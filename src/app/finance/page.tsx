@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowLeft, TrendingUp, FileSpreadsheet, PieChart, Calculator } from "lucide-react";
+import { ArrowLeft, TrendingUp, FileSpreadsheet, PieChart, BarChart3 } from "lucide-react";
 
 const projects = [
     {
@@ -12,6 +12,7 @@ const projects = [
         icon: FileSpreadsheet,
         tags: ["Excel", "三表模型", "财务分析"],
         date: "2024-12",
+        href: null,
     },
     {
         id: 2,
@@ -20,6 +21,7 @@ const projects = [
         icon: TrendingUp,
         tags: ["DCF", "估值", "投资分析"],
         date: "2024-11",
+        href: null,
     },
     {
         id: 3,
@@ -28,14 +30,16 @@ const projects = [
         icon: PieChart,
         tags: ["财务比率", "杜邦分析", "财务健康"],
         date: "2024-10",
+        href: null,
     },
     {
         id: 4,
-        title: "LBO模型构建",
-        description: "杠杆收购模型的核心逻辑与Excel实现，包括债务结构设计和回报计算。",
-        icon: Calculator,
-        tags: ["LBO", "私募股权", "并购"],
-        date: "2024-09",
+        title: "单车边际变动归因分析",
+        description: "通过上传两期财务数据，自动对比分析单车边际变动的驱动因素，帮助快速识别成本与收入的关键变化点。",
+        icon: BarChart3,
+        tags: ["Streamlit", "数据分析", "边际分析"],
+        date: "2025-01",
+        href: "/finance/margin-analysis",
     },
 ];
 
@@ -84,17 +88,8 @@ export default function FinancePage() {
                 >
                     {projects.map((project, index) => {
                         const Icon = project.icon;
-
-                        return (
-                            <motion.article
-                                key={project.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
-                                className="group p-8 rounded-2xl bg-white/5 border border-white/10 
-                           hover:border-white/20 hover:bg-white/10
-                           transition-all duration-300 cursor-pointer text-left"
-                            >
+                        const CardContent = (
+                            <>
                                 {/* Icon and Date */}
                                 <div className="flex items-start justify-between mb-6">
                                     <div className="p-4 rounded-xl bg-blue-500/10 text-blue-400 group-hover:text-blue-300 transition-colors">
@@ -122,6 +117,39 @@ export default function FinancePage() {
                                         </span>
                                     ))}
                                 </div>
+                            </>
+                        );
+
+                        // 如果有链接，用 Link 包裹
+                        if (project.href) {
+                            return (
+                                <Link key={project.id} href={project.href}>
+                                    <motion.article
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
+                                        className="group p-8 rounded-2xl bg-white/5 border border-white/10 
+                                           hover:border-white/20 hover:bg-white/10
+                                           transition-all duration-300 cursor-pointer text-left h-full"
+                                    >
+                                        {CardContent}
+                                    </motion.article>
+                                </Link>
+                            );
+                        }
+
+                        // 没有链接，普通卡片
+                        return (
+                            <motion.article
+                                key={project.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
+                                className="group p-8 rounded-2xl bg-white/5 border border-white/10 
+                                   hover:border-white/20 hover:bg-white/10
+                                   transition-all duration-300 cursor-pointer text-left"
+                            >
+                                {CardContent}
                             </motion.article>
                         );
                     })}
