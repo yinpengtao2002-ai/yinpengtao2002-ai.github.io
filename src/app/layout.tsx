@@ -34,7 +34,8 @@ export default function RootLayout({
         className={`${inter.variable} antialiased gradient-bg noise-overlay`}
       >
         <ParticleField />
-        <Navigation />
+        {/* Navigation disabled as requested */}
+        {/* <Navigation /> */}
         <main>{children}</main>
         <AudioPlayer />
       </body>
