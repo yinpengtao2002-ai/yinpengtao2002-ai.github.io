@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的个人空间 | My Personal Space</title>
+    <meta name="description" content="欢迎来到我的个人空间，这里记录着我的日常生活与美好瞬间。">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-logo">
+                <span class="logo-icon">✨</span>
+                <span class="logo-text">My Space</span>
+            </a>
+            <div class="nav-links">
+                <a href="#home" class="nav-link active">首页</a>
+                <a href="#moments" class="nav-link">动态</a>
+                <a href="#gallery" class="nav-link">相册</a>
+                <a href="#about" class="nav-link">关于我</a>
+            </div>
+            <button class="theme-toggle" id="themeToggle" aria-label="切换主题">
+                <span class="theme-icon">🌙</span>
+            </button>
+            <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="菜单">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- 移动端菜单 -->
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="#home" class="mobile-link">首页</a>
+        <a href="#moments" class="mobile-link">动态</a>
+        <a href="#gallery" class="mobile-link">相册</a>
+        <a href="#about" class="mobile-link">关于我</a>
+    </div>
+
+    <!-- 主页区域 -->
+    <section id="home" class="hero-section">
+        <div class="hero-content">
+            <div class="hero-avatar">
+                <div class="avatar-ring"></div>
+                <div class="avatar-placeholder">👤</div>
+            </div>
+            <h1 class="hero-title">欢迎来到我的空间</h1>
+            <p class="hero-subtitle">记录生活的美好瞬间 ✨</p>
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <span class="stat-number" id="postCount">0</span>
+                    <span class="stat-label">动态</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="photoCount">0</span>
+                    <span class="stat-label">照片</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="dayCount">1</span>
+                    <span class="stat-label">天</span>
+                </div>
+            </div>
+            <a href="#moments" class="hero-cta">
+                <span>开始探索</span>
+                <span class="cta-arrow">→</span>
+            </a>
+        </div>
+        <div class="hero-decoration">
+            <div class="floating-shape shape-1"></div>
+            <div class="floating-shape shape-2"></div>
+            <div class="floating-shape shape-3"></div>
+        </div>
+    </section>
+
+    <!-- 动态区域 -->
+    <section id="moments" class="section moments-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">📝 我的动态</h2>
+                <p class="section-desc">分享生活中的点点滴滴</p>
+            </div>
+
+            <!-- 发布框 -->
+            <div class="post-composer glass-card">
+                <div class="composer-header">
+                    <span class="composer-avatar">😊</span>
+                    <span class="composer-hint">分享你的想法...</span>
+                </div>
+                <textarea id="postContent" class="composer-input" placeholder="今天发生了什么有趣的事？"></textarea>
+                <div class="composer-preview" id="imagePreview"></div>
+                <div class="composer-actions">
+                    <div class="composer-tools">
+                        <label class="tool-btn" title="添加图片">
+                            <input type="file" id="imageInput" accept="image/*" multiple hidden>
+                            <span>🖼️</span>
+                            <span>图片</span>
+                        </label>
+                        <button class="tool-btn" id="emojiBtn" title="添加表情">
+                            <span>😀</span>
+                            <span>表情</span>
+                        </button>
+                    </div>
+                    <button class="publish-btn" id="publishBtn">
+                        <span>发布</span>
+                        <span class="btn-icon">✨</span>
+                    </button>
+                </div>
+                <!-- 表情选择器 -->
+                <div class="emoji-picker" id="emojiPicker">
+                    <div class="emoji-grid">
+                        <span class="emoji-item">😀</span>
+                        <span class="emoji-item">😊</span>
+                        <span class="emoji-item">😍</span>
+                        <span class="emoji-item">🥰</span>
+                        <span class="emoji-item">😎</span>
+                        <span class="emoji-item">🤔</span>
+                        <span class="emoji-item">😅</span>
+                        <span class="emoji-item">😂</span>
+                        <span class="emoji-item">🥺</span>
+                        <span class="emoji-item">😴</span>
+                        <span class="emoji-item">🎉</span>
+                        <span class="emoji-item">❤️</span>
+                        <span class="emoji-item">💕</span>
+                        <span class="emoji-item">⭐</span>
+                        <span class="emoji-item">🌟</span>
+                        <span class="emoji-item">✨</span>
+                        <span class="emoji-item">🌈</span>
+                        <span class="emoji-item">🌸</span>
+                        <span class="emoji-item">🍀</span>
+                        <span class="emoji-item">☀️</span>
+                        <span class="emoji-item">🌙</span>
+                        <span class="emoji-item">🎵</span>
+                        <span class="emoji-item">📸</span>
+                        <span class="emoji-item">🎨</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 动态列表 -->
+            <div class="posts-container" id="postsContainer">
+                <!-- 动态将通过 JavaScript 动态添加 -->
+            </div>
+
+            <!-- 空状态 -->
+            <div class="empty-state" id="emptyState">
+                <div class="empty-icon">📭</div>
+                <h3>还没有动态</h3>
+                <p>分享你的第一条动态吧！</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 相册区域 -->
+    <section id="gallery" class="section gallery-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">📷 我的相册</h2>
+                <p class="section-desc">美好瞬间的收藏</p>
+            </div>
+
+            <!-- 相册上传 -->
+            <div class="gallery-upload glass-card">
+                <label class="upload-area" id="galleryUploadArea">
+                    <input type="file" id="galleryInput" accept="image/*" multiple hidden>
+                    <div class="upload-content">
+                        <span class="upload-icon">📤</span>
+                        <span class="upload-text">点击或拖拽图片到这里上传</span>
+                        <span class="upload-hint">支持 JPG、PNG、GIF 格式</span>
+                    </div>
+                </label>
+            </div>
+
+            <!-- 瀑布流相册 -->
+            <div class="gallery-grid" id="galleryGrid">
+                <!-- 图片将通过 JavaScript 动态添加 -->
+            </div>
+
+            <!-- 相册空状态 -->
+            <div class="empty-state gallery-empty" id="galleryEmpty">
+                <div class="empty-icon">🖼️</div>
+                <h3>相册还是空的</h3>
+                <p>上传一些照片来填充你的相册吧！</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 关于我 -->
+    <section id="about" class="section about-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">👋 关于我</h2>
+                <p class="section-desc">认识一下网站的主人</p>
+            </div>
+
+            <div class="about-content glass-card">
+                <div class="about-avatar">
+                    <div class="avatar-large">👤</div>
+                </div>
+                <div class="about-info">
+                    <h3 class="about-name" id="aboutName" contenteditable="true">点击编辑你的名字</h3>
+                    <p class="about-bio" id="aboutBio" contenteditable="true">点击这里编辑你的个人简介，介绍一下你自己吧！可以写写你的爱好、职业、梦想等等...</p>
+                    <div class="about-tags">
+                        <span class="tag">🎨 爱好广泛</span>
+                        <span class="tag">📚 热爱学习</span>
+                        <span class="tag">🌟 积极向上</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 联系方式 -->
+            <div class="contact-cards">
+                <div class="contact-card glass-card">
+                    <span class="contact-icon">📧</span>
+                    <span class="contact-label">邮箱</span>
+                    <span class="contact-value" id="contactEmail" contenteditable="true">your@email.com</span>
+                </div>
+                <div class="contact-card glass-card">
+                    <span class="contact-icon">💬</span>
+                    <span class="contact-label">微信</span>
+                    <span class="contact-value" id="contactWechat" contenteditable="true">your_wechat</span>
+                </div>
+                <div class="contact-card glass-card">
+                    <span class="contact-icon">🔗</span>
+                    <span class="contact-label">其他</span>
+                    <span class="contact-value" id="contactOther" contenteditable="true">其他联系方式</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p class="footer-text">用 ❤️ 打造的个人空间</p>
+            <p class="footer-copyright">© 2026 My Personal Space. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- 图片查看器 -->
+    <div class="image-viewer" id="imageViewer">
+        <button class="viewer-close" id="viewerClose">×</button>
+        <button class="viewer-nav viewer-prev" id="viewerPrev">‹</button>
+        <button class="viewer-nav viewer-next" id="viewerNext">›</button>
+        <div class="viewer-content">
+            <img src="" alt="" id="viewerImage">
+        </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
