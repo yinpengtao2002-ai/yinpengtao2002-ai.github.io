@@ -66,63 +66,66 @@ export default function ExplorePage() {
                     {sections.map((section, index) => {
                         const Icon = section.icon;
                         return (
-                            <motion.a
+                            <Link
                                 key={section.id}
                                 href={section.href}
-                                initial={{ opacity: 0, y: 40 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.6, delay: 0.3 + index * 0.15 }}
-                                className="group relative p-12 rounded-3xl bg-white/5 border border-white/10 
+                            >
+                                <motion.div
+                                    initial={{ opacity: 0, y: 40 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.6, delay: 0.3 + index * 0.15 }}
+                                    className="group relative p-12 rounded-3xl bg-white/5 border border-white/10 
                            hover:border-white/30 hover:bg-white/10
                            transition-all duration-500 overflow-hidden
                            hover:shadow-[0_0_60px_rgba(168,85,247,0.2)]
                            hover:scale-105"
-                            >
-                                {/* Background gradient */}
-                                <div
-                                    className={`absolute inset-0 bg-gradient-to-br ${section.gradient} opacity-0 
-                             group-hover:opacity-15 transition-opacity duration-500`}
-                                />
-
-                                {/* Icon */}
-                                <div
-                                    className={`inline-flex p-5 rounded-2xl bg-gradient-to-br ${section.gradient} 
-                             mb-8`}
                                 >
-                                    <Icon className="w-10 h-10 text-white" />
-                                </div>
+                                    {/* Background gradient */}
+                                    <div
+                                        className={`absolute inset-0 bg-gradient-to-br ${section.gradient} opacity-0 
+                             group-hover:opacity-15 transition-opacity duration-500`}
+                                    />
 
-                                {/* Title */}
-                                <h2 className="text-3xl font-bold mb-4 group-hover:text-white transition-colors">
-                                    {section.title}
-                                </h2>
-
-                                {/* Subtitle */}
-                                <p className="text-white/60 text-lg mb-4">{section.subtitle}</p>
-
-                                {/* Description */}
-                                <p className="text-white/40 leading-relaxed">
-                                    {section.description}
-                                </p>
-
-                                {/* Arrow indicator */}
-                                <div className="absolute bottom-10 right-10 opacity-0 group-hover:opacity-100 
-                              translate-x-4 group-hover:translate-x-0 transition-all duration-300">
-                                    <svg
-                                        className="w-8 h-8 text-white/60"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
+                                    {/* Icon */}
+                                    <div
+                                        className={`inline-flex p-5 rounded-2xl bg-gradient-to-br ${section.gradient} 
+                             mb-8`}
                                     >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M17 8l4 4m0 0l-4 4m4-4H3"
-                                        />
-                                    </svg>
-                                </div>
-                            </motion.a>
+                                        <Icon className="w-10 h-10 text-white" />
+                                    </div>
+
+                                    {/* Title */}
+                                    <h2 className="text-3xl font-bold mb-4 group-hover:text-white transition-colors">
+                                        {section.title}
+                                    </h2>
+
+                                    {/* Subtitle */}
+                                    <p className="text-white/60 text-lg mb-4">{section.subtitle}</p>
+
+                                    {/* Description */}
+                                    <p className="text-white/40 leading-relaxed">
+                                        {section.description}
+                                    </p>
+
+                                    {/* Arrow indicator */}
+                                    <div className="absolute bottom-10 right-10 opacity-0 group-hover:opacity-100 
+                              translate-x-4 group-hover:translate-x-0 transition-all duration-300">
+                                        <svg
+                                            className="w-8 h-8 text-white/60"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M17 8l4 4m0 0l-4 4m4-4H3"
+                                            />
+                                        </svg>
+                                    </div>
+                                </motion.div>
+                            </Link>
                         );
                     })}
                 </div>

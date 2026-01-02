@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 
 interface GlowingButtonProps {
@@ -16,7 +17,7 @@ export default function GlowingButton({ href, text }: GlowingButtonProps) {
             transition={{ duration: 0.8, delay: 0.8 }}
             className="relative z-10"
         >
-            <a
+            <Link
                 href={href}
                 className="group relative inline-flex items-center justify-center"
             >
@@ -84,7 +85,7 @@ export default function GlowingButton({ href, text }: GlowingButtonProps) {
                         →
                     </motion.span>
                 </div>
-            </a>
+            </Link>
         </motion.div>
     );
 }

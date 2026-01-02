@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import ParticleField from "@/components/ParticleField";
+import AudioPlayer from "@/components/AudioPlayer";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -35,6 +36,7 @@ export default function RootLayout({
         <ParticleField />
         <Navigation />
         <main>{children}</main>
+        <AudioPlayer />
       </body>
     </html>
   );
