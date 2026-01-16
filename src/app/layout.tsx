@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { Poppins, Lora } from "next/font/google";
 import "./globals.css";
-import Navigation from "@/components/Navigation";
+// import Navigation from "@/components/Navigation";
 import MouseTrail from "@/components/ui/MouseTrail";
-import AudioPlayer from "@/components/AudioPlayer";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -45,7 +44,6 @@ export default function RootLayout({
         {/* Navigation disabled as requested */}
         {/* <Navigation /> */}
         <main>{children}</main>
-        <AudioPlayer />
       </body>
     </html>
   );
