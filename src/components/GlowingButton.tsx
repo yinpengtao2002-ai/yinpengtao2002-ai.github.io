@@ -21,7 +21,7 @@ export default function GlowingButton({ href, text }: GlowingButtonProps) {
                 href={href}
                 className="group relative inline-flex items-center justify-center"
             >
-                {/* 旋转光束边框 - 与边框完全贴合 */}
+                {/* 旋转光束边框 - Anthropic Orange */}
                 <div className="absolute inset-0 rounded-full p-[2px]">
                     <div className="absolute inset-0 rounded-full overflow-hidden">
                         <motion.div
@@ -33,7 +33,7 @@ export default function GlowingButton({ href, text }: GlowingButtonProps) {
                             }}
                             className="absolute"
                             style={{
-                                background: "conic-gradient(from 0deg, transparent 0deg 300deg, rgba(168,85,247,0.8) 330deg, rgba(236,72,153,0.9) 345deg, rgba(168,85,247,0.8) 360deg)",
+                                background: "conic-gradient(from 0deg, transparent 0deg 300deg, rgba(217,119,87,0.7) 330deg, rgba(106,155,204,0.8) 345deg, rgba(217,119,87,0.7) 360deg)",
                                 width: "200%",
                                 height: "200%",
                                 left: "-50%",
@@ -56,7 +56,7 @@ export default function GlowingButton({ href, text }: GlowingButtonProps) {
                     <div
                         className="absolute w-16 h-16 rounded-full blur-xl"
                         style={{
-                            background: "radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)",
+                            background: "radial-gradient(circle, rgba(217,119,87,0.3) 0%, transparent 70%)",
                             top: "-20px",
                             left: "50%",
                             transform: "translateX(-50%)"
@@ -64,23 +64,24 @@ export default function GlowingButton({ href, text }: GlowingButtonProps) {
                     />
                 </motion.div>
 
-                {/* 按钮主体 */}
+                {/* 按钮主体 - 浅色半透明背景 */}
                 <div className="relative min-w-[280px] h-[64px] rounded-full 
-                        bg-[#1a1030]/60 backdrop-blur-md 
-                        border border-purple-500/20
-                        group-hover:bg-[#1a1030]/80
-                        group-hover:border-purple-500/40
+                        bg-white/70 backdrop-blur-md 
+                        border border-[#e8e6dc]
+                        group-hover:bg-white/90
+                        group-hover:border-[#d97757]/40
                         transition-all duration-300
+                        shadow-sm group-hover:shadow-md
                         flex items-center justify-center gap-3">
 
-                    <span className="text-xl font-medium tracking-widest text-white/90 group-hover:text-white transition-colors">
+                    <span className="text-xl font-medium tracking-widest text-[#141413]/80 group-hover:text-[#141413] transition-colors">
                         {text}
                     </span>
 
                     <motion.span
                         animate={{ x: [0, 4, 0] }}
                         transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                        className="text-pink-400 text-lg"
+                        className="text-[#d97757] text-lg"
                     >
                         →
                     </motion.span>

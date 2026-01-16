@@ -57,21 +57,22 @@ export default function AudioPlayer() {
             transition={{ delay: 2, duration: 0.5 }}
             onClick={togglePlay}
             className="fixed bottom-6 right-6 z-50 p-4 rounded-full 
-                 bg-white/10 backdrop-blur-md border border-white/20
-                 hover:bg-white/20 hover:border-white/30
+                 bg-white/80 backdrop-blur-md border border-[#e8e6dc]
+                 hover:bg-white hover:border-[#d97757]/40
+                 shadow-sm hover:shadow-md
                  transition-all duration-300 group"
             title={isPlaying ? "暂停音乐" : "播放音乐"}
         >
             {isPlaying ? (
-                <Volume2 className="w-5 h-5 text-white/80 group-hover:text-white" />
+                <Volume2 className="w-5 h-5 text-[#141413]/80 group-hover:text-[#141413]" />
             ) : (
-                <VolumeX className="w-5 h-5 text-white/50 group-hover:text-white" />
+                <VolumeX className="w-5 h-5 text-[#b0aea5] group-hover:text-[#141413]" />
             )}
 
-            {/* 播放中的动画指示器 */}
+            {/* 播放中的动画指示器 - Anthropic Orange */}
             {isPlaying && (
                 <motion.div
-                    className="absolute inset-0 rounded-full border-2 border-purple-500/50"
+                    className="absolute inset-0 rounded-full border-2 border-[#d97757]/50"
                     animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
                     transition={{ duration: 2, repeat: Infinity }}
                 />

@@ -1,13 +1,21 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Poppins, Lora } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
-import ParticleField from "@/components/ParticleField";
+import MouseTrail from "@/components/ui/MouseTrail";
 import AudioPlayer from "@/components/AudioPlayer";
 
-const inter = Inter({
-  variable: "--font-inter",
+const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+const lora = Lora({
+  variable: "--font-lora",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -29,11 +37,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN" className="dark">
+    <html lang="zh-CN">
       <body
-        className={`${inter.variable} antialiased gradient-bg noise-overlay`}
+        className={`${poppins.variable} ${lora.variable} antialiased gradient-bg overflow-x-hidden selection:bg-[#d97757] selection:text-white`}
       >
-        <ParticleField />
+        <MouseTrail />
         {/* Navigation disabled as requested */}
         {/* <Navigation /> */}
         <main>{children}</main>

@@ -30,13 +30,13 @@ export default function ParticleField() {
             canvas.height = window.innerHeight;
 
             const particlesArray = [];
-            // 增加粒子密度，每 8000 像素区域一个粒子 (原 9000)
+            // 粒子密度，每 8000 像素区域一个粒子
             const numberOfParticles = (canvas.width * canvas.height) / 8000;
 
             for (let i = 0; i < numberOfParticles; i++) {
                 const x = Math.random() * canvas.width;
                 const y = Math.random() * canvas.height;
-                // 增大粒子尺寸: 1.5 ~ 4
+                // 粒子尺寸: 1.5 ~ 4
                 const size = Math.random() * 2.5 + 1.5;
                 const density = Math.random() * 30 + 1;
 
@@ -63,7 +63,7 @@ export default function ParticleField() {
                 const dx = mouse.x - p.baseX;
                 const dy = mouse.y - p.baseY;
                 const distance = Math.sqrt(dx * dx + dy * dy);
-                const maxDistance = 300; // 增大影响范围 (原 250)
+                const maxDistance = 300;
 
                 if (distance < maxDistance) {
                     const forceDirectionX = dx / distance;
@@ -73,7 +73,6 @@ export default function ParticleField() {
                     const directionX = forceDirectionX * force * p.density;
                     const directionY = forceDirectionY * force * p.density;
 
-                    // 减小拉扯幅度 (原 2.5 -> 1.5)
                     p.x = p.baseX + directionX * 1.5;
                     p.y = p.baseY + directionY * 1.5;
                 } else {
@@ -87,25 +86,23 @@ export default function ParticleField() {
                     }
                 }
 
-                // 绘制粒子 - 提高不透明度到 0.6
+                // 绘制粒子 - Anthropic Orange (柔和透明度适配浅色背景)
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fillStyle = "rgba(168, 85, 247, 0.6)";
+                ctx.fillStyle = "rgba(217, 119, 87, 0.35)";  // Anthropic Orange
                 ctx.fill();
 
-                // 绘制连线
+                // 绘制粒子间连线 - Mid Gray
                 for (let j = i + 1; j < particlesRef.current.length; j++) {
                     const p2 = particlesRef.current[j];
                     const dx = p.x - p2.x;
                     const dy = p.y - p2.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
 
-                    // 增加连线距离到 120
                     if (distance < 120) {
                         ctx.beginPath();
                         const opacity = 1 - distance / 120;
-                        // 显著提高连线可见度 (opacity * 0.5)
-                        ctx.strokeStyle = `rgba(168, 85, 247, ${opacity * 0.5})`;
+                        ctx.strokeStyle = `rgba(176, 174, 165, ${opacity * 0.35})`;  // Mid Gray
                         ctx.lineWidth = 0.6;
                         ctx.moveTo(p.x, p.y);
                         ctx.lineTo(p2.x, p2.y);
@@ -113,13 +110,12 @@ export default function ParticleField() {
                     }
                 }
 
-                // 绘制粒子与鼠标的连线
+                // 绘制粒子与鼠标的连线 - Anthropic Blue
                 const distMouse = Math.sqrt((p.x - mouse.x) ** 2 + (p.y - mouse.y) ** 2);
-                if (distMouse < 200) { // 增大连接范围到 200
+                if (distMouse < 200) {
                     ctx.beginPath();
                     const opacity = 1 - distMouse / 200;
-                    // 提高鼠标连线亮度 (opacity * 0.8)
-                    ctx.strokeStyle = `rgba(236, 72, 153, ${opacity * 0.8})`;
+                    ctx.strokeStyle = `rgba(106, 155, 204, ${opacity * 0.6})`;  // Anthropic Blue
                     ctx.lineWidth = 1;
                     ctx.moveTo(p.x, p.y);
                     ctx.lineTo(mouse.x, mouse.y);

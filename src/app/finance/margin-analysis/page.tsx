@@ -18,12 +18,28 @@ export default function MarginAnalysisPage() {
                 className="fixed top-4 left-4 right-4 z-50 flex items-center justify-between pointer-events-none"
                 onMouseEnter={() => setShowControls(true)}
             >
+                {/* Left - Back button */}
+                <div className="pointer-events-auto">
+                    <Link
+                        href="/finance"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full 
+                             bg-white/90 backdrop-blur-md border border-[#e8e6dc]
+                             text-[#141413]/70 hover:text-[#141413] hover:bg-white
+                             shadow-sm hover:shadow-md transition-all"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        <span className="text-sm">返回</span>
+                    </Link>
+                </div>
+
                 {/* Right controls */}
-                <div className="pointer-events-auto flex items-center gap-2 ml-auto">
+                <div className="pointer-events-auto flex items-center gap-2">
                     {/* Toggle visibility button */}
                     <button
                         onClick={() => setShowControls(!showControls)}
-                        className="p-2 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white/70 hover:text-white hover:bg-black/80 transition-all"
+                        className="p-2 rounded-full bg-white/90 backdrop-blur-md border border-[#e8e6dc] 
+                             text-[#141413]/70 hover:text-[#141413] hover:bg-white 
+                             shadow-sm hover:shadow-md transition-all"
                         title={showControls ? "隐藏控制栏" : "显示控制栏"}
                     >
                         {showControls ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -34,7 +50,9 @@ export default function MarginAnalysisPage() {
                         href="https://marginanalysis0103-dc3khcc79ja82phpgnvpav.streamlit.app/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white/70 hover:text-white hover:bg-black/80 transition-all"
+                        className="p-2 rounded-full bg-white/90 backdrop-blur-md border border-[#e8e6dc] 
+                             text-[#141413]/70 hover:text-[#141413] hover:bg-white 
+                             shadow-sm hover:shadow-md transition-all"
                         title="新窗口打开"
                     >
                         <ExternalLink className="w-4 h-4" />
