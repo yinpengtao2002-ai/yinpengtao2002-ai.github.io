@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Send, Sparkles, TrendingUp, ArrowLeft, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import { allDialoguePatterns, defaultResponses } from "@/lib/data/dialoguePatterns";
 
 /* Claude-style serif font for literary feel */
 const serifFont = "'Palatino Linotype', 'Book Antiqua', Palatino, 'Times New Roman', serif";
@@ -182,56 +183,8 @@ function recognizeIntent(
 ): { response: string; action?: string } | null {
     const lowerInput = input.toLowerCase().trim();
 
-    // Chit-chat patterns and warm random responses
-    const chitChatPatterns = [
-        {
-            keywords: ["哈哈", "haha", "lol", "嘿嘿"],
-            responses: [
-                "看到你开心我也很开心！😊",
-                "笑容是最好的语言，哪怕是对AI来说。",
-                "希望能一直为你带来好心情！🌟",
-                "你的快乐很有感染力呢！"
-            ]
-        },
-        {
-            keywords: ["你好", "hi", "hello", "嗨", "hey", "哈喽", "您好"],
-            responses: [
-                "你好呀！无论何时，我都随时待命。",
-                "很高兴见到你！今天有什么我可以帮你的吗？",
-                "你好！感觉今天是个不错的一天呢！✨",
-                "嗨！很高兴能在这里遇见你。"
-            ]
-        },
-        {
-            keywords: ["谢谢", "感谢", "thx", "thanks", "thank you", "阿里嘎多"],
-            responses: [
-                "不客气，能帮到你是我的荣幸！🌹",
-                "随时为你效劳！",
-                "不用谢，我们是朋友嘛。",
-                "你的礼貌让我觉得心里暖暖的！❤️"
-            ]
-        },
-        {
-            keywords: ["厉害", "666", "牛", "棒", "awesome", "good", "nice", "强"],
-            responses: [
-                "谢谢夸奖！我会继续努力的 💪",
-                "过奖啦，其实是你更厉害！",
-                "被你夸奖我都要脸红了...😳",
-                "开心！希望能一直做你的得力助手。"
-            ]
-        },
-        {
-            keywords: ["在吗", "online", "活着"],
-            responses: [
-                "一直在哦，从未离开。🛡️",
-                "随时都在，等你召唤。",
-                "我在呢，有什么想聊的吗？"
-            ]
-        }
-    ];
-
-    // Check chit-chat first
-    for (const pattern of chitChatPatterns) {
+    // Check chit-chat patterns from comprehensive dialogue library (100+ patterns)
+    for (const pattern of allDialoguePatterns) {
         if (pattern.keywords.some(k => lowerInput.includes(k))) {
             const randomResponse = pattern.responses[Math.floor(Math.random() * pattern.responses.length)];
             return { response: randomResponse };
@@ -261,13 +214,7 @@ function recognizeIntent(
         };
     }
 
-    // Default response - warmer fallback
-    const defaultResponses = [
-        "抱歉，我还在学习中，目前主要负责【AI 见闻】和【财务建模】的导航。不过你可以试试直接输入这些关键词。",
-        "虽然我也很想陪你聊更多，但我现在的核心能力是带你去【AI】或【财务】板块。要不去看看？",
-        "这个问题有点深奥...🤔 不过如果你是想找【AI】或【财务】相关的内容，我可是专家！",
-        "哎呀，我可能没太听懂。不过你可以输入“AI”或“财务”，我能立马带你去相应页面！"
-    ];
+    // Default response - warmer fallback from comprehensive library (10 options)
     return {
         response: defaultResponses[Math.floor(Math.random() * defaultResponses.length)],
     };
@@ -307,7 +254,7 @@ export default function ExplorePage() {
                     id: "greeting",
                     role: "assistant",
                     content:
-                        "你好！我是你的智能助手。\n\n你可以点击下方按钮，或者直接告诉我带你去【AI 见闻】还是【财务建模】板块。试试输入 \"带我去AI\"？",
+                        "你好！我是 Lucas。\n\n你可以点击下方按钮，或者直接告诉我带你去【AI 见闻】还是【财务建模】板块。试试输入 \"带我去AI\"？",
                     buttons: [
                         { label: "AI 见闻", href: "/ai", icon: "ai" },
                         { label: "财务建模", href: "/finance", icon: "finance" },
