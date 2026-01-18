@@ -119,3 +119,39 @@ export function ImageArtifact() {
         </div>
     );
 }
+
+export function MusicArtifact() {
+    return (
+        <div className="flex items-center gap-3 w-32">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-200 to-rose-200 border border-white/40 flex items-center justify-center">
+                <div className="w-2 h-2 bg-white rounded-full" />
+            </div>
+            <div className="flex-1 space-y-1.5">
+                <div className="w-full h-1.5 bg-gray-400/20 rounded-full overflow-hidden">
+                    <motion.div
+                        className="h-full bg-pink-400/40"
+                        animate={{ width: ["0%", "100%"] }}
+                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                    />
+                </div>
+                <div className="flex gap-1">
+                    <div className="w-1/2 h-1 bg-gray-300/20 rounded-full" />
+                    <div className="w-1/3 h-1 bg-gray-300/20 rounded-full" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export function SecureArtifact() {
+    return (
+        <div className="flex flex-col items-center gap-2 w-20">
+            <div className="w-8 h-8 rounded-full border-2 border-emerald-400/30 flex items-center justify-center">
+                <Check className="w-4 h-4 text-emerald-500/50" />
+            </div>
+            <div className="w-12 h-1 bg-emerald-400/20 rounded-full" />
+        </div>
+    );
+}
+
+import { Check } from "lucide-react";

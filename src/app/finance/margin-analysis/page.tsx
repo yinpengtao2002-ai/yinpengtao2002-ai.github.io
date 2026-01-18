@@ -21,7 +21,7 @@ export default function MarginAnalysisPage() {
                 {/* Left - Back button */}
                 <div className="pointer-events-auto">
                     <Link
-                        href="/finance"
+                        href="/explore"
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-full 
                              bg-white/90 backdrop-blur-md border border-[#e8e6dc]
                              text-[#141413]/70 hover:text-[#141413] hover:bg-white

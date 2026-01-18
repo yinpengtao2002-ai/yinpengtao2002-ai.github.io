@@ -3,21 +3,35 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Send, Sparkles, TrendingUp, ArrowLeft, ArrowUpRight } from "lucide-react";
+import { Send, Sparkles, TrendingUp, ArrowLeft, ArrowUpRight, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { allDialoguePatterns, defaultResponses } from "@/lib/data/dialoguePatterns";
+import { aiContent as staticAI, financeContent as staticFinance } from "@/lib/data/generated/content";
 
 /* Claude-style serif font for literary feel */
 const serifFont = "'Palatino Linotype', 'Book Antiqua', Palatino, 'Times New Roman', serif";
 const sansFont = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+
+// Content card type for inline display
+interface ContentCard {
+    id: number;
+    title: string;
+    description: string;
+    category?: string;
+    date: string;
+    href: string;
+}
 
 // Message type definition
 interface Message {
     id: string;
     role: "user" | "assistant";
     content: string;
-    buttons?: { label: string; href: string; icon: "ai" | "finance" }[];
+    buttons?: { label: string; icon: "ai" | "finance" }[];
     isTyping?: boolean;
+    // NEW: Inline content cards
+    contentCards?: ContentCard[];
+    cardType?: "ai" | "finance";
 }
 
 // Typing indicator component
@@ -43,28 +57,22 @@ function TypingIndicator() {
     );
 }
 
-// Feature Card component (fka NavButton)
+// Feature Card component - now uses onClick callback instead of navigation
 function FeatureCard({
     label,
-    href,
     icon,
+    onClick,
 }: {
     label: string;
-    href: string;
     icon: "ai" | "finance";
+    onClick: () => void;
 }) {
-    const router = useRouter();
-
-    const handleClick = () => {
-        router.push(href);
-    };
-
     const isAI = icon === "ai";
     const hoverBorderColor = isAI ? "#d97757" : "#6a9bcc";
 
     return (
         <motion.button
-            onClick={handleClick}
+            onClick={onClick}
             className="flex items-center gap-3 px-6 py-4 rounded-xl transition-all duration-300 group text-left"
             style={{
                 background: '#FFFFFF',
@@ -95,8 +103,94 @@ function FeatureCard({
     );
 }
 
+// Content Card List component - displays articles/projects inline
+function ContentCardList({
+    cards,
+    cardType,
+    onCardClick,
+}: {
+    cards: ContentCard[];
+    cardType: "ai" | "finance";
+    onCardClick: (card: ContentCard) => void;
+}) {
+    const isAI = cardType === "ai";
+    const accentColor = isAI ? "#d97757" : "#6a9bcc";
+
+    return (
+        <div className="grid grid-cols-1 gap-3 mt-4">
+            {cards.map((card, index) => (
+                <motion.button
+                    key={card.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    onClick={() => onCardClick(card)}
+                    className="group text-left p-4 rounded-xl transition-all duration-300"
+                    style={{
+                        background: '#FFFFFF',
+                        border: '1px solid #E5E7EB',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                    }}
+                    whileHover={{
+                        y: -2,
+                        boxShadow: '0 6px 16px rgba(0,0,0,0.08)',
+                        borderColor: accentColor,
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                >
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                                <h4
+                                    className="text-[15px] font-semibold truncate"
+                                    style={{ color: '#1F2937', fontFamily: sansFont }}
+                                >
+                                    {card.title}
+                                </h4>
+                                {card.href && (
+                                    <ExternalLink className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                                )}
+                            </div>
+                            <p
+                                className="text-[13px] line-clamp-2"
+                                style={{ color: '#6B7280', lineHeight: '1.5' }}
+                            >
+                                {card.description}
+                            </p>
+                            {card.category && (
+                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                    <span
+                                        className="text-[11px] px-2 py-0.5 rounded-full"
+                                        style={{
+                                            background: `${accentColor}15`,
+                                            color: accentColor,
+                                        }}
+                                    >
+                                        {card.category}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                        <span className="text-[11px] text-gray-400 flex-shrink-0">{card.date}</span>
+                    </div>
+                </motion.button>
+            ))}
+        </div>
+    );
+}
+
 // Chat bubble component - Claude magazine style
-function ChatBubble({ message, isLast }: { message: Message; isLast: boolean }) {
+function ChatBubble({
+    message,
+    isLast,
+    onCardClick,
+    onFeatureClick
+}: {
+    message: Message;
+    isLast: boolean;
+    onCardClick?: (card: ContentCard) => void;
+    onFeatureClick?: (icon: "ai" | "finance") => void;
+}) {
     const isUser = message.role === "user";
 
     return (
@@ -157,14 +251,23 @@ function ChatBubble({ message, isLast }: { message: Message; isLast: boolean }) 
                             >
                                 {message.content}
                             </p>
-                            {message.buttons && message.buttons.length > 0 && isLast && (
+                            {/* Inline content cards */}
+                            {message.contentCards && message.contentCards.length > 0 && message.cardType && onCardClick && (
+                                <ContentCardList
+                                    cards={message.contentCards}
+                                    cardType={message.cardType}
+                                    onCardClick={onCardClick}
+                                />
+                            )}
+                            {/* FeatureButtons (for greeting) */}
+                            {message.buttons && message.buttons.length > 0 && isLast && onFeatureClick && (
                                 <div className="flex flex-wrap gap-4 mt-6">
                                     {message.buttons.map((btn, idx) => (
                                         <FeatureCard
                                             key={idx}
                                             label={btn.label}
-                                            href={btn.href}
                                             icon={btn.icon}
+                                            onClick={() => onFeatureClick(btn.icon)}
                                         />
                                     ))}
                                 </div>
@@ -177,10 +280,12 @@ function ChatBubble({ message, isLast }: { message: Message; isLast: boolean }) 
     );
 }
 
-// Intent recognition function
+// Intent recognition function - now returns contentCards for inline display
 function recognizeIntent(
-    input: string
-): { response: string; action?: string } | null {
+    input: string,
+    aiContent: ContentCard[],
+    financeContent: ContentCard[]
+): { response: string; action?: string; contentCards?: ContentCard[]; cardType?: "ai" | "finance" } | null {
     const lowerInput = input.toLowerCase().trim();
 
     // Check chit-chat patterns from comprehensive dialogue library (100+ patterns)
@@ -191,15 +296,21 @@ function recognizeIntent(
         }
     }
 
-    // AI navigation
+    // AI content - show inline cards instead of navigation
     if (lowerInput.includes("ai") || lowerInput.includes("人工智能") || lowerInput.includes("见闻") || lowerInput.includes("chatgpt") || lowerInput.includes("llm")) {
+        if (aiContent.length === 0) {
+            return {
+                response: "【AI 见闻】板块暂时还没有内容哦，敬请期待！✨",
+            };
+        }
         return {
-            response: "明白，带你去探索 AI 的前沿见闻！🚀",
-            action: "/ai",
+            response: "好的！以下是【AI 见闻】板块的内容，选择一个你感兴趣的话题：",
+            contentCards: aiContent,
+            cardType: "ai",
         };
     }
 
-    // Finance navigation
+    // Finance content - show inline cards instead of navigation
     if (
         lowerInput.includes("财务") ||
         lowerInput.includes("建模") ||
@@ -208,9 +319,15 @@ function recognizeIntent(
         lowerInput.includes("finance") ||
         lowerInput.includes("估值")
     ) {
+        if (financeContent.length === 0) {
+            return {
+                response: "【财务建模】板块暂时还没有内容哦，敬请期待！📊",
+            };
+        }
         return {
-            response: "收到，让我们一起开启财务建模之旅。📊",
-            action: "/finance",
+            response: "收到！以下是【财务建模】板块的内容，选择你感兴趣的项目：",
+            contentCards: financeContent,
+            cardType: "finance",
         };
     }
 
@@ -228,6 +345,25 @@ export default function ExplorePage() {
     const [isProcessing, setIsProcessing] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+
+    // Content loaded from static generated data (prebuild script)
+    // Convert from generated ContentItem to local ContentCard format
+    const aiContent: ContentCard[] = staticAI.map((item) => ({
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        date: item.date,
+        category: item.category ?? undefined,
+        href: item.href,
+    }));
+    const financeContent: ContentCard[] = staticFinance.map((item) => ({
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        date: item.date,
+        category: item.category ?? undefined,
+        href: item.href,
+    }));
 
     // Auto-scroll to bottom
     const scrollToBottom = () => {
@@ -256,8 +392,8 @@ export default function ExplorePage() {
                     content:
                         "你好！我是 Lucas。\n\n你可以点击下方按钮，或者直接告诉我带你去【AI 见闻】还是【财务建模】板块。试试输入 \"带我去AI\"？",
                     buttons: [
-                        { label: "AI 见闻", href: "/ai", icon: "ai" },
-                        { label: "财务建模", href: "/finance", icon: "finance" },
+                        { label: "AI 见闻", icon: "ai" as const },
+                        { label: "财务建模", icon: "finance" as const },
                     ],
                 },
             ]);
@@ -292,8 +428,8 @@ export default function ExplorePage() {
         // Simulate processing delay
         await new Promise((resolve) => setTimeout(resolve, 800 + Math.random() * 600));
 
-        // Recognize intent
-        const result = recognizeIntent(userMessage.content);
+        // Recognize intent with dynamic content
+        const result = recognizeIntent(userMessage.content, aiContent, financeContent);
 
         // Remove typing indicator and add response
         setMessages((prev) => {
@@ -304,10 +440,14 @@ export default function ExplorePage() {
                     id: `assistant-${Date.now()}`,
                     role: "assistant",
                     content: result?.response || "我不太明白你的意思。",
-                    buttons: !result?.action
+                    // Include content cards if available
+                    contentCards: result?.contentCards,
+                    cardType: result?.cardType,
+                    // Show buttons only if no content cards
+                    buttons: !result?.contentCards
                         ? [
-                            { label: "AI 见闻", href: "/ai", icon: "ai" },
-                            { label: "财务建模", href: "/finance", icon: "finance" },
+                            { label: "AI 见闻", href: "/ai", icon: "ai" as const },
+                            { label: "财务建模", href: "/finance", icon: "finance" as const },
                         ]
                         : undefined,
                 },
@@ -315,13 +455,62 @@ export default function ExplorePage() {
         });
 
         setIsProcessing(false);
+    };
 
-        // Navigate if action exists
-        if (result?.action) {
-            setTimeout(() => {
-                router.push(result.action!);
-            }, 1500);
-        }
+    // Handle card click - navigate to article page
+    const handleCardClick = (card: ContentCard) => {
+        router.push(card.href);
+    };
+
+    // Handle feature card click - show content cards inline (same as typing)
+    const handleFeatureClick = (icon: "ai" | "finance") => {
+        // Simulate user input for the clicked section
+        const userInput = icon === "ai" ? "AI 见闻" : "财务建模";
+
+        // Add user message bubble
+        const userMessage: Message = {
+            id: `user-${Date.now()}`,
+            role: "user",
+            content: userInput,
+        };
+        setMessages((prev) => [...prev, userMessage]);
+
+        // Then add content cards as response using dynamic content state
+        setTimeout(() => {
+            if (icon === "ai") {
+                if (aiContent.length === 0) {
+                    setMessages((prev) => [...prev, {
+                        id: `assistant-${Date.now()}`,
+                        role: "assistant",
+                        content: "【AI 见闻】板块暂时还没有内容哦，敬请期待！✨",
+                    }]);
+                    return;
+                }
+                setMessages((prev) => [...prev, {
+                    id: `assistant-${Date.now()}`,
+                    role: "assistant",
+                    content: "好的！以下是【AI 见闻】板块的内容，选择一个你感兴趣的话题：",
+                    contentCards: aiContent,
+                    cardType: "ai" as const,
+                }]);
+            } else {
+                if (financeContent.length === 0) {
+                    setMessages((prev) => [...prev, {
+                        id: `assistant-${Date.now()}`,
+                        role: "assistant",
+                        content: "【财务建模】板块暂时还没有内容哦，敬请期待！📊",
+                    }]);
+                    return;
+                }
+                setMessages((prev) => [...prev, {
+                    id: `assistant-${Date.now()}`,
+                    role: "assistant",
+                    content: "收到！以下是【财务建模】板块的内容，选择你感兴趣的项目：",
+                    contentCards: financeContent,
+                    cardType: "finance" as const,
+                }]);
+            }
+        }, 400);
     };
 
     // Handle key press
@@ -416,6 +605,8 @@ export default function ExplorePage() {
                                     key={message.id}
                                     message={message}
                                     isLast={index === messages.length - 1}
+                                    onCardClick={handleCardClick}
+                                    onFeatureClick={handleFeatureClick}
                                 />
                             ))}
                         </AnimatePresence>
@@ -431,6 +622,57 @@ export default function ExplorePage() {
                         background: '#FBF9F6',
                     }}
                 >
+                    {/* Quick Access Cards (Grand Style) */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                        <motion.button
+                            onClick={() => handleFeatureClick("ai")}
+                            className="flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300 group text-left relative overflow-hidden"
+                            style={{
+                                background: '#FFFFFF',
+                                borderColor: '#E5E7EB',
+                                boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                            }}
+                            whileHover={{
+                                y: -2,
+                                boxShadow: '0 8px 12px rgba(217, 119, 87, 0.1)',
+                                borderColor: '#d97757'
+                            }}
+                            whileTap={{ scale: 0.98 }}
+                        >
+                            <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-[#FFF0EB] text-[#d97757] group-hover:scale-110 transition-transform duration-300">
+                                <span className="text-xl">✨</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[14px] font-bold text-gray-700 group-hover:text-[#d97757] transition-colors">AI 见闻</span>
+                                <span className="text-[10px] text-gray-400">探索前沿科技</span>
+                            </div>
+                        </motion.button>
+
+                        <motion.button
+                            onClick={() => handleFeatureClick("finance")}
+                            className="flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300 group text-left relative overflow-hidden"
+                            style={{
+                                background: '#FFFFFF',
+                                borderColor: '#E5E7EB',
+                                boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                            }}
+                            whileHover={{
+                                y: -2,
+                                boxShadow: '0 8px 12px rgba(106, 155, 204, 0.1)',
+                                borderColor: '#6a9bcc'
+                            }}
+                            whileTap={{ scale: 0.98 }}
+                        >
+                            <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-[#F0F7FF] text-[#6a9bcc] group-hover:scale-110 transition-transform duration-300">
+                                <span className="text-xl">📈</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[14px] font-bold text-gray-700 group-hover:text-[#6a9bcc] transition-colors">财务建模</span>
+                                <span className="text-[10px] text-gray-400">洞察商业价值</span>
+                            </div>
+                        </motion.button>
+                    </div>
+
                     {/* Floating input island */}
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
