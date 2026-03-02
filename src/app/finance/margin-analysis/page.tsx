@@ -6,11 +6,11 @@ import { ArrowLeft, ExternalLink, Maximize2, Minimize2 } from "lucide-react";
 import { useState } from "react";
 
 export default function MarginAnalysisPage() {
-    const streamlitUrl = "https://marginanalysis0103-dc3khcc79ja82phpgnvpav.streamlit.app/?embed=true&embed_options=dark_theme&embed_options=hide_footer&embed_options=hide_toolbar";
+    const streamlitUrl = "https://marginanalysis0103-dc3khcc79ja82phpgnvpav.streamlit.app/?embed=true&embed_options=hide_footer&embed_options=hide_toolbar";
     const [showControls, setShowControls] = useState(true);
 
     return (
-        <div className="fixed inset-0 bg-[#0E1117] overflow-hidden">
+        <div className="fixed inset-0 bg-[#faf9f5] overflow-hidden">
             {/* Floating Controls - shows on hover or when visible */}
             <motion.div
                 initial={{ opacity: 0 }}
