@@ -90,7 +90,7 @@ export default function Home() {
       </section>
 
       {/* Articles */}
-      <section className="py-24 px-6 md:px-12 max-w-5xl mx-auto">
+      <section id="articles" className="py-24 px-6 md:px-12 max-w-5xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}

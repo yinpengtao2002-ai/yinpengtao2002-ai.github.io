@@ -12,6 +12,6 @@ export const siteConfig: SiteConfig = {
     },
     links: {
         github: "https://github.com/yinpengtao2002-ai",
-        email: "yinpengtao@example.com",
+        email: "yinpengtao2002@gmail.com",
     },
 };
