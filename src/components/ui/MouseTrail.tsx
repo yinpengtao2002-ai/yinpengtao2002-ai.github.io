@@ -1,11 +1,16 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function MouseTrail() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [isTouchDevice, setIsTouchDevice] = useState(false);
 
     useEffect(() => {
+        // Detect touch device - no mouse trail needed
+        const isTouch = window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
+        setIsTouchDevice(isTouch);
+        if (isTouch) return;
         const canvas = canvasRef.current;
         if (!canvas) return;
 
@@ -124,10 +129,11 @@ export default function MouseTrail() {
         };
     }, []);
 
+    if (isTouchDevice) return null;
+
     return (
         <canvas
             ref={canvasRef}
-            // multiply blend mode looks great on light background (like ink)
             className="fixed inset-0 pointer-events-none z-50 mix-blend-multiply"
         />
     );

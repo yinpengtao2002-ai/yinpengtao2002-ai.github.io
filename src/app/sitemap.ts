@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 import { aiContent, financeContent } from "@/lib/data/generated/content";
 
-const BASE_URL = "https://yinpengtao2002-ai.github.io";
+const BASE_URL = "https://yinpengtao.cn";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages: MetadataRoute.Sitemap = [

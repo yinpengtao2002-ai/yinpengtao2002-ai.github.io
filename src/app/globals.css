@@ -3,20 +3,25 @@
 /* Anthropic Brand Colors - WARM LIGHT THEME */
 :root {
   --background: #faf9f5;
-  /* Anthropic Light */
   --foreground: #141413;
-  /* Anthropic Dark */
   --accent: #d97757;
-  /* Anthropic Orange */
   --accent-secondary: #6a9bcc;
-  /* Anthropic Blue */
   --accent-tertiary: #788c5d;
-  /* Anthropic Green */
   --muted: #b0aea5;
-  /* Anthropic Mid Gray */
   --card: #ffffff;
   --border: #e8e6dc;
-  /* Anthropic Light Gray */
+}
+
+/* Dark Theme */
+[data-theme="dark"] {
+  --background: #1a1a1a;
+  --foreground: #e8e6dc;
+  --accent: #e08b6d;
+  --accent-secondary: #7dade0;
+  --accent-tertiary: #8fa86e;
+  --muted: #7a7870;
+  --card: #242424;
+  --border: #333330;
 }
 
 @theme inline {
@@ -69,7 +74,7 @@ h6 {
 
 /* Subtle warm gradient background */
 .gradient-bg {
-  background: linear-gradient(135deg, #faf9f5 0%, #f5f3ed 50%, #faf9f5 100%);
+  background: linear-gradient(135deg, var(--background) 0%, var(--border) 50%, var(--background) 100%);
   background-size: 200% 200%;
   animation: gradientShift 20s ease infinite;
 }

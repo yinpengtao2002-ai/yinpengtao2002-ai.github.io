@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins, Lora } from "next/font/google";
 import "./globals.css";
 import MouseTrail from "@/components/ui/MouseTrail";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -17,7 +18,7 @@ const lora = Lora({
   display: "swap",
 });
 
-const BASE_URL = "https://yinpengtao2002-ai.github.io";
+const BASE_URL = "https://yinpengtao.cn";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
@@ -58,6 +59,7 @@ export default function RootLayout({
         className={`${poppins.variable} ${lora.variable} antialiased gradient-bg overflow-x-hidden selection:bg-[#d97757] selection:text-white`}
       >
         <MouseTrail />
+        <ThemeToggle />
         <main>{children}</main>
       </body>
     </html>
