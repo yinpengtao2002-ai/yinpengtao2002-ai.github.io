@@ -1,23 +1,17 @@
 "use client";
 
 import { motion } from "framer-motion";
-import TypewriterText from "../TypewriterText";
-import MagneticCTA from "../ui/MagneticCTA";
 import ArtifactCard, { CodeArtifact, ChartArtifact, ImageArtifact } from "../ui/ArtifactCard";
 import ThinkingSubtitle from "../ui/ThinkingSubtitle";
 
 interface HeroProps {
     name: string;
     subtitle?: string;
-    buttonText?: string;
-    buttonHref?: string;
 }
 
 export default function Hero({
     name,
     subtitle,
-    buttonText = "探索更多",
-    buttonHref = "/explore",
 }: HeroProps) {
     return (
         <div className="h-screen relative w-full overflow-hidden bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#faf9f6] via-[#f4f1ea] to-[#e6e2d6]">
@@ -93,16 +87,24 @@ export default function Hero({
                     )}
                 </div>
 
-                {/* Explore Button (Magnetic CTA) - Bottom 15% (Lower Third) */}
+                {/* Scroll Down Indicator */}
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 0.8 }}
-                    className="absolute bottom-[15%] left-0 w-full flex justify-center"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 1, delay: 2 }}
+                    className="absolute bottom-[8%] left-0 w-full flex justify-center"
                 >
-                    <div className="w-[85%] sm:w-[70%] max-w-4xl">
-                        <MagneticCTA href={buttonHref} text={buttonText} />
-                    </div>
+                    <motion.a
+                        href="#about"
+                        animate={{ y: [0, 8, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        className="flex flex-col items-center gap-2 text-[#b0aea5] hover:text-[#141413] transition-colors cursor-pointer"
+                    >
+                        <span className="text-xs uppercase tracking-[0.3em]">Scroll</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <path d="M12 5v14M5 12l7 7 7-7" />
+                        </svg>
+                    </motion.a>
                 </motion.div>
             </div>
         </div>
