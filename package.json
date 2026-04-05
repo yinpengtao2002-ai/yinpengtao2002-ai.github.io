@@ -11,6 +11,7 @@
     "prebuild": "node scripts/generate-content.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.82.0",
     "framer-motion": "^12.23.26",
     "gray-matter": "^4.0.3",
     "lucide-react": "^0.562.0",

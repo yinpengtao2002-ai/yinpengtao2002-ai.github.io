@@ -343,6 +343,7 @@ export default function ExplorePage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
+    const [aiAvailable, setAiAvailable] = useState<boolean | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -402,6 +403,78 @@ export default function ExplorePage() {
         return () => clearTimeout(timer);
     }, []);
 
+    // Try calling Claude API with streaming
+    const callClaudeAPI = async (
+        allMessages: Message[],
+        assistantMsgId: string
+    ): Promise<boolean> => {
+        try {
+            const apiMessages = allMessages
+                .filter((m) => !m.isTyping && m.content)
+                .map((m) => ({ role: m.role, content: m.content }));
+
+            const res = await fetch("/api/chat/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ messages: apiMessages }),
+            });
+
+            if (!res.ok || !res.body) return false;
+
+            // Mark AI as available
+            if (aiAvailable === null) setAiAvailable(true);
+
+            // Stream the response
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let fullText = "";
+
+            // Replace typing indicator with empty assistant message
+            setMessages((prev) =>
+                prev.map((m) =>
+                    m.id === "typing"
+                        ? { ...m, id: assistantMsgId, isTyping: false, content: "" }
+                        : m
+                )
+            );
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value);
+                const lines = chunk.split("\n");
+
+                for (const line of lines) {
+                    if (!line.startsWith("data: ")) continue;
+                    const data = line.slice(6);
+                    if (data === "[DONE]") break;
+
+                    try {
+                        const parsed = JSON.parse(data);
+                        if (parsed.text) {
+                            fullText += parsed.text;
+                            const currentText = fullText;
+                            setMessages((prev) =>
+                                prev.map((m) =>
+                                    m.id === assistantMsgId
+                                        ? { ...m, content: currentText }
+                                        : m
+                                )
+                            );
+                        }
+                    } catch {
+                        // Skip malformed chunks
+                    }
+                }
+            }
+
+            return fullText.length > 0;
+        } catch {
+            return false;
+        }
+    };
+
     // Handle send message
     const handleSend = async () => {
         if (!inputValue.trim() || isProcessing) return;
@@ -412,43 +485,62 @@ export default function ExplorePage() {
             content: inputValue.trim(),
         };
 
-        setMessages((prev) => [...prev, userMessage]);
+        const updatedMessages = [...messages, userMessage];
+        setMessages(updatedMessages);
         setInputValue("");
         setIsProcessing(true);
 
         // Add typing indicator
-        const typingMessage: Message = {
-            id: "typing",
-            role: "assistant",
-            content: "",
-            isTyping: true,
-        };
-        setMessages((prev) => [...prev, typingMessage]);
+        setMessages((prev) => [
+            ...prev,
+            { id: "typing", role: "assistant", content: "", isTyping: true },
+        ]);
 
-        // Simulate processing delay
-        await new Promise((resolve) => setTimeout(resolve, 800 + Math.random() * 600));
+        const assistantMsgId = `assistant-${Date.now()}`;
 
-        // Recognize intent with dynamic content
-        const result = recognizeIntent(userMessage.content, aiContent, financeContent);
+        // Try real AI first (skip if already known unavailable)
+        if (aiAvailable !== false) {
+            const success = await callClaudeAPI(updatedMessages, assistantMsgId);
+            if (success) {
+                setIsProcessing(false);
+                return;
+            }
+            // Mark as unavailable so we don't retry every message
+            setAiAvailable(false);
+        }
 
-        // Remove typing indicator and add response
+        // Fallback to regex pattern matching
+        await new Promise((resolve) =>
+            setTimeout(resolve, 600 + Math.random() * 400)
+        );
+
+        const result = recognizeIntent(
+            userMessage.content,
+            aiContent,
+            financeContent
+        );
+
         setMessages((prev) => {
             const filtered = prev.filter((m) => m.id !== "typing");
             return [
                 ...filtered,
                 {
-                    id: `assistant-${Date.now()}`,
-                    role: "assistant",
+                    id: assistantMsgId,
+                    role: "assistant" as const,
                     content: result?.response || "我不太明白你的意思。",
-                    // Include content cards if available
                     contentCards: result?.contentCards,
                     cardType: result?.cardType,
-                    // Show buttons only if no content cards
                     buttons: !result?.contentCards
                         ? [
-                            { label: "AI 见闻", href: "/ai", icon: "ai" as const },
-                            { label: "财务建模", href: "/finance", icon: "finance" as const },
-                        ]
+                              {
+                                  label: "AI 见闻",
+                                  icon: "ai" as const,
+                              },
+                              {
+                                  label: "财务建模",
+                                  icon: "finance" as const,
+                              },
+                          ]
                         : undefined,
                 },
             ];
