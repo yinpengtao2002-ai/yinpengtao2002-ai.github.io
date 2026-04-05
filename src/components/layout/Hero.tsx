@@ -100,8 +100,8 @@ export default function Hero({
                         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                         className="flex flex-col items-center gap-2 text-[#b0aea5] hover:text-[#141413] transition-colors cursor-pointer"
                     >
-                        <span className="text-xs uppercase tracking-[0.3em]">Scroll</span>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <span className="text-xs tracking-[0.2em]">向下滑动 探索更多</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                             <path d="M12 5v14M5 12l7 7 7-7" />
                         </svg>
                     </motion.a>

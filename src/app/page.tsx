@@ -5,177 +5,365 @@ import { Hero } from "@/components/layout";
 import { siteConfig } from "@/lib/config/site";
 import { sections } from "@/lib/data/sections";
 import { aiContent, financeContent } from "@/lib/data/generated/content";
-import SectionCard from "@/components/feature/SectionCard";
 import Link from "next/link";
-import { ArrowRight, Github, Mail, MessageCircle } from "lucide-react";
+import {
+  ArrowRight,
+  Github,
+  Mail,
+  MessageCircle,
+  TrendingUp,
+  Sparkles,
+  Code2,
+  BarChart3,
+} from "lucide-react";
+
+const skillIcons = [BarChart3, TrendingUp, Sparkles, Code2];
 
 export default function Home() {
+  const allArticles = [...financeContent, ...aiContent];
+
   return (
     <>
-      {/* Hero Section */}
+      {/* Hero */}
       <Hero name={siteConfig.name} subtitle={siteConfig.subtitle} />
 
-      {/* About Section */}
-      <section id="about" className="py-24 px-6 md:px-12 max-w-5xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.7 }}
-        >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-[#141413]">
-            关于我
-          </h2>
-          <div className="w-16 h-1 bg-[#d97757] rounded-full mb-8" />
-          <div className="grid md:grid-cols-2 gap-12 items-start">
-            <div className="space-y-6 text-lg leading-relaxed text-[#5f5e5a]">
-              <p>
-                你好，我是{" "}
-                <span className="text-[#141413] font-semibold">
-                  {siteConfig.author.chineseName}
-                </span>
-                （{siteConfig.author.name}），对金融建模与人工智能充满热情。
-              </p>
-              <p>
-                我相信技术的力量在于解决真实的问题。这个网站记录了我在金融分析、AI
-                工具应用等领域的探索与思考。
-              </p>
-              <p className="text-[#d97757] font-medium italic">
-                &ldquo;{siteConfig.description}&rdquo;
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { label: "金融建模", value: "Financial Modeling" },
-                { label: "数据分析", value: "Data Analysis" },
-                { label: "人工智能", value: "AI & ML" },
-                { label: "全栈开发", value: "Full Stack Dev" },
-              ].map((skill) => (
-                <div
-                  key={skill.label}
-                  className="p-4 rounded-xl bg-white/80 border border-[#e8e6dc] text-center hover:border-[#d97757]/40 transition-colors"
-                >
-                  <p className="text-sm text-[#b0aea5] mb-1">{skill.label}</p>
-                  <p className="text-sm font-medium text-[#141413]">
-                    {skill.value}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-      </section>
+      {/* ===================== ABOUT ===================== */}
+      <section id="about" className="relative py-32 overflow-hidden">
+        {/* Decorative line */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-24 bg-gradient-to-b from-transparent via-[var(--border)] to-transparent" />
 
-      {/* Sections (Projects) */}
-      <section className="py-24 px-6 md:px-12 max-w-5xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.7 }}
-        >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-[#141413]">
-            探索领域
-          </h2>
-          <div className="w-16 h-1 bg-[#6a9bcc] rounded-full mb-8" />
-          <p className="text-lg text-[#b0aea5] mb-12 max-w-2xl">
-            我主要专注于以下两个方向，点击卡片深入了解。
-          </p>
-          <div className="grid md:grid-cols-2 gap-8">
-            {sections.map((section, index) => (
-              <SectionCard key={section.id} {...section} index={index} />
-            ))}
-          </div>
-        </motion.div>
-      </section>
+        <div className="max-w-3xl mx-auto px-8 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.8 }}
+          >
+            <p
+              className="text-sm uppercase tracking-[0.4em] mb-6"
+              style={{ color: "var(--accent)" }}
+            >
+              About
+            </p>
+            <h2
+              className="text-4xl md:text-5xl font-bold mb-8 leading-tight"
+              style={{ color: "var(--foreground)" }}
+            >
+              你好，我是
+              <span
+                className="gradient-text"
+                style={{ display: "inline" }}
+              >
+                {" "}{siteConfig.author.chineseName}
+              </span>
+            </h2>
+            <p
+              className="text-lg md:text-xl leading-relaxed mb-6"
+              style={{ color: "var(--muted)" }}
+            >
+              对金融建模与人工智能充满热情。
+              我相信技术的力量在于解决真实的问题。
+            </p>
+            <p
+              className="text-base italic"
+              style={{ color: "var(--accent)" }}
+            >
+              &ldquo;{siteConfig.description}&rdquo;
+            </p>
+          </motion.div>
 
-      {/* Articles */}
-      <section id="articles" className="py-24 px-6 md:px-12 max-w-5xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.7 }}
-        >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-[#141413]">
-            最新文章
-          </h2>
-          <div className="w-16 h-1 bg-[#788c5d] rounded-full mb-8" />
-          <div className="space-y-6">
-            {[...financeContent, ...aiContent].map((article) => (
-              <Link key={article.slug} href={article.href}>
+          {/* Skill pills */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="flex flex-wrap justify-center gap-4 mt-12"
+          >
+            {[
+              { label: "金融建模", en: "Financial Modeling" },
+              { label: "数据分析", en: "Data Analysis" },
+              { label: "人工智能", en: "AI & ML" },
+              { label: "全栈开发", en: "Full Stack" },
+            ].map((skill, i) => {
+              const Icon = skillIcons[i];
+              return (
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5 }}
-                  className="group p-6 rounded-2xl bg-white/80 border border-[#e8e6dc] hover:border-[#d97757]/40 hover:bg-white transition-all duration-300 hover:shadow-md flex items-center justify-between"
+                  key={skill.label}
+                  whileHover={{ y: -4, scale: 1.02 }}
+                  className="flex items-center gap-3 px-5 py-3 rounded-full border backdrop-blur-sm transition-all duration-300"
+                  style={{
+                    background: "var(--card)",
+                    borderColor: "var(--border)",
+                  }}
                 >
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-[#141413] mb-2 group-hover:text-[#d97757] transition-colors">
-                      {article.title}
+                  <Icon
+                    className="w-4 h-4"
+                    style={{ color: "var(--accent)" }}
+                  />
+                  <span
+                    className="text-sm font-medium"
+                    style={{ color: "var(--foreground)" }}
+                  >
+                    {skill.label}
+                  </span>
+                  <span
+                    className="text-xs hidden sm:inline"
+                    style={{ color: "var(--muted)" }}
+                  >
+                    {skill.en}
+                  </span>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ===================== EXPLORE SECTIONS ===================== */}
+      <section className="py-32">
+        <div className="max-w-3xl mx-auto px-8 text-center mb-16">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.8 }}
+          >
+            <p
+              className="text-sm uppercase tracking-[0.4em] mb-6"
+              style={{ color: "var(--accent-secondary)" }}
+            >
+              Explore
+            </p>
+            <h2
+              className="text-4xl md:text-5xl font-bold mb-6"
+              style={{ color: "var(--foreground)" }}
+            >
+              探索领域
+            </h2>
+            <p className="text-lg" style={{ color: "var(--muted)" }}>
+              两个核心方向，持续深耕。
+            </p>
+          </motion.div>
+        </div>
+
+        <div className="max-w-4xl mx-auto px-8 grid md:grid-cols-2 gap-6">
+          {sections.map((section, index) => {
+            const Icon = section.icon;
+            return (
+              <motion.div
+                key={section.id}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: index * 0.15 }}
+              >
+                <Link href={section.href}>
+                  <motion.div
+                    whileHover={{ y: -6 }}
+                    className="group relative p-10 rounded-2xl border overflow-hidden transition-all duration-500"
+                    style={{
+                      background: "var(--card)",
+                      borderColor: "var(--border)",
+                    }}
+                  >
+                    {/* Hover glow */}
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-br ${section.gradient} opacity-0 group-hover:opacity-[0.04] transition-opacity duration-500`}
+                    />
+
+                    <div className={`inline-flex p-4 rounded-xl ${section.iconBg} mb-6`}>
+                      <Icon className="w-7 h-7 text-white" />
+                    </div>
+
+                    <h3
+                      className="text-2xl font-bold mb-2"
+                      style={{ color: "var(--foreground)" }}
+                    >
+                      {section.title}
                     </h3>
-                    <p className="text-[#b0aea5] text-sm line-clamp-1">
+                    <p
+                      className="text-sm mb-3"
+                      style={{ color: "var(--accent)" }}
+                    >
+                      {section.subtitle}
+                    </p>
+                    <p
+                      className="text-sm leading-relaxed"
+                      style={{ color: "var(--muted)" }}
+                    >
+                      {section.description}
+                    </p>
+
+                    <ArrowRight
+                      className="absolute bottom-8 right-8 w-5 h-5 opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all duration-300"
+                      style={{ color: "var(--accent)" }}
+                    />
+                  </motion.div>
+                </Link>
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ===================== ARTICLES ===================== */}
+      <section id="articles" className="py-32">
+        <div className="max-w-3xl mx-auto px-8 text-center mb-16">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.8 }}
+          >
+            <p
+              className="text-sm uppercase tracking-[0.4em] mb-6"
+              style={{ color: "var(--accent-tertiary)" }}
+            >
+              Articles
+            </p>
+            <h2
+              className="text-4xl md:text-5xl font-bold mb-6"
+              style={{ color: "var(--foreground)" }}
+            >
+              最新文章
+            </h2>
+          </motion.div>
+        </div>
+
+        <div className="max-w-3xl mx-auto px-8 space-y-4">
+          {allArticles.map((article, index) => (
+            <motion.div
+              key={article.slug}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+            >
+              <Link href={article.href}>
+                <motion.div
+                  whileHover={{ x: 6 }}
+                  className="group flex items-center justify-between gap-6 py-6 border-b transition-all duration-300"
+                  style={{ borderColor: "var(--border)" }}
+                >
+                  <div className="flex-1 min-w-0">
+                    <h3
+                      className="text-lg font-semibold mb-1 transition-colors duration-300"
+                      style={{ color: "var(--foreground)" }}
+                    >
+                      <span className="group-hover:text-[var(--accent)]">
+                        {article.title}
+                      </span>
+                    </h3>
+                    <p
+                      className="text-sm truncate"
+                      style={{ color: "var(--muted)" }}
+                    >
                       {article.description}
                     </p>
                   </div>
-                  <div className="flex items-center gap-3 ml-6 shrink-0">
-                    <span className="text-xs text-[#b0aea5]/60">
+                  <div className="flex items-center gap-4 shrink-0">
+                    <span
+                      className="text-xs hidden sm:inline"
+                      style={{ color: "var(--muted)", opacity: 0.6 }}
+                    >
                       {article.date}
                     </span>
-                    <ArrowRight className="w-5 h-5 text-[#b0aea5] group-hover:text-[#d97757] group-hover:translate-x-1 transition-all" />
+                    <ArrowRight
+                      className="w-4 h-4 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300"
+                      style={{ color: "var(--accent)" }}
+                    />
                   </div>
                 </motion.div>
               </Link>
-            ))}
-          </div>
-        </motion.div>
+            </motion.div>
+          ))}
+
+          {allArticles.length === 0 && (
+            <p
+              className="text-center py-12"
+              style={{ color: "var(--muted)" }}
+            >
+              文章正在路上...
+            </p>
+          )}
+        </div>
       </section>
 
-      {/* Explore CTA */}
-      <section className="py-24 px-6 md:px-12 max-w-5xl mx-auto text-center">
+      {/* ===================== CHAT CTA ===================== */}
+      <section className="py-32">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.7 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.8 }}
+          className="max-w-2xl mx-auto px-8 text-center"
         >
-          <MessageCircle className="w-10 h-10 text-[#d97757] mx-auto mb-6" />
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#141413]">
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            className="inline-flex p-4 rounded-full mb-8"
+            style={{
+              background: "var(--card)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <MessageCircle
+              className="w-8 h-8"
+              style={{ color: "var(--accent)" }}
+            />
+          </motion.div>
+          <h2
+            className="text-3xl md:text-4xl font-bold mb-4"
+            style={{ color: "var(--foreground)" }}
+          >
             想聊聊？
           </h2>
-          <p className="text-lg text-[#b0aea5] mb-8 max-w-lg mx-auto">
-            试试和我的 AI 助手对话，探索更多内容。
+          <p className="text-lg mb-10" style={{ color: "var(--muted)" }}>
+            和 AI 助手对话，发现更多有趣的内容。
           </p>
           <Link
             href="/explore"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-[#141413] text-white font-medium hover:bg-[#d97757] transition-colors duration-300"
+            className="group inline-flex items-center gap-3 px-10 py-4 rounded-full text-white font-medium transition-all duration-300 hover:gap-5"
+            style={{ background: "var(--foreground)" }}
           >
             进入对话
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </Link>
         </motion.div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-16 px-6 md:px-12 border-t border-[#e8e6dc]">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="text-center md:text-left">
-            <p className="text-lg font-semibold text-[#141413]">
+      {/* ===================== FOOTER ===================== */}
+      <footer
+        className="py-20 border-t"
+        style={{ borderColor: "var(--border)" }}
+      >
+        <div className="max-w-3xl mx-auto px-8 flex flex-col items-center gap-8">
+          {/* Name */}
+          <div className="text-center">
+            <p
+              className="text-xl font-bold"
+              style={{ color: "var(--foreground)" }}
+            >
               {siteConfig.name}
             </p>
-            <p className="text-sm text-[#b0aea5] mt-1">
+            <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>
               {siteConfig.author.chineseName} &middot;{" "}
               {siteConfig.author.pinyinName}
             </p>
           </div>
-          <div className="flex items-center gap-6">
+
+          {/* Social links */}
+          <div className="flex items-center gap-4">
             {siteConfig.links?.github && (
               <a
                 href={siteConfig.links.github}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#b0aea5] hover:text-[#141413] transition-colors"
+                className="p-3 rounded-full border transition-all duration-300 hover:scale-110"
+                style={{
+                  borderColor: "var(--border)",
+                  color: "var(--muted)",
+                }}
               >
                 <Github className="w-5 h-5" />
               </a>
@@ -183,15 +371,20 @@ export default function Home() {
             {siteConfig.links?.email && (
               <a
                 href={`mailto:${siteConfig.links.email}`}
-                className="text-[#b0aea5] hover:text-[#141413] transition-colors"
+                className="p-3 rounded-full border transition-all duration-300 hover:scale-110"
+                style={{
+                  borderColor: "var(--border)",
+                  color: "var(--muted)",
+                }}
               >
                 <Mail className="w-5 h-5" />
               </a>
             )}
           </div>
-          <p className="text-xs text-[#b0aea5]/50">
-            &copy; {new Date().getFullYear()} {siteConfig.name}. All rights
-            reserved.
+
+          {/* Copyright */}
+          <p className="text-xs" style={{ color: "var(--muted)", opacity: 0.5 }}>
+            &copy; {new Date().getFullYear()} {siteConfig.name}
           </p>
         </div>
       </footer>
