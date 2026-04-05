@@ -29,10 +29,9 @@ export default function Home() {
 
       {/* ===================== ABOUT ===================== */}
       <section id="about" className="relative py-32 overflow-hidden">
-        {/* Decorative line */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-24 bg-gradient-to-b from-transparent via-[var(--border)] to-transparent" />
 
-        <div className="max-w-3xl mx-auto px-8 text-center">
+        <div className="max-w-2xl mx-auto px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -50,10 +49,7 @@ export default function Home() {
               style={{ color: "var(--foreground)" }}
             >
               你好，我是
-              <span
-                className="gradient-text"
-                style={{ display: "inline" }}
-              >
+              <span className="gradient-text">
                 {" "}{siteConfig.author.chineseName}
               </span>
             </h2>
@@ -62,6 +58,7 @@ export default function Home() {
               style={{ color: "var(--muted)" }}
             >
               对金融建模与人工智能充满热情。
+              <br />
               我相信技术的力量在于解决真实的问题。
             </p>
             <p
@@ -78,7 +75,7 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="flex flex-wrap justify-center gap-4 mt-12"
+            className="flex flex-wrap justify-center gap-3 mt-14"
           >
             {[
               { label: "金融建模", en: "Financial Modeling" },
@@ -90,27 +87,18 @@ export default function Home() {
               return (
                 <motion.div
                   key={skill.label}
-                  whileHover={{ y: -4, scale: 1.02 }}
-                  className="flex items-center gap-3 px-5 py-3 rounded-full border backdrop-blur-sm transition-all duration-300"
+                  whileHover={{ y: -3 }}
+                  className="flex items-center gap-2.5 px-5 py-2.5 rounded-full border transition-all duration-300"
                   style={{
                     background: "var(--card)",
                     borderColor: "var(--border)",
                   }}
                 >
-                  <Icon
-                    className="w-4 h-4"
-                    style={{ color: "var(--accent)" }}
-                  />
-                  <span
-                    className="text-sm font-medium"
-                    style={{ color: "var(--foreground)" }}
-                  >
+                  <Icon className="w-4 h-4 shrink-0" style={{ color: "var(--accent)" }} />
+                  <span className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
                     {skill.label}
                   </span>
-                  <span
-                    className="text-xs hidden sm:inline"
-                    style={{ color: "var(--muted)" }}
-                  >
+                  <span className="text-xs hidden sm:inline" style={{ color: "var(--muted)" }}>
                     {skill.en}
                   </span>
                 </motion.div>
@@ -122,7 +110,7 @@ export default function Home() {
 
       {/* ===================== EXPLORE SECTIONS ===================== */}
       <section className="py-32">
-        <div className="max-w-3xl mx-auto px-8 text-center mb-16">
+        <div className="max-w-2xl mx-auto px-8 text-center mb-20">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -147,21 +135,21 @@ export default function Home() {
           </motion.div>
         </div>
 
-        <div className="max-w-4xl mx-auto px-8 grid md:grid-cols-2 gap-6">
+        <div className="max-w-2xl mx-auto px-8 flex flex-col gap-6">
           {sections.map((section, index) => {
             const Icon = section.icon;
             return (
               <motion.div
                 key={section.id}
-                initial={{ opacity: 0, y: 40 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: index * 0.15 }}
               >
                 <Link href={section.href}>
                   <motion.div
-                    whileHover={{ y: -6 }}
-                    className="group relative p-10 rounded-2xl border overflow-hidden transition-all duration-500"
+                    whileHover={{ y: -4 }}
+                    className="group relative py-10 px-8 rounded-2xl border text-center overflow-hidden transition-all duration-500"
                     style={{
                       background: "var(--card)",
                       borderColor: "var(--border)",
@@ -169,11 +157,11 @@ export default function Home() {
                   >
                     {/* Hover glow */}
                     <div
-                      className={`absolute inset-0 bg-gradient-to-br ${section.gradient} opacity-0 group-hover:opacity-[0.04] transition-opacity duration-500`}
+                      className={`absolute inset-0 bg-gradient-to-br ${section.gradient} opacity-0 group-hover:opacity-[0.05] transition-opacity duration-500`}
                     />
 
-                    <div className={`inline-flex p-4 rounded-xl ${section.iconBg} mb-6`}>
-                      <Icon className="w-7 h-7 text-white" />
+                    <div className={`inline-flex p-4 rounded-xl ${section.iconBg} mb-5`}>
+                      <Icon className="w-6 h-6 text-white" />
                     </div>
 
                     <h3
@@ -182,23 +170,15 @@ export default function Home() {
                     >
                       {section.title}
                     </h3>
-                    <p
-                      className="text-sm mb-3"
-                      style={{ color: "var(--accent)" }}
-                    >
+                    <p className="text-sm mb-2" style={{ color: "var(--accent)" }}>
                       {section.subtitle}
                     </p>
                     <p
-                      className="text-sm leading-relaxed"
+                      className="text-sm leading-relaxed max-w-md mx-auto"
                       style={{ color: "var(--muted)" }}
                     >
                       {section.description}
                     </p>
-
-                    <ArrowRight
-                      className="absolute bottom-8 right-8 w-5 h-5 opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all duration-300"
-                      style={{ color: "var(--accent)" }}
-                    />
                   </motion.div>
                 </Link>
               </motion.div>
@@ -209,7 +189,7 @@ export default function Home() {
 
       {/* ===================== ARTICLES ===================== */}
       <section id="articles" className="py-32">
-        <div className="max-w-3xl mx-auto px-8 text-center mb-16">
+        <div className="max-w-2xl mx-auto px-8 text-center mb-16">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -231,7 +211,7 @@ export default function Home() {
           </motion.div>
         </div>
 
-        <div className="max-w-3xl mx-auto px-8 space-y-4">
+        <div className="max-w-2xl mx-auto px-8 flex flex-col gap-4">
           {allArticles.map((article, index) => (
             <motion.div
               key={article.slug}
@@ -242,35 +222,30 @@ export default function Home() {
             >
               <Link href={article.href}>
                 <motion.div
-                  whileHover={{ x: 6 }}
-                  className="group flex items-center justify-between gap-6 py-6 border-b transition-all duration-300"
-                  style={{ borderColor: "var(--border)" }}
+                  whileHover={{ y: -3 }}
+                  className="group p-6 rounded-2xl border text-center transition-all duration-300"
+                  style={{
+                    background: "var(--card)",
+                    borderColor: "var(--border)",
+                  }}
                 >
-                  <div className="flex-1 min-w-0">
-                    <h3
-                      className="text-lg font-semibold mb-1 transition-colors duration-300"
-                      style={{ color: "var(--foreground)" }}
-                    >
-                      <span className="group-hover:text-[var(--accent)]">
-                        {article.title}
-                      </span>
-                    </h3>
-                    <p
-                      className="text-sm truncate"
-                      style={{ color: "var(--muted)" }}
-                    >
-                      {article.description}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-4 shrink-0">
-                    <span
-                      className="text-xs hidden sm:inline"
-                      style={{ color: "var(--muted)", opacity: 0.6 }}
-                    >
+                  <h3
+                    className="text-lg font-semibold mb-2 transition-colors duration-300"
+                    style={{ color: "var(--foreground)" }}
+                  >
+                    <span className="group-hover:text-[var(--accent)]">
+                      {article.title}
+                    </span>
+                  </h3>
+                  <p className="text-sm mb-3" style={{ color: "var(--muted)" }}>
+                    {article.description}
+                  </p>
+                  <div className="flex items-center justify-center gap-3">
+                    <span className="text-xs" style={{ color: "var(--muted)", opacity: 0.5 }}>
                       {article.date}
                     </span>
                     <ArrowRight
-                      className="w-4 h-4 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300"
+                      className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all duration-300"
                       style={{ color: "var(--accent)" }}
                     />
                   </div>
@@ -280,10 +255,7 @@ export default function Home() {
           ))}
 
           {allArticles.length === 0 && (
-            <p
-              className="text-center py-12"
-              style={{ color: "var(--muted)" }}
-            >
+            <p className="text-center py-12" style={{ color: "var(--muted)" }}>
               文章正在路上...
             </p>
           )}
@@ -307,10 +279,7 @@ export default function Home() {
               border: "1px solid var(--border)",
             }}
           >
-            <MessageCircle
-              className="w-8 h-8"
-              style={{ color: "var(--accent)" }}
-            />
+            <MessageCircle className="w-8 h-8" style={{ color: "var(--accent)" }} />
           </motion.div>
           <h2
             className="text-3xl md:text-4xl font-bold mb-4"
@@ -333,26 +302,17 @@ export default function Home() {
       </section>
 
       {/* ===================== FOOTER ===================== */}
-      <footer
-        className="py-20 border-t"
-        style={{ borderColor: "var(--border)" }}
-      >
-        <div className="max-w-3xl mx-auto px-8 flex flex-col items-center gap-8">
-          {/* Name */}
+      <footer className="py-20 border-t" style={{ borderColor: "var(--border)" }}>
+        <div className="max-w-2xl mx-auto px-8 flex flex-col items-center gap-8">
           <div className="text-center">
-            <p
-              className="text-xl font-bold"
-              style={{ color: "var(--foreground)" }}
-            >
+            <p className="text-xl font-bold" style={{ color: "var(--foreground)" }}>
               {siteConfig.name}
             </p>
             <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>
-              {siteConfig.author.chineseName} &middot;{" "}
-              {siteConfig.author.pinyinName}
+              {siteConfig.author.chineseName} &middot; {siteConfig.author.pinyinName}
             </p>
           </div>
 
-          {/* Social links */}
           <div className="flex items-center gap-4">
             {siteConfig.links?.github && (
               <a
@@ -360,10 +320,7 @@ export default function Home() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-3 rounded-full border transition-all duration-300 hover:scale-110"
-                style={{
-                  borderColor: "var(--border)",
-                  color: "var(--muted)",
-                }}
+                style={{ borderColor: "var(--border)", color: "var(--muted)" }}
               >
                 <Github className="w-5 h-5" />
               </a>
@@ -372,17 +329,13 @@ export default function Home() {
               <a
                 href={`mailto:${siteConfig.links.email}`}
                 className="p-3 rounded-full border transition-all duration-300 hover:scale-110"
-                style={{
-                  borderColor: "var(--border)",
-                  color: "var(--muted)",
-                }}
+                style={{ borderColor: "var(--border)", color: "var(--muted)" }}
               >
                 <Mail className="w-5 h-5" />
               </a>
             )}
           </div>
 
-          {/* Copyright */}
           <p className="text-xs" style={{ color: "var(--muted)", opacity: 0.5 }}>
             &copy; {new Date().getFullYear()} {siteConfig.name}
           </p>
