@@ -1,21 +1,39 @@
 import { NextRequest } from "next/server";
+import { aiContent, financeContent } from "@/lib/data/generated/content";
 
-const SYSTEM_PROMPT = `你是 Lucas Yin（殷鹏焘）的个人网站助手。你的风格友好、简洁、专业。
+function buildSystemPrompt(): string {
+  // Build article catalog from actual content
+  const financeArticles = financeContent
+    .map((a) => `  - "${a.title}"：${a.description}（链接：${a.href}）`)
+    .join("\n");
+  const aiArticles =
+    aiContent.length > 0
+      ? aiContent
+          .map((a) => `  - "${a.title}"：${a.description}（链接：${a.href}）`)
+          .join("\n")
+      : "  - 暂无内容，正在建设中";
+
+  return `你是 Lucas Yin（殷鹏焘）的个人网站助手。你的风格友好、简洁、专业。
 
 关于 Lucas：
 - 对金融建模和人工智能充满热情
 - 专注领域：财务建模、数据分析、AI 工具应用、全栈开发
 - GitHub: https://github.com/yinpengtao2002-ai
 
-网站内容：
-- 【财务建模】板块：包含"单车边际变动归因分析"工具和"从航天板块大热看投资组合"文章
-- 【AI 见闻】板块：正在建设中
+网站文章目录：
+【财务建模】板块：
+${financeArticles}
+
+【AI 见闻】板块：
+${aiArticles}
 
 回复规则：
 - 用中文回复，除非用户用英文提问
 - 保持简洁，通常 2-4 句话
-- 如果用户问到网站内容相关的话题，可以推荐相关文章
+- 当用户的问题与某篇文章相关时，主动推荐并附上链接，例如："你可以看看这篇文章：「标题」→ /article/finance/xxx"
+- 当用户问"有什么内容"或"有哪些文章"时，列出相关板块的文章
 - 你代表 Lucas 的个人品牌，语气专业但亲切`;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -43,7 +61,7 @@ export async function POST(req: NextRequest) {
         max_tokens: 512,
         stream: true,
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: buildSystemPrompt() },
           ...messages.map((m: { role: string; content: string }) => ({
             role: m.role,
             content: m.content,
