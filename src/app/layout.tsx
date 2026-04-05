@@ -17,15 +17,33 @@ const lora = Lora({
   display: "swap",
 });
 
+const BASE_URL = "https://yinpengtao2002-ai.github.io";
+
 export const metadata: Metadata = {
-  title: "Lucas Yin | Personal Portfolio",
-  description: "我们需要的是对技术有极致热情的人，而不是习惯用经验找答案的人",
-  keywords: ["portfolio", "financial modeling", "AI", "technology"],
+  metadataBase: new URL(BASE_URL),
+  title: {
+    default: "Lucas Yin | Personal Portfolio",
+    template: "%s | Lucas Yin",
+  },
+  description: "金融建模 & AI — 对技术有极致热情的人",
+  keywords: ["Lucas Yin", "殷鹏焘", "portfolio", "financial modeling", "AI", "全栈开发"],
   authors: [{ name: "Lucas Yin" }],
   openGraph: {
     title: "Lucas Yin | Personal Portfolio",
-    description: "我们需要的是对技术有极致热情的人，而不是习惯用经验找答案的人",
+    description: "金融建模 & AI — 对技术有极致热情的人",
+    url: BASE_URL,
+    siteName: "Lucas Yin",
+    locale: "zh_CN",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Lucas Yin | Personal Portfolio",
+    description: "金融建模 & AI — 对技术有极致热情的人",
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 

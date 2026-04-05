@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://yinpengtao2002-ai.github.io/sitemap.xml
