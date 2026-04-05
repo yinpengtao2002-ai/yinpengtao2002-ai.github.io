@@ -34,8 +34,8 @@ export default async function ArticlePage({ params }: PageProps) {
             <div className="min-h-screen bg-[#FBF9F6] flex items-center justify-center">
                 <div className="text-center">
                     <h1 className="text-2xl font-bold text-gray-800 mb-4">文章未找到</h1>
-                    <Link href="/explore" className="text-blue-600 hover:underline">
-                        返回对话
+                    <Link href="/" className="text-blue-600 hover:underline">
+                        返回首页
                     </Link>
                 </div>
             </div>

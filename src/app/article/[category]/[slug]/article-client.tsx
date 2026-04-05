@@ -263,11 +263,11 @@ export default function ArticleClient({ article, category }: ArticleClientProps)
                 {/* 900px Width to match Subtle Paper */}
                 <div className="w-full max-w-[900px] bg-[#FBF9F6]/95 backdrop-blur-sm px-8 py-4 flex items-center justify-between pointer-events-auto border-b border-gray-100 transition-all duration-300">
                     <Link
-                        href="/explore"
+                        href="/"
                         className="group inline-flex items-center gap-1.5 text-gray-400 hover:text-[#7e22ce] transition-colors"
                     >
                         <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-                        <span className="text-[13px] font-medium text-gray-500 group-hover:text-[#7e22ce]">Back</span>
+                        <span className="text-[13px] font-medium text-gray-500 group-hover:text-[#7e22ce]">返回</span>
                     </Link>
                     <span className="text-[11px] font-mono text-gray-300 tracking-wider uppercase">
                         {category === 'ai' ? 'AI / Insights' : 'Finance / Models'}
