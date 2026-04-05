@@ -339,6 +339,9 @@ export default function Home() {
           <p className="text-xs" style={{ color: "var(--muted)", opacity: 0.5 }}>
             &copy; {new Date().getFullYear()} {siteConfig.name}
           </p>
+          <p className="text-xs" style={{ color: "var(--muted)", opacity: 0.3 }}>
+            v2.0.0
+          </p>
         </div>
       </footer>
     </>
