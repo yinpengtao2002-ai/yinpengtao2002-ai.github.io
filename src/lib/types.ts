@@ -22,13 +22,6 @@ export interface ArticleData {
     date: string;
 }
 
-// Navigation item type
-export interface NavItem {
-    href: string;
-    label: string;
-    icon: LucideIcon;
-}
-
 // Site configuration type
 export interface SiteConfig {
     name: string;

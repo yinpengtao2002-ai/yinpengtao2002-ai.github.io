@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Poppins, Lora } from "next/font/google";
 import "./globals.css";
-// import Navigation from "@/components/Navigation";
 import MouseTrail from "@/components/ui/MouseTrail";
 
 const poppins = Poppins({
@@ -41,8 +40,6 @@ export default function RootLayout({
         className={`${poppins.variable} ${lora.variable} antialiased gradient-bg overflow-x-hidden selection:bg-[#d97757] selection:text-white`}
       >
         <MouseTrail />
-        {/* Navigation disabled as requested */}
-        {/* <Navigation /> */}
         <main>{children}</main>
       </body>
     </html>
