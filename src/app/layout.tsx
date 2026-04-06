@@ -60,7 +60,7 @@ export default function RootLayout({
       >
         <MouseTrail />
         <ThemeToggle />
-        <main>{children}</main>
+        <main style={{ width: "100%", minWidth: "100vw", display: "block" }}>{children}</main>
       </body>
     </html>
   );
