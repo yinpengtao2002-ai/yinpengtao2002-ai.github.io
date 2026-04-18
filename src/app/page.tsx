@@ -38,7 +38,7 @@ function CenteredBlock({
       <div
         style={{
           width: "100%",
-          maxWidth: "640px",
+          maxWidth: "800px",
           marginLeft: "auto",
           marginRight: "auto",
           paddingLeft: "2rem",
@@ -53,7 +53,6 @@ function CenteredBlock({
 }
 
 export default function Home() {
-  const allArticles = [...financeContent, ...aiContent];
 
   return (
     <>
@@ -263,8 +262,8 @@ export default function Home() {
         </div>
       </CenteredBlock>
 
-      {/* ===================== ARTICLES ===================== */}
-      <CenteredBlock id="articles">
+      {/* ===================== FINANCE ARTICLES ===================== */}
+      <CenteredBlock id="finance-articles">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -277,11 +276,11 @@ export default function Home() {
               fontSize: "0.875rem",
               textTransform: "uppercase",
               letterSpacing: "0.4em",
-              color: "var(--accent-tertiary)",
+              color: "var(--accent-secondary)",
               marginBottom: "1.5rem",
             }}
           >
-            Articles
+            Financial Modeling
           </p>
           <h2
             style={{
@@ -291,12 +290,12 @@ export default function Home() {
               marginBottom: "1.5rem",
             }}
           >
-            最新文章
+            财务建模
           </h2>
         </motion.div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", paddingBottom: "8rem" }}>
-          {allArticles.map((article, index) => (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", paddingBottom: "4rem" }}>
+          {financeContent.map((article, index) => (
             <motion.div
               key={article.slug}
               initial={{ opacity: 0, y: 20 }}
@@ -338,8 +337,89 @@ export default function Home() {
             </motion.div>
           ))}
 
-          {allArticles.length === 0 && (
+          {financeContent.length === 0 && (
             <p style={{ padding: "3rem 0", color: "var(--muted)" }}>文章正在路上...</p>
+          )}
+        </div>
+      </CenteredBlock>
+
+      {/* ===================== AI ARTICLES ===================== */}
+      <CenteredBlock id="ai-articles">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.8 }}
+          style={{ paddingTop: "4rem", paddingBottom: "2rem" }}
+        >
+          <p
+            style={{
+              fontSize: "0.875rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.4em",
+              color: "var(--accent)",
+              marginBottom: "1.5rem",
+            }}
+          >
+            AI Insights
+          </p>
+          <h2
+            style={{
+              fontSize: "clamp(2rem, 5vw, 3rem)",
+              fontWeight: 700,
+              color: "var(--foreground)",
+              marginBottom: "1.5rem",
+            }}
+          >
+            AI 见闻
+          </h2>
+        </motion.div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", paddingBottom: "8rem" }}>
+          {aiContent.map((article, index) => (
+            <motion.div
+              key={article.slug}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+            >
+              <Link href={article.href} style={{ textDecoration: "none" }}>
+                <motion.div
+                  whileHover={{ y: -3 }}
+                  style={{
+                    padding: "1.5rem",
+                    borderRadius: "1rem",
+                    border: "1px solid var(--border)",
+                    background: "var(--card)",
+                    textAlign: "center",
+                    transition: "all 0.3s ease",
+                    cursor: "pointer",
+                  }}
+                >
+                  <h3
+                    style={{
+                      fontSize: "1.125rem",
+                      fontWeight: 600,
+                      color: "var(--foreground)",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    {article.title}
+                  </h3>
+                  <p style={{ fontSize: "0.875rem", color: "var(--muted)", marginBottom: "0.75rem" }}>
+                    {article.description}
+                  </p>
+                  <span style={{ fontSize: "0.75rem", color: "var(--muted)", opacity: 0.5 }}>
+                    {article.date}
+                  </span>
+                </motion.div>
+              </Link>
+            </motion.div>
+          ))}
+
+          {aiContent.length === 0 && (
+            <p style={{ padding: "3rem 0", color: "var(--muted)" }}>文章正在路上... 敬请期待 ✨</p>
           )}
         </div>
       </CenteredBlock>
@@ -401,16 +481,21 @@ export default function Home() {
       </CenteredBlock>
 
       {/* ===================== FOOTER ===================== */}
-      <CenteredBlock>
+      <section style={{ width: "100%", borderTop: "1px solid var(--border)" }}>
         <div
           style={{
+            maxWidth: "800px",
+            marginLeft: "auto",
+            marginRight: "auto",
             paddingTop: "5rem",
             paddingBottom: "5rem",
-            borderTop: "1px solid var(--border)",
+            paddingLeft: "2rem",
+            paddingRight: "2rem",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             gap: "2rem",
+            textAlign: "center",
           }}
         >
           <div>
@@ -461,10 +546,10 @@ export default function Home() {
             &copy; {new Date().getFullYear()} {siteConfig.name}
           </p>
           <p style={{ fontSize: "0.75rem", color: "var(--muted)", opacity: 0.3 }}>
-            v2.2.0
+            v3.0.0
           </p>
         </div>
-      </CenteredBlock>
+      </section>
     </>
   );
 }

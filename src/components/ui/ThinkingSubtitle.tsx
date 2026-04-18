@@ -74,7 +74,8 @@ export default function ThinkingSubtitle({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className={`${isThinking ? "text-[#b0aea5] italic" : "text-[#5f5e5a]"} transition-colors duration-500`}
+                    className={`${isThinking ? "italic" : ""} transition-colors duration-500`}
+                    style={{ color: isThinking ? 'var(--muted)' : 'var(--foreground)' }}
                 >
                     {displayedText}
                 </motion.span>
@@ -82,7 +83,8 @@ export default function ThinkingSubtitle({
             <motion.span
                 animate={{ opacity: [1, 0] }}
                 transition={{ duration: 0.8, repeat: Infinity }}
-                className={`ml-1 inline-block w-1.5 h-4 bg-[#d97757] align-middle ${!isThinking && displayedText === finalText ? "hidden" : ""}`}
+                className={`ml-1 inline-block w-1.5 h-4 align-middle ${!isThinking && displayedText === finalText ? "hidden" : ""}`}
+                style={{ background: 'var(--accent)' }}
             />
         </div>
     );

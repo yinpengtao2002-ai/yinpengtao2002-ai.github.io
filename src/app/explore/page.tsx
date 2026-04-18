@@ -75,8 +75,8 @@ function FeatureCard({
             onClick={onClick}
             className="flex items-center gap-3 px-6 py-4 rounded-xl transition-all duration-300 group text-left"
             style={{
-                background: '#FFFFFF',
-                border: '1px solid #E5E7EB',
+                background: 'var(--card)',
+                border: '1px solid var(--border)',
                 boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
                 minWidth: '160px',
             }}
@@ -87,17 +87,17 @@ function FeatureCard({
             }}
             whileTap={{ scale: 0.98 }}
         >
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-50 group-hover:bg-white transition-colors" style={{ fontSize: '20px' }}>
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-card group-hover:bg-background transition-colors" style={{ fontSize: '20px' }}>
                 {isAI ? "✨" : "📈"}
             </div>
             <div className="flex flex-col">
                 <span
                     className="text-[15px] font-semibold"
-                    style={{ color: '#374151', fontFamily: sansFont }}
+                    style={{ color: 'var(--foreground)', fontFamily: sansFont }}
                 >
                     {label}
                 </span>
-                <span className="text-[11px] text-gray-400 font-medium">Click to explore</span>
+                <span className="text-[11px] text-muted font-medium">Click to explore</span>
             </div>
         </motion.button>
     );
@@ -127,8 +127,8 @@ function ContentCardList({
                     onClick={() => onCardClick(card)}
                     className="group text-left p-4 rounded-xl transition-all duration-300"
                     style={{
-                        background: '#FFFFFF',
-                        border: '1px solid #E5E7EB',
+                        background: 'var(--card)',
+                        border: '1px solid var(--border)',
                         boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
                     }}
                     whileHover={{
@@ -143,17 +143,17 @@ function ContentCardList({
                             <div className="flex items-center gap-2 mb-1">
                                 <h4
                                     className="text-[15px] font-semibold truncate"
-                                    style={{ color: '#1F2937', fontFamily: sansFont }}
+                                    style={{ color: 'var(--foreground)', fontFamily: sansFont }}
                                 >
                                     {card.title}
                                 </h4>
                                 {card.href && (
-                                    <ExternalLink className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                                    <ExternalLink className="w-3.5 h-3.5 text-muted flex-shrink-0" />
                                 )}
                             </div>
                             <p
                                 className="text-[13px] line-clamp-2"
-                                style={{ color: '#6B7280', lineHeight: '1.5' }}
+                                style={{ color: 'var(--muted)', lineHeight: '1.5' }}
                             >
                                 {card.description}
                             </p>
@@ -171,7 +171,7 @@ function ContentCardList({
                                 </div>
                             )}
                         </div>
-                        <span className="text-[11px] text-gray-400 flex-shrink-0">{card.date}</span>
+                        <span className="text-[11px] text-muted flex-shrink-0">{card.date}</span>
                     </div>
                 </motion.button>
             ))}
@@ -205,18 +205,18 @@ function ChatBubble({
                 <div className="flex justify-end">
                     <div
                         style={{
-                            background: '#F3F4F6',
+                            background: 'var(--card)',
                             borderRadius: '12px',
                             padding: '12px 18px',
                             maxWidth: '70%',
-                            border: '1px solid #E5E7EB',
+                            border: '1px solid var(--border)',
                         }}
                     >
                         <p
                             style={{
                                 fontSize: '15px',
                                 lineHeight: '1.6',
-                                color: '#1F2937',
+                                color: 'var(--foreground)',
                                 fontFamily: sansFont,
                                 margin: 0,
                             }}
@@ -243,7 +243,7 @@ function ChatBubble({
                                 style={{
                                     fontSize: '16px',
                                     lineHeight: '1.85',
-                                    color: '#374151',
+                                    color: 'var(--foreground)',
                                     fontFamily: serifFont,
                                     letterSpacing: '0.01em',
                                     margin: 0,
@@ -615,7 +615,7 @@ export default function ExplorePage() {
 
     return (
         /* ========== LAYER 1: App Background Layer ========== */
-        <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-[#f5f3ef] via-[#ebe7e0] to-[#e2ddd4] overflow-hidden">
+        <div className="fixed inset-0 w-screen h-screen overflow-hidden" style={{ background: 'linear-gradient(to bottom right, var(--background), var(--border), var(--background))' }}>
             {/* Subtle decorative elements on background */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 {/* Large ambient orb - top right */}
@@ -647,7 +647,7 @@ export default function ExplorePage() {
                     `,
                     borderRadius: '20px',
                     /* Pure warm white - Claude's paper texture */
-                    background: '#FBF9F6',
+                    background: 'var(--background)',
                 }}
             >
                 {/* ========== LAYER 3: Window Internal Layout ========== */}
@@ -656,8 +656,8 @@ export default function ExplorePage() {
                 <header
                     className="flex-shrink-0"
                     style={{
-                        borderBottom: '1px solid #EBE8E3',
-                        background: '#FBF9F6',
+                        borderBottom: '1px solid var(--border)',
+                        background: 'var(--background)',
                         padding: '16px 28px',
                     }}
                 >
@@ -665,7 +665,7 @@ export default function ExplorePage() {
                         {/* Back button - left */}
                         <Link
                             href="/"
-                            className="flex items-center gap-2 text-[#9A9488] hover:text-[#5C5549] transition-colors group"
+                            className="flex items-center gap-2 text-muted hover:text-foreground transition-colors group"
                         >
                             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
                             <span style={{ fontSize: '13px', fontFamily: sansFont }}>返回</span>
@@ -677,7 +677,7 @@ export default function ExplorePage() {
                                 className="w-2 h-2 rounded-full animate-pulse"
                                 style={{ background: '#10B981', boxShadow: '0 0 6px rgba(16, 185, 129, 0.4)' }}
                             />
-                            <span style={{ fontSize: '12px', color: '#9A9488', fontFamily: sansFont }}>在线</span>
+                            <span style={{ fontSize: '12px', color: 'var(--muted)', fontFamily: sansFont }}>在线</span>
                         </div>
                     </div>
                 </header>
@@ -686,7 +686,7 @@ export default function ExplorePage() {
                 <div
                     className="flex-1 overflow-y-auto"
                     style={{
-                        background: '#FBF9F6',
+                        background: 'var(--background)',
                         padding: '40px 24px',
                     }}
                 >
@@ -711,7 +711,7 @@ export default function ExplorePage() {
                     className="flex-shrink-0"
                     style={{
                         padding: '16px 24px 24px 24px',
-                        background: '#FBF9F6',
+                        background: 'var(--background)',
                     }}
                 >
                     {/* Quick Access Cards (Grand Style) */}
@@ -720,8 +720,8 @@ export default function ExplorePage() {
                             onClick={() => handleFeatureClick("ai")}
                             className="flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300 group text-left relative overflow-hidden"
                             style={{
-                                background: '#FFFFFF',
-                                borderColor: '#E5E7EB',
+                                background: 'var(--card)',
+                                borderColor: 'var(--border)',
                                 boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
                             }}
                             whileHover={{
@@ -735,8 +735,8 @@ export default function ExplorePage() {
                                 <span className="text-xl">✨</span>
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-[14px] font-bold text-gray-700 group-hover:text-[#d97757] transition-colors">AI 见闻</span>
-                                <span className="text-[10px] text-gray-400">探索前沿科技</span>
+                                <span className="text-[14px] font-bold text-foreground group-hover:text-[#d97757] transition-colors">AI 见闻</span>
+                                <span className="text-[10px] text-muted">探索前沿科技</span>
                             </div>
                         </motion.button>
 
@@ -744,8 +744,8 @@ export default function ExplorePage() {
                             onClick={() => handleFeatureClick("finance")}
                             className="flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300 group text-left relative overflow-hidden"
                             style={{
-                                background: '#FFFFFF',
-                                borderColor: '#E5E7EB',
+                                background: 'var(--card)',
+                                borderColor: 'var(--border)',
                                 boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
                             }}
                             whileHover={{
@@ -759,8 +759,8 @@ export default function ExplorePage() {
                                 <span className="text-xl">📈</span>
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-[14px] font-bold text-gray-700 group-hover:text-[#6a9bcc] transition-colors">财务建模</span>
-                                <span className="text-[10px] text-gray-400">洞察商业价值</span>
+                                <span className="text-[14px] font-bold text-foreground group-hover:text-[#6a9bcc] transition-colors">财务建模</span>
+                                <span className="text-[10px] text-muted">洞察商业价值</span>
                             </div>
                         </motion.button>
                     </div>
@@ -771,9 +771,9 @@ export default function ExplorePage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: 0.2 }}
                         style={{
-                            background: '#FFFFFF',
+                            background: 'var(--card)',
                             borderRadius: '16px',
-                            border: '1px solid #E5E7EB',
+                            border: '1px solid var(--border)',
                             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
                         }}
                     >
@@ -789,7 +789,7 @@ export default function ExplorePage() {
                                     flex: 1,
                                     background: 'transparent',
                                     fontSize: '15px',
-                                    color: '#374151',
+                                    color: 'var(--foreground)',
                                     fontFamily: sansFont,
                                     outline: 'none',
                                     border: 'none',
@@ -806,8 +806,8 @@ export default function ExplorePage() {
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    background: inputValue.trim() && !isProcessing ? '#D97757' : '#E5E7EB',
-                                    color: inputValue.trim() && !isProcessing ? '#FFFFFF' : '#9CA3AF',
+                                    background: inputValue.trim() && !isProcessing ? 'var(--accent)' : 'var(--border)',
+                                    color: inputValue.trim() && !isProcessing ? '#FFFFFF' : 'var(--muted)',
                                     border: 'none',
                                     cursor: inputValue.trim() && !isProcessing ? 'pointer' : 'default',
                                     transition: 'all 0.2s ease',

@@ -14,7 +14,7 @@ export default function Hero({
     subtitle,
 }: HeroProps) {
     return (
-        <div className="h-screen relative w-full overflow-hidden bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#faf9f6] via-[#f4f1ea] to-[#e6e2d6]">
+        <div className="h-screen relative w-full overflow-hidden" style={{ background: 'radial-gradient(ellipse at top left, var(--background), var(--background), var(--border))' }}>
             {/* Background Effects */}
             <BackgroundEffects />
 
@@ -52,7 +52,7 @@ export default function Hero({
                         transition={{ duration: 0.8, ease: "easeOut" }}
                         className="text-center w-full relative z-20"
                     >
-                        <h1 className="text-6xl sm:text-8xl md:text-9xl font-bold tracking-tighter text-[#141413] drop-shadow-sm whitespace-nowrap">
+                        <h1 className="text-6xl sm:text-8xl md:text-9xl font-bold tracking-tighter whitespace-nowrap" style={{ color: 'var(--foreground)' }}>
                             <span className="gradient-text">{name}</span>
                         </h1>
                     </motion.div>
@@ -63,7 +63,7 @@ export default function Hero({
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ duration: 1, delay: 0.4 }}
-                            className="relative z-20 mt-8 pt-6 border-t border-[#e8e6dc] w-full max-w-3xl flex flex-col items-center gap-4"
+                            className="relative z-20 mt-8 pt-6 border-t border-border w-full max-w-3xl flex flex-col items-center gap-4"
                         >
                             <ThinkingSubtitle
                                 finalText={subtitle}
@@ -98,7 +98,7 @@ export default function Hero({
                         href="#about"
                         animate={{ y: [0, 8, 0] }}
                         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        className="flex flex-col items-center gap-2 text-[#b0aea5] hover:text-[#141413] transition-colors cursor-pointer"
+                        className="flex flex-col items-center gap-2 text-muted hover:text-foreground transition-colors cursor-pointer"
                     >
                         <span className="text-xs tracking-[0.2em]">向下滑动 探索更多</span>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
