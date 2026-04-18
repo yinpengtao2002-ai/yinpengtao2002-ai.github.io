@@ -72,11 +72,9 @@ h6 {
   background-clip: text;
 }
 
-/* Subtle warm gradient background */
+/* Consistent background across all sections */
 .gradient-bg {
-  background: linear-gradient(135deg, var(--background) 0%, var(--border) 50%, var(--background) 100%);
-  background-size: 200% 200%;
-  animation: gradientShift 20s ease infinite;
+  background: var(--background);
 }
 
 @keyframes gradientShift {
