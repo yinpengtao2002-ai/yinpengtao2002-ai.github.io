@@ -14,7 +14,7 @@ export default function Hero({
     subtitle,
 }: HeroProps) {
     return (
-        <div className="h-screen relative w-full overflow-hidden" style={{ background: 'radial-gradient(ellipse at top left, var(--background), var(--background), var(--border))' }}>
+        <div className="h-screen relative w-full overflow-hidden">
             {/* Background Effects */}
             <BackgroundEffects />
 
