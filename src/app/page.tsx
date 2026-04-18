@@ -15,71 +15,81 @@ import {
   Sparkles,
   Code2,
   BarChart3,
+  ChevronDown,
 } from "lucide-react";
 
 const skillIcons = [BarChart3, TrendingUp, Sparkles, Code2];
 
-/* Centered wrapper - guaranteed centering via flex */
-function CenteredBlock({
+/* Scroll-down arrow that links to the next section */
+function ScrollArrow({ targetId }: { targetId: string }) {
+  return (
+    <motion.a
+      href={`#${targetId}`}
+      animate={{ y: [0, 8, 0] }}
+      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        color: "var(--muted)",
+        cursor: "pointer",
+        textDecoration: "none",
+      }}
+    >
+      <ChevronDown style={{ width: 20, height: 20 }} />
+    </motion.a>
+  );
+}
+
+/* Full-screen section wrapper with optional scroll arrow */
+function FullScreenSection({
   children,
-  className = "",
   id,
+  nextId,
 }: {
   children: React.ReactNode;
-  className?: string;
   id?: string;
+  nextId?: string;
 }) {
   return (
     <section
       id={id}
-      className={className}
-      style={{ width: "100%", minWidth: "100%" }}
+      style={{
+        width: "100%",
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "4rem 2rem",
+        position: "relative",
+      }}
     >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "800px",
-          marginLeft: "auto",
-          marginRight: "auto",
-          paddingLeft: "2rem",
-          paddingRight: "2rem",
-          textAlign: "center",
-        }}
-      >
+      <div style={{ width: "100%", maxWidth: "800px", textAlign: "center" }}>
         {children}
       </div>
+      {nextId && (
+        <div style={{ position: "absolute", bottom: "2.5rem" }}>
+          <ScrollArrow targetId={nextId} />
+        </div>
+      )}
     </section>
   );
 }
 
 export default function Home() {
-
   return (
     <>
-      {/* Hero */}
+      {/* ===== HERO (already 100vh, has its own scroll arrow) ===== */}
       <Hero name={siteConfig.name} subtitle={siteConfig.subtitle} />
 
-      {/* ===================== ABOUT ===================== */}
-      <CenteredBlock id="about" className="relative" style-py="8rem">
-        {/* Decorative line */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "1px",
-            height: "96px",
-            background: "linear-gradient(to bottom, transparent, var(--border), transparent)",
-          }}
-        />
-
+      {/* ===== ABOUT ===== */}
+      <FullScreenSection id="about" nextId="explore">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.8 }}
-          style={{ paddingTop: "8rem", paddingBottom: "8rem" }}
         >
           <p
             style={{
@@ -160,26 +170,16 @@ export default function Home() {
             })}
           </div>
         </motion.div>
-      </CenteredBlock>
+      </FullScreenSection>
 
-      {/* ===================== EXPLORE SECTIONS ===================== */}
-      <section
-        style={{
-          width: "100%",
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "4rem 2rem",
-        }}
-      >
+      {/* ===== EXPLORE SECTIONS ===== */}
+      <FullScreenSection id="explore" nextId="finance-articles">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.8 }}
-          style={{ textAlign: "center", marginBottom: "3rem" }}
+          style={{ marginBottom: "3rem" }}
         >
           <p
             style={{
@@ -213,7 +213,6 @@ export default function Home() {
             gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
             gap: "1.5rem",
             width: "100%",
-            maxWidth: "800px",
           }}
         >
           {sections.map((section, index) => {
@@ -279,16 +278,16 @@ export default function Home() {
             );
           })}
         </div>
-      </section>
+      </FullScreenSection>
 
-      {/* ===================== FINANCE ARTICLES ===================== */}
-      <CenteredBlock id="finance-articles">
+      {/* ===== FINANCE ARTICLES ===== */}
+      <FullScreenSection id="finance-articles" nextId="ai-articles">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.8 }}
-          style={{ paddingTop: "8rem", paddingBottom: "2rem" }}
+          style={{ marginBottom: "2rem" }}
         >
           <p
             style={{
@@ -313,7 +312,7 @@ export default function Home() {
           </h2>
         </motion.div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", paddingBottom: "4rem" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", width: "100%" }}>
           {financeContent.map((article, index) => (
             <motion.div
               key={article.slug}
@@ -360,16 +359,16 @@ export default function Home() {
             <p style={{ padding: "3rem 0", color: "var(--muted)" }}>文章正在路上...</p>
           )}
         </div>
-      </CenteredBlock>
+      </FullScreenSection>
 
-      {/* ===================== AI ARTICLES ===================== */}
-      <CenteredBlock id="ai-articles">
+      {/* ===== AI ARTICLES ===== */}
+      <FullScreenSection id="ai-articles" nextId="chat-cta">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.8 }}
-          style={{ paddingTop: "4rem", paddingBottom: "2rem" }}
+          style={{ marginBottom: "2rem" }}
         >
           <p
             style={{
@@ -394,7 +393,7 @@ export default function Home() {
           </h2>
         </motion.div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", paddingBottom: "8rem" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", width: "100%" }}>
           {aiContent.map((article, index) => (
             <motion.div
               key={article.slug}
@@ -438,19 +437,18 @@ export default function Home() {
           ))}
 
           {aiContent.length === 0 && (
-            <p style={{ padding: "3rem 0", color: "var(--muted)" }}>文章正在路上... 敬请期待 ✨</p>
+            <p style={{ padding: "3rem 0", color: "var(--muted)" }}>文章正在路上... 敬请期待</p>
           )}
         </div>
-      </CenteredBlock>
+      </FullScreenSection>
 
-      {/* ===================== CHAT CTA ===================== */}
-      <CenteredBlock>
+      {/* ===== CHAT CTA ===== */}
+      <FullScreenSection id="chat-cta" nextId="footer">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.8 }}
-          style={{ paddingTop: "8rem", paddingBottom: "8rem" }}
         >
           <motion.div
             whileHover={{ scale: 1.05 }}
@@ -497,10 +495,10 @@ export default function Home() {
             <ArrowRight style={{ width: 16, height: 16 }} />
           </Link>
         </motion.div>
-      </CenteredBlock>
+      </FullScreenSection>
 
-      {/* ===================== FOOTER ===================== */}
-      <section style={{ width: "100%", borderTop: "1px solid var(--border)" }}>
+      {/* ===== FOOTER ===== */}
+      <section id="footer" style={{ width: "100%", borderTop: "1px solid var(--border)" }}>
         <div
           style={{
             maxWidth: "800px",
@@ -565,7 +563,7 @@ export default function Home() {
             &copy; {new Date().getFullYear()} {siteConfig.name}
           </p>
           <p style={{ fontSize: "0.75rem", color: "var(--muted)", opacity: 0.3 }}>
-            v3.0.0
+            v3.1.0
           </p>
         </div>
       </section>
