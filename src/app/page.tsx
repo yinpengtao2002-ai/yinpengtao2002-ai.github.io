@@ -163,13 +163,23 @@ export default function Home() {
       </CenteredBlock>
 
       {/* ===================== EXPLORE SECTIONS ===================== */}
-      <CenteredBlock>
+      <section
+        style={{
+          width: "100%",
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "4rem 2rem",
+        }}
+      >
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.8 }}
-          style={{ paddingTop: "8rem", paddingBottom: "2rem" }}
+          style={{ textAlign: "center", marginBottom: "3rem" }}
         >
           <p
             style={{
@@ -197,7 +207,15 @@ export default function Home() {
           </p>
         </motion.div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", paddingBottom: "8rem" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: "1.5rem",
+            width: "100%",
+            maxWidth: "800px",
+          }}
+        >
           {sections.map((section, index) => {
             const Icon = section.icon;
             return (
@@ -219,6 +237,7 @@ export default function Home() {
                       textAlign: "center",
                       transition: "all 0.3s ease",
                       cursor: "pointer",
+                      height: "100%",
                     }}
                   >
                     <div
@@ -260,7 +279,7 @@ export default function Home() {
             );
           })}
         </div>
-      </CenteredBlock>
+      </section>
 
       {/* ===================== FINANCE ARTICLES ===================== */}
       <CenteredBlock id="finance-articles">
