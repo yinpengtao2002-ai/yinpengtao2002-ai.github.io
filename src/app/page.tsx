@@ -281,7 +281,7 @@ export default function Home() {
         </div>
       </FullScreenSection>
 
-      {/* ===== FINANCE ARTICLES ===== */}
+      {/* ===== FINANCE ARTICLES PREVIEW ===== */}
       <FullScreenSection id="finance-articles" nextId="ai-articles">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
@@ -314,7 +314,7 @@ export default function Home() {
         </motion.div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem", width: "100%" }}>
-          {financeContent.map((article, index) => (
+          {financeContent.slice(0, 3).map((article, index) => (
             <motion.div
               key={article.slug}
               initial={{ opacity: 0, y: 20 }}
@@ -359,10 +359,34 @@ export default function Home() {
           {financeContent.length === 0 && (
             <p style={{ padding: "3rem 0", color: "var(--muted)" }}>文章正在路上...</p>
           )}
+
+          {financeContent.length > 0 && (
+            <Link
+              href="/finance"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                padding: "0.75rem 1.5rem",
+                marginTop: "1rem",
+                color: "var(--accent-secondary)",
+                textDecoration: "none",
+                fontSize: "0.875rem",
+                fontWeight: 500,
+                borderRadius: "9999px",
+                border: "1px solid var(--border)",
+                transition: "all 0.3s ease",
+              }}
+            >
+              查看全部 {financeContent.length} 篇
+              <ArrowRight style={{ width: 14, height: 14 }} />
+            </Link>
+          )}
         </div>
       </FullScreenSection>
 
-      {/* ===== AI ARTICLES ===== */}
+      {/* ===== AI ARTICLES PREVIEW ===== */}
       <FullScreenSection id="ai-articles" nextId="chat-cta">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
@@ -395,7 +419,7 @@ export default function Home() {
         </motion.div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem", width: "100%" }}>
-          {aiContent.map((article, index) => (
+          {aiContent.slice(0, 3).map((article, index) => (
             <motion.div
               key={article.slug}
               initial={{ opacity: 0, y: 20 }}
@@ -439,6 +463,30 @@ export default function Home() {
 
           {aiContent.length === 0 && (
             <p style={{ padding: "3rem 0", color: "var(--muted)" }}>文章正在路上... 敬请期待</p>
+          )}
+
+          {aiContent.length > 0 && (
+            <Link
+              href="/ai"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                padding: "0.75rem 1.5rem",
+                marginTop: "1rem",
+                color: "var(--accent)",
+                textDecoration: "none",
+                fontSize: "0.875rem",
+                fontWeight: 500,
+                borderRadius: "9999px",
+                border: "1px solid var(--border)",
+                transition: "all 0.3s ease",
+              }}
+            >
+              查看全部 {aiContent.length} 篇
+              <ArrowRight style={{ width: 14, height: 14 }} />
+            </Link>
           )}
         </div>
       </FullScreenSection>
