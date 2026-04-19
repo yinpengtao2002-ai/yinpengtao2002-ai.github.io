@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model,
-        max_tokens: 512,
+        max_tokens: 4096,
         stream: true,
         messages: [
           { role: "system", content: buildSystemPrompt() },
@@ -106,11 +106,13 @@ export async function POST(req: NextRequest) {
 
               try {
                 const parsed = JSON.parse(data);
-                const delta = parsed.choices?.[0]?.delta?.content;
-                if (delta) {
+                const delta = parsed.choices?.[0]?.delta;
+                // For thinking models: skip reasoning_content, only forward content
+                const text = delta?.content;
+                if (text) {
                   controller.enqueue(
                     encoder.encode(
-                      `data: ${JSON.stringify({ text: delta })}\n\n`
+                      `data: ${JSON.stringify({ text })}\n\n`
                     )
                   );
                 }
