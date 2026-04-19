@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Send, Sparkles, TrendingUp, ArrowLeft, ArrowUpRight, ExternalLink } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { allDialoguePatterns, defaultResponses } from "@/lib/data/dialoguePatterns";
 import { aiContent as staticAI, financeContent as staticFinance } from "@/lib/data/generated/content";
@@ -27,7 +27,6 @@ interface Message {
     id: string;
     role: "user" | "assistant";
     content: string;
-    buttons?: { label: string; icon: "ai" | "finance" }[];
     isTyping?: boolean;
     // NEW: Inline content cards
     contentCards?: ContentCard[];
@@ -54,52 +53,6 @@ function TypingIndicator() {
                 />
             ))}
         </div>
-    );
-}
-
-// Feature Card component - now uses onClick callback instead of navigation
-function FeatureCard({
-    label,
-    icon,
-    onClick,
-}: {
-    label: string;
-    icon: "ai" | "finance";
-    onClick: () => void;
-}) {
-    const isAI = icon === "ai";
-    const hoverBorderColor = isAI ? "#d97757" : "#6a9bcc";
-
-    return (
-        <motion.button
-            onClick={onClick}
-            className="flex items-center gap-3 px-6 py-4 rounded-xl transition-all duration-300 group text-left"
-            style={{
-                background: 'var(--card)',
-                border: '1px solid var(--border)',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
-                minWidth: '160px',
-            }}
-            whileHover={{
-                y: -2,
-                boxShadow: '0 8px 15px rgba(0,0,0,0.1)',
-                borderColor: hoverBorderColor
-            }}
-            whileTap={{ scale: 0.98 }}
-        >
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-card group-hover:bg-background transition-colors" style={{ fontSize: '20px' }}>
-                {isAI ? "✨" : "📈"}
-            </div>
-            <div className="flex flex-col">
-                <span
-                    className="text-[15px] font-semibold"
-                    style={{ color: 'var(--foreground)', fontFamily: sansFont }}
-                >
-                    {label}
-                </span>
-                <span className="text-[11px] text-muted font-medium">Click to explore</span>
-            </div>
-        </motion.button>
     );
 }
 
@@ -182,14 +135,11 @@ function ContentCardList({
 // Chat bubble component - Claude magazine style
 function ChatBubble({
     message,
-    isLast,
     onCardClick,
-    onFeatureClick
 }: {
     message: Message;
     isLast: boolean;
     onCardClick?: (card: ContentCard) => void;
-    onFeatureClick?: (icon: "ai" | "finance") => void;
 }) {
     const isUser = message.role === "user";
 
@@ -258,19 +208,6 @@ function ChatBubble({
                                     cardType={message.cardType}
                                     onCardClick={onCardClick}
                                 />
-                            )}
-                            {/* FeatureButtons (for greeting) */}
-                            {message.buttons && message.buttons.length > 0 && isLast && onFeatureClick && (
-                                <div className="flex flex-wrap gap-4 mt-6">
-                                    {message.buttons.map((btn, idx) => (
-                                        <FeatureCard
-                                            key={idx}
-                                            label={btn.label}
-                                            icon={btn.icon}
-                                            onClick={() => onFeatureClick(btn.icon)}
-                                        />
-                                    ))}
-                                </div>
                             )}
                         </>
                     )}
@@ -391,11 +328,7 @@ export default function ExplorePage() {
                     id: "greeting",
                     role: "assistant",
                     content:
-                        "你好！我是 Lucas。\n\n你可以点击下方按钮，或者直接告诉我带你去【AI 见闻】还是【财务建模】板块。试试输入 \"带我去AI\"？",
-                    buttons: [
-                        { label: "AI 见闻", icon: "ai" as const },
-                        { label: "财务建模", icon: "finance" as const },
-                    ],
+                        "你好！我是 Lucas 的 AI 助手。\n\n你可以问我任何关于这个网站的问题，比如有什么文章、Lucas 是谁，或者随便聊聊也行 😊",
                 },
             ]);
         }, 1200);
@@ -530,18 +463,6 @@ export default function ExplorePage() {
                     content: result?.response || "我不太明白你的意思。",
                     contentCards: result?.contentCards,
                     cardType: result?.cardType,
-                    buttons: !result?.contentCards
-                        ? [
-                              {
-                                  label: "AI 见闻",
-                                  icon: "ai" as const,
-                              },
-                              {
-                                  label: "财务建模",
-                                  icon: "finance" as const,
-                              },
-                          ]
-                        : undefined,
                 },
             ];
         });
@@ -552,57 +473,6 @@ export default function ExplorePage() {
     // Handle card click - navigate to article page
     const handleCardClick = (card: ContentCard) => {
         router.push(card.href);
-    };
-
-    // Handle feature card click - show content cards inline (same as typing)
-    const handleFeatureClick = (icon: "ai" | "finance") => {
-        // Simulate user input for the clicked section
-        const userInput = icon === "ai" ? "AI 见闻" : "财务建模";
-
-        // Add user message bubble
-        const userMessage: Message = {
-            id: `user-${Date.now()}`,
-            role: "user",
-            content: userInput,
-        };
-        setMessages((prev) => [...prev, userMessage]);
-
-        // Then add content cards as response using dynamic content state
-        setTimeout(() => {
-            if (icon === "ai") {
-                if (aiContent.length === 0) {
-                    setMessages((prev) => [...prev, {
-                        id: `assistant-${Date.now()}`,
-                        role: "assistant",
-                        content: "【AI 见闻】板块暂时还没有内容哦，敬请期待！✨",
-                    }]);
-                    return;
-                }
-                setMessages((prev) => [...prev, {
-                    id: `assistant-${Date.now()}`,
-                    role: "assistant",
-                    content: "好的！以下是【AI 见闻】板块的内容，选择一个你感兴趣的话题：",
-                    contentCards: aiContent,
-                    cardType: "ai" as const,
-                }]);
-            } else {
-                if (financeContent.length === 0) {
-                    setMessages((prev) => [...prev, {
-                        id: `assistant-${Date.now()}`,
-                        role: "assistant",
-                        content: "【财务建模】板块暂时还没有内容哦，敬请期待！📊",
-                    }]);
-                    return;
-                }
-                setMessages((prev) => [...prev, {
-                    id: `assistant-${Date.now()}`,
-                    role: "assistant",
-                    content: "收到！以下是【财务建模】板块的内容，选择你感兴趣的项目：",
-                    contentCards: financeContent,
-                    cardType: "finance" as const,
-                }]);
-            }
-        }, 400);
     };
 
     // Handle key press
@@ -698,7 +568,6 @@ export default function ExplorePage() {
                                     message={message}
                                     isLast={index === messages.length - 1}
                                     onCardClick={handleCardClick}
-                                    onFeatureClick={handleFeatureClick}
                                 />
                             ))}
                         </AnimatePresence>
@@ -706,7 +575,7 @@ export default function ExplorePage() {
                     <div ref={messagesEndRef} />
                 </div>
 
-                {/* Input Area - Floating island at bottom */}
+                {/* Input Area */}
                 <div
                     className="flex-shrink-0"
                     style={{
@@ -714,57 +583,6 @@ export default function ExplorePage() {
                         background: 'var(--background)',
                     }}
                 >
-                    {/* Quick Access Cards (Grand Style) */}
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                        <motion.button
-                            onClick={() => handleFeatureClick("ai")}
-                            className="flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300 group text-left relative overflow-hidden"
-                            style={{
-                                background: 'var(--card)',
-                                borderColor: 'var(--border)',
-                                boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
-                            }}
-                            whileHover={{
-                                y: -2,
-                                boxShadow: '0 8px 12px rgba(217, 119, 87, 0.1)',
-                                borderColor: '#d97757'
-                            }}
-                            whileTap={{ scale: 0.98 }}
-                        >
-                            <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-[#FFF0EB] text-[#d97757] group-hover:scale-110 transition-transform duration-300">
-                                <span className="text-xl">✨</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-[14px] font-bold text-foreground group-hover:text-[#d97757] transition-colors">AI 见闻</span>
-                                <span className="text-[10px] text-muted">探索前沿科技</span>
-                            </div>
-                        </motion.button>
-
-                        <motion.button
-                            onClick={() => handleFeatureClick("finance")}
-                            className="flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300 group text-left relative overflow-hidden"
-                            style={{
-                                background: 'var(--card)',
-                                borderColor: 'var(--border)',
-                                boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
-                            }}
-                            whileHover={{
-                                y: -2,
-                                boxShadow: '0 8px 12px rgba(106, 155, 204, 0.1)',
-                                borderColor: '#6a9bcc'
-                            }}
-                            whileTap={{ scale: 0.98 }}
-                        >
-                            <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-[#F0F7FF] text-[#6a9bcc] group-hover:scale-110 transition-transform duration-300">
-                                <span className="text-xl">📈</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-[14px] font-bold text-foreground group-hover:text-[#6a9bcc] transition-colors">财务建模</span>
-                                <span className="text-[10px] text-muted">洞察商业价值</span>
-                            </div>
-                        </motion.button>
-                    </div>
-
                     {/* Floating input island */}
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
