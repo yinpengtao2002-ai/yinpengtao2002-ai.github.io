@@ -10,6 +10,7 @@ import {
   ArrowRight,
   Github,
   Mail,
+  Phone,
   MessageCircle,
   TrendingUp,
   Sparkles,
@@ -122,9 +123,9 @@ export default function Home() {
               marginBottom: "1.5rem",
             }}
           >
-            对金融建模与人工智能充满热情。
+            目前就职于奇瑞汽车股份有限公司，担任财务BP。
             <br />
-            我相信技术的力量在于解决真实的问题。
+            热爱金融建模与人工智能，相信技术的力量在于解决真实的问题。
           </p>
           <p style={{ fontSize: "1rem", fontStyle: "italic", color: "var(--accent)" }}>
             &ldquo;{siteConfig.description}&rdquo;
@@ -555,6 +556,21 @@ export default function Home() {
                 }}
               >
                 <Mail style={{ width: 20, height: 20 }} />
+              </a>
+            )}
+            {siteConfig.links?.phone && (
+              <a
+                href={`tel:${siteConfig.links.phone}`}
+                style={{
+                  padding: "0.75rem",
+                  borderRadius: "9999px",
+                  border: "1px solid var(--border)",
+                  color: "var(--muted)",
+                  display: "flex",
+                  transition: "all 0.3s ease",
+                }}
+              >
+                <Phone style={{ width: 20, height: 20 }} />
               </a>
             )}
           </div>
