@@ -5,50 +5,117 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowUp, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import { allDialoguePatterns, defaultResponses } from "@/lib/data/dialoguePatterns";
 import { aiContent as staticAI, financeContent as staticFinance } from "@/lib/data/generated/content";
 
-function RichText({ text }: { text: string }) {
-    const tokenPattern = /(\[[^\]]+\]\([^)]+\)|https?:\/\/[^\s)]+|\/(?:finance|ai|article)\/[^\s)，。、！？]+)/g;
-    const parts = text.split(tokenPattern);
+function MessageContent({ text }: { text: string }) {
     return (
-        <>
-            {parts.map((part, i) => {
-                const mdMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
-                if (mdMatch) {
+        <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeKatex]}
+            components={{
+                a: ({ href, children }) => (
+                    <Link
+                        href={href || "#"}
+                        style={{
+                            color: "var(--accent)",
+                            textDecoration: "underline",
+                            textUnderlineOffset: 3,
+                        }}
+                    >
+                        {children}
+                    </Link>
+                ),
+                p: ({ children }) => (
+                    <p style={{ margin: "0.5em 0" }}>{children}</p>
+                ),
+                strong: ({ children }) => (
+                    <strong style={{ fontWeight: 700, color: "var(--foreground)" }}>{children}</strong>
+                ),
+                ul: ({ children }) => (
+                    <ul style={{ paddingLeft: 20, margin: "0.5em 0" }}>{children}</ul>
+                ),
+                ol: ({ children }) => (
+                    <ol style={{ paddingLeft: 20, margin: "0.5em 0" }}>{children}</ol>
+                ),
+                li: ({ children }) => (
+                    <li style={{ marginBottom: 4 }}>{children}</li>
+                ),
+                code: ({ children, className }) => {
+                    const isBlock = className?.startsWith("language-");
+                    if (isBlock) {
+                        return (
+                            <code
+                                style={{
+                                    display: "block",
+                                    background: "var(--card)",
+                                    border: "1px solid var(--border)",
+                                    borderRadius: 8,
+                                    padding: "12px 16px",
+                                    fontSize: 13,
+                                    overflowX: "auto",
+                                    whiteSpace: "pre",
+                                }}
+                            >
+                                {children}
+                            </code>
+                        );
+                    }
                     return (
-                        <Link
-                            key={i}
-                            href={mdMatch[2]}
+                        <code
                             style={{
-                                color: "var(--accent)",
-                                textDecoration: "underline",
-                                textUnderlineOffset: 3,
+                                background: "var(--card)",
+                                border: "1px solid var(--border)",
+                                borderRadius: 4,
+                                padding: "2px 6px",
+                                fontSize: "0.9em",
                             }}
                         >
-                            {mdMatch[1]}
-                        </Link>
+                            {children}
+                        </code>
                     );
-                }
-                const isLink = /^(https?:\/\/|\/(?:finance|ai|article)\/)/.test(part);
-                if (isLink) {
-                    return (
-                        <Link
-                            key={i}
-                            href={part}
-                            style={{
-                                color: "var(--accent)",
-                                textDecoration: "underline",
-                                textUnderlineOffset: 3,
-                            }}
-                        >
-                            {part}
-                        </Link>
-                    );
-                }
-                return <span key={i}>{part}</span>;
-            })}
-        </>
+                },
+                pre: ({ children }) => (
+                    <pre style={{ margin: "0.75em 0", overflow: "auto" }}>{children}</pre>
+                ),
+                blockquote: ({ children }) => (
+                    <blockquote
+                        style={{
+                            borderLeft: "3px solid var(--accent)",
+                            paddingLeft: 12,
+                            margin: "0.5em 0",
+                            color: "var(--muted)",
+                        }}
+                    >
+                        {children}
+                    </blockquote>
+                ),
+                table: ({ children }) => (
+                    <div style={{ overflowX: "auto", margin: "0.5em 0" }}>
+                        <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 14 }}>
+                            {children}
+                        </table>
+                    </div>
+                ),
+                th: ({ children }) => (
+                    <th style={{ border: "1px solid var(--border)", padding: "6px 12px", textAlign: "left", fontWeight: 600 }}>
+                        {children}
+                    </th>
+                ),
+                td: ({ children }) => (
+                    <td style={{ border: "1px solid var(--border)", padding: "6px 12px" }}>
+                        {children}
+                    </td>
+                ),
+            }}
+        >
+            {text}
+        </ReactMarkdown>
     );
 }
 
@@ -367,10 +434,9 @@ export default function ExplorePage() {
                                                     fontSize: 15,
                                                     lineHeight: 1.8,
                                                     color: "var(--foreground)",
-                                                    whiteSpace: "pre-wrap",
                                                     wordBreak: "break-word",
                                                 }}>
-                                                    <RichText text={message.content} />
+                                                    <MessageContent text={message.content} />
                                                 </div>
                                                 {message.contentCards && message.contentCards.length > 0 && message.cardType && (
                                                     <ContentCardList
