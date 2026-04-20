@@ -57,6 +57,8 @@ export async function POST(req: NextRequest) {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
+        "User-Agent": "Mozilla/5.0 (compatible; YinPengtaoWebsite/1.0)",
+        Accept: "application/json, text/event-stream",
       },
       body: JSON.stringify({
         model,
