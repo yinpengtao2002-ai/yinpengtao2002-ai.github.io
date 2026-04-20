@@ -9,11 +9,27 @@ import { allDialoguePatterns, defaultResponses } from "@/lib/data/dialoguePatter
 import { aiContent as staticAI, financeContent as staticFinance } from "@/lib/data/generated/content";
 
 function RichText({ text }: { text: string }) {
-    const linkPattern = /(https?:\/\/[^\s)]+|\/(?:finance|ai|article)\/[^\s)，。、！？]+)/g;
-    const parts = text.split(linkPattern);
+    const tokenPattern = /(\[[^\]]+\]\([^)]+\)|https?:\/\/[^\s)]+|\/(?:finance|ai|article)\/[^\s)，。、！？]+)/g;
+    const parts = text.split(tokenPattern);
     return (
         <>
             {parts.map((part, i) => {
+                const mdMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+                if (mdMatch) {
+                    return (
+                        <Link
+                            key={i}
+                            href={mdMatch[2]}
+                            style={{
+                                color: "var(--accent)",
+                                textDecoration: "underline",
+                                textUnderlineOffset: 3,
+                            }}
+                        >
+                            {mdMatch[1]}
+                        </Link>
+                    );
+                }
                 const isLink = /^(https?:\/\/|\/(?:finance|ai|article)\/)/.test(part);
                 if (isLink) {
                     return (
@@ -173,7 +189,7 @@ export default function ExplorePage() {
             setMessages([{
                 id: "greeting",
                 role: "assistant",
-                content: "你好！我是 Lucas 的 AI 助手。\n\n你可以问我任何关于这个网站的问题，比如有什么文章、Lucas 是谁，或者随便聊聊也行。",
+                content: "你好！我是 Lucas 的 AI 助手，搭载 Claude Opus 4.6 模型。\n\n你可以问我任何关于这个网站的问题，比如有什么文章、Lucas 是谁，或者随便聊聊也行。",
             }]);
         }, 1000);
         return () => clearTimeout(timer);
