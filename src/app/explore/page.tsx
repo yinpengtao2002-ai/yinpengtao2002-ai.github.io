@@ -8,6 +8,34 @@ import Link from "next/link";
 import { allDialoguePatterns, defaultResponses } from "@/lib/data/dialoguePatterns";
 import { aiContent as staticAI, financeContent as staticFinance } from "@/lib/data/generated/content";
 
+function RichText({ text }: { text: string }) {
+    const linkPattern = /(https?:\/\/[^\s)]+|\/(?:finance|ai|article)\/[^\s)，。、！？]+)/g;
+    const parts = text.split(linkPattern);
+    return (
+        <>
+            {parts.map((part, i) => {
+                const isLink = /^(https?:\/\/|\/(?:finance|ai|article)\/)/.test(part);
+                if (isLink) {
+                    return (
+                        <Link
+                            key={i}
+                            href={part}
+                            style={{
+                                color: "var(--accent)",
+                                textDecoration: "underline",
+                                textUnderlineOffset: 3,
+                            }}
+                        >
+                            {part}
+                        </Link>
+                    );
+                }
+                return <span key={i}>{part}</span>;
+            })}
+        </>
+    );
+}
+
 interface ContentCard {
     id: number;
     title: string;
@@ -326,7 +354,7 @@ export default function ExplorePage() {
                                                     whiteSpace: "pre-wrap",
                                                     wordBreak: "break-word",
                                                 }}>
-                                                    {message.content}
+                                                    <RichText text={message.content} />
                                                 </div>
                                                 {message.contentCards && message.contentCards.length > 0 && message.cardType && (
                                                     <ContentCardList
