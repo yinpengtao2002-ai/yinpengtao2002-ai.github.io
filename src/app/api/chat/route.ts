@@ -41,13 +41,13 @@ export async function POST(req: NextRequest) {
   try {
     const { messages } = await req.json();
 
-    const apiKey = process.env.CHAT_API_KEY;
-    const apiUrl = process.env.CHAT_API_URL;
-    const model = process.env.CHAT_MODEL || "gpt-3.5-turbo";
+    const apiKey = process.env.CHAT_API_KEY?.trim();
+    const apiUrl = process.env.CHAT_API_URL?.trim();
+    const model = (process.env.CHAT_MODEL || "gpt-3.5-turbo").trim();
 
     if (!apiKey || !apiUrl) {
       return Response.json(
-        { error: "API not configured" },
+        { error: "API not configured", hasKey: !!apiKey, hasUrl: !!apiUrl },
         { status: 503 }
       );
     }
@@ -73,8 +73,16 @@ export async function POST(req: NextRequest) {
     });
 
     if (!res.ok || !res.body) {
+      const errorText = await res.text().catch(() => "");
+      console.error("Upstream API error:", res.status, errorText);
       return Response.json(
-        { error: "Upstream API error" },
+        {
+          error: "Upstream API error",
+          status: res.status,
+          detail: errorText.slice(0, 500),
+          model,
+          urlHost: new URL(apiUrl).host,
+        },
         { status: res.status }
       );
     }
