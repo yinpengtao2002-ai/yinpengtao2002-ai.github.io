@@ -44,7 +44,8 @@ export async function POST(req: NextRequest) {
 
     const apiKey = process.env.CHAT_API_KEY?.trim();
     const apiUrl = process.env.CHAT_API_URL?.trim();
-    const model = (process.env.CHAT_MODEL || "gpt-3.5-turbo").trim();
+    const primaryModel = (process.env.CHAT_MODEL || "gpt-3.5-turbo").trim();
+    const fallbackModel = (process.env.CHAT_MODEL_FALLBACK || "gpt-5.3-codex").trim();
 
     if (!apiKey || !apiUrl) {
       return Response.json(
@@ -53,27 +54,40 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const res = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        "User-Agent": "Mozilla/5.0 (compatible; YinPengtaoWebsite/1.0)",
-        Accept: "application/json, text/event-stream",
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 4096,
-        stream: true,
-        messages: [
-          { role: "system", content: buildSystemPrompt() },
-          ...messages.map((m: { role: string; content: string }) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        ],
-      }),
-    });
+    const callUpstream = (model: string) =>
+      fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+          "User-Agent": "Mozilla/5.0 (compatible; YinPengtaoWebsite/1.0)",
+          Accept: "application/json, text/event-stream",
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 4096,
+          stream: true,
+          messages: [
+            { role: "system", content: buildSystemPrompt() },
+            ...messages.map((m: { role: string; content: string }) => ({
+              role: m.role,
+              content: m.content,
+            })),
+          ],
+        }),
+      });
+
+    let res = await callUpstream(primaryModel);
+    let activeModel = primaryModel;
+
+    if ((!res.ok || !res.body) && fallbackModel && fallbackModel !== primaryModel) {
+      const primaryErr = await res.text().catch(() => "");
+      console.warn(
+        `Primary model ${primaryModel} failed (${res.status}): ${primaryErr.slice(0, 200)}. Trying fallback ${fallbackModel}.`
+      );
+      res = await callUpstream(fallbackModel);
+      activeModel = fallbackModel;
+    }
 
     if (!res.ok || !res.body) {
       const errorText = await res.text().catch(() => "");
@@ -83,7 +97,7 @@ export async function POST(req: NextRequest) {
           error: "Upstream API error",
           status: res.status,
           detail: errorText.slice(0, 500),
-          model,
+          model: activeModel,
           urlHost: new URL(apiUrl).host,
         },
         { status: res.status }
