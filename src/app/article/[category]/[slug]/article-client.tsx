@@ -9,7 +9,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import mermaid from "mermaid";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { ContentItem } from "@/lib/data/generated/content";
 
 function MermaidChart({ chart }: { chart: string }) {
@@ -60,7 +60,7 @@ interface ArticleClientProps {
 export default function ArticleClient({ article, category }: ArticleClientProps) {
     const router = useRouter();
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if ("scrollRestoration" in window.history) {
             window.history.scrollRestoration = "manual";
         }
