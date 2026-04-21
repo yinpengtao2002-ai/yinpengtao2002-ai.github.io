@@ -31,10 +31,10 @@ export default async function ArticlePage({ params }: PageProps) {
 
     if (!article) {
         return (
-            <div className="min-h-screen bg-[#FBF9F6] flex items-center justify-center">
-                <div className="text-center">
-                    <h1 className="text-2xl font-bold text-gray-800 mb-4">文章未找到</h1>
-                    <Link href="/" className="text-blue-600 hover:underline">
+            <div style={{ minHeight: "100vh", background: "var(--background)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ textAlign: "center" }}>
+                    <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--foreground)", marginBottom: 16 }}>文章未找到</h1>
+                    <Link href="/" style={{ color: "var(--accent)", textDecoration: "underline" }}>
                         返回首页
                     </Link>
                 </div>
