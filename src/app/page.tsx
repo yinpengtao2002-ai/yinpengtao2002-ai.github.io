@@ -11,7 +11,6 @@ import {
   Github,
   Mail,
   Phone,
-  MessageCircle,
   TrendingUp,
   Sparkles,
   Code2,
@@ -387,7 +386,7 @@ export default function Home() {
       </FullScreenSection>
 
       {/* ===== AI ARTICLES PREVIEW ===== */}
-      <FullScreenSection id="ai-articles" nextId="chat-cta">
+      <FullScreenSection id="ai-articles" nextId="footer">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -489,61 +488,6 @@ export default function Home() {
             </Link>
           )}
         </div>
-      </FullScreenSection>
-
-      {/* ===== CHAT CTA ===== */}
-      <FullScreenSection id="chat-cta" nextId="footer">
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.8 }}
-        >
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            style={{
-              display: "inline-flex",
-              padding: "1rem",
-              borderRadius: "9999px",
-              background: "var(--card)",
-              border: "1px solid var(--border)",
-              marginBottom: "2rem",
-            }}
-          >
-            <MessageCircle style={{ width: 32, height: 32, color: "var(--accent)" }} />
-          </motion.div>
-          <h2
-            style={{
-              fontSize: "clamp(1.75rem, 4vw, 2.5rem)",
-              fontWeight: 700,
-              color: "var(--foreground)",
-              marginBottom: "1rem",
-            }}
-          >
-            想聊聊？
-          </h2>
-          <p style={{ fontSize: "1.125rem", color: "var(--muted)", marginBottom: "2.5rem" }}>
-            和 AI 助手对话，发现更多有趣的内容。
-          </p>
-          <Link
-            href="/explore"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.75rem",
-              padding: "1rem 2.5rem",
-              borderRadius: "9999px",
-              background: "var(--foreground)",
-              color: "white",
-              fontWeight: 500,
-              textDecoration: "none",
-              transition: "all 0.3s ease",
-            }}
-          >
-            进入对话
-            <ArrowRight style={{ width: 16, height: 16 }} />
-          </Link>
-        </motion.div>
       </FullScreenSection>
 
       {/* ===== FOOTER ===== */}
