@@ -83,7 +83,7 @@ async function getNotionContent(category, databaseId) {
             // Convert page blocks to markdown
             const mdBlocks = await n2m.pageToMarkdown(page.id);
             const mdString = n2m.toMarkdownString(mdBlocks);
-            const content = (mdString.parent || '').trim();
+            const content = (mdString.parent || '').trim().replace(/\n{3,}/g, '\n\n');
 
             articles.push({
                 slug,

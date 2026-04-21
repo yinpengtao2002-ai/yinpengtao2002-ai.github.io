@@ -8,7 +8,49 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
+import mermaid from "mermaid";
+import { useLayoutEffect, useRef, useState } from "react";
 import { ContentItem } from "@/lib/data/generated/content";
+
+function MermaidChart({ chart }: { chart: string }) {
+    const ref = useRef<HTMLDivElement>(null);
+    const [svg, setSvg] = useState("");
+
+    useLayoutEffect(() => {
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: "neutral",
+            securityLevel: "loose",
+        });
+        const render = async () => {
+            try {
+                const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`;
+                const { svg } = await mermaid.render(id, chart);
+                setSvg(svg);
+            } catch (e) {
+                console.error("Mermaid render failed:", e);
+            }
+        };
+        render();
+    }, [chart]);
+
+    return (
+        <div
+            ref={ref}
+            style={{
+                margin: "24px 0",
+                display: "flex",
+                justifyContent: "center",
+                background: "var(--card)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                padding: 24,
+                overflowX: "auto",
+            }}
+            dangerouslySetInnerHTML={{ __html: svg }}
+        />
+    );
+}
 
 interface ArticleClientProps {
     article: ContentItem;
@@ -166,6 +208,9 @@ export default function ArticleClient({ article, category }: ArticleClientProps)
                                 </blockquote>
                             ),
                             code: ({ children, className }) => {
+                                if (className === "language-mermaid") {
+                                    return <MermaidChart chart={String(children).replace(/\n$/, "")} />;
+                                }
                                 const isBlock = className?.startsWith("language-");
                                 if (isBlock) {
                                     return (

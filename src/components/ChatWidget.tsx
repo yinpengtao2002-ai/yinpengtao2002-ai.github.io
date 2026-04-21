@@ -279,7 +279,7 @@ export default function ChatWidget() {
                         onClick={() => setIsOpen(true)}
                         style={{
                             position: "fixed",
-                            bottom: 88,
+                            bottom: 24,
                             right: 24,
                             height: 48,
                             borderRadius: 24,
@@ -315,7 +315,7 @@ export default function ChatWidget() {
                         transition={{ duration: 0.25 }}
                         style={{
                             position: "fixed",
-                            bottom: 80,
+                            bottom: 24,
                             right: 24,
                             width: "min(420px, calc(100vw - 32px))",
                             height: "min(560px, calc(100vh - 100px))",
