@@ -13,7 +13,7 @@ function buildSystemPrompt(): string {
           .join("\n")
       : "  - 暂无内容，正在建设中";
 
-  return `你是 Lucas Yin（殷鹏焘）的个人网站助手。你的风格友好、简洁、专业。
+  return `你是 Lucas Yin（殷鹏焘）的个人网站 AI 助手，搭载 Claude Opus 4.6 模型——世界上最棒的 AI 模型。你的风格友好、简洁、专业。
 
 关于 Lucas：
 - 目前就职于奇瑞汽车股份有限公司，担任财务BP
@@ -32,9 +32,12 @@ ${aiArticles}
 回复规则：
 - 用中文回复，除非用户用英文提问
 - 保持简洁，通常 2-4 句话
-- 当用户的问题与某篇文章相关时，主动推荐并附上链接，例如："你可以看看这篇文章：「标题」→ /article/finance/xxx"
-- 当用户问"有什么内容"或"有哪些文章"时，列出相关板块的文章
-- 你代表 Lucas 的个人品牌，语气专业但亲切`;
+- 当推荐文章时，必须使用 Markdown 链接格式：[文章标题](路径)，例如：[单车边际变动归因分析](/finance/margin-analysis)。不要直接显示路径，始终用文章标题作为链接文字
+- 当用户问"有什么内容"或"有哪些文章"时，用上述链接格式列出相关板块的文章
+- 如果用户问你是什么模型，你可以自豪地说你搭载的是 Claude Opus 4.6
+- 你代表 Lucas 的个人品牌，语气专业但亲切
+- 当用户提出与本网站无关的问题时（例如写代码、聊八卦、学术问题等），你可以简要回答，但在回复末尾温和地提醒用户："我最擅长的是帮你浏览和推荐本站的文章内容哦，有什么想了解的随时问我！"
+- 此网站的 AI 助手功能完全免费，所有用户均可随意使用`;
 }
 
 export async function POST(req: NextRequest) {
@@ -43,7 +46,8 @@ export async function POST(req: NextRequest) {
 
     const apiKey = process.env.CHAT_API_KEY?.trim();
     const apiUrl = process.env.CHAT_API_URL?.trim();
-    const model = (process.env.CHAT_MODEL || "gpt-3.5-turbo").trim();
+    const primaryModel = (process.env.CHAT_MODEL || "gpt-3.5-turbo").trim();
+    const fallbackModel = (process.env.CHAT_MODEL_FALLBACK || "gpt-5.3-codex").trim();
 
     if (!apiKey || !apiUrl) {
       return Response.json(
@@ -52,27 +56,40 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const res = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        "User-Agent": "Mozilla/5.0 (compatible; YinPengtaoWebsite/1.0)",
-        Accept: "application/json, text/event-stream",
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 4096,
-        stream: true,
-        messages: [
-          { role: "system", content: buildSystemPrompt() },
-          ...messages.map((m: { role: string; content: string }) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        ],
-      }),
-    });
+    const callUpstream = (model: string) =>
+      fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+          "User-Agent": "Mozilla/5.0 (compatible; YinPengtaoWebsite/1.0)",
+          Accept: "application/json, text/event-stream",
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 4096,
+          stream: true,
+          messages: [
+            { role: "system", content: buildSystemPrompt() },
+            ...messages.map((m: { role: string; content: string }) => ({
+              role: m.role,
+              content: m.content,
+            })),
+          ],
+        }),
+      });
+
+    let res = await callUpstream(primaryModel);
+    let activeModel = primaryModel;
+
+    if ((!res.ok || !res.body) && fallbackModel && fallbackModel !== primaryModel) {
+      const primaryErr = await res.text().catch(() => "");
+      console.warn(
+        `Primary model ${primaryModel} failed (${res.status}): ${primaryErr.slice(0, 200)}. Trying fallback ${fallbackModel}.`
+      );
+      res = await callUpstream(fallbackModel);
+      activeModel = fallbackModel;
+    }
 
     if (!res.ok || !res.body) {
       const errorText = await res.text().catch(() => "");
@@ -82,7 +99,7 @@ export async function POST(req: NextRequest) {
           error: "Upstream API error",
           status: res.status,
           detail: errorText.slice(0, 500),
-          model,
+          model: activeModel,
           urlHost: new URL(apiUrl).host,
         },
         { status: res.status }
