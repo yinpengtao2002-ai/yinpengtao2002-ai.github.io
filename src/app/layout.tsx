@@ -24,15 +24,15 @@ const BASE_URL = "https://yinpengtao.cn";
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
-    default: "Lucas Yin | Personal Portfolio",
+    default: "Lucas Yin | Financial Modeling & AI",
     template: "%s | Lucas Yin",
   },
-  description: "金融建模 & AI — 对技术有极致热情的人",
-  keywords: ["Lucas Yin", "殷鹏焘", "portfolio", "financial modeling", "AI", "全栈开发"],
+  description: "Financial Modeling & AI — Driven by a passion for solving real-world problems with technology.",
+  keywords: ["Lucas Yin", "殷鹏焘", "financial modeling", "AI", "data analysis", "full-stack development"],
   authors: [{ name: "Lucas Yin" }],
   openGraph: {
-    title: "Lucas Yin | Personal Portfolio",
-    description: "金融建模 & AI — 对技术有极致热情的人",
+    title: "Lucas Yin | Financial Modeling & AI",
+    description: "Financial Modeling & AI — Driven by a passion for solving real-world problems with technology.",
     url: BASE_URL,
     siteName: "Lucas Yin",
     locale: "zh_CN",
@@ -40,8 +40,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Lucas Yin | Personal Portfolio",
-    description: "金融建模 & AI — 对技术有极致热情的人",
+    title: "Lucas Yin | Financial Modeling & AI",
+    description: "Financial Modeling & AI — Driven by a passion for solving real-world problems with technology.",
   },
   robots: {
     index: true,
