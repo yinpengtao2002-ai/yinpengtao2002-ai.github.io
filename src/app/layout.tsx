@@ -43,6 +43,9 @@ export const metadata: Metadata = {
     title: "Lucas Yin (殷鹏焘) | Financial Modeling & AI",
     description: "殷鹏焘 (Lucas Yin) — Financial Modeling & AI. Driven by a passion for solving real-world problems with technology.",
   },
+  verification: {
+    google: "_SRIbBn9vkLjTvw36xM7n5Fx4SXdSY2WsTy-LYUtKm4",
+  },
   robots: {
     index: true,
     follow: true,
