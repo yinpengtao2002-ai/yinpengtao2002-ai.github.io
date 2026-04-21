@@ -112,7 +112,7 @@ export default function ArticleClient({ article, category }: ArticleClientProps)
                         }}
                     >
                         <ArrowLeft style={{ width: 16, height: 16 }} />
-                        <span>{category === "ai" ? "AI 见闻" : "财务建模"}</span>
+                        <span>返回</span>
                     </button>
                     <span
                         style={{
@@ -299,7 +299,7 @@ export default function ArticleClient({ article, category }: ArticleClientProps)
                             padding: 0,
                         }}
                     >
-                        ← 返回{category === "ai" ? " AI 见闻" : "财务建模"}列表
+                        ← 返回
                     </button>
                 </div>
             </motion.main>
