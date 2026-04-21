@@ -3,6 +3,7 @@ import { Poppins, Lora } from "next/font/google";
 import "./globals.css";
 import MouseTrail from "@/components/ui/MouseTrail";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import ChatWidget from "@/components/ChatWidget";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -61,6 +62,7 @@ export default function RootLayout({
         <MouseTrail />
         <ThemeToggle />
         <main style={{ width: "100%", minWidth: "100vw", display: "block" }}>{children}</main>
+        <ChatWidget />
       </body>
     </html>
   );

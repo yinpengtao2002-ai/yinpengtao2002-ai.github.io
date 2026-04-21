@@ -11,17 +11,22 @@
     "prebuild": "node scripts/generate-content.js"
   },
   "dependencies": {
+    "@notionhq/client": "^2.3.0",
     "framer-motion": "^12.23.26",
     "gray-matter": "^4.0.3",
+    "katex": "^0.16.45",
     "lucide-react": "^0.562.0",
     "mermaid": "^11.12.2",
     "next": "16.1.1",
+    "notion-to-md": "^3.1.9",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",
+    "rehype-katex": "^7.0.1",
     "remark-directive": "^4.0.0",
     "remark-gfm": "^4.0.1",
     "remark-github-blockquote-alert": "^2.0.1",
+    "remark-math": "^6.0.0",
     "remark-rehype": "^11.1.2",
     "unist-util-visit": "^5.0.0"
   },

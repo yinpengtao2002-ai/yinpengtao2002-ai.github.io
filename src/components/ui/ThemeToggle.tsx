@@ -27,7 +27,7 @@ export default function ThemeToggle() {
     return (
         <button
             onClick={toggle}
-            className="fixed bottom-6 right-6 z-50 p-3 rounded-full border transition-all duration-300 hover:scale-110"
+            className="fixed top-4 right-4 z-50 p-2.5 rounded-full border transition-all duration-300 hover:scale-110"
             style={{
                 background: "var(--card)",
                 borderColor: "var(--border)",
