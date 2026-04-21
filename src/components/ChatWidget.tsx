@@ -174,15 +174,11 @@ export default function ChatWidget() {
     useEffect(() => {
         if (isOpen && !initialized) {
             setInitialized(true);
-            setMessages([{ id: "greeting-typing", role: "assistant", content: "", isTyping: true }]);
-            const timer = setTimeout(() => {
-                setMessages([{
-                    id: "greeting",
-                    role: "assistant",
-                    content: "你好！我是 Lucas 的 AI 助手，搭载 Claude Opus 4.6 模型。\n\n你可以问我任何关于这个网站的问题，比如有什么文章、Lucas 是谁，或者随便聊聊也行。",
-                }]);
-            }, 800);
-            return () => clearTimeout(timer);
+            setMessages([{
+                id: "greeting",
+                role: "assistant",
+                content: "你好！我是 Lucas 的 AI 助手，搭载 Claude Opus 4.6 模型。\n\n你可以问我任何关于这个网站的问题，比如有什么文章、Lucas 是谁，或者随便聊聊也行。",
+            }]);
         }
     }, [isOpen, initialized]);
 
@@ -283,25 +279,28 @@ export default function ChatWidget() {
                         onClick={() => setIsOpen(true)}
                         style={{
                             position: "fixed",
-                            bottom: 24,
+                            bottom: 88,
                             right: 24,
-                            width: 56,
-                            height: 56,
-                            borderRadius: "50%",
+                            height: 48,
+                            borderRadius: 24,
                             border: "none",
-                            background: "var(--foreground)",
-                            color: "var(--background)",
+                            background: "var(--accent)",
+                            color: "white",
                             cursor: "pointer",
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "center",
+                            gap: 8,
+                            padding: "0 18px 0 14px",
                             boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
                             zIndex: 9999,
+                            fontSize: 14,
+                            fontWeight: 600,
                         }}
-                        whileHover={{ scale: 1.1 }}
+                        whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                     >
-                        <MessageCircle style={{ width: 24, height: 24 }} />
+                        <MessageCircle style={{ width: 20, height: 20 }} />
+                        <span>AI 助手</span>
                     </motion.button>
                 )}
             </AnimatePresence>
@@ -316,10 +315,10 @@ export default function ChatWidget() {
                         transition={{ duration: 0.25 }}
                         style={{
                             position: "fixed",
-                            bottom: 24,
+                            bottom: 80,
                             right: 24,
                             width: "min(420px, calc(100vw - 32px))",
-                            height: "min(600px, calc(100vh - 48px))",
+                            height: "min(560px, calc(100vh - 100px))",
                             borderRadius: 16,
                             border: "1px solid var(--border)",
                             background: "var(--background)",
