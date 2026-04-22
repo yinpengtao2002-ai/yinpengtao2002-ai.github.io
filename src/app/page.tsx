@@ -6,11 +6,7 @@ import { siteConfig } from "@/lib/config/site";
 import { sections } from "@/lib/data/sections";
 import { aiContent, financeContent } from "@/lib/data/generated/content";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Github,
-  Mail,
-} from "lucide-react";
+import { ArrowRight, Mail } from "lucide-react";
 
 /* Scroll-down arrow that links to the next section */
 function ScrollArrow({ targetId }: { targetId: string }) {
@@ -403,46 +399,23 @@ export default function Home() {
             </p>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <Mail style={{ width: 16, height: 16, color: "var(--muted)" }} />
-              <a
-                href={`mailto:${siteConfig.links?.email}`}
-                style={{
-                  fontSize: "0.875rem",
-                  color: "var(--muted)",
-                  textDecoration: "none",
-                  transition: "color 0.3s ease",
-                }}
-              >
-                {siteConfig.links?.email}
-              </a>
-            </div>
-            {siteConfig.links?.github && (
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <Github style={{ width: 16, height: 16, color: "var(--muted)" }} />
-                <a
-                  href={siteConfig.links.github}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    fontSize: "0.875rem",
-                    color: "var(--muted)",
-                    textDecoration: "none",
-                    transition: "color 0.3s ease",
-                  }}
-                >
-                  {siteConfig.links.github.replace("https://github.com/", "")}
-                </a>
-              </div>
-            )}
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <Mail style={{ width: 16, height: 16, color: "var(--muted)" }} />
+            <a
+              href={`mailto:${siteConfig.links?.email}`}
+              style={{
+                fontSize: "0.875rem",
+                color: "var(--muted)",
+                textDecoration: "none",
+                transition: "color 0.3s ease",
+              }}
+            >
+              {siteConfig.links?.email}
+            </a>
           </div>
 
           <p style={{ fontSize: "0.75rem", color: "var(--muted)", opacity: 0.5 }}>
             &copy; {new Date().getFullYear()} {siteConfig.name}
-          </p>
-          <p style={{ fontSize: "0.75rem", color: "var(--muted)", opacity: 0.3 }}>
-            v3.1.0
           </p>
         </div>
       </section>
