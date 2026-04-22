@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Hero } from "@/components/layout";
 import { siteConfig } from "@/lib/config/site";
+import { sections } from "@/lib/data/sections";
 import { aiContent, financeContent } from "@/lib/data/generated/content";
 import Link from "next/link";
 import {
@@ -122,6 +123,44 @@ export default function Home() {
           <p style={{ fontSize: "1rem", fontStyle: "italic", color: "var(--accent)" }}>
             &ldquo;{siteConfig.description}&rdquo;
           </p>
+
+          {/* 领域标签 */}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "center",
+              gap: "0.75rem",
+              marginTop: "3rem",
+            }}
+          >
+            {sections.map((section, i) => {
+              const Icon = section.icon;
+              return (
+                <Link key={section.id} href={section.href} style={{ textDecoration: "none" }}>
+                  <motion.div
+                    whileHover={{ y: -3 }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      padding: "0.625rem 1.25rem",
+                      borderRadius: "9999px",
+                      border: "1px solid var(--border)",
+                      background: "var(--card)",
+                      cursor: "pointer",
+                      transition: "all 0.3s ease",
+                    }}
+                  >
+                    <Icon style={{ width: 16, height: 16, color: "var(--accent)" }} />
+                    <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "var(--foreground)" }}>
+                      {section.subtitle}
+                    </span>
+                  </motion.div>
+                </Link>
+              );
+            })}
+          </div>
         </motion.div>
       </FullScreenSection>
 
