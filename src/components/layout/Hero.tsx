@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import ArtifactCard, { CodeArtifact, ChartArtifact, ImageArtifact } from "../ui/ArtifactCard";
 import ThinkingSubtitle from "../ui/ThinkingSubtitle";
+import { scrollToSection } from "@/lib/scroll";
 
 interface HeroProps {
     name: string;
@@ -14,12 +15,12 @@ export default function Hero({
     subtitle,
 }: HeroProps) {
     return (
-        <div className="h-screen relative w-full overflow-hidden">
+        <div className="full-viewport fixed-viewport relative w-full overflow-hidden">
             {/* Background Effects */}
             <BackgroundEffects />
 
             {/* Main Content Group */}
-            <div className="relative z-10 w-full h-full">
+            <div className="full-viewport fixed-viewport relative z-10 w-full">
 
                 {/* Name & Subtitle - Centered vertically (50% mark) */}
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full flex flex-col items-center">
@@ -94,17 +95,19 @@ export default function Hero({
                     transition={{ duration: 1, delay: 2 }}
                     className="absolute bottom-[8%] left-0 w-full flex justify-center"
                 >
-                    <motion.a
-                        href="#about"
+                    <motion.button
+                        type="button"
+                        onClick={() => scrollToSection("about")}
                         animate={{ y: [0, 8, 0] }}
                         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        className="flex flex-col items-center gap-2 text-muted hover:text-foreground transition-colors cursor-pointer"
+                        className="flex flex-col items-center gap-2 text-muted hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
+                        aria-label="滚动到 About 区域"
                     >
                         <span className="text-xs tracking-[0.2em]">向下滑动 探索更多</span>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                             <path d="M12 5v14M5 12l7 7 7-7" />
                         </svg>
-                    </motion.a>
+                    </motion.button>
                 </motion.div>
             </div>
         </div>

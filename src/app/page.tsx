@@ -5,14 +5,16 @@ import { Hero } from "@/components/layout";
 import { siteConfig } from "@/lib/config/site";
 import { sections } from "@/lib/data/sections";
 import { aiContent, financeContent } from "@/lib/data/generated/content";
+import { scrollToSection } from "@/lib/scroll";
 import Link from "next/link";
 import { ArrowRight, Mail, Linkedin, MessageCircle } from "lucide-react";
 
 /* Scroll-down arrow that links to the next section */
 function ScrollArrow({ targetId }: { targetId: string }) {
   return (
-    <motion.a
-      href={`#${targetId}`}
+    <motion.button
+      type="button"
+      onClick={() => scrollToSection(targetId)}
       animate={{ y: [0, 8, 0] }}
       transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
       style={{
@@ -23,13 +25,17 @@ function ScrollArrow({ targetId }: { targetId: string }) {
         color: "var(--muted)",
         cursor: "pointer",
         textDecoration: "none",
+        background: "transparent",
+        border: "none",
+        padding: 0,
       }}
+      aria-label={`滚动到 ${targetId} 区域`}
     >
       <span style={{ fontSize: 12, letterSpacing: "0.2em" }}>向下滑动 探索更多</span>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
         <path d="M12 5v14M5 12l7 7 7-7" />
       </svg>
-    </motion.a>
+    </motion.button>
   );
 }
 
@@ -46,9 +52,9 @@ function FullScreenSection({
   return (
     <section
       id={id}
+      className="full-viewport"
       style={{
         width: "100%",
-        minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",

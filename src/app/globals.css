@@ -47,6 +47,12 @@ html {
   scroll-behavior: smooth;
 }
 
+html,
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -75,6 +81,16 @@ h6 {
 /* Consistent background across all sections */
 .gradient-bg {
   background: var(--background);
+}
+
+.full-viewport {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.fixed-viewport {
+  height: 100vh;
+  height: 100dvh;
 }
 
 @keyframes gradientShift {
