@@ -69,8 +69,21 @@ export default function ArticleClient({ article, category }: ArticleClientProps)
 
     useEffect(() => {
         window.scrollTo(0, 0);
-        const timer = setTimeout(() => window.scrollTo(0, 0), 50);
-        return () => clearTimeout(timer);
+        const timers = [50, 100, 200, 400].map(ms =>
+            setTimeout(() => window.scrollTo(0, 0), ms)
+        );
+        const onScroll = () => {
+            window.scrollTo(0, 0);
+        };
+        window.addEventListener("scroll", onScroll);
+        const cleanup = setTimeout(() => {
+            window.removeEventListener("scroll", onScroll);
+        }, 500);
+        return () => {
+            timers.forEach(clearTimeout);
+            clearTimeout(cleanup);
+            window.removeEventListener("scroll", onScroll);
+        };
     }, []);
 
     const handleBack = () => {

@@ -54,17 +54,13 @@ function FullScreenSection({
         alignItems: "center",
         justifyContent: "center",
         padding: "4rem 2rem",
-        position: "relative",
+        gap: "2rem",
       }}
     >
-      <div style={{ width: "100%", maxWidth: "800px", textAlign: "center", marginBottom: nextId ? "5rem" : 0 }}>
+      <div style={{ width: "100%", maxWidth: "800px", textAlign: "center" }}>
         {children}
       </div>
-      {nextId && (
-        <div style={{ position: "absolute", bottom: "2rem" }}>
-          <ScrollArrow targetId={nextId} />
-        </div>
-      )}
+      {nextId && <ScrollArrow targetId={nextId} />}
     </section>
   );
 }
