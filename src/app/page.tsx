@@ -53,7 +53,7 @@ function FullScreenSection({
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: "4rem 2rem 6rem",
+        padding: "4rem 2rem 7rem",
         position: "relative",
       }}
     >
@@ -61,7 +61,7 @@ function FullScreenSection({
         {children}
       </div>
       {nextId && (
-        <div style={{ position: "absolute", bottom: "2.5rem" }}>
+        <div style={{ position: "absolute", bottom: "4.5rem" }}>
           <ScrollArrow targetId={nextId} />
         </div>
       )}
