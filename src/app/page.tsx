@@ -53,8 +53,8 @@ function FullScreenSection({
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: "4rem 2rem",
-        gap: "2rem",
+        padding: "3rem 2rem",
+        gap: "1.5rem",
       }}
     >
       <div style={{ width: "100%", maxWidth: "800px", textAlign: "center" }}>
@@ -191,7 +191,7 @@ export default function Home() {
         </motion.div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem", width: "100%" }}>
-          {financeContent.slice(0, 3).map((article, index) => (
+          {financeContent.slice(0, 2).map((article, index) => (
             <motion.div
               key={article.slug}
               initial={{ opacity: 0, y: 20 }}
@@ -296,7 +296,7 @@ export default function Home() {
         </motion.div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem", width: "100%" }}>
-          {aiContent.slice(0, 3).map((article, index) => (
+          {aiContent.slice(0, 2).map((article, index) => (
             <motion.div
               key={article.slug}
               initial={{ opacity: 0, y: 20 }}

@@ -207,7 +207,7 @@ export default function ArticleClient({ article, category }: ArticleClientProps)
                 {/* Article Body */}
                 <article className="notion-article">
                     <ReactMarkdown
-                        remarkPlugins={[remarkGfm, remarkMath]}
+                        remarkPlugins={[remarkGfm, [remarkMath, { singleDollarTextMath: false }]]}
                         rehypePlugins={[rehypeKatex]}
                         components={{
                             h1: ({ children }) => (
