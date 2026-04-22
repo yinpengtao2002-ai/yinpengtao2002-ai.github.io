@@ -52,8 +52,8 @@ function FullScreenSection({
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
-        padding: "4rem 2rem 7rem",
+        justifyContent: "flex-start",
+        padding: "8rem 2rem 7rem",
         position: "relative",
       }}
     >
