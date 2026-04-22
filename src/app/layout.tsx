@@ -60,7 +60,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <head>
-        <meta name="baidu-site-verification" content="codeva-1vCoww6XwP" />
+        <meta name="baidu-site-verification" content="codeva-9201I1Yt1V" />
       </head>
       <body
         className={`${poppins.variable} ${lora.variable} antialiased gradient-bg overflow-x-hidden selection:bg-[#d97757] selection:text-white`}
