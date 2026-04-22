@@ -11,7 +11,6 @@ import {
   Github,
   Mail,
   Phone,
-  ChevronDown,
 } from "lucide-react";
 
 /* Scroll-down arrow that links to the next section */
@@ -25,12 +24,16 @@ function ScrollArrow({ targetId }: { targetId: string }) {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
+        gap: 8,
         color: "var(--muted)",
         cursor: "pointer",
         textDecoration: "none",
       }}
     >
-      <ChevronDown style={{ width: 20, height: 20 }} />
+      <span style={{ fontSize: 12, letterSpacing: "0.2em" }}>向下滑动 探索更多</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M12 5v14M5 12l7 7 7-7" />
+      </svg>
     </motion.a>
   );
 }
