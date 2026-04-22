@@ -6,7 +6,7 @@ import { siteConfig } from "@/lib/config/site";
 import { sections } from "@/lib/data/sections";
 import { aiContent, financeContent } from "@/lib/data/generated/content";
 import Link from "next/link";
-import { ArrowRight, Mail } from "lucide-react";
+import { ArrowRight, Mail, Linkedin, MessageCircle } from "lucide-react";
 
 /* Scroll-down arrow that links to the next section */
 function ScrollArrow({ targetId }: { targetId: string }) {
@@ -53,7 +53,7 @@ function FullScreenSection({
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: "4rem 2rem",
+        padding: "4rem 2rem 6rem",
         position: "relative",
       }}
     >
@@ -399,19 +399,41 @@ export default function Home() {
             </p>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <Mail style={{ width: 16, height: 16, color: "var(--muted)" }} />
-            <a
-              href={`mailto:${siteConfig.links?.email}`}
-              style={{
-                fontSize: "0.875rem",
-                color: "var(--muted)",
-                textDecoration: "none",
-                transition: "color 0.3s ease",
-              }}
-            >
-              {siteConfig.links?.email}
-            </a>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Mail style={{ width: 16, height: 16, color: "var(--muted)" }} />
+              <a
+                href={`mailto:${siteConfig.links?.email}`}
+                style={{
+                  fontSize: "0.875rem",
+                  color: "var(--muted)",
+                  textDecoration: "none",
+                }}
+              >
+                {siteConfig.links?.email}
+              </a>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <MessageCircle style={{ width: 16, height: 16, color: "var(--muted)" }} />
+              <span style={{ fontSize: "0.875rem", color: "var(--muted)" }}>
+                微信：YPT1479239526
+              </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Linkedin style={{ width: 16, height: 16, color: "var(--muted)" }} />
+              <a
+                href="https://www.linkedin.com/in/lucasyin2002/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontSize: "0.875rem",
+                  color: "var(--muted)",
+                  textDecoration: "none",
+                }}
+              >
+                LinkedIn
+              </a>
+            </div>
           </div>
 
           <p style={{ fontSize: "0.75rem", color: "var(--muted)", opacity: 0.5 }}>
