@@ -10,7 +10,6 @@ import {
   ArrowRight,
   Github,
   Mail,
-  Phone,
 } from "lucide-react";
 
 /* Scroll-down arrow that links to the next section */
@@ -404,53 +403,38 @@ export default function Home() {
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: "1rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Mail style={{ width: 16, height: 16, color: "var(--muted)" }} />
+              <a
+                href={`mailto:${siteConfig.links?.email}`}
+                style={{
+                  fontSize: "0.875rem",
+                  color: "var(--muted)",
+                  textDecoration: "none",
+                  transition: "color 0.3s ease",
+                }}
+              >
+                {siteConfig.links?.email}
+              </a>
+            </div>
             {siteConfig.links?.github && (
-              <a
-                href={siteConfig.links.github}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  padding: "0.75rem",
-                  borderRadius: "9999px",
-                  border: "1px solid var(--border)",
-                  color: "var(--muted)",
-                  display: "flex",
-                  transition: "all 0.3s ease",
-                }}
-              >
-                <Github style={{ width: 20, height: 20 }} />
-              </a>
-            )}
-            {siteConfig.links?.email && (
-              <a
-                href={`mailto:${siteConfig.links.email}`}
-                style={{
-                  padding: "0.75rem",
-                  borderRadius: "9999px",
-                  border: "1px solid var(--border)",
-                  color: "var(--muted)",
-                  display: "flex",
-                  transition: "all 0.3s ease",
-                }}
-              >
-                <Mail style={{ width: 20, height: 20 }} />
-              </a>
-            )}
-            {siteConfig.links?.phone && (
-              <a
-                href={`tel:${siteConfig.links.phone}`}
-                style={{
-                  padding: "0.75rem",
-                  borderRadius: "9999px",
-                  border: "1px solid var(--border)",
-                  color: "var(--muted)",
-                  display: "flex",
-                  transition: "all 0.3s ease",
-                }}
-              >
-                <Phone style={{ width: 20, height: 20 }} />
-              </a>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <Github style={{ width: 16, height: 16, color: "var(--muted)" }} />
+                <a
+                  href={siteConfig.links.github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    fontSize: "0.875rem",
+                    color: "var(--muted)",
+                    textDecoration: "none",
+                    transition: "color 0.3s ease",
+                  }}
+                >
+                  {siteConfig.links.github.replace("https://github.com/", "")}
+                </a>
+              </div>
             )}
           </div>
 
