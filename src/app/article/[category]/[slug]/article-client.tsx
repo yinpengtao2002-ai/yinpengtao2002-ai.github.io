@@ -291,7 +291,7 @@ export default function ArticleClient({ article, category }: ArticleClientProps)
                                 />
                             ),
                             strong: ({ children }) => (
-                                <strong style={{ fontWeight: 600, color: "var(--foreground)" }}>
+                                <strong style={{ fontWeight: 700, color: "var(--foreground)" }}>
                                     {children}
                                 </strong>
                             ),

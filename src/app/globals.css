@@ -299,3 +299,25 @@ h6 {
   -webkit-line-clamp: 3;
   overflow: hidden;
 }
+
+/* Chat panel - desktop */
+.chat-panel {
+  bottom: 24px;
+  right: 24px;
+  width: 420px;
+  height: 560px;
+  border-radius: 16px;
+}
+
+/* Chat panel - mobile: full screen */
+@media (max-width: 640px) {
+  .chat-panel {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+}

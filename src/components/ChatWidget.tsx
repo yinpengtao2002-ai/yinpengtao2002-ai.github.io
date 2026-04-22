@@ -313,20 +313,16 @@ export default function ChatWidget() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
                         transition={{ duration: 0.25 }}
+                        className="chat-panel"
                         style={{
                             position: "fixed",
-                            bottom: 24,
-                            right: 24,
-                            width: "min(420px, calc(100vw - 32px))",
-                            height: "min(560px, calc(100vh - 100px))",
-                            borderRadius: 16,
-                            border: "1px solid var(--border)",
-                            background: "var(--background)",
-                            boxShadow: "0 8px 40px rgba(0,0,0,0.12)",
                             display: "flex",
                             flexDirection: "column",
                             overflow: "hidden",
                             zIndex: 9999,
+                            background: "var(--background)",
+                            border: "1px solid var(--border)",
+                            boxShadow: "0 8px 40px rgba(0,0,0,0.12)",
                         }}
                     >
                         {/* Header */}
