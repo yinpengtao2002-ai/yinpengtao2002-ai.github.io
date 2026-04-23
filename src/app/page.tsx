@@ -63,6 +63,7 @@ function FullScreenSection({
       id={id}
       className="full-viewport"
       style={{
+        position: "relative",
         width: "100%",
         display: "flex",
         flexDirection: "column",
@@ -72,11 +73,29 @@ function FullScreenSection({
         gap: topAlign ? "1rem" : "1.5rem",
       }}
     >
-      <div style={{ width: "100%", maxWidth: "800px", textAlign: "center" }}>
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "800px",
+          textAlign: "center",
+          paddingBottom: topAlign && nextId ? "5.5rem" : 0,
+        }}
+      >
         {children}
       </div>
       {nextId && (
-        <div style={{ marginTop: topAlign ? "0.75rem" : 0 }}>
+        <div
+          style={
+            topAlign
+              ? {
+                  position: "absolute",
+                  left: "50%",
+                  bottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)",
+                  transform: "translateX(-50%)",
+                }
+              : { marginTop: 0 }
+          }
+        >
           <ScrollArrow targetId={nextId} lowMotion={lowMotion} />
         </div>
       )}

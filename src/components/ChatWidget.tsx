@@ -12,6 +12,7 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { allDialoguePatterns, defaultResponses } from "@/lib/data/dialoguePatterns";
 import { aiContent as staticAI, financeContent as staticFinance } from "@/lib/data/generated/content";
+import { useViewportProfile } from "@/lib/useLowMotionMode";
 
 interface ContentCard {
     id: number;
@@ -150,12 +151,15 @@ function recognizeIntent(input: string, aiContent: ContentCard[], financeContent
 
 export default function ChatWidget() {
     const router = useRouter();
+    const { isMobileLike } = useViewportProfile();
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
     const [aiAvailable, setAiAvailable] = useState<boolean | null>(null);
     const [initialized, setInitialized] = useState(false);
+    const [viewportHeight, setViewportHeight] = useState<number | null>(null);
+    const [viewportOffsetTop, setViewportOffsetTop] = useState(0);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -172,19 +176,29 @@ export default function ChatWidget() {
     useEffect(() => { scrollToBottom(); }, [messages]);
 
     useEffect(() => {
-        if (isOpen && !initialized) {
-            setInitialized(true);
-            setMessages([{
-                id: "greeting",
-                role: "assistant",
-                content: "你好！我是 Lucas 的 AI 助手，搭载 Claude Opus 4.6 模型。\n\n你可以问我任何关于这个网站的问题，比如有什么文章、Lucas 是谁，或者随便聊聊也行。",
-            }]);
-        }
-    }, [isOpen, initialized]);
+        if (isOpen && !isMobileLike) inputRef.current?.focus();
+    }, [isMobileLike, isOpen]);
 
     useEffect(() => {
-        if (isOpen) inputRef.current?.focus();
-    }, [isOpen]);
+        if (!isOpen || !isMobileLike || typeof window === "undefined") return;
+
+        const viewport = window.visualViewport;
+        if (!viewport) return;
+
+        const updateViewport = () => {
+            setViewportHeight(viewport.height);
+            setViewportOffsetTop(viewport.offsetTop);
+        };
+
+        updateViewport();
+        viewport.addEventListener("resize", updateViewport);
+        viewport.addEventListener("scroll", updateViewport);
+
+        return () => {
+            viewport.removeEventListener("resize", updateViewport);
+            viewport.removeEventListener("scroll", updateViewport);
+        };
+    }, [isMobileLike, isOpen]);
 
     const callClaudeAPI = async (allMessages: Message[], assistantMsgId: string): Promise<boolean> => {
         try {
@@ -266,6 +280,27 @@ export default function ChatWidget() {
         el.style.height = Math.min(el.scrollHeight, 100) + "px";
     };
 
+    const handleOpen = () => {
+        if (!initialized) {
+            setInitialized(true);
+            setMessages([{
+                id: "greeting",
+                role: "assistant",
+                content: "你好！我是 Lucas 的 AI 助手，搭载 Claude Opus 4.6 模型。\n\n你可以问我任何关于这个网站的问题，比如有什么文章、Lucas 是谁，或者随便聊聊也行。",
+            }]);
+        }
+        setIsOpen(true);
+    };
+
+    const handleInputFocus = () => {
+        if (!isMobileLike) return;
+
+        setTimeout(() => {
+            inputRef.current?.scrollIntoView({ block: "nearest" });
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+        }, 180);
+    };
+
     return (
         <>
             {/* Floating Button */}
@@ -276,7 +311,7 @@ export default function ChatWidget() {
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0, opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        onClick={() => setIsOpen(true)}
+                        onClick={handleOpen}
                         style={{
                             position: "fixed",
                             bottom: 24,
@@ -323,6 +358,9 @@ export default function ChatWidget() {
                             background: "var(--background)",
                             border: "1px solid var(--border)",
                             boxShadow: "0 8px 40px rgba(0,0,0,0.12)",
+                            top: isMobileLike ? viewportOffsetTop : undefined,
+                            bottom: isMobileLike ? "auto" : undefined,
+                            height: isMobileLike ? (viewportHeight ? `${viewportHeight}px` : "100dvh") : undefined,
                         }}
                     >
                         {/* Header */}
@@ -417,7 +455,9 @@ export default function ChatWidget() {
                         <div style={{
                             flexShrink: 0,
                             borderTop: "1px solid var(--border)",
-                            padding: "12px 16px",
+                            padding: isMobileLike
+                                ? "12px 16px calc(12px + env(safe-area-inset-bottom, 0px))"
+                                : "12px 16px",
                         }}>
                             <div style={{
                                 display: "flex",
@@ -434,6 +474,7 @@ export default function ChatWidget() {
                                     ref={inputRef}
                                     value={inputValue}
                                     onChange={handleInput}
+                                    onFocus={handleInputFocus}
                                     onKeyDown={handleKeyDown}
                                     placeholder="输入消息..."
                                     rows={1}
