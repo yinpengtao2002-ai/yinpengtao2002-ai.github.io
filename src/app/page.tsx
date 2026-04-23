@@ -166,9 +166,7 @@ export default function Home() {
               marginBottom: "1.5rem",
             }}
           >
-            目前就职于奇瑞汽车股份有限公司，担任财务BP。
-            <br />
-            热爱金融建模与人工智能，相信技术的力量在于解决真实的问题。
+            目前就职于奇瑞汽车，担任财务BP。
           </p>
           <p style={{ fontSize: "1rem", fontStyle: "italic", color: "var(--accent)" }}>
             &ldquo;{siteConfig.description}&rdquo;

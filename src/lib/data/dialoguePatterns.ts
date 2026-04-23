@@ -194,7 +194,7 @@ export const ownerPatterns: DialoguePattern[] = [
     {
         keywords: ["lucas", "卢卡斯", "站长", "博主", "作者", "yinpengtao", "殷鹏涛"],
         responses: [
-            "你在找Lucas吗？他是这个网站的主人，一个热爱AI和财务建模的人！✨",
+            "你在找Lucas吗？他是这个网站的主人，目前就职于奇瑞汽车，担任财务BP。",
             "Lucas是一个对技术充满热情的人，这个网站是他的个人空间～",
             "站长Lucas很有趣哦，你可以通过各个板块了解更多关于他的内容！",
             "想了解更多关于Lucas？可以去【AI见闻】看看他的思考！"
