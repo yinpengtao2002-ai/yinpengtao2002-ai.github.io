@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import ArtifactCard, { CodeArtifact, ChartArtifact, ImageArtifact } from "../ui/ArtifactCard";
 import ThinkingSubtitle from "../ui/ThinkingSubtitle";
 import { scrollToSection } from "@/lib/scroll";
-import { useLowMotionMode } from "@/lib/useLowMotionMode";
+import { useViewportProfile } from "@/lib/useLowMotionMode";
 
 interface HeroProps {
     name: string;
@@ -15,7 +15,7 @@ export default function Hero({
     name,
     subtitle,
 }: HeroProps) {
-    const lowMotion = useLowMotionMode();
+    const { lowMotion, isMobileLike } = useViewportProfile();
     const showArtifacts = !lowMotion;
 
     return (
@@ -27,7 +27,13 @@ export default function Hero({
             <div className="full-viewport fixed-viewport relative z-10 w-full">
 
                 {/* Name & Subtitle - Centered vertically (50% mark) */}
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full flex flex-col items-center">
+                <div
+                    className="absolute left-1/2 w-full flex flex-col items-center px-5 sm:px-6"
+                    style={{
+                        top: isMobileLike ? "47%" : "50%",
+                        transform: "translate(-50%, -50%)",
+                    }}
+                >
 
                     {/* Artifact 1: Code Snippet - Floating Top Right */}
                     {showArtifacts && (
@@ -63,7 +69,16 @@ export default function Hero({
                         transition={{ duration: lowMotion ? 0.4 : 0.8, ease: "easeOut" }}
                         className="text-center w-full relative z-20"
                     >
-                        <h1 className="text-6xl sm:text-8xl md:text-9xl font-bold tracking-tighter whitespace-nowrap" style={{ color: 'var(--foreground)' }}>
+                        <h1
+                            className="text-6xl sm:text-8xl md:text-9xl font-bold tracking-tighter"
+                            style={{
+                                color: "var(--foreground)",
+                                fontSize: isMobileLike ? "clamp(3.1rem, 15vw, 4.8rem)" : undefined,
+                                lineHeight: isMobileLike ? 0.94 : 1,
+                                whiteSpace: isMobileLike ? "normal" : "nowrap",
+                                paddingInline: isMobileLike ? "0.5rem" : 0,
+                            }}
+                        >
                             <span className="gradient-text">{name}</span>
                         </h1>
                     </motion.div>
@@ -74,13 +89,21 @@ export default function Hero({
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ duration: lowMotion ? 0.4 : 1, delay: lowMotion ? 0.15 : 0.4 }}
-                            className="relative z-20 mt-8 pt-6 border-t border-border w-full max-w-3xl flex flex-col items-center gap-4"
+                            className="relative z-20 border-t border-border w-full flex flex-col items-center"
+                            style={{
+                                maxWidth: "42rem",
+                                marginTop: isMobileLike ? "1.25rem" : "2rem",
+                                paddingTop: isMobileLike ? "1rem" : "1.5rem",
+                                gap: isMobileLike ? "0.6rem" : "1rem",
+                            }}
                         >
                             <ThinkingSubtitle
                                 finalText={subtitle}
                                 thoughts={["Thinking...", "Initializing Personality...", "Designing Portfolio..."]}
                                 reducedMotion={lowMotion}
-                                className="text-xl sm:text-2xl md:text-3xl font-light tracking-[0.3em] uppercase"
+                                className={isMobileLike
+                                    ? "text-base font-light tracking-[0.14em] uppercase"
+                                    : "text-xl sm:text-2xl md:text-3xl font-light tracking-[0.3em] uppercase"}
                             />
 
                             {/* Welcome Message */}
@@ -93,7 +116,9 @@ export default function Hero({
                                     finalText="欢迎参观我的个人网站"
                                     thoughts={["Loading content...", "Preparing welcome message..."]}
                                     reducedMotion={lowMotion}
-                                    className="text-lg sm:text-xl font-light tracking-[0.2em] text-[#d97757]"
+                                    className={isMobileLike
+                                        ? "text-sm font-light tracking-[0.1em] text-[#d97757]"
+                                        : "text-lg sm:text-xl font-light tracking-[0.2em] text-[#d97757]"}
                                 />
                             </motion.div>
                         </motion.div>

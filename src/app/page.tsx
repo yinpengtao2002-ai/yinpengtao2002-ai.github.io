@@ -6,7 +6,7 @@ import { siteConfig } from "@/lib/config/site";
 import { sections } from "@/lib/data/sections";
 import { aiContent, financeContent } from "@/lib/data/generated/content";
 import { scrollToSection } from "@/lib/scroll";
-import { useLowMotionMode } from "@/lib/useLowMotionMode";
+import { useViewportProfile } from "@/lib/useLowMotionMode";
 import Link from "next/link";
 import { ArrowRight, Mail, Linkedin, MessageCircle } from "lucide-react";
 
@@ -46,12 +46,18 @@ function FullScreenSection({
   id,
   nextId,
   lowMotion,
+  isMobileLike,
+  mobileTopAlign = false,
 }: {
   children: React.ReactNode;
   id?: string;
   nextId?: string;
   lowMotion: boolean;
+  isMobileLike: boolean;
+  mobileTopAlign?: boolean;
 }) {
+  const topAlign = mobileTopAlign && isMobileLike;
+
   return (
     <section
       id={id}
@@ -61,21 +67,25 @@ function FullScreenSection({
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
-        padding: "3rem 2rem",
-        gap: "1.5rem",
+        justifyContent: topAlign ? "flex-start" : "center",
+        padding: topAlign ? "4rem 1.25rem 2.5rem" : isMobileLike ? "3rem 1.25rem" : "3rem 2rem",
+        gap: topAlign ? "1rem" : "1.5rem",
       }}
     >
       <div style={{ width: "100%", maxWidth: "800px", textAlign: "center" }}>
         {children}
       </div>
-      {nextId && <ScrollArrow targetId={nextId} lowMotion={lowMotion} />}
+      {nextId && (
+        <div style={{ marginTop: topAlign ? "0.75rem" : 0 }}>
+          <ScrollArrow targetId={nextId} lowMotion={lowMotion} />
+        </div>
+      )}
     </section>
   );
 }
 
 export default function Home() {
-  const lowMotion = useLowMotionMode();
+  const { lowMotion, isMobileLike } = useViewportProfile();
   const sectionTransition = lowMotion ? { duration: 0.35 } : { duration: 0.8 };
   const sectionViewport = lowMotion ? { once: true, margin: "-20px" } : { once: true, margin: "-80px" };
   const revealInitial = lowMotion ? { opacity: 0 } : { opacity: 0, y: 40 };
@@ -93,7 +103,13 @@ export default function Home() {
       <Hero name={siteConfig.name} subtitle={siteConfig.subtitle} />
 
       {/* ===== ABOUT ===== */}
-      <FullScreenSection id="about" nextId="finance-articles" lowMotion={lowMotion}>
+      <FullScreenSection
+        id="about"
+        nextId="finance-articles"
+        lowMotion={lowMotion}
+        isMobileLike={isMobileLike}
+        mobileTopAlign
+      >
         <motion.div
           initial={revealInitial}
           whileInView={revealWhileInView}
@@ -145,8 +161,8 @@ export default function Home() {
               display: "flex",
               flexWrap: "wrap",
               justifyContent: "center",
-              gap: "0.75rem",
-              marginTop: "3rem",
+              gap: isMobileLike ? "0.5rem" : "0.75rem",
+              marginTop: isMobileLike ? "2rem" : "3rem",
             }}
           >
             {sections.map((section) => {
@@ -159,7 +175,7 @@ export default function Home() {
                       display: "flex",
                       alignItems: "center",
                       gap: "0.5rem",
-                      padding: "0.625rem 1.25rem",
+                      padding: isMobileLike ? "0.5rem 0.9rem" : "0.625rem 1.25rem",
                       borderRadius: "9999px",
                       border: "1px solid var(--border)",
                       background: "var(--card)",
@@ -168,10 +184,10 @@ export default function Home() {
                     }}
                   >
                     <Icon style={{ width: 16, height: 16, color: "var(--accent)" }} />
-                    <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "var(--foreground)" }}>
-                      {section.subtitle}
-                    </span>
-                  </motion.div>
+                      <span style={{ fontSize: isMobileLike ? "0.8rem" : "0.875rem", fontWeight: 500, color: "var(--foreground)" }}>
+                        {section.subtitle}
+                      </span>
+                    </motion.div>
                 </Link>
               );
             })}
@@ -180,7 +196,7 @@ export default function Home() {
       </FullScreenSection>
 
       {/* ===== FINANCE ARTICLES PREVIEW ===== */}
-      <FullScreenSection id="finance-articles" nextId="ai-articles" lowMotion={lowMotion}>
+      <FullScreenSection id="finance-articles" nextId="ai-articles" lowMotion={lowMotion} isMobileLike={isMobileLike}>
         <motion.div
           initial={revealInitial}
           whileInView={revealWhileInView}
@@ -285,7 +301,7 @@ export default function Home() {
       </FullScreenSection>
 
       {/* ===== AI ARTICLES PREVIEW ===== */}
-      <FullScreenSection id="ai-articles" nextId="footer" lowMotion={lowMotion}>
+      <FullScreenSection id="ai-articles" nextId="footer" lowMotion={lowMotion} isMobileLike={isMobileLike}>
         <motion.div
           initial={revealInitial}
           whileInView={revealWhileInView}

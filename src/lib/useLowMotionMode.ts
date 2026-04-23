@@ -3,9 +3,9 @@
 import { useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
 
-export function useLowMotionMode() {
+export function useViewportProfile() {
     const prefersReducedMotion = useReducedMotion();
-    const [isLowPowerViewport, setIsLowPowerViewport] = useState(false);
+    const [isMobileLike, setIsMobileLike] = useState(false);
 
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -14,7 +14,7 @@ export function useLowMotionMode() {
 
         const update = () => {
             const hasTouch = window.navigator.maxTouchPoints > 0;
-            setIsLowPowerViewport(mediaQuery.matches || hasTouch);
+            setIsMobileLike(mediaQuery.matches || hasTouch);
         };
 
         update();
@@ -28,5 +28,13 @@ export function useLowMotionMode() {
         return () => mediaQuery.removeListener(update);
     }, []);
 
-    return Boolean(prefersReducedMotion || isLowPowerViewport);
+    return {
+        isMobileLike,
+        prefersReducedMotion: Boolean(prefersReducedMotion),
+        lowMotion: Boolean(prefersReducedMotion || isMobileLike),
+    };
+}
+
+export function useLowMotionMode() {
+    return useViewportProfile().lowMotion;
 }
