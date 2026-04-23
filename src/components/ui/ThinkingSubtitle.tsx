@@ -7,20 +7,29 @@ interface ThinkingSubtitleProps {
     finalText: string;
     thoughts?: string[];
     className?: string;
+    reducedMotion?: boolean;
 }
 
 export default function ThinkingSubtitle({
     finalText,
     thoughts = ["Thinking...", "Analyzing...", "Generating Identity..."],
-    className = ""
+    className = "",
+    reducedMotion = false,
 }: ThinkingSubtitleProps) {
     const [currentThoughtIndex, setCurrentThoughtIndex] = useState(0);
     const [isThinking, setIsThinking] = useState(true);
     const [displayedText, setDisplayedText] = useState("");
 
+    useEffect(() => {
+        if (!reducedMotion) return;
+
+        setIsThinking(false);
+        setDisplayedText(finalText);
+    }, [finalText, reducedMotion]);
+
     // Cycle through thoughts
     useEffect(() => {
-        if (!isThinking) return;
+        if (!isThinking || reducedMotion) return;
 
         // Type out the current thought
         const currentThought = thoughts[currentThoughtIndex];
@@ -45,11 +54,11 @@ export default function ThinkingSubtitle({
         }, 50); // Typing speed for thoughts
 
         return () => clearInterval(typingInterval);
-    }, [currentThoughtIndex, isThinking, thoughts]);
+    }, [currentThoughtIndex, isThinking, reducedMotion, thoughts]);
 
     // Final Text Typing
     useEffect(() => {
-        if (isThinking) return;
+        if (isThinking || reducedMotion) return;
 
         let charIndex = 0;
         setDisplayedText(""); // Reset for final text
@@ -64,7 +73,7 @@ export default function ThinkingSubtitle({
         }, 80); // Typing speed for final text (slower, more deliberate)
 
         return () => clearInterval(typingInterval);
-    }, [isThinking, finalText]);
+    }, [isThinking, finalText, reducedMotion]);
 
     return (
         <div className={`relative inline-flex items-center justify-center min-h-[1.5em] ${className}`}>
@@ -83,7 +92,7 @@ export default function ThinkingSubtitle({
             <motion.span
                 animate={{ opacity: [1, 0] }}
                 transition={{ duration: 0.8, repeat: Infinity }}
-                className={`ml-1 inline-block w-1.5 h-4 align-middle ${!isThinking && displayedText === finalText ? "hidden" : ""}`}
+                className={`ml-1 inline-block w-1.5 h-4 align-middle ${reducedMotion || (!isThinking && displayedText === finalText) ? "hidden" : ""}`}
                 style={{ background: 'var(--accent)' }}
             />
         </div>

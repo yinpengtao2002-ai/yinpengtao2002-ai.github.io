@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { Poppins, Lora } from "next/font/google";
 import "./globals.css";
-import MouseTrail from "@/components/ui/MouseTrail";
-import ThemeToggle from "@/components/ui/ThemeToggle";
-import ChatWidget from "@/components/ChatWidget";
+import ClientShell from "@/components/ClientShell";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -65,10 +63,8 @@ export default function RootLayout({
       <body
         className={`${poppins.variable} ${lora.variable} antialiased gradient-bg overflow-x-hidden selection:bg-[#d97757] selection:text-white`}
       >
-        <MouseTrail />
-        <ThemeToggle />
+        <ClientShell />
         <main style={{ width: "100%", minWidth: "100vw", display: "block" }}>{children}</main>
-        <ChatWidget />
       </body>
     </html>
   );

@@ -6,17 +6,18 @@ import { siteConfig } from "@/lib/config/site";
 import { sections } from "@/lib/data/sections";
 import { aiContent, financeContent } from "@/lib/data/generated/content";
 import { scrollToSection } from "@/lib/scroll";
+import { useLowMotionMode } from "@/lib/useLowMotionMode";
 import Link from "next/link";
 import { ArrowRight, Mail, Linkedin, MessageCircle } from "lucide-react";
 
 /* Scroll-down arrow that links to the next section */
-function ScrollArrow({ targetId }: { targetId: string }) {
+function ScrollArrow({ targetId, lowMotion }: { targetId: string; lowMotion: boolean }) {
   return (
     <motion.button
       type="button"
       onClick={() => scrollToSection(targetId)}
-      animate={{ y: [0, 8, 0] }}
-      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+      animate={lowMotion ? undefined : { y: [0, 8, 0] }}
+      transition={lowMotion ? undefined : { duration: 2, repeat: Infinity, ease: "easeInOut" }}
       style={{
         display: "flex",
         flexDirection: "column",
@@ -44,10 +45,12 @@ function FullScreenSection({
   children,
   id,
   nextId,
+  lowMotion,
 }: {
   children: React.ReactNode;
   id?: string;
   nextId?: string;
+  lowMotion: boolean;
 }) {
   return (
     <section
@@ -66,24 +69,36 @@ function FullScreenSection({
       <div style={{ width: "100%", maxWidth: "800px", textAlign: "center" }}>
         {children}
       </div>
-      {nextId && <ScrollArrow targetId={nextId} />}
+      {nextId && <ScrollArrow targetId={nextId} lowMotion={lowMotion} />}
     </section>
   );
 }
 
 export default function Home() {
+  const lowMotion = useLowMotionMode();
+  const sectionTransition = lowMotion ? { duration: 0.35 } : { duration: 0.8 };
+  const sectionViewport = lowMotion ? { once: true, margin: "-20px" } : { once: true, margin: "-80px" };
+  const revealInitial = lowMotion ? { opacity: 0 } : { opacity: 0, y: 40 };
+  const revealWhileInView = lowMotion ? { opacity: 1 } : { opacity: 1, y: 0 };
+  const cardInitial = lowMotion ? { opacity: 0 } : { opacity: 0, y: 20 };
+  const cardWhileInView = lowMotion ? { opacity: 1 } : { opacity: 1, y: 0 };
+  const getCardTransition = (index: number) =>
+    lowMotion
+      ? { duration: 0.25, delay: index * 0.04 }
+      : { duration: 0.5, delay: index * 0.1 };
+
   return (
     <>
       {/* ===== HERO (already 100vh, has its own scroll arrow) ===== */}
       <Hero name={siteConfig.name} subtitle={siteConfig.subtitle} />
 
       {/* ===== ABOUT ===== */}
-      <FullScreenSection id="about" nextId="finance-articles">
+      <FullScreenSection id="about" nextId="finance-articles" lowMotion={lowMotion}>
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.8 }}
+          initial={revealInitial}
+          whileInView={revealWhileInView}
+          viewport={sectionViewport}
+          transition={sectionTransition}
         >
           <p
             style={{
@@ -134,7 +149,7 @@ export default function Home() {
               marginTop: "3rem",
             }}
           >
-            {sections.map((section, i) => {
+            {sections.map((section) => {
               const Icon = section.icon;
               return (
                 <Link key={section.id} href={section.href} style={{ textDecoration: "none" }}>
@@ -165,12 +180,12 @@ export default function Home() {
       </FullScreenSection>
 
       {/* ===== FINANCE ARTICLES PREVIEW ===== */}
-      <FullScreenSection id="finance-articles" nextId="ai-articles">
+      <FullScreenSection id="finance-articles" nextId="ai-articles" lowMotion={lowMotion}>
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.8 }}
+          initial={revealInitial}
+          whileInView={revealWhileInView}
+          viewport={sectionViewport}
+          transition={sectionTransition}
           style={{ marginBottom: "2rem" }}
         >
           <p
@@ -200,10 +215,10 @@ export default function Home() {
           {financeContent.slice(0, 2).map((article, index) => (
             <motion.div
               key={article.slug}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={cardInitial}
+              whileInView={cardWhileInView}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+              transition={getCardTransition(index)}
             >
               <Link href={article.href} style={{ textDecoration: "none" }}>
                 <motion.div
@@ -270,12 +285,12 @@ export default function Home() {
       </FullScreenSection>
 
       {/* ===== AI ARTICLES PREVIEW ===== */}
-      <FullScreenSection id="ai-articles" nextId="footer">
+      <FullScreenSection id="ai-articles" nextId="footer" lowMotion={lowMotion}>
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.8 }}
+          initial={revealInitial}
+          whileInView={revealWhileInView}
+          viewport={sectionViewport}
+          transition={sectionTransition}
           style={{ marginBottom: "2rem" }}
         >
           <p
@@ -305,10 +320,10 @@ export default function Home() {
           {aiContent.slice(0, 2).map((article, index) => (
             <motion.div
               key={article.slug}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={cardInitial}
+              whileInView={cardWhileInView}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+              transition={getCardTransition(index)}
             >
               <Link href={article.href} style={{ textDecoration: "none" }}>
                 <motion.div
