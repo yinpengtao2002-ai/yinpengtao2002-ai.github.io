@@ -333,6 +333,8 @@ export default function ChatWidget() {
         : "12px 16px";
     const inputWrapperPadding = compactMobileChat ? "8px 8px 8px 12px" : "10px 10px 10px 16px";
     const inputMaxHeight = compactMobileChat ? 72 : 100;
+    const inputFontSize = isMobileLike ? 16 : 14;
+    const inputLineHeight = isMobileLike ? "26px" : "24px";
 
     return (
         <>
@@ -522,8 +524,8 @@ export default function ChatWidget() {
                                         background: "transparent",
                                         border: "none",
                                         outline: "none",
-                                        fontSize: 14,
-                                        lineHeight: "24px",
+                                        fontSize: inputFontSize,
+                                        lineHeight: inputLineHeight,
                                         height: 24,
                                         maxHeight: inputMaxHeight,
                                         color: "var(--foreground)",
