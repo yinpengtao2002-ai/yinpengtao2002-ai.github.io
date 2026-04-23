@@ -32,6 +32,20 @@ interface Message {
     cardType?: "ai" | "finance";
 }
 
+const MOBILE_QUICK_PROMPTS = [
+    "有什么文章值得看？",
+    "Lucas 是谁？",
+    "推荐一篇财务建模文章",
+];
+
+function getGreetingMessage(isMobileLike: boolean) {
+    if (isMobileLike) {
+        return "你好，我是 Lucas 的 AI 助手。\n\n想了解文章、Lucas，或者本站内容，都可以直接问我。";
+    }
+
+    return "你好！我是 Lucas 的 AI 助手，搭载 Claude Opus 4.6 模型。\n\n你可以问我任何关于这个网站的问题，比如有什么文章、Lucas 是谁，或者随便聊聊也行。";
+}
+
 function MessageContent({ text }: { text: string }) {
     return (
         <ReactMarkdown
@@ -88,6 +102,45 @@ function TypingIndicator() {
                     animate={{ opacity: [0.3, 1, 0.3] }}
                     transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
                 />
+            ))}
+        </div>
+    );
+}
+
+function QuickPromptRow({
+    prompts,
+    onSelect,
+}: {
+    prompts: string[];
+    onSelect: (prompt: string) => void;
+}) {
+    return (
+        <div
+            style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 8,
+                marginTop: 14,
+            }}
+        >
+            {prompts.map((prompt) => (
+                <button
+                    key={prompt}
+                    onClick={() => onSelect(prompt)}
+                    type="button"
+                    style={{
+                        border: "1px solid var(--border)",
+                        background: "rgba(255,255,255,0.82)",
+                        color: "var(--foreground)",
+                        borderRadius: 999,
+                        padding: "8px 12px",
+                        fontSize: 13,
+                        lineHeight: 1.35,
+                        cursor: "pointer",
+                    }}
+                >
+                    {prompt}
+                </button>
             ))}
         </div>
     );
@@ -174,6 +227,14 @@ export default function ChatWidget() {
         date: item.date, category: item.category ?? undefined, href: item.href,
     }));
 
+    const currentViewportHeight =
+        viewportHeight ?? (typeof window !== "undefined" ? window.innerHeight : null);
+    const mobileSheetMode = isOpen && isMobileLike && !keyboardOpen;
+    const mobileFocusMode = isOpen && isMobileLike && keyboardOpen;
+    const mobileHorizontalInset = mobileFocusMode ? 8 : 14;
+    const mobileSheetHeight = currentViewportHeight ? Math.min(Math.max(currentViewportHeight * 0.6, 440), 580) : null;
+    const mobileFocusHeight = currentViewportHeight ? Math.max(currentViewportHeight - 20, 320) : null;
+
     const scrollToBottom = (behavior: ScrollBehavior = "auto") => {
         const container = messagesContainerRef.current;
         if (!container) return;
@@ -257,9 +318,10 @@ export default function ChatWidget() {
         } catch { return false; }
     };
 
-    const handleSend = async () => {
-        if (!inputValue.trim() || isProcessing) return;
-        const userMessage: Message = { id: `user-${Date.now()}`, role: "user", content: inputValue.trim() };
+    const sendMessage = async (content: string) => {
+        const trimmed = content.trim();
+        if (!trimmed || isProcessing) return;
+        const userMessage: Message = { id: `user-${Date.now()}`, role: "user", content: trimmed };
         const updatedMessages = [...messages, userMessage];
         setMessages(updatedMessages);
         setInputValue("");
@@ -286,6 +348,10 @@ export default function ChatWidget() {
         setIsProcessing(false);
     };
 
+    const handleSend = async () => {
+        await sendMessage(inputValue);
+    };
+
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
     };
@@ -304,7 +370,7 @@ export default function ChatWidget() {
             setMessages([{
                 id: "greeting",
                 role: "assistant",
-                content: "你好！我是 Lucas 的 AI 助手，搭载 Claude Opus 4.6 模型。\n\n你可以问我任何关于这个网站的问题，比如有什么文章、Lucas 是谁，或者随便聊聊也行。",
+                content: getGreetingMessage(isMobileLike),
             }]);
         }
         setIsOpen(true);
@@ -320,9 +386,9 @@ export default function ChatWidget() {
     };
 
     const compactMobileChat = isOpen && isMobileLike && keyboardOpen;
-    const headerPadding = compactMobileChat ? "10px 12px" : "14px 16px";
+    const headerPadding = compactMobileChat ? "10px 12px" : "14px 18px 12px";
     const headerFontSize = compactMobileChat ? 13 : 14;
-    const messagesPadding = compactMobileChat ? "10px 12px" : "16px";
+    const messagesPadding = compactMobileChat ? "10px 12px 8px" : isMobileLike ? "8px 18px 12px" : "16px";
     const messageGap = compactMobileChat ? 10 : 16;
     const bodyFontSize = compactMobileChat ? 13 : 14;
     const bodyLineHeight = compactMobileChat ? 1.55 : 1.7;
@@ -335,6 +401,28 @@ export default function ChatWidget() {
     const inputMaxHeight = compactMobileChat ? 72 : 100;
     const inputFontSize = isMobileLike ? 16 : 14;
     const inputLineHeight = isMobileLike ? "26px" : "24px";
+    const introState = isMobileLike && messages.length === 1 && messages[0]?.id === "greeting" && !isProcessing;
+    const panelStyle = isMobileLike
+        ? mobileFocusMode
+            ? {
+                top: viewportOffsetTop + 10,
+                left: mobileHorizontalInset,
+                right: mobileHorizontalInset,
+                bottom: "auto" as const,
+                width: "auto" as const,
+                height: mobileFocusHeight ? `${mobileFocusHeight}px` : "calc(100dvh - 20px)",
+                borderRadius: 24,
+            }
+            : {
+                left: mobileHorizontalInset,
+                right: mobileHorizontalInset,
+                bottom: "calc(env(safe-area-inset-bottom, 0px) + 14px)",
+                top: "auto" as const,
+                width: "auto" as const,
+                height: mobileSheetHeight ? `${mobileSheetHeight}px` : "60dvh",
+                borderRadius: 28,
+            }
+        : {};
 
     return (
         <>
@@ -378,184 +466,310 @@ export default function ChatWidget() {
             {/* Chat Panel */}
             <AnimatePresence>
                 {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                        transition={{ duration: 0.25 }}
-                        className="chat-panel"
-                        style={{
-                            position: "fixed",
-                            display: "flex",
-                            flexDirection: "column",
-                            overflow: "hidden",
-                            zIndex: 9999,
-                            background: "var(--background)",
-                            border: "1px solid var(--border)",
-                            boxShadow: "0 8px 40px rgba(0,0,0,0.12)",
-                            top: isMobileLike ? viewportOffsetTop : undefined,
-                            bottom: isMobileLike ? "auto" : undefined,
-                            height: isMobileLike ? (viewportHeight ? `${viewportHeight}px` : "100dvh") : undefined,
-                        }}
-                    >
-                        {/* Header */}
-                        <div style={{
-                            flexShrink: 0,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            padding: headerPadding,
-                            borderBottom: "1px solid var(--border)",
-                        }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <div style={{
-                                    width: 7, height: 7, borderRadius: "50%",
-                                    background: "#10B981",
-                                    boxShadow: "0 0 6px rgba(16,185,129,0.4)",
-                                }} />
-                                <span style={{ fontSize: headerFontSize, fontWeight: 600, color: "var(--foreground)" }}>
-                                    AI 助手
-                                </span>
-                            </div>
-                            <button
+                    <>
+                        {isMobileLike && (
+                            <motion.button
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: mobileFocusMode ? 0.08 : 0.18 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.22 }}
                                 onClick={() => {
                                     setKeyboardOpen(false);
                                     setIsOpen(false);
                                 }}
+                                type="button"
+                                aria-label="关闭 AI 助手"
                                 style={{
-                                    background: "none", border: "none",
-                                    color: "var(--muted)", cursor: "pointer",
-                                    padding: 4, display: "flex",
+                                    position: "fixed",
+                                    inset: 0,
+                                    zIndex: 9998,
+                                    border: "none",
+                                    background: "rgba(20,20,19,0.10)",
+                                    cursor: "pointer",
                                 }}
-                            >
-                                <X style={{ width: 18, height: 18 }} />
-                            </button>
-                        </div>
-
-                        {/* Messages */}
-                        <div
-                            ref={messagesContainerRef}
-                            style={{ flex: 1, overflowY: "auto", padding: messagesPadding, scrollPaddingBottom: compactMobileChat ? 20 : 32 }}
-                        >
-                            <AnimatePresence mode="popLayout">
-                                {messages.map((message) => (
-                                    <motion.div
-                                        key={message.id}
-                                        initial={{ opacity: 0, y: 8 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: 0.2 }}
-                                        style={{ marginBottom: messageGap }}
-                                    >
-                                        {message.role === "user" ? (
-                                            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                                                <div style={{
-                                                    background: "var(--accent)",
-                                                    color: "white",
-                                                    borderRadius: "16px 16px 4px 16px",
-                                                    padding: "8px 14px",
-                                                    maxWidth: "80%",
-                                                    fontSize: bodyFontSize,
-                                                    lineHeight: compactMobileChat ? 1.5 : 1.6,
-                                                    wordBreak: "break-word",
-                                                }}>
-                                                    {message.content}
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div>
-                                                {message.isTyping ? (
-                                                    <TypingIndicator />
-                                                ) : (
-                                                    <>
-                                                        <div style={{
-                                                            fontSize: bodyFontSize,
-                                                            lineHeight: bodyLineHeight,
-                                                            color: "var(--foreground)",
-                                                            wordBreak: "break-word",
-                                                            overflowWrap: "anywhere",
-                                                        }}>
-                                                            <MessageContent text={message.content} />
-                                                        </div>
-                                                        {message.contentCards && message.contentCards.length > 0 && message.cardType && (
-                                                            <ContentCardList
-                                                                cards={message.contentCards}
-                                                                cardType={message.cardType}
-                                                                onCardClick={(card) => { setIsOpen(false); router.push(card.href); }}
-                                                            />
-                                                        )}
-                                                    </>
-                                                )}
-                                            </div>
-                                        )}
-                                    </motion.div>
-                                ))}
-                            </AnimatePresence>
-                            <div ref={messagesEndRef} />
-                        </div>
-
-                        {/* Input */}
-                        <div style={{
-                            flexShrink: 0,
-                            borderTop: "1px solid var(--border)",
-                            padding: inputSectionPadding,
-                        }}>
-                            <div style={{
+                            />
+                        )}
+                        <motion.div
+                            initial={{ opacity: 0, y: isMobileLike ? 28 : 20, scale: 0.97 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 20, scale: 0.97 }}
+                            transition={{ duration: 0.25 }}
+                            className="chat-panel"
+                            style={{
+                                position: "fixed",
                                 display: "flex",
-                                alignItems: "flex-end",
-                                gap: 8,
-                                background: "var(--card)",
-                                border: "1px solid var(--border)",
-                                borderRadius: 12,
-                                padding: inputWrapperPadding,
-                            }}>
-                                <textarea
-                                    id="chat-input"
-                                    name="chat-input"
-                                    ref={inputRef}
-                                    value={inputValue}
-                                    onChange={handleInput}
-                                    onFocus={handleInputFocus}
-                                    onKeyDown={handleKeyDown}
-                                    placeholder="输入消息..."
-                                    rows={1}
-                                    disabled={isProcessing}
+                                flexDirection: "column",
+                                overflow: "hidden",
+                                overscrollBehavior: "contain",
+                                zIndex: 9999,
+                                background: isMobileLike ? "rgba(250, 249, 245, 0.96)" : "var(--background)",
+                                border: isMobileLike ? "1px solid rgba(232, 230, 220, 0.95)" : "1px solid var(--border)",
+                                boxShadow: isMobileLike
+                                    ? "0 24px 60px rgba(20,20,19,0.18)"
+                                    : "0 8px 40px rgba(0,0,0,0.12)",
+                                backdropFilter: isMobileLike ? "blur(18px)" : undefined,
+                                WebkitBackdropFilter: isMobileLike ? "blur(18px)" : undefined,
+                                ...panelStyle,
+                            }}
+                        >
+                            {isMobileLike && mobileSheetMode && (
+                                <div
                                     style={{
-                                        flex: 1,
-                                        background: "transparent",
-                                        border: "none",
-                                        outline: "none",
-                                        fontSize: inputFontSize,
-                                        lineHeight: inputLineHeight,
-                                        height: 24,
-                                        maxHeight: inputMaxHeight,
-                                        color: "var(--foreground)",
-                                        resize: "none",
-                                        fontFamily: "inherit",
-                                    }}
-                                />
-                                <button
-                                    onClick={handleSend}
-                                    disabled={!inputValue.trim() || isProcessing}
-                                    style={{
-                                        width: 30,
-                                        height: 30,
-                                        borderRadius: "50%",
-                                        border: "none",
                                         display: "flex",
-                                        alignItems: "center",
                                         justifyContent: "center",
-                                        background: inputValue.trim() && !isProcessing ? "var(--foreground)" : "var(--border)",
-                                        color: inputValue.trim() && !isProcessing ? "var(--background)" : "var(--muted)",
-                                        cursor: inputValue.trim() && !isProcessing ? "pointer" : "default",
-                                        transition: "all 0.2s",
+                                        paddingTop: 10,
                                         flexShrink: 0,
                                     }}
                                 >
-                                    <ArrowUp style={{ width: 14, height: 14 }} />
+                                    <div
+                                        style={{
+                                            width: 42,
+                                            height: 4,
+                                            borderRadius: 999,
+                                            background: "rgba(20,20,19,0.14)",
+                                        }}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Header */}
+                            <div
+                                style={{
+                                    flexShrink: 0,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    padding: headerPadding,
+                                    borderBottom: "1px solid var(--border)",
+                                }}
+                            >
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <div
+                                        style={{
+                                            width: 7,
+                                            height: 7,
+                                            borderRadius: "50%",
+                                            background: "#10B981",
+                                            boxShadow: "0 0 6px rgba(16,185,129,0.4)",
+                                        }}
+                                    />
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                                        <span
+                                            style={{
+                                                fontSize: headerFontSize,
+                                                fontWeight: 600,
+                                                color: "var(--foreground)",
+                                                lineHeight: 1.2,
+                                            }}
+                                        >
+                                            {isMobileLike ? "Lucas AI" : "AI 助手"}
+                                        </span>
+                                        {isMobileLike && !compactMobileChat && (
+                                            <span style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.1 }}>
+                                                站内文章与人物信息
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setKeyboardOpen(false);
+                                        setIsOpen(false);
+                                    }}
+                                    style={{
+                                        background: "none",
+                                        border: "none",
+                                        color: "var(--muted)",
+                                        cursor: "pointer",
+                                        padding: 4,
+                                        display: "flex",
+                                    }}
+                                >
+                                    <X style={{ width: 18, height: 18 }} />
                                 </button>
                             </div>
-                        </div>
-                    </motion.div>
+
+                            {/* Messages */}
+                            <div
+                                ref={messagesContainerRef}
+                                style={{
+                                    flex: 1,
+                                    minHeight: 0,
+                                    overflowY: "auto",
+                                    padding: messagesPadding,
+                                    scrollPaddingBottom: compactMobileChat ? 20 : 32,
+                                }}
+                            >
+                                <AnimatePresence mode="popLayout">
+                                    {messages.map((message) => (
+                                        <motion.div
+                                            key={message.id}
+                                            initial={{ opacity: 0, y: 8 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.2 }}
+                                            style={{ marginBottom: messageGap }}
+                                        >
+                                            {message.role === "user" ? (
+                                                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                                                    <div
+                                                        style={{
+                                                            background: "var(--accent)",
+                                                            color: "white",
+                                                            borderRadius: "16px 16px 4px 16px",
+                                                            padding: "8px 14px",
+                                                            maxWidth: "80%",
+                                                            fontSize: bodyFontSize,
+                                                            lineHeight: compactMobileChat ? 1.5 : 1.6,
+                                                            wordBreak: "break-word",
+                                                            overflowWrap: "anywhere",
+                                                        }}
+                                                    >
+                                                        {message.content}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    {message.isTyping ? (
+                                                        <TypingIndicator />
+                                                    ) : (
+                                                        <>
+                                                            <div
+                                                                style={message.id === "greeting" && isMobileLike ? {
+                                                                    fontSize: bodyFontSize,
+                                                                    lineHeight: 1.6,
+                                                                    color: "var(--foreground)",
+                                                                    wordBreak: "break-word",
+                                                                    overflowWrap: "anywhere",
+                                                                    background: "rgba(255,255,255,0.78)",
+                                                                    border: "1px solid rgba(232,230,220,0.95)",
+                                                                    borderRadius: 20,
+                                                                    padding: compactMobileChat ? "10px 12px" : "14px 16px",
+                                                                    boxShadow: "0 10px 24px rgba(20,20,19,0.05)",
+                                                                } : {
+                                                                    fontSize: bodyFontSize,
+                                                                    lineHeight: bodyLineHeight,
+                                                                    color: "var(--foreground)",
+                                                                    wordBreak: "break-word",
+                                                                    overflowWrap: "anywhere",
+                                                                }}
+                                                            >
+                                                                {message.id === "greeting" && isMobileLike && !compactMobileChat && (
+                                                                    <div
+                                                                        style={{
+                                                                            fontSize: 11,
+                                                                            letterSpacing: "0.08em",
+                                                                            textTransform: "uppercase",
+                                                                            color: "var(--muted)",
+                                                                            marginBottom: 8,
+                                                                        }}
+                                                                    >
+                                                                        Ask Lucas AI
+                                                                    </div>
+                                                                )}
+                                                                <MessageContent text={message.content} />
+                                                            </div>
+                                                            {message.id === "greeting" && introState && !compactMobileChat && (
+                                                                <QuickPromptRow
+                                                                    prompts={MOBILE_QUICK_PROMPTS}
+                                                                    onSelect={(prompt) => {
+                                                                        setInputValue(prompt);
+                                                                        setTimeout(() => {
+                                                                            void sendMessage(prompt);
+                                                                        }, 0);
+                                                                    }}
+                                                                />
+                                                            )}
+                                                            {message.contentCards && message.contentCards.length > 0 && message.cardType && (
+                                                                <ContentCardList
+                                                                    cards={message.contentCards}
+                                                                    cardType={message.cardType}
+                                                                    onCardClick={(card) => {
+                                                                        setIsOpen(false);
+                                                                        router.push(card.href);
+                                                                    }}
+                                                                />
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                                <div ref={messagesEndRef} />
+                            </div>
+
+                            {/* Input */}
+                            <div
+                                style={{
+                                    flexShrink: 0,
+                                    borderTop: "1px solid var(--border)",
+                                    padding: inputSectionPadding,
+                                    background: isMobileLike ? "rgba(250,249,245,0.9)" : "transparent",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "flex-end",
+                                        gap: 8,
+                                        background: "var(--card)",
+                                        border: "1px solid var(--border)",
+                                        borderRadius: isMobileLike ? 16 : 12,
+                                        padding: inputWrapperPadding,
+                                        boxShadow: isMobileLike ? "0 4px 14px rgba(20,20,19,0.04)" : "none",
+                                    }}
+                                >
+                                    <textarea
+                                        id="chat-input"
+                                        name="chat-input"
+                                        ref={inputRef}
+                                        value={inputValue}
+                                        onChange={handleInput}
+                                        onFocus={handleInputFocus}
+                                        onKeyDown={handleKeyDown}
+                                        placeholder={isMobileLike ? "问点什么..." : "输入消息..."}
+                                        rows={1}
+                                        disabled={isProcessing}
+                                        style={{
+                                            flex: 1,
+                                            minWidth: 0,
+                                            background: "transparent",
+                                            border: "none",
+                                            outline: "none",
+                                            fontSize: inputFontSize,
+                                            lineHeight: inputLineHeight,
+                                            height: 24,
+                                            maxHeight: inputMaxHeight,
+                                            color: "var(--foreground)",
+                                            resize: "none",
+                                            fontFamily: "inherit",
+                                        }}
+                                    />
+                                    <button
+                                        onClick={handleSend}
+                                        disabled={!inputValue.trim() || isProcessing}
+                                        style={{
+                                            width: 32,
+                                            height: 32,
+                                            borderRadius: "50%",
+                                            border: "none",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            background: inputValue.trim() && !isProcessing ? "var(--foreground)" : "var(--border)",
+                                            color: inputValue.trim() && !isProcessing ? "var(--background)" : "var(--muted)",
+                                            cursor: inputValue.trim() && !isProcessing ? "pointer" : "default",
+                                            transition: "all 0.2s",
+                                            flexShrink: 0,
+                                        }}
+                                    >
+                                        <ArrowUp style={{ width: 14, height: 14 }} />
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </>
                 )}
             </AnimatePresence>
         </>
