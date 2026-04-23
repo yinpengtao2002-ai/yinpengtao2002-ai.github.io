@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useDragControls, type PanInfo } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { MessageCircle, X, ArrowUp, ExternalLink } from "lucide-react";
 import Link from "next/link";
@@ -38,12 +38,8 @@ const MOBILE_QUICK_PROMPTS = [
     "推荐一篇财务建模文章",
 ];
 
-function getGreetingMessage(isMobileLike: boolean) {
-    if (isMobileLike) {
-        return "你好，我是 Lucas 的 AI 助手。\n\n想了解文章、Lucas，或者本站内容，都可以直接问我。";
-    }
-
-    return "你好！我是 Lucas 的 AI 助手，搭载 Claude Opus 4.6 模型。\n\n你可以问我任何关于这个网站的问题，比如有什么文章、Lucas 是谁，或者随便聊聊也行。";
+function getGreetingMessage() {
+    return "你好，我是 Lucas AI。\n\n想了解文章、Lucas，或者本站内容，都可以直接问我。";
 }
 
 function MessageContent({ text }: { text: string }) {
@@ -205,6 +201,7 @@ function recognizeIntent(input: string, aiContent: ContentCard[], financeContent
 export default function ChatWidget() {
     const router = useRouter();
     const { isMobileLike } = useViewportProfile();
+    const dragControls = useDragControls();
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState("");
@@ -370,7 +367,7 @@ export default function ChatWidget() {
             setMessages([{
                 id: "greeting",
                 role: "assistant",
-                content: getGreetingMessage(isMobileLike),
+                content: getGreetingMessage(),
             }]);
         }
         setIsOpen(true);
@@ -386,6 +383,7 @@ export default function ChatWidget() {
     };
 
     const compactMobileChat = isOpen && isMobileLike && keyboardOpen;
+    const canDragToClose = isMobileLike && mobileSheetMode;
     const headerPadding = compactMobileChat ? "10px 12px" : "14px 18px 12px";
     const headerFontSize = compactMobileChat ? 13 : 14;
     const messagesPadding = compactMobileChat ? "10px 12px 8px" : isMobileLike ? "8px 18px 12px" : "16px";
@@ -401,7 +399,7 @@ export default function ChatWidget() {
     const inputMaxHeight = compactMobileChat ? 72 : 100;
     const inputFontSize = isMobileLike ? 16 : 14;
     const inputLineHeight = isMobileLike ? "26px" : "24px";
-    const introState = isMobileLike && messages.length === 1 && messages[0]?.id === "greeting" && !isProcessing;
+    const introState = messages.length === 1 && messages[0]?.id === "greeting" && !isProcessing;
     const panelStyle = isMobileLike
         ? mobileFocusMode
             ? {
@@ -423,6 +421,17 @@ export default function ChatWidget() {
                 borderRadius: 28,
             }
         : {};
+    const handleClose = () => {
+        setKeyboardOpen(false);
+        setIsOpen(false);
+    };
+    const handlePanelDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+        if (!canDragToClose) return;
+
+        if (info.offset.y > 110 || info.velocity.y > 700) {
+            handleClose();
+        }
+    };
 
     return (
         <>
@@ -473,10 +482,7 @@ export default function ChatWidget() {
                                 animate={{ opacity: mobileFocusMode ? 0.08 : 0.18 }}
                                 exit={{ opacity: 0 }}
                                 transition={{ duration: 0.22 }}
-                                onClick={() => {
-                                    setKeyboardOpen(false);
-                                    setIsOpen(false);
-                                }}
+                                onClick={handleClose}
                                 type="button"
                                 aria-label="关闭 AI 助手"
                                 style={{
@@ -494,6 +500,13 @@ export default function ChatWidget() {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 20, scale: 0.97 }}
                             transition={{ duration: 0.25 }}
+                            drag={canDragToClose ? "y" : false}
+                            dragListener={false}
+                            dragControls={dragControls}
+                            dragConstraints={{ top: 0, bottom: 0 }}
+                            dragElastic={0.18}
+                            dragMomentum={false}
+                            onDragEnd={handlePanelDragEnd}
                             className="chat-panel"
                             style={{
                                 position: "fixed",
@@ -518,7 +531,13 @@ export default function ChatWidget() {
                                         display: "flex",
                                         justifyContent: "center",
                                         paddingTop: 10,
+                                        paddingBottom: 4,
                                         flexShrink: 0,
+                                        cursor: "grab",
+                                        touchAction: "none",
+                                    }}
+                                    onPointerDown={(event) => {
+                                        dragControls.start(event);
                                     }}
                                 >
                                     <div
@@ -562,9 +581,9 @@ export default function ChatWidget() {
                                                 lineHeight: 1.2,
                                             }}
                                         >
-                                            {isMobileLike ? "Lucas AI" : "AI 助手"}
+                                            Lucas AI
                                         </span>
-                                        {isMobileLike && !compactMobileChat && (
+                                        {!compactMobileChat && (
                                             <span style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.1 }}>
                                                 站内文章与人物信息
                                             </span>
@@ -572,10 +591,7 @@ export default function ChatWidget() {
                                     </div>
                                 </div>
                                 <button
-                                    onClick={() => {
-                                        setKeyboardOpen(false);
-                                        setIsOpen(false);
-                                    }}
+                                    onClick={handleClose}
                                     style={{
                                         background: "none",
                                         border: "none",
@@ -634,7 +650,7 @@ export default function ChatWidget() {
                                                     ) : (
                                                         <>
                                                             <div
-                                                                style={message.id === "greeting" && isMobileLike ? {
+                                                                style={message.id === "greeting" ? {
                                                                     fontSize: bodyFontSize,
                                                                     lineHeight: 1.6,
                                                                     color: "var(--foreground)",
@@ -643,7 +659,7 @@ export default function ChatWidget() {
                                                                     background: "rgba(255,255,255,0.78)",
                                                                     border: "1px solid rgba(232,230,220,0.95)",
                                                                     borderRadius: 20,
-                                                                    padding: compactMobileChat ? "10px 12px" : "14px 16px",
+                                                                    padding: compactMobileChat ? "10px 12px" : isMobileLike ? "14px 16px" : "16px 18px",
                                                                     boxShadow: "0 10px 24px rgba(20,20,19,0.05)",
                                                                 } : {
                                                                     fontSize: bodyFontSize,
@@ -653,7 +669,7 @@ export default function ChatWidget() {
                                                                     overflowWrap: "anywhere",
                                                                 }}
                                                             >
-                                                                {message.id === "greeting" && isMobileLike && !compactMobileChat && (
+                                                                {message.id === "greeting" && !compactMobileChat && (
                                                                     <div
                                                                         style={{
                                                                             fontSize: 11,
