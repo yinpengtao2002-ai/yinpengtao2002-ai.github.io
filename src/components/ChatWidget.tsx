@@ -160,6 +160,7 @@ export default function ChatWidget() {
     const [initialized, setInitialized] = useState(false);
     const [viewportHeight, setViewportHeight] = useState<number | null>(null);
     const [viewportOffsetTop, setViewportOffsetTop] = useState(0);
+    const [keyboardOpen, setKeyboardOpen] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -188,6 +189,8 @@ export default function ChatWidget() {
         const updateViewport = () => {
             setViewportHeight(viewport.height);
             setViewportOffsetTop(viewport.offsetTop);
+            const heightLoss = window.innerHeight - viewport.height - viewport.offsetTop;
+            setKeyboardOpen(heightLoss > 160);
         };
 
         updateViewport();
@@ -281,6 +284,7 @@ export default function ChatWidget() {
     };
 
     const handleOpen = () => {
+        setKeyboardOpen(false);
         if (!initialized) {
             setInitialized(true);
             setMessages([{
@@ -300,6 +304,21 @@ export default function ChatWidget() {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
         }, 180);
     };
+
+    const compactMobileChat = isOpen && isMobileLike && keyboardOpen;
+    const headerPadding = compactMobileChat ? "10px 12px" : "14px 16px";
+    const headerFontSize = compactMobileChat ? 13 : 14;
+    const messagesPadding = compactMobileChat ? "10px 12px" : "16px";
+    const messageGap = compactMobileChat ? 10 : 16;
+    const bodyFontSize = compactMobileChat ? 13 : 14;
+    const bodyLineHeight = compactMobileChat ? 1.55 : 1.7;
+    const inputSectionPadding = isMobileLike
+        ? compactMobileChat
+            ? "8px 12px calc(8px + env(safe-area-inset-bottom, 0px))"
+            : "12px 16px calc(12px + env(safe-area-inset-bottom, 0px))"
+        : "12px 16px";
+    const inputWrapperPadding = compactMobileChat ? "8px 8px 8px 12px" : "10px 10px 10px 16px";
+    const inputMaxHeight = compactMobileChat ? 72 : 100;
 
     return (
         <>
@@ -369,7 +388,7 @@ export default function ChatWidget() {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "space-between",
-                            padding: "14px 16px",
+                            padding: headerPadding,
                             borderBottom: "1px solid var(--border)",
                         }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -378,12 +397,15 @@ export default function ChatWidget() {
                                     background: "#10B981",
                                     boxShadow: "0 0 6px rgba(16,185,129,0.4)",
                                 }} />
-                                <span style={{ fontSize: 14, fontWeight: 600, color: "var(--foreground)" }}>
+                                <span style={{ fontSize: headerFontSize, fontWeight: 600, color: "var(--foreground)" }}>
                                     AI 助手
                                 </span>
                             </div>
                             <button
-                                onClick={() => setIsOpen(false)}
+                                onClick={() => {
+                                    setKeyboardOpen(false);
+                                    setIsOpen(false);
+                                }}
                                 style={{
                                     background: "none", border: "none",
                                     color: "var(--muted)", cursor: "pointer",
@@ -395,7 +417,7 @@ export default function ChatWidget() {
                         </div>
 
                         {/* Messages */}
-                        <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
+                        <div style={{ flex: 1, overflowY: "auto", padding: messagesPadding, scrollPaddingBottom: compactMobileChat ? 20 : 32 }}>
                             <AnimatePresence mode="popLayout">
                                 {messages.map((message) => (
                                     <motion.div
@@ -403,7 +425,7 @@ export default function ChatWidget() {
                                         initial={{ opacity: 0, y: 8 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.2 }}
-                                        style={{ marginBottom: 16 }}
+                                        style={{ marginBottom: messageGap }}
                                     >
                                         {message.role === "user" ? (
                                             <div style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -413,8 +435,8 @@ export default function ChatWidget() {
                                                     borderRadius: "16px 16px 4px 16px",
                                                     padding: "8px 14px",
                                                     maxWidth: "80%",
-                                                    fontSize: 14,
-                                                    lineHeight: 1.6,
+                                                    fontSize: bodyFontSize,
+                                                    lineHeight: compactMobileChat ? 1.5 : 1.6,
                                                     wordBreak: "break-word",
                                                 }}>
                                                     {message.content}
@@ -427,8 +449,8 @@ export default function ChatWidget() {
                                                 ) : (
                                                     <>
                                                         <div style={{
-                                                            fontSize: 14,
-                                                            lineHeight: 1.7,
+                                                            fontSize: bodyFontSize,
+                                                            lineHeight: bodyLineHeight,
                                                             color: "var(--foreground)",
                                                             wordBreak: "break-word",
                                                         }}>
@@ -455,9 +477,7 @@ export default function ChatWidget() {
                         <div style={{
                             flexShrink: 0,
                             borderTop: "1px solid var(--border)",
-                            padding: isMobileLike
-                                ? "12px 16px calc(12px + env(safe-area-inset-bottom, 0px))"
-                                : "12px 16px",
+                            padding: inputSectionPadding,
                         }}>
                             <div style={{
                                 display: "flex",
@@ -466,7 +486,7 @@ export default function ChatWidget() {
                                 background: "var(--card)",
                                 border: "1px solid var(--border)",
                                 borderRadius: 12,
-                                padding: "10px 10px 10px 16px",
+                                padding: inputWrapperPadding,
                             }}>
                                 <textarea
                                     id="chat-input"
@@ -487,7 +507,7 @@ export default function ChatWidget() {
                                         fontSize: 14,
                                         lineHeight: "24px",
                                         height: 24,
-                                        maxHeight: 100,
+                                        maxHeight: inputMaxHeight,
                                         color: "var(--foreground)",
                                         resize: "none",
                                         fontFamily: "inherit",
