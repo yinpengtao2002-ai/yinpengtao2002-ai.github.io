@@ -229,14 +229,14 @@ export default function ChatWidget() {
         viewportHeight ?? (typeof window !== "undefined" ? window.innerHeight : null);
     const mobileFullscreenMode = isOpen && isMobileLike && (mobileExpanded || keyboardOpen);
     const mobileSheetMode = isOpen && isMobileLike && !mobileFullscreenMode;
-    const mobileFullscreenTopInset = keyboardOpen ? 6 : 10;
-    const mobileHorizontalInset = mobileFullscreenMode ? (keyboardOpen ? 4 : 8) : 14;
+    const mobileFullscreenTopInset = keyboardOpen ? 0 : 10;
+    const mobileHorizontalInset = mobileFullscreenMode ? (keyboardOpen ? 0 : 8) : 14;
     const mobileSheetHeight = currentViewportHeight ? Math.min(Math.max(currentViewportHeight * 0.6, 440), 580) : null;
     const mobileFocusHeight = currentViewportHeight ? Math.max(currentViewportHeight - mobileFullscreenTopInset, 320) : null;
     const mobileBackdropBackground = keyboardOpen
-        ? "rgba(250,249,245,0.92)"
+        ? "rgba(20,20,19,0.22)"
         : mobileFullscreenMode
-            ? "rgba(20,20,19,0.08)"
+            ? "rgba(20,20,19,0.12)"
             : "rgba(20,20,19,0.18)";
 
     const scrollToBottom = (behavior: ScrollBehavior = "auto") => {
@@ -399,6 +399,8 @@ export default function ChatWidget() {
     const messageGap = compactMobileChat ? 10 : 16;
     const bodyFontSize = compactMobileChat ? 13 : 14;
     const bodyLineHeight = compactMobileChat ? 1.55 : 1.7;
+    const dragHandleHotzoneWidth = mobileFullscreenMode ? 260 : 300;
+    const dragHandleHotzoneHeight = mobileFullscreenMode ? 44 : 58;
     const inputSectionPadding = isMobileLike
         ? compactMobileChat
             ? "8px 12px calc(8px + env(safe-area-inset-bottom, 0px))"
@@ -418,7 +420,7 @@ export default function ChatWidget() {
                 bottom: "auto" as const,
                 width: "auto" as const,
                 height: mobileFocusHeight ? `${mobileFocusHeight}px` : `calc(100dvh - ${mobileFullscreenTopInset}px)`,
-                borderRadius: keyboardOpen ? 20 : 24,
+                borderRadius: keyboardOpen ? 0 : 24,
             }
             : {
                 left: mobileHorizontalInset,
@@ -541,15 +543,21 @@ export default function ChatWidget() {
                                 zIndex: 9999,
                                 background: isMobileLike
                                     ? keyboardOpen
-                                        ? "rgba(250, 249, 245, 0.995)"
+                                        ? "var(--background)"
                                         : "rgba(250, 249, 245, 0.96)"
                                     : "var(--background)",
-                                border: isMobileLike ? "1px solid rgba(232, 230, 220, 0.95)" : "1px solid var(--border)",
+                                border: isMobileLike
+                                    ? keyboardOpen
+                                        ? "none"
+                                        : "1px solid rgba(232, 230, 220, 0.95)"
+                                    : "1px solid var(--border)",
                                 boxShadow: isMobileLike
-                                    ? "0 24px 60px rgba(20,20,19,0.18)"
+                                    ? keyboardOpen
+                                        ? "none"
+                                        : "0 24px 60px rgba(20,20,19,0.18)"
                                     : "0 8px 40px rgba(0,0,0,0.12)",
-                                backdropFilter: isMobileLike ? "blur(18px)" : undefined,
-                                WebkitBackdropFilter: isMobileLike ? "blur(18px)" : undefined,
+                                backdropFilter: isMobileLike && !keyboardOpen ? "blur(18px)" : undefined,
+                                WebkitBackdropFilter: isMobileLike && !keyboardOpen ? "blur(18px)" : undefined,
                                 transition: isMobileLike
                                     ? "top 260ms cubic-bezier(0.22, 1, 0.36, 1), bottom 260ms cubic-bezier(0.22, 1, 0.36, 1), height 260ms cubic-bezier(0.22, 1, 0.36, 1), left 260ms cubic-bezier(0.22, 1, 0.36, 1), right 260ms cubic-bezier(0.22, 1, 0.36, 1), border-radius 260ms cubic-bezier(0.22, 1, 0.36, 1)"
                                     : undefined,
@@ -557,31 +565,46 @@ export default function ChatWidget() {
                             }}
                         >
                             {isMobileLike && (
-                                <div
-                                    style={{
-                                        display: "flex",
-                                        justifyContent: "center",
-                                        alignItems: "center",
-                                        minHeight: mobileFullscreenMode ? 26 : 34,
-                                        paddingTop: mobileFullscreenMode ? 8 : 10,
-                                        paddingBottom: mobileFullscreenMode ? 6 : 8,
-                                        flexShrink: 0,
-                                        cursor: "grab",
-                                        touchAction: "none",
-                                    }}
-                                    onPointerDown={(event) => {
-                                        dragControls.start(event);
-                                    }}
-                                >
+                                <>
                                     <div
                                         style={{
-                                            width: 42,
-                                            height: 4,
-                                            borderRadius: 999,
-                                            background: "rgba(20,20,19,0.14)",
+                                            position: "absolute",
+                                            top: 0,
+                                            left: "50%",
+                                            transform: "translateX(-50%)",
+                                            width: dragHandleHotzoneWidth,
+                                            maxWidth: "100%",
+                                            height: dragHandleHotzoneHeight,
+                                            zIndex: 2,
+                                            cursor: "grab",
+                                            touchAction: "none",
+                                        }}
+                                        onPointerDown={(event) => {
+                                            dragControls.start(event);
                                         }}
                                     />
-                                </div>
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                            minHeight: mobileFullscreenMode ? 26 : 34,
+                                            paddingTop: mobileFullscreenMode ? 8 : 10,
+                                            paddingBottom: mobileFullscreenMode ? 6 : 8,
+                                            flexShrink: 0,
+                                            pointerEvents: "none",
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                width: 42,
+                                                height: 4,
+                                                borderRadius: 999,
+                                                background: "rgba(20,20,19,0.14)",
+                                            }}
+                                        />
+                                    </div>
+                                </>
                             )}
 
                             {/* Header */}
@@ -754,7 +777,11 @@ export default function ChatWidget() {
                                     flexShrink: 0,
                                     borderTop: "1px solid var(--border)",
                                     padding: inputSectionPadding,
-                                    background: isMobileLike ? "rgba(250,249,245,0.9)" : "transparent",
+                                    background: isMobileLike
+                                        ? keyboardOpen
+                                            ? "var(--background)"
+                                            : "rgba(250,249,245,0.9)"
+                                        : "transparent",
                                 }}
                             >
                                 <div
