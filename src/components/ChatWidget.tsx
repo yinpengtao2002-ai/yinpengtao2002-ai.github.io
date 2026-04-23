@@ -161,6 +161,7 @@ export default function ChatWidget() {
     const [viewportHeight, setViewportHeight] = useState<number | null>(null);
     const [viewportOffsetTop, setViewportOffsetTop] = useState(0);
     const [keyboardOpen, setKeyboardOpen] = useState(false);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -173,8 +174,21 @@ export default function ChatWidget() {
         date: item.date, category: item.category ?? undefined, href: item.href,
     }));
 
-    const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    useEffect(() => { scrollToBottom(); }, [messages]);
+    const scrollToBottom = (behavior: ScrollBehavior = "auto") => {
+        const container = messagesContainerRef.current;
+        if (!container) return;
+
+        if (behavior === "smooth") {
+            container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+            return;
+        }
+
+        container.scrollTop = container.scrollHeight;
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
 
     useEffect(() => {
         if (isOpen && !isMobileLike) inputRef.current?.focus();
@@ -301,7 +315,7 @@ export default function ChatWidget() {
 
         setTimeout(() => {
             inputRef.current?.scrollIntoView({ block: "nearest" });
-            messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+            scrollToBottom("smooth");
         }, 180);
     };
 
@@ -417,7 +431,10 @@ export default function ChatWidget() {
                         </div>
 
                         {/* Messages */}
-                        <div style={{ flex: 1, overflowY: "auto", padding: messagesPadding, scrollPaddingBottom: compactMobileChat ? 20 : 32 }}>
+                        <div
+                            ref={messagesContainerRef}
+                            style={{ flex: 1, overflowY: "auto", padding: messagesPadding, scrollPaddingBottom: compactMobileChat ? 20 : 32 }}
+                        >
                             <AnimatePresence mode="popLayout">
                                 {messages.map((message) => (
                                     <motion.div
@@ -453,6 +470,7 @@ export default function ChatWidget() {
                                                             lineHeight: bodyLineHeight,
                                                             color: "var(--foreground)",
                                                             wordBreak: "break-word",
+                                                            overflowWrap: "anywhere",
                                                         }}>
                                                             <MessageContent text={message.content} />
                                                         </div>
