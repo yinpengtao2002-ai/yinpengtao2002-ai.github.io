@@ -227,13 +227,19 @@ export default function ChatWidget() {
 
     const currentViewportHeight =
         viewportHeight ?? (typeof window !== "undefined" ? window.innerHeight : null);
-    const mobileFullscreenMode = isOpen && isMobileLike && (mobileExpanded || keyboardOpen);
-    const mobileSheetMode = isOpen && isMobileLike && !mobileFullscreenMode;
-    const mobileFullscreenTopInset = keyboardOpen ? 0 : 10;
-    const mobileHorizontalInset = mobileFullscreenMode ? (keyboardOpen ? 0 : 8) : 14;
+    const mobileFullscreenMode = isOpen && isMobileLike && mobileExpanded;
+    const mobileKeyboardMode = isOpen && isMobileLike && keyboardOpen && !mobileExpanded;
+    const mobileSheetMode = isOpen && isMobileLike && !mobileExpanded && !keyboardOpen;
+    const mobileFullscreenTopInset = mobileFullscreenMode && keyboardOpen ? 0 : 10;
+    const mobileHorizontalInset = mobileFullscreenMode
+        ? (keyboardOpen ? 0 : 8)
+        : mobileKeyboardMode
+            ? 10
+            : 14;
     const mobileSheetHeight = currentViewportHeight ? Math.min(Math.max(currentViewportHeight * 0.6, 440), 580) : null;
     const mobileFocusHeight = currentViewportHeight ? Math.max(currentViewportHeight - mobileFullscreenTopInset, 320) : null;
-    const mobileBackdropBackground = keyboardOpen
+    const mobileKeyboardHeight = currentViewportHeight ? Math.max(currentViewportHeight - 18, 320) : null;
+    const mobileBackdropBackground = mobileKeyboardMode
         ? "rgba(20,20,19,0.22)"
         : mobileFullscreenMode
             ? "rgba(20,20,19,0.12)"
@@ -384,7 +390,6 @@ export default function ChatWidget() {
     const handleInputFocus = () => {
         if (!isMobileLike) return;
 
-        setMobileExpanded(true);
         setTimeout(() => {
             inputRef.current?.scrollIntoView({ block: "nearest" });
             scrollToBottom("smooth");
@@ -422,6 +427,16 @@ export default function ChatWidget() {
                 height: mobileFocusHeight ? `${mobileFocusHeight}px` : `calc(100dvh - ${mobileFullscreenTopInset}px)`,
                 borderRadius: keyboardOpen ? 0 : 24,
             }
+            : mobileKeyboardMode
+                ? {
+                    top: viewportOffsetTop + 10,
+                    left: mobileHorizontalInset,
+                    right: mobileHorizontalInset,
+                    bottom: "auto" as const,
+                    width: "auto" as const,
+                    height: mobileKeyboardHeight ? `${mobileKeyboardHeight}px` : "calc(100dvh - 20px)",
+                    borderRadius: 28,
+                }
             : {
                 left: mobileHorizontalInset,
                 right: mobileHorizontalInset,
@@ -449,6 +464,12 @@ export default function ChatWidget() {
             if (info.offset.y < -90 || info.velocity.y < -700) {
                 setMobileExpanded(true);
             }
+            return;
+        }
+
+        if (mobileKeyboardMode && (info.offset.y > 110 || info.velocity.y > 700)) {
+            inputRef.current?.blur();
+            setKeyboardOpen(false);
             return;
         }
 
@@ -542,22 +563,22 @@ export default function ChatWidget() {
                                 overscrollBehavior: "contain",
                                 zIndex: 9999,
                                 background: isMobileLike
-                                    ? keyboardOpen
+                                    ? mobileFullscreenMode && keyboardOpen
                                         ? "var(--background)"
                                         : "rgba(250, 249, 245, 0.96)"
                                     : "var(--background)",
                                 border: isMobileLike
-                                    ? keyboardOpen
+                                    ? mobileFullscreenMode && keyboardOpen
                                         ? "none"
                                         : "1px solid rgba(232, 230, 220, 0.95)"
                                     : "1px solid var(--border)",
                                 boxShadow: isMobileLike
-                                    ? keyboardOpen
+                                    ? mobileFullscreenMode && keyboardOpen
                                         ? "none"
                                         : "0 24px 60px rgba(20,20,19,0.18)"
                                     : "0 8px 40px rgba(0,0,0,0.12)",
-                                backdropFilter: isMobileLike && !keyboardOpen ? "blur(18px)" : undefined,
-                                WebkitBackdropFilter: isMobileLike && !keyboardOpen ? "blur(18px)" : undefined,
+                                backdropFilter: isMobileLike && !(mobileFullscreenMode && keyboardOpen) ? "blur(18px)" : undefined,
+                                WebkitBackdropFilter: isMobileLike && !(mobileFullscreenMode && keyboardOpen) ? "blur(18px)" : undefined,
                                 transition: isMobileLike
                                     ? "top 260ms cubic-bezier(0.22, 1, 0.36, 1), bottom 260ms cubic-bezier(0.22, 1, 0.36, 1), height 260ms cubic-bezier(0.22, 1, 0.36, 1), left 260ms cubic-bezier(0.22, 1, 0.36, 1), right 260ms cubic-bezier(0.22, 1, 0.36, 1), border-radius 260ms cubic-bezier(0.22, 1, 0.36, 1)"
                                     : undefined,
@@ -778,7 +799,7 @@ export default function ChatWidget() {
                                     borderTop: "1px solid var(--border)",
                                     padding: inputSectionPadding,
                                     background: isMobileLike
-                                        ? keyboardOpen
+                                        ? mobileFullscreenMode && keyboardOpen
                                             ? "var(--background)"
                                             : "rgba(250,249,245,0.9)"
                                         : "transparent",
