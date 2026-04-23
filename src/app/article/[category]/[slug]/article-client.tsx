@@ -9,7 +9,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import mermaid from "mermaid";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { ContentItem } from "@/lib/data/generated/content";
 
 function MermaidChart({ chart }: { chart: string }) {
@@ -61,30 +61,26 @@ export default function ArticleClient({ article, category }: ArticleClientProps)
     const router = useRouter();
 
     useLayoutEffect(() => {
+        const previousScrollRestoration =
+            "scrollRestoration" in window.history ? window.history.scrollRestoration : undefined;
+
         if ("scrollRestoration" in window.history) {
             window.history.scrollRestoration = "manual";
         }
-        window.scrollTo(0, 0);
-    }, []);
 
-    useEffect(() => {
-        window.scrollTo(0, 0);
-        const timers = [50, 100, 200, 400].map(ms =>
-            setTimeout(() => window.scrollTo(0, 0), ms)
-        );
-        const onScroll = () => {
-            window.scrollTo(0, 0);
-        };
-        window.addEventListener("scroll", onScroll);
-        const cleanup = setTimeout(() => {
-            window.removeEventListener("scroll", onScroll);
-        }, 500);
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        const raf = window.requestAnimationFrame(() => {
+            window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        });
+
         return () => {
-            timers.forEach(clearTimeout);
-            clearTimeout(cleanup);
-            window.removeEventListener("scroll", onScroll);
+            window.cancelAnimationFrame(raf);
+
+            if (previousScrollRestoration) {
+                window.history.scrollRestoration = previousScrollRestoration;
+            }
         };
-    }, []);
+    }, [article.slug]);
 
     const handleBack = () => {
         if (typeof window !== "undefined" && window.history.length > 1) {
