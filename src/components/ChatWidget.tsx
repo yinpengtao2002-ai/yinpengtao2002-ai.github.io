@@ -229,9 +229,15 @@ export default function ChatWidget() {
         viewportHeight ?? (typeof window !== "undefined" ? window.innerHeight : null);
     const mobileFullscreenMode = isOpen && isMobileLike && (mobileExpanded || keyboardOpen);
     const mobileSheetMode = isOpen && isMobileLike && !mobileFullscreenMode;
-    const mobileHorizontalInset = mobileFullscreenMode ? 8 : 14;
+    const mobileFullscreenTopInset = keyboardOpen ? 6 : 10;
+    const mobileHorizontalInset = mobileFullscreenMode ? (keyboardOpen ? 4 : 8) : 14;
     const mobileSheetHeight = currentViewportHeight ? Math.min(Math.max(currentViewportHeight * 0.6, 440), 580) : null;
-    const mobileFocusHeight = currentViewportHeight ? Math.max(currentViewportHeight - 20, 320) : null;
+    const mobileFocusHeight = currentViewportHeight ? Math.max(currentViewportHeight - mobileFullscreenTopInset, 320) : null;
+    const mobileBackdropBackground = keyboardOpen
+        ? "rgba(250,249,245,0.92)"
+        : mobileFullscreenMode
+            ? "rgba(20,20,19,0.08)"
+            : "rgba(20,20,19,0.18)";
 
     const scrollToBottom = (behavior: ScrollBehavior = "auto") => {
         const container = messagesContainerRef.current;
@@ -406,13 +412,13 @@ export default function ChatWidget() {
     const panelStyle = isMobileLike
         ? mobileFullscreenMode
             ? {
-                top: viewportOffsetTop + 10,
+                top: viewportOffsetTop + mobileFullscreenTopInset,
                 left: mobileHorizontalInset,
                 right: mobileHorizontalInset,
                 bottom: "auto" as const,
                 width: "auto" as const,
-                height: mobileFocusHeight ? `${mobileFocusHeight}px` : "calc(100dvh - 20px)",
-                borderRadius: 24,
+                height: mobileFocusHeight ? `${mobileFocusHeight}px` : `calc(100dvh - ${mobileFullscreenTopInset}px)`,
+                borderRadius: keyboardOpen ? 20 : 24,
             }
             : {
                 left: mobileHorizontalInset,
@@ -497,7 +503,7 @@ export default function ChatWidget() {
                         {isMobileLike && (
                             <motion.button
                                 initial={{ opacity: 0 }}
-                                animate={{ opacity: mobileFullscreenMode ? 0.08 : 0.18 }}
+                                animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
                                 transition={{ duration: 0.22 }}
                                 onClick={handleClose}
@@ -508,7 +514,7 @@ export default function ChatWidget() {
                                     inset: 0,
                                     zIndex: 9998,
                                     border: "none",
-                                    background: "rgba(20,20,19,0.10)",
+                                    background: mobileBackdropBackground,
                                     cursor: "pointer",
                                 }}
                             />
@@ -533,7 +539,11 @@ export default function ChatWidget() {
                                 overflow: "hidden",
                                 overscrollBehavior: "contain",
                                 zIndex: 9999,
-                                background: isMobileLike ? "rgba(250, 249, 245, 0.96)" : "var(--background)",
+                                background: isMobileLike
+                                    ? keyboardOpen
+                                        ? "rgba(250, 249, 245, 0.995)"
+                                        : "rgba(250, 249, 245, 0.96)"
+                                    : "var(--background)",
                                 border: isMobileLike ? "1px solid rgba(232, 230, 220, 0.95)" : "1px solid var(--border)",
                                 boxShadow: isMobileLike
                                     ? "0 24px 60px rgba(20,20,19,0.18)"
@@ -551,8 +561,10 @@ export default function ChatWidget() {
                                     style={{
                                         display: "flex",
                                         justifyContent: "center",
-                                        paddingTop: mobileFullscreenMode ? 12 : 10,
-                                        paddingBottom: 4,
+                                        alignItems: "center",
+                                        minHeight: mobileFullscreenMode ? 26 : 34,
+                                        paddingTop: mobileFullscreenMode ? 8 : 10,
+                                        paddingBottom: mobileFullscreenMode ? 6 : 8,
                                         flexShrink: 0,
                                         cursor: "grab",
                                         touchAction: "none",
