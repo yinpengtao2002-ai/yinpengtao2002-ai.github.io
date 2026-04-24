@@ -11,7 +11,7 @@ import Link from "next/link";
 import { ArrowRight, Mail, Linkedin, MessageCircle } from "lucide-react";
 
 const HOME_UI_FONT =
-  'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
+  '"Anthropic Sans", var(--font-poppins), "IBM Plex Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
 
 /* Scroll-down arrow that links to the next section */
 function ScrollArrow({ targetId, lowMotion }: { targetId: string; lowMotion: boolean }) {

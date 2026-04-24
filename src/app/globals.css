@@ -33,8 +33,8 @@
   --color-muted: var(--muted);
   --color-card: var(--card);
   --color-border: var(--border);
-  --font-sans: var(--font-poppins);
-  --font-serif: var(--font-lora);
+  --font-sans: "Anthropic Sans", var(--font-poppins);
+  --font-serif: "Anthropic Serif", var(--font-lora);
 }
 
 * {
@@ -52,7 +52,7 @@ body {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Lora', Georgia, serif;
+  font-family: "Anthropic Serif", var(--font-lora), "Source Serif 4", "Songti SC", "Noto Serif CJK SC", Georgia, serif;
   min-height: 100vh;
 }
 
@@ -63,7 +63,7 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: 'Poppins', Arial, sans-serif;
+  font-family: "Anthropic Sans", var(--font-poppins), "IBM Plex Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
 }
 
 /* Gradient text effect - Anthropic palette */
@@ -236,7 +236,7 @@ h6 {
 /* Semantic text styles */
 .text-title {
   color: var(--foreground);
-  font-family: 'Poppins', Arial, sans-serif;
+  font-family: "Anthropic Sans", var(--font-poppins), "IBM Plex Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
   font-weight: 700;
 }
 
@@ -247,7 +247,7 @@ h6 {
 
 .text-body {
   color: var(--foreground);
-  font-family: 'Lora', Georgia, serif;
+  font-family: "Anthropic Serif", var(--font-lora), "Source Serif 4", "Songti SC", "Noto Serif CJK SC", Georgia, serif;
 }
 
 .text-caption {
