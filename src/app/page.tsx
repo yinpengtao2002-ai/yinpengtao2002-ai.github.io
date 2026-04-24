@@ -10,6 +10,9 @@ import { useViewportProfile } from "@/lib/useLowMotionMode";
 import Link from "next/link";
 import { ArrowRight, Mail, Linkedin, MessageCircle } from "lucide-react";
 
+const HOME_UI_FONT =
+  'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
+
 /* Scroll-down arrow that links to the next section */
 function ScrollArrow({ targetId, lowMotion }: { targetId: string; lowMotion: boolean }) {
   return (
@@ -29,6 +32,7 @@ function ScrollArrow({ targetId, lowMotion }: { targetId: string; lowMotion: boo
         background: "transparent",
         border: "none",
         padding: 0,
+        fontFamily: HOME_UI_FONT,
       }}
       aria-label={`滚动到 ${targetId} 区域`}
     >
@@ -142,6 +146,7 @@ export default function Home() {
               letterSpacing: "0.4em",
               color: "var(--accent)",
               marginBottom: "1.5rem",
+              fontFamily: HOME_UI_FONT,
             }}
           >
             About
@@ -198,6 +203,7 @@ export default function Home() {
                       background: "var(--card)",
                       cursor: "pointer",
                       transition: "all 0.3s ease",
+                      fontFamily: HOME_UI_FONT,
                     }}
                   >
                     <Icon style={{ width: 16, height: 16, color: "var(--accent)" }} />
@@ -228,6 +234,7 @@ export default function Home() {
               letterSpacing: "0.4em",
               color: "var(--accent-secondary)",
               marginBottom: "1.5rem",
+              fontFamily: HOME_UI_FONT,
             }}
           >
             Financial Modeling
@@ -264,6 +271,7 @@ export default function Home() {
                     textAlign: "center",
                     transition: "all 0.3s ease",
                     cursor: "pointer",
+                    fontFamily: HOME_UI_FONT,
                   }}
                 >
                   <h3
@@ -288,7 +296,7 @@ export default function Home() {
           ))}
 
           {financeContent.length === 0 && (
-            <p style={{ padding: "3rem 0", color: "var(--muted)" }}>文章正在路上...</p>
+            <p style={{ padding: "3rem 0", color: "var(--muted)", fontFamily: HOME_UI_FONT }}>文章正在路上...</p>
           )}
 
           {financeContent.length > 0 && (
@@ -301,13 +309,14 @@ export default function Home() {
                 gap: "0.5rem",
                 padding: "0.75rem 1.5rem",
                 marginTop: "1rem",
-                color: "var(--accent-secondary)",
-                textDecoration: "none",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                borderRadius: "9999px",
-                border: "1px solid var(--border)",
-                transition: "all 0.3s ease",
+              color: "var(--accent-secondary)",
+              textDecoration: "none",
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              fontFamily: HOME_UI_FONT,
+              borderRadius: "9999px",
+              border: "1px solid var(--border)",
+              transition: "all 0.3s ease",
               }}
             >
               查看全部 {financeContent.length} 篇
@@ -333,6 +342,7 @@ export default function Home() {
               letterSpacing: "0.4em",
               color: "var(--accent)",
               marginBottom: "1.5rem",
+              fontFamily: HOME_UI_FONT,
             }}
           >
             AI Insights
@@ -369,6 +379,7 @@ export default function Home() {
                     textAlign: "center",
                     transition: "all 0.3s ease",
                     cursor: "pointer",
+                    fontFamily: HOME_UI_FONT,
                   }}
                 >
                   <h3
@@ -393,7 +404,7 @@ export default function Home() {
           ))}
 
           {aiContent.length === 0 && (
-            <p style={{ padding: "3rem 0", color: "var(--muted)" }}>文章正在路上... 敬请期待</p>
+            <p style={{ padding: "3rem 0", color: "var(--muted)", fontFamily: HOME_UI_FONT }}>文章正在路上... 敬请期待</p>
           )}
 
           {aiContent.length > 0 && (
@@ -406,13 +417,14 @@ export default function Home() {
                 gap: "0.5rem",
                 padding: "0.75rem 1.5rem",
                 marginTop: "1rem",
-                color: "var(--accent)",
-                textDecoration: "none",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                borderRadius: "9999px",
-                border: "1px solid var(--border)",
-                transition: "all 0.3s ease",
+              color: "var(--accent)",
+              textDecoration: "none",
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              fontFamily: HOME_UI_FONT,
+              borderRadius: "9999px",
+              border: "1px solid var(--border)",
+              transition: "all 0.3s ease",
               }}
             >
               查看全部 {aiContent.length} 篇
@@ -441,15 +453,15 @@ export default function Home() {
           }}
         >
           <div>
-            <p style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--foreground)" }}>
+            <p style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--foreground)", fontFamily: HOME_UI_FONT }}>
               {siteConfig.name}
             </p>
-            <p style={{ fontSize: "0.875rem", color: "var(--muted)", marginTop: "0.25rem" }}>
+            <p style={{ fontSize: "0.875rem", color: "var(--muted)", marginTop: "0.25rem", fontFamily: HOME_UI_FONT }}>
               {siteConfig.author.chineseName} &middot; {siteConfig.author.pinyinName}
             </p>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem", fontFamily: HOME_UI_FONT }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <Mail style={{ width: 16, height: 16, color: "var(--muted)" }} />
               <a
@@ -486,7 +498,7 @@ export default function Home() {
             </div>
           </div>
 
-          <p style={{ fontSize: "0.75rem", color: "var(--muted)", opacity: 0.5 }}>
+          <p style={{ fontSize: "0.75rem", color: "var(--muted)", opacity: 0.5, fontFamily: HOME_UI_FONT }}>
             &copy; {new Date().getFullYear()} {siteConfig.name}
           </p>
         </div>

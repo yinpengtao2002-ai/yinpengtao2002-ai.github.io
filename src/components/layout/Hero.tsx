@@ -102,8 +102,8 @@ export default function Hero({
                                 thoughts={["Thinking...", "Initializing Personality...", "Designing Portfolio..."]}
                                 reducedMotion={lowMotion}
                                 className={isMobileLike
-                                    ? "text-base font-light tracking-[0.14em] uppercase"
-                                    : "text-xl sm:text-2xl md:text-3xl font-light tracking-[0.3em] uppercase"}
+                                    ? "font-sans text-base font-light tracking-[0.14em] uppercase"
+                                    : "font-sans text-xl sm:text-2xl md:text-3xl font-light tracking-[0.3em] uppercase"}
                             />
 
                             {/* Welcome Message */}
@@ -117,8 +117,8 @@ export default function Hero({
                                     thoughts={["Loading content...", "Preparing welcome message..."]}
                                     reducedMotion={lowMotion}
                                     className={isMobileLike
-                                        ? "text-sm font-light tracking-[0.1em] text-[#d97757]"
-                                        : "text-lg sm:text-xl font-light tracking-[0.2em] text-[#d97757]"}
+                                        ? "font-sans text-sm font-light tracking-[0.1em] text-[#d97757]"
+                                        : "font-sans text-lg sm:text-xl font-light tracking-[0.2em] text-[#d97757]"}
                                 />
                             </motion.div>
                         </motion.div>
@@ -137,7 +137,7 @@ export default function Hero({
                         onClick={() => scrollToSection("about")}
                         animate={lowMotion ? undefined : { y: [0, 8, 0] }}
                         transition={lowMotion ? undefined : { duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        className="flex flex-col items-center gap-2 text-muted hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
+                        className="font-sans flex flex-col items-center gap-2 text-muted hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
                         aria-label="滚动到 About 区域"
                     >
                         <span className="text-xs tracking-[0.2em]">向下滑动 探索更多</span>
