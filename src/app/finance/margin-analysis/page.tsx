@@ -1,70 +1,51 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Link from "next/link";
-import { ArrowLeft, ExternalLink, Maximize2, Minimize2 } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function MarginAnalysisPage() {
+    const router = useRouter();
     const toolUrl = "/tools/margin-analysis/index.html";
-    const [showControls, setShowControls] = useState(true);
+
+    const handleBack = () => {
+        if (typeof window !== "undefined" && window.history.length > 1) {
+            router.back();
+            return;
+        }
+
+        router.push("/finance");
+    };
 
     return (
         <div className="fixed inset-0 bg-[#faf9f5] overflow-hidden">
-            {/* Floating Controls - shows on hover or when visible */}
             <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: showControls ? 1 : 0 }}
-                className="fixed top-4 right-4 z-50 flex items-center gap-2 pointer-events-none"
-                onMouseEnter={() => setShowControls(true)}
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.22 }}
+                className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-full border border-[#e8e6dc]/90 bg-[#faf9f5]/88 px-2 py-2 shadow-[0_10px_30px_rgba(20,20,19,0.08)] backdrop-blur-md"
             >
-                <div className="pointer-events-auto">
-                    <Link
-                        href="/"
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full 
-                             bg-white/90 backdrop-blur-md border border-[#e8e6dc]
-                             text-[#141413]/70 hover:text-[#141413] hover:bg-white
-                             shadow-sm hover:shadow-md transition-all"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        <span className="text-sm">返回</span>
-                    </Link>
-                </div>
-
-                <div className="pointer-events-auto flex items-center gap-2">
-                    {/* Toggle visibility button */}
-                    <button
-                        onClick={() => setShowControls(!showControls)}
-                        className="p-2 rounded-full bg-white/90 backdrop-blur-md border border-[#e8e6dc] 
-                             text-[#141413]/70 hover:text-[#141413] hover:bg-white 
-                             shadow-sm hover:shadow-md transition-all"
-                        title={showControls ? "隐藏控制栏" : "显示控制栏"}
-                    >
-                        {showControls ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-                    </button>
-
-                    {/* Open in new tab */}
-                    <a
-                        href={toolUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 rounded-full bg-white/90 backdrop-blur-md border border-[#e8e6dc] 
-                             text-[#141413]/70 hover:text-[#141413] hover:bg-white 
-                             shadow-sm hover:shadow-md transition-all"
-                        title="新窗口打开"
-                    >
-                        <ExternalLink className="w-4 h-4" />
-                    </a>
-                </div>
+                <button
+                    type="button"
+                    onClick={handleBack}
+                    className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium text-[#141413]/70 transition-colors hover:bg-white/80 hover:text-[#141413]"
+                    aria-label="返回上一页"
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                    <span>返回</span>
+                </button>
+                <span className="h-5 w-px bg-[#e8e6dc]" />
+                <a
+                    href={toolUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full text-[#141413]/60 transition-colors hover:bg-white/80 hover:text-[#141413]"
+                    title="新窗口打开"
+                    aria-label="新窗口打开单车边际分析工具"
+                >
+                    <ExternalLink className="h-4 w-4" />
+                </a>
             </motion.div>
-
-            {/* Hover zone to show controls */}
-            {!showControls && (
-                <div
-                    className="fixed top-0 left-0 right-0 h-16 z-40"
-                    onMouseEnter={() => setShowControls(true)}
-                />
-            )}
 
             {/* Full screen iframe container */}
             <div className="absolute inset-0">
