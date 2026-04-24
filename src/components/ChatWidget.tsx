@@ -38,6 +38,9 @@ const MOBILE_QUICK_PROMPTS = [
     "推荐一篇财务建模文章",
 ];
 
+const CHAT_UI_FONT =
+    'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
+
 function getGreetingMessage() {
     return "你好，我是 Lucas AI。\n\n想了解文章、Lucas，或者本站内容，都可以直接问我。";
 }
@@ -133,6 +136,7 @@ function QuickPromptRow({
                         fontSize: 13,
                         lineHeight: 1.35,
                         cursor: "pointer",
+                        fontFamily: "inherit",
                     }}
                 >
                     {prompt}
@@ -161,6 +165,7 @@ function ContentCardList({ cards, cardType, onCardClick }: {
                         textAlign: "left", padding: "10px 12px", borderRadius: 10,
                         border: "1px solid var(--border)", background: "var(--card)",
                         cursor: "pointer", transition: "border-color 0.2s",
+                        fontFamily: "inherit",
                     }}
                     whileHover={{ borderColor: accentColor }}
                 >
@@ -567,6 +572,7 @@ export default function ChatWidget() {
                                         ? "var(--background)"
                                         : "rgba(250, 249, 245, 0.96)"
                                     : "var(--background)",
+                                fontFamily: isMobileLike ? undefined : CHAT_UI_FONT,
                                 border: isMobileLike
                                     ? mobileFullscreenMode && keyboardOpen
                                         ? "none"
@@ -797,14 +803,15 @@ export default function ChatWidget() {
                                 style={{
                                     flexShrink: 0,
                                     borderTop: "1px solid var(--border)",
-                                    padding: inputSectionPadding,
-                                    background: isMobileLike
-                                        ? mobileFullscreenMode && keyboardOpen
-                                            ? "var(--background)"
-                                            : "rgba(250,249,245,0.9)"
-                                        : "transparent",
-                                }}
-                            >
+                            padding: inputSectionPadding,
+                            background: isMobileLike
+                                ? mobileFullscreenMode && keyboardOpen
+                                    ? "var(--background)"
+                                    : "rgba(250,249,245,0.9)"
+                                : "transparent",
+                            fontFamily: "inherit",
+                        }}
+                    >
                                 <div
                                     style={{
                                         display: "flex",
