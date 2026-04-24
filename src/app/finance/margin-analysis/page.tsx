@@ -6,7 +6,7 @@ import { ArrowLeft, ExternalLink, Maximize2, Minimize2 } from "lucide-react";
 import { useState } from "react";
 
 export default function MarginAnalysisPage() {
-    const streamlitUrl = "https://marginanalysis0103-dc3khcc79ja82phpgnvpav.streamlit.app/?embed=true&embed_options=hide_footer&embed_options=hide_toolbar";
+    const toolUrl = "/tools/margin-analysis/index.html";
     const [showControls, setShowControls] = useState(true);
 
     return (
@@ -15,10 +15,9 @@ export default function MarginAnalysisPage() {
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: showControls ? 1 : 0 }}
-                className="fixed top-4 left-4 right-4 z-50 flex items-center justify-between pointer-events-none"
+                className="fixed top-4 right-4 z-50 flex items-center gap-2 pointer-events-none"
                 onMouseEnter={() => setShowControls(true)}
             >
-                {/* Left - Back button */}
                 <div className="pointer-events-auto">
                     <Link
                         href="/"
@@ -32,7 +31,6 @@ export default function MarginAnalysisPage() {
                     </Link>
                 </div>
 
-                {/* Right controls */}
                 <div className="pointer-events-auto flex items-center gap-2">
                     {/* Toggle visibility button */}
                     <button
@@ -47,7 +45,7 @@ export default function MarginAnalysisPage() {
 
                     {/* Open in new tab */}
                     <a
-                        href="https://marginanalysis0103-dc3khcc79ja82phpgnvpav.streamlit.app/"
+                        href={toolUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="p-2 rounded-full bg-white/90 backdrop-blur-md border border-[#e8e6dc] 
@@ -70,18 +68,14 @@ export default function MarginAnalysisPage() {
 
             {/* Full screen iframe container */}
             <div className="absolute inset-0">
-                {/* iframe positioned to hide top padding and push footer off-screen */}
                 <iframe
-                    src={streamlitUrl}
+                    src={toolUrl}
                     title="单车边际变动归因分析"
-                    className="absolute border-0 w-full"
+                    className="absolute inset-0 border-0 w-full h-full"
                     style={{
-                        top: "-55px",
                         left: 0,
-                        height: "calc(100vh + 110px)",
                     }}
                     allow="clipboard-read; clipboard-write"
-                    loading="lazy"
                 />
             </div>
         </div>

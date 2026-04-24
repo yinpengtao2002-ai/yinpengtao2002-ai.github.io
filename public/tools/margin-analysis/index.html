@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单车边际变动归因分析</title>
+
+    <!-- Google Fonts - Anthropic 风格 -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+
+    <!-- SheetJS (xlsx) for Excel parsing -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ==================== 侧边栏 ==================== -->
+<aside id="sidebar" class="sidebar">
+    <button id="sidebar-toggle" class="sidebar-toggle" title="收起侧边栏">&laquo;</button>
+
+    <!-- 数据中心 - 初始态（未加载数据时展开） -->
+    <section id="data-center-init" class="sidebar-section">
+        <h2 class="sidebar-title">📁 数据中心</h2>
+        <div class="file-upload-area" id="file-upload-area">
+            <input type="file" id="file-input" accept=".csv,.xlsx,.xls" hidden>
+            <label for="file-input" class="file-upload-label">
+                <span class="upload-icon">📂</span>
+                <span>上传 CSV 或 Excel 文件</span>
+                <span class="upload-hint">点击选择或拖拽文件到此处</span>
+            </label>
+        </div>
+        <div class="template-downloads">
+            <span class="template-download-title">下载示例格式</span>
+            <div class="template-download-actions">
+                <button type="button" class="btn-template" data-template-format="csv">CSV 模板</button>
+                <button type="button" class="btn-template" data-template-format="xlsx">Excel 模板</button>
+            </div>
+        </div>
+        <div class="divider"></div>
+        <p class="caption">或者体验示例数据</p>
+        <button id="btn-load-demo" class="btn-primary full-width">📊 加载示例数据</button>
+        <div class="divider"></div>
+    </section>
+
+    <!-- 数据中心 - 已加载态（折叠） -->
+    <section id="data-center-loaded" class="sidebar-section" style="display:none;">
+        <details class="sidebar-details">
+            <summary class="sidebar-summary">📁 数据中心</summary>
+            <div class="details-content">
+                <div class="file-upload-area small" id="file-upload-area-loaded">
+                    <input type="file" id="file-input-loaded" accept=".csv,.xlsx,.xls" hidden>
+                    <label for="file-input-loaded" class="file-upload-label small">
+                        <span>重新上传文件</span>
+                    </label>
+                </div>
+                <div class="template-downloads compact">
+                    <span class="template-download-title">下载示例格式</span>
+                    <div class="template-download-actions">
+                        <button type="button" class="btn-template" data-template-format="csv">CSV</button>
+                        <button type="button" class="btn-template" data-template-format="xlsx">Excel</button>
+                    </div>
+                </div>
+            </div>
+        </details>
+    </section>
+
+    <!-- 维度配置 -->
+    <section id="dim-config-section" class="sidebar-section" style="display:none;">
+        <details class="sidebar-details">
+            <summary class="sidebar-summary">⚙️ 维度配置</summary>
+            <div class="details-content">
+                <p class="caption">设置各维度的显示名称（修改后自动更新）</p>
+                <div id="dim-config-inputs"></div>
+            </div>
+        </details>
+    </section>
+
+    <!-- 分析期间 -->
+    <section id="period-section" class="sidebar-section" style="display:none;">
+        <div class="divider"></div>
+        <h2 class="sidebar-title">📅 分析期间</h2>
+        <div class="form-group">
+            <label class="form-label">基期</label>
+            <select id="select-base-month" class="form-select"></select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">当期</label>
+            <select id="select-curr-month" class="form-select"></select>
+        </div>
+    </section>
+
+    <!-- 下钻顺序 -->
+    <section id="drill-order-section" class="sidebar-section" style="display:none;">
+        <div class="divider"></div>
+        <h2 class="sidebar-title">🔀 下钻顺序</h2>
+        <p class="caption">选择"无"可跳过该层级</p>
+        <div id="drill-order-selects"></div>
+    </section>
+
+    <!-- 维度钻取 -->
+    <section id="drill-filter-section" class="sidebar-section" style="display:none;">
+        <div class="divider"></div>
+        <h2 class="sidebar-title">🔍 维度钻取</h2>
+        <p class="caption">支持多选，留空表示全部</p>
+        <div id="drill-filter-inputs"></div>
+        <button id="btn-reset-filter" class="btn-secondary full-width">🔄 重置筛选</button>
+    </section>
+</aside>
+
+<!-- 侧边栏折叠后的展开按钮 -->
+<button id="sidebar-expand" class="sidebar-expand" style="display:none;" title="展开侧边栏">&raquo;</button>
+
+<!-- ==================== 主内容区 ==================== -->
+<main id="main-content" class="main-content">
+
+    <!-- 标题区域 -->
+    <div class="title-container">
+        <div class="title-glow"></div>
+        <div class="title-decoration">
+            <span class="deco-line left"></span>
+            <span class="deco-icon">◈</span>
+            <span class="deco-line right"></span>
+        </div>
+        <h1 class="main-header">单车边际变动归因分析</h1>
+        <p class="sub-header">Unit Margin Attribution Analysis</p>
+        <div class="title-tags">
+            <span class="tag">PVM 归因</span>
+            <span class="tag-dot">·</span>
+            <span class="tag">结构效应</span>
+            <span class="tag-dot">·</span>
+            <span class="tag">费率效应</span>
+        </div>
+    </div>
+
+    <!-- 未加载数据时的提示 -->
+    <div id="empty-state" class="empty-state">
+        <div class="info-box">
+            👈 请在左侧边栏上传数据文件
+        </div>
+
+        <details class="usage-details" open>
+            <summary class="usage-summary">📖 使用说明</summary>
+            <div class="usage-content">
+                <h3>数据格式要求</h3>
+                <div class="table-wrapper">
+                    <table class="format-table">
+                        <thead>
+                            <tr>
+                                <th>列名</th><th>Month</th><th>Dim_A</th><th>Dim_B</th><th>Dim_C</th><th>Dim_D</th><th>Dim_E</th><th>Sales Volume</th><th>Total Margin</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>说明</td><td>月份</td><td>维度A</td><td>维度B</td><td>维度C</td><td>维度D</td><td>维度E</td><td>销量</td><td>边际总额</td>
+                            </tr>
+                            <tr>
+                                <td>默认</td><td>-</td><td>大区</td><td>国家</td><td>车型</td><td>燃油品类</td><td>品牌</td><td>-</td><td>-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="tip-box">
+                    💡 <strong>提示</strong>：Dim_D 和 Dim_E 为可选列，如果数据中不包含则不会显示。上传数据后可在侧边栏修改各维度的显示名称。
+                </div>
+                <h3>计算逻辑 (自底向上)</h3>
+                <ol>
+                    <li><strong>原子化计算</strong>: 首先在最细颗粒度（所有维度的组合）上计算每个细分项的 PVM 效应。</li>
+                    <li><strong>结构效应 (Mix)</strong>: 细分项权重变化带来的影响。</li>
+                    <li><strong>费率效应 (Rate)</strong>: 细分项单车边际变化带来的影响。</li>
+                    <li><strong>维度聚合</strong>: 将细分项的效应汇总到当前查看的维度（如大区）。</li>
+                </ol>
+                <div class="tip-box">
+                    💡 这种方法能确保大区内部的产品结构变化正确归因为结构效应，而不是费率效应。
+                </div>
+            </div>
+        </details>
+    </div>
+
+    <!-- 已加载数据后的分析区域 -->
+    <div id="analysis-area" style="display:none;">
+
+        <!-- 顶部指标卡片 -->
+        <div class="metrics-row" id="metrics-row">
+            <div class="metric-card">
+                <span class="metric-label" id="metric-label-1">📦 基期全球销量</span>
+                <span class="metric-value" id="metric-value-1">-</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label" id="metric-label-2">📦 当期全球销量</span>
+                <span class="metric-value" id="metric-value-2">-</span>
+                <span class="metric-delta" id="metric-delta-2"></span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label" id="metric-label-3">💎 基期单车边际</span>
+                <span class="metric-value" id="metric-value-3">-</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label" id="metric-label-4">💎 当期单车边际</span>
+                <span class="metric-value" id="metric-value-4">-</span>
+                <span class="metric-delta" id="metric-delta-4"></span>
+            </div>
+        </div>
+
+        <hr class="section-divider">
+
+        <!-- 动态图表区域 - 由 JS 动态生成 -->
+        <div id="charts-container"></div>
+    </div>
+
+    <!-- 页脚 -->
+    <hr class="section-divider">
+
+    <!-- PVM 假设说明 -->
+    <details id="pvm-assumptions" class="usage-details" style="display:none;">
+        <summary class="usage-summary">📐 PVM效应计算假设说明</summary>
+        <div class="usage-content">
+            <div class="table-wrapper">
+                <table class="assumption-table">
+                    <thead>
+                        <tr>
+                            <th style="width:15%;">产品类型</th>
+                            <th style="width:50%;">结构效应 (Mix Effect)</th>
+                            <th style="width:35%;">费率效应 (Rate Effect)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="product-type">现有产品</td>
+                            <td class="formula">(当期权重 - 基期权重) × (基期单车边际 - 基期平均单车边际)</td>
+                            <td class="formula">当期权重 × (当期单车边际 - 基期单车边际)</td>
+                        </tr>
+                        <tr>
+                            <td class="product-type">0→N产品</td>
+                            <td class="formula">当期权重 × (当期单车边际 - 基期平均单车边际)</td>
+                            <td style="text-align:center; color:var(--text-secondary);">0</td>
+                        </tr>
+                        <tr>
+                            <td class="product-type">N→0产品</td>
+                            <td class="formula">- 基期权重 × (基期单车边际 - 基期平均单车边际)</td>
+                            <td style="text-align:center; color:var(--text-secondary);">0</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="assumption-note">
+                💡 <strong>说明：</strong>所有计算均在最细颗粒度进行，展示的数值为细分项汇总结果。这样可以避免高层级维度掩盖实际的结构变化。
+            </p>
+        </div>
+    </details>
+
+    <div class="footer">
+        <span class="footer-brand">✧ 财务分析驾驶舱 ✧</span>
+        <br>
+        <span class="footer-sub">PVM MARGIN ANALYSIS | POWERED BY PLOTLY.JS</span>
+    </div>
+</main>
+
+<!-- JS 模块 (后续任务中逐步实现) -->
+<script src="app.js"></script>
+
+</body>
+</html>
