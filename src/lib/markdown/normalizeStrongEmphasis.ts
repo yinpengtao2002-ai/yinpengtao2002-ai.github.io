@@ -3,11 +3,11 @@ const FENCE_LINE_PATTERN = /^[ \t]{0,3}(`{3,}|~{3,})/;
 const STRONG_SPAN_PATTERN = /\*\*((?:\\.|(?!\*\*)[\s\S])+?)\*\*/g;
 
 function isBoundaryCharacter(char: string | undefined) {
-    return !char || /\s|\p{P}/u.test(char);
+    return !char || /\s|[\p{P}\p{S}]/u.test(char);
 }
 
-function isPunctuation(char: string | undefined) {
-    return !!char && /\p{P}/u.test(char);
+function isDelimiterTroubleCharacter(char: string | undefined) {
+    return !!char && /[\p{P}\p{S}]/u.test(char);
 }
 
 function normalizeStrongSpans(segment: string) {
@@ -18,11 +18,11 @@ function normalizeStrongSpans(segment: string) {
         const last = content[content.length - 1];
         let nextContent = content;
 
-        if (isPunctuation(first) && !isBoundaryCharacter(before) && !content.startsWith(ZERO_WIDTH_SPACE)) {
+        if (isDelimiterTroubleCharacter(first) && !isBoundaryCharacter(before) && !content.startsWith(ZERO_WIDTH_SPACE)) {
             nextContent = `${ZERO_WIDTH_SPACE}${nextContent}`;
         }
 
-        if (isPunctuation(last) && !isBoundaryCharacter(after) && !content.endsWith(ZERO_WIDTH_SPACE)) {
+        if (isDelimiterTroubleCharacter(last) && !isBoundaryCharacter(after) && !content.endsWith(ZERO_WIDTH_SPACE)) {
             nextContent = `${nextContent}${ZERO_WIDTH_SPACE}`;
         }
 
