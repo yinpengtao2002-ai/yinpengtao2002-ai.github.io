@@ -6,6 +6,8 @@ import ThinkingSubtitle from "../ui/ThinkingSubtitle";
 import { scrollToSection } from "@/lib/scroll";
 import { useViewportProfile } from "@/lib/useLowMotionMode";
 
+const HERO_SUBTITLE_FONT = 'var(--font-hero-display), "Songti SC", "STSong", "Noto Serif CJK SC", serif';
+
 interface HeroProps {
     name: string;
     subtitle?: string;
@@ -95,6 +97,7 @@ export default function Hero({
                                 marginTop: isMobileLike ? "1.25rem" : "2rem",
                                 paddingTop: isMobileLike ? "1rem" : "1.5rem",
                                 gap: isMobileLike ? "0.6rem" : "1rem",
+                                fontFamily: HERO_SUBTITLE_FONT,
                             }}
                         >
                             <ThinkingSubtitle
@@ -102,8 +105,8 @@ export default function Hero({
                                 thoughts={["Thinking...", "Initializing Personality...", "Designing Portfolio..."]}
                                 reducedMotion={lowMotion}
                                 className={isMobileLike
-                                    ? "font-sans text-base font-light tracking-[0.14em] uppercase"
-                                    : "font-sans text-xl sm:text-2xl md:text-3xl font-light tracking-[0.3em] uppercase"}
+                                    ? "text-base font-medium tracking-[0.16em] uppercase"
+                                    : "text-xl sm:text-2xl md:text-3xl font-medium tracking-[0.34em] uppercase"}
                             />
 
                             {/* Welcome Message */}
@@ -117,8 +120,8 @@ export default function Hero({
                                     thoughts={["Loading content...", "Preparing welcome message..."]}
                                     reducedMotion={lowMotion}
                                     className={isMobileLike
-                                        ? "font-sans text-sm font-light tracking-[0.1em] text-[#d97757]"
-                                        : "font-sans text-lg sm:text-xl font-light tracking-[0.2em] text-[#d97757]"}
+                                        ? "text-sm font-normal tracking-[0.12em] text-[#d97757]"
+                                        : "text-lg sm:text-xl font-normal tracking-[0.24em] text-[#d97757]"}
                                 />
                             </motion.div>
                         </motion.div>
