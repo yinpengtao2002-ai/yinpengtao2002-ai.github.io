@@ -11,6 +11,7 @@ import "katex/dist/katex.min.css";
 import mermaid from "mermaid";
 import { useLayoutEffect, useRef, useState } from "react";
 import { ContentItem } from "@/lib/data/generated/content";
+import { normalizeMarkdownStrongEmphasis } from "@/lib/markdown/normalizeStrongEmphasis";
 
 function MermaidChart({ chart }: { chart: string }) {
     const ref = useRef<HTMLDivElement>(null);
@@ -59,6 +60,7 @@ interface ArticleClientProps {
 
 export default function ArticleClient({ article, category }: ArticleClientProps) {
     const router = useRouter();
+    const articleContent = normalizeMarkdownStrongEmphasis(article.content);
 
     useLayoutEffect(() => {
         const previousScrollRestoration =
@@ -296,7 +298,7 @@ export default function ArticleClient({ article, category }: ArticleClientProps)
                             ),
                         }}
                     >
-                        {article.content}
+                        {articleContent}
                     </ReactMarkdown>
                 </article>
 
