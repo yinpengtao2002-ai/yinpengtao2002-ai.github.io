@@ -45,14 +45,43 @@ function getGreetingMessage() {
     return "你好，我是 Lucas AI。\n\n想了解文章、Lucas，或者本站内容，都可以直接问我。";
 }
 
-function MessageContent({ text }: { text: string }) {
+function getInternalHref(href: string | undefined) {
+    if (!href) return null;
+    if (href.startsWith("/") && !href.startsWith("//")) return href;
+    if (href.startsWith("#")) return href;
+
+    if (typeof window === "undefined") return null;
+
+    try {
+        const url = new URL(href, window.location.origin);
+        if (url.origin !== window.location.origin) return null;
+        return `${url.pathname}${url.search}${url.hash}`;
+    } catch {
+        return null;
+    }
+}
+
+function MessageContent({
+    text,
+    onInternalLinkClick,
+}: {
+    text: string;
+    onInternalLinkClick?: (href: string) => void;
+}) {
     return (
         <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath]}
             rehypePlugins={[rehypeKatex]}
             components={{
                 a: ({ href, children }) => (
-                    <Link href={href || "#"} style={{ color: "var(--accent)", textDecoration: "underline", textUnderlineOffset: 3 }}>
+                    <Link
+                        href={href || "#"}
+                        onClick={() => {
+                            const internalHref = getInternalHref(href);
+                            if (internalHref) onInternalLinkClick?.(internalHref);
+                        }}
+                        style={{ color: "var(--accent)", textDecoration: "underline", textUnderlineOffset: 3 }}
+                    >
                         {children}
                     </Link>
                 ),
@@ -765,7 +794,12 @@ export default function ChatWidget() {
                                                                         Ask Lucas AI
                                                                     </div>
                                                                 )}
-                                                                <MessageContent text={message.content} />
+                                                                <MessageContent
+                                                                    text={message.content}
+                                                                    onInternalLinkClick={() => {
+                                                                        if (isMobileLike) handleClose();
+                                                                    }}
+                                                                />
                                                             </div>
                                                             {message.id === "greeting" && introState && !compactMobileChat && (
                                                                 <QuickPromptRow
@@ -783,7 +817,7 @@ export default function ChatWidget() {
                                                                     cards={message.contentCards}
                                                                     cardType={message.cardType}
                                                                     onCardClick={(card) => {
-                                                                        setIsOpen(false);
+                                                                        handleClose();
                                                                         router.push(card.href);
                                                                     }}
                                                                 />
