@@ -105,8 +105,8 @@ export default function Hero({
                                 thoughts={["Thinking...", "Initializing Personality...", "Designing Portfolio..."]}
                                 reducedMotion={lowMotion}
                                 className={isMobileLike
-                                    ? "text-base font-medium tracking-[0.16em] uppercase"
-                                    : "text-xl sm:text-2xl md:text-3xl font-medium tracking-[0.34em] uppercase"}
+                                    ? "text-base font-medium tracking-[0.08em]"
+                                    : "text-xl sm:text-2xl md:text-3xl font-medium tracking-[0.18em]"}
                             />
 
                             {/* Welcome Message */}
