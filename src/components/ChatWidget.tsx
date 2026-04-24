@@ -39,7 +39,7 @@ const MOBILE_QUICK_PROMPTS = [
 ];
 
 const CHAT_UI_FONT =
-    '"Anthropic Sans", var(--font-poppins), "IBM Plex Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
+    'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
 
 function getGreetingMessage() {
     return "你好，我是 Lucas AI。\n\n想了解文章、Lucas，或者本站内容，都可以直接问我。";

@@ -1,20 +1,19 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans, Source_Serif_4 } from "next/font/google";
+import { Poppins, Lora } from "next/font/google";
 import "./globals.css";
 import ClientShell from "@/components/ClientShell";
 
-const brandSans = IBM_Plex_Sans({
+const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
-const brandSerif = Source_Serif_4({
+const lora = Lora({
   variable: "--font-lora",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
   display: "swap",
 });
 
@@ -62,7 +61,7 @@ export default function RootLayout({
         <meta name="baidu-site-verification" content="codeva-9201I1Yt1V" />
       </head>
       <body
-        className={`${brandSans.variable} ${brandSerif.variable} antialiased gradient-bg overflow-x-hidden selection:bg-[#d97757] selection:text-white`}
+        className={`${poppins.variable} ${lora.variable} antialiased gradient-bg overflow-x-hidden selection:bg-[#d97757] selection:text-white`}
       >
         <ClientShell />
         <main style={{ width: "100%", minWidth: "100vw", display: "block" }}>{children}</main>
