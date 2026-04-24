@@ -11,9 +11,6 @@ interface HeroProps {
     subtitle?: string;
 }
 
-const HERO_SUPPORTING_FONT =
-    'var(--font-lora), "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif';
-
 export default function Hero({
     name,
     subtitle,
@@ -98,7 +95,6 @@ export default function Hero({
                                 marginTop: isMobileLike ? "1.25rem" : "2rem",
                                 paddingTop: isMobileLike ? "1rem" : "1.5rem",
                                 gap: isMobileLike ? "0.6rem" : "1rem",
-                                fontFamily: HERO_SUPPORTING_FONT,
                             }}
                         >
                             <ThinkingSubtitle
@@ -106,8 +102,8 @@ export default function Hero({
                                 thoughts={["Thinking...", "Initializing Personality...", "Designing Portfolio..."]}
                                 reducedMotion={lowMotion}
                                 className={isMobileLike
-                                    ? "text-base font-normal tracking-[0.05em]"
-                                    : "text-xl sm:text-2xl md:text-3xl font-normal tracking-[0.08em]"}
+                                    ? "font-sans text-base font-light tracking-[0.14em] uppercase"
+                                    : "font-sans text-xl sm:text-2xl md:text-3xl font-light tracking-[0.3em] uppercase"}
                             />
 
                             {/* Welcome Message */}
@@ -121,8 +117,8 @@ export default function Hero({
                                     thoughts={["Loading content...", "Preparing welcome message..."]}
                                     reducedMotion={lowMotion}
                                     className={isMobileLike
-                                        ? "text-sm font-normal tracking-[0.04em] text-[#d97757]"
-                                        : "text-lg sm:text-xl font-normal tracking-[0.06em] text-[#d97757]"}
+                                        ? "font-sans text-sm font-light tracking-[0.1em] text-[#d97757]"
+                                        : "font-sans text-lg sm:text-xl font-light tracking-[0.2em] text-[#d97757]"}
                                 />
                             </motion.div>
                         </motion.div>
