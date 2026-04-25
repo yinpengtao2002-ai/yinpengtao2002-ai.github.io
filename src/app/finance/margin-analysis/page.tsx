@@ -22,7 +22,7 @@ export default function MarginAnalysisPage() {
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.22 }}
-                className="fixed top-4 right-20 z-50 rounded-full border border-[#e8e6dc]/90 bg-[#faf9f5]/88 px-2 py-2 shadow-[0_10px_30px_rgba(20,20,19,0.08)] backdrop-blur-md"
+                className="fixed top-4 right-4 z-50 rounded-full border border-[#e8e6dc]/90 bg-[#faf9f5]/88 px-2 py-2 shadow-[0_10px_30px_rgba(20,20,19,0.08)] backdrop-blur-md"
             >
                 <button
                     type="button"
