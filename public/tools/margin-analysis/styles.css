@@ -1067,10 +1067,62 @@ details[open] > .usage-summary::after {
     .main-content {
         padding: 1rem;
     }
+    /* 指标卡片 2x2 布局 */
     .metrics-row {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
     }
+    .metric-card {
+        padding: 0.75rem 0.5rem;
+    }
+    .metric-value {
+        font-size: 1.3rem;
+    }
+    .metric-label {
+        font-size: 0.65rem;
+    }
+    /* 标题区域精简 */
     .main-header {
-        font-size: 1.8rem;
+        font-size: 1.5rem;
+        padding: 0.3rem 0;
+    }
+    .sub-header {
+        font-size: 0.7rem;
+        letter-spacing: 0.15em;
+    }
+    .title-container {
+        padding: 1rem 0;
+    }
+    .title-decoration {
+        display: none;
+    }
+    .title-glow {
+        display: none;
+    }
+    .title-tags {
+        display: none;
+    }
+    /* 展开按钮移到底部中央 */
+    .sidebar-expand {
+        top: auto;
+        bottom: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 48px;
+        height: 32px;
+        border-radius: 16px;
+    }
+    .sidebar-expand:hover {
+        transform: translateX(-50%) scale(1.05);
+    }
+    /* 页脚精简 */
+    .footer {
+        padding: 1rem 0;
+    }
+    .footer-brand {
+        font-size: 0.8rem;
+    }
+    .footer-sub {
+        display: none;
     }
 }
