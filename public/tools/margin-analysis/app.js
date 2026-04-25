@@ -36,6 +36,7 @@ const TEMPLATE_HEADERS = [
 
 
 // ==================== DOM Ready ====================
+document.addEventListener("DOMContentLoaded", () => {
 document.addEventListener('DOMContentLoaded', () => {
     initSidebarToggle();
     initFileUpload();
@@ -43,8 +44,19 @@ document.addEventListener('DOMContentLoaded', () => {
     initDemoButton();
     initResetFilter();
     initMonthSelectors();
+
+    // 手机端自动加载示例数据
+    if (isMobile()) {
+        const demoData = generateDemoData();
+        processLoadedData(demoData, "示例数据");
+    }
 });
 
+// 检测是否为手机端
+function isMobile() {
+    return window.innerWidth <= 768 ||
+           /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
 
 // ==================== 侧边栏收折 ====================
 function initSidebarToggle() {
