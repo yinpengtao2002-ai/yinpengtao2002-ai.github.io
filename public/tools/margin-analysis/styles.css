@@ -1054,7 +1054,12 @@ details[open] > .usage-summary::after {
 }
 
 @media (max-width: 768px) {
+    :root {
+        --sidebar-width: 280px;
+    }
     .sidebar {
+        width: 280px;
+        min-width: 280px;
         position: fixed;
         left: 0;
         top: 0;
