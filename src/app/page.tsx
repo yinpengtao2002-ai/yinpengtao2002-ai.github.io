@@ -454,7 +454,7 @@ export default function Home() {
         >
           <div>
             <p style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--foreground)", fontFamily: HOME_UI_FONT }}>
-              {siteConfig.name} · V260426-1
+              {siteConfig.name}
             </p>
             <p style={{ fontSize: "0.875rem", color: "var(--muted)", marginTop: "0.25rem", fontFamily: HOME_UI_FONT }}>
               {siteConfig.author.chineseName} &middot; {siteConfig.author.pinyinName}
@@ -499,7 +499,9 @@ export default function Home() {
           </div>
 
           <p style={{ fontSize: "0.75rem", color: "var(--muted)", opacity: 0.5, fontFamily: HOME_UI_FONT }}>
-            &copy; {new Date().getFullYear()} {siteConfig.name} · V260426-1
+            &copy; {new Date().getFullYear()} {siteConfig.name}
+          <p style={{ fontSize: "0.65rem", color: "var(--muted)", opacity: 0.4, fontFamily: HOME_UI_FONT, marginTop: "-0.5rem" }}>
+            V260426-1
           </p>
         </div>
       </section>
