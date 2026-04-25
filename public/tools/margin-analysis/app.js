@@ -1528,7 +1528,26 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
         }]
     };
 
-    Plotly.newPlot(containerId, [trace], layout, { responsive: true, displayModeBar: false });
+
+    // 移动端优化：减小高度、禁用拖拽
+    const isMobileView = window.innerWidth <= 768;
+    if (isMobileView) {
+        layout.height = 380;
+        layout.margin = { l: 60, r: 40, t: 100, b: 80 };
+        layout.xaxis.tickfont.size = 10;
+        layout.yaxis.tickfont.size = 10;
+        layout.yaxis.title.font.size = 11;
+        layout.title.font.size = 14;
+        layout.annotations[0].font.size = 12;
+    }
+
+    const config = {
+        responsive: true,
+        displayModeBar: false,
+        dragMode: isMobileView ? false : 'pan'
+    };
+
+    Plotly.newPlot(containerId, [trace], layout, config);
 }
 
 
