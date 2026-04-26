@@ -1,28 +1,6 @@
 import type { Metadata } from "next";
-import { Poppins, Lora, Newsreader } from "next/font/google";
 import "./globals.css";
 import ClientShell from "@/components/ClientShell";
-
-const poppins = Poppins({
-  variable: "--font-poppins",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
-
-const lora = Lora({
-  variable: "--font-lora",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
-
-const heroDisplay = Newsreader({
-  variable: "--font-hero-display",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  display: "swap",
-});
 
 const BASE_URL = "https://yinpengtao.cn";
 
@@ -68,7 +46,7 @@ export default function RootLayout({
         <meta name="baidu-site-verification" content="codeva-9201I1Yt1V" />
       </head>
       <body
-        className={`${poppins.variable} ${lora.variable} ${heroDisplay.variable} antialiased gradient-bg overflow-x-hidden selection:bg-[#d97757] selection:text-white`}
+        className="antialiased gradient-bg overflow-x-hidden selection:bg-[#d97757] selection:text-white"
       >
         <ClientShell />
         <main style={{ width: "100%", minWidth: "100vw", display: "block" }}>{children}</main>

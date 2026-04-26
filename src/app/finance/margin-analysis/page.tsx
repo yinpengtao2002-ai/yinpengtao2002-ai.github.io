@@ -22,7 +22,7 @@ export default function MarginAnalysisPage() {
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.22 }}
-                className="fixed left-4 top-4 z-50 sm:left-auto sm:right-20"
+                className="fixed right-16 top-4 z-50 sm:right-20"
             >
                 <button
                     type="button"

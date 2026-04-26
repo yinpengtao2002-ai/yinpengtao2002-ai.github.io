@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { aiContent, financeContent } from "@/lib/data/generated/content";
 
+const CHAT_UPSTREAM_TIMEOUT_MS = 12000;
+
 function buildSystemPrompt(): string {
   // Build article catalog from actual content
   const financeArticles = financeContent
@@ -54,8 +56,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const callUpstream = (model: string) =>
-      fetch(apiUrl, {
+    const callUpstream = async (model: string) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), CHAT_UPSTREAM_TIMEOUT_MS);
+
+      try {
+        return await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -75,32 +81,60 @@ export async function POST(req: NextRequest) {
             })),
           ],
         }),
+        signal: controller.signal,
       });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    };
 
-    let res = await callUpstream(primaryModel);
+    let res: Response | null = null;
     let activeModel = primaryModel;
+    let upstreamError = "";
 
-    if ((!res.ok || !res.body) && fallbackModel && fallbackModel !== primaryModel) {
-      const primaryErr = await res.text().catch(() => "");
-      console.warn(
-        `Primary model ${primaryModel} failed (${res.status}): ${primaryErr.slice(0, 200)}. Trying fallback ${fallbackModel}.`
-      );
-      res = await callUpstream(fallbackModel);
-      activeModel = fallbackModel;
+    try {
+      res = await callUpstream(primaryModel);
+    } catch (err) {
+      upstreamError = err instanceof Error ? err.message : "Upstream request failed";
+      console.warn(`Primary model ${primaryModel} request failed: ${upstreamError}`);
     }
 
-    if (!res.ok || !res.body) {
-      const errorText = await res.text().catch(() => "");
-      console.error("Upstream API error:", res.status, errorText);
+    if ((!res || !res.ok || !res.body) && fallbackModel && fallbackModel !== primaryModel) {
+      const primaryErr = res ? await res.text().catch(() => "") : upstreamError;
+      console.warn(
+        `Primary model ${primaryModel} failed (${res?.status ?? "timeout"}): ${primaryErr.slice(0, 200)}. Trying fallback ${fallbackModel}.`
+      );
+      activeModel = fallbackModel;
+
+      try {
+        res = await callUpstream(fallbackModel);
+        upstreamError = "";
+      } catch (err) {
+        upstreamError = err instanceof Error ? err.message : "Upstream request failed";
+        console.warn(`Fallback model ${fallbackModel} request failed: ${upstreamError}`);
+      }
+    }
+
+    if (!res || !res.ok || !res.body) {
+      const errorText = res ? await res.text().catch(() => "") : upstreamError || "Upstream request timed out";
+      const status = res?.status ?? 504;
+      const urlHost = (() => {
+        try {
+          return new URL(apiUrl).host;
+        } catch {
+          return "invalid-url";
+        }
+      })();
+      console.error("Upstream API error:", status, errorText);
       return Response.json(
         {
           error: "Upstream API error",
-          status: res.status,
+          status,
           detail: errorText.slice(0, 500),
           model: activeModel,
-          urlHost: new URL(apiUrl).host,
+          urlHost,
         },
-        { status: res.status }
+        { status }
       );
     }
 

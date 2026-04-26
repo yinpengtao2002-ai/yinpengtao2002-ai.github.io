@@ -10,7 +10,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
-import { allDialoguePatterns, defaultResponses } from "@/lib/data/dialoguePatterns";
+import { CHAT_API_TIMEOUT_MS, getLocalFallbackResponse } from "@/lib/chatFallback";
 import { aiContent as staticAI, financeContent as staticFinance } from "@/lib/data/generated/content";
 import { useViewportProfile } from "@/lib/useLowMotionMode";
 
@@ -214,24 +214,6 @@ function ContentCardList({ cards, cardType, onCardClick }: {
     );
 }
 
-function recognizeIntent(input: string, aiContent: ContentCard[], financeContent: ContentCard[]) {
-    const lower = input.toLowerCase().trim();
-    for (const pattern of allDialoguePatterns) {
-        if (pattern.keywords.some((k) => lower.includes(k))) {
-            return { response: pattern.responses[Math.floor(Math.random() * pattern.responses.length)] };
-        }
-    }
-    if (lower.includes("ai") || lower.includes("人工智能") || lower.includes("见闻") || lower.includes("chatgpt") || lower.includes("llm")) {
-        if (aiContent.length === 0) return { response: "【AI 见闻】板块暂时还没有内容，敬请期待！" };
-        return { response: "以下是【AI 见闻】板块的内容：", contentCards: aiContent, cardType: "ai" as const };
-    }
-    if (lower.includes("财务") || lower.includes("建模") || lower.includes("模型") || lower.includes("金融") || lower.includes("finance") || lower.includes("估值")) {
-        if (financeContent.length === 0) return { response: "【财务建模】板块暂时还没有内容，敬请期待！" };
-        return { response: "以下是【财务建模】板块的内容：", contentCards: financeContent, cardType: "finance" as const };
-    }
-    return { response: defaultResponses[Math.floor(Math.random() * defaultResponses.length)] };
-}
-
 export default function ChatWidget() {
     const router = useRouter();
     const { isMobileLike } = useViewportProfile();
@@ -323,6 +305,10 @@ export default function ChatWidget() {
     }, [isMobileLike, isOpen]);
 
     const callChatAPI = async (allMessages: Message[], assistantMsgId: string): Promise<boolean> => {
+        let fullText = "";
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), CHAT_API_TIMEOUT_MS);
+
         try {
             const apiMessages = allMessages
                 .filter((m) => !m.isTyping && m.content)
@@ -331,12 +317,12 @@ export default function ChatWidget() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ messages: apiMessages }),
+                signal: controller.signal,
             });
             if (!res.ok || !res.body) return false;
             if (aiAvailable === null) setAiAvailable(true);
             const reader = res.body.getReader();
             const decoder = new TextDecoder();
-            let fullText = "";
             setMessages((prev) =>
                 prev.map((m) => (m.id === "typing" ? { ...m, id: assistantMsgId, isTyping: false, content: "" } : m))
             );
@@ -359,7 +345,11 @@ export default function ChatWidget() {
                 }
             }
             return fullText.length > 0;
-        } catch { return false; }
+        } catch {
+            return fullText.length > 0;
+        } finally {
+            window.clearTimeout(timeoutId);
+        }
     };
 
     const sendMessage = async (content: string) => {
@@ -373,15 +363,17 @@ export default function ChatWidget() {
         if (inputRef.current) inputRef.current.style.height = "24px";
         setMessages((prev) => [...prev, { id: "typing", role: "assistant", content: "", isTyping: true }]);
         const assistantMsgId = `assistant-${Date.now()}`;
+        let includeOfflineNotice = false;
         if (aiAvailable !== false) {
             const success = await callChatAPI(updatedMessages, assistantMsgId);
             if (success) { setIsProcessing(false); return; }
             setAiAvailable(false);
+            includeOfflineNotice = true;
         }
         await new Promise((r) => setTimeout(r, 600 + Math.random() * 400));
-        const result = recognizeIntent(userMessage.content, aiContent, financeContent);
+        const result = getLocalFallbackResponse(userMessage.content, aiContent, financeContent, { includeOfflineNotice });
         setMessages((prev) => {
-            const filtered = prev.filter((m) => m.id !== "typing");
+            const filtered = prev.filter((m) => m.id !== "typing" && m.id !== assistantMsgId);
             return [...filtered, {
                 id: assistantMsgId, role: "assistant" as const,
                 content: result?.response || "我不太明白你的意思。",
