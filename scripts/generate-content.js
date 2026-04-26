@@ -9,10 +9,77 @@ const matter = require('gray-matter');
 
 const contentDirectory = path.join(process.cwd(), 'content');
 const outputDirectory = path.join(process.cwd(), 'src', 'lib', 'data', 'generated');
+const tsOutputPath = path.join(outputDirectory, 'content.ts');
 
 const NOTION_TOKEN = process.env.NOTION_TOKEN;
 const NOTION_AI_DB = process.env.NOTION_AI_DATABASE_ID;
 const NOTION_FINANCE_DB = process.env.NOTION_FINANCE_DATABASE_ID;
+
+function extractGeneratedArray(source, exportName) {
+    const marker = `export const ${exportName}: ContentItem[] = `;
+    const markerIndex = source.indexOf(marker);
+    if (markerIndex === -1) return [];
+
+    const arrayStart = source.indexOf('[', markerIndex + marker.length);
+    if (arrayStart === -1) return [];
+
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+
+    for (let i = arrayStart; i < source.length; i++) {
+        const char = source[i];
+
+        if (inString) {
+            if (escaped) {
+                escaped = false;
+            } else if (char === '\\') {
+                escaped = true;
+            } else if (char === '"') {
+                inString = false;
+            }
+            continue;
+        }
+
+        if (char === '"') {
+            inString = true;
+        } else if (char === '[') {
+            depth++;
+        } else if (char === ']') {
+            depth--;
+            if (depth === 0) {
+                return JSON.parse(source.slice(arrayStart, i + 1));
+            }
+        }
+    }
+
+    return [];
+}
+
+function loadExistingGeneratedContent() {
+    if (!fs.existsSync(tsOutputPath)) {
+        return { ai: [], finance: [] };
+    }
+
+    try {
+        const source = fs.readFileSync(tsOutputPath, 'utf-8');
+        return {
+            ai: extractGeneratedArray(source, 'aiContent'),
+            finance: extractGeneratedArray(source, 'financeContent'),
+        };
+    } catch (err) {
+        console.warn(`  ⚠️  Could not read existing generated content: ${err.message}`);
+        return { ai: [], finance: [] };
+    }
+}
+
+function withoutGeneratedId(item) {
+    const copy = { ...item };
+    delete copy.id;
+    return copy;
+}
+
+const existingGeneratedContent = loadExistingGeneratedContent();
 
 function getMarkdownContent(category) {
     const categoryPath = path.join(contentDirectory, category);
@@ -37,10 +104,13 @@ function getMarkdownContent(category) {
     });
 }
 
-async function getNotionContent(category, databaseId) {
+async function getNotionContent(category, databaseId, fallbackArticles) {
     if (!NOTION_TOKEN || !databaseId) {
         console.log(`  ⏭️  Skipping Notion ${category} (no token or database ID)`);
-        return [];
+        if (fallbackArticles.length > 0) {
+            console.log(`  ↩️  Reusing ${fallbackArticles.length} existing Notion ${category} articles`);
+        }
+        return fallbackArticles;
     }
 
     const { Client } = require('@notionhq/client');
@@ -92,13 +162,19 @@ async function getNotionContent(category, databaseId) {
         return articles;
     } catch (err) {
         console.error(`  ⚠️  Notion ${category} fetch failed:`, err.message);
-        return [];
+        if (fallbackArticles.length > 0) {
+            console.log(`  ↩️  Reusing ${fallbackArticles.length} existing Notion ${category} articles`);
+        }
+        return fallbackArticles;
     }
 }
 
 async function getMergedContent(category, databaseId) {
     const local = getMarkdownContent(category);
-    const notion = await getNotionContent(category, databaseId);
+    const fallback = existingGeneratedContent[category]
+        .filter((item) => item.source === 'notion')
+        .map(withoutGeneratedId);
+    const notion = await getNotionContent(category, databaseId, fallback);
     const seen = new Set(local.map((a) => a.slug));
     const merged = [...local];
     for (const article of notion) {
@@ -151,7 +227,15 @@ export function getContentBySlug(category: 'ai' | 'finance', slug: string): Cont
 }
 `;
 
-    const tsOutputPath = path.join(outputDirectory, 'content.ts');
+    if (
+        JSON.stringify(existingGeneratedContent.ai) === JSON.stringify(aiContent) &&
+        JSON.stringify(existingGeneratedContent.finance) === JSON.stringify(financeContent)
+    ) {
+        console.log('  ✅ Content unchanged; keeping existing generated file');
+        console.log('✨ Content generation complete!');
+        return;
+    }
+
     fs.writeFileSync(tsOutputPath, tsContent);
     console.log(`  📄 Generated: ${tsOutputPath}`);
     console.log('✨ Content generation complete!');
