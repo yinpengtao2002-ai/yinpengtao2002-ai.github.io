@@ -75,6 +75,12 @@ src/lib/data/generated/content.ts
 
 这些变量通常放在 Vercel 的项目环境变量里，本地没有也可以运行基础页面。
 
+本地调试时可以复制 `.env.example`：
+
+```bash
+cp .env.example .env.local
+```
+
 Notion 内容同步：
 
 ```text
@@ -141,4 +147,3 @@ npm run build:static
 - 如果要发布最新 Notion 文章，请确保部署平台设置了 Notion 相关环境变量。
 - 如果只想检查网站能不能正常打包，优先运行 `npm run build:vercel`。
 - 如果要给 GitHub Pages 准备静态文件，运行 `npm run build:static`。
-
