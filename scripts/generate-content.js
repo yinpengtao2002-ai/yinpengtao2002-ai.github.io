@@ -14,15 +14,6 @@ const NOTION_TOKEN = process.env.NOTION_TOKEN;
 const NOTION_AI_DB = process.env.NOTION_AI_DATABASE_ID;
 const NOTION_FINANCE_DB = process.env.NOTION_FINANCE_DATABASE_ID;
 
-function slugify(text) {
-    return text
-        .toLowerCase()
-        .trim()
-        .replace(/[\s\u3000]+/g, '-')
-        .replace(/[^\w\u4e00-\u9fa5-]/g, '')
-        .slice(0, 60) || 'untitled';
-}
-
 function getMarkdownContent(category) {
     const categoryPath = path.join(contentDirectory, category);
     if (!fs.existsSync(categoryPath)) return [];

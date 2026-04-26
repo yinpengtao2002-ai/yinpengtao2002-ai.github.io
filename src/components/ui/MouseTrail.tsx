@@ -2,15 +2,58 @@
 
 import { useEffect, useRef, useState } from "react";
 
+const PARTICLE_COLORS = [
+    "217, 119, 87",
+    "106, 155, 204",
+    "120, 140, 93",
+];
+
+class TrailParticle {
+    x: number;
+    y: number;
+    size: number;
+    speedX: number;
+    speedY: number;
+    life: number;
+    maxLife: number;
+    color: string;
+
+    constructor(x: number, y: number) {
+        this.x = x;
+        this.y = y;
+        this.size = Math.random() * 4 + 2;
+        this.speedX = Math.random() * 2 - 1;
+        this.speedY = Math.random() * 2 - 1;
+        this.maxLife = 60;
+        this.life = this.maxLife;
+        this.color = PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)];
+    }
+
+    update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.life--;
+        this.size = Math.max(0, this.size - 0.05);
+    }
+
+    draw(ctx: CanvasRenderingContext2D) {
+        ctx.beginPath();
+        const opacity = (this.life / this.maxLife) * 0.5;
+        ctx.fillStyle = `rgba(${this.color}, ${opacity})`;
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
 export default function MouseTrail() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const [isTouchDevice, setIsTouchDevice] = useState(false);
+    const [isTouchDevice] = useState(() => {
+        if (typeof window === "undefined") return false;
+        return window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
+    });
 
     useEffect(() => {
-        // Detect touch device - no mouse trail needed
-        const isTouch = window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
-        setIsTouchDevice(isTouch);
-        if (isTouch) return;
+        if (isTouchDevice) return;
         const canvas = canvasRef.current;
         if (!canvas) return;
 
@@ -20,8 +63,9 @@ export default function MouseTrail() {
         let width = window.innerWidth;
         let height = window.innerHeight;
 
-        const particles: Particle[] = [];
+        const particles: TrailParticle[] = [];
         const maxParticles = 50;
+        let animationFrame = 0;
 
         // Mouse state
         const mouse = { x: width / 2, y: height / 2 };
@@ -41,7 +85,7 @@ export default function MouseTrail() {
 
             // Add particles on move
             for (let i = 0; i < 3; i++) {
-                particles.push(new Particle(mouse.x, mouse.y));
+                particles.push(new TrailParticle(mouse.x, mouse.y));
             }
         };
 
@@ -51,62 +95,13 @@ export default function MouseTrail() {
         // Initialize size
         onResize();
 
-        // Particle Class
-        class Particle {
-            x: number;
-            y: number;
-            size: number;
-            speedX: number;
-            speedY: number;
-            life: number;
-            maxLife: number;
-            color: string;
-
-            constructor(x: number, y: number) {
-                this.x = x;
-                this.y = y;
-                this.size = Math.random() * 4 + 2;
-                this.speedX = Math.random() * 2 - 1;
-                this.speedY = Math.random() * 2 - 1;
-                this.maxLife = 60;
-                this.life = this.maxLife;
-                // Anthropic Brand Accents (RGB)
-                // Orange #d97757 -> 217, 119, 87
-                // Blue #6a9bcc -> 106, 155, 204
-                // Green #788c5d -> 120, 140, 93
-                const colors = [
-                    '217, 119, 87',
-                    '106, 155, 204',
-                    '120, 140, 93'
-                ];
-                this.color = colors[Math.floor(Math.random() * colors.length)];
-            }
-
-            update() {
-                this.x += this.speedX;
-                this.y += this.speedY;
-                this.life--;
-                this.size = Math.max(0, this.size - 0.05);
-            }
-
-            draw() {
-                if (!ctx) return;
-                ctx.beginPath();
-                // Use lower opacity for a watercolor/ink effect
-                const opacity = (this.life / this.maxLife) * 0.5;
-                ctx.fillStyle = `rgba(${this.color}, ${opacity})`;
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-
         const animate = () => {
             ctx.clearRect(0, 0, width, height);
 
             // Update and draw particles
             for (let i = particles.length - 1; i >= 0; i--) {
                 particles[i].update();
-                particles[i].draw();
+                particles[i].draw(ctx);
 
                 if (particles[i].life <= 0) {
                     particles.splice(i, 1);
@@ -118,7 +113,7 @@ export default function MouseTrail() {
                 particles.splice(0, particles.length - maxParticles);
             }
 
-            requestAnimationFrame(animate);
+            animationFrame = requestAnimationFrame(animate);
         };
 
         animate();
@@ -126,8 +121,9 @@ export default function MouseTrail() {
         return () => {
             window.removeEventListener("resize", onResize);
             window.removeEventListener("mousemove", onMouseMove);
+            cancelAnimationFrame(animationFrame);
         };
-    }, []);
+    }, [isTouchDevice]);
 
     if (isTouchDevice) return null;
 

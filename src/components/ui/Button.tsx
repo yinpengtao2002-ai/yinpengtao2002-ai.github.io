@@ -31,6 +31,12 @@ const sizeClasses = {
     lg: "px-8 py-4 text-lg",
 };
 
+const glowSizeClasses = {
+    sm: "min-w-[200px] h-[52px] text-base",
+    md: "min-w-[240px] h-[58px] text-lg",
+    lg: "min-w-[280px] h-[64px] text-xl",
+};
+
 function GlowButton({
     children,
     href,
@@ -93,16 +99,16 @@ function GlowButton({
 
                 {/* 按钮主体 */}
                 <div
-                    className={`relative min-w-[280px] h-[64px] rounded-full 
+                    className={`relative rounded-full
             bg-white/70 backdrop-blur-md 
             border border-[#e8e6dc]
             group-hover:bg-white/90
             group-hover:border-[#d97757]/40
             transition-all duration-300
             shadow-sm group-hover:shadow-md
-            flex items-center justify-center gap-3 ${className}`}
+            flex items-center justify-center gap-3 ${glowSizeClasses[size]} ${className}`}
                 >
-                    <span className="text-xl font-medium tracking-widest text-[#141413]/80 group-hover:text-[#141413] transition-colors">
+                    <span className="font-medium tracking-widest text-[#141413]/80 group-hover:text-[#141413] transition-colors">
                         {children}
                     </span>
 

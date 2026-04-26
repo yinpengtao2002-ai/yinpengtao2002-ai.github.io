@@ -39,24 +39,24 @@ export default function Card({
     ${className}
   `;
 
-    const CardWrapper = ({ children: wrapperChildren }: { children: ReactNode }) => (
+    const cardContent = (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay }}
             className={cardClasses}
         >
-            {wrapperChildren}
+            {children}
         </motion.div>
     );
 
     if (href) {
         return (
             <Link href={href}>
-                <CardWrapper>{children}</CardWrapper>
+                {cardContent}
             </Link>
         );
     }
 
-    return <CardWrapper>{children}</CardWrapper>;
+    return cardContent;
 }

@@ -20,7 +20,7 @@ export default function TypewriterText({
 }: TypewriterTextProps) {
     const [displayedText, setDisplayedText] = useState("");
     const [isTyping, setIsTyping] = useState(false);
-    const [isComplete, setIsComplete] = useState(false);
+    const isComplete = isTyping && displayedText.length >= text.length;
 
     useEffect(() => {
         const startTimeout = setTimeout(() => {
@@ -39,8 +39,6 @@ export default function TypewriterText({
             }, speed);
 
             return () => clearTimeout(timeout);
-        } else {
-            setIsComplete(true);
         }
     }, [displayedText, isTyping, speed, text]);
 

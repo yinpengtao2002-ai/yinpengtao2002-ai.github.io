@@ -1573,7 +1573,7 @@ function buildDetailTable(displayData, dimCol, dimName, isGlobal) {
 
     // 表体
     const tbody = document.createElement('tbody');
-    displayData.forEach((row, idx) => {
+    displayData.forEach((row) => {
         const tr = document.createElement('tr');
         const isTotal = row[dimCol] === '总计';
         if (isTotal) tr.className = 'total-row';

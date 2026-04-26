@@ -137,6 +137,19 @@ interface Message {
     cardType?: "ai" | "finance";
 }
 
+const GREETING_TYPING_MESSAGE: Message = {
+    id: "greeting-typing",
+    role: "assistant",
+    content: "",
+    isTyping: true,
+};
+
+const GREETING_MESSAGE: Message = {
+    id: "greeting",
+    role: "assistant",
+    content: "你好！我是 Lucas 的 AI 助手，搭载 Claude Opus 4.6 模型。\n\n你可以问我任何关于这个网站的问题，比如有什么文章、Lucas 是谁，或者随便聊聊也行。",
+};
+
 function TypingIndicator() {
     return (
         <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 0" }}>
@@ -231,7 +244,7 @@ function recognizeIntent(
 
 export default function ExplorePage() {
     const router = useRouter();
-    const [messages, setMessages] = useState<Message[]>([]);
+    const [messages, setMessages] = useState<Message[]>(() => [GREETING_TYPING_MESSAGE]);
     const [inputValue, setInputValue] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
     const [aiAvailable, setAiAvailable] = useState<boolean | null>(null);
@@ -251,13 +264,8 @@ export default function ExplorePage() {
     useEffect(() => { scrollToBottom(); }, [messages]);
 
     useEffect(() => {
-        setMessages([{ id: "greeting-typing", role: "assistant", content: "", isTyping: true }]);
         const timer = setTimeout(() => {
-            setMessages([{
-                id: "greeting",
-                role: "assistant",
-                content: "你好！我是 Lucas 的 AI 助手，搭载 Claude Opus 4.6 模型。\n\n你可以问我任何关于这个网站的问题，比如有什么文章、Lucas 是谁，或者随便聊聊也行。",
-            }]);
+            setMessages([GREETING_MESSAGE]);
         }, 1000);
         return () => clearTimeout(timer);
     }, []);
