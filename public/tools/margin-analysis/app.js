@@ -37,25 +37,27 @@ const TEMPLATE_HEADERS = [
 
 
 // ==================== DOM Ready ====================
-document.addEventListener("DOMContentLoaded", () => {
-    initSidebarToggle();
-    initFileUpload();
-    initTemplateDownloads();
-    initDemoButton();
-    initResetFilter();
-    initMonthSelectors();
+if (typeof document !== 'undefined') {
+    document.addEventListener("DOMContentLoaded", () => {
+        initSidebarToggle();
+        initFileUpload();
+        initTemplateDownloads();
+        initDemoButton();
+        initResetFilter();
+        initMonthSelectors();
 
-    // 手机端自动加载示例数据并收起侧边栏
-    if (isMobile()) {
-        const demoData = generateDemoData();
-        processLoadedData(demoData, "示例数据");
-        // 收起侧边栏
-        const sidebar = document.getElementById("sidebar");
-        const expandBtn = document.getElementById("sidebar-expand");
-        sidebar.classList.add("collapsed");
-        expandBtn.style.display = "flex";
-    }
-});
+        // 手机端自动加载示例数据并收起侧边栏
+        if (isMobile()) {
+            const demoData = generateDemoData();
+            processLoadedData(demoData, "示例数据");
+            // 收起侧边栏
+            const sidebar = document.getElementById("sidebar");
+            const expandBtn = document.getElementById("sidebar-expand");
+            sidebar.classList.add("collapsed");
+            expandBtn.style.display = "flex";
+        }
+    });
+}
 
 // 检测是否为手机端
 function isMobile() {
@@ -1571,4 +1573,12 @@ function formatSignedNumber(num) {
     if (num == null || isNaN(num)) return '-';
     const sign = num >= 0 ? '+' : '';
     return sign + Math.round(num).toLocaleString('en-US');
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        calculateGlobalMetrics,
+        calculateDimensionPVMEffects,
+        prepareDisplayData
+    };
 }
