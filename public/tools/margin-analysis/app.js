@@ -23,6 +23,7 @@ const AppState = {
 };
 
 const ALL_DIMENSIONS = ['Dim_A', 'Dim_B', 'Dim_C', 'Dim_D', 'Dim_E'];
+const PLOT_FONT_FAMILY = 'PingFang SC, Microsoft YaHei, Helvetica Neue, Arial, sans-serif';
 
 const DIM_ICONS = {
     Dim_A: '🌍', Dim_B: '🏳️', Dim_C: '🚗',
@@ -1400,7 +1401,7 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
         y: values,
         textposition: 'outside',
         text: textLabels,
-        textfont: { size: 13, color: '#141413', family: 'Poppins' },
+        textfont: { size: 13, color: '#141413', family: PLOT_FONT_FAMILY },
         increasing: { marker: { color: colors.increasing, line: { color: colors.increasing, width: 1 } } },
         decreasing: { marker: { color: colors.decreasing, line: { color: colors.decreasing, width: 1 } } },
         totals: { marker: { color: colors.total, line: { color: colors.total, width: 2 } } },
@@ -1410,7 +1411,7 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
     const layout = {
         title: {
             text: `<b>${title}</b>`,
-            font: { size: 18, color: '#141413', family: 'Poppins' },
+            font: { size: 18, color: '#141413', family: PLOT_FONT_FAMILY },
             x: 0.5,
             xanchor: 'center'
         },
@@ -1421,7 +1422,7 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
         paper_bgcolor: 'rgba(250, 249, 245, 0)',
         xaxis: {
             tickangle: -25,
-            tickfont: { size: 12, color: '#b0aea5', family: 'Poppins' },
+            tickfont: { size: 12, color: '#b0aea5', family: PLOT_FONT_FAMILY },
             gridcolor: 'rgba(232, 230, 220, 0.5)',
             linecolor: '#e8e6dc',
             showline: true
@@ -1439,7 +1440,7 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
         hoverlabel: {
             bgcolor: 'rgba(255, 255, 255, 0.98)',
             bordercolor: '#d97757',
-            font: { size: 13, color: '#141413', family: 'Poppins' }
+            font: { size: 13, color: '#141413', family: PLOT_FONT_FAMILY }
         },
         annotations: [{
             x: 0.5,
@@ -1448,7 +1449,7 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
             yref: 'paper',
             text: `<b>变动: ¥${formatSignedNumber(deltaVal)}</b>  <span style="color: ${deltaColor}">(${pctChange >= 0 ? '+' : ''}${pctChange.toFixed(2)}%)</span>`,
             showarrow: false,
-            font: { size: 15, color: deltaColor, family: 'Poppins' },
+            font: { size: 15, color: deltaColor, family: PLOT_FONT_FAMILY },
             bgcolor: 'rgba(255, 255, 255, 0.95)',
             bordercolor: '#e8e6dc',
             borderwidth: 1,
