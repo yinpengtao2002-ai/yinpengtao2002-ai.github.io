@@ -931,38 +931,30 @@ function calculateGlobalMetrics(data, month) {
 }
 
 
-// ==================== 原子 PVM 效应计算 ====================
+// ==================== 当前维度 PVM 效应计算 ====================
 /**
- * 在最细颗粒度（所有维度组合）上计算 Mix 和 Rate 效应
- * 对应 app.py 的 calculate_atomic_pvm_effects()
+ * 在当前展示维度上直接计算 Mix 和 Rate 效应。
+ * 这种口径不再先拆到所有维度组合，适合版型/国家频繁变化、底层组合缺少可比基期或当期的数据。
  *
  * @param {Array} data - 已筛选的数据行
  * @param {string} baseMonth - 基期
  * @param {string} currMonth - 当期
- * @param {number} globalVolCurr - 当期全局/视图总销量（用于计算权重）
- * @param {number} globalVolBase - 基期全局/视图总销量（用于计算权重）
- * @param {number} globalAvgMarginBase - 基期全局/视图平均单车边际
- * @returns {Array} 原子层级的 PVM 效应数组
+ * @param {string} groupDim - 当前展示维度 (如 'Dim_A')
+ * @param {number} totalVolCurr - 当期全局/视图总销量（用于计算权重）
+ * @param {number} totalVolBase - 基期全局/视图总销量（用于计算权重）
+ * @param {number} avgMarginBase - 基期全局/视图平均单车边际
+ * @returns {Array} 当前维度层级的 PVM 效应数组
  */
-function calculateAtomicPVMEffects(data, baseMonth, currMonth, globalVolCurr, globalVolBase, globalAvgMarginBase) {
-    // 1. 识别数据中所有可用维度
-    const allDims = ALL_DIMENSIONS.filter(d => {
-        return data.some(row => row[d] !== undefined && row[d] !== '');
-    });
-
-    if (allDims.length === 0) return [];
-
-    // 2. 按所有维度 + 月份分组聚合
-    function makeKey(row) {
-        return allDims.map(d => row[d] || '').join('|||');
-    }
-
-    // 分别聚合基期和当期
+function calculateDimensionPVMEffects(data, baseMonth, currMonth, groupDim, totalVolCurr, totalVolBase, avgMarginBase) {
     const baseAgg = {};
     const currAgg = {};
 
+    function getDimValue(row) {
+        return row[groupDim] || '';
+    }
+
     data.forEach(row => {
-        const key = makeKey(row);
+        const key = getDimValue(row);
         if (row['Month'] === baseMonth) {
             if (!baseAgg[key]) baseAgg[key] = { vol: 0, margin: 0 };
             baseAgg[key].vol += row['Sales Volume'];
@@ -975,99 +967,39 @@ function calculateAtomicPVMEffects(data, baseMonth, currMonth, globalVolCurr, gl
         }
     });
 
-    // 3. 合并基期和当期（outer join）
     const allKeys = new Set([...Object.keys(baseAgg), ...Object.keys(currAgg)]);
-    const results = [];
 
-    allKeys.forEach(key => {
-        const dims = key.split('|||');
+    return [...allKeys].map(key => {
         const baseData = baseAgg[key] || { vol: 0, margin: 0 };
         const currData = currAgg[key] || { vol: 0, margin: 0 };
+        const weightBase = totalVolBase > 0 ? baseData.vol / totalVolBase : 0;
+        const weightCurr = totalVolCurr > 0 ? currData.vol / totalVolCurr : 0;
+        const marginUnitBase = baseData.vol > 0 ? baseData.margin / baseData.vol : 0;
+        const marginUnitCurr = currData.vol > 0 ? currData.margin / currData.vol : 0;
 
-        // 构造行数据，保留维度信息
-        const row = {};
-        allDims.forEach((d, i) => row[d] = dims[i]);
+        const row = {
+            [groupDim]: key,
+            Vol_Base: baseData.vol,
+            Vol_Curr: currData.vol,
+            Total_Margin_Base: baseData.margin,
+            Total_Margin_Curr: currData.margin,
+            Margin_Unit_Base: marginUnitBase,
+            Margin_Unit_Curr: marginUnitCurr
+        };
 
-        row['Sales Volume_Base'] = baseData.vol;
-        row['Total Margin_Base'] = baseData.margin;
-        row['Sales Volume_Curr'] = currData.vol;
-        row['Total Margin_Curr'] = currData.margin;
-
-        // 权重（相对于全局/视图总销量）
-        row['Weight_Base'] = globalVolBase > 0 ? baseData.vol / globalVolBase : 0;
-        row['Weight_Curr'] = globalVolCurr > 0 ? currData.vol / globalVolCurr : 0;
-
-        // 单车边际
-        row['Unit_Margin_Base'] = baseData.vol > 0 ? baseData.margin / baseData.vol : 0;
-        row['Unit_Margin_Curr'] = currData.vol > 0 ? currData.margin / currData.vol : 0;
-
-        // 识别产品类型
-        const isNew = baseData.vol === 0 && currData.vol > 0;
-        const isDisc = currData.vol === 0 && baseData.vol > 0;
-
-        // PVM 计算
-        if (isNew) {
-            // 新品 (0→N): Mix = Weight_Curr * (Unit_Margin_Curr - Global_Avg), Rate = 0
-            row['Mix_Effect'] = row['Weight_Curr'] * (row['Unit_Margin_Curr'] - globalAvgMarginBase);
-            row['Rate_Effect'] = 0;
-        } else if (isDisc) {
-            // 停产品 (N→0): Mix = -Weight_Base * (Unit_Margin_Base - Global_Avg), Rate = 0
-            row['Mix_Effect'] = (0 - row['Weight_Base']) * (row['Unit_Margin_Base'] - globalAvgMarginBase);
-            row['Rate_Effect'] = 0;
+        if (baseData.vol === 0 && currData.vol > 0) {
+            row.Mix_Effect = weightCurr * (marginUnitCurr - avgMarginBase);
+            row.Rate_Effect = 0;
+        } else if (currData.vol === 0 && baseData.vol > 0) {
+            row.Mix_Effect = -weightBase * (marginUnitBase - avgMarginBase);
+            row.Rate_Effect = 0;
         } else {
-            // 现有产品:
-            // Mix = (Weight_Curr - Weight_Base) * (Unit_Margin_Base - Global_Avg)
-            // Rate = Weight_Curr * (Unit_Margin_Curr - Unit_Margin_Base)
-            row['Mix_Effect'] = (row['Weight_Curr'] - row['Weight_Base']) * (row['Unit_Margin_Base'] - globalAvgMarginBase);
-            row['Rate_Effect'] = row['Weight_Curr'] * (row['Unit_Margin_Curr'] - row['Unit_Margin_Base']);
+            row.Mix_Effect = (weightCurr - weightBase) * (marginUnitBase - avgMarginBase);
+            row.Rate_Effect = weightCurr * (marginUnitCurr - marginUnitBase);
         }
 
-        results.push(row);
-    });
-
-    return results;
-}
-
-
-// ==================== PVM 效应聚合到指定维度 ====================
-/**
- * 将原子层级的 PVM 效应汇总到指定维度
- * 对应 app.py 的 aggregate_pvm_effects()
- *
- * @param {Array} atomicData - 原子层级 PVM 效应
- * @param {string} groupDim - 聚合目标维度 (如 'Dim_A')
- * @returns {Array} 按维度聚合后的效应数组
- */
-function aggregatePVMEffects(atomicData, groupDim) {
-    const groups = {};
-
-    atomicData.forEach(row => {
-        const key = row[groupDim] || '';
-        if (!groups[key]) {
-            groups[key] = {
-                [groupDim]: key,
-                Vol_Base: 0,
-                Vol_Curr: 0,
-                Total_Margin_Base: 0,
-                Total_Margin_Curr: 0,
-                Mix_Effect: 0,
-                Rate_Effect: 0
-            };
-        }
-        const g = groups[key];
-        g.Vol_Base += row['Sales Volume_Base'];
-        g.Vol_Curr += row['Sales Volume_Curr'];
-        g.Total_Margin_Base += row['Total Margin_Base'];
-        g.Total_Margin_Curr += row['Total Margin_Curr'];
-        g.Mix_Effect += row['Mix_Effect'];
-        g.Rate_Effect += row['Rate_Effect'];
-    });
-
-    return Object.values(groups).map(g => {
-        g.Margin_Unit_Base = g.Vol_Base > 0 ? g.Total_Margin_Base / g.Vol_Base : 0;
-        g.Margin_Unit_Curr = g.Vol_Curr > 0 ? g.Total_Margin_Curr / g.Vol_Curr : 0;
-        g.Total_Contribution = g.Mix_Effect + g.Rate_Effect;
-        return g;
+        row.Total_Contribution = row.Mix_Effect + row.Rate_Effect;
+        return row;
     });
 }
 
@@ -1182,14 +1114,11 @@ function triggerUpdate() {
         const levelBase = calculateGlobalMetrics(dfLevel, baseMonth);
         const levelCurr = calculateGlobalMetrics(dfLevel, currMonth);
 
-        // 原子 PVM 效应（基于视图范围权重）
-        const atomicEffects = calculateAtomicPVMEffects(
-            dfLevel, baseMonth, currMonth,
+        // 当前维度口径 PVM 效应（基于视图范围权重）
+        const effects = calculateDimensionPVMEffects(
+            dfLevel, baseMonth, currMonth, dim,
             levelCurr.totalVol, levelBase.totalVol, levelBase.avgMargin
         );
-
-        // 聚合到当前维度
-        const effects = aggregatePVMEffects(atomicEffects, dim);
 
         // 准备展示数据
         const displayData = prepareDisplayData(
@@ -1206,11 +1135,10 @@ function triggerUpdate() {
         });
 
         if (isDrilled) {
-            const globalAtomicEffects = calculateAtomicPVMEffects(
-                dfLevel, baseMonth, currMonth,
+            const globalEffects = calculateDimensionPVMEffects(
+                dfLevel, baseMonth, currMonth, dim,
                 globalCurr.totalVol, globalBase.totalVol, globalBase.avgMargin
             );
-            const globalEffects = aggregatePVMEffects(globalAtomicEffects, dim);
             globalDisplayData = prepareDisplayData(
                 globalEffects, dim,
                 globalBase.totalVol, globalCurr.totalVol,
@@ -1366,7 +1294,7 @@ function renderCharts() {
             chartDiv.id,
             lr.effects,
             dim,
-            `${dimName}贡献分解 (自底向上计算)`,
+            `${dimName}贡献分解 (当前维度口径)`,
             lr.levelAvgMarginBase,
             lr.levelAvgMarginCurr,
             colorSchemes[level % colorSchemes.length]

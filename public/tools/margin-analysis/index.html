@@ -162,15 +162,15 @@
                 <div class="tip-box">
                     💡 <strong>提示</strong>：Dim_D 和 Dim_E 为可选列，如果数据中不包含则不会显示。上传数据后可在侧边栏修改各维度的显示名称。
                 </div>
-                <h3>计算逻辑 (自底向上)</h3>
+                <h3>计算逻辑 (当前维度口径)</h3>
                 <ol>
-                    <li><strong>原子化计算</strong>: 首先在最细颗粒度（所有维度的组合）上计算每个细分项的 PVM 效应。</li>
-                    <li><strong>结构效应 (Mix)</strong>: 细分项权重变化带来的影响。</li>
-                    <li><strong>费率效应 (Rate)</strong>: 细分项单车边际变化带来的影响。</li>
-                    <li><strong>维度聚合</strong>: 将细分项的效应汇总到当前查看的维度（如大区）。</li>
+                    <li><strong>当前维度聚合</strong>: 每张图直接按正在查看的维度汇总销量和边际，例如大区、国家或车型。</li>
+                    <li><strong>结构效应 (Mix)</strong>: 当前维度销量占比变化带来的单车边际影响。</li>
+                    <li><strong>费率效应 (Rate)</strong>: 当前维度自身单车边际变化带来的影响。</li>
+                    <li><strong>口径差异</strong>: 不同维度下 Mix 和 Rate 的拆分会不同，这是聚合口径不同造成的正常结果。</li>
                 </ol>
                 <div class="tip-box">
-                    💡 这种方法能确保大区内部的产品结构变化正确归因为结构效应，而不是费率效应。
+                    💡 当前口径更适合国家、车型、版型频繁变化的数据。新增或退出的维度项缺少可比单车边际，因此归入结构效应；总贡献仍回到该视图的单车边际变化。
                 </div>
             </div>
         </details>
@@ -212,30 +212,33 @@
 
     <!-- PVM 假设说明 -->
     <details id="pvm-assumptions" class="usage-details" style="display:none;">
-        <summary class="usage-summary">📐 PVM效应计算假设说明</summary>
+        <summary class="usage-summary">📐 当前维度口径说明</summary>
         <div class="usage-content">
+            <p class="assumption-note">
+                本工具按当前展示维度直接计算归因，不再强制从最底层组合向上汇总。这样能减少国际业务中版型、国家、配置频繁变化带来的不可比问题；如果需要解释更底层的根因，请继续下钻到对应维度观察。
+            </p>
             <div class="table-wrapper">
                 <table class="assumption-table">
                     <thead>
                         <tr>
-                            <th style="width:15%;">产品类型</th>
+                            <th style="width:15%;">维度项类型</th>
                             <th style="width:50%;">结构效应 (Mix Effect)</th>
                             <th style="width:35%;">费率效应 (Rate Effect)</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td class="product-type">现有产品</td>
+                            <td class="product-type">可比维度项</td>
                             <td class="formula">(当期权重 - 基期权重) × (基期单车边际 - 基期平均单车边际)</td>
                             <td class="formula">当期权重 × (当期单车边际 - 基期单车边际)</td>
                         </tr>
                         <tr>
-                            <td class="product-type">0→N产品</td>
+                            <td class="product-type">新增维度项</td>
                             <td class="formula">当期权重 × (当期单车边际 - 基期平均单车边际)</td>
                             <td style="text-align:center; color:var(--text-secondary);">0</td>
                         </tr>
                         <tr>
-                            <td class="product-type">N→0产品</td>
+                            <td class="product-type">退出维度项</td>
                             <td class="formula">- 基期权重 × (基期单车边际 - 基期平均单车边际)</td>
                             <td style="text-align:center; color:var(--text-secondary);">0</td>
                         </tr>
@@ -243,7 +246,7 @@
                 </table>
             </div>
             <p class="assumption-note">
-                💡 <strong>说明：</strong>所有计算均在最细颗粒度进行，展示的数值为细分项汇总结果。这样可以避免高层级维度掩盖实际的结构变化。
+                💡 <strong>阅读提示：</strong>大区、国家、车型等不同维度的结构效应和费率效应总和可能不同，这不是计算错误，而是当前维度口径下的业务解释不同。判断一个异常时，先看当前维度是否能回答问题，再决定是否继续下钻。
             </p>
         </div>
     </details>
