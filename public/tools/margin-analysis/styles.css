@@ -72,10 +72,10 @@ body {
 }
 
 .sidebar-toggle {
-    position: absolute;
+    position: fixed;
     top: 12px;
-    right: 12px;
-    background: none;
+    left: calc(var(--sidebar-width) - 40px);
+    background: var(--bg-card);
     border: 1px solid var(--border-light);
     border-radius: 6px;
     width: 28px;
@@ -87,6 +87,8 @@ body {
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
+    z-index: 130;
+    box-shadow: 0 4px 14px rgba(20, 20, 19, 0.08);
 }
 .sidebar-toggle:hover {
     color: var(--accent-orange);

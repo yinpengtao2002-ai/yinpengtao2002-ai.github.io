@@ -22,16 +22,18 @@ export default function MarginAnalysisPage() {
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.22 }}
-                className="fixed top-4 right-4 z-50 rounded-full border border-[#e8e6dc]/90 bg-[#faf9f5]/88 px-2 py-2 shadow-[0_10px_30px_rgba(20,20,19,0.08)] backdrop-blur-md"
+                className="fixed left-4 top-4 z-50 sm:left-auto sm:right-20"
             >
                 <button
                     type="button"
                     onClick={handleBack}
-                    className="inline-flex cursor-pointer items-center gap-2 rounded-full border-0 bg-transparent px-3 py-2 font-[inherit] text-sm font-medium text-[#141413]/70 transition-colors hover:bg-white/80 hover:text-[#141413]"
+                    className="group inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-[#e8e6dc]/90 bg-white/85 font-[inherit] text-sm font-semibold text-[#141413]/72 shadow-[0_12px_34px_rgba(20,20,19,0.10)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-[#d97757]/45 hover:bg-white hover:text-[#141413] hover:shadow-[0_16px_38px_rgba(217,119,87,0.14)] focus:outline-none focus:ring-2 focus:ring-[#d97757]/25 sm:h-11 sm:w-auto sm:gap-2 sm:px-3.5 sm:pr-4"
                     aria-label="返回上一页"
                 >
-                    <ArrowLeft className="h-4 w-4" />
-                    <span>返回</span>
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#faf9f5] text-[#d97757] transition-colors group-hover:bg-[#fff3ee]">
+                        <ArrowLeft className="h-4 w-4" />
+                    </span>
+                    <span className="hidden sm:inline">返回</span>
                 </button>
             </motion.div>
 
