@@ -936,8 +936,8 @@ function calculateGlobalMetrics(data, month) {
 
 // ==================== 当前维度 PVM 效应计算 ====================
 /**
- * 在当前展示维度上直接计算 Mix 和 Rate 效应。
- * 这种口径不再先拆到所有维度组合，适合版型/国家频繁变化、底层组合缺少可比基期或当期的数据。
+ * 在当前展示维度上计算 Mix 和 Rate 效应。
+ * 这种口径适合版型、国家、配置频繁变化的数据。
  *
  * @param {Array} data - 已筛选的数据行
  * @param {string} baseMonth - 基期
@@ -1117,7 +1117,7 @@ function triggerUpdate() {
         const levelBase = calculateGlobalMetrics(dfLevel, baseMonth);
         const levelCurr = calculateGlobalMetrics(dfLevel, currMonth);
 
-        // 当前维度口径 PVM 效应（基于视图范围权重）
+        // 基于当前视图范围权重计算 PVM 效应
         const effects = calculateDimensionPVMEffects(
             dfLevel, baseMonth, currMonth, dim,
             levelCurr.totalVol, levelBase.totalVol, levelBase.avgMargin
@@ -1297,7 +1297,7 @@ function renderCharts() {
             chartDiv.id,
             lr.effects,
             dim,
-            `${dimName}贡献分解 (当前维度口径)`,
+            `${dimName}贡献分解（按当前维度）`,
             lr.levelAvgMarginBase,
             lr.levelAvgMarginCurr,
             colorSchemes[level % colorSchemes.length]
