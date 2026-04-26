@@ -102,9 +102,12 @@ body {
     border-radius: 8px;
     width: 36px;
     height: 36px;
+    gap: 6px;
     cursor: pointer;
     color: var(--accent-orange);
     font-size: 16px;
+    font-family: 'Poppins', Arial, sans-serif;
+    font-weight: 600;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -115,6 +118,10 @@ body {
 .sidebar-expand:hover {
     box-shadow: var(--shadow-hover);
     transform: scale(1.05);
+}
+
+.sidebar-expand-text {
+    display: none;
 }
 
 /* 侧边栏内容 */
@@ -1107,18 +1114,33 @@ details[open] > .usage-summary::after {
     .title-tags {
         display: none;
     }
-    /* 展开按钮移到底部中央 */
+    /* 展开按钮固定在左下角，避免图表遮挡且更像控制台入口 */
     .sidebar-expand {
         top: auto;
         bottom: 16px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 48px;
-        height: 32px;
-        border-radius: 16px;
+        left: 16px;
+        width: auto;
+        min-width: 96px;
+        height: 40px;
+        padding: 0 14px;
+        border-radius: 999px;
+        z-index: 120;
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        box-shadow: 0 10px 30px rgba(20, 20, 19, 0.16);
     }
     .sidebar-expand:hover {
-        transform: translateX(-50%) scale(1.05);
+        transform: translateY(-1px);
+    }
+    .sidebar-expand-icon {
+        font-size: 18px;
+        line-height: 1;
+    }
+    .sidebar-expand-text {
+        display: inline;
+        color: var(--text-primary);
+        font-size: 0.82rem;
     }
     /* 页脚精简 */
     .footer {
