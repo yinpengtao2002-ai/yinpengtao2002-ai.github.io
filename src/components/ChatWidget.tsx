@@ -322,7 +322,7 @@ export default function ChatWidget() {
         };
     }, [isMobileLike, isOpen]);
 
-    const callClaudeAPI = async (allMessages: Message[], assistantMsgId: string): Promise<boolean> => {
+    const callChatAPI = async (allMessages: Message[], assistantMsgId: string): Promise<boolean> => {
         try {
             const apiMessages = allMessages
                 .filter((m) => !m.isTyping && m.content)
@@ -374,7 +374,7 @@ export default function ChatWidget() {
         setMessages((prev) => [...prev, { id: "typing", role: "assistant", content: "", isTyping: true }]);
         const assistantMsgId = `assistant-${Date.now()}`;
         if (aiAvailable !== false) {
-            const success = await callClaudeAPI(updatedMessages, assistantMsgId);
+            const success = await callChatAPI(updatedMessages, assistantMsgId);
             if (success) { setIsProcessing(false); return; }
             setAiAvailable(false);
         }

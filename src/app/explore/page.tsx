@@ -147,7 +147,7 @@ const GREETING_TYPING_MESSAGE: Message = {
 const GREETING_MESSAGE: Message = {
     id: "greeting",
     role: "assistant",
-    content: "你好！我是 Lucas 的 AI 助手，搭载 Claude Opus 4.6 模型。\n\n你可以问我任何关于这个网站的问题，比如有什么文章、Lucas 是谁，或者随便聊聊也行。",
+    content: "你好！我是 Lucas 的 AI 助手。\n\n你可以问我任何关于这个网站的问题，比如有什么文章、Lucas 是谁，或者随便聊聊也行。",
 };
 
 function TypingIndicator() {
@@ -270,7 +270,7 @@ export default function ExplorePage() {
         return () => clearTimeout(timer);
     }, []);
 
-    const callClaudeAPI = async (allMessages: Message[], assistantMsgId: string): Promise<boolean> => {
+    const callChatAPI = async (allMessages: Message[], assistantMsgId: string): Promise<boolean> => {
         try {
             const apiMessages = allMessages
                 .filter((m) => !m.isTyping && m.content)
@@ -330,7 +330,7 @@ export default function ExplorePage() {
         const assistantMsgId = `assistant-${Date.now()}`;
 
         if (aiAvailable !== false) {
-            const success = await callClaudeAPI(updatedMessages, assistantMsgId);
+            const success = await callChatAPI(updatedMessages, assistantMsgId);
             if (success) { setIsProcessing(false); return; }
             setAiAvailable(false);
         }
