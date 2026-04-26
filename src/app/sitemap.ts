@@ -3,6 +3,8 @@ import { aiContent, financeContent } from "@/lib/data/generated/content";
 
 const BASE_URL = "https://yinpengtao.cn";
 
+export const dynamic = "force-static";
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages: MetadataRoute.Sitemap = [
     { url: BASE_URL, lastModified: new Date(), priority: 1.0 },

@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:vercel": "npm run build",
+    "build:static": "STATIC_EXPORT=true npm run build",
     "start": "next start",
     "lint": "eslint",
     "gen": "node scripts/generate-content.js",
