@@ -126,7 +126,6 @@ export default function Home() {
       <Hero
         name={siteConfig.name}
         description={siteConfig.description}
-        profileLine="汽车行业财务 BP · 财务模型与 AI 实践"
         subtitle={siteConfig.subtitle}
       />
 
@@ -478,6 +477,18 @@ export default function Home() {
             </p>
             <p style={{ fontSize: "0.875rem", color: "var(--muted)", marginTop: "0.25rem", fontFamily: HOME_UI_FONT }}>
               {siteConfig.author.chineseName} &middot; {siteConfig.author.pinyinName}
+            </p>
+            <p
+              style={{
+                fontSize: "0.72rem",
+                color: "var(--muted)",
+                opacity: 0.32,
+                marginTop: "0.55rem",
+                fontFamily: HOME_UI_FONT,
+                letterSpacing: "0.04em",
+              }}
+            >
+              Chery International Financial BP
             </p>
           </div>
 
