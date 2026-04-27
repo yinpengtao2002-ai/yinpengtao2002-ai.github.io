@@ -478,18 +478,42 @@ export default function Home() {
             <p style={{ fontSize: "0.875rem", color: "var(--muted)", marginTop: "0.25rem", fontFamily: HOME_UI_FONT }}>
               {siteConfig.author.chineseName} &middot; {siteConfig.author.pinyinName}
             </p>
-            <p
-              style={{
-                fontSize: "0.72rem",
-                color: "var(--muted)",
-                opacity: 0.32,
-                marginTop: "0.55rem",
-                fontFamily: HOME_UI_FONT,
-                letterSpacing: "0.04em",
-              }}
-            >
-              Chery International Financial BP
-            </p>
+            <div style={{ marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+              <p
+                style={{
+                  fontSize: "0.78rem",
+                  color: "var(--muted)",
+                  opacity: 0.48,
+                  margin: 0,
+                  fontFamily: HOME_UI_FONT,
+                }}
+              >
+                奇瑞汽车 · 国际 · 财务 BP
+              </p>
+              <p
+                style={{
+                  fontSize: "0.72rem",
+                  color: "var(--muted)",
+                  opacity: 0.34,
+                  margin: 0,
+                  fontFamily: HOME_UI_FONT,
+                  letterSpacing: "0.04em",
+                }}
+              >
+                Chery International Financial BP
+              </p>
+              <p
+                style={{
+                  fontSize: "0.72rem",
+                  color: "var(--muted)",
+                  opacity: 0.28,
+                  margin: "0.45rem 0 0",
+                  fontFamily: HOME_UI_FONT,
+                }}
+              >
+                汽车出海 · 经营分析 · 财务模型 · AI 实践
+              </p>
+            </div>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem", fontFamily: HOME_UI_FONT }}>
