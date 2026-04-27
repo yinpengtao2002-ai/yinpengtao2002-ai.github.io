@@ -11,12 +11,14 @@ const HERO_SUBTITLE_FONT = 'var(--font-hero-display), "Songti SC", "STSong", "No
 interface HeroProps {
     name: string;
     description?: string;
+    profileLine?: string;
     subtitle?: string;
 }
 
 export default function Hero({
     description,
     name,
+    profileLine,
     subtitle,
 }: HeroProps) {
     const { lowMotion, isMobileLike } = useViewportProfile();
@@ -110,6 +112,27 @@ export default function Hero({
                                     ? "text-base font-normal tracking-[0.16em] uppercase"
                                     : "text-xl sm:text-2xl md:text-3xl font-normal tracking-[0.34em] uppercase"}
                             />
+
+                            {profileLine && (
+                                <motion.p
+                                    initial={{ opacity: 0, y: lowMotion ? 0 : 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: lowMotion ? 0.35 : 0.7, delay: lowMotion ? 0.2 : 2.4 }}
+                                    style={{
+                                        margin: 0,
+                                        color: "var(--accent)",
+                                        fontFamily:
+                                            'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif',
+                                        fontSize: isMobileLike ? "0.8rem" : "0.95rem",
+                                        fontWeight: 600,
+                                        letterSpacing: 0,
+                                        lineHeight: 1.6,
+                                        textAlign: "center",
+                                    }}
+                                >
+                                    {profileLine}
+                                </motion.p>
+                            )}
 
                             {/* Welcome Message */}
                             <motion.div

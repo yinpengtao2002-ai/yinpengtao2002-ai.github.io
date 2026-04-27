@@ -123,7 +123,12 @@ export default function Home() {
   return (
     <>
       {/* ===== HERO (already 100vh, has its own scroll arrow) ===== */}
-      <Hero name={siteConfig.name} description={siteConfig.description} subtitle={siteConfig.subtitle} />
+      <Hero
+        name={siteConfig.name}
+        description={siteConfig.description}
+        profileLine="汽车行业财务 BP · 财务模型与 AI 实践"
+        subtitle={siteConfig.subtitle}
+      />
 
       {/* ===== FINANCE TOOLS PREVIEW ===== */}
       <FullScreenSection id="finance-articles" nextId="ai-articles" lowMotion={lowMotion} isMobileLike={isMobileLike}>
