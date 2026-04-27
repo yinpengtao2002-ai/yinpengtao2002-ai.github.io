@@ -10,10 +10,12 @@ const HERO_SUBTITLE_FONT = 'var(--font-hero-display), "Songti SC", "STSong", "No
 
 interface HeroProps {
     name: string;
+    description?: string;
     subtitle?: string;
 }
 
 export default function Hero({
+    description,
     name,
     subtitle,
 }: HeroProps) {
@@ -116,7 +118,7 @@ export default function Hero({
                                 transition={{ duration: lowMotion ? 0.35 : 1, delay: lowMotion ? 0.25 : 3.5 }}
                             >
                                 <ThinkingSubtitle
-                                    finalText="奇瑞汽车财务 BP。这里记录我的财务模型、文章和工具实践。"
+                                    finalText="这里记录我的财务模型、文章和工具实践。"
                                     thoughts={["Loading content...", "Preparing welcome message..."]}
                                     reducedMotion={lowMotion}
                                     className={isMobileLike
@@ -124,6 +126,26 @@ export default function Hero({
                                         : "text-lg sm:text-xl font-normal tracking-[0.24em] text-[#d97757]"}
                                 />
                             </motion.div>
+
+                            {description && (
+                                <motion.p
+                                    initial={{ opacity: 0, y: lowMotion ? 0 : 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: lowMotion ? 0.35 : 0.8, delay: lowMotion ? 0.35 : 4.1 }}
+                                    style={{
+                                        maxWidth: isMobileLike ? "20rem" : "34rem",
+                                        margin: 0,
+                                        color: "var(--muted)",
+                                        fontFamily:
+                                            'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif',
+                                        fontSize: isMobileLike ? "0.8rem" : "0.95rem",
+                                        lineHeight: 1.8,
+                                        textAlign: "center",
+                                    }}
+                                >
+                                    &ldquo;{description}&rdquo;
+                                </motion.p>
+                            )}
                         </motion.div>
                     )}
                 </div>
