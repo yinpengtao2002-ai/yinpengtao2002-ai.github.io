@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import { Hero } from "@/components/layout";
 import { siteConfig } from "@/lib/config/site";
-import { sections } from "@/lib/data/sections";
 import { aiContent, essaysContent, financeContent } from "@/lib/data/generated/content";
 import { scrollToSection } from "@/lib/scroll";
 import { useViewportProfile } from "@/lib/useLowMotionMode";
@@ -125,99 +124,6 @@ export default function Home() {
     <>
       {/* ===== HERO (already 100vh, has its own scroll arrow) ===== */}
       <Hero name={siteConfig.name} subtitle={siteConfig.subtitle} />
-
-      {/* ===== ABOUT ===== */}
-      <FullScreenSection
-        id="about"
-        nextId="finance-articles"
-        lowMotion={lowMotion}
-        isMobileLike={isMobileLike}
-        mobileTopAlign
-      >
-        <motion.div
-          initial={revealInitial}
-          whileInView={revealWhileInView}
-          viewport={sectionViewport}
-          transition={sectionTransition}
-        >
-          <p
-            style={{
-              fontSize: "0.875rem",
-              textTransform: "uppercase",
-              letterSpacing: "0.4em",
-              color: "var(--accent)",
-              marginBottom: "1.5rem",
-              fontFamily: HOME_UI_FONT,
-            }}
-          >
-            About
-          </p>
-          <h2
-            style={{
-              fontSize: "clamp(2rem, 5vw, 3rem)",
-              fontWeight: 700,
-              color: "var(--foreground)",
-              marginBottom: "2rem",
-              lineHeight: 1.2,
-            }}
-          >
-            你好，我是
-            <span className="gradient-text"> {siteConfig.author.chineseName}</span>
-          </h2>
-          <p
-            style={{
-              fontSize: "1.125rem",
-              lineHeight: 1.8,
-              color: "var(--muted)",
-              marginBottom: "1.5rem",
-            }}
-          >
-            目前就职于奇瑞汽车，担任财务BP。
-          </p>
-          <p style={{ fontSize: "1rem", fontStyle: "italic", color: "var(--accent)" }}>
-            &ldquo;{siteConfig.description}&rdquo;
-          </p>
-
-          {/* 领域标签 */}
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              justifyContent: "center",
-              gap: isMobileLike ? "0.5rem" : "0.75rem",
-              marginTop: isMobileLike ? "2rem" : "3rem",
-            }}
-          >
-            {sections.map((section) => {
-              const Icon = section.icon;
-              return (
-                <Link key={section.id} href={section.href} style={{ textDecoration: "none" }}>
-                  <motion.div
-                    whileHover={{ y: -3 }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.5rem",
-                      padding: isMobileLike ? "0.5rem 0.9rem" : "0.625rem 1.25rem",
-                      borderRadius: "9999px",
-                      border: "1px solid var(--border)",
-                      background: "var(--card)",
-                      cursor: "pointer",
-                      transition: "all 0.3s ease",
-                      fontFamily: HOME_UI_FONT,
-                    }}
-                  >
-                    <Icon style={{ width: 16, height: 16, color: "var(--accent)" }} />
-                      <span style={{ fontSize: isMobileLike ? "0.8rem" : "0.875rem", fontWeight: 500, color: "var(--foreground)" }}>
-                        {section.subtitle}
-                      </span>
-                    </motion.div>
-                </Link>
-              );
-            })}
-          </div>
-        </motion.div>
-      </FullScreenSection>
 
       {/* ===== FINANCE TOOLS PREVIEW ===== */}
       <FullScreenSection id="finance-articles" nextId="ai-articles" lowMotion={lowMotion} isMobileLike={isMobileLike}>
