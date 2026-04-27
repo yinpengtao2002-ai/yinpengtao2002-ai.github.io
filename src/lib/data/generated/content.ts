@@ -1,5 +1,5 @@
 // Auto-generated content data from markdown + Notion
-// Generated at: 2026-04-27T14:09:00.279Z
+// Generated at: 2026-04-27T16:16:40.457Z
 // DO NOT EDIT MANUALLY - run 'npm run prebuild' to regenerate
 
 export interface ContentItem {
@@ -36,12 +36,12 @@ export const financeContent: ContentItem[] = [
   {
     "id": 1,
     "slug": "sensitivity-analysis",
-    "title": "利润敏感性分析",
-    "description": "调整收入、毛利率、费用率和税率假设，快速判断利润最受哪些因素影响。",
+    "title": "利润桥敏感性分析",
+    "description": "按企业 FBP 内部利润桥口径，分析收入、返利、净收入、材料成本、变动费用、固定项和利润项对利润的影响。",
     "date": "2026-04",
     "category": null,
     "href": "/finance/sensitivity-analysis",
-    "content": "当预算或预测出现变化时，它可以帮助你快速回答三个问题：利润会变多少、哪个因素影响最大、不同情景之间差距有多大。\n\n1. 调整收入、毛利率、费用率和税率假设\n2. 对比经营利润、净利润和利润率变化\n3. 查看关键驱动因素排序、双变量矩阵和情景对比\n4. 导出结果，方便复盘或汇报",
+    "content": "当预算或预测出现变化时，它可以帮助你快速回答三个问题：利润会变多少、哪个科目影响最大、不同情景之间差距有多大。\n\n1. 调整收入、返利、材料成本、变动制造费用、变动销售费用等假设\n2. 计算净收入、边际总额和最终利润\n3. 管理技术开发费、国际固定费用、折旧加摊销、后台公共费用等固定项\n4. 纳入其他业务利润、备件利润和子公司利润\n5. 查看关键科目排序、双变量矩阵和情景对比\n6. 导出模板和结果，方便复盘或汇报",
     "source": "markdown"
   },
   {

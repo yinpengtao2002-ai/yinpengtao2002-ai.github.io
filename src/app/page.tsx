@@ -478,23 +478,24 @@ export default function Home() {
             <p style={{ fontSize: "0.875rem", color: "var(--muted)", marginTop: "0.25rem", fontFamily: HOME_UI_FONT }}>
               {siteConfig.author.chineseName} &middot; {siteConfig.author.pinyinName}
             </p>
-            <div style={{ marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+            <div style={{ marginTop: "0.95rem", display: "flex", flexDirection: "column", gap: "0.25rem" }}>
               <p
                 style={{
                   fontSize: "0.78rem",
                   color: "var(--muted)",
-                  opacity: 0.48,
+                  opacity: 0.86,
                   margin: 0,
                   fontFamily: HOME_UI_FONT,
+                  fontWeight: 400,
                 }}
               >
                 奇瑞汽车 · 国际 · 财务 BP
               </p>
               <p
                 style={{
-                  fontSize: "0.72rem",
+                  fontSize: "0.76rem",
                   color: "var(--muted)",
-                  opacity: 0.34,
+                  opacity: 0.82,
                   margin: 0,
                   fontFamily: HOME_UI_FONT,
                   letterSpacing: "0.04em",
@@ -506,7 +507,7 @@ export default function Home() {
                 style={{
                   fontSize: "0.72rem",
                   color: "var(--muted)",
-                  opacity: 0.28,
+                  opacity: 0.74,
                   margin: "0.45rem 0 0",
                   fontFamily: HOME_UI_FONT,
                 }}
