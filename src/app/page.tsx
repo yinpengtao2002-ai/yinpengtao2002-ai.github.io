@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState } from "react";
 import { Hero } from "@/components/layout";
 import { siteConfig } from "@/lib/config/site";
 import { sections } from "@/lib/data/sections";
@@ -9,146 +8,10 @@ import { aiContent, essaysContent, financeContent } from "@/lib/data/generated/c
 import { scrollToSection } from "@/lib/scroll";
 import { useViewportProfile } from "@/lib/useLowMotionMode";
 import Link from "next/link";
-import { ArrowRight, Mail, Linkedin, MessageCircle, Menu, X } from "lucide-react";
+import { ArrowRight, Mail, Linkedin, MessageCircle } from "lucide-react";
 
 const HOME_UI_FONT =
   'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
-
-const HOME_NAV_ITEMS = [
-  { id: "about", label: "关于" },
-  { id: "finance-articles", label: "财务模型" },
-  { id: "ai-articles", label: "AI 工作流" },
-  { id: "essays", label: "日常随笔" },
-  { id: "footer", label: "联系" },
-];
-
-function HomeNavigation({ isMobileLike }: { isMobileLike: boolean }) {
-  const [open, setOpen] = useState(false);
-
-  const goToSection = (id: string) => {
-    scrollToSection(id);
-    setOpen(false);
-  };
-
-  if (isMobileLike) {
-    return (
-      <div style={{ position: "fixed", top: 16, left: 16, zIndex: 45, fontFamily: HOME_UI_FONT }}>
-        <button
-          type="button"
-          onClick={() => setOpen((value) => !value)}
-          aria-expanded={open}
-          aria-label="打开栏目目录"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            minHeight: 40,
-            padding: "0 12px",
-            borderRadius: 999,
-            border: "1px solid var(--border)",
-            background: "color-mix(in srgb, var(--card) 86%, transparent)",
-            color: "var(--foreground)",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-            backdropFilter: "blur(14px)",
-            WebkitBackdropFilter: "blur(14px)",
-            fontSize: 13,
-            fontWeight: 600,
-          }}
-        >
-          {open ? <X style={{ width: 16, height: 16 }} /> : <Menu style={{ width: 16, height: 16 }} />}
-          目录
-        </button>
-
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.18 }}
-            style={{
-              marginTop: 10,
-              width: 152,
-              padding: 6,
-              borderRadius: 12,
-              border: "1px solid var(--border)",
-              background: "color-mix(in srgb, var(--card) 92%, transparent)",
-              boxShadow: "0 18px 44px rgba(0,0,0,0.12)",
-              backdropFilter: "blur(16px)",
-              WebkitBackdropFilter: "blur(16px)",
-            }}
-          >
-            {HOME_NAV_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => goToSection(item.id)}
-                style={{
-                  width: "100%",
-                  display: "block",
-                  padding: "10px 10px",
-                  border: 0,
-                  borderRadius: 8,
-                  background: "transparent",
-                  color: "var(--foreground)",
-                  textAlign: "left",
-                  fontSize: 13,
-                  fontFamily: HOME_UI_FONT,
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
-          </motion.div>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <nav
-      aria-label="首页栏目导航"
-      style={{
-        position: "fixed",
-        top: 18,
-        left: "50%",
-        transform: "translateX(-50%)",
-        zIndex: 45,
-        display: "flex",
-        alignItems: "center",
-        gap: 4,
-        padding: 5,
-        borderRadius: 999,
-        border: "1px solid var(--border)",
-        background: "color-mix(in srgb, var(--card) 82%, transparent)",
-        boxShadow: "0 12px 32px rgba(0,0,0,0.08)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        fontFamily: HOME_UI_FONT,
-      }}
-    >
-      {HOME_NAV_ITEMS.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          onClick={() => goToSection(item.id)}
-          style={{
-            border: 0,
-            borderRadius: 999,
-            background: "transparent",
-            color: "var(--muted)",
-            cursor: "pointer",
-            fontSize: 13,
-            fontWeight: 600,
-            padding: "8px 14px",
-            whiteSpace: "nowrap",
-            fontFamily: HOME_UI_FONT,
-          }}
-        >
-          {item.label}
-        </button>
-      ))}
-    </nav>
-  );
-}
 
 /* Scroll-down arrow that links to the next section */
 function ScrollArrow({ targetId, lowMotion, compact = false }: { targetId: string; lowMotion: boolean; compact?: boolean }) {
@@ -260,8 +123,6 @@ export default function Home() {
 
   return (
     <>
-      <HomeNavigation isMobileLike={isMobileLike} />
-
       {/* ===== HERO (already 100vh, has its own scroll arrow) ===== */}
       <Hero name={siteConfig.name} subtitle={siteConfig.subtitle} />
 

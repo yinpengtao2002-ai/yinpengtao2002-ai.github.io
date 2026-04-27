@@ -3,7 +3,8 @@
 /* eslint-disable @next/next/no-img-element */
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Home } from "lucide-react";
+import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -203,6 +204,21 @@ export default function ArticleClient({ article, category }: ArticleClientProps)
                     >
                         {category === "ai" ? "AI Workflow" : category === "finance" ? "Financial Modeling" : "Daily Essays"}
                     </span>
+                    <Link
+                        href="/"
+                        aria-label="回到首页"
+                        style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                            color: "var(--muted)",
+                            fontSize: 14,
+                            textDecoration: "none",
+                        }}
+                    >
+                        <Home style={{ width: 15, height: 15 }} />
+                        <span>首页</span>
+                    </Link>
                 </div>
             </header>
 

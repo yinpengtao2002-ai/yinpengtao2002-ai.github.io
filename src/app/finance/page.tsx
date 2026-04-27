@@ -3,14 +3,14 @@
 import { motion } from "framer-motion";
 import { financeContent } from "@/lib/data/generated/content";
 import Link from "next/link";
-import { ArrowLeft, TrendingUp } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 
 export default function FinancePage() {
   return (
     <div
       style={{
         minHeight: "100vh",
-        padding: "2rem",
+        padding: "5rem 2rem 2rem",
         background: "var(--background)",
       }}
     >
@@ -26,24 +26,8 @@ export default function FinancePage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          style={{ paddingTop: "2rem", paddingBottom: "3rem" }}
+          style={{ paddingTop: "1rem", paddingBottom: "3rem" }}
         >
-          <Link
-            href="/"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              color: "var(--muted)",
-              textDecoration: "none",
-              fontSize: "0.875rem",
-              marginBottom: "2rem",
-            }}
-          >
-            <ArrowLeft style={{ width: 16, height: 16 }} />
-            返回首页
-          </Link>
-
           <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem" }}>
             <div
               className="bg-gradient-to-br from-[#6a9bcc] to-[#788c5d]"
