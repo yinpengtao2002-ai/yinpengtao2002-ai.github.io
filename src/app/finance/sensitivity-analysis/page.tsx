@@ -2,24 +2,24 @@ import type { Metadata } from "next";
 import ToolBackButton from "@/components/finance/ToolBackButton";
 
 export const metadata: Metadata = {
-    title: "敏感性分析模型｜利润情景推演工具｜Lucas Yin",
-    description: "面向企业 FBP 的利润敏感性工作台，可导入预算假设，分析收入、毛利率、费用和税率变化对经营利润与净利润的影响。",
+    title: "利润敏感性分析｜情景推演工具｜Lucas Yin",
+    description: "调整收入、毛利率、费用率和税率假设，快速判断利润最受哪些因素影响。",
 };
 
 function ProjectDescription({ className = "" }: { className?: string }) {
     return (
         <section className={className}>
-            <h1>敏感性分析模型</h1>
+            <h1>利润敏感性分析</h1>
             <p>
-                这是一个用于企业 FBP 利润测算的敏感性分析工具，用来判断收入、毛利率、费用率、
-                固定费用和税率变化对经营利润与净利润的影响。
+                用于预算、滚动预测和经营复盘。输入一组利润假设后，可以看到收入、毛利率、
+                费用率和税率变化会怎样影响经营利润与净利润。
             </p>
             <h2>适用场景</h2>
             <ul>
                 <li>年度预算和滚动预测。</li>
-                <li>经营利润压力测试。</li>
-                <li>管理层情景推演。</li>
-                <li>判断哪些变量对利润最敏感。</li>
+                <li>判断利润目标能否承受收入或费用变化。</li>
+                <li>对比悲观、基准、乐观三种经营情景。</li>
+                <li>找出最值得管理层关注的利润驱动因素。</li>
             </ul>
             <h2>输入数据</h2>
             <ul>
@@ -54,7 +54,7 @@ export default function SensitivityAnalysisPage() {
             <div className="absolute inset-0">
                 <iframe
                     src="/tools/sensitivity-analysis/index.html"
-                    title="敏感性分析模型"
+                    title="利润敏感性分析"
                     className="absolute inset-0 h-full w-full border-0"
                     allow="clipboard-read; clipboard-write"
                 />

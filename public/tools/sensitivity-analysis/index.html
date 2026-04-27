@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>敏感性分析模型</title>
+    <title>利润敏感性分析</title>
     <script src="../../vendor/plotly/plotly.min.js"></script>
     <script src="../../vendor/xlsx/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="styles.css">
@@ -14,8 +14,8 @@
 
         <section class="sidebar-block">
             <div class="sidebar-kicker">Sensitivity Lab</div>
-            <h1 class="sidebar-heading">敏感性分析模型</h1>
-            <p class="sidebar-copy">调整收入、毛利率、费用和税率假设，观察经营利润与净利润的变化。</p>
+            <h1 class="sidebar-heading">利润敏感性分析</h1>
+            <p class="sidebar-copy">调整核心经营假设，查看利润变化和关键驱动因素。</p>
             <div id="message-area" class="message-area" aria-live="polite"></div>
         </section>
 
@@ -36,10 +36,10 @@
         </section>
 
         <section class="sidebar-block">
-            <h2 class="sidebar-title">模型口径</h2>
+            <h2 class="sidebar-title">分析口径</h2>
             <div class="form-grid">
                 <label class="field">
-                    <span>输出指标</span>
+                    <span>关注指标</span>
                     <select id="metric-select" class="input">
                         <option value="operatingProfit">经营利润</option>
                         <option value="netProfit">净利润</option>
@@ -65,7 +65,7 @@
         </section>
 
         <section class="sidebar-block">
-            <h2 class="sidebar-title">二维矩阵</h2>
+            <h2 class="sidebar-title">联动分析</h2>
             <div class="form-grid">
                 <label class="field">
                     <span>横轴变量</span>
@@ -87,7 +87,7 @@
         </section>
 
         <section class="sidebar-block">
-            <h2 class="sidebar-title">分析幅度</h2>
+            <h2 class="sidebar-title">变动幅度</h2>
             <div id="range-inputs" class="form-grid"></div>
         </section>
     </aside>
@@ -98,8 +98,8 @@
         <header class="model-header">
             <div>
                 <p class="eyebrow">Financial Modeling</p>
-                <h1>敏感性分析模型</h1>
-                <p class="model-subtitle">面向企业 FBP 的利润敏感性工作台：导入预算假设，快速判断收入、毛利、费用和税率变动对利润的影响。</p>
+                <h1>利润敏感性分析</h1>
+                <p class="model-subtitle">调整收入、毛利率、费用率和税率，判断利润最受哪些因素影响。</p>
             </div>
             <div class="header-actions">
                 <button type="button" class="btn btn-secondary" id="btn-reset">重置</button>
@@ -113,8 +113,8 @@
             <article class="panel panel-large">
                 <div class="panel-header">
                     <div>
-                        <h2>利润驱动龙卷风图</h2>
-                        <p>比较各变量在设定冲击范围内对输出指标的影响。</p>
+                        <h2>关键因素排序</h2>
+                        <p>看清每个变量变化时，对所选利润指标的影响大小。</p>
                     </div>
                 </div>
                 <div id="tornado-chart" class="chart"></div>
@@ -124,7 +124,7 @@
                 <div class="panel-header">
                     <div>
                         <h2>场景对比</h2>
-                        <p>悲观、基准、乐观三组利润口径。</p>
+                        <p>对比悲观、基准、乐观三种经营结果。</p>
                     </div>
                 </div>
                 <div id="scenario-chart" class="chart chart-small"></div>
@@ -135,8 +135,8 @@
             <article class="panel panel-large">
                 <div class="panel-header">
                     <div>
-                        <h2>二维敏感性矩阵</h2>
-                        <p>观察两个变量联动变化下的利润区间。</p>
+                        <h2>双变量影响矩阵</h2>
+                        <p>同时调整两个变量，查看利润可能落在哪个区间。</p>
                     </div>
                 </div>
                 <div id="matrix-chart" class="chart"></div>
@@ -145,8 +145,8 @@
             <article class="panel">
                 <div class="panel-header">
                     <div>
-                        <h2>模型桥</h2>
-                        <p>从毛利到经营利润的主要桥接项。</p>
+                        <h2>利润拆解</h2>
+                        <p>查看收入、毛利和费用如何一步步形成经营利润。</p>
                     </div>
                 </div>
                 <div id="bridge-chart" class="chart chart-small"></div>
@@ -168,8 +168,8 @@
         <section class="panel table-panel">
             <div class="panel-header">
                 <div>
-                    <h2>敏感性结果表</h2>
-                    <p>一维变量冲击的低位、基准和高位结果。</p>
+                    <h2>变量影响明细</h2>
+                    <p>逐项查看各变量在低位和高位假设下的结果。</p>
                 </div>
             </div>
             <div class="table-wrap">
@@ -178,8 +178,8 @@
         </section>
 
         <footer class="footer">
-            <span>Profit Sensitivity Analysis</span>
-            <span>Revenue, Margin, Expense and Tax Drivers</span>
+            <span>利润敏感性分析</span>
+            <span>收入、毛利率、费用率与税率</span>
         </footer>
     </main>
 

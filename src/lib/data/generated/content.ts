@@ -1,5 +1,5 @@
 // Auto-generated content data from markdown + Notion
-// Generated at: 2026-04-27T10:17:32.619Z
+// Generated at: 2026-04-27T13:41:39.744Z
 // DO NOT EDIT MANUALLY - run 'npm run prebuild' to regenerate
 
 export interface ContentItem {
@@ -32,12 +32,12 @@ export const financeContent: ContentItem[] = [
   {
     "id": 1,
     "slug": "sensitivity-analysis",
-    "title": "敏感性分析模型",
-    "description": "面向企业 FBP 的利润敏感性工作台，可导入预算假设，分析收入、毛利率、费用和税率变动对经营利润与净利润的影响。",
+    "title": "利润敏感性分析",
+    "description": "调整收入、毛利率、费用率和税率假设，快速判断利润最受哪些因素影响。",
     "date": "2026-04",
     "category": null,
     "href": "/finance/sensitivity-analysis",
-    "content": "这是一个用于企业 FBP 利润测算的敏感性分析工具，可以帮助你：\n\n1. 导入或手动调整预算假设\n2. 分析收入、毛利率、费用和税率对利润的影响\n3. 生成一维敏感性、二维矩阵和场景对比\n4. 导出模板和分析结果",
+    "content": "当预算或预测出现变化时，它可以帮助你快速回答三个问题：利润会变多少、哪个因素影响最大、不同情景之间差距有多大。\n\n1. 调整收入、毛利率、费用率和税率假设\n2. 对比经营利润、净利润和利润率变化\n3. 查看关键驱动因素排序、双变量矩阵和情景对比\n4. 导出结果，方便复盘或汇报",
     "source": "markdown"
   },
   {

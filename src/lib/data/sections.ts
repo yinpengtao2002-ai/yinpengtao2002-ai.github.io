@@ -26,7 +26,7 @@ export const sections: SectionData[] = [
         id: "essays",
         title: "Daily Essays",
         subtitle: "日常随笔",
-        description: "存放日常随笔、小说和更个人化的写作",
+        description: "记录日常观察、故事片段和个人思考",
         icon: PenLine,
         href: "/essays",
         gradient: "from-[#788c5d] to-[#d97757]",

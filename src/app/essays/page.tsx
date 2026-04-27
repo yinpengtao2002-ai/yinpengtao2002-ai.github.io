@@ -65,7 +65,7 @@ export default function EssaysPage() {
             </h1>
           </div>
           <p style={{ fontSize: "1rem", color: "var(--muted)", lineHeight: 1.6 }}>
-            存放日常随笔、小说和更个人化的写作，不和 AI 工作流内容混在一起。
+            记录一些日常观察、故事片段和更个人化的思考。
           </p>
           <p style={{ fontSize: "0.875rem", color: "var(--muted)", opacity: 0.6, marginTop: "0.5rem" }}>
             共 {essaysContent.length} 篇日常随笔
