@@ -69,7 +69,7 @@ export default function FinancePage() {
             探索财务建模、数据分析与投资决策的专业领域
           </p>
           <p style={{ fontSize: "0.875rem", color: "var(--muted)", opacity: 0.6, marginTop: "0.5rem" }}>
-            共 {financeContent.length} 篇文章
+            共 {financeContent.length} 个内容
           </p>
         </motion.div>
 

@@ -1,5 +1,5 @@
 // Auto-generated content data from markdown + Notion
-// Generated at: 2026-04-21T02:53:12.593Z
+// Generated at: 2026-04-27T04:27:40.214Z
 // DO NOT EDIT MANUALLY - run 'npm run prebuild' to regenerate
 
 export interface ContentItem {
@@ -42,6 +42,17 @@ export const aiContent: ContentItem[] = [
 export const financeContent: ContentItem[] = [
   {
     "id": 1,
+    "slug": "sensitivity-analysis",
+    "title": "敏感性分析模型",
+    "description": "面向企业 FBP 的利润敏感性工作台，可导入预算假设，分析收入、毛利率、费用和税率变动对经营利润与净利润的影响。",
+    "date": "2026-04",
+    "category": null,
+    "href": "/finance/sensitivity-analysis",
+    "content": "这是一个用于企业 FBP 利润测算的敏感性分析工具，可以帮助你：\n\n1. 导入或手动调整预算假设\n2. 分析收入、毛利率、费用和税率对利润的影响\n3. 生成一维敏感性、二维矩阵和场景对比\n4. 导出模板和分析结果",
+    "source": "markdown"
+  },
+  {
+    "id": 2,
     "slug": "notion-fbde349d753a",
     "title": "当避险失灵：2026美伊战争后股市与黄金双杀的深层逻辑",
     "description": "黄金股市双杀，反经济常识从何而来",
@@ -52,7 +63,7 @@ export const financeContent: ContentItem[] = [
     "source": "notion"
   },
   {
-    "id": 2,
+    "id": 3,
     "slug": "margin-analysis",
     "title": "单车边际变动归因分析",
     "description": "通过上传两期财务数据，自动对比分析单车边际变动的驱动因素。",
