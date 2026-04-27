@@ -15,6 +15,26 @@ const NOTION_TOKEN = process.env.NOTION_TOKEN;
 const NOTION_AI_DB = process.env.NOTION_AI_DATABASE_ID;
 const NOTION_FINANCE_DB = process.env.NOTION_FINANCE_DATABASE_ID;
 
+const SEMANTIC_SLUG_OVERRIDES = {
+    ai: {
+        'notion-24ae349d753a': 'humanities-ai-guide',
+        '给人文工作者的 AI 使用指南': 'humanities-ai-guide',
+    },
+    finance: {
+        'notion-fbde349d753a': 'gold-stock-selloff-iran-war-2026',
+        '当避险失灵：2026美伊战争后股市与黄金双杀的深层逻辑': 'gold-stock-selloff-iran-war-2026',
+    },
+    essays: {
+        'notion-355e349d753a': 'moonlight-ferry',
+        '月光渡口': 'moonlight-ferry',
+    },
+};
+
+function getSemanticSlug(category, item) {
+    const overrides = SEMANTIC_SLUG_OVERRIDES[category] || {};
+    return overrides[item.slug] || overrides[item.title] || item.slug;
+}
+
 function extractGeneratedArray(source, exportName) {
     const marker = `export const ${exportName}: ContentItem[] = `;
     const markerIndex = source.indexOf(marker);
@@ -91,10 +111,24 @@ function isEssayItem(item) {
 }
 
 function normalizeCategoryHref(item, category) {
-    if ((category === 'ai' || category === 'essays') && (!item.href || item.href.startsWith('/article/'))) {
-        return { ...item, href: `/article/${category}/${item.slug}` };
+    const previousSlug = item.slug;
+    const slug = getSemanticSlug(category, item);
+    const aliases = new Set(item.aliases || []);
+
+    if (previousSlug !== slug) {
+        aliases.add(previousSlug);
     }
-    return item;
+
+    const nextItem = {
+        ...item,
+        slug,
+        ...(aliases.size > 0 ? { aliases: Array.from(aliases) } : {}),
+    };
+
+    if (!nextItem.href || nextItem.href.startsWith('/article/')) {
+        return { ...nextItem, href: `/article/${category}/${slug}` };
+    }
+    return nextItem;
 }
 
 function renumberContent(items) {
@@ -234,6 +268,7 @@ async function main() {
 export interface ContentItem {
     id: number;
     slug: string;
+    aliases?: string[];
     title: string;
     description: string;
     date: string;
@@ -251,7 +286,7 @@ export const essaysContent: ContentItem[] = ${JSON.stringify(essaysContent, null
 
 export function getContentBySlug(category: 'ai' | 'finance' | 'essays', slug: string): ContentItem | undefined {
     const content = category === 'ai' ? aiContent : category === 'finance' ? financeContent : essaysContent;
-    return content.find(item => item.slug === slug);
+    return content.find(item => item.slug === slug || item.aliases?.includes(slug));
 }
 `;
 

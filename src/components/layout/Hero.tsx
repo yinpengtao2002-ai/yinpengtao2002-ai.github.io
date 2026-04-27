@@ -116,7 +116,7 @@ export default function Hero({
                                 transition={{ duration: lowMotion ? 0.35 : 1, delay: lowMotion ? 0.25 : 3.5 }}
                             >
                                 <ThinkingSubtitle
-                                    finalText="欢迎参观我的个人网站"
+                                    finalText="这里记录我的财务模型、文章和工具实践。"
                                     thoughts={["Loading content...", "Preparing welcome message..."]}
                                     reducedMotion={lowMotion}
                                     className={isMobileLike
