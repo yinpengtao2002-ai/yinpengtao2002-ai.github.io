@@ -27,7 +27,7 @@ function buildSystemPrompt(): string {
 【财务建模】板块：
 ${financeArticles}
 
-【AI 见闻】板块：
+【AI 工作流】板块：
 ${aiArticles}
 
 回复规则：

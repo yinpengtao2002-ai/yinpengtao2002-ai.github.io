@@ -62,11 +62,11 @@ export default function AIPage() {
                 color: "var(--foreground)",
               }}
             >
-              AI 见闻
+              AI 工作流
             </h1>
           </div>
           <p style={{ fontSize: "1rem", color: "var(--muted)", lineHeight: 1.6 }}>
-            发现人工智能的前沿趋势、工具与应用场景
+            记录 AI 工具、内容生产和知识工作方法
           </p>
           <p style={{ fontSize: "0.875rem", color: "var(--muted)", opacity: 0.6, marginTop: "0.5rem" }}>
             共 {aiContent.length} 篇文章
@@ -119,10 +119,10 @@ export default function AIPage() {
             <div style={{ padding: "4rem 0", textAlign: "center" }}>
               <Sparkles style={{ width: 48, height: 48, color: "var(--border)", margin: "0 auto 1.5rem" }} />
               <p style={{ fontSize: "1.125rem", color: "var(--muted)", marginBottom: "0.5rem" }}>
-                文章正在路上...
+                内容正在路上...
               </p>
               <p style={{ fontSize: "0.875rem", color: "var(--muted)", opacity: 0.6 }}>
-                敬请期待，AI 领域的精彩内容即将上线
+                敬请期待，AI 工作流相关内容即将上线
               </p>
             </div>
           )}

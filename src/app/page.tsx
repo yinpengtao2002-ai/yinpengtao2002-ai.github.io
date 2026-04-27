@@ -345,7 +345,7 @@ export default function Home() {
               fontFamily: HOME_UI_FONT,
             }}
           >
-            AI Insights
+            AI Workflow
           </p>
           <h2
             style={{
@@ -355,7 +355,7 @@ export default function Home() {
               marginBottom: "1.5rem",
             }}
           >
-            AI 见闻
+            AI 工作流
           </h2>
         </motion.div>
 
@@ -453,7 +453,7 @@ export default function Home() {
               fontFamily: HOME_UI_FONT,
             }}
           >
-            Essays
+            Daily Essays
           </p>
           <h2
             style={{
@@ -463,7 +463,7 @@ export default function Home() {
               marginBottom: "1.5rem",
             }}
           >
-            随笔
+            日常随笔
           </h2>
         </motion.div>
 
@@ -512,7 +512,7 @@ export default function Home() {
           ))}
 
           {essaysContent.length === 0 && (
-            <p style={{ padding: "3rem 0", color: "var(--muted)", fontFamily: HOME_UI_FONT }}>随笔正在路上...</p>
+            <p style={{ padding: "3rem 0", color: "var(--muted)", fontFamily: HOME_UI_FONT }}>日常随笔正在路上...</p>
           )}
 
           {essaysContent.length > 0 && (

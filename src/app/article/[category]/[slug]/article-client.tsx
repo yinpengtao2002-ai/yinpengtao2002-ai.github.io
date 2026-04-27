@@ -10,9 +10,62 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import mermaid from "mermaid";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ContentItem } from "@/lib/data/generated/content";
 import { normalizeMarkdownStrongEmphasis } from "@/lib/markdown/normalizeStrongEmphasis";
+
+type TocHeading = {
+    id: string;
+    level: 2 | 3;
+    line: number;
+    text: string;
+};
+
+type MarkdownHeadingNode = {
+    position?: {
+        start?: {
+            line?: number | null;
+        };
+    };
+};
+
+function cleanHeadingText(text: string) {
+    return text
+        .replace(/\s+#+$/, "")
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+        .replace(/[*_`~]/g, "")
+        .trim();
+}
+
+function extractTableOfContents(markdown: string): TocHeading[] {
+    const headings: TocHeading[] = [];
+    const headingPattern = /^(#{2,3})\s+(.+)$/gm;
+    let match = headingPattern.exec(markdown);
+
+    while (match) {
+        const level = match[1].length as 2 | 3;
+        const text = cleanHeadingText(match[2]);
+        if (text) {
+            const line = markdown.slice(0, match.index).split("\n").length;
+            headings.push({
+                id: `section-${line}`,
+                level,
+                line,
+                text,
+            });
+        }
+        match = headingPattern.exec(markdown);
+    }
+
+    return headings;
+}
+
+function getHeadingId(node: MarkdownHeadingNode | undefined, level: 2 | 3, headings: TocHeading[]) {
+    const line = node?.position?.start?.line;
+    if (typeof line !== "number") return undefined;
+
+    return headings.find((heading) => heading.level === level && heading.line === line)?.id;
+}
 
 function MermaidChart({ chart }: { chart: string }) {
     const ref = useRef<HTMLDivElement>(null);
@@ -61,7 +114,8 @@ interface ArticleClientProps {
 
 export default function ArticleClient({ article, category }: ArticleClientProps) {
     const router = useRouter();
-    const articleContent = normalizeMarkdownStrongEmphasis(article.content);
+    const articleContent = useMemo(() => normalizeMarkdownStrongEmphasis(article.content), [article.content]);
+    const tocHeadings = useMemo(() => extractTableOfContents(articleContent), [articleContent]);
 
     useLayoutEffect(() => {
         const previousScrollRestoration =
@@ -92,7 +146,6 @@ export default function ArticleClient({ article, category }: ArticleClientProps)
             router.push(`/${category}`);
         }
     };
-
     return (
         <div
             style={{
@@ -148,7 +201,7 @@ export default function ArticleClient({ article, category }: ArticleClientProps)
                             textTransform: "uppercase",
                         }}
                     >
-                        {category === "ai" ? "AI Insights" : category === "finance" ? "Financial Modeling" : "Essays"}
+                        {category === "ai" ? "AI Workflow" : category === "finance" ? "Financial Modeling" : "Daily Essays"}
                     </span>
                 </div>
             </header>
@@ -203,6 +256,26 @@ export default function ArticleClient({ article, category }: ArticleClientProps)
                     )}
                 </div>
 
+                {tocHeadings.length > 1 && (
+                    <nav aria-label="文章目录" style={styles.toc}>
+                        <div style={styles.tocTitle}>目录</div>
+                        <div style={styles.tocList}>
+                            {tocHeadings.map((heading) => (
+                                <a
+                                    key={heading.id}
+                                    href={`#${heading.id}`}
+                                    style={{
+                                        ...styles.tocLink,
+                                        paddingLeft: heading.level === 3 ? 18 : 0,
+                                    }}
+                                >
+                                    {heading.text}
+                                </a>
+                            ))}
+                        </div>
+                    </nav>
+                )}
+
                 {/* Article Body */}
                 <article className="notion-article">
                     <ReactMarkdown
@@ -212,11 +285,11 @@ export default function ArticleClient({ article, category }: ArticleClientProps)
                             h1: ({ children }) => (
                                 <h1 style={styles.h1}>{children}</h1>
                             ),
-                            h2: ({ children }) => (
-                                <h2 style={styles.h2}>{children}</h2>
+                            h2: ({ node, children }) => (
+                                <h2 id={getHeadingId(node, 2, tocHeadings)} style={styles.h2}>{children}</h2>
                             ),
-                            h3: ({ children }) => (
-                                <h3 style={styles.h3}>{children}</h3>
+                            h3: ({ node, children }) => (
+                                <h3 id={getHeadingId(node, 3, tocHeadings)} style={styles.h3}>{children}</h3>
                             ),
                             p: ({ children }) => (
                                 <p style={styles.p}>{children}</p>
@@ -346,6 +419,7 @@ const styles: Record<string, React.CSSProperties> = {
         color: "var(--foreground)",
         margin: "40px 0 12px",
         lineHeight: 1.35,
+        scrollMarginTop: 88,
     },
     h3: {
         fontSize: "1.25rem",
@@ -353,6 +427,31 @@ const styles: Record<string, React.CSSProperties> = {
         color: "var(--foreground)",
         margin: "32px 0 8px",
         lineHeight: 1.4,
+        scrollMarginTop: 88,
+    },
+    toc: {
+        border: "1px solid var(--border)",
+        borderRadius: 8,
+        background: "var(--card)",
+        padding: "18px 20px",
+        margin: "0 0 36px",
+    },
+    tocTitle: {
+        fontSize: 13,
+        fontWeight: 700,
+        letterSpacing: "0.08em",
+        color: "var(--muted)",
+        marginBottom: 10,
+    },
+    tocList: {
+        display: "grid",
+        gap: 8,
+    },
+    tocLink: {
+        color: "var(--foreground)",
+        fontSize: 14,
+        lineHeight: 1.5,
+        textDecoration: "none",
     },
     p: {
         fontSize: 16,

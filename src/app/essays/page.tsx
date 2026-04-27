@@ -61,14 +61,14 @@ export default function EssaysPage() {
                 color: "var(--foreground)",
               }}
             >
-              随笔
+              日常随笔
             </h1>
           </div>
           <p style={{ fontSize: "1rem", color: "var(--muted)", lineHeight: 1.6 }}>
-            存放小说、随笔和更个人化的写作，不和 AI 工作流内容混在一起。
+            存放日常随笔、小说和更个人化的写作，不和 AI 工作流内容混在一起。
           </p>
           <p style={{ fontSize: "0.875rem", color: "var(--muted)", opacity: 0.6, marginTop: "0.5rem" }}>
-            共 {essaysContent.length} 篇随笔
+            共 {essaysContent.length} 篇日常随笔
           </p>
         </motion.div>
 
@@ -115,7 +115,7 @@ export default function EssaysPage() {
 
           {essaysContent.length === 0 && (
             <p style={{ padding: "3rem 0", color: "var(--muted)", textAlign: "center" }}>
-              随笔正在路上...
+              日常随笔正在路上...
             </p>
           )}
         </div>
