@@ -12,6 +12,10 @@ const legacyArticleParams = [
     { category: "finance" as const, slug: "notion-fbde349d753a" },
 ];
 
+function isArticleRouteItem(category: ContentCategory, item: ArticleItem) {
+    return item.href.startsWith(`/article/${category}/`);
+}
+
 interface PageProps {
     params: Promise<{
         category: string;
@@ -21,10 +25,12 @@ interface PageProps {
 
 export function generateStaticParams() {
     const buildParams = (category: ContentCategory, items: ArticleItem[]) =>
-        items.flatMap((item) => [
-            { category, slug: item.slug },
-            ...(item.aliases || []).map((slug) => ({ category, slug })),
-        ]);
+        items
+            .filter((item) => isArticleRouteItem(category, item))
+            .flatMap((item) => [
+                { category, slug: item.slug },
+                ...(item.aliases || []).map((slug) => ({ category, slug })),
+            ]);
 
     const aiParams = buildParams("ai", aiContent);
     const financeParams = buildParams("finance", financeContent);
@@ -48,7 +54,7 @@ function getArticleWithCategory(category: string, slug: string): { article: Arti
         : "ai";
 
     const directArticle = getContentBySlug(typedCategory, slug);
-    if (directArticle) {
+    if (directArticle && isArticleRouteItem(typedCategory, directArticle)) {
         return { article: directArticle, category: typedCategory };
     }
 
@@ -57,7 +63,7 @@ function getArticleWithCategory(category: string, slug: string): { article: Arti
         const article = contentByCategory[fallbackCategory].find(
             (item) => item.slug === slug || item.aliases?.includes(slug)
         );
-        if (article) {
+        if (article && isArticleRouteItem(fallbackCategory, article)) {
             return { article, category: fallbackCategory };
         }
     }

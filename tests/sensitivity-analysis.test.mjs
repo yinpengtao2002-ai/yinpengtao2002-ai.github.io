@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-const sensitivityAnalysis = await import("../public/tools/sensitivity-analysis/app.js");
+const sensitivityAnalysis = await import("../src/app/finance/sensitivity-analysis/sensitivity-engine.js");
 
 const {
     DRIVER_DEFINITIONS,
@@ -12,7 +12,7 @@ const {
     normalizeImportedValue,
 } = sensitivityAnalysis.default;
 
-const revenueDriver = DRIVER_DEFINITIONS.find((driver) => driver.key === "revenue");
+const netRevenueDriver = DRIVER_DEFINITIONS.find((driver) => driver.key === "netRevenue");
 const materialCostDriver = DRIVER_DEFINITIONS.find((driver) => driver.key === "materialCost");
 const EPSILON = 1e-9;
 
@@ -23,29 +23,27 @@ function approx(actual, expected, message) {
     );
 }
 
-test("profit bridge model calculates the default profit bridge", () => {
+test("operating profit model calculates the default structure", () => {
     const result = computeModel(getDefaultAssumptions());
 
-    approx(result.revenue, 1500, "revenue");
-    approx(result.rebate, 180, "rebate");
     approx(result.netRevenue, 1320, "net revenue");
     approx(result.variableCostTotal, 950, "variable cost total");
     approx(result.contributionMargin, 370, "contribution margin");
     approx(result.fixedDeductionTotal, 177, "fixed deduction total");
     approx(result.profitAdditionTotal, 55, "profit addition total");
-    approx(result.profit, 248, "profit");
+    approx(result.fixedPartNet, 122, "fixed part net");
+    approx(result.profit, 248, "profit total");
 });
 
-test("profit bridge model calculates rates against the right base", () => {
+test("operating profit model calculates rates against the right base", () => {
     const result = computeModel(getDefaultAssumptions());
 
-    approx(result.rebateRate, 12, "rebate rate");
     approx(result.contributionMarginRate, 370 / 1320 * 100, "contribution margin rate");
-    approx(result.profitRate, 248 / 1320 * 100, "profit rate");
+    approx(result.profitRate, 248 / 1320 * 100, "profit total rate");
 });
 
 test("imported amount values keep their numeric scale", () => {
-    assert.equal(normalizeImportedValue(revenueDriver, "1,500 亿元"), 1500);
+    assert.equal(normalizeImportedValue(netRevenueDriver, "1,320 亿元"), 1320);
     assert.equal(normalizeImportedValue(materialCostDriver, "780 百万元"), 780);
 });
 

@@ -1,4 +1,4 @@
-:root {
+.sensitivity-tool {
     --bg-primary: #faf9f5;
     --bg-card: #ffffff;
     --text-primary: #141413;
@@ -16,64 +16,68 @@
     --font-serif: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
 }
 
-* {
+.sensitivity-tool * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-html,
-body {
+.sensitivity-tool {
+    height: 100vh;
+    height: 100dvh;
     min-height: 100vh;
+    min-height: 100dvh;
+    overflow: hidden;
 }
 
-body {
+.sensitivity-tool {
     display: flex;
     background: var(--bg-primary);
     color: var(--text-primary);
     font-family: var(--font-serif);
 }
 
-button,
-input,
-select {
+.sensitivity-tool button,
+.sensitivity-tool input,
+.sensitivity-tool select {
     font: inherit;
 }
 
-button {
+.sensitivity-tool button {
     border: 0;
 }
 
-::-webkit-scrollbar {
+.sensitivity-tool::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 
-::-webkit-scrollbar-track {
+.sensitivity-tool::-webkit-scrollbar-track {
     background: var(--bg-primary);
 }
 
-::-webkit-scrollbar-thumb {
+.sensitivity-tool::-webkit-scrollbar-thumb {
     background: #d9d6cb;
     border-radius: 999px;
 }
 
-::-webkit-scrollbar-thumb:hover {
+.sensitivity-tool::-webkit-scrollbar-thumb:hover {
     background: var(--text-muted);
 }
 
-::selection {
+.sensitivity-tool ::selection {
     background: rgba(217, 119, 87, 0.22);
     color: var(--text-primary);
 }
 
-.sidebar {
+.sensitivity-tool .sidebar {
     position: sticky;
     top: 0;
     z-index: 30;
     width: var(--sidebar-width);
     min-width: var(--sidebar-width);
     height: 100vh;
+    height: 100dvh;
     overflow-y: auto;
     border-right: 1px solid var(--border-light);
     background: rgba(255, 255, 255, 0.94);
@@ -81,13 +85,13 @@ button {
     transition: margin-left 0.25s ease, opacity 0.25s ease;
 }
 
-.sidebar.collapsed {
+.sensitivity-tool .sidebar.collapsed {
     margin-left: calc(-1 * var(--sidebar-width));
     opacity: 0;
     pointer-events: none;
 }
 
-.sidebar-toggle {
+.sensitivity-tool .sidebar-toggle {
     position: fixed;
     left: calc(var(--sidebar-width) - 42px);
     top: 12px;
@@ -109,12 +113,12 @@ button {
     transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
-.sidebar-toggle:hover {
+.sensitivity-tool .sidebar-toggle:hover {
     transform: translateY(-1px);
     border-color: rgba(217, 119, 87, 0.55);
 }
 
-.sidebar-expand {
+.sensitivity-tool .sidebar-expand {
     position: fixed;
     left: 14px;
     top: 14px;
@@ -132,17 +136,17 @@ button {
     font-weight: 600;
 }
 
-.sidebar-block {
+.sensitivity-tool .sidebar-block {
     margin-bottom: 1rem;
     border-bottom: 1px solid var(--border-light);
     padding-bottom: 1rem;
 }
 
-.sidebar-block:last-child {
+.sensitivity-tool .sidebar-block:last-child {
     border-bottom: 0;
 }
 
-.sidebar-kicker {
+.sensitivity-tool .sidebar-kicker {
     color: var(--accent-orange);
     font-family: var(--font-sans);
     font-size: 0.72rem;
@@ -151,7 +155,7 @@ button {
     text-transform: uppercase;
 }
 
-.sidebar-heading {
+.sensitivity-tool .sidebar-heading {
     margin-top: 0.35rem;
     color: var(--text-primary);
     font-family: var(--font-sans);
@@ -159,7 +163,7 @@ button {
     line-height: 1.2;
 }
 
-.sidebar-copy {
+.sensitivity-tool .sidebar-copy {
     margin-top: 0.55rem;
     color: var(--text-secondary);
     font-family: var(--font-sans);
@@ -167,7 +171,7 @@ button {
     line-height: 1.65;
 }
 
-.sidebar-title {
+.sensitivity-tool .sidebar-title {
     margin-bottom: 0.75rem;
     border-left: 3px solid var(--accent-orange);
     padding-left: 0.65rem;
@@ -177,11 +181,11 @@ button {
     font-weight: 700;
 }
 
-.message-area {
+.sensitivity-tool .message-area {
     margin-top: 0.75rem;
 }
 
-.message {
+.sensitivity-tool .message {
     border-radius: 8px;
     padding: 0.55rem 0.7rem;
     font-family: var(--font-sans);
@@ -189,19 +193,19 @@ button {
     line-height: 1.45;
 }
 
-.message.success {
+.sensitivity-tool .message.success {
     border: 1px solid rgba(120, 140, 93, 0.28);
     background: rgba(120, 140, 93, 0.1);
     color: #5f7544;
 }
 
-.message.error {
+.sensitivity-tool .message.error {
     border: 1px solid rgba(182, 95, 85, 0.28);
     background: rgba(182, 95, 85, 0.09);
     color: var(--accent-red);
 }
 
-.upload-zone {
+.sensitivity-tool .upload-zone {
     display: block;
     min-height: 92px;
     border: 2px dashed #dcd8cd;
@@ -210,13 +214,13 @@ button {
     transition: border-color 0.2s ease, background 0.2s ease;
 }
 
-.upload-zone:hover,
-.upload-zone.drag-over {
+.sensitivity-tool .upload-zone:hover,
+.sensitivity-tool .upload-zone.drag-over {
     border-color: var(--accent-orange);
     background: #fff7f2;
 }
 
-.upload-label {
+.sensitivity-tool .upload-label {
     display: flex;
     min-height: 88px;
     cursor: pointer;
@@ -228,31 +232,31 @@ button {
     text-align: center;
 }
 
-.upload-title {
+.sensitivity-tool .upload-title {
     color: var(--text-primary);
     font-family: var(--font-sans);
     font-size: 0.9rem;
     font-weight: 700;
 }
 
-.upload-hint {
+.sensitivity-tool .upload-hint {
     color: var(--text-muted);
     font-family: var(--font-sans);
     font-size: 0.74rem;
 }
 
-.button-grid {
+.sensitivity-tool .button-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.55rem;
     margin-top: 0.7rem;
 }
 
-.button-grid .btn:first-child {
+.sensitivity-tool .button-grid .btn:first-child {
     grid-column: span 2;
 }
 
-.btn {
+.sensitivity-tool .btn {
     display: inline-flex;
     min-height: 36px;
     cursor: pointer;
@@ -267,50 +271,50 @@ button {
     transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
 
-.btn:hover {
+.sensitivity-tool .btn:hover {
     transform: translateY(-1px);
 }
 
-.btn-primary {
+.sensitivity-tool .btn-primary {
     background: var(--accent-orange);
     color: #fff;
     box-shadow: 0 8px 18px rgba(217, 119, 87, 0.25);
 }
 
-.btn-primary:hover {
+.sensitivity-tool .btn-primary:hover {
     background: #c86a4b;
     box-shadow: 0 12px 26px rgba(217, 119, 87, 0.32);
 }
 
-.btn-secondary {
+.sensitivity-tool .btn-secondary {
     border: 1px solid var(--border-light);
     background: var(--bg-card);
     color: var(--text-primary);
 }
 
-.btn-secondary:hover {
+.sensitivity-tool .btn-secondary:hover {
     border-color: rgba(217, 119, 87, 0.55);
     color: var(--accent-orange);
 }
 
-.form-grid {
+.sensitivity-tool .form-grid {
     display: grid;
     gap: 0.68rem;
 }
 
-.field {
+.sensitivity-tool .field {
     display: grid;
     gap: 0.3rem;
 }
 
-.field span {
+.sensitivity-tool .field span {
     color: var(--text-secondary);
     font-family: var(--font-sans);
     font-size: 0.76rem;
     font-weight: 600;
 }
 
-.input {
+.sensitivity-tool .input {
     width: 100%;
     min-height: 36px;
     border: 1px solid var(--border-light);
@@ -324,26 +328,29 @@ button {
     transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
-.input:focus {
+.sensitivity-tool .input:focus {
     border-color: rgba(217, 119, 87, 0.65);
     box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.12);
 }
 
-.field-note {
+.sensitivity-tool .field-note {
     color: var(--text-muted);
     font-family: var(--font-sans);
     font-size: 0.68rem;
     line-height: 1.35;
 }
 
-.main-content {
+.sensitivity-tool .main-content {
+    height: 100vh;
+    height: 100dvh;
     min-width: 0;
     flex: 1;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 2rem 2.4rem 2.5rem;
 }
 
-.model-header {
+.sensitivity-tool .model-header {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
@@ -352,7 +359,7 @@ button {
     max-width: 1480px;
 }
 
-.eyebrow {
+.sensitivity-tool .eyebrow {
     margin-bottom: 0.4rem;
     color: var(--accent-blue);
     font-family: var(--font-sans);
@@ -362,14 +369,14 @@ button {
     text-transform: uppercase;
 }
 
-.model-header h1 {
+.sensitivity-tool .model-header h1 {
     font-family: var(--font-sans);
     font-size: clamp(1.9rem, 3vw, 3rem);
     line-height: 1.08;
     letter-spacing: 0;
 }
 
-.model-subtitle {
+.sensitivity-tool .model-subtitle {
     max-width: 720px;
     margin-top: 0.65rem;
     color: var(--text-secondary);
@@ -378,14 +385,14 @@ button {
     line-height: 1.7;
 }
 
-.header-actions {
+.sensitivity-tool .header-actions {
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-end;
     gap: 0.65rem;
 }
 
-.metrics-grid {
+.sensitivity-tool .metrics-grid {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 0.85rem;
@@ -393,7 +400,7 @@ button {
     margin: 0 auto 1rem;
 }
 
-.metric-card {
+.sensitivity-tool .metric-card {
     min-height: 118px;
     border: 1px solid var(--border-light);
     border-radius: 8px;
@@ -402,14 +409,14 @@ button {
     box-shadow: var(--shadow-soft);
 }
 
-.metric-label {
+.sensitivity-tool .metric-label {
     color: var(--text-secondary);
     font-family: var(--font-sans);
     font-size: 0.73rem;
     font-weight: 700;
 }
 
-.metric-value {
+.sensitivity-tool .metric-value {
     margin-top: 0.55rem;
     color: var(--text-primary);
     font-family: var(--font-sans);
@@ -418,7 +425,7 @@ button {
     line-height: 1.15;
 }
 
-.metric-sub {
+.sensitivity-tool .metric-sub {
     margin-top: 0.4rem;
     color: var(--text-muted);
     font-family: var(--font-sans);
@@ -426,7 +433,7 @@ button {
     line-height: 1.4;
 }
 
-.workspace-grid {
+.sensitivity-tool .workspace-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.45fr) minmax(360px, 0.75fr);
     gap: 1rem;
@@ -434,11 +441,11 @@ button {
     margin: 0 auto 1rem;
 }
 
-.bottom-grid {
+.sensitivity-tool .bottom-grid {
     grid-template-columns: minmax(0, 1.25fr) minmax(360px, 0.85fr);
 }
 
-.panel {
+.sensitivity-tool .panel {
     min-width: 0;
     border: 1px solid var(--border-light);
     border-radius: 8px;
@@ -447,11 +454,11 @@ button {
     box-shadow: var(--shadow-soft);
 }
 
-.panel-large {
+.sensitivity-tool .panel-large {
     min-height: 540px;
 }
 
-.panel-header {
+.sensitivity-tool .panel-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -460,14 +467,14 @@ button {
     padding-bottom: 0.8rem;
 }
 
-.panel-header h2 {
+.sensitivity-tool .panel-header h2 {
     color: var(--text-primary);
     font-family: var(--font-sans);
     font-size: 1.05rem;
     font-weight: 800;
 }
 
-.panel-header p {
+.sensitivity-tool .panel-header p {
     margin-top: 0.28rem;
     color: var(--text-secondary);
     font-family: var(--font-sans);
@@ -475,33 +482,33 @@ button {
     line-height: 1.5;
 }
 
-.chart {
+.sensitivity-tool .chart {
     width: 100%;
     min-height: 440px;
 }
 
-.chart-small {
+.sensitivity-tool .chart-small {
     min-height: 360px;
 }
 
-.table-panel {
+.sensitivity-tool .table-panel {
     max-width: 1480px;
     margin: 0 auto 1rem;
 }
 
-.table-wrap {
+.sensitivity-tool .table-wrap {
     margin-top: 1rem;
     overflow-x: auto;
 }
 
-.data-table {
+.sensitivity-tool .data-table {
     width: 100%;
     border-collapse: collapse;
     font-family: var(--font-sans);
     font-size: 0.78rem;
 }
 
-.data-table th {
+.sensitivity-tool .data-table th {
     position: sticky;
     top: 0;
     border: 1px solid var(--border-light);
@@ -513,11 +520,11 @@ button {
     white-space: nowrap;
 }
 
-.data-table th:first-child {
+.sensitivity-tool .data-table th:first-child {
     text-align: left;
 }
 
-.data-table td {
+.sensitivity-tool .data-table td {
     border: 1px solid var(--border-light);
     color: var(--text-primary);
     padding: 0.55rem 0.7rem;
@@ -525,30 +532,30 @@ button {
     white-space: nowrap;
 }
 
-.data-table td:first-child {
+.sensitivity-tool .data-table td:first-child {
     text-align: left;
     font-weight: 700;
 }
 
-.data-table tbody tr:nth-child(even) {
+.sensitivity-tool .data-table tbody tr:nth-child(even) {
     background: rgba(250, 249, 245, 0.75);
 }
 
-.data-table tbody tr:hover {
+.sensitivity-tool .data-table tbody tr:hover {
     background: rgba(217, 119, 87, 0.05);
 }
 
-.positive {
+.sensitivity-tool .positive {
     color: var(--accent-green) !important;
     font-weight: 700;
 }
 
-.negative {
+.sensitivity-tool .negative {
     color: var(--accent-red) !important;
     font-weight: 700;
 }
 
-.footer {
+.sensitivity-tool .footer {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -562,26 +569,26 @@ button {
 }
 
 @media (max-width: 1280px) {
-    .metrics-grid {
+    .sensitivity-tool .metrics-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .workspace-grid,
-    .bottom-grid {
+    .sensitivity-tool .workspace-grid,
+    .sensitivity-tool .bottom-grid {
         grid-template-columns: 1fr;
     }
 }
 
 @media (max-width: 820px) {
-    :root {
+    .sensitivity-tool {
         --sidebar-width: 300px;
     }
 
-    body {
+    .sensitivity-tool {
         display: block;
     }
 
-    .sidebar {
+    .sensitivity-tool .sidebar {
         position: fixed;
         left: 0;
         top: 0;
@@ -590,56 +597,62 @@ button {
         box-shadow: 8px 0 30px rgba(20, 20, 19, 0.14);
     }
 
-    .sidebar-toggle {
+    .sensitivity-tool:not([data-initialized="true"]) .sidebar {
+        margin-left: calc(-1 * var(--sidebar-width));
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .sensitivity-tool .sidebar-toggle {
         left: calc(var(--sidebar-width) - 42px);
     }
 
-    .main-content {
+    .sensitivity-tool .main-content {
         padding: 4.5rem 1rem 1.6rem;
     }
 
-    .model-header {
+    .sensitivity-tool .model-header {
         align-items: stretch;
         flex-direction: column;
     }
 
-    .header-actions {
+    .sensitivity-tool .header-actions {
         justify-content: flex-start;
     }
 
-    .metrics-grid {
+    .sensitivity-tool .metrics-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .metric-card {
+    .sensitivity-tool .metric-card {
         min-height: 104px;
         padding: 0.8rem;
     }
 
-    .panel {
+    .sensitivity-tool .panel {
         padding: 0.85rem;
     }
 
-    .panel-large {
+    .sensitivity-tool .panel-large {
         min-height: auto;
     }
 
-    .chart,
-    .chart-small {
+    .sensitivity-tool .chart,
+    .sensitivity-tool .chart-small {
         min-height: 340px;
     }
 }
 
 @media (max-width: 520px) {
-    .metrics-grid {
+    .sensitivity-tool .metrics-grid {
         grid-template-columns: 1fr;
     }
 
-    .button-grid {
+    .sensitivity-tool .button-grid {
         grid-template-columns: 1fr;
     }
 
-    .button-grid .btn:first-child {
+    .sensitivity-tool .button-grid .btn:first-child {
         grid-column: auto;
     }
 }
