@@ -35,7 +35,7 @@ interface Message {
 const MOBILE_QUICK_PROMPTS = [
     "有什么文章值得看？",
     "Lucas 是谁？",
-    "推荐一篇财务建模文章",
+    "推荐一个财务模型",
 ];
 
 const CHAT_UI_FONT =

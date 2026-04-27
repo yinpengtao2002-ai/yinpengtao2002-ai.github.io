@@ -62,11 +62,11 @@ export default function FinancePage() {
                 color: "var(--foreground)",
               }}
             >
-              财务建模
+              财务模型
             </h1>
           </div>
           <p style={{ fontSize: "1rem", color: "var(--muted)", lineHeight: 1.6 }}>
-            探索财务建模、数据分析与投资决策的专业领域
+            整理可直接使用的财务模型和分析工具。
           </p>
           <p style={{ fontSize: "0.875rem", color: "var(--muted)", opacity: 0.6, marginTop: "0.5rem" }}>
             共 {financeContent.length} 个内容

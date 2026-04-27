@@ -70,7 +70,7 @@ export function getLocalFallbackResponse(
             return withOfflineNotice({ response: "【财务建模】板块暂时还没有内容，敬请期待。" }, options.includeOfflineNotice);
         }
         return withOfflineNotice({
-            response: "这些是【财务建模】板块目前可以阅读或使用的内容：",
+            response: "这些是【财务建模】板块目前可以使用的模型和工具：",
             contentCards: financeContent,
             cardType: "finance",
         }, options.includeOfflineNotice);

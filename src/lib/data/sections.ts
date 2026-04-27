@@ -5,8 +5,8 @@ export const sections: SectionData[] = [
     {
         id: "finance",
         title: "Financial Modeling",
-        subtitle: "财务建模 & 分析",
-        description: "探索财务建模、数据分析与投资决策的专业领域",
+        subtitle: "财务模型",
+        description: "整理可直接使用的财务模型和分析工具",
         icon: TrendingUp,
         href: "/finance",
         gradient: "from-[#6a9bcc] to-[#788c5d]",

@@ -25,6 +25,8 @@ const SEMANTIC_SLUG_OVERRIDES = {
         '当避险失灵：2026美伊战争后股市与黄金双杀的深层逻辑': 'gold-stock-selloff-iran-war-2026',
     },
     essays: {
+        'notion-fbde349d753a': 'gold-stock-selloff-iran-war-2026',
+        '当避险失灵：2026美伊战争后股市与黄金双杀的深层逻辑': 'gold-stock-selloff-iran-war-2026',
         'notion-355e349d753a': 'moonlight-ferry',
         '月光渡口': 'moonlight-ferry',
     },
@@ -85,10 +87,15 @@ function loadExistingGeneratedContent() {
         const source = fs.readFileSync(tsOutputPath, 'utf-8');
         const ai = extractGeneratedArray(source, 'aiContent');
         const essays = extractGeneratedArray(source, 'essaysContent');
+        const finance = extractGeneratedArray(source, 'financeContent');
         return {
             ai: ai.filter((item) => !isEssayItem(item)),
-            finance: extractGeneratedArray(source, 'financeContent'),
-            essays: essays.length > 0 ? essays : ai.filter(isEssayItem),
+            finance: finance.filter((item) => !isEssayItem(item)),
+            essays: dedupeContentItems([
+                ...essays,
+                ...ai.filter(isEssayItem),
+                ...finance.filter(isEssayItem),
+            ]),
         };
     } catch (err) {
         console.warn(`  ⚠️  Could not read existing generated content: ${err.message}`);
@@ -107,7 +114,10 @@ function isEssayItem(item) {
     return category === 'essay' ||
         category === 'essays' ||
         category === '随笔' ||
-        item.title === '月光渡口';
+        item.title === '月光渡口' ||
+        item.title === '当避险失灵：2026美伊战争后股市与黄金双杀的深层逻辑' ||
+        item.slug === 'notion-fbde349d753a' ||
+        item.slug === 'gold-stock-selloff-iran-war-2026';
 }
 
 function normalizeCategoryHref(item, category) {
@@ -133,6 +143,24 @@ function normalizeCategoryHref(item, category) {
 
 function renumberContent(items) {
     return items.map((item, index) => ({ ...item, id: index + 1 }));
+}
+
+function dedupeContentItems(items) {
+    const seen = new Set();
+    const result = [];
+    for (const item of items) {
+        const key = item.slug || item.title;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        result.push(item);
+    }
+    return result;
+}
+
+function sortContentByDateDesc(a, b) {
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return b.date.localeCompare(a.date);
 }
 
 const existingGeneratedContent = loadExistingGeneratedContent();
@@ -255,10 +283,17 @@ async function main() {
     const aiContent = renumberContent((await getMergedContent('ai', NOTION_AI_DB)).filter((item) => !isEssayItem(item)));
     console.log(`  ✅ Total AI articles: ${aiContent.length}`);
 
-    const financeContent = await getMergedContent('finance', NOTION_FINANCE_DB);
+    const mergedFinanceContent = await getMergedContent('finance', NOTION_FINANCE_DB);
+    const financeContent = renumberContent(mergedFinanceContent.filter((item) => !isEssayItem(item)));
     console.log(`  ✅ Total Finance articles: ${financeContent.length}`);
 
-    const essaysContent = await getMergedContent('essays', null);
+    const financeEssays = mergedFinanceContent
+        .filter(isEssayItem)
+        .map((item) => normalizeCategoryHref(item, 'essays'));
+    const essaysContent = renumberContent(dedupeContentItems([
+        ...(await getMergedContent('essays', null)),
+        ...financeEssays,
+    ]).sort(sortContentByDateDesc));
     console.log(`  ✅ Total Essays: ${essaysContent.length}`);
 
     const tsContent = `// Auto-generated content data from markdown + Notion
