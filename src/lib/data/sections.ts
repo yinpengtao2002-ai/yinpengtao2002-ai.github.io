@@ -1,4 +1,4 @@
-import { TrendingUp, Sparkles } from "lucide-react";
+import { TrendingUp, Sparkles, PenLine } from "lucide-react";
 import { SectionData } from "../types";
 
 export const sections: SectionData[] = [
@@ -21,5 +21,15 @@ export const sections: SectionData[] = [
         href: "/ai",
         gradient: "from-[#d97757] to-[#6a9bcc]",
         iconBg: "bg-gradient-to-br from-[#d97757] to-[#6a9bcc]",
+    },
+    {
+        id: "essays",
+        title: "Essays",
+        subtitle: "随笔 & 写作",
+        description: "存放随笔、小说和更个人化的写作",
+        icon: PenLine,
+        href: "/essays",
+        gradient: "from-[#788c5d] to-[#d97757]",
+        iconBg: "bg-gradient-to-br from-[#788c5d] to-[#d97757]",
     },
 ];

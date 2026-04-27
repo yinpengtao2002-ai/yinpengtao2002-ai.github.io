@@ -58,18 +58,21 @@ function extractGeneratedArray(source, exportName) {
 
 function loadExistingGeneratedContent() {
     if (!fs.existsSync(tsOutputPath)) {
-        return { ai: [], finance: [] };
+        return { ai: [], finance: [], essays: [] };
     }
 
     try {
         const source = fs.readFileSync(tsOutputPath, 'utf-8');
+        const ai = extractGeneratedArray(source, 'aiContent');
+        const essays = extractGeneratedArray(source, 'essaysContent');
         return {
-            ai: extractGeneratedArray(source, 'aiContent'),
+            ai: ai.filter((item) => !isEssayItem(item)),
             finance: extractGeneratedArray(source, 'financeContent'),
+            essays: essays.length > 0 ? essays : ai.filter(isEssayItem),
         };
     } catch (err) {
         console.warn(`  ⚠️  Could not read existing generated content: ${err.message}`);
-        return { ai: [], finance: [] };
+        return { ai: [], finance: [], essays: [] };
     }
 }
 
@@ -77,6 +80,25 @@ function withoutGeneratedId(item) {
     const copy = { ...item };
     delete copy.id;
     return copy;
+}
+
+function isEssayItem(item) {
+    const category = String(item.category || '').toLowerCase();
+    return category === 'essay' ||
+        category === 'essays' ||
+        category === '随笔' ||
+        item.title === '月光渡口';
+}
+
+function normalizeCategoryHref(item, category) {
+    if ((category === 'ai' || category === 'essays') && (!item.href || item.href.startsWith('/article/'))) {
+        return { ...item, href: `/article/${category}/${item.slug}` };
+    }
+    return item;
+}
+
+function renumberContent(items) {
+    return items.map((item, index) => ({ ...item, id: index + 1 }));
 }
 
 const existingGeneratedContent = loadExistingGeneratedContent();
@@ -171,7 +193,7 @@ async function getNotionContent(category, databaseId, fallbackArticles) {
 
 async function getMergedContent(category, databaseId) {
     const local = getMarkdownContent(category);
-    const fallback = existingGeneratedContent[category]
+    const fallback = (existingGeneratedContent[category] || [])
         .filter((item) => item.source === 'notion')
         .map(withoutGeneratedId);
     const notion = await getNotionContent(category, databaseId, fallback);
@@ -185,7 +207,8 @@ async function getMergedContent(category, databaseId) {
         if (!b.date) return -1;
         return b.date.localeCompare(a.date);
     });
-    return merged.map((item, i) => ({ id: i + 1, ...item }));
+    return merged.map((item) => normalizeCategoryHref(item, category))
+        .map((item, i) => ({ id: i + 1, ...item }));
 }
 
 async function main() {
@@ -195,11 +218,14 @@ async function main() {
         fs.mkdirSync(outputDirectory, { recursive: true });
     }
 
-    const aiContent = await getMergedContent('ai', NOTION_AI_DB);
+    const aiContent = renumberContent((await getMergedContent('ai', NOTION_AI_DB)).filter((item) => !isEssayItem(item)));
     console.log(`  ✅ Total AI articles: ${aiContent.length}`);
 
     const financeContent = await getMergedContent('finance', NOTION_FINANCE_DB);
     console.log(`  ✅ Total Finance articles: ${financeContent.length}`);
+
+    const essaysContent = await getMergedContent('essays', null);
+    console.log(`  ✅ Total Essays: ${essaysContent.length}`);
 
     const tsContent = `// Auto-generated content data from markdown + Notion
 // Generated at: ${new Date().toISOString()}
@@ -221,15 +247,18 @@ export const aiContent: ContentItem[] = ${JSON.stringify(aiContent, null, 2)};
 
 export const financeContent: ContentItem[] = ${JSON.stringify(financeContent, null, 2)};
 
-export function getContentBySlug(category: 'ai' | 'finance', slug: string): ContentItem | undefined {
-    const content = category === 'ai' ? aiContent : financeContent;
+export const essaysContent: ContentItem[] = ${JSON.stringify(essaysContent, null, 2)};
+
+export function getContentBySlug(category: 'ai' | 'finance' | 'essays', slug: string): ContentItem | undefined {
+    const content = category === 'ai' ? aiContent : category === 'finance' ? financeContent : essaysContent;
     return content.find(item => item.slug === slug);
 }
 `;
 
     if (
         JSON.stringify(existingGeneratedContent.ai) === JSON.stringify(aiContent) &&
-        JSON.stringify(existingGeneratedContent.finance) === JSON.stringify(financeContent)
+        JSON.stringify(existingGeneratedContent.finance) === JSON.stringify(financeContent) &&
+        JSON.stringify(existingGeneratedContent.essays) === JSON.stringify(essaysContent)
     ) {
         console.log('  ✅ Content unchanged; keeping existing generated file');
         console.log('✨ Content generation complete!');

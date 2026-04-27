@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Hero } from "@/components/layout";
 import { siteConfig } from "@/lib/config/site";
 import { sections } from "@/lib/data/sections";
-import { aiContent, financeContent } from "@/lib/data/generated/content";
+import { aiContent, essaysContent, financeContent } from "@/lib/data/generated/content";
 import { scrollToSection } from "@/lib/scroll";
 import { useViewportProfile } from "@/lib/useLowMotionMode";
 import Link from "next/link";
@@ -327,7 +327,7 @@ export default function Home() {
       </FullScreenSection>
 
       {/* ===== AI ARTICLES PREVIEW ===== */}
-      <FullScreenSection id="ai-articles" nextId="footer" lowMotion={lowMotion} isMobileLike={isMobileLike}>
+      <FullScreenSection id="ai-articles" nextId="essays" lowMotion={lowMotion} isMobileLike={isMobileLike}>
         <motion.div
           initial={revealInitial}
           whileInView={revealWhileInView}
@@ -428,6 +428,114 @@ export default function Home() {
               }}
             >
               查看全部 {aiContent.length} 篇
+              <ArrowRight style={{ width: 14, height: 14 }} />
+            </Link>
+          )}
+        </div>
+      </FullScreenSection>
+
+      {/* ===== ESSAYS PREVIEW ===== */}
+      <FullScreenSection id="essays" nextId="footer" lowMotion={lowMotion} isMobileLike={isMobileLike}>
+        <motion.div
+          initial={revealInitial}
+          whileInView={revealWhileInView}
+          viewport={sectionViewport}
+          transition={sectionTransition}
+          style={{ marginBottom: "2rem" }}
+        >
+          <p
+            style={{
+              fontSize: "0.875rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.4em",
+              color: "var(--accent-tertiary)",
+              marginBottom: "1.5rem",
+              fontFamily: HOME_UI_FONT,
+            }}
+          >
+            Essays
+          </p>
+          <h2
+            style={{
+              fontSize: "clamp(2rem, 5vw, 3rem)",
+              fontWeight: 700,
+              color: "var(--foreground)",
+              marginBottom: "1.5rem",
+            }}
+          >
+            随笔
+          </h2>
+        </motion.div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", width: "100%" }}>
+          {essaysContent.slice(0, 2).map((article, index) => (
+            <motion.div
+              key={article.slug}
+              initial={cardInitial}
+              whileInView={cardWhileInView}
+              viewport={{ once: true }}
+              transition={getCardTransition(index)}
+            >
+              <Link href={article.href} style={{ textDecoration: "none" }}>
+                <motion.div
+                  whileHover={{ y: -3 }}
+                  style={{
+                    padding: "1.5rem",
+                    borderRadius: "1rem",
+                    border: "1px solid var(--border)",
+                    background: "var(--card)",
+                    textAlign: "center",
+                    transition: "all 0.3s ease",
+                    cursor: "pointer",
+                    fontFamily: HOME_UI_FONT,
+                  }}
+                >
+                  <h3
+                    style={{
+                      fontSize: "1.125rem",
+                      fontWeight: 600,
+                      color: "var(--foreground)",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    {article.title}
+                  </h3>
+                  <p style={{ fontSize: "0.875rem", color: "var(--muted)", marginBottom: "0.75rem" }}>
+                    {article.description}
+                  </p>
+                  <span style={{ fontSize: "0.75rem", color: "var(--muted)", opacity: 0.5 }}>
+                    {article.date}
+                  </span>
+                </motion.div>
+              </Link>
+            </motion.div>
+          ))}
+
+          {essaysContent.length === 0 && (
+            <p style={{ padding: "3rem 0", color: "var(--muted)", fontFamily: HOME_UI_FONT }}>随笔正在路上...</p>
+          )}
+
+          {essaysContent.length > 0 && (
+            <Link
+              href="/essays"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                padding: "0.75rem 1.5rem",
+                marginTop: "1rem",
+                color: "var(--accent-tertiary)",
+                textDecoration: "none",
+                fontSize: "0.875rem",
+                fontWeight: 500,
+                fontFamily: HOME_UI_FONT,
+                borderRadius: "9999px",
+                border: "1px solid var(--border)",
+                transition: "all 0.3s ease",
+              }}
+            >
+              查看全部 {essaysContent.length} 篇
               <ArrowRight style={{ width: 14, height: 14 }} />
             </Link>
           )}

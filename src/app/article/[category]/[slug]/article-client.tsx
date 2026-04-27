@@ -56,7 +56,7 @@ function MermaidChart({ chart }: { chart: string }) {
 
 interface ArticleClientProps {
     article: ContentItem;
-    category: "ai" | "finance";
+    category: "ai" | "finance" | "essays";
 }
 
 export default function ArticleClient({ article, category }: ArticleClientProps) {
@@ -148,7 +148,7 @@ export default function ArticleClient({ article, category }: ArticleClientProps)
                             textTransform: "uppercase",
                         }}
                     >
-                        {category === "ai" ? "AI Insights" : "Financial Modeling"}
+                        {category === "ai" ? "AI Insights" : category === "finance" ? "Financial Modeling" : "Essays"}
                     </span>
                 </div>
             </header>

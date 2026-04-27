@@ -1,6 +1,8 @@
-import { getContentBySlug, aiContent, financeContent } from "@/lib/data/generated/content";
+import { getContentBySlug, aiContent, financeContent, essaysContent } from "@/lib/data/generated/content";
 import Link from "next/link";
 import ArticleClient from "./article-client";
+
+type ContentCategory = "ai" | "finance" | "essays";
 
 interface PageProps {
     params: Promise<{
@@ -20,12 +22,19 @@ export function generateStaticParams() {
         slug: item.slug,
     }));
 
-    return [...aiParams, ...financeParams];
+    const essaysParams = essaysContent.map((item) => ({
+        category: "essays",
+        slug: item.slug,
+    }));
+
+    return [...aiParams, ...financeParams, ...essaysParams];
 }
 
 export default async function ArticlePage({ params }: PageProps) {
     const { category, slug } = await params;
-    const typedCategory = category as 'ai' | 'finance';
+    const typedCategory = ["ai", "finance", "essays"].includes(category)
+        ? category as ContentCategory
+        : "ai";
 
     const article = getContentBySlug(typedCategory, slug);
 

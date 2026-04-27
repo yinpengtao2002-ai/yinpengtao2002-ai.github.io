@@ -1,41 +1,55 @@
-"use client";
+import type { Metadata } from "next";
+import ToolBackButton from "@/components/finance/ToolBackButton";
 
-import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
+export const metadata: Metadata = {
+    title: "敏感性分析模型｜利润情景推演工具｜Lucas Yin",
+    description: "面向企业 FBP 的利润敏感性工作台，可导入预算假设，分析收入、毛利率、费用和税率变化对经营利润与净利润的影响。",
+};
+
+function ProjectDescription({ className = "" }: { className?: string }) {
+    return (
+        <section className={className}>
+            <h1>敏感性分析模型</h1>
+            <p>
+                这是一个用于企业 FBP 利润测算的敏感性分析工具，用来判断收入、毛利率、费用率、
+                固定费用和税率变化对经营利润与净利润的影响。
+            </p>
+            <h2>适用场景</h2>
+            <ul>
+                <li>年度预算和滚动预测。</li>
+                <li>经营利润压力测试。</li>
+                <li>管理层情景推演。</li>
+                <li>判断哪些变量对利润最敏感。</li>
+            </ul>
+            <h2>输入数据</h2>
+            <ul>
+                <li>基准收入和收入变动率。</li>
+                <li>毛利率、销售费用率和变动经营费用率。</li>
+                <li>固定经营费用、管理费用、研发费用、其他收益和所得税率。</li>
+            </ul>
+            <h2>输出结果</h2>
+            <ul>
+                <li>经营利润、净利润和利润率指标。</li>
+                <li>一维敏感性排序。</li>
+                <li>二维敏感性矩阵。</li>
+                <li>悲观、基准、乐观三情景对比。</li>
+            </ul>
+        </section>
+    );
+}
 
 export default function SensitivityAnalysisPage() {
-    const router = useRouter();
-
-    const handleBack = () => {
-        if (typeof window !== "undefined" && window.history.length > 1) {
-            router.back();
-            return;
-        }
-
-        router.push("/finance");
-    };
-
     return (
         <div className="fixed inset-0 overflow-hidden bg-[#faf9f5]">
-            <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.22 }}
-                className="fixed right-16 top-4 z-50 sm:right-20"
-            >
-                <button
-                    type="button"
-                    onClick={handleBack}
-                    className="group inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-[#e8e6dc]/90 bg-white/90 font-[inherit] text-sm font-semibold text-[#141413]/75 shadow-[0_14px_36px_rgba(20,20,19,0.10)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-[#d97757]/50 hover:bg-white hover:text-[#141413] hover:shadow-[0_18px_42px_rgba(217,119,87,0.16)] focus:outline-none focus:ring-2 focus:ring-[#d97757]/25 sm:h-11 sm:w-auto sm:min-w-[118px] sm:gap-2.5 sm:px-3 sm:pr-4"
-                    aria-label="返回上一页"
-                >
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff3ee] text-[#d97757] ring-1 ring-[#f2d8cd] transition-all duration-200 group-hover:bg-[#d97757] group-hover:text-white group-hover:ring-[#d97757] sm:h-8 sm:w-8">
-                        <ArrowLeft className="h-4 w-4" />
-                    </span>
-                    <span className="hidden whitespace-nowrap sm:inline">返回上一页</span>
-                </button>
-            </motion.div>
+            <ProjectDescription className="sr-only" />
+
+            <noscript>
+                <div className="relative z-[60] min-h-screen overflow-auto bg-[#faf9f5] p-6 text-[#141413]">
+                    <ProjectDescription />
+                </div>
+            </noscript>
+
+            <ToolBackButton />
 
             <div className="absolute inset-0">
                 <iframe

@@ -1,51 +1,59 @@
-"use client";
+import type { Metadata } from "next";
+import ToolBackButton from "@/components/finance/ToolBackButton";
 
-import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
+export const metadata: Metadata = {
+    title: "单车边际变动归因分析｜财务模型｜Lucas Yin",
+    description: "上传两期单车边际数据，按当前分析维度拆解结构效应和费率效应，解释单车边际变化的主要来源。",
+};
+
+function ProjectDescription({ className = "" }: { className?: string }) {
+    return (
+        <section className={className}>
+            <h1>单车边际变动归因分析</h1>
+            <p>
+                这是一个面向汽车业务和财务 BP 的单车边际归因工具，用于比较两期数据之间单车边际的变化，
+                并按当前维度拆解结构效应与费率效应。
+            </p>
+            <h2>适用场景</h2>
+            <ul>
+                <li>月度经营复盘，解释单车边际为什么上升或下降。</li>
+                <li>国家、车型、版型变化较大的业务组合分析。</li>
+                <li>识别是销量结构变化影响利润，还是单车盈利水平变化影响利润。</li>
+            </ul>
+            <h2>输入数据</h2>
+            <ul>
+                <li>月份或期间。</li>
+                <li>大区、国家、车型、燃油品类、品牌等分析维度。</li>
+                <li>销量和总边际。</li>
+            </ul>
+            <h2>输出结果</h2>
+            <ul>
+                <li>基期与当期单车边际。</li>
+                <li>结构效应、费率效应和总贡献。</li>
+                <li>瀑布图、维度明细和可导出的分析结果。</li>
+            </ul>
+        </section>
+    );
+}
 
 export default function MarginAnalysisPage() {
-    const router = useRouter();
-
-    const handleBack = () => {
-        if (typeof window !== "undefined" && window.history.length > 1) {
-            router.back();
-            return;
-        }
-
-        router.push("/finance");
-    };
-
     return (
-        <div className="fixed inset-0 bg-[#faf9f5] overflow-hidden">
-            <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.22 }}
-                className="fixed right-16 top-4 z-50 sm:right-20"
-            >
-                <button
-                    type="button"
-                    onClick={handleBack}
-                    className="group inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-[#e8e6dc]/90 bg-white/90 font-[inherit] text-sm font-semibold text-[#141413]/75 shadow-[0_14px_36px_rgba(20,20,19,0.10)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-[#d97757]/50 hover:bg-white hover:text-[#141413] hover:shadow-[0_18px_42px_rgba(217,119,87,0.16)] focus:outline-none focus:ring-2 focus:ring-[#d97757]/25 sm:h-11 sm:w-auto sm:min-w-[118px] sm:gap-2.5 sm:px-3 sm:pr-4"
-                    aria-label="返回上一页"
-                >
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff3ee] text-[#d97757] ring-1 ring-[#f2d8cd] transition-all duration-200 group-hover:bg-[#d97757] group-hover:text-white group-hover:ring-[#d97757] sm:h-8 sm:w-8">
-                        <ArrowLeft className="h-4 w-4" />
-                    </span>
-                    <span className="hidden whitespace-nowrap sm:inline">返回上一页</span>
-                </button>
-            </motion.div>
+        <div className="fixed inset-0 overflow-hidden bg-[#faf9f5]">
+            <ProjectDescription className="sr-only" />
 
-            {/* Full screen iframe container */}
+            <noscript>
+                <div className="relative z-[60] min-h-screen overflow-auto bg-[#faf9f5] p-6 text-[#141413]">
+                    <ProjectDescription />
+                </div>
+            </noscript>
+
+            <ToolBackButton />
+
             <div className="absolute inset-0">
                 <iframe
                     src="/tools/margin-analysis/index.html"
                     title="单车边际变动归因分析"
-                    className="absolute inset-0 border-0 w-full h-full"
-                    style={{
-                        left: 0,
-                    }}
+                    className="absolute inset-0 h-full w-full border-0"
                     allow="clipboard-read; clipboard-write"
                 />
             </div>
