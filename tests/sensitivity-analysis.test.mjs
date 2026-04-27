@@ -7,6 +7,8 @@ const {
     DRIVER_DEFINITIONS,
     computeModel,
     getDefaultAssumptions,
+    getLockedPlotLayout,
+    getPlotConfig,
     normalizeImportedValue,
 } = sensitivityAnalysis.default;
 
@@ -39,4 +41,22 @@ test("imported percent values are treated as percentage points", () => {
 
 test("imported amount values keep their numeric scale", () => {
     assert.equal(normalizeImportedValue(amountDriver, "1,200 亿元"), 1200);
+});
+
+test("plot configuration keeps charts readable without accidental zoom controls", () => {
+    const config = getPlotConfig();
+    const layout = getLockedPlotLayout({
+        legend: { orientation: "h" },
+        xaxis: { title: "横轴" },
+        yaxis: { title: "纵轴" },
+    });
+
+    assert.equal(config.displayModeBar, false);
+    assert.equal(config.scrollZoom, false);
+    assert.equal(config.doubleClick, false);
+    assert.equal(layout.dragmode, false);
+    assert.equal(layout.legend.itemclick, false);
+    assert.equal(layout.legend.itemdoubleclick, false);
+    assert.equal(layout.xaxis.fixedrange, true);
+    assert.equal(layout.yaxis.fixedrange, true);
 });

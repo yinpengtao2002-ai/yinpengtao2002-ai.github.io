@@ -748,7 +748,7 @@ function renderTornadoChart() {
             hovertemplate: "%{hovertext}<extra></extra>",
             hovertext: rows.map((row) => `${row.name}<br>高位假设：${formatDriverValue(row.key, row.highValue)}<br>${metricLabel}：${formatMetric(row.highMetric)}`)
         }
-    ], {
+    ], getLockedPlotLayout({
         margin: { l: 116, r: 28, t: 24, b: 46 },
         barmode: "overlay",
         paper_bgcolor: "rgba(0,0,0,0)",
@@ -762,7 +762,7 @@ function renderTornadoChart() {
             gridcolor: "#ece8de"
         },
         yaxis: { automargin: true }
-    }, getPlotConfig());
+    }), getPlotConfig());
 }
 
 function renderScenarioChart() {
@@ -781,7 +781,7 @@ function renderScenarioChart() {
             textposition: "auto",
             hovertemplate: "%{x}<br>%{text}<extra></extra>"
         }
-    ], {
+    ], getLockedPlotLayout({
         margin: { l: 52, r: 22, t: 26, b: 42 },
         paper_bgcolor: "rgba(0,0,0,0)",
         plot_bgcolor: "rgba(0,0,0,0)",
@@ -790,7 +790,7 @@ function renderScenarioChart() {
             title: getMetricDefinition().label,
             gridcolor: "#ece8de"
         }
-    }, getPlotConfig());
+    }), getPlotConfig());
 }
 
 function renderMatrixChart() {
@@ -816,7 +816,7 @@ function renderMatrixChart() {
                 thickness: 14
             }
         }
-    ], {
+    ], getLockedPlotLayout({
         margin: { l: 92, r: 64, t: 28, b: 80 },
         paper_bgcolor: "rgba(0,0,0,0)",
         plot_bgcolor: "rgba(0,0,0,0)",
@@ -829,7 +829,7 @@ function renderMatrixChart() {
             title: driverByKey[matrix.yKey].name,
             automargin: true
         }
-    }, getPlotConfig());
+    }), getPlotConfig());
 }
 
 function renderBridgeChart(result) {
@@ -857,7 +857,7 @@ function renderBridgeChart(result) {
             totals: { marker: { color: "#5c8fba" } },
             hovertemplate: "%{x}<br>%{y:.1f}<extra></extra>"
         }
-    ], {
+    ], getLockedPlotLayout({
         margin: { l: 58, r: 24, t: 26, b: 72 },
         paper_bgcolor: "rgba(0,0,0,0)",
         plot_bgcolor: "rgba(0,0,0,0)",
@@ -867,7 +867,7 @@ function renderBridgeChart(result) {
             gridcolor: "#ece8de"
         },
         xaxis: { tickangle: -24 }
-    }, getPlotConfig());
+    }), getPlotConfig());
 }
 
 function renderProfitTable(result) {
@@ -1109,8 +1109,33 @@ function getPlotFont() {
 function getPlotConfig() {
     return {
         responsive: true,
+        displayModeBar: false,
         displaylogo: false,
-        modeBarButtonsToRemove: ["select2d", "lasso2d", "autoScale2d"]
+        scrollZoom: false,
+        doubleClick: false,
+        editable: false,
+        staticPlot: false
+    };
+}
+
+function getLockedPlotLayout(layout) {
+    return {
+        ...layout,
+        dragmode: false,
+        clickmode: "none",
+        legend: {
+            ...(layout.legend || {}),
+            itemclick: false,
+            itemdoubleclick: false
+        },
+        xaxis: {
+            ...(layout.xaxis || {}),
+            fixedrange: true
+        },
+        yaxis: {
+            ...(layout.yaxis || {}),
+            fixedrange: true
+        }
     };
 }
 
@@ -1128,6 +1153,8 @@ if (typeof module !== "undefined" && module.exports) {
         sanitizeAssumptions,
         sequenceAround,
         parseCsv,
-        normalizeImportedValue
+        normalizeImportedValue,
+        getPlotConfig,
+        getLockedPlotLayout
     };
 }

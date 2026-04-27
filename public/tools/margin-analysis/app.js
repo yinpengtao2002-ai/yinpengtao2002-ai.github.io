@@ -1417,6 +1417,8 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
             x: 0.5,
             xanchor: 'center'
         },
+        dragmode: false,
+        clickmode: 'none',
         showlegend: false,
         height: 520,
         margin: { l: 80, r: 80, t: 120, b: 100 },
@@ -1427,7 +1429,8 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
             tickfont: { size: 12, color: '#b0aea5', family: PLOT_FONT_FAMILY },
             gridcolor: 'rgba(232, 230, 220, 0.5)',
             linecolor: '#e8e6dc',
-            showline: true
+            showline: true,
+            fixedrange: true
         },
         yaxis: {
             title: { text: '单车边际 (¥)', font: { size: 13, color: '#b0aea5' } },
@@ -1437,7 +1440,8 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
             linecolor: '#e8e6dc',
             showline: true,
             range: [yRangeMin, yRangeMax],
-            zeroline: false
+            zeroline: false,
+            fixedrange: true
         },
         hoverlabel: {
             bgcolor: 'rgba(255, 255, 255, 0.98)',
@@ -1460,7 +1464,7 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
     };
 
 
-    // 移动端优化：减小高度、禁用拖拽
+    // 移动端优化：减小高度
     const isMobileView = window.innerWidth <= 768;
     if (isMobileView) {
         layout.height = 380;
@@ -1475,7 +1479,10 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
     const config = {
         responsive: true,
         displayModeBar: false,
-        dragMode: isMobileView ? false : 'pan'
+        scrollZoom: false,
+        doubleClick: false,
+        editable: false,
+        staticPlot: false
     };
 
     Plotly.newPlot(containerId, [trace], layout, config);
