@@ -32,7 +32,7 @@ function ProjectDescription({ className = "" }: { className?: string }) {
             <ul>
                 <li>销量、单车边际、净收入、边际、利润总额和利润总额率指标。</li>
                 <li>统一 10% 波动下的利润敏感性排序。</li>
-                <li>盈亏平衡点和二维敏感性矩阵。</li>
+                <li>目标利润分析和二维敏感性矩阵。</li>
             </ul>
         </section>
     );

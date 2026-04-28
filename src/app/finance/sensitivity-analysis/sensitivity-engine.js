@@ -198,7 +198,8 @@ const AppState = {
     displayUnit: "亿",
     xDriver: "salesVolume",
     yDriver: "unitMaterialCost",
-    matrixSteps: 7
+    matrixSteps: 7,
+    targetProfit: 300
 };
 
 let driverByKey = Object.fromEntries(DRIVER_DEFINITIONS.map((driver) => [driver.key, driver]));
@@ -578,6 +579,17 @@ function initControlEvents() {
     });
     document.getElementById("unit-select").addEventListener("change", (event) => {
         AppState.displayUnit = event.target.value;
+        renderAll();
+    });
+    document.getElementById("target-profit-input").addEventListener("input", (event) => {
+        const rawValue = String(event.target.value || "").trim();
+        const value = Number(rawValue);
+        if (rawValue === "") {
+            AppState.targetProfit = null;
+            renderAll();
+            return;
+        }
+        AppState.targetProfit = Number.isFinite(value) ? value : null;
         renderAll();
     });
     document.getElementById("x-driver-select").addEventListener("change", (event) => {
@@ -992,6 +1004,7 @@ function refreshInputValues() {
     document.getElementById("x-driver-select").value = AppState.xDriver;
     document.getElementById("y-driver-select").value = AppState.yDriver;
     document.getElementById("matrix-steps").value = AppState.matrixSteps;
+    document.getElementById("target-profit-input").value = AppState.targetProfit ?? "";
     refreshAdjustmentDisplay();
 }
 
@@ -1015,7 +1028,7 @@ function renderAll() {
     refreshAdjustmentDisplay();
     renderMetrics(result, baseResult);
     renderTornadoChart();
-    renderBreakEvenChart(result);
+    renderTargetProfitChart(result);
     renderMatrixChart();
     renderWaterfallCharts(result);
 }
@@ -1110,16 +1123,19 @@ function renderTornadoChart() {
     }), getPlotConfig());
 }
 
-function calculateBreakEvenData(result) {
+function calculateTargetProfitData(result) {
     const currentVolume = Number(result.salesVolume || 0);
     const unitContributionMargin = Number(result.unitContributionMargin || 0);
     const fixedPartNet = Number(result.fixedPartNet || 0);
-    const hasBreakEven = unitContributionMargin > 0;
-    const breakEvenVolume = hasBreakEven ? Math.max(0, fixedPartNet / unitContributionMargin) : null;
+    const rawTargetProfit = AppState.targetProfit;
+    const targetProfit = Number(rawTargetProfit);
+    const hasTargetProfit = rawTargetProfit !== null && rawTargetProfit !== undefined && Number.isFinite(targetProfit);
+    const hasRequiredVolume = hasTargetProfit && unitContributionMargin > 0;
+    const requiredVolume = hasRequiredVolume ? Math.max(0, (fixedPartNet + targetProfit) / unitContributionMargin) : null;
     const maxVolume = Math.max(
         10,
         currentVolume * 1.35,
-        (breakEvenVolume || 0) * 1.35,
+        (requiredVolume || 0) * 1.35,
         currentVolume + 10
     );
     const steps = 28;
@@ -1131,18 +1147,20 @@ function calculateBreakEvenData(result) {
         currentProfit: result.profit,
         unitContributionMargin,
         fixedPartNet,
-        hasBreakEven,
-        breakEvenVolume,
+        targetProfit,
+        hasTargetProfit,
+        hasRequiredVolume,
+        requiredVolume,
         maxVolume,
         volumes,
         profits
     };
 }
 
-function renderBreakEvenChart(result) {
+function renderTargetProfitChart(result) {
     if (typeof Plotly === "undefined") return;
     const compact = isCompactViewport();
-    const data = calculateBreakEvenData(result);
+    const data = calculateTargetProfitData(result);
     const traces = [
         {
             x: data.volumes,
@@ -1178,34 +1196,55 @@ function renderBreakEvenChart(result) {
     ];
     const annotations = [];
 
-    if (data.hasBreakEven) {
+    if (data.hasRequiredVolume) {
         traces.push({
-            x: [data.breakEvenVolume],
-            y: [0],
+            x: [data.requiredVolume],
+            y: [toDisplayAmount(data.targetProfit)],
             type: "scatter",
             mode: compact ? "markers" : "markers+text",
-            name: "盈亏平衡点",
+            name: "目标销量",
             marker: { color: "#788c5d", size: compact ? 9 : 11, symbol: "diamond" },
-            text: [`盈亏平衡 ${formatVolume(data.breakEvenVolume, 1)}`],
+            text: [`目标 ${formatVolume(data.requiredVolume, 1)}`],
             textposition: "bottom center",
-            hovertemplate: `盈亏平衡销量：%{x:.1f} 万辆<br>利润：0<extra></extra>`
+            hovertemplate: `目标销量：%{x:.1f} 万辆<br>目标利润：${formatAmount(data.targetProfit, 1)}<extra></extra>`
         });
         shapes.push({
             type: "line",
-            x0: data.breakEvenVolume,
-            x1: data.breakEvenVolume,
+            x0: 0,
+            x1: data.maxVolume,
+            y0: toDisplayAmount(data.targetProfit),
+            y1: toDisplayAmount(data.targetProfit),
+            line: { color: "#788c5d", width: 1, dash: "dash" }
+        });
+        shapes.push({
+            type: "line",
+            x0: data.requiredVolume,
+            x1: data.requiredVolume,
             yref: "paper",
             y0: 0,
             y1: 1,
             line: { color: "#788c5d", width: 1, dash: "dash" }
         });
         annotations.push({
-            x: data.breakEvenVolume,
-            y: 0,
+            x: data.requiredVolume,
+            y: toDisplayAmount(data.targetProfit),
             yshift: compact ? -18 : -30,
-            text: `平衡点 ${formatVolume(data.breakEvenVolume, 1)}`,
+            text: `目标销量 ${formatVolume(data.requiredVolume, 1)}`,
             showarrow: false,
             font: { size: compact ? 10 : 11, color: "#788c5d" }
+        });
+    } else if (!data.hasTargetProfit) {
+        annotations.push({
+            x: 0.5,
+            y: 0.5,
+            xref: "paper",
+            yref: "paper",
+            text: "请在左侧输入目标利润",
+            showarrow: false,
+            font: { size: compact ? 11 : 12, color: "#747168" },
+            bgcolor: "rgba(255,250,245,0.9)",
+            bordercolor: "#e8e6dc",
+            borderpad: 8
         });
     } else {
         annotations.push({
@@ -1213,7 +1252,7 @@ function renderBreakEvenChart(result) {
             y: 0.5,
             xref: "paper",
             yref: "paper",
-            text: "当前单车边际不为正，无法计算销量盈亏平衡点",
+            text: "当前单车边际不为正，无法计算目标销量",
             showarrow: false,
             font: { size: compact ? 11 : 12, color: "#b65f55" },
             bgcolor: "rgba(255,250,245,0.9)",
@@ -1222,7 +1261,7 @@ function renderBreakEvenChart(result) {
         });
     }
 
-    Plotly.react("breakeven-chart", traces, getLockedPlotLayout({
+    Plotly.react("target-profit-chart", traces, getLockedPlotLayout({
         height: compact ? 360 : 420,
         margin: { l: compact ? 42 : 58, r: compact ? 8 : 22, t: compact ? 18 : 26, b: compact ? 50 : 58 },
         paper_bgcolor: "rgba(0,0,0,0)",
@@ -1432,6 +1471,7 @@ function resetModel() {
     AppState.xDriver = "salesVolume";
     AppState.yDriver = "unitMaterialCost";
     AppState.matrixSteps = 7;
+    AppState.targetProfit = 300;
     renderControlInputs();
     refreshInputValues();
     renderAll();

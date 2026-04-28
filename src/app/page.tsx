@@ -107,6 +107,93 @@ function FullScreenSection({
   );
 }
 
+function HomeSectionNav({ lowMotion, isMobileLike }: { lowMotion: boolean; isMobileLike: boolean }) {
+  const items = [
+    { title: "财务模型", eyebrow: "Finance", targetId: "finance-articles", color: "var(--accent-secondary)" },
+    { title: "AI 工作流", eyebrow: "AI Workflow", targetId: "ai-articles", color: "var(--accent)" },
+    { title: "日常随笔", eyebrow: "Essays", targetId: "essays", color: "var(--accent-tertiary)" },
+  ];
+
+  return (
+    <section
+      id="section-nav"
+      style={{
+        width: "100%",
+        borderTop: "1px solid var(--border)",
+        borderBottom: "1px solid var(--border)",
+        background: "color-mix(in srgb, var(--background) 88%, var(--card) 12%)",
+      }}
+    >
+      <nav
+        aria-label="首页栏目导航"
+        style={{
+          maxWidth: "1120px",
+          margin: "0 auto",
+          padding: isMobileLike ? "1rem 1.25rem" : "1.15rem 2rem",
+          display: "grid",
+          gridTemplateColumns: isMobileLike ? "1fr" : "repeat(3, minmax(0, 1fr))",
+          gap: isMobileLike ? 0 : "1px",
+          background: isMobileLike ? "transparent" : "var(--border)",
+          fontFamily: HOME_UI_FONT,
+        }}
+      >
+        {items.map((item, index) => (
+          <motion.button
+            key={item.targetId}
+            type="button"
+            initial={lowMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+            whileInView={lowMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: lowMotion ? 0.2 : 0.35, delay: index * 0.06 }}
+            whileHover={lowMotion ? undefined : { y: -2 }}
+            onClick={() => scrollToSection(item.targetId)}
+            style={{
+              minHeight: isMobileLike ? 76 : 108,
+              border: "none",
+              borderBottom: isMobileLike && index < items.length - 1 ? "1px solid var(--border)" : "none",
+              background: "var(--background)",
+              color: "var(--foreground)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "1rem",
+              padding: isMobileLike ? "1rem 0" : "1rem 1.35rem",
+              textAlign: "left",
+              fontFamily: "inherit",
+            }}
+            aria-label={`查看${item.title}`}
+          >
+            <span style={{ display: "grid", gap: "0.35rem" }}>
+              <span
+                style={{
+                  color: item.color,
+                  fontSize: "0.72rem",
+                  fontWeight: 700,
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                }}
+              >
+                {item.eyebrow}
+              </span>
+              <span
+                style={{
+                  fontSize: isMobileLike ? "1.45rem" : "clamp(1.45rem, 2.4vw, 2.15rem)",
+                  fontWeight: 800,
+                  lineHeight: 1.05,
+                }}
+              >
+                {item.title}
+              </span>
+            </span>
+            <ArrowRight style={{ width: 20, height: 20, color: item.color, flexShrink: 0 }} />
+          </motion.button>
+        ))}
+      </nav>
+    </section>
+  );
+}
+
 export default function Home() {
   const { lowMotion, isMobileLike } = useViewportProfile();
   const sectionTransition = lowMotion ? { duration: 0.35 } : { duration: 0.8 };
@@ -128,6 +215,8 @@ export default function Home() {
         description={siteConfig.description}
         subtitle={siteConfig.subtitle}
       />
+
+      <HomeSectionNav lowMotion={lowMotion} isMobileLike={isMobileLike} />
 
       {/* ===== FINANCE TOOLS PREVIEW ===== */}
       <FullScreenSection id="finance-articles" nextId="ai-articles" lowMotion={lowMotion} isMobileLike={isMobileLike}>

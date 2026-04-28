@@ -123,6 +123,11 @@ export default function SensitivityTool() {
                                 <option value="百万">百万元</option>
                             </select>
                         </label>
+                        <label className="field">
+                            <span>目标利润（亿元）</span>
+                            <input id="target-profit-input" className="input" type="number" step="1" defaultValue="300" />
+                            <span className="field-note">用于测算当前口径下达到目标利润所需销量。</span>
+                        </label>
                     </div>
                 </section>
 
@@ -186,11 +191,11 @@ export default function SensitivityTool() {
                     <article className="panel panel-large">
                         <div className="panel-header">
                             <div>
-                                <h2>盈亏平衡点</h2>
-                                <p>在当前调整口径下，查看利润随销量变化的曲线和 0 利润对应销量。</p>
+                                <h2>目标利润分析</h2>
+                                <p>输入目标利润，查看当前单车边际和固定部分下需要达到的销量。</p>
                             </div>
                         </div>
-                        <div id="breakeven-chart" className="chart chart-breakeven" />
+                        <div id="target-profit-chart" className="chart chart-target-profit" />
                     </article>
                 </section>
 

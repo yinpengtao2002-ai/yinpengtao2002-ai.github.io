@@ -159,11 +159,11 @@ export default function Hero({
                 >
                     <motion.button
                         type="button"
-                        onClick={() => scrollToSection("finance-articles")}
+                        onClick={() => scrollToSection("section-nav")}
                         animate={lowMotion ? undefined : { y: [0, 8, 0] }}
                         transition={lowMotion ? undefined : { duration: 2, repeat: Infinity, ease: "easeInOut" }}
                         className="font-sans flex flex-col items-center gap-2 text-muted hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
-                        aria-label="滚动到财务模型区域"
+                        aria-label="滚动到栏目导航区域"
                     >
                         <span className="text-xs tracking-[0.2em]">向下滑动 探索更多</span>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
