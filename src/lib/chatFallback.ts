@@ -1,8 +1,8 @@
 import { allDialoguePatterns, defaultResponses } from "@/lib/data/dialoguePatterns";
 
-export const CHAT_API_TIMEOUT_MS = 10000;
+export const CHAT_API_TIMEOUT_MS = 70000;
 
-const OFFLINE_INDEX_NOTICE = "我现在先用站内索引帮你找内容。";
+const OFFLINE_INDEX_NOTICE = "当前助手暂时不可用，先为你显示相关内容入口。";
 
 export interface LocalContentCard {
     id: number;

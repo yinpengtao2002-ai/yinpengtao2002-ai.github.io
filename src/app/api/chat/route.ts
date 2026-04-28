@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { aiContent, financeContent } from "@/lib/data/generated/content";
 
-const CHAT_UPSTREAM_TIMEOUT_MS = 12000;
+const CHAT_UPSTREAM_TIMEOUT_MS = 30000;
 
 function buildSystemPrompt(): string {
   // Build article catalog from actual content
