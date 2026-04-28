@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 import { aiContent, financeContent } from "@/lib/data/generated/content";
 
-const CHAT_UPSTREAM_TIMEOUT_MS = 30000;
+const CHAT_PRIMARY_TIMEOUT_MS = 18000;
+const CHAT_FALLBACK_TIMEOUT_MS = 10000;
 
 function buildSystemPrompt(): string {
   // Build article catalog from actual content
@@ -46,8 +47,8 @@ export async function POST(req: NextRequest) {
 
     const apiKey = process.env.CHAT_API_KEY?.trim();
     const apiUrl = process.env.CHAT_API_URL?.trim();
-    const primaryModel = (process.env.CHAT_MODEL || "z-ai/glm5").trim();
-    const fallbackModel = (process.env.CHAT_MODEL_FALLBACK || "z-ai/glm-5.1").trim();
+    const primaryModel = (process.env.CHAT_MODEL || "z-ai/glm-5.1").trim();
+    const fallbackModel = (process.env.CHAT_MODEL_FALLBACK || "z-ai/glm5").trim();
 
     if (!apiKey || !apiUrl) {
       return Response.json(
@@ -56,9 +57,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const callUpstream = async (model: string) => {
+    const callUpstream = async (model: string, timeoutMs: number) => {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), CHAT_UPSTREAM_TIMEOUT_MS);
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       try {
         return await fetch(apiUrl, {
@@ -93,7 +94,7 @@ export async function POST(req: NextRequest) {
     let upstreamError = "";
 
     try {
-      res = await callUpstream(primaryModel);
+      res = await callUpstream(primaryModel, CHAT_PRIMARY_TIMEOUT_MS);
     } catch (err) {
       upstreamError = err instanceof Error ? err.message : "Upstream request failed";
       console.warn(`Primary model ${primaryModel} request failed: ${upstreamError}`);
@@ -107,7 +108,7 @@ export async function POST(req: NextRequest) {
       activeModel = fallbackModel;
 
       try {
-        res = await callUpstream(fallbackModel);
+        res = await callUpstream(fallbackModel, CHAT_FALLBACK_TIMEOUT_MS);
         upstreamError = "";
       } catch (err) {
         upstreamError = err instanceof Error ? err.message : "Upstream request failed";
