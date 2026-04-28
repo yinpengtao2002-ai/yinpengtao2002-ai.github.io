@@ -332,9 +332,17 @@ function getMetricValue(result, metricKey = AppState.metric) {
 function formatNumber(value, decimals = 1) {
     if (!Number.isFinite(value)) return "-";
     const normalizedValue = Math.abs(value) < 1e-9 ? 0 : value;
+    let displayDecimals = decimals;
+    while (
+        displayDecimals < 6 &&
+        Math.abs(normalizedValue) > 0 &&
+        Number(normalizedValue.toFixed(displayDecimals)) === 0
+    ) {
+        displayDecimals += 1;
+    }
     return Number(normalizedValue).toLocaleString("zh-CN", {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals
+        minimumFractionDigits: displayDecimals,
+        maximumFractionDigits: displayDecimals
     }).replace("-0", "0");
 }
 
@@ -1176,11 +1184,9 @@ function renderTargetProfitChart(result) {
             x: [data.currentVolume],
             y: [toDisplayAmount(data.currentProfit)],
             type: "scatter",
-            mode: compact ? "markers" : "markers+text",
+            mode: "markers",
             name: "当前销量",
             marker: { color: "#d97757", size: compact ? 9 : 11 },
-            text: [`当前 ${formatVolume(data.currentVolume, 1)}`],
-            textposition: "top center",
             hovertemplate: `当前销量：%{x:.1f} 万辆<br>利润：${formatAmount(data.currentProfit, 1)}<extra></extra>`
         }
     ];
@@ -1195,17 +1201,31 @@ function renderTargetProfitChart(result) {
         }
     ];
     const annotations = [];
+    annotations.push({
+        x: data.currentVolume,
+        y: toDisplayAmount(data.currentProfit),
+        text: compact ? `当前 ${formatNumber(data.currentVolume, 1)}` : `当前销量 ${formatVolume(data.currentVolume, 1)}`,
+        showarrow: true,
+        arrowhead: 2,
+        arrowsize: 0.8,
+        arrowwidth: 1,
+        arrowcolor: "#d97757",
+        ax: compact ? -22 : -46,
+        ay: compact ? 30 : 40,
+        font: { size: compact ? 10 : 11, color: "#141413" },
+        bgcolor: "rgba(255,250,245,0.94)",
+        bordercolor: "rgba(217,119,87,0.36)",
+        borderpad: 4
+    });
 
     if (data.hasRequiredVolume) {
         traces.push({
             x: [data.requiredVolume],
             y: [toDisplayAmount(data.targetProfit)],
             type: "scatter",
-            mode: compact ? "markers" : "markers+text",
+            mode: "markers",
             name: "目标销量",
             marker: { color: "#788c5d", size: compact ? 9 : 11, symbol: "diamond" },
-            text: [`目标 ${formatVolume(data.requiredVolume, 1)}`],
-            textposition: "bottom center",
             hovertemplate: `目标销量：%{x:.1f} 万辆<br>目标利润：${formatAmount(data.targetProfit, 1)}<extra></extra>`
         });
         shapes.push({
@@ -1228,10 +1248,18 @@ function renderTargetProfitChart(result) {
         annotations.push({
             x: data.requiredVolume,
             y: toDisplayAmount(data.targetProfit),
-            yshift: compact ? -18 : -30,
-            text: `目标销量 ${formatVolume(data.requiredVolume, 1)}`,
-            showarrow: false,
-            font: { size: compact ? 10 : 11, color: "#788c5d" }
+            text: compact ? `目标 ${formatNumber(data.requiredVolume, 1)}` : `目标销量 ${formatVolume(data.requiredVolume, 1)}`,
+            showarrow: true,
+            arrowhead: 2,
+            arrowsize: 0.8,
+            arrowwidth: 1,
+            arrowcolor: "#788c5d",
+            ax: compact ? 22 : 48,
+            ay: compact ? -30 : -42,
+            font: { size: compact ? 10 : 11, color: "#50613a" },
+            bgcolor: "rgba(255,250,245,0.94)",
+            bordercolor: "rgba(120,140,93,0.38)",
+            borderpad: 4
         });
     } else if (!data.hasTargetProfit) {
         annotations.push({
@@ -1291,13 +1319,19 @@ function renderMatrixChart() {
     const matrix = createMatrixData();
     const xLabels = matrix.xValues.map((value) => formatDriverAxisValue(matrix.xKey, value));
     const yLabels = matrix.yValues.map((value) => formatDriverAxisValue(matrix.yKey, value));
+    const xIndexes = matrix.xValues.map((_, index) => index);
+    const yIndexes = matrix.yValues.map((_, index) => index);
     const cellText = matrix.z.map((row) => row.map((value) => formatMetricCellValue(value)));
-    const hoverValues = matrix.z.map((row) => row.map((value) => formatMetric(value)));
+    const hoverValues = matrix.z.map((row, rowIndex) => row.map((value, columnIndex) => [
+        xLabels[columnIndex],
+        yLabels[rowIndex],
+        formatMetric(value)
+    ]));
 
     Plotly.react("matrix-chart", [
         {
-            x: xLabels,
-            y: yLabels,
+            x: xIndexes,
+            y: yIndexes,
             z: matrix.z,
             text: cellText,
             customdata: hoverValues,
@@ -1310,7 +1344,7 @@ function renderMatrixChart() {
                 [1, "#bfd7e9"]
             ],
             showscale: !compact,
-            hovertemplate: `${driverByKey[matrix.xKey].name}: %{x}<br>${driverByKey[matrix.yKey].name}: %{y}<br>${getMetricDefinition().label}: %{customdata}<extra></extra>`,
+            hovertemplate: `${driverByKey[matrix.xKey].name}: %{customdata[0]}<br>${driverByKey[matrix.yKey].name}: %{customdata[1]}<br>${getMetricDefinition().label}: %{customdata[2]}<extra></extra>`,
             colorbar: {
                 title: getMetricDefinition().label,
                 thickness: 14
@@ -1323,11 +1357,20 @@ function renderMatrixChart() {
         font: getPlotFont(),
         xaxis: {
             title: `${driverByKey[matrix.xKey].name}（${driverByKey[matrix.xKey].unit}）`,
+            tickmode: "array",
+            tickvals: xIndexes,
+            ticktext: xLabels,
             tickangle: compact ? -18 : -28,
-            tickfont: { size: compact ? 9 : 11 }
+            tickfont: { size: compact ? 9 : 11 },
+            range: [-0.5, xIndexes.length - 0.5],
+            automargin: true
         },
         yaxis: {
             title: compact ? "" : `${driverByKey[matrix.yKey].name}（${driverByKey[matrix.yKey].unit}）`,
+            tickmode: "array",
+            tickvals: yIndexes,
+            ticktext: yLabels,
+            range: [-0.5, yIndexes.length - 0.5],
             automargin: true,
             tickfont: { size: compact ? 9 : 11 }
         }
