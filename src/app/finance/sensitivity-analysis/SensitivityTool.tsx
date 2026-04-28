@@ -81,7 +81,7 @@ export default function SensitivityTool() {
                 <section className="sidebar-block">
                     <div className="sidebar-kicker">Sensitivity Lab</div>
                     <h1 className="sidebar-heading">经营利润敏感性分析</h1>
-                    <p className="sidebar-copy">按内部经营利润口径调整净收入、变动成本和固定部分净额，观察边际与利润总额变化。</p>
+                    <p className="sidebar-copy">按内部经营利润口径调整销量、单车收入、单车成本和固定部分净额，观察边际与利润总额变化。</p>
                     <div id="message-area" className="message-area" aria-live="polite" />
                 </section>
 
@@ -110,6 +110,8 @@ export default function SensitivityTool() {
                                 <option value="profit">利润总额</option>
                                 <option value="contributionMargin">边际</option>
                                 <option value="netRevenue">净收入</option>
+                                <option value="salesVolume">销量</option>
+                                <option value="unitContributionMargin">单车边际</option>
                                 <option value="contributionMarginRate">边际率</option>
                                 <option value="profitRate">利润总额率</option>
                             </select>
@@ -166,7 +168,7 @@ export default function SensitivityTool() {
                     <div>
                         <p className="eyebrow">Financial Modeling</p>
                         <h1>经营利润敏感性分析</h1>
-                        <p className="model-subtitle">从净收入扣除材料成本、变动制造费用、变动销售费用得到边际，再考虑固定扣减项和利润贡献项得到利润总额。</p>
+                        <p className="model-subtitle">销量与单车净收入、单车材料成本、单车变动费用共同决定边际；边际以下再考虑固定扣减项和利润贡献项得到利润总额。</p>
                     </div>
                     <div className="header-actions">
                         <button type="button" className="btn btn-secondary" id="btn-reset">重置</button>
@@ -213,7 +215,7 @@ export default function SensitivityTool() {
                         <div className="panel-header">
                             <div>
                                 <h2>利润结构</h2>
-                                <p>从净收入到边际，再到固定部分净额和利润总额。</p>
+                                <p>从销量和单车口径到边际，再到固定部分净额和利润总额。</p>
                             </div>
                         </div>
                         <div id="bridge-chart" className="chart chart-small" />
@@ -224,7 +226,7 @@ export default function SensitivityTool() {
                     <div className="panel-header">
                         <div>
                             <h2>利润结构明细</h2>
-                            <p>基准情景下的净收入、边际、固定扣减项、利润贡献项和利润总额。</p>
+                            <p>基准情景下的销量、单车口径、边际、固定扣减项、利润贡献项和利润总额。</p>
                         </div>
                     </div>
                     <div className="table-wrap">
@@ -246,7 +248,7 @@ export default function SensitivityTool() {
 
                 <footer className="footer">
                     <span>经营利润敏感性分析</span>
-                    <span>净收入、边际、固定部分净额与利润总额</span>
+                    <span>销量、单车边际、固定部分净额与利润总额</span>
                 </footer>
             </main>
         </div>

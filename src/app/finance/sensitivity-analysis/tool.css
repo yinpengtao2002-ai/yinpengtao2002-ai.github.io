@@ -302,6 +302,25 @@
     gap: 0.68rem;
 }
 
+.sensitivity-tool .field-group {
+    display: grid;
+    gap: 0.68rem;
+    border-bottom: 1px dashed var(--border-light);
+    padding-bottom: 0.78rem;
+}
+
+.sensitivity-tool .field-group:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.sensitivity-tool .field-group-title {
+    color: var(--accent-blue);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
 .sensitivity-tool .field {
     display: grid;
     gap: 0.3rem;
@@ -394,7 +413,7 @@
 
 .sensitivity-tool .metrics-grid {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.85rem;
     max-width: 1480px;
     margin: 0 auto 1rem;

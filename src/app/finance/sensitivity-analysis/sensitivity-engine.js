@@ -5,55 +5,81 @@
 
 const DRIVER_DEFINITIONS = [
     {
-        key: "netRevenue",
-        name: "净收入",
-        aliases: ["revenue", "收入"],
-        unit: "亿元",
-        kind: "amount",
-        step: 1,
-        defaultValue: 1320,
-        defaultRange: 120,
+        key: "salesVolume",
+        name: "销量",
+        aliases: ["volume", "sales", "销量", "销售量"],
+        unit: "万辆",
+        kind: "volume",
+        group: "volume",
+        step: 0.1,
+        decimals: 1,
+        defaultValue: 100,
+        defaultRange: 10,
         impact: "positive",
-        description: "本模型的起点，使用已经扣减后的净额"
+        description: "边际以上项目的销量基础"
     },
     {
-        key: "materialCost",
-        name: "材料成本",
-        unit: "亿元",
-        kind: "amount",
-        step: 1,
-        defaultValue: 780,
-        defaultRange: 60,
-        impact: "negative",
-        description: "净收入下的直接材料成本"
+        key: "unitNetRevenue",
+        name: "单车净收入",
+        aliases: ["unitRevenue", "unitNetRevenue", "单车收入", "单车净收入"],
+        unit: "万元/辆",
+        kind: "unitAmount",
+        group: "volume",
+        step: 0.1,
+        decimals: 2,
+        defaultValue: 13.2,
+        defaultRange: 1.2,
+        impact: "positive",
+        description: "每辆车贡献的净收入"
     },
     {
-        key: "variableManufacturingCost",
-        name: "变动制造费用",
-        unit: "亿元",
-        kind: "amount",
-        step: 1,
-        defaultValue: 90,
-        defaultRange: 15,
+        key: "unitMaterialCost",
+        name: "单车材料成本",
+        aliases: ["unitMaterialCost", "单车材料成本"],
+        unit: "万元/辆",
+        kind: "unitAmount",
+        group: "volume",
+        step: 0.1,
+        decimals: 2,
+        defaultValue: 7.8,
+        defaultRange: 0.6,
         impact: "negative",
-        description: "随产销量变化的制造费用"
+        description: "每辆车对应的材料成本"
     },
     {
-        key: "variableSalesCost",
-        name: "变动销售费用",
-        unit: "亿元",
-        kind: "amount",
-        step: 1,
-        defaultValue: 80,
-        defaultRange: 15,
+        key: "unitVariableManufacturingCost",
+        name: "单车变动制造费用",
+        aliases: ["unitVariableManufacturingCost", "单车变动制造费用"],
+        unit: "万元/辆",
+        kind: "unitAmount",
+        group: "volume",
+        step: 0.1,
+        decimals: 2,
+        defaultValue: 0.9,
+        defaultRange: 0.15,
         impact: "negative",
-        description: "随销售规模变化的销售费用"
+        description: "每辆车对应的变动制造费用"
+    },
+    {
+        key: "unitVariableSalesCost",
+        name: "单车变动销售费用",
+        aliases: ["unitVariableSalesCost", "单车变动销售费用"],
+        unit: "万元/辆",
+        kind: "unitAmount",
+        group: "volume",
+        step: 0.1,
+        decimals: 2,
+        defaultValue: 0.8,
+        defaultRange: 0.15,
+        impact: "negative",
+        description: "每辆车对应的变动销售费用"
     },
     {
         key: "techDevelopmentFee",
         name: "技术开发费",
         unit: "亿元",
         kind: "amount",
+        group: "fixedDeduction",
         step: 1,
         defaultValue: 45,
         defaultRange: 10,
@@ -65,6 +91,7 @@ const DRIVER_DEFINITIONS = [
         name: "国际固定费用",
         unit: "亿元",
         kind: "amount",
+        group: "fixedDeduction",
         step: 1,
         defaultValue: 35,
         defaultRange: 8,
@@ -76,6 +103,7 @@ const DRIVER_DEFINITIONS = [
         name: "折旧加摊销",
         unit: "亿元",
         kind: "amount",
+        group: "fixedDeduction",
         step: 1,
         defaultValue: 42,
         defaultRange: 8,
@@ -87,6 +115,7 @@ const DRIVER_DEFINITIONS = [
         name: "后台公共费用",
         unit: "亿元",
         kind: "amount",
+        group: "fixedDeduction",
         step: 1,
         defaultValue: 55,
         defaultRange: 10,
@@ -98,6 +127,7 @@ const DRIVER_DEFINITIONS = [
         name: "其他业务利润",
         unit: "亿元",
         kind: "amount",
+        group: "profitAddition",
         step: 1,
         defaultValue: 18,
         defaultRange: 8,
@@ -109,6 +139,7 @@ const DRIVER_DEFINITIONS = [
         name: "备件利润",
         unit: "亿元",
         kind: "amount",
+        group: "profitAddition",
         step: 1,
         defaultValue: 25,
         defaultRange: 8,
@@ -120,6 +151,7 @@ const DRIVER_DEFINITIONS = [
         name: "子公司利润",
         unit: "亿元",
         kind: "amount",
+        group: "profitAddition",
         step: 1,
         defaultValue: 12,
         defaultRange: 6,
@@ -132,6 +164,8 @@ const METRIC_DEFINITIONS = {
     profit: { label: "利润总额", unit: "amount", decimals: 1 },
     contributionMargin: { label: "边际", unit: "amount", decimals: 1 },
     netRevenue: { label: "净收入", unit: "amount", decimals: 1 },
+    salesVolume: { label: "销量", unit: "volume", decimals: 1 },
+    unitContributionMargin: { label: "单车边际", unit: "unitAmount", decimals: 2 },
     contributionMarginRate: { label: "边际率", unit: "%", decimals: 1 },
     profitRate: { label: "利润总额率", unit: "%", decimals: 1 }
 };
@@ -148,8 +182,8 @@ const AppState = {
     scenarioOverrides: null,
     metric: "profit",
     displayUnit: "亿",
-    xDriver: "netRevenue",
-    yDriver: "materialCost",
+    xDriver: "salesVolume",
+    yDriver: "unitMaterialCost",
     matrixSteps: 7
 };
 
@@ -184,10 +218,11 @@ function sanitizeAssumptions(assumptions) {
     DRIVER_DEFINITIONS.forEach((driver) => {
         next[driver.key] = Number(next[driver.key] || 0);
     });
-    next.netRevenue = Math.max(0, next.netRevenue);
-    next.materialCost = Math.max(0, next.materialCost);
-    next.variableManufacturingCost = Math.max(0, next.variableManufacturingCost);
-    next.variableSalesCost = Math.max(0, next.variableSalesCost);
+    next.salesVolume = Math.max(0, next.salesVolume);
+    next.unitNetRevenue = Math.max(0, next.unitNetRevenue);
+    next.unitMaterialCost = Math.max(0, next.unitMaterialCost);
+    next.unitVariableManufacturingCost = Math.max(0, next.unitVariableManufacturingCost);
+    next.unitVariableSalesCost = Math.max(0, next.unitVariableSalesCost);
     next.techDevelopmentFee = Math.max(0, next.techDevelopmentFee);
     next.internationalFixedCost = Math.max(0, next.internationalFixedCost);
     next.depreciationAmortization = Math.max(0, next.depreciationAmortization);
@@ -197,8 +232,13 @@ function sanitizeAssumptions(assumptions) {
 
 function computeModel(assumptions) {
     const a = sanitizeAssumptions(assumptions);
-    const netRevenue = a.netRevenue;
-    const variableCostTotal = a.materialCost + a.variableManufacturingCost + a.variableSalesCost;
+    const netRevenue = a.salesVolume * a.unitNetRevenue;
+    const materialCost = a.salesVolume * a.unitMaterialCost;
+    const variableManufacturingCost = a.salesVolume * a.unitVariableManufacturingCost;
+    const variableSalesCost = a.salesVolume * a.unitVariableSalesCost;
+    const unitVariableCost = a.unitMaterialCost + a.unitVariableManufacturingCost + a.unitVariableSalesCost;
+    const unitContributionMargin = a.unitNetRevenue - unitVariableCost;
+    const variableCostTotal = materialCost + variableManufacturingCost + variableSalesCost;
     const contributionMargin = netRevenue - variableCostTotal;
     const fixedDeductionTotal = (
         a.techDevelopmentFee +
@@ -217,9 +257,14 @@ function computeModel(assumptions) {
     return {
         ...a,
         netRevenue,
-        materialCostRate: percentOf(a.materialCost, netRevenue),
-        variableManufacturingCostRate: percentOf(a.variableManufacturingCost, netRevenue),
-        variableSalesCostRate: percentOf(a.variableSalesCost, netRevenue),
+        materialCost,
+        variableManufacturingCost,
+        variableSalesCost,
+        unitVariableCost,
+        unitContributionMargin,
+        materialCostRate: percentOf(materialCost, netRevenue),
+        variableManufacturingCostRate: percentOf(variableManufacturingCost, netRevenue),
+        variableSalesCostRate: percentOf(variableSalesCost, netRevenue),
         variableCostTotal,
         variableCostRate: percentOf(variableCostTotal, netRevenue),
         contributionMargin,
@@ -254,9 +299,19 @@ function formatAmount(value, decimals = 1) {
     return `${formatNumber(value * multiplier, decimals)} ${unit}`;
 }
 
+function formatVolume(value, decimals = 1) {
+    return `${formatNumber(value, decimals)} 万辆`;
+}
+
+function formatUnitAmount(value, decimals = 2) {
+    return `${formatNumber(value, decimals)} 万元/辆`;
+}
+
 function formatMetric(value, metricKey = AppState.metric) {
     const definition = getMetricDefinition(metricKey);
     if (definition.unit === "amount") return formatAmount(value, definition.decimals);
+    if (definition.unit === "volume") return formatVolume(value, definition.decimals);
+    if (definition.unit === "unitAmount") return formatUnitAmount(value, definition.decimals);
     if (definition.unit === "%") return `${formatNumber(value, definition.decimals)}%`;
     return formatNumber(value, definition.decimals);
 }
@@ -264,7 +319,8 @@ function formatMetric(value, metricKey = AppState.metric) {
 function formatDriverValue(key, value) {
     const driver = driverByKey[key];
     if (!driver) return formatNumber(value, 2);
-    return `${formatNumber(value, driver.step < 1 ? 1 : 0)} ${driver.unit}`;
+    const decimals = Number.isFinite(driver.decimals) ? driver.decimals : driver.step < 1 ? 1 : 0;
+    return `${formatNumber(value, decimals)} ${driver.unit}`;
 }
 
 function getScenarioValue(key, scenario) {
@@ -378,37 +434,58 @@ function renderControlInputs() {
     const rangesContainer = document.getElementById("range-inputs");
     const xSelect = document.getElementById("x-driver-select");
     const ySelect = document.getElementById("y-driver-select");
+    const groups = [
+        { key: "volume", title: "边际以上：量价假设" },
+        { key: "fixedDeduction", title: "边际以下：固定扣减项" },
+        { key: "profitAddition", title: "边际以下：利润贡献项" }
+    ];
 
-    assumptionsContainer.innerHTML = DRIVER_DEFINITIONS.map((driver) => `
-        <label class="field" for="input-${driver.key}">
-            <span>${driver.name}</span>
-            <input
-                id="input-${driver.key}"
-                class="input assumption-input"
-                type="number"
-                step="${driver.step}"
-                data-key="${driver.key}"
-                value="${AppState.assumptions[driver.key]}"
-            >
-            <small class="field-note">${driver.unit}｜${driver.description}</small>
-        </label>
-    `).join("");
+    assumptionsContainer.innerHTML = groups.map((group) => {
+        const drivers = DRIVER_DEFINITIONS.filter((driver) => driver.group === group.key);
+        return `
+            <div class="field-group">
+                <div class="field-group-title">${group.title}</div>
+                ${drivers.map((driver) => `
+                    <label class="field" for="input-${driver.key}">
+                        <span>${driver.name}</span>
+                        <input
+                            id="input-${driver.key}"
+                            class="input assumption-input"
+                            type="number"
+                            step="${driver.step}"
+                            data-key="${driver.key}"
+                            value="${AppState.assumptions[driver.key]}"
+                        >
+                        <small class="field-note">${driver.unit}｜${driver.description}</small>
+                    </label>
+                `).join("")}
+            </div>
+        `;
+    }).join("");
 
-    rangesContainer.innerHTML = DRIVER_DEFINITIONS.map((driver) => `
-        <label class="field" for="range-${driver.key}">
-            <span>${driver.name}</span>
-            <input
-                id="range-${driver.key}"
-                class="input range-input"
-                type="number"
-                min="0"
-                step="${driver.step}"
-                data-key="${driver.key}"
-                value="${AppState.ranges[driver.key]}"
-            >
-            <small class="field-note">冲击幅度，单位同该科目</small>
-        </label>
-    `).join("");
+    rangesContainer.innerHTML = groups.map((group) => {
+        const drivers = DRIVER_DEFINITIONS.filter((driver) => driver.group === group.key);
+        return `
+            <div class="field-group">
+                <div class="field-group-title">${group.title}</div>
+                ${drivers.map((driver) => `
+                    <label class="field" for="range-${driver.key}">
+                        <span>${driver.name}</span>
+                        <input
+                            id="range-${driver.key}"
+                            class="input range-input"
+                            type="number"
+                            min="0"
+                            step="${driver.step}"
+                            data-key="${driver.key}"
+                            value="${AppState.ranges[driver.key]}"
+                        >
+                        <small class="field-note">冲击幅度，单位同该科目</small>
+                    </label>
+                `).join("")}
+            </div>
+        `;
+    }).join("");
 
     const options = DRIVER_DEFINITIONS.map((driver) => (
         `<option value="${driver.key}">${driver.name}</option>`
@@ -664,6 +741,8 @@ function parseNumeric(value) {
         .trim()
         .replace(/,/g, "")
         .replace(/%/g, "")
+        .replace(/万元\/辆|万元\/台|万元每辆|万元每台/g, "")
+        .replace(/万台|万辆|台|辆/g, "")
         .replace(/亿元|百万元|万元|元/g, "");
     if (cleaned === "") return NaN;
     return Number(cleaned);
@@ -707,9 +786,19 @@ function renderAll() {
 function renderMetrics(result) {
     const cards = [
         {
+            label: "销量",
+            value: formatVolume(result.salesVolume, 1),
+            sub: `单车净收入 ${formatUnitAmount(result.unitNetRevenue, 2)}`
+        },
+        {
+            label: "单车边际",
+            value: formatUnitAmount(result.unitContributionMargin, 2),
+            sub: `单车变动成本 ${formatUnitAmount(result.unitVariableCost, 2)}`
+        },
+        {
             label: "净收入",
             value: formatAmount(result.netRevenue, 1),
-            sub: "本模型从净收入开始"
+            sub: "销量 × 单车净收入"
         },
         {
             label: "边际",
@@ -725,11 +814,6 @@ function renderMetrics(result) {
             label: "固定部分净额",
             value: formatAmount(result.fixedPartNet, 1),
             sub: "固定费用扣减利润项目后"
-        },
-        {
-            label: "变动成本",
-            value: formatAmount(result.variableCostTotal, 1),
-            sub: `占净收入 ${formatNumber(result.variableCostRate, 1)}%`
         }
     ];
 
@@ -927,36 +1011,42 @@ function renderBridgeChart(result) {
 
 function renderProfitTable(result) {
     const rows = [
-        ["净收入", result.netRevenue, 100],
-        ["材料成本", -result.materialCost, percentOf(-result.materialCost, result.netRevenue)],
-        ["变动制造费用", -result.variableManufacturingCost, percentOf(-result.variableManufacturingCost, result.netRevenue)],
-        ["变动销售费用", -result.variableSalesCost, percentOf(-result.variableSalesCost, result.netRevenue)],
-        ["边际", result.contributionMargin, result.contributionMarginRate],
-        ["技术开发费", -result.techDevelopmentFee, percentOf(-result.techDevelopmentFee, result.netRevenue)],
-        ["国际固定费用", -result.internationalFixedCost, percentOf(-result.internationalFixedCost, result.netRevenue)],
-        ["折旧加摊销", -result.depreciationAmortization, percentOf(-result.depreciationAmortization, result.netRevenue)],
-        ["后台公共费用", -result.backOfficeSharedCost, percentOf(-result.backOfficeSharedCost, result.netRevenue)],
-        ["其他业务利润", result.otherBusinessProfit, percentOf(result.otherBusinessProfit, result.netRevenue)],
-        ["备件利润", result.sparePartsProfit, percentOf(result.sparePartsProfit, result.netRevenue)],
-        ["子公司利润", result.subsidiaryProfit, percentOf(result.subsidiaryProfit, result.netRevenue)],
-        ["固定部分净额", -result.fixedPartNet, percentOf(-result.fixedPartNet, result.netRevenue)],
-        ["利润总额", result.profit, result.profitRate]
+        { label: "销量", display: formatVolume(result.salesVolume, 1), value: result.salesVolume, pct: null },
+        { label: "单车净收入", display: formatUnitAmount(result.unitNetRevenue, 2), value: result.unitNetRevenue, pct: null },
+        { label: "净收入", display: formatAmount(result.netRevenue, 1), value: result.netRevenue, pct: 100 },
+        { label: "单车材料成本", display: formatUnitAmount(-result.unitMaterialCost, 2), value: -result.unitMaterialCost, pct: null },
+        { label: "材料成本", display: formatAmount(-result.materialCost, 1), value: -result.materialCost, pct: percentOf(-result.materialCost, result.netRevenue) },
+        { label: "单车变动制造费用", display: formatUnitAmount(-result.unitVariableManufacturingCost, 2), value: -result.unitVariableManufacturingCost, pct: null },
+        { label: "变动制造费用", display: formatAmount(-result.variableManufacturingCost, 1), value: -result.variableManufacturingCost, pct: percentOf(-result.variableManufacturingCost, result.netRevenue) },
+        { label: "单车变动销售费用", display: formatUnitAmount(-result.unitVariableSalesCost, 2), value: -result.unitVariableSalesCost, pct: null },
+        { label: "变动销售费用", display: formatAmount(-result.variableSalesCost, 1), value: -result.variableSalesCost, pct: percentOf(-result.variableSalesCost, result.netRevenue) },
+        { label: "单车边际", display: formatUnitAmount(result.unitContributionMargin, 2), value: result.unitContributionMargin, pct: null },
+        { label: "边际", display: formatAmount(result.contributionMargin, 1), value: result.contributionMargin, pct: result.contributionMarginRate },
+        { label: "技术开发费", display: formatAmount(-result.techDevelopmentFee, 1), value: -result.techDevelopmentFee, pct: percentOf(-result.techDevelopmentFee, result.netRevenue) },
+        { label: "国际固定费用", display: formatAmount(-result.internationalFixedCost, 1), value: -result.internationalFixedCost, pct: percentOf(-result.internationalFixedCost, result.netRevenue) },
+        { label: "折旧加摊销", display: formatAmount(-result.depreciationAmortization, 1), value: -result.depreciationAmortization, pct: percentOf(-result.depreciationAmortization, result.netRevenue) },
+        { label: "后台公共费用", display: formatAmount(-result.backOfficeSharedCost, 1), value: -result.backOfficeSharedCost, pct: percentOf(-result.backOfficeSharedCost, result.netRevenue) },
+        { label: "其他业务利润", display: formatAmount(result.otherBusinessProfit, 1), value: result.otherBusinessProfit, pct: percentOf(result.otherBusinessProfit, result.netRevenue) },
+        { label: "备件利润", display: formatAmount(result.sparePartsProfit, 1), value: result.sparePartsProfit, pct: percentOf(result.sparePartsProfit, result.netRevenue) },
+        { label: "子公司利润", display: formatAmount(result.subsidiaryProfit, 1), value: result.subsidiaryProfit, pct: percentOf(result.subsidiaryProfit, result.netRevenue) },
+        { label: "固定部分净额", display: formatAmount(-result.fixedPartNet, 1), value: -result.fixedPartNet, pct: percentOf(-result.fixedPartNet, result.netRevenue) },
+        { label: "利润总额", display: formatAmount(result.profit, 1), value: result.profit, pct: result.profitRate }
     ];
 
     document.getElementById("profit-table").innerHTML = `
         <thead>
             <tr>
                 <th>项目</th>
-                <th>金额</th>
+                <th>数值</th>
                 <th>占净收入比例</th>
             </tr>
         </thead>
         <tbody>
             ${rows.map((row) => `
                 <tr>
-                    <td>${row[0]}</td>
-                    <td class="${row[1] >= 0 ? "positive" : "negative"}">${formatAmount(row[1], 1)}</td>
-                    <td>${formatNumber(row[2], 1)}%</td>
+                    <td>${row.label}</td>
+                    <td class="${row.value >= 0 ? "positive" : "negative"}">${row.display}</td>
+                    <td>${row.pct === null ? "-" : `${formatNumber(row.pct, 1)}%`}</td>
                 </tr>
             `).join("")}
         </tbody>
@@ -999,8 +1089,8 @@ function resetModel() {
     AppState.scenarioOverrides = null;
     AppState.metric = "profit";
     AppState.displayUnit = "亿";
-    AppState.xDriver = "netRevenue";
-    AppState.yDriver = "materialCost";
+    AppState.xDriver = "salesVolume";
+    AppState.yDriver = "unitMaterialCost";
     AppState.matrixSteps = 7;
     refreshInputValues();
     renderAll();
@@ -1062,7 +1152,7 @@ function downloadTemplate(format) {
         const readme = XLSX.utils.aoa_to_sheet([
             ["字段", "说明"],
             ["Key", "科目代码，请不要改动。系统按 Key 识别字段。"],
-            ["Value/Base", "基准假设金额。"],
+            ["Value/Base", "基准假设值，单位见 Unit。"],
             ["Range", "敏感性冲击幅度，单位同科目。"],
             ["Bear/Base/Bull", "可选三情景假设，留空时系统按 Range 自动生成。"]
         ]);
@@ -1083,10 +1173,16 @@ function downloadResultsWorkbook() {
     const sensitivityRows = calculateSensitivityRows();
     const matrix = createMatrixData();
     const profitRows = [
+        { Item: "销量", Value: result.salesVolume, Unit: "万辆", NetRevenuePct: "" },
+        { Item: "单车净收入", Value: result.unitNetRevenue, Unit: "万元/辆", NetRevenuePct: "" },
         { Item: "净收入", Value: result.netRevenue, NetRevenuePct: 100 },
+        { Item: "单车材料成本", Value: -result.unitMaterialCost, Unit: "万元/辆", NetRevenuePct: "" },
         { Item: "材料成本", Value: -result.materialCost, NetRevenuePct: percentOf(-result.materialCost, result.netRevenue) },
+        { Item: "单车变动制造费用", Value: -result.unitVariableManufacturingCost, Unit: "万元/辆", NetRevenuePct: "" },
         { Item: "变动制造费用", Value: -result.variableManufacturingCost, NetRevenuePct: percentOf(-result.variableManufacturingCost, result.netRevenue) },
+        { Item: "单车变动销售费用", Value: -result.unitVariableSalesCost, Unit: "万元/辆", NetRevenuePct: "" },
         { Item: "变动销售费用", Value: -result.variableSalesCost, NetRevenuePct: percentOf(-result.variableSalesCost, result.netRevenue) },
+        { Item: "单车边际", Value: result.unitContributionMargin, Unit: "万元/辆", NetRevenuePct: "" },
         { Item: "边际", Value: result.contributionMargin, NetRevenuePct: result.contributionMarginRate },
         { Item: "技术开发费", Value: -result.techDevelopmentFee, NetRevenuePct: percentOf(-result.techDevelopmentFee, result.netRevenue) },
         { Item: "国际固定费用", Value: -result.internationalFixedCost, NetRevenuePct: percentOf(-result.internationalFixedCost, result.netRevenue) },
@@ -1119,7 +1215,7 @@ function downloadResultsWorkbook() {
     if (typeof XLSX !== "undefined") {
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(getTemplateRows()), "Assumptions");
-        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(profitRows), "ProfitBridge");
+        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(profitRows), "ProfitStructure");
         XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(sensitivityExport), "Sensitivity");
         XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(matrixRows), "Matrix");
         XLSX.writeFile(workbook, "operating-profit-sensitivity-results.xlsx");

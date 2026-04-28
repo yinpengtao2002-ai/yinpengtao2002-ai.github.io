@@ -12,8 +12,9 @@ const {
     normalizeImportedValue,
 } = sensitivityAnalysis.default;
 
-const netRevenueDriver = DRIVER_DEFINITIONS.find((driver) => driver.key === "netRevenue");
-const materialCostDriver = DRIVER_DEFINITIONS.find((driver) => driver.key === "materialCost");
+const salesVolumeDriver = DRIVER_DEFINITIONS.find((driver) => driver.key === "salesVolume");
+const unitNetRevenueDriver = DRIVER_DEFINITIONS.find((driver) => driver.key === "unitNetRevenue");
+const unitMaterialCostDriver = DRIVER_DEFINITIONS.find((driver) => driver.key === "unitMaterialCost");
 const EPSILON = 1e-9;
 
 function approx(actual, expected, message) {
@@ -26,8 +27,12 @@ function approx(actual, expected, message) {
 test("operating profit model calculates the default structure", () => {
     const result = computeModel(getDefaultAssumptions());
 
+    approx(result.salesVolume, 100, "sales volume");
+    approx(result.unitNetRevenue, 13.2, "unit net revenue");
+    approx(result.unitMaterialCost, 7.8, "unit material cost");
     approx(result.netRevenue, 1320, "net revenue");
     approx(result.variableCostTotal, 950, "variable cost total");
+    approx(result.unitContributionMargin, 3.7, "unit contribution margin");
     approx(result.contributionMargin, 370, "contribution margin");
     approx(result.fixedDeductionTotal, 177, "fixed deduction total");
     approx(result.profitAdditionTotal, 55, "profit addition total");
@@ -42,9 +47,26 @@ test("operating profit model calculates rates against the right base", () => {
     approx(result.profitRate, 248 / 1320 * 100, "profit total rate");
 });
 
+test("sales volume only drives above-margin items", () => {
+    const result = computeModel({
+        ...getDefaultAssumptions(),
+        salesVolume: 110,
+    });
+
+    approx(result.netRevenue, 1452, "volume-driven net revenue");
+    approx(result.materialCost, 858, "volume-driven material cost");
+    approx(result.variableManufacturingCost, 99, "volume-driven variable manufacturing cost");
+    approx(result.variableSalesCost, 88, "volume-driven variable sales cost");
+    approx(result.contributionMargin, 407, "volume-driven contribution margin");
+    approx(result.fixedDeductionTotal, 177, "fixed deductions stay independent from volume");
+    approx(result.profitAdditionTotal, 55, "profit additions stay independent from volume");
+    approx(result.profit, 285, "profit total after unchanged below-margin items");
+});
+
 test("imported amount values keep their numeric scale", () => {
-    assert.equal(normalizeImportedValue(netRevenueDriver, "1,320 亿元"), 1320);
-    assert.equal(normalizeImportedValue(materialCostDriver, "780 百万元"), 780);
+    assert.equal(normalizeImportedValue(salesVolumeDriver, "100 万辆"), 100);
+    assert.equal(normalizeImportedValue(unitNetRevenueDriver, "13.2 万元/辆"), 13.2);
+    assert.equal(normalizeImportedValue(unitMaterialCostDriver, "7.8 万元/辆"), 7.8);
 });
 
 test("plot configuration keeps charts readable without accidental zoom controls", () => {
