@@ -299,6 +299,11 @@ function formatAmount(value, decimals = 1) {
     return `${formatNumber(value * multiplier, decimals)} ${unit}`;
 }
 
+function formatSignedAmount(value, decimals = 1) {
+    const sign = value > 0 ? "+" : "";
+    return `${sign}${formatAmount(value, decimals)}`;
+}
+
 function formatVolume(value, decimals = 1) {
     return `${formatNumber(value, decimals)} 万辆`;
 }
@@ -426,6 +431,7 @@ function initApp() {
     initControlEvents();
     initFileUpload();
     initResponsiveSidebar();
+    initChartResizeObserver();
     renderAll();
 }
 
@@ -970,7 +976,8 @@ function renderWaterfallCharts(result) {
             "total"
         ],
         bottomMargin: 76,
-        tickAngle: -24
+        tickAngle: -24,
+        height: 340
     });
 
     renderWaterfallChart("profit-bridge-chart", {
@@ -1007,14 +1014,20 @@ function renderWaterfallCharts(result) {
             "relative",
             "total"
         ],
-        bottomMargin: 90,
-        tickAngle: -34
+        bottomMargin: 82,
+        tickAngle: -22,
+        height: 430
     });
 }
 
 function renderWaterfallChart(targetId, options) {
     const labels = options.labels;
     const values = options.values.map(toDisplayAmount);
+    const textLabels = options.values.map((value, index) => (
+        options.measures[index] === "relative"
+            ? formatSignedAmount(value, 1)
+            : formatAmount(value, 1)
+    ));
     const hoverTexts = options.labels.map((label, index) => (
         `${label}<br>${formatAmount(options.values[index], 1)}`
     ));
@@ -1026,6 +1039,10 @@ function renderWaterfallChart(targetId, options) {
             measure: options.measures,
             x: labels,
             y: values,
+            text: textLabels,
+            textposition: "outside",
+            textfont: { family: getPlotFont().family, size: 11, color: "#141413" },
+            cliponaxis: false,
             connector: { line: { color: "#cfcabe" } },
             increasing: { marker: { color: "#788c5d" } },
             decreasing: { marker: { color: "#b65f55" } },
@@ -1034,7 +1051,8 @@ function renderWaterfallChart(targetId, options) {
             hovertext: hoverTexts
         }
     ], getLockedPlotLayout({
-        margin: { l: 58, r: 22, t: 22, b: options.bottomMargin },
+        height: options.height,
+        margin: { l: 58, r: 32, t: 42, b: options.bottomMargin },
         paper_bgcolor: "rgba(0,0,0,0)",
         plot_bgcolor: "rgba(0,0,0,0)",
         font: getPlotFont(),
@@ -1138,6 +1156,7 @@ function toggleSidebar(shouldCollapse) {
     const expand = document.getElementById("sidebar-expand");
     sidebar.classList.toggle("collapsed", shouldCollapse);
     expand.style.display = shouldCollapse ? "block" : "none";
+    schedulePlotResize();
 }
 
 function initResponsiveSidebar() {
@@ -1146,6 +1165,29 @@ function initResponsiveSidebar() {
     if (isMobileViewport) {
         toggleSidebar(true);
     }
+}
+
+function resizePlotlyCharts() {
+    if (typeof Plotly === "undefined") return;
+    document.querySelectorAll(".sensitivity-tool .js-plotly-plot").forEach((plot) => {
+        Plotly.Plots.resize(plot);
+    });
+}
+
+function schedulePlotResize() {
+    if (typeof window === "undefined") return;
+    window.requestAnimationFrame(resizePlotlyCharts);
+    window.setTimeout(resizePlotlyCharts, 280);
+}
+
+function initChartResizeObserver() {
+    if (typeof window === "undefined") return;
+    const mainContent = document.querySelector(".sensitivity-tool .main-content");
+    if (mainContent && typeof ResizeObserver !== "undefined") {
+        const observer = new ResizeObserver(schedulePlotResize);
+        observer.observe(mainContent);
+    }
+    window.addEventListener("resize", schedulePlotResize);
 }
 
 function showMessage(type, text) {

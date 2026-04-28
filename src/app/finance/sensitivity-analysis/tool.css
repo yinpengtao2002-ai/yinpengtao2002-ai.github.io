@@ -474,6 +474,11 @@
     min-width: 0;
 }
 
+.sensitivity-tool .profit-waterfall-panel {
+    max-width: 1480px;
+    margin: 0 auto 1rem;
+}
+
 .sensitivity-tool .panel {
     min-width: 0;
     border: 1px solid var(--border-light);
@@ -522,6 +527,10 @@
 
 .sensitivity-tool .chart-compact {
     min-height: 280px;
+}
+
+.sensitivity-tool .chart-profit-waterfall {
+    min-height: 430px;
 }
 
 .sensitivity-tool .table-panel {

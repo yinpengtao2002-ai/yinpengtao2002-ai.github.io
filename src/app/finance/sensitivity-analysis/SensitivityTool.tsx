@@ -211,27 +211,25 @@ export default function SensitivityTool() {
                         <div id="matrix-chart" className="chart" />
                     </article>
 
-                    <div className="waterfall-stack">
-                        <article className="panel waterfall-panel">
-                            <div className="panel-header">
-                                <div>
-                                    <h2>边际瀑布图</h2>
-                                    <p>净收入扣减材料成本、变动制造费用和变动销售费用后得到边际。</p>
-                                </div>
+                    <article className="panel waterfall-panel">
+                        <div className="panel-header">
+                            <div>
+                                <h2>边际瀑布图</h2>
+                                <p>净收入扣减材料成本、变动制造费用和变动销售费用后得到边际。</p>
                             </div>
-                            <div id="margin-bridge-chart" className="chart chart-compact" />
-                        </article>
+                        </div>
+                        <div id="margin-bridge-chart" className="chart chart-compact" />
+                    </article>
+                </section>
 
-                        <article className="panel waterfall-panel">
-                            <div className="panel-header">
-                                <div>
-                                    <h2>利润瀑布图</h2>
-                                    <p>从边际出发，扣减固定费用并加上利润贡献项后得到利润总额。</p>
-                                </div>
-                            </div>
-                            <div id="profit-bridge-chart" className="chart chart-compact" />
-                        </article>
+                <section className="panel waterfall-panel profit-waterfall-panel">
+                    <div className="panel-header">
+                        <div>
+                            <h2>利润瀑布图</h2>
+                            <p>从边际出发，扣减固定费用并加上利润贡献项后得到利润总额。</p>
+                        </div>
                     </div>
+                    <div id="profit-bridge-chart" className="chart chart-profit-waterfall" />
                 </section>
 
                 <section className="panel table-panel">

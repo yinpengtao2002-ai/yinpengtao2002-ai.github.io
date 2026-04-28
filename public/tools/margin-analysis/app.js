@@ -55,6 +55,7 @@ if (typeof document !== 'undefined') {
             const expandBtn = document.getElementById("sidebar-expand");
             sidebar.classList.add("collapsed");
             expandBtn.style.display = "flex";
+            schedulePlotResize();
         }
     });
 }
@@ -74,12 +75,27 @@ function initSidebarToggle() {
     toggleBtn.addEventListener('click', () => {
         sidebar.classList.add('collapsed');
         expandBtn.style.display = 'flex';
+        schedulePlotResize();
     });
 
     expandBtn.addEventListener('click', () => {
         sidebar.classList.remove('collapsed');
         expandBtn.style.display = 'none';
+        schedulePlotResize();
     });
+}
+
+function resizePlotlyCharts() {
+    if (typeof Plotly === 'undefined') return;
+    document.querySelectorAll('.js-plotly-plot').forEach((plot) => {
+        Plotly.Plots.resize(plot);
+    });
+}
+
+function schedulePlotResize() {
+    if (typeof window === 'undefined') return;
+    window.requestAnimationFrame(resizePlotlyCharts);
+    window.setTimeout(resizePlotlyCharts, 320);
 }
 
 
