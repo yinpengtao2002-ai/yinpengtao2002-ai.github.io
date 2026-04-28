@@ -388,14 +388,14 @@ details[open] > .sidebar-summary::after {
 
 /* 多选容器 */
 .multiselect-container {
-    margin-bottom: 0.8rem;
+    margin-bottom: 0.65rem;
 }
 
 .multiselect-label {
     display: block;
     font-size: 0.82rem;
     color: var(--text-primary);
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.35rem;
     font-family: var(--font-sans);
     font-weight: 500;
 }
@@ -406,6 +406,11 @@ details[open] > .sidebar-summary::after {
     gap: 0.3rem;
     margin-bottom: 0.3rem;
     min-height: 28px;
+}
+
+.multiselect-chips:empty {
+    min-height: 0;
+    margin-bottom: 0;
 }
 
 .chip {

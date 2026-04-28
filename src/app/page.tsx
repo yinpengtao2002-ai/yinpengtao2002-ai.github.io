@@ -119,6 +119,7 @@ function HomeSectionNav({ lowMotion, isMobileLike }: { lowMotion: boolean; isMob
       id="section-nav"
       style={{
         width: "100%",
+        scrollMarginTop: isMobileLike ? "72px" : "84px",
         borderTop: "1px solid var(--border)",
         borderBottom: "1px solid var(--border)",
         background: "color-mix(in srgb, var(--background) 88%, var(--card) 12%)",
@@ -127,13 +128,12 @@ function HomeSectionNav({ lowMotion, isMobileLike }: { lowMotion: boolean; isMob
       <nav
         aria-label="首页栏目导航"
         style={{
-          maxWidth: "1120px",
+          maxWidth: "920px",
           margin: "0 auto",
-          padding: isMobileLike ? "1rem 1.25rem" : "1.15rem 2rem",
+          padding: isMobileLike ? "0.8rem 1rem" : "0.9rem 2rem",
           display: "grid",
-          gridTemplateColumns: isMobileLike ? "1fr" : "repeat(3, minmax(0, 1fr))",
-          gap: isMobileLike ? 0 : "1px",
-          background: isMobileLike ? "transparent" : "var(--border)",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gap: isMobileLike ? "0.45rem" : "0.6rem",
           fontFamily: HOME_UI_FONT,
         }}
       >
@@ -148,45 +148,48 @@ function HomeSectionNav({ lowMotion, isMobileLike }: { lowMotion: boolean; isMob
             whileHover={lowMotion ? undefined : { y: -2 }}
             onClick={() => scrollToSection(item.targetId)}
             style={{
-              minHeight: isMobileLike ? 76 : 108,
-              border: "none",
-              borderBottom: isMobileLike && index < items.length - 1 ? "1px solid var(--border)" : "none",
-              background: "var(--background)",
+              minHeight: isMobileLike ? 54 : 64,
+              border: "1px solid var(--border)",
+              borderRadius: 14,
+              background: "color-mix(in srgb, var(--background) 92%, var(--card) 8%)",
               color: "var(--foreground)",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              gap: "1rem",
-              padding: isMobileLike ? "1rem 0" : "1rem 1.35rem",
+              gap: isMobileLike ? "0.45rem" : "0.85rem",
+              padding: isMobileLike ? "0.7rem 0.65rem" : "0.85rem 1rem",
               textAlign: "left",
               fontFamily: "inherit",
+              boxShadow: "0 8px 24px rgba(20, 20, 19, 0.04)",
             }}
             aria-label={`查看${item.title}`}
           >
-            <span style={{ display: "grid", gap: "0.35rem" }}>
+            <span style={{ display: "grid", gap: isMobileLike ? "0.1rem" : "0.18rem", minWidth: 0 }}>
               <span
                 style={{
                   color: item.color,
-                  fontSize: "0.72rem",
+                  fontSize: isMobileLike ? "0.56rem" : "0.66rem",
                   fontWeight: 700,
-                  letterSpacing: "0.18em",
+                  letterSpacing: isMobileLike ? "0.08em" : "0.16em",
                   textTransform: "uppercase",
+                  whiteSpace: "nowrap",
                 }}
               >
                 {item.eyebrow}
               </span>
               <span
                 style={{
-                  fontSize: isMobileLike ? "1.45rem" : "clamp(1.45rem, 2.4vw, 2.15rem)",
+                  fontSize: isMobileLike ? "0.98rem" : "clamp(1.08rem, 1.5vw, 1.28rem)",
                   fontWeight: 800,
-                  lineHeight: 1.05,
+                  lineHeight: 1.12,
+                  whiteSpace: "nowrap",
                 }}
               >
                 {item.title}
               </span>
             </span>
-            <ArrowRight style={{ width: 20, height: 20, color: item.color, flexShrink: 0 }} />
+            <ArrowRight style={{ width: isMobileLike ? 14 : 17, height: isMobileLike ? 14 : 17, color: item.color, flexShrink: 0 }} />
           </motion.button>
         ))}
       </nav>

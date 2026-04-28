@@ -1201,17 +1201,26 @@ function renderTargetProfitChart(result) {
         }
     ];
     const annotations = [];
+    const labelTargetOnRight = data.hasRequiredVolume && data.requiredVolume >= data.currentVolume;
+    const labelPointsClose = data.hasRequiredVolume && Math.abs(data.requiredVolume - data.currentVolume) < data.maxVolume * 0.18;
+    const labelHorizontalOffset = compact
+        ? (labelPointsClose ? 38 : 24)
+        : (labelPointsClose ? 92 : 56);
+    const labelVerticalOffset = compact
+        ? (labelPointsClose ? 48 : 32)
+        : (labelPointsClose ? 72 : 44);
     annotations.push({
         x: data.currentVolume,
         y: toDisplayAmount(data.currentProfit),
-        text: compact ? `当前 ${formatNumber(data.currentVolume, 1)}` : `当前销量 ${formatVolume(data.currentVolume, 1)}`,
+        text: compact ? `当前<br>${formatNumber(data.currentVolume, 1)}` : `当前<br>${formatVolume(data.currentVolume, 1)}`,
+        align: "center",
         showarrow: true,
         arrowhead: 2,
         arrowsize: 0.8,
         arrowwidth: 1,
         arrowcolor: "#d97757",
-        ax: compact ? -22 : -46,
-        ay: compact ? 30 : 40,
+        ax: labelTargetOnRight ? -labelHorizontalOffset : labelHorizontalOffset,
+        ay: labelVerticalOffset,
         font: { size: compact ? 10 : 11, color: "#141413" },
         bgcolor: "rgba(255,250,245,0.94)",
         bordercolor: "rgba(217,119,87,0.36)",
@@ -1248,14 +1257,15 @@ function renderTargetProfitChart(result) {
         annotations.push({
             x: data.requiredVolume,
             y: toDisplayAmount(data.targetProfit),
-            text: compact ? `目标 ${formatNumber(data.requiredVolume, 1)}` : `目标销量 ${formatVolume(data.requiredVolume, 1)}`,
+            text: compact ? `目标<br>${formatNumber(data.requiredVolume, 1)}` : `目标<br>${formatVolume(data.requiredVolume, 1)}`,
+            align: "center",
             showarrow: true,
             arrowhead: 2,
             arrowsize: 0.8,
             arrowwidth: 1,
             arrowcolor: "#788c5d",
-            ax: compact ? 22 : 48,
-            ay: compact ? -30 : -42,
+            ax: labelTargetOnRight ? labelHorizontalOffset : -labelHorizontalOffset,
+            ay: -labelVerticalOffset,
             font: { size: compact ? 10 : 11, color: "#50613a" },
             bgcolor: "rgba(255,250,245,0.94)",
             bordercolor: "rgba(120,140,93,0.38)",
