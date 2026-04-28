@@ -26,6 +26,8 @@ git restore --worktree -- src/lib/data/generated/content.ts
 - `src/app/page.tsx`: homepage sections.
 - `src/components/layout/Hero.tsx`: homepage hero typography and animation.
 - `src/components/ChatWidget.tsx`: floating AI assistant, including mobile sheet/fullscreen behavior.
+- `src/app/api/chat/route.ts`: server-side chat proxy for the site AI assistant.
+- `src/lib/chatFallback.ts`: local fallback responses when the upstream AI is unavailable.
 - `src/app/article/[category]/[slug]/article-client.tsx`: article rendering.
 - `src/lib/markdown/normalizeStrongEmphasis.ts`: fixes Markdown bold edge cases such as `**"$text"**` and `**$81.40/桶**`.
 - `scripts/generate-content.js`: merges local Markdown and Notion content into generated data.
@@ -41,9 +43,20 @@ git restore --worktree -- src/lib/data/generated/content.ts
 - Avoid reverting user changes or generated work unless the user explicitly asks.
 - Keep mobile and desktop in one responsive implementation when feasible; do not create separate feature forks unless there is a clear reason.
 
+## AI Assistant Configuration
+
+- `/api/chat` expects an OpenAI-compatible endpoint through `CHAT_API_URL` and `CHAT_API_KEY`.
+- Current default models in code: primary `gpt-5.4-mini`, fallback `gpt-5.2`.
+- `.env.example` uses the 8848AI endpoint: `https://api.884819.xyz/v1/chat/completions`.
+- Vercel environment variables override code defaults. It is okay to omit `CHAT_MODEL` and `CHAT_MODEL_FALLBACK` if the current code defaults are desired, but never remove `CHAT_API_KEY` or `CHAT_API_URL`.
+- Local development chat will fall back to local content unless `.env.local` provides `CHAT_API_KEY` and `CHAT_API_URL`.
+- On 2026-04-28, `z-ai/glm-5.1` and `z-ai/glm5` timed out through 8848AI, so do not restore them as defaults without retesting.
+- The frontend waits up to `CHAT_API_TIMEOUT_MS` before falling back to local content cards. Keep fallback wording user-facing; avoid phrases like "站内索引" unless deliberately exposing implementation details.
+
 ## Design Notes
 
-- Current global typography uses Poppins for UI/headings and Lora for body/article text.
+- Current global typography uses Chinese/system stacks: UI/headings use PingFang SC / Hiragino Sans GB / Microsoft YaHei / Helvetica Neue / Arial; body/article text uses Songti SC / STSong / Noto Serif CJK SC / Georgia.
+- The CSS variable names still include `--font-poppins` and `--font-lora` for historical compatibility, but they no longer point to actual Poppins/Lora fonts.
 - Hero subtitle has custom display handling; typography has been sensitive, so change it carefully.
 - The site visual direction is warm, Claude/Anthropic-inspired, light, editorial, and restrained.
 - Avoid adding fake controls. If a control looks interactive, it should have a real purpose.
