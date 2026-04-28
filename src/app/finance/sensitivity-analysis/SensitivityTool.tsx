@@ -211,15 +211,27 @@ export default function SensitivityTool() {
                         <div id="matrix-chart" className="chart" />
                     </article>
 
-                    <article className="panel">
-                        <div className="panel-header">
-                            <div>
-                                <h2>利润结构</h2>
-                                <p>从销量和单车口径到边际，再到固定部分净额和利润总额。</p>
+                    <div className="waterfall-stack">
+                        <article className="panel waterfall-panel">
+                            <div className="panel-header">
+                                <div>
+                                    <h2>边际瀑布图</h2>
+                                    <p>净收入扣减材料成本、变动制造费用和变动销售费用后得到边际。</p>
+                                </div>
                             </div>
-                        </div>
-                        <div id="bridge-chart" className="chart chart-small" />
-                    </article>
+                            <div id="margin-bridge-chart" className="chart chart-compact" />
+                        </article>
+
+                        <article className="panel waterfall-panel">
+                            <div className="panel-header">
+                                <div>
+                                    <h2>利润瀑布图</h2>
+                                    <p>从边际出发，扣减固定费用并加上利润贡献项后得到利润总额。</p>
+                                </div>
+                            </div>
+                            <div id="profit-bridge-chart" className="chart chart-compact" />
+                        </article>
+                    </div>
                 </section>
 
                 <section className="panel table-panel">

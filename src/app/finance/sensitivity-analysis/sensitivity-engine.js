@@ -778,7 +778,7 @@ function renderAll() {
     renderTornadoChart();
     renderScenarioChart();
     renderMatrixChart();
-    renderBridgeChart(result);
+    renderWaterfallCharts(result);
     renderProfitTable(result);
     renderSensitivityTable();
 }
@@ -936,76 +936,113 @@ function renderMatrixChart() {
     }), getPlotConfig());
 }
 
-function renderBridgeChart(result) {
-    if (typeof Plotly === "undefined") return;
-    const labels = [
-        "净收入",
-        "材料成本",
-        "变动制造费用",
-        "变动销售费用",
-        "边际",
-        "技术开发费",
-        "国际固定费用",
-        "折旧加摊销",
-        "后台公共费用",
-        "其他业务利润",
-        "备件利润",
-        "子公司利润",
-        "利润总额"
-    ];
-    const values = [
-        result.netRevenue,
-        -result.materialCost,
-        -result.variableManufacturingCost,
-        -result.variableSalesCost,
-        result.contributionMargin,
-        -result.techDevelopmentFee,
-        -result.internationalFixedCost,
-        -result.depreciationAmortization,
-        -result.backOfficeSharedCost,
-        result.otherBusinessProfit,
-        result.sparePartsProfit,
-        result.subsidiaryProfit,
-        result.profit
-    ];
+function toDisplayAmount(value) {
+    return AppState.displayUnit === "百万" ? value * 100 : value;
+}
 
-    Plotly.react("bridge-chart", [
+function getDisplayAmountUnit() {
+    return AppState.displayUnit === "百万" ? "百万元" : "亿元";
+}
+
+function renderWaterfallCharts(result) {
+    if (typeof Plotly === "undefined") return;
+
+    renderWaterfallChart("margin-bridge-chart", {
+        labels: [
+            "净收入",
+            "材料成本",
+            "变动制造费用",
+            "变动销售费用",
+            "边际"
+        ],
+        values: [
+            result.netRevenue,
+            -result.materialCost,
+            -result.variableManufacturingCost,
+            -result.variableSalesCost,
+            result.contributionMargin
+        ],
+        measures: [
+            "absolute",
+            "relative",
+            "relative",
+            "relative",
+            "total"
+        ],
+        bottomMargin: 76,
+        tickAngle: -24
+    });
+
+    renderWaterfallChart("profit-bridge-chart", {
+        labels: [
+            "边际",
+            "技术开发费",
+            "国际固定费用",
+            "折旧加摊销",
+            "后台公共费用",
+            "其他业务利润",
+            "备件利润",
+            "子公司利润",
+            "利润总额"
+        ],
+        values: [
+            result.contributionMargin,
+            -result.techDevelopmentFee,
+            -result.internationalFixedCost,
+            -result.depreciationAmortization,
+            -result.backOfficeSharedCost,
+            result.otherBusinessProfit,
+            result.sparePartsProfit,
+            result.subsidiaryProfit,
+            result.profit
+        ],
+        measures: [
+            "absolute",
+            "relative",
+            "relative",
+            "relative",
+            "relative",
+            "relative",
+            "relative",
+            "relative",
+            "total"
+        ],
+        bottomMargin: 90,
+        tickAngle: -34
+    });
+}
+
+function renderWaterfallChart(targetId, options) {
+    const labels = options.labels;
+    const values = options.values.map(toDisplayAmount);
+    const hoverTexts = options.labels.map((label, index) => (
+        `${label}<br>${formatAmount(options.values[index], 1)}`
+    ));
+
+    Plotly.react(targetId, [
         {
             type: "waterfall",
             orientation: "v",
-            measure: [
-                "absolute",
-                "relative",
-                "relative",
-                "relative",
-                "total",
-                "relative",
-                "relative",
-                "relative",
-                "relative",
-                "relative",
-                "relative",
-                "relative",
-                "total"
-            ],
+            measure: options.measures,
             x: labels,
             y: values,
             connector: { line: { color: "#cfcabe" } },
             increasing: { marker: { color: "#788c5d" } },
             decreasing: { marker: { color: "#b65f55" } },
             totals: { marker: { color: "#5c8fba" } },
-            hovertemplate: "%{x}<br>%{y:.1f}<extra></extra>"
+            hovertemplate: "%{hovertext}<extra></extra>",
+            hovertext: hoverTexts
         }
     ], getLockedPlotLayout({
-        margin: { l: 58, r: 24, t: 26, b: 112 },
+        margin: { l: 58, r: 22, t: 22, b: options.bottomMargin },
         paper_bgcolor: "rgba(0,0,0,0)",
         plot_bgcolor: "rgba(0,0,0,0)",
         font: getPlotFont(),
         yaxis: {
-            title: AppState.displayUnit === "百万" ? "百万元" : "亿元",
+            title: getDisplayAmountUnit(),
             gridcolor: "#ece8de"
         },
-        xaxis: { tickangle: -36 }
+        xaxis: { tickangle: options.tickAngle }
     }), getPlotConfig());
 }
 

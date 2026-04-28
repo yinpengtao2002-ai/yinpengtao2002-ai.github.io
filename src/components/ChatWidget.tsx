@@ -472,7 +472,12 @@ export default function ChatWidget() {
                 height: mobileSheetHeight ? `${mobileSheetHeight}px` : "60dvh",
                 borderRadius: 28,
             }
-        : {};
+        : {
+            right: 20,
+            bottom: 20,
+            width: "min(380px, calc(100vw - 40px))",
+            height: "min(500px, calc(100dvh - 88px))",
+        };
     const handleClose = () => {
         setKeyboardOpen(false);
         setMobileExpanded(false);
