@@ -460,6 +460,49 @@
     margin: 0 auto 1rem;
 }
 
+.sensitivity-tool .target-grid {
+    grid-template-columns: minmax(360px, 0.8fr) minmax(0, 1.2fr);
+}
+
+.sensitivity-tool .target-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.sensitivity-tool .target-card {
+    min-height: 112px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: #fbfaf7;
+    padding: 0.9rem;
+}
+
+.sensitivity-tool .target-label {
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.sensitivity-tool .target-value {
+    margin-top: 0.5rem;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: clamp(1.05rem, 1.45vw, 1.55rem);
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.sensitivity-tool .target-sub {
+    margin-top: 0.42rem;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    line-height: 1.4;
+}
+
 .sensitivity-tool .bottom-grid {
     grid-template-columns: minmax(0, 1.25fr) minmax(360px, 0.85fr);
 }
@@ -531,6 +574,10 @@
 
 .sensitivity-tool .chart-profit-waterfall {
     min-height: 430px;
+}
+
+.sensitivity-tool .chart-target {
+    min-height: 350px;
 }
 
 .sensitivity-tool .table-panel {
@@ -616,7 +663,8 @@
     }
 
     .sensitivity-tool .workspace-grid,
-    .sensitivity-tool .bottom-grid {
+    .sensitivity-tool .bottom-grid,
+    .sensitivity-tool .target-grid {
         grid-template-columns: 1fr;
     }
 
@@ -685,7 +733,8 @@
 
     .sensitivity-tool .chart,
     .sensitivity-tool .chart-small,
-    .sensitivity-tool .chart-compact {
+    .sensitivity-tool .chart-compact,
+    .sensitivity-tool .chart-target {
         min-height: 340px;
     }
 
@@ -705,5 +754,9 @@
 
     .sensitivity-tool .button-grid .btn:first-child {
         grid-column: auto;
+    }
+
+    .sensitivity-tool .target-summary {
+        grid-template-columns: 1fr;
     }
 }

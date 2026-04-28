@@ -127,6 +127,17 @@ export default function SensitivityTool() {
                 </section>
 
                 <section className="sidebar-block">
+                    <h2 className="sidebar-title">目标利润</h2>
+                    <div className="form-grid">
+                        <label className="field">
+                            <span>目标利润</span>
+                            <input id="target-profit-input" className="input" type="number" step="1" defaultValue="300" />
+                            <small className="field-note">亿元｜用于反推目标销量和所需单车口径</small>
+                        </label>
+                    </div>
+                </section>
+
+                <section className="sidebar-block">
                     <h2 className="sidebar-title">模型假设</h2>
                     <div id="assumption-inputs" className="form-grid" />
                 </section>
@@ -177,6 +188,28 @@ export default function SensitivityTool() {
                 </header>
 
                 <section className="metrics-grid" id="metrics-grid" />
+
+                <section className="workspace-grid target-grid">
+                    <article className="panel target-summary-panel">
+                        <div className="panel-header">
+                            <div>
+                                <h2>目标利润反推</h2>
+                                <p>在当前成本和固定扣减口径下，反推达到目标利润所需的关键条件。</p>
+                            </div>
+                        </div>
+                        <div id="target-summary" className="target-summary" />
+                    </article>
+
+                    <article className="panel">
+                        <div className="panel-header">
+                            <div>
+                                <h2>目标利润平衡点</h2>
+                                <p>查看销量变化下的利润曲线，并标出当前点、盈亏平衡点和目标点。</p>
+                            </div>
+                        </div>
+                        <div id="target-profit-chart" className="chart chart-target" />
+                    </article>
+                </section>
 
                 <section className="workspace-grid">
                     <article className="panel panel-large">

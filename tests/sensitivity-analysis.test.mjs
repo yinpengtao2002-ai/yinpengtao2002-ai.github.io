@@ -5,10 +5,12 @@ const sensitivityAnalysis = await import("../src/app/finance/sensitivity-analysi
 
 const {
     DRIVER_DEFINITIONS,
+    computeTargetProfitAnalysis,
     computeModel,
     getDefaultAssumptions,
     getLockedPlotLayout,
     getPlotConfig,
+    getTemplateRows,
     normalizeImportedValue,
 } = sensitivityAnalysis.default;
 
@@ -59,6 +61,16 @@ test("tax reduces profit when it is included", () => {
     approx(result.profit, 238, "profit total after tax");
 });
 
+test("target profit analysis reverses required volume and unit revenue", () => {
+    const result = computeModel(getDefaultAssumptions());
+    const target = computeTargetProfitAnalysis(result, 300);
+
+    approx(target.profitGap, 52, "profit gap");
+    approx(target.requiredTargetVolume, (300 + 122) / 3.7, "required target volume");
+    approx(target.requiredUnitContributionMargin, (300 + 122) / 100, "required unit contribution margin");
+    approx(target.requiredUnitNetRevenue, 9.5 + ((300 + 122) / 100), "required unit net revenue");
+});
+
 test("sales volume only drives above-margin items", () => {
     const result = computeModel({
         ...getDefaultAssumptions(),
@@ -79,6 +91,15 @@ test("imported amount values keep their numeric scale", () => {
     assert.equal(normalizeImportedValue(salesVolumeDriver, "100 万辆"), 100);
     assert.equal(normalizeImportedValue(unitNetRevenueDriver, "13.2 万元/辆"), 13.2);
     assert.equal(normalizeImportedValue(unitMaterialCostDriver, "7.8 万元/辆"), 7.8);
+});
+
+test("template rows use finance-facing fields instead of implementation keys", () => {
+    const row = getTemplateRows()[0];
+
+    assert.deepEqual(Object.keys(row), ["序号", "部分", "名称", "口径", "基准值", "敏感性幅度", "单位"]);
+    assert.equal(row["名称"], "销量");
+    assert.equal(row.Key, undefined);
+    assert.equal(row.Description, undefined);
 });
 
 test("plot configuration keeps charts readable without accidental zoom controls", () => {
