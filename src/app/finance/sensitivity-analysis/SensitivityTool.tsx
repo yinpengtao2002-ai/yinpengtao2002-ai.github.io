@@ -131,8 +131,8 @@ export default function SensitivityTool() {
                     <div className="form-grid">
                         <label className="field">
                             <span>目标利润</span>
-                            <input id="target-profit-input" className="input" type="number" step="1" defaultValue="300" />
-                            <small className="field-note">亿元｜用于反推目标销量和所需单车口径</small>
+                            <input id="target-profit-input" className="input" type="number" step="1" />
+                            <small className="field-note">亿元｜默认按当前利润上浮 20% 取整，可自行修改</small>
                         </label>
                     </div>
                 </section>
@@ -194,7 +194,7 @@ export default function SensitivityTool() {
                         <div className="panel-header">
                             <div>
                                 <h2>目标利润反推</h2>
-                                <p>在当前成本和固定扣减口径下，反推达到目标利润所需的关键条件。</p>
+                                <p>默认目标按当前利润上浮 20% 后向上取整到 10 亿元，也可以在左侧手动修改。</p>
                             </div>
                         </div>
                         <div id="target-summary" className="target-summary" />

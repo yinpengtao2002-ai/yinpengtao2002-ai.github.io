@@ -11,6 +11,7 @@ const {
     getLockedPlotLayout,
     getPlotConfig,
     getTemplateRows,
+    getSuggestedTargetProfit,
     normalizeImportedValue,
 } = sensitivityAnalysis.default;
 
@@ -69,6 +70,12 @@ test("target profit analysis reverses required volume and unit revenue", () => {
     approx(target.requiredTargetVolume, (300 + 122) / 3.7, "required target volume");
     approx(target.requiredUnitContributionMargin, (300 + 122) / 100, "required unit contribution margin");
     approx(target.requiredUnitNetRevenue, 9.5 + ((300 + 122) / 100), "required unit net revenue");
+});
+
+test("default target profit is a rounded uplift from current profit", () => {
+    const result = computeModel(getDefaultAssumptions());
+
+    assert.equal(getSuggestedTargetProfit(result), 300);
 });
 
 test("sales volume only drives above-margin items", () => {

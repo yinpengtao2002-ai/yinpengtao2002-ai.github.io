@@ -197,7 +197,7 @@ const AppState = {
     scenarioOverrides: null,
     metric: "profit",
     displayUnit: "亿",
-    targetProfit: 300,
+    targetProfit: getSuggestedTargetProfit(computeModel(getDefaultAssumptions())),
     xDriver: "salesVolume",
     yDriver: "unitMaterialCost",
     matrixSteps: 7
@@ -310,6 +310,12 @@ function computeModel(assumptions) {
         profit,
         profitRate: percentOf(profit, netRevenue)
     };
+}
+
+function getSuggestedTargetProfit(result) {
+    const currentProfit = Number(result.profit || 0);
+    if (!Number.isFinite(currentProfit) || currentProfit <= 0) return 0;
+    return Math.ceil((currentProfit * 1.2) / 10) * 10;
 }
 
 function getMetricDefinition(metricKey = AppState.metric) {
@@ -840,6 +846,7 @@ function applyImportedRows(rows) {
         DRIVER_DEFINITIONS.map((driver) => [driver.key, Math.abs(Number(nextRanges[driver.key] ?? driver.defaultRange ?? 0))])
     );
     AppState.scenarioOverrides = hasScenarioValues ? nextScenarios : null;
+    AppState.targetProfit = getSuggestedTargetProfit(computeModel(AppState.assumptions));
     if (!driverByKey[AppState.xDriver]) AppState.xDriver = "salesVolume";
     if (!driverByKey[AppState.yDriver] || AppState.yDriver === AppState.xDriver) {
         AppState.yDriver = DRIVER_DEFINITIONS.find((driver) => driver.key !== AppState.xDriver)?.key || "salesVolume";
@@ -1231,7 +1238,8 @@ function renderTargetProfitChart(result) {
 
 function renderTornadoChart() {
     if (typeof Plotly === "undefined") return;
-    const rows = calculateSensitivityRows().slice(0, 12).reverse();
+    const rows = calculateSensitivityRows().reverse();
+    const chartHeight = Math.max(440, rows.length * 34 + 110);
     const metricLabel = getMetricDefinition().label;
 
     Plotly.react("tornado-chart", [
@@ -1256,6 +1264,7 @@ function renderTornadoChart() {
             hovertext: rows.map((row) => `${row.name}<br>高位假设：${formatDriverValue(row.key, row.highValue)}<br>${metricLabel}：${formatMetric(row.highMetric)}`)
         }
     ], getLockedPlotLayout({
+        height: chartHeight,
         margin: { l: 126, r: 28, t: 24, b: 46 },
         barmode: "overlay",
         paper_bgcolor: "rgba(0,0,0,0)",
@@ -1352,11 +1361,15 @@ function getDriverTotalAmount(result, driver) {
     return Number(result[driver.key] || 0);
 }
 
+function hasWaterfallValue(result, driver) {
+    return Math.abs(getDriverTotalAmount(result, driver)) > 1e-9;
+}
+
 function renderWaterfallCharts(result) {
     if (typeof Plotly === "undefined") return;
-    const variableCostDrivers = getDriversBy(isUnitVariableCostDriver);
-    const fixedDeductionDrivers = getDriversBy((driver) => driver.group === "fixedDeduction");
-    const profitAdditionDrivers = getDriversBy((driver) => driver.group === "profitAddition");
+    const variableCostDrivers = getDriversBy(isUnitVariableCostDriver).filter((driver) => hasWaterfallValue(result, driver));
+    const fixedDeductionDrivers = getDriversBy((driver) => driver.group === "fixedDeduction").filter((driver) => hasWaterfallValue(result, driver));
+    const profitAdditionDrivers = getDriversBy((driver) => driver.group === "profitAddition").filter((driver) => hasWaterfallValue(result, driver));
 
     renderWaterfallChart("margin-bridge-chart", {
         labels: [
@@ -1468,7 +1481,7 @@ function resetModel() {
     AppState.scenarioOverrides = null;
     AppState.metric = "profit";
     AppState.displayUnit = "亿";
-    AppState.targetProfit = 300;
+    AppState.targetProfit = getSuggestedTargetProfit(computeModel(AppState.assumptions));
     AppState.xDriver = "salesVolume";
     AppState.yDriver = "unitMaterialCost";
     AppState.matrixSteps = 7;
@@ -1727,6 +1740,7 @@ if (typeof module !== "undefined" && module.exports) {
         computeModel,
         computeTargetProfitAnalysis,
         createProfitVolumeCurve,
+        getSuggestedTargetProfit,
         getTemplateRows,
         sanitizeAssumptions,
         sequenceAround,
