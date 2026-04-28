@@ -1,5 +1,5 @@
 // Auto-generated content data from markdown + Notion
-// Generated at: 2026-04-28T09:50:17.835Z
+// Generated at: 2026-04-28T09:55:43.088Z
 // DO NOT EDIT MANUALLY - run 'npm run prebuild' to regenerate
 
 export interface ContentItem {
@@ -38,7 +38,7 @@ export const financeContent: ContentItem[] = [
     "slug": "sensitivity-analysis",
     "title": "利润敏感性分析",
     "description": "按企业 FBP 利润口径，基于现状底表调整销量、收入、成本、固定扣减项和税费假设，分析对边际与利润总额的影响。",
-    "date": "2026-04",
+    "date": "2026-04-01",
     "category": null,
     "href": "/finance/sensitivity-analysis",
     "content": "当预算或预测出现变化时，它可以帮助你快速回答三个问题：利润总额会变多少、哪个科目影响最大、当前口径下的盈亏平衡销量是多少。\n\n1. 上传或维护现状底表，收入、成本和费用按总额填写\n2. 自动计算净收入、变动成本、边际和利润总额\n3. 管理技术开发费、国际固定费用、折旧加摊销、后台公共费用、所得税等固定扣减项\n4. 将其他业务利润、备件利润和子公司利润作为固定部分中的利润贡献项目\n5. 通过百分比滑块调整各科目，查看调整后指标与现状差异\n6. 查看关键因素排序、盈亏平衡点、双变量矩阵、边际瀑布图和利润瀑布图",
@@ -49,7 +49,7 @@ export const financeContent: ContentItem[] = [
     "slug": "margin-analysis",
     "title": "单车边际变动归因分析",
     "description": "通过上传两期财务数据，自动对比分析单车边际变动的驱动因素。",
-    "date": "2026-01",
+    "date": "2026-01-01",
     "category": null,
     "href": "/finance/margin-analysis",
     "content": "这是一个用于分析单车边际变动的工具，可以帮助你：\n\n1. 上传两期财务数据\n2. 自动计算边际变动\n3. 识别关键驱动因素\n4. 生成可视化报告",

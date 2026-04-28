@@ -1,7 +1,7 @@
 ---
 title: "利润敏感性分析"
 description: "按企业 FBP 利润口径，基于现状底表调整销量、收入、成本、固定扣减项和税费假设，分析对边际与利润总额的影响。"
-date: "2026-04"
+date: "2026-04-01"
 href: "/finance/sensitivity-analysis"
 ---
 

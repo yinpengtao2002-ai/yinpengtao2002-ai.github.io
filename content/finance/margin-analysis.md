@@ -1,7 +1,7 @@
 ---
 title: "单车边际变动归因分析"
 description: "通过上传两期财务数据，自动对比分析单车边际变动的驱动因素。"
-date: "2026-01"
+date: "2026-01-01"
 href: "/finance/margin-analysis"
 ---
 
