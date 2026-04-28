@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { aiContent, financeContent } from "@/lib/data/generated/content";
 
 const CHAT_PRIMARY_TIMEOUT_MS = 18000;
-const CHAT_FALLBACK_TIMEOUT_MS = 10000;
+const CHAT_FALLBACK_TIMEOUT_MS = 18000;
 
 function buildSystemPrompt(): string {
   // Build article catalog from actual content
@@ -47,8 +47,8 @@ export async function POST(req: NextRequest) {
 
     const apiKey = process.env.CHAT_API_KEY?.trim();
     const apiUrl = process.env.CHAT_API_URL?.trim();
-    const primaryModel = (process.env.CHAT_MODEL || "z-ai/glm-5.1").trim();
-    const fallbackModel = (process.env.CHAT_MODEL_FALLBACK || "z-ai/glm5").trim();
+    const primaryModel = (process.env.CHAT_MODEL || "gpt-5.4-mini").trim();
+    const fallbackModel = (process.env.CHAT_MODEL_FALLBACK || "gpt-5.2").trim();
 
     if (!apiKey || !apiUrl) {
       return Response.json(
