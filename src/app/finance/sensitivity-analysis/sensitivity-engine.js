@@ -1,5 +1,5 @@
 /**
- * 企业 FBP 经营利润敏感性分析 - official finance page engine.
+ * 企业 FBP 利润敏感性分析 - official finance page engine.
  * Scope is intentionally limited to /finance/sensitivity-analysis.
  */
 
@@ -123,6 +123,19 @@ const DRIVER_DEFINITIONS = [
         description: "后台职能和公共分摊费用"
     },
     {
+        key: "incomeTax",
+        name: "所得税",
+        aliases: ["incomeTax", "tax", "incomeTaxExpense", "所得税", "税费", "税"],
+        unit: "亿元",
+        kind: "amount",
+        group: "fixedDeduction",
+        step: 1,
+        defaultValue: 0,
+        defaultRange: 0,
+        impact: "negative",
+        description: "利润口径中的税费扣减项"
+    },
+    {
         key: "otherBusinessProfit",
         name: "其他业务利润",
         unit: "亿元",
@@ -227,6 +240,7 @@ function sanitizeAssumptions(assumptions) {
     next.internationalFixedCost = Math.max(0, next.internationalFixedCost);
     next.depreciationAmortization = Math.max(0, next.depreciationAmortization);
     next.backOfficeSharedCost = Math.max(0, next.backOfficeSharedCost);
+    next.incomeTax = Math.max(0, next.incomeTax);
     return next;
 }
 
@@ -244,7 +258,8 @@ function computeModel(assumptions) {
         a.techDevelopmentFee +
         a.internationalFixedCost +
         a.depreciationAmortization +
-        a.backOfficeSharedCost
+        a.backOfficeSharedCost +
+        a.incomeTax
     );
     const profitAdditionTotal = (
         a.otherBusinessProfit +
@@ -287,10 +302,11 @@ function getMetricValue(result, metricKey = AppState.metric) {
 
 function formatNumber(value, decimals = 1) {
     if (!Number.isFinite(value)) return "-";
-    return Number(value).toLocaleString("zh-CN", {
+    const normalizedValue = Math.abs(value) < 1e-9 ? 0 : value;
+    return Number(normalizedValue).toLocaleString("zh-CN", {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals
-    });
+    }).replace("-0", "0");
 }
 
 function formatAmount(value, decimals = 1) {
@@ -534,7 +550,7 @@ function initControlEvents() {
     document.getElementById("btn-reset").addEventListener("click", resetModel);
     document.getElementById("btn-demo").addEventListener("click", () => {
         resetModel();
-        showMessage("success", "已加载经营利润示例数据。");
+        showMessage("success", "已加载利润示例数据。");
     });
     document.getElementById("btn-csv-template").addEventListener("click", () => downloadTemplate("csv"));
     document.getElementById("btn-xlsx-template").addEventListener("click", () => downloadTemplate("xlsx"));
@@ -785,8 +801,6 @@ function renderAll() {
     renderScenarioChart();
     renderMatrixChart();
     renderWaterfallCharts(result);
-    renderProfitTable(result);
-    renderSensitivityTable();
 }
 
 function renderMetrics(result) {
@@ -794,7 +808,22 @@ function renderMetrics(result) {
         {
             label: "销量",
             value: formatVolume(result.salesVolume, 1),
-            sub: `单车净收入 ${formatUnitAmount(result.unitNetRevenue, 2)}`
+            sub: "当前销量假设"
+        },
+        {
+            label: "单车净收入",
+            value: formatUnitAmount(result.unitNetRevenue, 2),
+            sub: "每辆车确认的净收入"
+        },
+        {
+            label: "净收入总额",
+            value: formatAmount(result.netRevenue, 1),
+            sub: "销量 × 单车净收入"
+        },
+        {
+            label: "边际总额",
+            value: formatAmount(result.contributionMargin, 1),
+            sub: `边际率 ${formatNumber(result.contributionMarginRate, 1)}%`
         },
         {
             label: "单车边际",
@@ -802,24 +831,9 @@ function renderMetrics(result) {
             sub: `单车变动成本 ${formatUnitAmount(result.unitVariableCost, 2)}`
         },
         {
-            label: "净收入",
-            value: formatAmount(result.netRevenue, 1),
-            sub: "销量 × 单车净收入"
-        },
-        {
-            label: "边际",
-            value: formatAmount(result.contributionMargin, 1),
-            sub: `边际率 ${formatNumber(result.contributionMarginRate, 1)}%`
-        },
-        {
             label: "利润总额",
             value: formatAmount(result.profit, 1),
             sub: `利润总额率 ${formatNumber(result.profitRate, 1)}%`
-        },
-        {
-            label: "固定部分净额",
-            value: formatAmount(result.fixedPartNet, 1),
-            sub: "固定费用扣减利润项目后"
         }
     ];
 
@@ -987,6 +1001,7 @@ function renderWaterfallCharts(result) {
             "国际固定费用",
             "折旧加摊销",
             "后台公共费用",
+            "所得税",
             "其他业务利润",
             "备件利润",
             "子公司利润",
@@ -998,6 +1013,7 @@ function renderWaterfallCharts(result) {
             -result.internationalFixedCost,
             -result.depreciationAmortization,
             -result.backOfficeSharedCost,
+            -result.incomeTax,
             result.otherBusinessProfit,
             result.sparePartsProfit,
             result.subsidiaryProfit,
@@ -1012,11 +1028,15 @@ function renderWaterfallCharts(result) {
             "relative",
             "relative",
             "relative",
+            "relative",
             "total"
         ],
-        bottomMargin: 82,
-        tickAngle: -22,
-        height: 430
+        bottomMargin: 112,
+        leftMargin: 66,
+        rightMargin: 42,
+        topMargin: 52,
+        tickAngle: -18,
+        height: 450
     });
 }
 
@@ -1052,7 +1072,12 @@ function renderWaterfallChart(targetId, options) {
         }
     ], getLockedPlotLayout({
         height: options.height,
-        margin: { l: 58, r: 32, t: 42, b: options.bottomMargin },
+        margin: {
+            l: options.leftMargin ?? 58,
+            r: options.rightMargin ?? 32,
+            t: options.topMargin ?? 42,
+            b: options.bottomMargin
+        },
         paper_bgcolor: "rgba(0,0,0,0)",
         plot_bgcolor: "rgba(0,0,0,0)",
         font: getPlotFont(),
@@ -1060,82 +1085,12 @@ function renderWaterfallChart(targetId, options) {
             title: getDisplayAmountUnit(),
             gridcolor: "#ece8de"
         },
-        xaxis: { tickangle: options.tickAngle }
+        xaxis: {
+            tickangle: options.tickAngle,
+            automargin: true,
+            tickfont: { size: 11 }
+        }
     }), getPlotConfig());
-}
-
-function renderProfitTable(result) {
-    const rows = [
-        { label: "销量", display: formatVolume(result.salesVolume, 1), value: result.salesVolume, pct: null },
-        { label: "单车净收入", display: formatUnitAmount(result.unitNetRevenue, 2), value: result.unitNetRevenue, pct: null },
-        { label: "净收入", display: formatAmount(result.netRevenue, 1), value: result.netRevenue, pct: 100 },
-        { label: "单车材料成本", display: formatUnitAmount(-result.unitMaterialCost, 2), value: -result.unitMaterialCost, pct: null },
-        { label: "材料成本", display: formatAmount(-result.materialCost, 1), value: -result.materialCost, pct: percentOf(-result.materialCost, result.netRevenue) },
-        { label: "单车变动制造费用", display: formatUnitAmount(-result.unitVariableManufacturingCost, 2), value: -result.unitVariableManufacturingCost, pct: null },
-        { label: "变动制造费用", display: formatAmount(-result.variableManufacturingCost, 1), value: -result.variableManufacturingCost, pct: percentOf(-result.variableManufacturingCost, result.netRevenue) },
-        { label: "单车变动销售费用", display: formatUnitAmount(-result.unitVariableSalesCost, 2), value: -result.unitVariableSalesCost, pct: null },
-        { label: "变动销售费用", display: formatAmount(-result.variableSalesCost, 1), value: -result.variableSalesCost, pct: percentOf(-result.variableSalesCost, result.netRevenue) },
-        { label: "单车边际", display: formatUnitAmount(result.unitContributionMargin, 2), value: result.unitContributionMargin, pct: null },
-        { label: "边际", display: formatAmount(result.contributionMargin, 1), value: result.contributionMargin, pct: result.contributionMarginRate },
-        { label: "技术开发费", display: formatAmount(-result.techDevelopmentFee, 1), value: -result.techDevelopmentFee, pct: percentOf(-result.techDevelopmentFee, result.netRevenue) },
-        { label: "国际固定费用", display: formatAmount(-result.internationalFixedCost, 1), value: -result.internationalFixedCost, pct: percentOf(-result.internationalFixedCost, result.netRevenue) },
-        { label: "折旧加摊销", display: formatAmount(-result.depreciationAmortization, 1), value: -result.depreciationAmortization, pct: percentOf(-result.depreciationAmortization, result.netRevenue) },
-        { label: "后台公共费用", display: formatAmount(-result.backOfficeSharedCost, 1), value: -result.backOfficeSharedCost, pct: percentOf(-result.backOfficeSharedCost, result.netRevenue) },
-        { label: "其他业务利润", display: formatAmount(result.otherBusinessProfit, 1), value: result.otherBusinessProfit, pct: percentOf(result.otherBusinessProfit, result.netRevenue) },
-        { label: "备件利润", display: formatAmount(result.sparePartsProfit, 1), value: result.sparePartsProfit, pct: percentOf(result.sparePartsProfit, result.netRevenue) },
-        { label: "子公司利润", display: formatAmount(result.subsidiaryProfit, 1), value: result.subsidiaryProfit, pct: percentOf(result.subsidiaryProfit, result.netRevenue) },
-        { label: "固定部分净额", display: formatAmount(-result.fixedPartNet, 1), value: -result.fixedPartNet, pct: percentOf(-result.fixedPartNet, result.netRevenue) },
-        { label: "利润总额", display: formatAmount(result.profit, 1), value: result.profit, pct: result.profitRate }
-    ];
-
-    document.getElementById("profit-table").innerHTML = `
-        <thead>
-            <tr>
-                <th>项目</th>
-                <th>数值</th>
-                <th>占净收入比例</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${rows.map((row) => `
-                <tr>
-                    <td>${row.label}</td>
-                    <td class="${row.value >= 0 ? "positive" : "negative"}">${row.display}</td>
-                    <td>${row.pct === null ? "-" : `${formatNumber(row.pct, 1)}%`}</td>
-                </tr>
-            `).join("")}
-        </tbody>
-    `;
-}
-
-function renderSensitivityTable() {
-    const rows = calculateSensitivityRows();
-    document.getElementById("sensitivity-table").innerHTML = `
-        <thead>
-            <tr>
-                <th>科目</th>
-                <th>低位假设</th>
-                <th>低位结果</th>
-                <th>基准结果</th>
-                <th>高位假设</th>
-                <th>高位结果</th>
-                <th>结果摆幅</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${rows.map((row) => `
-                <tr>
-                    <td>${row.name}</td>
-                    <td>${formatDriverValue(row.key, row.lowValue)}</td>
-                    <td class="${row.lowDelta >= 0 ? "positive" : "negative"}">${formatMetric(row.lowMetric)}</td>
-                    <td>${formatMetric(row.baseMetric)}</td>
-                    <td>${formatDriverValue(row.key, row.highValue)}</td>
-                    <td class="${row.highDelta >= 0 ? "positive" : "negative"}">${formatMetric(row.highMetric)}</td>
-                    <td>${formatMetric(row.swing)}</td>
-                </tr>
-            `).join("")}
-        </tbody>
-    `;
 }
 
 function resetModel() {
@@ -1237,13 +1192,13 @@ function downloadTemplate(format) {
         ]);
         XLSX.utils.book_append_sheet(workbook, worksheet, "Assumptions");
         XLSX.utils.book_append_sheet(workbook, readme, "Readme");
-        XLSX.writeFile(workbook, "operating-profit-sensitivity-template.xlsx");
+        XLSX.writeFile(workbook, "profit-sensitivity-template.xlsx");
         return;
     }
 
     downloadBlob(
         new Blob(["\uFEFF" + toCsv(rows)], { type: "text/csv;charset=utf-8;" }),
-        "operating-profit-sensitivity-template.csv"
+        "profit-sensitivity-template.csv"
     );
 }
 
@@ -1267,10 +1222,11 @@ function downloadResultsWorkbook() {
         { Item: "国际固定费用", Value: -result.internationalFixedCost, NetRevenuePct: percentOf(-result.internationalFixedCost, result.netRevenue) },
         { Item: "折旧加摊销", Value: -result.depreciationAmortization, NetRevenuePct: percentOf(-result.depreciationAmortization, result.netRevenue) },
         { Item: "后台公共费用", Value: -result.backOfficeSharedCost, NetRevenuePct: percentOf(-result.backOfficeSharedCost, result.netRevenue) },
+        { Item: "所得税", Value: -result.incomeTax, NetRevenuePct: percentOf(-result.incomeTax, result.netRevenue) },
         { Item: "其他业务利润", Value: result.otherBusinessProfit, NetRevenuePct: percentOf(result.otherBusinessProfit, result.netRevenue) },
         { Item: "备件利润", Value: result.sparePartsProfit, NetRevenuePct: percentOf(result.sparePartsProfit, result.netRevenue) },
         { Item: "子公司利润", Value: result.subsidiaryProfit, NetRevenuePct: percentOf(result.subsidiaryProfit, result.netRevenue) },
-        { Item: "固定部分净额", Value: -result.fixedPartNet, NetRevenuePct: percentOf(-result.fixedPartNet, result.netRevenue) },
+        { Item: "固定扣减净额", Value: -result.fixedPartNet, NetRevenuePct: percentOf(-result.fixedPartNet, result.netRevenue) },
         { Item: "利润总额", Value: result.profit, NetRevenuePct: result.profitRate }
     ];
     const sensitivityExport = sensitivityRows.map((row) => ({
@@ -1297,13 +1253,13 @@ function downloadResultsWorkbook() {
         XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(profitRows), "ProfitStructure");
         XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(sensitivityExport), "Sensitivity");
         XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(matrixRows), "Matrix");
-        XLSX.writeFile(workbook, "operating-profit-sensitivity-results.xlsx");
+        XLSX.writeFile(workbook, "profit-sensitivity-results.xlsx");
         return;
     }
 
     downloadBlob(
         new Blob(["\uFEFF" + toCsv(sensitivityExport)], { type: "text/csv;charset=utf-8;" }),
-        "operating-profit-sensitivity-results.csv"
+        "profit-sensitivity-results.csv"
     );
 }
 

@@ -24,7 +24,7 @@ function approx(actual, expected, message) {
     );
 }
 
-test("operating profit model calculates the default structure", () => {
+test("profit model calculates the default structure", () => {
     const result = computeModel(getDefaultAssumptions());
 
     approx(result.salesVolume, 100, "sales volume");
@@ -34,17 +34,29 @@ test("operating profit model calculates the default structure", () => {
     approx(result.variableCostTotal, 950, "variable cost total");
     approx(result.unitContributionMargin, 3.7, "unit contribution margin");
     approx(result.contributionMargin, 370, "contribution margin");
+    approx(result.incomeTax, 0, "income tax default");
     approx(result.fixedDeductionTotal, 177, "fixed deduction total");
     approx(result.profitAdditionTotal, 55, "profit addition total");
     approx(result.fixedPartNet, 122, "fixed part net");
     approx(result.profit, 248, "profit total");
 });
 
-test("operating profit model calculates rates against the right base", () => {
+test("profit model calculates rates against the right base", () => {
     const result = computeModel(getDefaultAssumptions());
 
     approx(result.contributionMarginRate, 370 / 1320 * 100, "contribution margin rate");
     approx(result.profitRate, 248 / 1320 * 100, "profit total rate");
+});
+
+test("tax reduces profit when it is included", () => {
+    const result = computeModel({
+        ...getDefaultAssumptions(),
+        incomeTax: 10,
+    });
+
+    approx(result.fixedDeductionTotal, 187, "fixed deduction total with tax");
+    approx(result.fixedPartNet, 132, "fixed part net with tax");
+    approx(result.profit, 238, "profit total after tax");
 });
 
 test("sales volume only drives above-margin items", () => {

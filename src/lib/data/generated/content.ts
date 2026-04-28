@@ -1,5 +1,5 @@
 // Auto-generated content data from markdown + Notion
-// Generated at: 2026-04-27T17:33:43.833Z
+// Generated at: 2026-04-28T06:45:46.067Z
 // DO NOT EDIT MANUALLY - run 'npm run prebuild' to regenerate
 
 export interface ContentItem {
@@ -36,12 +36,12 @@ export const financeContent: ContentItem[] = [
   {
     "id": 1,
     "slug": "sensitivity-analysis",
-    "title": "经营利润敏感性分析",
-    "description": "按企业 FBP 内部经营利润口径，分析销量、单车收入、单车成本、固定部分净额对边际与利润总额的影响。",
+    "title": "利润敏感性分析",
+    "description": "按企业 FBP 利润口径，分析销量、单车收入、单车成本、固定扣减项、税费对边际与利润总额的影响。",
     "date": "2026-04",
     "category": null,
     "href": "/finance/sensitivity-analysis",
-    "content": "当预算或预测出现变化时，它可以帮助你快速回答三个问题：利润总额会变多少、哪个量价因素影响最大、不同情景之间差距有多大。\n\n1. 调整销量、单车净收入、单车材料成本、单车变动制造费用和单车变动销售费用假设\n2. 自动计算净收入、变动成本、边际和利润总额\n3. 管理技术开发费、国际固定费用、折旧加摊销、后台公共费用等固定扣减项\n4. 将其他业务利润、备件利润和子公司利润作为固定部分中的利润贡献项目\n5. 查看关键科目排序、双变量矩阵和情景对比\n6. 导出模板和结果，方便复盘或汇报",
+    "content": "当预算或预测出现变化时，它可以帮助你快速回答三个问题：利润总额会变多少、哪个量价因素影响最大、不同情景之间差距有多大。\n\n1. 调整销量、单车净收入、单车材料成本、单车变动制造费用和单车变动销售费用假设\n2. 自动计算净收入、变动成本、边际和利润总额\n3. 管理技术开发费、国际固定费用、折旧加摊销、后台公共费用、所得税等固定扣减项\n4. 将其他业务利润、备件利润和子公司利润作为固定部分中的利润贡献项目\n5. 查看关键科目排序、双变量矩阵和情景对比\n6. 导出模板和结果，方便复盘或汇报",
     "source": "markdown"
   },
   {

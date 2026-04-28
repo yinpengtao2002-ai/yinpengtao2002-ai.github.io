@@ -650,7 +650,7 @@
     }
 
     .sensitivity-tool .sidebar-toggle {
-        left: calc(var(--sidebar-width) - 42px);
+        left: calc(var(--sidebar-width) - 74px);
     }
 
     .sensitivity-tool .main-content {

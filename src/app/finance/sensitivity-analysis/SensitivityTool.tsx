@@ -80,8 +80,8 @@ export default function SensitivityTool() {
 
                 <section className="sidebar-block">
                     <div className="sidebar-kicker">Sensitivity Lab</div>
-                    <h1 className="sidebar-heading">经营利润敏感性分析</h1>
-                    <p className="sidebar-copy">按内部经营利润口径调整销量、单车收入、单车成本和固定部分净额，观察边际与利润总额变化。</p>
+                    <h1 className="sidebar-heading">利润敏感性分析</h1>
+                    <p className="sidebar-copy">调整销量、单车收入、单车成本、固定费用和税费假设，观察边际与利润总额变化。</p>
                     <div id="message-area" className="message-area" aria-live="polite" />
                 </section>
 
@@ -127,7 +127,7 @@ export default function SensitivityTool() {
                 </section>
 
                 <section className="sidebar-block">
-                    <h2 className="sidebar-title">经营假设</h2>
+                    <h2 className="sidebar-title">模型假设</h2>
                     <div id="assumption-inputs" className="form-grid" />
                 </section>
 
@@ -167,8 +167,8 @@ export default function SensitivityTool() {
                 <header className="model-header">
                     <div>
                         <p className="eyebrow">Financial Modeling</p>
-                        <h1>经营利润敏感性分析</h1>
-                        <p className="model-subtitle">销量与单车净收入、单车材料成本、单车变动费用共同决定边际；边际以下再考虑固定扣减项和利润贡献项得到利润总额。</p>
+                        <h1>利润敏感性分析</h1>
+                        <p className="model-subtitle">销量与单车净收入、单车材料成本、单车变动费用共同决定边际；边际以下再考虑固定扣减项、税费和利润贡献项得到利润总额。</p>
                     </div>
                     <div className="header-actions">
                         <button type="button" className="btn btn-secondary" id="btn-reset">重置</button>
@@ -193,7 +193,7 @@ export default function SensitivityTool() {
                         <div className="panel-header">
                             <div>
                                 <h2>场景对比</h2>
-                                <p>对比悲观、基准、乐观三种经营利润结果。</p>
+                                <p>基准来自当前假设；悲观和乐观按左侧变动幅度自动推演，导入模板时可使用模板中的情景值。</p>
                             </div>
                         </div>
                         <div id="scenario-chart" className="chart chart-small" />
@@ -226,39 +226,15 @@ export default function SensitivityTool() {
                     <div className="panel-header">
                         <div>
                             <h2>利润瀑布图</h2>
-                            <p>从边际出发，扣减固定费用并加上利润贡献项后得到利润总额。</p>
+                            <p>从边际出发，扣减固定费用和税费，并加上利润贡献项后得到利润总额。</p>
                         </div>
                     </div>
                     <div id="profit-bridge-chart" className="chart chart-profit-waterfall" />
                 </section>
 
-                <section className="panel table-panel">
-                    <div className="panel-header">
-                        <div>
-                            <h2>利润结构明细</h2>
-                            <p>基准情景下的销量、单车口径、边际、固定扣减项、利润贡献项和利润总额。</p>
-                        </div>
-                    </div>
-                    <div className="table-wrap">
-                        <table className="data-table" id="profit-table" />
-                    </div>
-                </section>
-
-                <section className="panel table-panel">
-                    <div className="panel-header">
-                        <div>
-                            <h2>变量影响明细</h2>
-                            <p>逐项查看各变量在低位和高位假设下的结果。</p>
-                        </div>
-                    </div>
-                    <div className="table-wrap">
-                        <table className="data-table" id="sensitivity-table" />
-                    </div>
-                </section>
-
                 <footer className="footer">
-                    <span>经营利润敏感性分析</span>
-                    <span>销量、单车边际、固定部分净额与利润总额</span>
+                    <span>利润敏感性分析</span>
+                    <span>销量、单车边际、固定扣减项与利润总额</span>
                 </footer>
             </main>
         </div>

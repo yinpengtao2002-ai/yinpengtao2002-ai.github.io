@@ -3,30 +3,30 @@ import ToolBackButton from "@/components/finance/ToolBackButton";
 import SensitivityTool from "./SensitivityTool";
 
 export const metadata: Metadata = {
-    title: "经营利润敏感性分析｜情景推演工具｜Lucas Yin",
-    description: "按企业 FBP 内部经营利润口径，分析销量、单车收入、单车成本、固定部分净额对边际与利润总额的影响。",
+    title: "利润敏感性分析｜情景推演工具｜Lucas Yin",
+    description: "按企业 FBP 利润口径，分析销量、单车收入、单车成本、固定扣减项、税费对边际与利润总额的影响。",
 };
 
 function ProjectDescription({ className = "" }: { className?: string }) {
     return (
         <section className={className}>
-            <h1>经营利润敏感性分析</h1>
+            <h1>利润敏感性分析</h1>
             <p>
-                用于预算、滚动预测和经营复盘。输入销量、单车收入、单车成本和固定部分假设后，
+                用于预算、滚动预测和经营复盘。输入销量、单车收入、单车成本、固定部分和税费假设后，
                 可以看到量价变化会怎样影响边际与利润总额。
             </p>
             <h2>适用场景</h2>
             <ul>
                 <li>年度预算和滚动预测。</li>
                 <li>判断利润总额目标能否承受销量、单车收入或单车成本变化。</li>
-                <li>对比悲观、基准、乐观三种经营情景。</li>
+                <li>对比悲观、基准、乐观三种利润情景。</li>
                 <li>找出最值得管理层关注的利润科目。</li>
             </ul>
             <h2>输入数据</h2>
             <ul>
                 <li>销量、单车净收入。</li>
                 <li>单车材料成本、单车变动制造费用、单车变动销售费用。</li>
-                <li>技术开发费、国际固定费用、折旧加摊销、后台公共费用等固定扣减项。</li>
+                <li>技术开发费、国际固定费用、折旧加摊销、后台公共费用、所得税等固定扣减项。</li>
                 <li>其他业务利润、备件利润和子公司利润等利润贡献项。</li>
             </ul>
             <h2>输出结果</h2>
