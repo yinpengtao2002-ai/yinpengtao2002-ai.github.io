@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
 
     const apiKey = process.env.CHAT_API_KEY?.trim();
     const apiUrl = process.env.CHAT_API_URL?.trim();
-    const primaryModel = (process.env.CHAT_MODEL || "gpt-3.5-turbo").trim();
-    const fallbackModel = (process.env.CHAT_MODEL_FALLBACK || "gpt-5.3-codex").trim();
+    const primaryModel = (process.env.CHAT_MODEL || "z-ai/glm5").trim();
+    const fallbackModel = (process.env.CHAT_MODEL_FALLBACK || "z-ai/glm-5.1").trim();
 
     if (!apiKey || !apiUrl) {
       return Response.json(
