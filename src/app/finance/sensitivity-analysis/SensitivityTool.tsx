@@ -81,7 +81,7 @@ export default function SensitivityTool() {
                 <section className="sidebar-block">
                     <div className="sidebar-kicker">Sensitivity Lab</div>
                     <h1 className="sidebar-heading">利润敏感性分析</h1>
-                    <p className="sidebar-copy">调整销量、单车收入、单车成本、固定费用和税费假设，观察边际与利润总额变化。</p>
+                    <p className="sidebar-copy">上传现状底表后，用百分比滑杆调整关键科目，观察边际与利润总额变化。</p>
                     <div id="message-area" className="message-area" aria-live="polite" />
                 </section>
 
@@ -127,17 +127,6 @@ export default function SensitivityTool() {
                 </section>
 
                 <section className="sidebar-block">
-                    <h2 className="sidebar-title">目标利润</h2>
-                    <div className="form-grid">
-                        <label className="field">
-                            <span>目标利润</span>
-                            <input id="target-profit-input" className="input" type="number" step="1" />
-                            <small className="field-note">亿元｜填写后展示目标销量、所需单车口径和曲线</small>
-                        </label>
-                    </div>
-                </section>
-
-                <section className="sidebar-block">
                     <h2 className="sidebar-title">联动分析</h2>
                     <div className="form-grid">
                         <label className="field">
@@ -160,8 +149,8 @@ export default function SensitivityTool() {
                 </section>
 
                 <section className="sidebar-block">
-                    <h2 className="sidebar-title">变动幅度</h2>
-                    <div id="range-inputs" className="form-grid" />
+                    <h2 className="sidebar-title">百分比调整</h2>
+                    <div id="adjustment-inputs" className="form-grid" />
                 </section>
             </aside>
 
@@ -183,47 +172,15 @@ export default function SensitivityTool() {
 
                 <section className="metrics-grid" id="metrics-grid" />
 
-                <section className="workspace-grid target-grid">
-                    <article className="panel target-summary-panel">
-                        <div className="panel-header">
-                            <div>
-                                <h2>目标利润反推</h2>
-                                <p>填写左侧目标利润后，系统会反推目标销量和所需单车净收入。</p>
-                            </div>
-                        </div>
-                        <div id="target-summary" className="target-summary" />
-                    </article>
-
-                    <article className="panel">
-                        <div className="panel-header">
-                            <div>
-                                <h2>目标利润平衡点</h2>
-                                <p>查看销量变化下的利润曲线，并标出当前点、盈亏平衡点和目标点。</p>
-                            </div>
-                        </div>
-                        <div id="target-profit-chart" className="chart chart-target" />
-                    </article>
-                </section>
-
                 <section className="workspace-grid">
                     <article className="panel panel-large">
                         <div className="panel-header">
                             <div>
-                                <h2>关键因素排序</h2>
-                                <p>看清每个科目变化时，对所选指标的影响大小。</p>
+                                <h2>波动 10% 对利润的影响</h2>
+                                <p>所有科目统一按上下波动 10%，比较对利润总额的影响。</p>
                             </div>
                         </div>
                         <div id="tornado-chart" className="chart" />
-                    </article>
-
-                    <article className="panel">
-                        <div className="panel-header">
-                            <div>
-                                <h2>场景对比</h2>
-                                <p>基准来自当前假设；悲观和乐观按左侧变动幅度自动推演，导入模板时可使用模板中的情景值。</p>
-                            </div>
-                        </div>
-                        <div id="scenario-chart" className="chart chart-small" />
                     </article>
                 </section>
 

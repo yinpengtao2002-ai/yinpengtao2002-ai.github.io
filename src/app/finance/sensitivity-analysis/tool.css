@@ -359,6 +359,61 @@
     line-height: 1.35;
 }
 
+.sensitivity-tool .adjustment-field {
+    display: grid;
+    gap: 0.42rem;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: #fbfaf7;
+    padding: 0.72rem;
+}
+
+.sensitivity-tool .adjustment-head,
+.sensitivity-tool .adjustment-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    font-family: var(--font-sans);
+}
+
+.sensitivity-tool .adjustment-head span {
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.sensitivity-tool .adjustment-head strong {
+    color: var(--accent-orange);
+    font-size: 0.82rem;
+}
+
+.sensitivity-tool .adjustment-slider {
+    width: 100%;
+    accent-color: var(--accent-orange);
+}
+
+.sensitivity-tool .adjustment-meta {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    line-height: 1.35;
+}
+
+.sensitivity-tool .adjustment-meta > span {
+    min-width: 0;
+}
+
+.sensitivity-tool .adjustment-number {
+    width: 58px;
+    min-height: 28px;
+    border: 1px solid var(--border-light);
+    border-radius: 7px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    text-align: right;
+}
+
 .sensitivity-tool .main-content {
     height: 100vh;
     height: 100dvh;
@@ -460,83 +515,8 @@
     margin: 0 auto 1rem;
 }
 
-.sensitivity-tool .target-grid {
-    grid-template-columns: minmax(360px, 0.8fr) minmax(0, 1.2fr);
-}
-
-.sensitivity-tool .target-summary {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem;
-    margin-top: 1rem;
-}
-
-.sensitivity-tool .target-card {
-    min-height: 112px;
-    border: 1px solid var(--border-light);
-    border-radius: 8px;
-    background: #fbfaf7;
-    padding: 0.9rem;
-}
-
-.sensitivity-tool .target-label {
-    color: var(--text-secondary);
-    font-family: var(--font-sans);
-    font-size: 0.72rem;
-    font-weight: 700;
-}
-
-.sensitivity-tool .target-value {
-    margin-top: 0.5rem;
-    color: var(--text-primary);
-    font-family: var(--font-sans);
-    font-size: clamp(1.05rem, 1.45vw, 1.55rem);
-    font-weight: 800;
-    line-height: 1.2;
-}
-
-.sensitivity-tool .target-sub {
-    margin-top: 0.42rem;
-    color: var(--text-muted);
-    font-family: var(--font-sans);
-    font-size: 0.72rem;
-    line-height: 1.4;
-}
-
-.sensitivity-tool .target-empty,
-.sensitivity-tool .chart-empty {
-    min-height: 100%;
-    border: 1px dashed var(--border-strong);
-    border-radius: 8px;
-    background: #fbfaf7;
-    color: var(--text-secondary);
-    font-family: var(--font-sans);
-    line-height: 1.7;
-}
-
-.sensitivity-tool .target-empty {
+.sensitivity-tool .workspace-grid > .panel-large:only-child {
     grid-column: 1 / -1;
-    padding: 1rem;
-}
-
-.sensitivity-tool .target-empty strong {
-    display: block;
-    color: var(--text-primary);
-    font-size: 0.92rem;
-    margin-bottom: 0.35rem;
-}
-
-.sensitivity-tool .target-empty span,
-.sensitivity-tool .chart-empty {
-    font-size: 0.82rem;
-}
-
-.sensitivity-tool .chart-empty {
-    min-height: 320px;
-    display: grid;
-    place-items: center;
-    padding: 1rem;
-    text-align: center;
 }
 
 .sensitivity-tool .bottom-grid {
@@ -610,10 +590,6 @@
 
 .sensitivity-tool .chart-profit-waterfall {
     min-height: 430px;
-}
-
-.sensitivity-tool .chart-target {
-    min-height: 350px;
 }
 
 .sensitivity-tool .table-panel {
@@ -699,8 +675,7 @@
     }
 
     .sensitivity-tool .workspace-grid,
-    .sensitivity-tool .bottom-grid,
-    .sensitivity-tool .target-grid {
+    .sensitivity-tool .bottom-grid {
         grid-template-columns: 1fr;
     }
 
@@ -769,8 +744,7 @@
 
     .sensitivity-tool .chart,
     .sensitivity-tool .chart-small,
-    .sensitivity-tool .chart-compact,
-    .sensitivity-tool .chart-target {
+    .sensitivity-tool .chart-compact {
         min-height: 340px;
     }
 
@@ -790,9 +764,5 @@
 
     .sensitivity-tool .button-grid .btn:first-child {
         grid-column: auto;
-    }
-
-    .sensitivity-tool .target-summary {
-        grid-template-columns: 1fr;
     }
 }

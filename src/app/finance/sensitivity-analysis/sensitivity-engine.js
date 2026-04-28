@@ -185,19 +185,16 @@ const METRIC_DEFINITIONS = {
     profitRate: { label: "利润总额率", unit: "%", decimals: 1 }
 };
 
-const SCENARIO_LABELS = {
-    bear: "悲观",
-    base: "基准",
-    bull: "乐观"
-};
+const SENSITIVITY_PERCENT = 10;
+const ADJUSTMENT_MIN = -50;
+const ADJUSTMENT_MAX = 50;
 
 const AppState = {
+    baseAssumptions: getDefaultAssumptions(),
     assumptions: getDefaultAssumptions(),
-    ranges: getDefaultRanges(),
-    scenarioOverrides: null,
+    adjustments: getDefaultAdjustments(),
     metric: "profit",
     displayUnit: "亿",
-    targetProfit: null,
     xDriver: "salesVolume",
     yDriver: "unitMaterialCost",
     matrixSteps: 7
@@ -224,8 +221,18 @@ function getDefaultAssumptions() {
     return Object.fromEntries(DRIVER_DEFINITIONS.map((driver) => [driver.key, driver.defaultValue]));
 }
 
-function getDefaultRanges() {
-    return Object.fromEntries(DRIVER_DEFINITIONS.map((driver) => [driver.key, driver.defaultRange]));
+function getDefaultAdjustments(definitions = DRIVER_DEFINITIONS) {
+    return Object.fromEntries(definitions.map((driver) => [driver.key, 0]));
+}
+
+function getAdjustedAssumptions() {
+    const adjusted = { ...AppState.baseAssumptions };
+    DRIVER_DEFINITIONS.forEach((driver) => {
+        const baseValue = Number(AppState.baseAssumptions[driver.key] ?? driver.defaultValue ?? 0);
+        const adjustment = Number(AppState.adjustments[driver.key] || 0);
+        adjusted[driver.key] = baseValue * (1 + adjustment / 100);
+    });
+    return sanitizeAssumptions(adjusted);
 }
 
 function clampNumber(value, min, max) {
@@ -340,16 +347,6 @@ function formatSignedAmount(value, decimals = 1) {
     return `${sign}${formatAmount(value, decimals)}`;
 }
 
-function formatSignedVolume(value, decimals = 1) {
-    const sign = value > 0 ? "+" : "";
-    return `${sign}${formatVolume(value, decimals)}`;
-}
-
-function formatSignedUnitAmount(value, decimals = 2) {
-    const sign = value > 0 ? "+" : "";
-    return `${sign}${formatUnitAmount(value, decimals)}`;
-}
-
 function formatVolume(value, decimals = 1) {
     return `${formatNumber(value, decimals)} 万辆`;
 }
@@ -367,41 +364,46 @@ function formatMetric(value, metricKey = AppState.metric) {
     return formatNumber(value, definition.decimals);
 }
 
-function formatDriverValue(key, value) {
+function formatSignedPercent(value, decimals = 0) {
+    const numeric = Number(value || 0);
+    const sign = numeric > 0 ? "+" : "";
+    return `${sign}${formatNumber(numeric, decimals)}%`;
+}
+
+function formatDeltaPercent(currentValue, baseValue) {
+    const current = Number(currentValue || 0);
+    const base = Number(baseValue || 0);
+    if (Math.abs(base) < 1e-9) {
+        if (Math.abs(current) < 1e-9) return "较现状 0.0%";
+        return "较现状新增";
+    }
+    return `较现状 ${formatSignedPercent(((current - base) / Math.abs(base)) * 100, 1)}`;
+}
+
+function formatDriverAnalysisValue(key, value, assumptions = AppState.assumptions) {
     const driver = driverByKey[key];
     if (!driver) return formatNumber(value, 2);
-    const decimals = Number.isFinite(driver.decimals) ? driver.decimals : driver.step < 1 ? 1 : 0;
-    return `${formatNumber(value, decimals)} ${driver.unit}`;
-}
-
-function getScenarioValue(key, scenario) {
-    if (scenario === "base") return AppState.assumptions[key];
-    const driver = driverByKey[key];
-    const baseValue = AppState.assumptions[key];
-    const imported = AppState.scenarioOverrides?.[scenario]?.[key];
-    if (Number.isFinite(imported)) return imported;
-
-    const range = Math.abs(Number(AppState.ranges[key] || 0));
-    if (scenario === "bear") {
-        return driver.impact === "negative" ? baseValue + range : baseValue - range;
+    if (driver.kind === "unitAmount") {
+        const salesVolume = Number(assumptions.salesVolume || 0);
+        const totalAmount = salesVolume * Number(value || 0);
+        return `${formatAmount(totalAmount, 1)}｜${formatUnitAmount(value, 2)}`;
     }
-    return driver.impact === "negative" ? baseValue - range : baseValue + range;
+    if (driver.kind === "volume") return formatVolume(value, 1);
+    return formatAmount(value, 1);
 }
 
-function buildScenarioAssumptions(scenario) {
-    const assumptions = { ...AppState.assumptions };
-    DRIVER_DEFINITIONS.forEach((driver) => {
-        assumptions[driver.key] = getScenarioValue(driver.key, scenario);
-    });
-    return sanitizeAssumptions(assumptions);
+function getSensitivityRange(key) {
+    const currentValue = Number(AppState.assumptions[key] || 0);
+    return Math.abs(currentValue) * (SENSITIVITY_PERCENT / 100);
 }
 
 function calculateSensitivityRows() {
     const baseResult = computeModel(AppState.assumptions);
-    const baseMetric = getMetricValue(baseResult);
+    const metricKey = "profit";
+    const baseMetric = getMetricValue(baseResult, metricKey);
 
     return DRIVER_DEFINITIONS.map((driver) => {
-        const range = Math.abs(Number(AppState.ranges[driver.key] || 0));
+        const range = getSensitivityRange(driver.key);
         const lowAssumptions = sanitizeAssumptions({
             ...AppState.assumptions,
             [driver.key]: AppState.assumptions[driver.key] - range
@@ -410,8 +412,8 @@ function calculateSensitivityRows() {
             ...AppState.assumptions,
             [driver.key]: AppState.assumptions[driver.key] + range
         });
-        const lowMetric = getMetricValue(computeModel(lowAssumptions));
-        const highMetric = getMetricValue(computeModel(highAssumptions));
+        const lowMetric = getMetricValue(computeModel(lowAssumptions), metricKey);
+        const highMetric = getMetricValue(computeModel(highAssumptions), metricKey);
 
         return {
             key: driver.key,
@@ -445,12 +447,12 @@ function createMatrixData() {
     const steps = clampNumber(AppState.matrixSteps, 5, 9);
     const xValues = sequenceAround(
         Number(AppState.assumptions[xKey] || 0),
-        Math.abs(Number(AppState.ranges[xKey] || 0)),
+        getSensitivityRange(xKey),
         steps
     );
     const yValues = sequenceAround(
         Number(AppState.assumptions[yKey] || 0),
-        Math.abs(Number(AppState.ranges[yKey] || 0)),
+        getSensitivityRange(yKey),
         steps
     );
 
@@ -468,57 +470,6 @@ function createMatrixData() {
     return { xKey, yKey, xValues, yValues, z };
 }
 
-function computeTargetProfitAnalysis(result, targetProfit = AppState.targetProfit) {
-    const profitTarget = Number.isFinite(Number(targetProfit)) ? Number(targetProfit) : 0;
-    const requiredContributionMargin = profitTarget + result.fixedPartNet;
-    const canSolveByVolume = result.unitContributionMargin > 0;
-    const canSolveByRevenue = result.salesVolume > 0;
-    const breakEvenVolume = canSolveByVolume ? result.fixedPartNet / result.unitContributionMargin : NaN;
-    const requiredTargetVolume = canSolveByVolume ? requiredContributionMargin / result.unitContributionMargin : NaN;
-    const requiredUnitContributionMargin = canSolveByRevenue ? requiredContributionMargin / result.salesVolume : NaN;
-    const requiredUnitNetRevenue = canSolveByRevenue
-        ? result.unitVariableCost + requiredUnitContributionMargin
-        : NaN;
-
-    return {
-        targetProfit: profitTarget,
-        currentProfit: result.profit,
-        profitGap: profitTarget - result.profit,
-        requiredContributionMargin,
-        breakEvenVolume,
-        requiredTargetVolume,
-        targetVolumeGap: requiredTargetVolume - result.salesVolume,
-        requiredUnitContributionMargin,
-        requiredUnitNetRevenue,
-        requiredUnitRevenueGap: requiredUnitNetRevenue - result.unitNetRevenue
-    };
-}
-
-function hasTargetProfit() {
-    return AppState.targetProfit !== null && Number.isFinite(Number(AppState.targetProfit));
-}
-
-function createProfitVolumeCurve(result, targetProfit = AppState.targetProfit) {
-    const analysis = computeTargetProfitAnalysis(result, targetProfit);
-    const candidateVolumes = [
-        result.salesVolume,
-        analysis.breakEvenVolume,
-        analysis.requiredTargetVolume
-    ].filter((value) => Number.isFinite(value) && value >= 0);
-    const maxVolume = Math.max(10, ...candidateVolumes.map((value) => value * 1.2));
-    const steps = 28;
-    const volumes = [];
-    const profits = [];
-
-    for (let index = 0; index < steps; index++) {
-        const volume = (maxVolume / (steps - 1)) * index;
-        volumes.push(volume);
-        profits.push(volume * result.unitContributionMargin - result.fixedPartNet);
-    }
-
-    return { ...analysis, volumes, profits };
-}
-
 function initApp() {
     const root = document.getElementById("sensitivity-tool-root");
     if (!root || root.dataset.initialized === "true") return;
@@ -534,7 +485,7 @@ function initApp() {
 
 function renderControlInputs() {
     const assumptionsContainer = document.getElementById("assumption-inputs");
-    const rangesContainer = document.getElementById("range-inputs");
+    const adjustmentsContainer = document.getElementById("adjustment-inputs");
     const xSelect = document.getElementById("x-driver-select");
     const ySelect = document.getElementById("y-driver-select");
     const groups = [
@@ -547,25 +498,43 @@ function renderControlInputs() {
         assumptionsContainer.innerHTML = "";
     }
 
-    rangesContainer.innerHTML = groups.map((group) => {
+    adjustmentsContainer.innerHTML = groups.map((group) => {
         const drivers = DRIVER_DEFINITIONS.filter((driver) => driver.group === group.key);
         return `
             <div class="field-group">
                 <div class="field-group-title">${group.title}</div>
                 ${drivers.map((driver) => `
-                    <label class="field" for="range-${driver.key}">
-                        <span>${driver.name}</span>
+                    <div class="adjustment-field">
+                        <div class="adjustment-head">
+                            <span>${driver.name}</span>
+                            <strong id="adjustment-label-${driver.key}">${formatSignedPercent(AppState.adjustments[driver.key] || 0)}</strong>
+                        </div>
                         <input
-                            id="range-${driver.key}"
-                            class="input range-input"
-                            type="number"
-                            min="0"
-                            step="${driver.step}"
+                            id="adjustment-${driver.key}"
+                            class="adjustment-slider adjustment-input"
+                            type="range"
+                            min="${ADJUSTMENT_MIN}"
+                            max="${ADJUSTMENT_MAX}"
+                            step="1"
                             data-key="${driver.key}"
-                            value="${AppState.ranges[driver.key]}"
+                            value="${AppState.adjustments[driver.key] || 0}"
                         >
-                        <small class="field-note">冲击幅度，单位同该科目</small>
-                    </label>
+                        <div class="adjustment-meta">
+                            <span id="adjustment-current-${driver.key}">${formatDriverAnalysisValue(driver.key, AppState.assumptions[driver.key])}</span>
+                            <label>
+                                <input
+                                    class="adjustment-number adjustment-input"
+                                    type="number"
+                                    min="${ADJUSTMENT_MIN}"
+                                    max="${ADJUSTMENT_MAX}"
+                                    step="1"
+                                    data-key="${driver.key}"
+                                    value="${AppState.adjustments[driver.key] || 0}"
+                                >
+                                %
+                            </label>
+                        </div>
+                    </div>
                 `).join("")}
             </div>
         `;
@@ -609,11 +578,6 @@ function initControlEvents() {
         AppState.matrixSteps = Number(event.target.value);
         renderAll();
     });
-    document.getElementById("target-profit-input").addEventListener("input", (event) => {
-        const value = String(event.target.value || "").trim();
-        AppState.targetProfit = value === "" ? null : Number(value);
-        renderAll();
-    });
     document.getElementById("btn-reset").addEventListener("click", resetModel);
     document.getElementById("btn-demo").addEventListener("click", () => {
         resetModel();
@@ -624,22 +588,10 @@ function initControlEvents() {
     document.getElementById("sidebar-toggle").addEventListener("click", () => toggleSidebar(true));
     document.getElementById("sidebar-expand").addEventListener("click", () => toggleSidebar(false));
 
-    const assumptionsContainer = document.getElementById("assumption-inputs");
-    if (assumptionsContainer) {
-        assumptionsContainer.addEventListener("input", (event) => {
-            if (!event.target.classList.contains("assumption-input")) return;
-            const key = event.target.dataset.key;
-            AppState.assumptions[key] = Number(event.target.value);
-            AppState.scenarioOverrides = null;
-            renderAll();
-        });
-    }
-
-    document.getElementById("range-inputs").addEventListener("input", (event) => {
-        if (!event.target.classList.contains("range-input")) return;
+    document.getElementById("adjustment-inputs").addEventListener("input", (event) => {
+        if (!event.target.classList.contains("adjustment-input")) return;
         const key = event.target.dataset.key;
-        AppState.ranges[key] = Math.abs(Number(event.target.value || 0));
-        AppState.scenarioOverrides = null;
+        AppState.adjustments[key] = clampNumber(Number(event.target.value || 0), ADJUSTMENT_MIN, ADJUSTMENT_MAX);
         renderAll();
     });
 }
@@ -753,15 +705,10 @@ function applyImportedRows(rows) {
 
     const nextDefinitions = cloneBaseDriverDefinitions();
     const nextAssumptions = Object.fromEntries(
-        nextDefinitions.map((driver) => [driver.key, AppState.assumptions[driver.key] ?? driver.defaultValue])
+        nextDefinitions.map((driver) => [driver.key, AppState.baseAssumptions[driver.key] ?? driver.defaultValue])
     );
-    const nextRanges = Object.fromEntries(
-        nextDefinitions.map((driver) => [driver.key, AppState.ranges[driver.key] ?? driver.defaultRange])
-    );
-    const nextScenarios = { bear: {}, base: {}, bull: {} };
     const usedKeys = new Set();
     let matched = 0;
-    let hasScenarioValues = false;
     let importedSalesVolume = nextAssumptions.salesVolume;
 
     rows.forEach((row, rowIndex) => {
@@ -792,29 +739,9 @@ function applyImportedRows(rows) {
         }
 
         if (!(driver.key in nextAssumptions)) nextAssumptions[driver.key] = driver.defaultValue;
-        if (!(driver.key in nextRanges)) nextRanges[driver.key] = driver.defaultRange;
-
         const value = normalizeImportedDriverValue(driver, row, getCell(row, ["基准值", "Value", "Base", "数值", "假设值"]), importedSalesVolume);
-        const range = normalizeImportedDriverValue(driver, row, getCell(row, ["敏感性幅度", "Range", "Sensitivity Range", "冲击范围", "幅度"]), importedSalesVolume);
-        const bear = normalizeImportedDriverValue(driver, row, getCell(row, ["Bear", "Downside", "悲观", "悲观情景"]), importedSalesVolume);
-        const base = normalizeImportedDriverValue(driver, row, getCell(row, ["Base", "基准情景"]), importedSalesVolume);
-        const bull = normalizeImportedDriverValue(driver, row, getCell(row, ["Bull", "Upside", "乐观", "乐观情景"]), importedSalesVolume);
 
         if (Number.isFinite(value)) nextAssumptions[driver.key] = value;
-        if (Number.isFinite(range)) nextRanges[driver.key] = Math.abs(range);
-        if (Number.isFinite(bear)) {
-            nextScenarios.bear[driver.key] = bear;
-            hasScenarioValues = true;
-        }
-        if (Number.isFinite(base)) {
-            nextScenarios.base[driver.key] = base;
-            nextAssumptions[driver.key] = base;
-            hasScenarioValues = true;
-        }
-        if (Number.isFinite(bull)) {
-            nextScenarios.bull[driver.key] = bull;
-            hasScenarioValues = true;
-        }
     });
 
     if (matched === 0) {
@@ -823,11 +750,9 @@ function applyImportedRows(rows) {
 
     DRIVER_DEFINITIONS = nextDefinitions;
     refreshDriverIndex();
-    AppState.assumptions = sanitizeAssumptions(nextAssumptions);
-    AppState.ranges = Object.fromEntries(
-        DRIVER_DEFINITIONS.map((driver) => [driver.key, Math.abs(Number(nextRanges[driver.key] ?? driver.defaultRange ?? 0))])
-    );
-    AppState.scenarioOverrides = hasScenarioValues ? nextScenarios : null;
+    AppState.baseAssumptions = sanitizeAssumptions(nextAssumptions);
+    AppState.adjustments = getDefaultAdjustments();
+    AppState.assumptions = getAdjustedAssumptions();
     if (!driverByKey[AppState.xDriver]) AppState.xDriver = "salesVolume";
     if (!driverByKey[AppState.yDriver] || AppState.yDriver === AppState.xDriver) {
         AppState.yDriver = DRIVER_DEFINITIONS.find((driver) => driver.key !== AppState.xDriver)?.key || "salesVolume";
@@ -929,7 +854,7 @@ function getTemplateUnit(driver) {
 
 function getTemplateDisplayValue(driver, value) {
     if (driver.kind !== "unitAmount") return value;
-    const salesVolume = Number(AppState.assumptions.salesVolume || 0);
+    const salesVolume = Number(AppState.baseAssumptions.salesVolume || 0);
     if (!Number.isFinite(salesVolume) || salesVolume <= 0) return 0;
     return round(Number(value || 0) * salesVolume, 2);
 }
@@ -1040,62 +965,69 @@ function inferCustomDriver(row, index, usedKeys) {
 }
 
 function refreshInputValues() {
-    document.querySelectorAll(".assumption-input").forEach((input) => {
-        input.value = AppState.assumptions[input.dataset.key];
-    });
-    document.querySelectorAll(".range-input").forEach((input) => {
-        input.value = AppState.ranges[input.dataset.key];
-    });
     document.getElementById("metric-select").value = AppState.metric;
     document.getElementById("unit-select").value = AppState.displayUnit;
-    document.getElementById("target-profit-input").value = AppState.targetProfit ?? "";
     document.getElementById("x-driver-select").value = AppState.xDriver;
     document.getElementById("y-driver-select").value = AppState.yDriver;
     document.getElementById("matrix-steps").value = AppState.matrixSteps;
+    refreshAdjustmentDisplay();
+}
+
+function refreshAdjustmentDisplay() {
+    DRIVER_DEFINITIONS.forEach((driver) => {
+        const adjustment = AppState.adjustments[driver.key] || 0;
+        document.querySelectorAll(`.adjustment-input[data-key="${driver.key}"]`).forEach((input) => {
+            input.value = adjustment;
+        });
+        const label = document.getElementById(`adjustment-label-${driver.key}`);
+        if (label) label.textContent = formatSignedPercent(adjustment);
+        const current = document.getElementById(`adjustment-current-${driver.key}`);
+        if (current) current.textContent = formatDriverAnalysisValue(driver.key, AppState.assumptions[driver.key]);
+    });
 }
 
 function renderAll() {
-    AppState.assumptions = sanitizeAssumptions(AppState.assumptions);
+    AppState.assumptions = getAdjustedAssumptions();
     const result = computeModel(AppState.assumptions);
-    renderMetrics(result);
-    renderTargetProfitAnalysis(result);
+    const baseResult = computeModel(AppState.baseAssumptions);
+    refreshAdjustmentDisplay();
+    renderMetrics(result, baseResult);
     renderTornadoChart();
-    renderScenarioChart();
     renderMatrixChart();
     renderWaterfallCharts(result);
 }
 
-function renderMetrics(result) {
+function renderMetrics(result, baseResult) {
     const cards = [
         {
             label: "销量",
             value: formatVolume(result.salesVolume, 1),
-            sub: "当前销量假设"
+            sub: formatDeltaPercent(result.salesVolume, baseResult.salesVolume)
         },
         {
             label: "单车净收入",
             value: formatUnitAmount(result.unitNetRevenue, 2),
-            sub: "每辆车确认的净收入"
+            sub: formatDeltaPercent(result.unitNetRevenue, baseResult.unitNetRevenue)
         },
         {
             label: "净收入总额",
             value: formatAmount(result.netRevenue, 1),
-            sub: "销量 × 单车净收入"
+            sub: formatDeltaPercent(result.netRevenue, baseResult.netRevenue)
         },
         {
             label: "边际总额",
             value: formatAmount(result.contributionMargin, 1),
-            sub: `边际率 ${formatNumber(result.contributionMarginRate, 1)}%`
+            sub: formatDeltaPercent(result.contributionMargin, baseResult.contributionMargin)
         },
         {
             label: "单车边际",
             value: formatUnitAmount(result.unitContributionMargin, 2),
-            sub: `单车变动成本 ${formatUnitAmount(result.unitVariableCost, 2)}`
+            sub: formatDeltaPercent(result.unitContributionMargin, baseResult.unitContributionMargin)
         },
         {
             label: "利润总额",
             value: formatAmount(result.profit, 1),
-            sub: `利润总额率 ${formatNumber(result.profitRate, 1)}%`
+            sub: formatDeltaPercent(result.profit, baseResult.profit)
         }
     ];
 
@@ -1108,166 +1040,11 @@ function renderMetrics(result) {
     `).join("");
 }
 
-function renderTargetProfitAnalysis(result) {
-    if (!hasTargetProfit()) {
-        renderTargetProfitPrompt();
-        return;
-    }
-    renderTargetProfitSummary(result);
-    renderTargetProfitChart(result);
-}
-
-function renderTargetProfitPrompt() {
-    const summary = document.getElementById("target-summary");
-    const chart = document.getElementById("target-profit-chart");
-    if (summary) {
-        summary.innerHTML = `
-            <div class="target-empty">
-                <strong>填写目标利润后显示反推结果</strong>
-                <span>请在左侧输入目标利润。系统会计算目标销量、所需单车净收入和盈亏平衡销量。</span>
-            </div>
-        `;
-    }
-    if (chart) {
-        if (typeof Plotly !== "undefined") Plotly.purge(chart);
-        chart.innerHTML = `
-            <div class="chart-empty">
-                请在左侧填写目标利润后查看平衡点曲线。
-            </div>
-        `;
-    }
-}
-
-function renderTargetProfitSummary(result) {
-    const analysis = computeTargetProfitAnalysis(result);
-    const formatFiniteVolume = (value) => (
-        Number.isFinite(value) && value >= 0 ? formatVolume(value, 1) : "暂不可计算"
-    );
-    const formatFiniteUnit = (value) => (
-        Number.isFinite(value) && value >= 0 ? formatUnitAmount(value, 2) : "暂不可计算"
-    );
-    const cards = [
-        {
-            label: "目标利润",
-            value: formatAmount(analysis.targetProfit, 1),
-            sub: `当前差额 ${formatSignedAmount(analysis.profitGap, 1)}`
-        },
-        {
-            label: "目标销量",
-            value: formatFiniteVolume(analysis.requiredTargetVolume),
-            sub: Number.isFinite(analysis.targetVolumeGap)
-                ? `较当前 ${formatSignedVolume(analysis.targetVolumeGap, 1)}`
-                : "单车边际需先转正"
-        },
-        {
-            label: "所需单车净收入",
-            value: formatFiniteUnit(analysis.requiredUnitNetRevenue),
-            sub: Number.isFinite(analysis.requiredUnitRevenueGap)
-                ? `较当前 ${formatSignedUnitAmount(analysis.requiredUnitRevenueGap, 2)}`
-                : "销量需大于 0"
-        },
-        {
-            label: "盈亏平衡销量",
-            value: formatFiniteVolume(analysis.breakEvenVolume),
-            sub: "利润为 0 时的销量"
-        }
-    ];
-
-    document.getElementById("target-summary").innerHTML = cards.map((card) => `
-        <div class="target-card">
-            <div class="target-label">${card.label}</div>
-            <div class="target-value">${card.value}</div>
-            <div class="target-sub">${card.sub}</div>
-        </div>
-    `).join("");
-}
-
-function renderTargetProfitChart(result) {
-    if (typeof Plotly === "undefined") return;
-    const curve = createProfitVolumeCurve(result);
-    const pointX = [];
-    const pointY = [];
-    const pointLabels = [];
-    const addPoint = (label, x, y) => {
-        if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0) return;
-        pointX.push(x);
-        pointY.push(y);
-        pointLabels.push(label);
-    };
-
-    addPoint("当前", result.salesVolume, result.profit);
-    addPoint("盈亏平衡", curve.breakEvenVolume, 0);
-    addPoint("目标", curve.requiredTargetVolume, curve.targetProfit);
-
-    Plotly.react("target-profit-chart", [
-        {
-            x: curve.volumes,
-            y: curve.profits.map(toDisplayAmount),
-            type: "scatter",
-            mode: "lines",
-            name: "利润曲线",
-            line: { color: "#5c8fba", width: 3 },
-            hovertemplate: `销量：%{x:.1f} 万辆<br>利润：%{y:.1f} ${getDisplayAmountUnit()}<extra></extra>`
-        },
-        {
-            x: pointX,
-            y: pointY.map(toDisplayAmount),
-            type: "scatter",
-            mode: "markers+text",
-            name: "关键点",
-            text: pointLabels,
-            textposition: "top center",
-            marker: {
-                color: ["#141413", "#d97757", "#788c5d"].slice(0, pointX.length),
-                size: 10
-            },
-            hovertemplate: `%{text}<br>销量：%{x:.1f} 万辆<br>利润：%{y:.1f} ${getDisplayAmountUnit()}<extra></extra>`
-        }
-    ], getLockedPlotLayout({
-        height: 350,
-        margin: { l: 58, r: 24, t: 28, b: 54 },
-        paper_bgcolor: "rgba(0,0,0,0)",
-        plot_bgcolor: "rgba(0,0,0,0)",
-        font: getPlotFont(),
-        showlegend: false,
-        shapes: [
-            {
-                type: "line",
-                xref: "paper",
-                x0: 0,
-                x1: 1,
-                y0: 0,
-                y1: 0,
-                line: { color: "#d97757", width: 1, dash: "dot" }
-            },
-            {
-                type: "line",
-                xref: "paper",
-                x0: 0,
-                x1: 1,
-                y0: toDisplayAmount(curve.targetProfit),
-                y1: toDisplayAmount(curve.targetProfit),
-                line: { color: "#788c5d", width: 1, dash: "dot" }
-            }
-        ],
-        xaxis: {
-            title: "销量（万辆）",
-            gridcolor: "#ece8de"
-        },
-        yaxis: {
-            title: getDisplayAmountUnit(),
-            gridcolor: "#ece8de",
-            zeroline: true,
-            zerolinecolor: "#d97757"
-        }
-    }), getPlotConfig());
-}
-
 function renderTornadoChart() {
     if (typeof Plotly === "undefined") return;
     const rows = calculateSensitivityRows().reverse();
     const chartHeight = Math.max(440, rows.length * 34 + 110);
-    const metricLabel = getMetricDefinition().label;
+    const metricLabel = METRIC_DEFINITIONS.profit.label;
 
     Plotly.react("tornado-chart", [
         {
@@ -1275,20 +1052,20 @@ function renderTornadoChart() {
             y: rows.map((row) => row.name),
             type: "bar",
             orientation: "h",
-            name: "低位假设",
+            name: "下调 10%",
             marker: { color: "rgba(182, 95, 85, 0.78)" },
             hovertemplate: "%{hovertext}<extra></extra>",
-            hovertext: rows.map((row) => `${row.name}<br>低位假设：${formatDriverValue(row.key, row.lowValue)}<br>${metricLabel}：${formatMetric(row.lowMetric)}`)
+            hovertext: rows.map((row) => `${row.name}<br>当前调整值：${formatDriverAnalysisValue(row.key, AppState.assumptions[row.key])}<br>下调 10%：${formatDriverAnalysisValue(row.key, row.lowValue)}<br>${metricLabel}：${formatMetric(row.lowMetric, "profit")}`)
         },
         {
             x: rows.map((row) => row.highDelta),
             y: rows.map((row) => row.name),
             type: "bar",
             orientation: "h",
-            name: "高位假设",
+            name: "上调 10%",
             marker: { color: "rgba(120, 140, 93, 0.82)" },
             hovertemplate: "%{hovertext}<extra></extra>",
-            hovertext: rows.map((row) => `${row.name}<br>高位假设：${formatDriverValue(row.key, row.highValue)}<br>${metricLabel}：${formatMetric(row.highMetric)}`)
+            hovertext: rows.map((row) => `${row.name}<br>当前调整值：${formatDriverAnalysisValue(row.key, AppState.assumptions[row.key])}<br>上调 10%：${formatDriverAnalysisValue(row.key, row.highValue)}<br>${metricLabel}：${formatMetric(row.highMetric, "profit")}`)
         }
     ], getLockedPlotLayout({
         height: chartHeight,
@@ -1299,7 +1076,7 @@ function renderTornadoChart() {
         font: getPlotFont(),
         legend: { orientation: "h", y: 1.08, x: 0 },
         xaxis: {
-            title: `${metricLabel}相对基准变化`,
+            title: "上下波动 10% 对利润总额的影响",
             zeroline: true,
             zerolinecolor: "#141413",
             gridcolor: "#ece8de"
@@ -1308,39 +1085,11 @@ function renderTornadoChart() {
     }), getPlotConfig());
 }
 
-function renderScenarioChart() {
-    if (typeof Plotly === "undefined") return;
-    const scenarios = ["bear", "base", "bull"];
-    const results = scenarios.map((scenario) => computeModel(buildScenarioAssumptions(scenario)));
-    const metricValues = results.map((result) => getMetricValue(result));
-
-    Plotly.react("scenario-chart", [
-        {
-            x: scenarios.map((scenario) => SCENARIO_LABELS[scenario]),
-            y: metricValues,
-            type: "bar",
-            marker: { color: ["#b65f55", "#5c8fba", "#788c5d"] },
-            text: metricValues.map((value) => formatMetric(value)),
-            textposition: "auto",
-            hovertemplate: "%{x}<br>%{text}<extra></extra>"
-        }
-    ], getLockedPlotLayout({
-        margin: { l: 54, r: 22, t: 26, b: 42 },
-        paper_bgcolor: "rgba(0,0,0,0)",
-        plot_bgcolor: "rgba(0,0,0,0)",
-        font: getPlotFont(),
-        yaxis: {
-            title: getMetricDefinition().label,
-            gridcolor: "#ece8de"
-        }
-    }), getPlotConfig());
-}
-
 function renderMatrixChart() {
     if (typeof Plotly === "undefined") return;
     const matrix = createMatrixData();
-    const xLabels = matrix.xValues.map((value) => formatDriverValue(matrix.xKey, value));
-    const yLabels = matrix.yValues.map((value) => formatDriverValue(matrix.yKey, value));
+    const xLabels = matrix.xValues.map((value) => formatDriverAnalysisValue(matrix.xKey, value));
+    const yLabels = matrix.yValues.map((value) => formatDriverAnalysisValue(matrix.yKey, value));
 
     Plotly.react("matrix-chart", [
         {
@@ -1503,12 +1252,11 @@ function renderWaterfallChart(targetId, options) {
 function resetModel() {
     DRIVER_DEFINITIONS = cloneBaseDriverDefinitions();
     refreshDriverIndex();
-    AppState.assumptions = getDefaultAssumptions();
-    AppState.ranges = getDefaultRanges();
-    AppState.scenarioOverrides = null;
+    AppState.baseAssumptions = getDefaultAssumptions();
+    AppState.adjustments = getDefaultAdjustments();
+    AppState.assumptions = getAdjustedAssumptions();
     AppState.metric = "profit";
     AppState.displayUnit = "亿";
-    AppState.targetProfit = null;
     AppState.xDriver = "salesVolume";
     AppState.yDriver = "unitMaterialCost";
     AppState.matrixSteps = 7;
@@ -1570,15 +1318,13 @@ function showMessage(type, text) {
 
 function getTemplateRows() {
     return DRIVER_DEFINITIONS.map((driver, index) => {
-        const value = AppState.assumptions[driver.key] ?? driver.defaultValue;
-        const range = AppState.ranges[driver.key] ?? driver.defaultRange;
+        const value = AppState.baseAssumptions[driver.key] ?? driver.defaultValue;
         return {
             "序号": index + 1,
             "部分": getTemplatePart(driver),
             "名称": getTemplateName(driver),
             "口径": getTemplateBasis(driver),
             "基准值": getTemplateDisplayValue(driver, value),
-            "敏感性幅度": getTemplateDisplayValue(driver, range),
             "单位": getTemplateUnit(driver)
         };
     });
@@ -1591,7 +1337,7 @@ function downloadTemplate(format) {
         const worksheet = XLSX.utils.json_to_sheet(rows);
         worksheet["!cols"] = [
             { wch: 8 }, { wch: 12 }, { wch: 20 }, { wch: 10 },
-            { wch: 12 }, { wch: 14 }, { wch: 12 }
+            { wch: 12 }, { wch: 12 }
         ];
         const readme = XLSX.utils.aoa_to_sheet([
             ["字段", "说明"],
@@ -1599,8 +1345,7 @@ function downloadTemplate(format) {
             ["部分", "可填写：销量、变动收入、变动成本、固定扣减、利润贡献。新增行按该列进入模型。"],
             ["名称", "图表和控制台显示的科目名称，可修改。"],
             ["口径", "销量填总量；其余边际以上科目填总额，系统按销量反算单车。"],
-            ["基准值", "当前方案的基准假设值。边际以上金额口径为亿元总额。"],
-            ["敏感性幅度", "用于自动生成悲观、乐观情景和敏感性排序。边际以上金额口径为亿元总额。"]
+            ["基准值", "现状底表的实际值。边际以上金额口径为亿元总额。"]
         ]);
         XLSX.utils.book_append_sheet(workbook, worksheet, "Assumptions");
         XLSX.utils.book_append_sheet(workbook, readme, "Readme");
@@ -1690,10 +1435,7 @@ if (typeof module !== "undefined" && module.exports) {
         DRIVER_DEFINITIONS,
         METRIC_DEFINITIONS,
         getDefaultAssumptions,
-        getDefaultRanges,
         computeModel,
-        computeTargetProfitAnalysis,
-        createProfitVolumeCurve,
         getTemplateRows,
         sanitizeAssumptions,
         sequenceAround,

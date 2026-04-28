@@ -5,7 +5,6 @@ const sensitivityAnalysis = await import("../src/app/finance/sensitivity-analysi
 
 const {
     DRIVER_DEFINITIONS,
-    computeTargetProfitAnalysis,
     computeModel,
     getDefaultAssumptions,
     getLockedPlotLayout,
@@ -61,16 +60,6 @@ test("tax reduces profit when it is included", () => {
     approx(result.profit, 238, "profit total after tax");
 });
 
-test("target profit analysis reverses required volume and unit revenue", () => {
-    const result = computeModel(getDefaultAssumptions());
-    const target = computeTargetProfitAnalysis(result, 300);
-
-    approx(target.profitGap, 52, "profit gap");
-    approx(target.requiredTargetVolume, (300 + 122) / 3.7, "required target volume");
-    approx(target.requiredUnitContributionMargin, (300 + 122) / 100, "required unit contribution margin");
-    approx(target.requiredUnitNetRevenue, 9.5 + ((300 + 122) / 100), "required unit net revenue");
-});
-
 test("sales volume only drives above-margin items", () => {
     const result = computeModel({
         ...getDefaultAssumptions(),
@@ -98,12 +87,11 @@ test("template rows use finance-facing fields instead of implementation keys", (
     const unitRevenueRow = getTemplateRows()[1];
     const unitCostRow = getTemplateRows()[2];
 
-    assert.deepEqual(Object.keys(row), ["序号", "部分", "名称", "口径", "基准值", "敏感性幅度", "单位"]);
+    assert.deepEqual(Object.keys(row), ["序号", "部分", "名称", "口径", "基准值", "单位"]);
     assert.equal(row["名称"], "销量");
     assert.equal(unitRevenueRow["名称"], "净收入总额");
     assert.equal(unitRevenueRow["口径"], "总额");
     assert.equal(unitRevenueRow["基准值"], 1320);
-    assert.equal(unitRevenueRow["敏感性幅度"], 120);
     assert.equal(unitRevenueRow["单位"], "亿元");
     assert.equal(unitCostRow["名称"], "材料成本总额");
     assert.equal(unitCostRow["基准值"], 780);
