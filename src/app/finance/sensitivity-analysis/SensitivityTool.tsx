@@ -132,14 +132,9 @@ export default function SensitivityTool() {
                         <label className="field">
                             <span>目标利润</span>
                             <input id="target-profit-input" className="input" type="number" step="1" />
-                            <small className="field-note">亿元｜默认按当前利润上浮 20% 取整，可自行修改</small>
+                            <small className="field-note">亿元｜填写后展示目标销量、所需单车口径和曲线</small>
                         </label>
                     </div>
-                </section>
-
-                <section className="sidebar-block">
-                    <h2 className="sidebar-title">模型假设</h2>
-                    <div id="assumption-inputs" className="form-grid" />
                 </section>
 
                 <section className="sidebar-block">
@@ -179,11 +174,10 @@ export default function SensitivityTool() {
                     <div>
                         <p className="eyebrow">Financial Modeling</p>
                         <h1>利润敏感性分析</h1>
-                        <p className="model-subtitle">销量与单车净收入、单车材料成本、单车变动费用共同决定边际；边际以下再考虑固定扣减项、税费和利润贡献项得到利润总额。</p>
+                        <p className="model-subtitle">销量与收入、材料成本、变动费用共同决定边际；边际以下再考虑固定扣减项、税费和利润贡献项得到利润总额。</p>
                     </div>
                     <div className="header-actions">
                         <button type="button" className="btn btn-secondary" id="btn-reset">重置</button>
-                        <button type="button" className="btn btn-primary" id="btn-download-results">导出结果</button>
                     </div>
                 </header>
 
@@ -194,7 +188,7 @@ export default function SensitivityTool() {
                         <div className="panel-header">
                             <div>
                                 <h2>目标利润反推</h2>
-                                <p>默认目标按当前利润上浮 20% 后向上取整到 10 亿元，也可以在左侧手动修改。</p>
+                                <p>填写左侧目标利润后，系统会反推目标销量和所需单车净收入。</p>
                             </div>
                         </div>
                         <div id="target-summary" className="target-summary" />

@@ -197,7 +197,7 @@ const AppState = {
     scenarioOverrides: null,
     metric: "profit",
     displayUnit: "亿",
-    targetProfit: getSuggestedTargetProfit(computeModel(getDefaultAssumptions())),
+    targetProfit: null,
     xDriver: "salesVolume",
     yDriver: "unitMaterialCost",
     matrixSteps: 7
@@ -310,12 +310,6 @@ function computeModel(assumptions) {
         profit,
         profitRate: percentOf(profit, netRevenue)
     };
-}
-
-function getSuggestedTargetProfit(result) {
-    const currentProfit = Number(result.profit || 0);
-    if (!Number.isFinite(currentProfit) || currentProfit <= 0) return 0;
-    return Math.ceil((currentProfit * 1.2) / 10) * 10;
 }
 
 function getMetricDefinition(metricKey = AppState.metric) {
@@ -500,6 +494,10 @@ function computeTargetProfitAnalysis(result, targetProfit = AppState.targetProfi
     };
 }
 
+function hasTargetProfit() {
+    return AppState.targetProfit !== null && Number.isFinite(Number(AppState.targetProfit));
+}
+
 function createProfitVolumeCurve(result, targetProfit = AppState.targetProfit) {
     const analysis = computeTargetProfitAnalysis(result, targetProfit);
     const candidateVolumes = [
@@ -545,28 +543,9 @@ function renderControlInputs() {
         { key: "profitAddition", title: "边际以下：利润贡献项" }
     ];
 
-    assumptionsContainer.innerHTML = groups.map((group) => {
-        const drivers = DRIVER_DEFINITIONS.filter((driver) => driver.group === group.key);
-        return `
-            <div class="field-group">
-                <div class="field-group-title">${group.title}</div>
-                ${drivers.map((driver) => `
-                    <label class="field" for="input-${driver.key}">
-                        <span>${driver.name}</span>
-                        <input
-                            id="input-${driver.key}"
-                            class="input assumption-input"
-                            type="number"
-                            step="${driver.step}"
-                            data-key="${driver.key}"
-                            value="${AppState.assumptions[driver.key]}"
-                        >
-                        <small class="field-note">${driver.unit}｜${driver.description}</small>
-                    </label>
-                `).join("")}
-            </div>
-        `;
-    }).join("");
+    if (assumptionsContainer) {
+        assumptionsContainer.innerHTML = "";
+    }
 
     rangesContainer.innerHTML = groups.map((group) => {
         const drivers = DRIVER_DEFINITIONS.filter((driver) => driver.group === group.key);
@@ -631,7 +610,8 @@ function initControlEvents() {
         renderAll();
     });
     document.getElementById("target-profit-input").addEventListener("input", (event) => {
-        AppState.targetProfit = Number(event.target.value || 0);
+        const value = String(event.target.value || "").trim();
+        AppState.targetProfit = value === "" ? null : Number(value);
         renderAll();
     });
     document.getElementById("btn-reset").addEventListener("click", resetModel);
@@ -641,17 +621,19 @@ function initControlEvents() {
     });
     document.getElementById("btn-csv-template").addEventListener("click", () => downloadTemplate("csv"));
     document.getElementById("btn-xlsx-template").addEventListener("click", () => downloadTemplate("xlsx"));
-    document.getElementById("btn-download-results").addEventListener("click", downloadResultsWorkbook);
     document.getElementById("sidebar-toggle").addEventListener("click", () => toggleSidebar(true));
     document.getElementById("sidebar-expand").addEventListener("click", () => toggleSidebar(false));
 
-    document.getElementById("assumption-inputs").addEventListener("input", (event) => {
-        if (!event.target.classList.contains("assumption-input")) return;
-        const key = event.target.dataset.key;
-        AppState.assumptions[key] = Number(event.target.value);
-        AppState.scenarioOverrides = null;
-        renderAll();
-    });
+    const assumptionsContainer = document.getElementById("assumption-inputs");
+    if (assumptionsContainer) {
+        assumptionsContainer.addEventListener("input", (event) => {
+            if (!event.target.classList.contains("assumption-input")) return;
+            const key = event.target.dataset.key;
+            AppState.assumptions[key] = Number(event.target.value);
+            AppState.scenarioOverrides = null;
+            renderAll();
+        });
+    }
 
     document.getElementById("range-inputs").addEventListener("input", (event) => {
         if (!event.target.classList.contains("range-input")) return;
@@ -846,7 +828,6 @@ function applyImportedRows(rows) {
         DRIVER_DEFINITIONS.map((driver) => [driver.key, Math.abs(Number(nextRanges[driver.key] ?? driver.defaultRange ?? 0))])
     );
     AppState.scenarioOverrides = hasScenarioValues ? nextScenarios : null;
-    AppState.targetProfit = getSuggestedTargetProfit(computeModel(AppState.assumptions));
     if (!driverByKey[AppState.xDriver]) AppState.xDriver = "salesVolume";
     if (!driverByKey[AppState.yDriver] || AppState.yDriver === AppState.xDriver) {
         AppState.yDriver = DRIVER_DEFINITIONS.find((driver) => driver.key !== AppState.xDriver)?.key || "salesVolume";
@@ -928,8 +909,29 @@ function getTemplatePart(driver) {
 
 function getTemplateBasis(driver) {
     if (driver.kind === "volume") return "总量";
-    if (driver.kind === "unitAmount") return "单车";
     return "总额";
+}
+
+function getTemplateName(driver) {
+    const names = {
+        unitNetRevenue: "净收入总额",
+        unitMaterialCost: "材料成本总额",
+        unitVariableManufacturingCost: "变动制造费用总额",
+        unitVariableSalesCost: "变动销售费用总额"
+    };
+    return names[driver.key] || driver.name;
+}
+
+function getTemplateUnit(driver) {
+    if (driver.kind === "unitAmount") return "亿元";
+    return driver.unit;
+}
+
+function getTemplateDisplayValue(driver, value) {
+    if (driver.kind !== "unitAmount") return value;
+    const salesVolume = Number(AppState.assumptions.salesVolume || 0);
+    if (!Number.isFinite(salesVolume) || salesVolume <= 0) return 0;
+    return round(Number(value || 0) * salesVolume, 2);
 }
 
 function getRowNumber(row, fallbackIndex) {
@@ -1046,7 +1048,7 @@ function refreshInputValues() {
     });
     document.getElementById("metric-select").value = AppState.metric;
     document.getElementById("unit-select").value = AppState.displayUnit;
-    document.getElementById("target-profit-input").value = AppState.targetProfit;
+    document.getElementById("target-profit-input").value = AppState.targetProfit ?? "";
     document.getElementById("x-driver-select").value = AppState.xDriver;
     document.getElementById("y-driver-select").value = AppState.yDriver;
     document.getElementById("matrix-steps").value = AppState.matrixSteps;
@@ -1107,8 +1109,33 @@ function renderMetrics(result) {
 }
 
 function renderTargetProfitAnalysis(result) {
+    if (!hasTargetProfit()) {
+        renderTargetProfitPrompt();
+        return;
+    }
     renderTargetProfitSummary(result);
     renderTargetProfitChart(result);
+}
+
+function renderTargetProfitPrompt() {
+    const summary = document.getElementById("target-summary");
+    const chart = document.getElementById("target-profit-chart");
+    if (summary) {
+        summary.innerHTML = `
+            <div class="target-empty">
+                <strong>填写目标利润后显示反推结果</strong>
+                <span>请在左侧输入目标利润。系统会计算目标销量、所需单车净收入和盈亏平衡销量。</span>
+            </div>
+        `;
+    }
+    if (chart) {
+        if (typeof Plotly !== "undefined") Plotly.purge(chart);
+        chart.innerHTML = `
+            <div class="chart-empty">
+                请在左侧填写目标利润后查看平衡点曲线。
+            </div>
+        `;
+    }
 }
 
 function renderTargetProfitSummary(result) {
@@ -1481,7 +1508,7 @@ function resetModel() {
     AppState.scenarioOverrides = null;
     AppState.metric = "profit";
     AppState.displayUnit = "亿";
-    AppState.targetProfit = getSuggestedTargetProfit(computeModel(AppState.assumptions));
+    AppState.targetProfit = null;
     AppState.xDriver = "salesVolume";
     AppState.yDriver = "unitMaterialCost";
     AppState.matrixSteps = 7;
@@ -1544,14 +1571,15 @@ function showMessage(type, text) {
 function getTemplateRows() {
     return DRIVER_DEFINITIONS.map((driver, index) => {
         const value = AppState.assumptions[driver.key] ?? driver.defaultValue;
+        const range = AppState.ranges[driver.key] ?? driver.defaultRange;
         return {
             "序号": index + 1,
             "部分": getTemplatePart(driver),
-            "名称": driver.name,
+            "名称": getTemplateName(driver),
             "口径": getTemplateBasis(driver),
-            "基准值": value,
-            "敏感性幅度": AppState.ranges[driver.key] ?? driver.defaultRange,
-            "单位": driver.unit
+            "基准值": getTemplateDisplayValue(driver, value),
+            "敏感性幅度": getTemplateDisplayValue(driver, range),
+            "单位": getTemplateUnit(driver)
         };
     });
 }
@@ -1570,9 +1598,9 @@ function downloadTemplate(format) {
             ["序号", "用于识别已有科目。修改名称时请保留原序号。"],
             ["部分", "可填写：销量、变动收入、变动成本、固定扣减、利润贡献。新增行按该列进入模型。"],
             ["名称", "图表和控制台显示的科目名称，可修改。"],
-            ["口径", "边际以上科目可填单车或总额；填总额时系统会按销量反算单车。"],
-            ["基准值", "当前方案的基准假设值。"],
-            ["敏感性幅度", "用于自动生成悲观、乐观情景和敏感性排序。"]
+            ["口径", "销量填总量；其余边际以上科目填总额，系统按销量反算单车。"],
+            ["基准值", "当前方案的基准假设值。边际以上金额口径为亿元总额。"],
+            ["敏感性幅度", "用于自动生成悲观、乐观情景和敏感性排序。边际以上金额口径为亿元总额。"]
         ]);
         XLSX.utils.book_append_sheet(workbook, worksheet, "Assumptions");
         XLSX.utils.book_append_sheet(workbook, readme, "Readme");
@@ -1583,80 +1611,6 @@ function downloadTemplate(format) {
     downloadBlob(
         new Blob(["\uFEFF" + toCsv(rows)], { type: "text/csv;charset=utf-8;" }),
         "profit-sensitivity-template.csv"
-    );
-}
-
-function downloadResultsWorkbook() {
-    const result = computeModel(AppState.assumptions);
-    const sensitivityRows = calculateSensitivityRows();
-    const matrix = createMatrixData();
-    const targetAnalysis = computeTargetProfitAnalysis(result);
-    const variableCostRows = getDriversBy(isUnitVariableCostDriver).flatMap((driver) => ([
-        { Item: driver.name, Value: -result[driver.key], Unit: driver.unit, NetRevenuePct: "" },
-        { Item: `${driver.name}总额`, Value: -getDriverTotalAmount(result, driver), NetRevenuePct: percentOf(-getDriverTotalAmount(result, driver), result.netRevenue) }
-    ]));
-    const fixedDeductionRows = getDriversBy((driver) => driver.group === "fixedDeduction").map((driver) => ({
-        Item: driver.name,
-        Value: -getDriverTotalAmount(result, driver),
-        NetRevenuePct: percentOf(-getDriverTotalAmount(result, driver), result.netRevenue)
-    }));
-    const profitAdditionRows = getDriversBy((driver) => driver.group === "profitAddition").map((driver) => ({
-        Item: driver.name,
-        Value: getDriverTotalAmount(result, driver),
-        NetRevenuePct: percentOf(getDriverTotalAmount(result, driver), result.netRevenue)
-    }));
-    const profitRows = [
-        { Item: "销量", Value: result.salesVolume, Unit: "万辆", NetRevenuePct: "" },
-        { Item: "单车净收入", Value: result.unitNetRevenue, Unit: "万元/辆", NetRevenuePct: "" },
-        { Item: "净收入", Value: result.netRevenue, NetRevenuePct: 100 },
-        ...variableCostRows,
-        { Item: "单车边际", Value: result.unitContributionMargin, Unit: "万元/辆", NetRevenuePct: "" },
-        { Item: "边际", Value: result.contributionMargin, NetRevenuePct: result.contributionMarginRate },
-        ...fixedDeductionRows,
-        ...profitAdditionRows,
-        { Item: "固定扣减净额", Value: -result.fixedPartNet, NetRevenuePct: percentOf(-result.fixedPartNet, result.netRevenue) },
-        { Item: "利润总额", Value: result.profit, NetRevenuePct: result.profitRate }
-    ];
-    const targetRows = [
-        { Item: "目标利润", Value: targetAnalysis.targetProfit, Unit: "亿元" },
-        { Item: "当前利润差额", Value: targetAnalysis.profitGap, Unit: "亿元" },
-        { Item: "目标销量", Value: targetAnalysis.requiredTargetVolume, Unit: "万辆" },
-        { Item: "盈亏平衡销量", Value: targetAnalysis.breakEvenVolume, Unit: "万辆" },
-        { Item: "所需单车净收入", Value: targetAnalysis.requiredUnitNetRevenue, Unit: "万元/辆" },
-        { Item: "所需单车边际", Value: targetAnalysis.requiredUnitContributionMargin, Unit: "万元/辆" }
-    ];
-    const sensitivityExport = sensitivityRows.map((row) => ({
-        Key: row.key,
-        Name: row.name,
-        LowValue: row.lowValue,
-        LowResult: row.lowMetric,
-        BaseResult: row.baseMetric,
-        HighValue: row.highValue,
-        HighResult: row.highMetric,
-        Swing: row.swing
-    }));
-    const matrixRows = matrix.yValues.map((yValue, rowIndex) => {
-        const item = { [driverByKey[matrix.yKey].name]: yValue };
-        matrix.xValues.forEach((xValue, columnIndex) => {
-            item[`${driverByKey[matrix.xKey].name}=${round(xValue, 3)}`] = matrix.z[rowIndex][columnIndex];
-        });
-        return item;
-    });
-
-    if (typeof XLSX !== "undefined") {
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(getTemplateRows()), "Assumptions");
-        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(profitRows), "ProfitStructure");
-        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(targetRows), "TargetProfit");
-        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(sensitivityExport), "Sensitivity");
-        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(matrixRows), "Matrix");
-        XLSX.writeFile(workbook, "profit-sensitivity-results.xlsx");
-        return;
-    }
-
-    downloadBlob(
-        new Blob(["\uFEFF" + toCsv(sensitivityExport)], { type: "text/csv;charset=utf-8;" }),
-        "profit-sensitivity-results.csv"
     );
 }
 
@@ -1740,7 +1694,6 @@ if (typeof module !== "undefined" && module.exports) {
         computeModel,
         computeTargetProfitAnalysis,
         createProfitVolumeCurve,
-        getSuggestedTargetProfit,
         getTemplateRows,
         sanitizeAssumptions,
         sequenceAround,

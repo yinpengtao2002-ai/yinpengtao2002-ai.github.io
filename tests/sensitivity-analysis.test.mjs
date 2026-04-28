@@ -11,7 +11,6 @@ const {
     getLockedPlotLayout,
     getPlotConfig,
     getTemplateRows,
-    getSuggestedTargetProfit,
     normalizeImportedValue,
 } = sensitivityAnalysis.default;
 
@@ -72,12 +71,6 @@ test("target profit analysis reverses required volume and unit revenue", () => {
     approx(target.requiredUnitNetRevenue, 9.5 + ((300 + 122) / 100), "required unit net revenue");
 });
 
-test("default target profit is a rounded uplift from current profit", () => {
-    const result = computeModel(getDefaultAssumptions());
-
-    assert.equal(getSuggestedTargetProfit(result), 300);
-});
-
 test("sales volume only drives above-margin items", () => {
     const result = computeModel({
         ...getDefaultAssumptions(),
@@ -102,9 +95,18 @@ test("imported amount values keep their numeric scale", () => {
 
 test("template rows use finance-facing fields instead of implementation keys", () => {
     const row = getTemplateRows()[0];
+    const unitRevenueRow = getTemplateRows()[1];
+    const unitCostRow = getTemplateRows()[2];
 
     assert.deepEqual(Object.keys(row), ["序号", "部分", "名称", "口径", "基准值", "敏感性幅度", "单位"]);
     assert.equal(row["名称"], "销量");
+    assert.equal(unitRevenueRow["名称"], "净收入总额");
+    assert.equal(unitRevenueRow["口径"], "总额");
+    assert.equal(unitRevenueRow["基准值"], 1320);
+    assert.equal(unitRevenueRow["敏感性幅度"], 120);
+    assert.equal(unitRevenueRow["单位"], "亿元");
+    assert.equal(unitCostRow["名称"], "材料成本总额");
+    assert.equal(unitCostRow["基准值"], 780);
     assert.equal(row.Key, undefined);
     assert.equal(row.Description, undefined);
 });
