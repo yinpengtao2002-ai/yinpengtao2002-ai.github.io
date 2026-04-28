@@ -1291,7 +1291,7 @@ function downloadBlob(blob, filename) {
 
 function getPlotFont() {
     return {
-        family: "PingFang SC, Microsoft YaHei, Helvetica Neue, Arial, sans-serif",
+        family: "Styrene B, Styrene A, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica Neue, PingFang SC, Hiragino Sans GB, Microsoft YaHei, Arial, sans-serif",
         color: "#141413",
         size: 12
     };
