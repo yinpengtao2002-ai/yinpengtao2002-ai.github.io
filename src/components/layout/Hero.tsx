@@ -14,6 +14,12 @@ interface HeroProps {
     subtitle?: string;
 }
 
+const MOBILE_SECTION_LINKS = [
+    { label: "财务模型", targetId: "finance-articles" },
+    { label: "AI 工作流", targetId: "ai-articles" },
+    { label: "日常随笔", targetId: "essays" },
+];
+
 export default function Hero({
     description,
     name,
@@ -146,6 +152,48 @@ export default function Hero({
                                     &ldquo;{description}&rdquo;
                                 </motion.p>
                             )}
+
+                            {isMobileLike && (
+                                <motion.nav
+                                    aria-label="首页主要板块"
+                                    initial={{ opacity: 0, y: lowMotion ? 0 : 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: lowMotion ? 0.25 : 0.6, delay: lowMotion ? 0.3 : 4.35 }}
+                                    style={{
+                                        display: "flex",
+                                        flexWrap: "wrap",
+                                        justifyContent: "center",
+                                        gap: "0.45rem",
+                                        marginTop: "0.1rem",
+                                        fontFamily:
+                                            'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif',
+                                    }}
+                                >
+                                    {MOBILE_SECTION_LINKS.map((item) => (
+                                        <button
+                                            key={item.targetId}
+                                            type="button"
+                                            onClick={() => scrollToSection(item.targetId)}
+                                            style={{
+                                                minHeight: 32,
+                                                padding: "0 0.72rem",
+                                                borderRadius: 999,
+                                                border: "1px solid var(--border)",
+                                                background: "color-mix(in srgb, var(--card) 82%, transparent)",
+                                                color: "var(--foreground)",
+                                                boxShadow: "0 8px 20px rgba(0,0,0,0.05)",
+                                                backdropFilter: "blur(14px)",
+                                                WebkitBackdropFilter: "blur(14px)",
+                                                fontSize: "0.72rem",
+                                                fontWeight: 700,
+                                                letterSpacing: "0.02em",
+                                            }}
+                                        >
+                                            {item.label}
+                                        </button>
+                                    ))}
+                                </motion.nav>
+                            )}
                         </motion.div>
                     )}
                 </div>
@@ -159,11 +207,11 @@ export default function Hero({
                 >
                     <motion.button
                         type="button"
-                        onClick={() => scrollToSection("section-nav")}
+                        onClick={() => scrollToSection("finance-articles")}
                         animate={lowMotion ? undefined : { y: [0, 8, 0] }}
                         transition={lowMotion ? undefined : { duration: 2, repeat: Infinity, ease: "easeInOut" }}
                         className="font-sans flex flex-col items-center gap-2 text-muted hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
-                        aria-label="滚动到栏目导航区域"
+                        aria-label="滚动到财务模型区域"
                     >
                         <span className="text-xs tracking-[0.2em]">向下滑动 探索更多</span>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">

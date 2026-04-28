@@ -119,7 +119,7 @@ export default function SiteNavigation() {
                                         width: "100%",
                                         padding: "10px 10px",
                                         borderRadius: 8,
-                                        color: active ? "var(--foreground)" : "var(--muted)",
+                                        color: active ? "var(--foreground)" : "color-mix(in srgb, var(--foreground) 68%, var(--muted) 32%)",
                                         textDecoration: "none",
                                         textAlign: "left",
                                         fontSize: 13,
