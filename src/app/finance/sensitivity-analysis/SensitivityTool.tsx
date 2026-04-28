@@ -182,6 +182,16 @@ export default function SensitivityTool() {
                         </div>
                         <div id="tornado-chart" className="chart" />
                     </article>
+
+                    <article className="panel panel-large">
+                        <div className="panel-header">
+                            <div>
+                                <h2>盈亏平衡点</h2>
+                                <p>在当前调整口径下，查看利润随销量变化的曲线和 0 利润对应销量。</p>
+                            </div>
+                        </div>
+                        <div id="breakeven-chart" className="chart chart-breakeven" />
+                    </article>
                 </section>
 
                 <section className="workspace-grid bottom-grid">

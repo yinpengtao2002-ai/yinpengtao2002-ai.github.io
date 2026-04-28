@@ -11,7 +11,13 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { CHAT_API_TIMEOUT_MS, getLocalFallbackResponse } from "@/lib/chatFallback";
-import { aiContent as staticAI, financeContent as staticFinance } from "@/lib/data/generated/content";
+import {
+    aiContent as staticAI,
+    essaysContent as staticEssays,
+    financeContent as staticFinance,
+} from "@/lib/data/generated/content";
+
+type ContentCardType = "ai" | "finance" | "essays";
 
 function MessageContent({ text }: { text: string }) {
     return (
@@ -134,7 +140,7 @@ interface Message {
     content: string;
     isTyping?: boolean;
     contentCards?: ContentCard[];
-    cardType?: "ai" | "finance";
+    cardType?: ContentCardType;
 }
 
 const GREETING_TYPING_MESSAGE: Message = {
@@ -171,10 +177,15 @@ function ContentCardList({
     onCardClick,
 }: {
     cards: ContentCard[];
-    cardType: "ai" | "finance";
+    cardType: ContentCardType;
     onCardClick: (card: ContentCard) => void;
 }) {
-    const accentColor = cardType === "ai" ? "var(--accent)" : "var(--accent-secondary)";
+    const accentColor =
+        cardType === "ai"
+            ? "var(--accent)"
+            : cardType === "finance"
+                ? "var(--accent-secondary)"
+                : "var(--foreground)";
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
@@ -230,6 +241,10 @@ export default function ExplorePage() {
         date: item.date, category: item.category ?? undefined, href: item.href,
     }));
     const financeContent: ContentCard[] = staticFinance.map((item) => ({
+        id: item.id, title: item.title, description: item.description,
+        date: item.date, category: item.category ?? undefined, href: item.href,
+    }));
+    const essaysContent: ContentCard[] = staticEssays.map((item) => ({
         id: item.id, title: item.title, description: item.description,
         date: item.date, category: item.category ?? undefined, href: item.href,
     }));
@@ -320,7 +335,7 @@ export default function ExplorePage() {
         }
 
         await new Promise((r) => setTimeout(r, 600 + Math.random() * 400));
-        const result = getLocalFallbackResponse(userMessage.content, aiContent, financeContent, { includeOfflineNotice });
+        const result = getLocalFallbackResponse(userMessage.content, aiContent, financeContent, essaysContent, { includeOfflineNotice });
 
         setMessages((prev) => {
             const filtered = prev.filter((m) => m.id !== "typing" && m.id !== assistantMsgId);

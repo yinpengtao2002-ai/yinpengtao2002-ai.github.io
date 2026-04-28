@@ -11,8 +11,14 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { CHAT_API_TIMEOUT_MS, getLocalFallbackResponse } from "@/lib/chatFallback";
-import { aiContent as staticAI, financeContent as staticFinance } from "@/lib/data/generated/content";
+import {
+    aiContent as staticAI,
+    essaysContent as staticEssays,
+    financeContent as staticFinance,
+} from "@/lib/data/generated/content";
 import { useViewportProfile } from "@/lib/useLowMotionMode";
+
+type ContentCardType = "ai" | "finance" | "essays";
 
 interface ContentCard {
     id: number;
@@ -29,7 +35,7 @@ interface Message {
     content: string;
     isTyping?: boolean;
     contentCards?: ContentCard[];
-    cardType?: "ai" | "finance";
+    cardType?: ContentCardType;
 }
 
 const MOBILE_QUICK_PROMPTS = [
@@ -158,7 +164,7 @@ function QuickPromptRow({
                     type="button"
                     style={{
                         border: "1px solid var(--border)",
-                        background: "rgba(255,255,255,0.82)",
+                        background: "var(--card)",
                         color: "var(--foreground)",
                         borderRadius: 999,
                         padding: "8px 12px",
@@ -177,10 +183,15 @@ function QuickPromptRow({
 
 function ContentCardList({ cards, cardType, onCardClick }: {
     cards: ContentCard[];
-    cardType: "ai" | "finance";
+    cardType: ContentCardType;
     onCardClick: (card: ContentCard) => void;
 }) {
-    const accentColor = cardType === "ai" ? "var(--accent)" : "var(--accent-secondary)";
+    const accentColor =
+        cardType === "ai"
+            ? "var(--accent)"
+            : cardType === "finance"
+                ? "var(--accent-secondary)"
+                : "var(--foreground)";
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 12 }}>
             {cards.map((card, index) => (
@@ -237,6 +248,10 @@ export default function ChatWidget() {
         date: item.date, category: item.category ?? undefined, href: item.href,
     }));
     const financeContent: ContentCard[] = staticFinance.map((item) => ({
+        id: item.id, title: item.title, description: item.description,
+        date: item.date, category: item.category ?? undefined, href: item.href,
+    }));
+    const essaysContent: ContentCard[] = staticEssays.map((item) => ({
         id: item.id, title: item.title, description: item.description,
         date: item.date, category: item.category ?? undefined, href: item.href,
     }));
@@ -371,7 +386,7 @@ export default function ChatWidget() {
             includeOfflineNotice = true;
         }
         await new Promise((r) => setTimeout(r, 600 + Math.random() * 400));
-        const result = getLocalFallbackResponse(userMessage.content, aiContent, financeContent, { includeOfflineNotice });
+        const result = getLocalFallbackResponse(userMessage.content, aiContent, financeContent, essaysContent, { includeOfflineNotice });
         setMessages((prev) => {
             const filtered = prev.filter((m) => m.id !== "typing" && m.id !== assistantMsgId);
             return [...filtered, {
@@ -596,13 +611,13 @@ export default function ChatWidget() {
                                 background: isMobileLike
                                     ? mobileFullscreenMode && keyboardOpen
                                         ? "var(--background)"
-                                        : "rgba(250, 249, 245, 0.96)"
+                                        : "var(--background)"
                                     : "var(--background)",
                                 fontFamily: isMobileLike ? undefined : CHAT_UI_FONT,
                                 border: isMobileLike
                                     ? mobileFullscreenMode && keyboardOpen
                                         ? "none"
-                                        : "1px solid rgba(232, 230, 220, 0.95)"
+                                        : "1px solid var(--border)"
                                     : "1px solid var(--border)",
                                 boxShadow: isMobileLike
                                     ? mobileFullscreenMode && keyboardOpen
@@ -653,7 +668,7 @@ export default function ChatWidget() {
                                                 width: 42,
                                                 height: 4,
                                                 borderRadius: 999,
-                                                background: "rgba(20,20,19,0.14)",
+                                                background: "var(--border)",
                                             }}
                                         />
                                     </div>
@@ -765,11 +780,11 @@ export default function ChatWidget() {
                                                                     color: "var(--foreground)",
                                                                     wordBreak: "break-word",
                                                                     overflowWrap: "anywhere",
-                                                                    background: "rgba(255,255,255,0.78)",
-                                                                    border: "1px solid rgba(232,230,220,0.95)",
+                                                                    background: "var(--card)",
+                                                                    border: "1px solid var(--border)",
                                                                     borderRadius: 20,
                                                                     padding: compactMobileChat ? "10px 12px" : isMobileLike ? "14px 16px" : "16px 18px",
-                                                                    boxShadow: "0 10px 24px rgba(20,20,19,0.05)",
+                                                                    boxShadow: isMobileLike ? "0 10px 24px rgba(20,20,19,0.05)" : "none",
                                                                 } : {
                                                                     fontSize: bodyFontSize,
                                                                     lineHeight: bodyLineHeight,
@@ -838,7 +853,7 @@ export default function ChatWidget() {
                             background: isMobileLike
                                 ? mobileFullscreenMode && keyboardOpen
                                     ? "var(--background)"
-                                    : "rgba(250,249,245,0.9)"
+                                    : "var(--background)"
                                 : "transparent",
                             fontFamily: "inherit",
                         }}

@@ -404,7 +404,7 @@
 }
 
 .sensitivity-tool .adjustment-number {
-    width: 58px;
+    width: 68px;
     min-height: 28px;
     border: 1px solid var(--border-light);
     border-radius: 7px;
@@ -586,6 +586,10 @@
 
 .sensitivity-tool .chart-compact {
     min-height: 280px;
+}
+
+.sensitivity-tool .chart-breakeven {
+    min-height: 360px;
 }
 
 .sensitivity-tool .chart-profit-waterfall {

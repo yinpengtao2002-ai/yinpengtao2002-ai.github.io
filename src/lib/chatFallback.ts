@@ -16,7 +16,7 @@ export interface LocalContentCard {
 export interface LocalFallbackResult {
     response: string;
     contentCards?: LocalContentCard[];
-    cardType?: "ai" | "finance";
+    cardType?: "ai" | "finance" | "essays";
 }
 
 function includesAny(text: string, keywords: string[]) {
@@ -35,6 +35,7 @@ export function getLocalFallbackResponse(
     input: string,
     aiContent: LocalContentCard[],
     financeContent: LocalContentCard[],
+    essaysContent: LocalContentCard[] = [],
     options: { includeOfflineNotice?: boolean } = {}
 ): LocalFallbackResult {
     const lower = input.toLowerCase().trim();
@@ -65,6 +66,22 @@ export function getLocalFallbackResponse(
         }, options.includeOfflineNotice);
     }
 
+    if (includesAny(lower, ["月光渡口", "渡口", "老陈", "苏晴", "小说", "随笔", "日常随笔", "essays", "essay"])) {
+        const cards = essaysContent.filter((item) => (
+            item.title.includes("月光渡口") ||
+            item.href.includes("moonlight-ferry") ||
+            item.title.includes("随笔") ||
+            item.description.includes("随笔")
+        ));
+        return withOfflineNotice({
+            response: cards.length > 0
+                ? "你要找的是 [月光渡口](/article/essays/moonlight-ferry)。它在【日常随笔】栏目里。"
+                : "【日常随笔】栏目暂时没有匹配内容。",
+            contentCards: cards.length > 0 ? cards : essaysContent,
+            cardType: "essays",
+        }, options.includeOfflineNotice);
+    }
+
     if (includesAny(lower, ["财务", "建模", "模型", "金融", "finance", "估值", "驾驶舱"])) {
         if (financeContent.length === 0) {
             return withOfflineNotice({ response: "【财务建模】板块暂时还没有内容，敬请期待。" }, options.includeOfflineNotice);
@@ -78,7 +95,7 @@ export function getLocalFallbackResponse(
 
     if (includesAny(lower, ["文章", "内容", "有什么", "推荐", "目录", "网站", "看什么", "入口", "板块"])) {
         return withOfflineNotice({
-            response: "你可以先看两个入口：[财务建模](/finance) 和 [AI 工作流](/ai)。如果想直接试工具，我推荐打开 [单车边际变动归因分析](/finance/margin-analysis)。",
+            response: "你可以先看三个入口：[财务建模](/finance)、[AI 工作流](/ai) 和 [日常随笔](/essays)。如果想读小说，可以直接看 [月光渡口](/article/essays/moonlight-ferry)。",
         }, options.includeOfflineNotice);
     }
 

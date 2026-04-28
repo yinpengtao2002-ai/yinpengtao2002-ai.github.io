@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { aiContent, financeContent } from "@/lib/data/generated/content";
+import { aiContent, essaysContent, financeContent } from "@/lib/data/generated/content";
 
 const CHAT_PRIMARY_TIMEOUT_MS = 18000;
 const CHAT_FALLBACK_TIMEOUT_MS = 18000;
@@ -12,6 +12,12 @@ function buildSystemPrompt(): string {
   const aiArticles =
     aiContent.length > 0
       ? aiContent
+          .map((a) => `  - "${a.title}"：${a.description}（链接：${a.href}）`)
+          .join("\n")
+      : "  - 暂无内容，正在建设中";
+  const essaysArticles =
+    essaysContent.length > 0
+      ? essaysContent
           .map((a) => `  - "${a.title}"：${a.description}（链接：${a.href}）`)
           .join("\n")
       : "  - 暂无内容，正在建设中";
@@ -30,6 +36,9 @@ ${financeArticles}
 
 【AI 工作流】板块：
 ${aiArticles}
+
+【日常随笔】板块：
+${essaysArticles}
 
 回复规则：
 - 用中文回复，除非用户用英文提问

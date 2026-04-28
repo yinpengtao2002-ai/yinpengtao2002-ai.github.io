@@ -186,8 +186,9 @@ const METRIC_DEFINITIONS = {
 };
 
 const SENSITIVITY_PERCENT = 10;
-const ADJUSTMENT_MIN = -50;
-const ADJUSTMENT_MAX = 50;
+const ADJUSTMENT_MIN = -100;
+const ADJUSTMENT_MAX = 300;
+const ADJUSTMENT_STEP = 0.1;
 
 const AppState = {
     baseAssumptions: getDefaultAssumptions(),
@@ -370,6 +371,10 @@ function formatSignedPercent(value, decimals = 0) {
     return `${sign}${formatNumber(numeric, decimals)}%`;
 }
 
+function isCompactViewport() {
+    return typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
+}
+
 function formatDeltaPercent(currentValue, baseValue) {
     const current = Number(currentValue || 0);
     const base = Number(baseValue || 0);
@@ -390,6 +395,21 @@ function formatDriverAnalysisValue(key, value, assumptions = AppState.assumption
     }
     if (driver.kind === "volume") return formatVolume(value, 1);
     return formatAmount(value, 1);
+}
+
+function formatDriverAxisValue(key, value) {
+    const driver = driverByKey[key];
+    if (!driver) return formatNumber(value, 1);
+    if (driver.kind === "volume") return formatNumber(value, 1);
+    if (driver.kind === "unitAmount") return formatNumber(value, 2);
+    return formatNumber(value, 1);
+}
+
+function formatMetricCellValue(value, metricKey = AppState.metric) {
+    const definition = getMetricDefinition(metricKey);
+    if (definition.unit === "amount") return formatNumber(toDisplayAmount(value), 0);
+    if (definition.unit === "%") return `${formatNumber(value, 1)}%`;
+    return formatNumber(value, definition.decimals);
 }
 
 function getSensitivityRange(key) {
@@ -444,7 +464,9 @@ function sequenceAround(baseValue, range, steps) {
 function createMatrixData() {
     const xKey = AppState.xDriver;
     const yKey = AppState.yDriver;
-    const steps = clampNumber(AppState.matrixSteps, 5, 9);
+    const steps = isCompactViewport()
+        ? 5
+        : clampNumber(AppState.matrixSteps, 5, 9);
     const xValues = sequenceAround(
         Number(AppState.assumptions[xKey] || 0),
         getSensitivityRange(xKey),
@@ -515,7 +537,7 @@ function renderControlInputs() {
                             type="range"
                             min="${ADJUSTMENT_MIN}"
                             max="${ADJUSTMENT_MAX}"
-                            step="1"
+                            step="${ADJUSTMENT_STEP}"
                             data-key="${driver.key}"
                             value="${AppState.adjustments[driver.key] || 0}"
                         >
@@ -527,7 +549,7 @@ function renderControlInputs() {
                                     type="number"
                                     min="${ADJUSTMENT_MIN}"
                                     max="${ADJUSTMENT_MAX}"
-                                    step="1"
+                                    step="${ADJUSTMENT_STEP}"
                                     data-key="${driver.key}"
                                     value="${AppState.adjustments[driver.key] || 0}"
                                 >
@@ -591,7 +613,7 @@ function initControlEvents() {
     document.getElementById("adjustment-inputs").addEventListener("input", (event) => {
         if (!event.target.classList.contains("adjustment-input")) return;
         const key = event.target.dataset.key;
-        AppState.adjustments[key] = clampNumber(Number(event.target.value || 0), ADJUSTMENT_MIN, ADJUSTMENT_MAX);
+        AppState.adjustments[key] = round(clampNumber(Number(event.target.value || 0), ADJUSTMENT_MIN, ADJUSTMENT_MAX), 1);
         renderAll();
     });
 }
@@ -975,12 +997,12 @@ function refreshInputValues() {
 
 function refreshAdjustmentDisplay() {
     DRIVER_DEFINITIONS.forEach((driver) => {
-        const adjustment = AppState.adjustments[driver.key] || 0;
+        const adjustment = round(AppState.adjustments[driver.key] || 0, 1);
         document.querySelectorAll(`.adjustment-input[data-key="${driver.key}"]`).forEach((input) => {
             input.value = adjustment;
         });
         const label = document.getElementById(`adjustment-label-${driver.key}`);
-        if (label) label.textContent = formatSignedPercent(adjustment);
+        if (label) label.textContent = formatSignedPercent(adjustment, 1);
         const current = document.getElementById(`adjustment-current-${driver.key}`);
         if (current) current.textContent = formatDriverAnalysisValue(driver.key, AppState.assumptions[driver.key]);
     });
@@ -993,6 +1015,7 @@ function renderAll() {
     refreshAdjustmentDisplay();
     renderMetrics(result, baseResult);
     renderTornadoChart();
+    renderBreakEvenChart(result);
     renderMatrixChart();
     renderWaterfallCharts(result);
 }
@@ -1043,7 +1066,8 @@ function renderMetrics(result, baseResult) {
 function renderTornadoChart() {
     if (typeof Plotly === "undefined") return;
     const rows = calculateSensitivityRows().reverse();
-    const chartHeight = Math.max(440, rows.length * 34 + 110);
+    const compact = isCompactViewport();
+    const chartHeight = Math.max(compact ? 480 : 440, rows.length * (compact ? 30 : 34) + (compact ? 90 : 110));
     const metricLabel = METRIC_DEFINITIONS.profit.label;
 
     Plotly.react("tornado-chart", [
@@ -1069,57 +1093,204 @@ function renderTornadoChart() {
         }
     ], getLockedPlotLayout({
         height: chartHeight,
-        margin: { l: 126, r: 28, t: 24, b: 46 },
+        margin: { l: compact ? 92 : 126, r: compact ? 8 : 28, t: compact ? 16 : 24, b: compact ? 34 : 46 },
         barmode: "overlay",
         paper_bgcolor: "rgba(0,0,0,0)",
         plot_bgcolor: "rgba(0,0,0,0)",
         font: getPlotFont(),
-        legend: { orientation: "h", y: 1.08, x: 0 },
+        legend: { orientation: "h", y: compact ? 1.04 : 1.08, x: 0 },
         xaxis: {
-            title: "上下波动 10% 对利润总额的影响",
+            title: compact ? "" : "上下波动 10% 对利润总额的影响",
             zeroline: true,
             zerolinecolor: "#141413",
-            gridcolor: "#ece8de"
+            gridcolor: "#ece8de",
+            tickfont: { size: compact ? 9 : 11 }
         },
-        yaxis: { automargin: true }
+        yaxis: { automargin: true, tickfont: { size: compact ? 9 : 11 } }
+    }), getPlotConfig());
+}
+
+function calculateBreakEvenData(result) {
+    const currentVolume = Number(result.salesVolume || 0);
+    const unitContributionMargin = Number(result.unitContributionMargin || 0);
+    const fixedPartNet = Number(result.fixedPartNet || 0);
+    const hasBreakEven = unitContributionMargin > 0;
+    const breakEvenVolume = hasBreakEven ? Math.max(0, fixedPartNet / unitContributionMargin) : null;
+    const maxVolume = Math.max(
+        10,
+        currentVolume * 1.35,
+        (breakEvenVolume || 0) * 1.35,
+        currentVolume + 10
+    );
+    const steps = 28;
+    const volumes = Array.from({ length: steps }, (_, index) => maxVolume * (index / (steps - 1)));
+    const profits = volumes.map((volume) => volume * unitContributionMargin - fixedPartNet);
+
+    return {
+        currentVolume,
+        currentProfit: result.profit,
+        unitContributionMargin,
+        fixedPartNet,
+        hasBreakEven,
+        breakEvenVolume,
+        maxVolume,
+        volumes,
+        profits
+    };
+}
+
+function renderBreakEvenChart(result) {
+    if (typeof Plotly === "undefined") return;
+    const compact = isCompactViewport();
+    const data = calculateBreakEvenData(result);
+    const traces = [
+        {
+            x: data.volumes,
+            y: data.profits.map(toDisplayAmount),
+            type: "scatter",
+            mode: "lines",
+            name: "利润曲线",
+            line: { color: "#5c8fba", width: 3 },
+            hovertemplate: `销量：%{x:.1f} 万辆<br>利润：%{customdata}<extra></extra>`,
+            customdata: data.profits.map((value) => formatAmount(value, 1))
+        },
+        {
+            x: [data.currentVolume],
+            y: [toDisplayAmount(data.currentProfit)],
+            type: "scatter",
+            mode: compact ? "markers" : "markers+text",
+            name: "当前销量",
+            marker: { color: "#d97757", size: compact ? 9 : 11 },
+            text: [`当前 ${formatVolume(data.currentVolume, 1)}`],
+            textposition: "top center",
+            hovertemplate: `当前销量：%{x:.1f} 万辆<br>利润：${formatAmount(data.currentProfit, 1)}<extra></extra>`
+        }
+    ];
+    const shapes = [
+        {
+            type: "line",
+            x0: 0,
+            x1: data.maxVolume,
+            y0: 0,
+            y1: 0,
+            line: { color: "#141413", width: 1, dash: "dot" }
+        }
+    ];
+    const annotations = [];
+
+    if (data.hasBreakEven) {
+        traces.push({
+            x: [data.breakEvenVolume],
+            y: [0],
+            type: "scatter",
+            mode: compact ? "markers" : "markers+text",
+            name: "盈亏平衡点",
+            marker: { color: "#788c5d", size: compact ? 9 : 11, symbol: "diamond" },
+            text: [`盈亏平衡 ${formatVolume(data.breakEvenVolume, 1)}`],
+            textposition: "bottom center",
+            hovertemplate: `盈亏平衡销量：%{x:.1f} 万辆<br>利润：0<extra></extra>`
+        });
+        shapes.push({
+            type: "line",
+            x0: data.breakEvenVolume,
+            x1: data.breakEvenVolume,
+            yref: "paper",
+            y0: 0,
+            y1: 1,
+            line: { color: "#788c5d", width: 1, dash: "dash" }
+        });
+        annotations.push({
+            x: data.breakEvenVolume,
+            y: 0,
+            yshift: compact ? -18 : -30,
+            text: `平衡点 ${formatVolume(data.breakEvenVolume, 1)}`,
+            showarrow: false,
+            font: { size: compact ? 10 : 11, color: "#788c5d" }
+        });
+    } else {
+        annotations.push({
+            x: 0.5,
+            y: 0.5,
+            xref: "paper",
+            yref: "paper",
+            text: "当前单车边际不为正，无法计算销量盈亏平衡点",
+            showarrow: false,
+            font: { size: compact ? 11 : 12, color: "#b65f55" },
+            bgcolor: "rgba(255,250,245,0.9)",
+            bordercolor: "#e8e6dc",
+            borderpad: 8
+        });
+    }
+
+    Plotly.react("breakeven-chart", traces, getLockedPlotLayout({
+        height: compact ? 360 : 420,
+        margin: { l: compact ? 42 : 58, r: compact ? 8 : 22, t: compact ? 18 : 26, b: compact ? 50 : 58 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        font: getPlotFont(),
+        shapes,
+        annotations,
+        legend: { orientation: "h", y: compact ? 1.05 : 1.08, x: 0 },
+        xaxis: {
+            title: "销量（万辆）",
+            gridcolor: "#ece8de",
+            zeroline: false,
+            tickfont: { size: compact ? 9 : 11 }
+        },
+        yaxis: {
+            title: getDisplayAmountUnit(),
+            gridcolor: "#ece8de",
+            zeroline: false,
+            tickfont: { size: compact ? 9 : 11 }
+        }
     }), getPlotConfig());
 }
 
 function renderMatrixChart() {
     if (typeof Plotly === "undefined") return;
+    const compact = isCompactViewport();
     const matrix = createMatrixData();
-    const xLabels = matrix.xValues.map((value) => formatDriverAnalysisValue(matrix.xKey, value));
-    const yLabels = matrix.yValues.map((value) => formatDriverAnalysisValue(matrix.yKey, value));
+    const xLabels = matrix.xValues.map((value) => formatDriverAxisValue(matrix.xKey, value));
+    const yLabels = matrix.yValues.map((value) => formatDriverAxisValue(matrix.yKey, value));
+    const cellText = matrix.z.map((row) => row.map((value) => formatMetricCellValue(value)));
+    const hoverValues = matrix.z.map((row) => row.map((value) => formatMetric(value)));
 
     Plotly.react("matrix-chart", [
         {
             x: xLabels,
             y: yLabels,
             z: matrix.z,
+            text: cellText,
+            customdata: hoverValues,
             type: "heatmap",
+            texttemplate: "%{text}",
+            textfont: { family: getPlotFont().family, size: compact ? 8 : 10, color: "#141413" },
             colorscale: [
-                [0, "#b65f55"],
+                [0, "#f0c5bd"],
                 [0.5, "#fffaf5"],
-                [1, "#5c8fba"]
+                [1, "#bfd7e9"]
             ],
-            hovertemplate: `${driverByKey[matrix.xKey].name}: %{x}<br>${driverByKey[matrix.yKey].name}: %{y}<br>${getMetricDefinition().label}: %{z:.2f}<extra></extra>`,
+            showscale: !compact,
+            hovertemplate: `${driverByKey[matrix.xKey].name}: %{x}<br>${driverByKey[matrix.yKey].name}: %{y}<br>${getMetricDefinition().label}: %{customdata}<extra></extra>`,
             colorbar: {
                 title: getMetricDefinition().label,
                 thickness: 14
             }
         }
     ], getLockedPlotLayout({
-        margin: { l: 100, r: 64, t: 28, b: 86 },
+        margin: { l: compact ? 48 : 78, r: compact ? 8 : 64, t: compact ? 18 : 28, b: compact ? 58 : 76 },
         paper_bgcolor: "rgba(0,0,0,0)",
         plot_bgcolor: "rgba(0,0,0,0)",
         font: getPlotFont(),
         xaxis: {
-            title: driverByKey[matrix.xKey].name,
-            tickangle: -32
+            title: `${driverByKey[matrix.xKey].name}（${driverByKey[matrix.xKey].unit}）`,
+            tickangle: compact ? -18 : -28,
+            tickfont: { size: compact ? 9 : 11 }
         },
         yaxis: {
-            title: driverByKey[matrix.yKey].name,
-            automargin: true
+            title: compact ? "" : `${driverByKey[matrix.yKey].name}（${driverByKey[matrix.yKey].unit}）`,
+            automargin: true,
+            tickfont: { size: compact ? 9 : 11 }
         }
     }), getPlotConfig());
 }
@@ -1197,6 +1368,7 @@ function renderWaterfallCharts(result) {
 }
 
 function renderWaterfallChart(targetId, options) {
+    const compact = isCompactViewport();
     const labels = options.labels;
     const values = options.values.map(toDisplayAmount);
     const textLabels = options.values.map((value, index) => (
@@ -1216,8 +1388,8 @@ function renderWaterfallChart(targetId, options) {
             x: labels,
             y: values,
             text: textLabels,
-            textposition: "outside",
-            textfont: { family: getPlotFont().family, size: 11, color: "#141413" },
+            textposition: compact ? "none" : "outside",
+            textfont: { family: getPlotFont().family, size: compact ? 9 : 11, color: "#141413" },
             cliponaxis: false,
             connector: { line: { color: "#cfcabe" } },
             increasing: { marker: { color: "#788c5d" } },
@@ -1227,12 +1399,12 @@ function renderWaterfallChart(targetId, options) {
             hovertext: hoverTexts
         }
     ], getLockedPlotLayout({
-        height: options.height,
+        height: compact ? Math.max(options.height, 360) : options.height,
         margin: {
-            l: options.leftMargin ?? 58,
-            r: options.rightMargin ?? 32,
-            t: options.topMargin ?? 42,
-            b: options.bottomMargin
+            l: compact ? 42 : options.leftMargin ?? 58,
+            r: compact ? 8 : options.rightMargin ?? 32,
+            t: compact ? 24 : options.topMargin ?? 42,
+            b: compact ? 86 : options.bottomMargin
         },
         paper_bgcolor: "rgba(0,0,0,0)",
         plot_bgcolor: "rgba(0,0,0,0)",
@@ -1242,9 +1414,9 @@ function renderWaterfallChart(targetId, options) {
             gridcolor: "#ece8de"
         },
         xaxis: {
-            tickangle: options.tickAngle,
+            tickangle: compact ? -30 : options.tickAngle,
             automargin: true,
-            tickfont: { size: 11 }
+            tickfont: { size: compact ? 9 : 11 }
         }
     }), getPlotConfig());
 }
@@ -1387,7 +1559,7 @@ function getPlotFont() {
     return {
         family: "PingFang SC, Microsoft YaHei, Helvetica Neue, Arial, sans-serif",
         color: "#141413",
-        size: 12
+        size: isCompactViewport() ? 10 : 12
     };
 }
 
