@@ -21,7 +21,7 @@ const AppState = {
     },
     unitMetricType: '边际',
     availableDimsInData: [],
-    pendingWaterfallTap: null
+    calculationResults: null
 };
 
 const ALL_DIMENSIONS = ['Dim_A', 'Dim_B', 'Dim_C', 'Dim_D', 'Dim_E'];
@@ -48,6 +48,7 @@ if (typeof document !== 'undefined') {
         initResetFilter();
         initMonthSelectors();
         initUserSettings();
+        initWaterfallDismissHandling();
 
         // 手机端自动加载示例数据并收起侧边栏
         if (isMobile()) {
@@ -57,6 +58,7 @@ if (typeof document !== 'undefined') {
             const sidebar = document.getElementById("sidebar");
             const expandBtn = document.getElementById("sidebar-expand");
             sidebar.classList.add("collapsed");
+            document.body.classList.remove("sidebar-open");
             expandBtn.style.display = "flex";
             schedulePlotResize();
         }
@@ -66,7 +68,20 @@ if (typeof document !== 'undefined') {
 // 检测是否为手机端
 function isMobile() {
     return window.innerWidth <= 768 ||
+           window.matchMedia?.('(hover: none), (pointer: coarse)').matches ||
            /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+function initWaterfallDismissHandling() {
+    document.addEventListener('click', (event) => {
+        if (!isMobile()) return;
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        if (target.closest('.waterfall-touch-host')) return;
+        if (target.closest('.waterfall-chart-container')) return;
+        clearWaterfallTouchCards();
+        hideWaterfallHoverTooltip();
+    });
 }
 
 // ==================== 侧边栏收折 ====================
@@ -74,17 +89,33 @@ function initSidebarToggle() {
     const sidebar = document.getElementById('sidebar');
     const toggleBtn = document.getElementById('sidebar-toggle');
     const expandBtn = document.getElementById('sidebar-expand');
+    const backdrop = document.getElementById('sidebar-backdrop');
+
+    const isSidebarOverlayViewport = () => window.matchMedia('(max-width: 768px)').matches;
+
+    const setSidebarOpen = (open) => {
+        sidebar.classList.toggle('collapsed', !open);
+        document.body.classList.toggle('sidebar-open', open && isSidebarOverlayViewport());
+        expandBtn.style.display = open ? 'none' : 'flex';
+        expandBtn.setAttribute('aria-expanded', String(open));
+        toggleBtn.setAttribute('aria-expanded', String(open));
+        schedulePlotResize();
+    };
 
     toggleBtn.addEventListener('click', () => {
-        sidebar.classList.add('collapsed');
-        expandBtn.style.display = 'flex';
-        schedulePlotResize();
+        setSidebarOpen(false);
     });
 
     expandBtn.addEventListener('click', () => {
-        sidebar.classList.remove('collapsed');
-        expandBtn.style.display = 'none';
-        schedulePlotResize();
+        setSidebarOpen(true);
+    });
+
+    backdrop?.addEventListener('click', () => {
+        setSidebarOpen(false);
+    });
+
+    window.matchMedia('(max-width: 768px)').addEventListener('change', (event) => {
+        document.body.classList.toggle('sidebar-open', !sidebar.classList.contains('collapsed') && event.matches);
     });
 }
 
@@ -1304,6 +1335,7 @@ function renderCharts() {
     const { levelResults } = AppState.calculationResults;
     const container = document.getElementById('charts-container');
     hideWaterfallHoverTooltip();
+    clearWaterfallTouchCards();
     container.innerHTML = '';
 
     // 显示 PVM 假设说明
@@ -1348,6 +1380,12 @@ function renderCharts() {
         chartDiv.id = `waterfall-chart-${level}`;
         chartDiv.className = 'waterfall-chart-container';
         section.appendChild(chartDiv);
+
+        const touchCardDiv = document.createElement('div');
+        touchCardDiv.id = `waterfall-touch-card-${level}`;
+        touchCardDiv.className = 'waterfall-touch-host';
+        touchCardDiv.setAttribute('aria-live', 'polite');
+        section.appendChild(touchCardDiv);
 
         // 明细数据表 (可折叠)
         const detailDetails = document.createElement('details');
@@ -1415,7 +1453,7 @@ function buildChartInteractionGuide() {
 
     const mobile = document.createElement('span');
     mobile.className = 'chart-interaction-item';
-    mobile.textContent = '手机端：首次点击查看卡片，再次点击同一柱子下钻';
+    mobile.textContent = '手机端：点击柱子展开明细卡，再点卡片按钮进入下一层';
 
     guide.appendChild(title);
     guide.appendChild(desktop);
@@ -1706,6 +1744,15 @@ function attachWaterfallInteractions(containerId, dimCol, level) {
     const graphDiv = document.getElementById(containerId);
     if (!graphDiv || !graphDiv.on) return;
 
+    graphDiv.addEventListener('click', (event) => {
+        if (!isMobile()) return;
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        if (target.closest('.waterfalllayer .point')) return;
+        clearWaterfallTouchCards();
+        hideWaterfallHoverTooltip();
+    });
+
     graphDiv.on('plotly_hover', (eventData) => {
         if (isMobile()) return;
         const meta = getWaterfallEventMeta(eventData);
@@ -1723,7 +1770,12 @@ function attachWaterfallInteractions(containerId, dimCol, level) {
     graphDiv.on('plotly_click', (eventData) => {
         const meta = getWaterfallEventMeta(eventData);
         if (isMobile()) {
-            handleWaterfallBarTap(meta, dimCol, level, eventData);
+            if (!meta) {
+                clearWaterfallTouchCards();
+                hideWaterfallHoverTooltip();
+                return;
+            }
+            handleWaterfallBarTap(meta, dimCol, level);
         } else {
             handleWaterfallBarClick(meta, dimCol, level);
         }
@@ -1756,7 +1808,6 @@ function getWaterfallHoverTooltip() {
 function hideWaterfallHoverTooltip() {
     const tooltip = document.getElementById('waterfall-hover-tooltip');
     if (tooltip) tooltip.classList.remove('visible');
-    AppState.pendingWaterfallTap = null;
 }
 
 function positionWaterfallTooltip(tooltip, event) {
@@ -1785,10 +1836,11 @@ function positionWaterfallTooltip(tooltip, event) {
     tooltip.style.top = `${top}px`;
 }
 
-function buildWaterfallTooltipHTML(meta) {
+function buildWaterfallTooltipHTML(meta, mode = 'hover') {
     if (meta.type === 'base' || meta.type === 'current') {
         const delta = meta.currMargin - meta.baseMargin;
         const isCurrent = meta.type === 'current';
+        const statusText = mode === 'touch' ? '汇总柱仅展示锚点' : '汇总柱不下钻';
         return `
             <div class="waterfall-tooltip-card ${isCurrent ? 'total' : 'base'}">
                 <div class="waterfall-tooltip-kicker">${isCurrent ? '当期结果' : '基期锚点'}</div>
@@ -1799,8 +1851,9 @@ function buildWaterfallTooltipHTML(meta) {
                 </div>
                 <div class="waterfall-tooltip-grid">
                     <span>较基期变动</span><b class="${delta >= 0 ? 'positive' : 'negative'}">${formatSignedNumber(delta)}</b>
-                    <span>点击状态</span><b>汇总柱不下钻</b>
+                    <span>点击状态</span><b>${statusText}</b>
                 </div>
+                ${mode === 'touch' ? buildWaterfallTouchActionHTML(meta) : ''}
             </div>
         `;
     }
@@ -1812,10 +1865,12 @@ function buildWaterfallTooltipHTML(meta) {
     const title = meta.type === 'other'
         ? `${escapeHTML(meta.label)}（${meta.rowCount || 0} 项）`
         : escapeHTML(meta.label);
-    const drillActionText = isMobile() ? '再次点击下钻到' : '点击下钻到';
+    const drillActionText = mode === 'touch'
+        ? '可进入下一层'
+        : (isMobile() ? '再次点击下钻到' : '点击下钻到');
     const clickHint = meta.drillable
         ? `${drillActionText}「${escapeHTML(meta.dimName)}：${escapeHTML(meta.label)}」`
-        : (meta.type === 'other' ? '其他柱包含多个项目，请点击具体柱子下钻' : '当前已是最后一层级');
+        : (meta.type === 'other' ? '其他柱包含多个项目，请在明细表筛选后查看具体项目' : '当前已是最后一层级');
 
     return `
         <div class="waterfall-tooltip-card ${tone}">
@@ -1843,6 +1898,26 @@ function buildWaterfallTooltipHTML(meta) {
                 <span>当期${escapeHTML(meta.unitMetricLabel)}</span><b>¥${formatNumber(meta.unitCurr)}</b>
             </div>
             <div class="waterfall-tooltip-hint">${clickHint}</div>
+            ${mode === 'touch' ? buildWaterfallTouchActionHTML(meta) : ''}
+        </div>
+    `;
+}
+
+function buildWaterfallTouchActionHTML(meta) {
+    if (meta.type === 'base' || meta.type === 'current') {
+        return '<div class="waterfall-touch-note">汇总柱用于对照基期和当期，不参与下钻。</div>';
+    }
+    if (meta.type === 'other') {
+        return '<div class="waterfall-touch-note">“其他”包含多个项目，请在明细表筛选后查看具体项目。</div>';
+    }
+    if (!meta.drillable) {
+        return '<div class="waterfall-touch-note">当前已是最后一层级。</div>';
+    }
+    return `
+        <div class="waterfall-touch-actions">
+            <button type="button" class="waterfall-touch-drill-btn" data-waterfall-touch-drill>
+                进入下一层：${escapeHTML(meta.dimName)}
+            </button>
         </div>
     `;
 }
@@ -1853,44 +1928,32 @@ function formatPercentPoint(num) {
     return `${sign}${num.toFixed(1)}pct`;
 }
 
-function handleWaterfallBarTap(meta, dimCol, level, eventData) {
+function handleWaterfallBarTap(meta, dimCol, level) {
     if (!meta) return;
-
-    const tapKey = getWaterfallTapKey(meta, dimCol, level);
-    const isSameTap = AppState.pendingWaterfallTap === tapKey;
-
-    showWaterfallHoverTooltip(meta, eventData);
-
-    if (meta.type === 'base' || meta.type === 'current') {
-        AppState.pendingWaterfallTap = null;
-        return;
-    }
-
-    if (meta.type === 'other') {
-        AppState.pendingWaterfallTap = null;
-        if (isSameTap) {
-            showMessage('error', '“其他”包含多个项目，请点击具体柱子或在明细表筛选后下钻。');
-        }
-        return;
-    }
-
-    if (!meta.drillable) {
-        AppState.pendingWaterfallTap = null;
-        if (isSameTap) showMessage('success', `已到最后一层级：${meta.dimName}`);
-        return;
-    }
-
-    if (isSameTap) {
-        AppState.pendingWaterfallTap = null;
-        handleWaterfallBarClick(meta, dimCol, level);
-        return;
-    }
-
-    AppState.pendingWaterfallTap = tapKey;
+    hideWaterfallHoverTooltip();
+    renderWaterfallTouchCard(meta, dimCol, level);
 }
 
-function getWaterfallTapKey(meta, dimCol, level) {
-    return `${level}|${dimCol}|${meta.type}|${getDetailTextValue(meta.rawValue || meta.label)}`;
+function renderWaterfallTouchCard(meta, dimCol, level) {
+    const container = document.getElementById(`waterfall-touch-card-${level}`);
+    if (!container) return;
+
+    clearWaterfallTouchCards(container);
+    container.innerHTML = buildWaterfallTooltipHTML(meta, 'touch');
+    container.classList.add('visible');
+
+    const drillButton = container.querySelector('[data-waterfall-touch-drill]');
+    if (drillButton) {
+        drillButton.addEventListener('click', () => handleWaterfallBarClick(meta, dimCol, level));
+    }
+}
+
+function clearWaterfallTouchCards(exceptContainer = null) {
+    document.querySelectorAll('.waterfall-touch-host').forEach((container) => {
+        if (container === exceptContainer) return;
+        container.innerHTML = '';
+        container.classList.remove('visible');
+    });
 }
 
 function handleWaterfallBarClick(meta, dimCol, level) {
@@ -1913,6 +1976,7 @@ function handleWaterfallBarClick(meta, dimCol, level) {
     }
 
     AppState.selectedDims[dimCol] = [value];
+    clearWaterfallTouchCards();
 
     for (let i = level + 1; i < AppState.drillOrder.length; i++) {
         AppState.selectedDims[AppState.drillOrder[i]] = null;

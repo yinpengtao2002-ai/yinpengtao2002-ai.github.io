@@ -100,6 +100,10 @@
     pointer-events: none;
 }
 
+.business-tool .sidebar-backdrop {
+    display: none;
+}
+
 .business-tool .sidebar-toggle {
     position: fixed;
     left: calc(var(--sidebar-width) - 42px);
@@ -1815,6 +1819,22 @@
         min-width: var(--sidebar-width);
         padding-top: 4.6rem;
         box-shadow: 8px 0 30px rgba(20, 20, 19, 0.14);
+    }
+
+    .business-tool .sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 25;
+        display: block;
+        background: rgba(20, 20, 19, 0.28);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+
+    .business-tool.sidebar-open .sidebar-backdrop {
+        opacity: 1;
+        pointer-events: auto;
     }
 
     .business-tool:not([data-initialized="true"]) .sidebar {

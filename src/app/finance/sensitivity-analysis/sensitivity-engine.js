@@ -627,8 +627,9 @@ function initControlEvents() {
     });
     document.getElementById("btn-csv-template").addEventListener("click", () => downloadTemplate("csv"));
     document.getElementById("btn-xlsx-template").addEventListener("click", () => downloadTemplate("xlsx"));
-    document.getElementById("sidebar-toggle").addEventListener("click", () => toggleSidebar(true));
-    document.getElementById("sidebar-expand").addEventListener("click", () => toggleSidebar(false));
+    document.getElementById("sidebar-toggle").addEventListener("click", () => toggleSidebar(false));
+    document.getElementById("sidebar-expand").addEventListener("click", () => toggleSidebar(true));
+    document.getElementById("sidebar-backdrop")?.addEventListener("click", () => toggleSidebar(false));
 
     document.getElementById("adjustment-inputs").addEventListener("input", (event) => {
         if (!event.target.classList.contains("adjustment-input")) return;
@@ -1530,20 +1531,28 @@ function resetModel() {
     renderAll();
 }
 
-function toggleSidebar(shouldCollapse) {
+function isMobileSidebarViewport() {
+    return typeof window !== "undefined" && window.matchMedia("(max-width: 820px)").matches;
+}
+
+function toggleSidebar(open) {
+    const root = document.getElementById("sensitivity-tool-root");
     const sidebar = document.getElementById("sidebar");
     const expand = document.getElementById("sidebar-expand");
-    sidebar.classList.toggle("collapsed", shouldCollapse);
-    expand.style.display = shouldCollapse ? "block" : "none";
+    const toggle = document.getElementById("sidebar-toggle");
+    sidebar.classList.toggle("collapsed", !open);
+    root?.classList.toggle("sidebar-open", open && isMobileSidebarViewport());
+    expand.style.display = open ? "none" : "block";
+    expand.setAttribute("aria-expanded", String(open));
+    toggle?.setAttribute("aria-expanded", String(open));
     schedulePlotResize();
 }
 
 function initResponsiveSidebar() {
     if (typeof window === "undefined") return;
-    const isMobileViewport = window.matchMedia("(max-width: 820px)").matches;
-    if (isMobileViewport) {
-        toggleSidebar(true);
-    }
+    const media = window.matchMedia("(max-width: 820px)");
+    toggleSidebar(!media.matches);
+    media.addEventListener("change", (event) => toggleSidebar(!event.matches));
 }
 
 function resizePlotlyCharts() {

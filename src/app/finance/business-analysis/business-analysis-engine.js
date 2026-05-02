@@ -328,6 +328,10 @@
         return typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
     }
 
+    function isCompactUnitChartViewport() {
+        return typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
+    }
+
     function compactBridgeAxisLabel(value) {
         const labels = {
             "预算边际总额": "预算边际",
@@ -1500,10 +1504,54 @@
     function renderUnitMarginChart(rows) {
         const summary = summarize(rows);
         const dimension = currentAnalysisDimension();
+        const compact = isCompactUnitChartViewport();
         const dimRows = buildDimensionRows(rows)
             .filter((item) => Math.abs(item.actual.unitNetRevenue) > 1e-9 || Math.abs(item.actual.unitContributionMargin) > 1e-9)
             .slice(0, 12);
         const maxVolume = Math.max(...dimRows.map((item) => Math.abs(item.actual.salesVolume)), 0.1);
+        const budgetAnnotations = compact
+            ? [{
+                xref: "paper",
+                yref: "paper",
+                x: 0,
+                y: 1.18,
+                xanchor: "left",
+                yanchor: "bottom",
+                showarrow: false,
+                align: "left",
+                text: `预算参考<br>净收入 ${formatUnitAmount(summary.budget.unitNetRevenue)} ｜ 边际 ${formatUnitAmount(summary.budget.unitContributionMargin)}`,
+                font: { size: 10, color: COLORS.muted },
+                bgcolor: "rgba(255,255,255,0.9)",
+                bordercolor: "rgba(232, 230, 220, 0.95)",
+                borderpad: 4
+            }]
+            : [{
+                xref: "x",
+                yref: "paper",
+                x: summary.budget.unitNetRevenue,
+                y: 1.04,
+                xanchor: "center",
+                yanchor: "bottom",
+                showarrow: false,
+                text: "预算单车净收入",
+                font: { size: 11, color: COLORS.muted },
+                bgcolor: "#ffffff",
+                bordercolor: "rgba(232, 230, 220, 0.95)",
+                borderpad: 4
+            }, {
+                xref: "paper",
+                yref: "y",
+                x: 1.01,
+                y: summary.budget.unitContributionMargin,
+                xanchor: "right",
+                yanchor: "middle",
+                showarrow: false,
+                text: "预算单车边际",
+                font: { size: 11, color: COLORS.muted },
+                bgcolor: "#ffffff",
+                bordercolor: "rgba(232, 230, 220, 0.95)",
+                borderpad: 4
+            }];
 
         Plotly.react("unit-margin-chart", [
             {
@@ -1531,34 +1579,8 @@
             }
         ], plotLayout({
             showlegend: false,
-            margin: { l: 58, r: 24, t: 58, b: 96 },
-            annotations: [{
-                xref: "x",
-                yref: "paper",
-                x: summary.budget.unitNetRevenue,
-                y: 1.04,
-                xanchor: "center",
-                yanchor: "bottom",
-                showarrow: false,
-                text: "预算单车净收入",
-                font: { size: 11, color: COLORS.muted },
-                bgcolor: "#ffffff",
-                bordercolor: "rgba(232, 230, 220, 0.95)",
-                borderpad: 4
-            }, {
-                xref: "paper",
-                yref: "y",
-                x: 1.01,
-                y: summary.budget.unitContributionMargin,
-                xanchor: "right",
-                yanchor: "middle",
-                showarrow: false,
-                text: "预算单车边际",
-                font: { size: 11, color: COLORS.muted },
-                bgcolor: "#ffffff",
-                bordercolor: "rgba(232, 230, 220, 0.95)",
-                borderpad: 4
-            }],
+            margin: compact ? { l: 52, r: 18, t: 76, b: 78 } : { l: 58, r: 24, t: 58, b: 96 },
+            annotations: budgetAnnotations,
             shapes: [
                 {
                     type: "line",
@@ -1581,8 +1603,8 @@
                     line: { color: "rgba(116, 113, 104, 0.38)", width: 1, dash: "dash" }
                 }
             ],
-            xaxis: { title: "单车净收入（万元/辆）", gridcolor: COLORS.grid, zerolinecolor: COLORS.grid },
-            yaxis: { title: "单车边际（万元/辆）", gridcolor: COLORS.grid, zerolinecolor: COLORS.grid }
+            xaxis: { title: "单车净收入（万元/辆）", tickfont: { size: compact ? 10 : 12 }, gridcolor: COLORS.grid, zerolinecolor: COLORS.grid },
+            yaxis: { title: "单车边际（万元/辆）", tickfont: { size: compact ? 10 : 12 }, gridcolor: COLORS.grid, zerolinecolor: COLORS.grid }
         }), plotConfig());
 
     }
@@ -1967,6 +1989,27 @@
         });
     }
 
+    function dismissWaterfallTouchCard() {
+        renderWaterfallTouchCard(null);
+    }
+
+    function bindWaterfallTouchDismiss() {
+        const root = byId("business-analysis-root");
+        if (!root || root.dataset.waterfallTouchDismissBound === "true") return;
+
+        document.addEventListener("click", (event) => {
+            if (!isTouchLikeViewport()) return;
+            const touchHost = byId("dimension-waterfall-touch-card");
+            if (!touchHost || !touchHost.innerHTML.trim()) return;
+            const target = event.target;
+            if (target?.closest?.("#dimension-waterfall-touch-card")) return;
+            if (target?.closest?.("#dimension-waterfall-chart")) return;
+            dismissWaterfallTouchCard();
+        });
+
+        root.dataset.waterfallTouchDismissBound = "true";
+    }
+
     function renderWaterfallTouchCard(item, dimension) {
         const container = byId("dimension-waterfall-touch-card");
         if (!container) return;
@@ -1997,6 +2040,7 @@
 
     function bindWaterfallDrill(visual, dimension, rows) {
         if (!visual || typeof visual.on !== "function") return;
+        bindWaterfallTouchDismiss();
         visual.removeAllListeners?.("plotly_click");
         visual.removeAllListeners?.("plotly_hover");
         visual.removeAllListeners?.("plotly_unhover");
@@ -2029,6 +2073,11 @@
             }
             const tooltip = byId("dimension-waterfall-tooltip");
             if (tooltip?.classList.contains("visible")) positionWaterfallTooltip(tooltip, event);
+        });
+        visual.addEventListener("click", (event) => {
+            if (!isTouchLikeViewport()) return;
+            const index = waterfallPointIndexFromEvent(visual, event);
+            if (index < 0) dismissWaterfallTouchCard();
         });
         visual.on("plotly_click", (event) => {
             const point = event?.points?.[0];
@@ -2701,25 +2750,54 @@
         updateAll();
     }
 
+    function isMobileSidebarViewport() {
+        return typeof window !== "undefined" && window.matchMedia("(max-width: 820px)").matches;
+    }
+
+    function setSidebarOpen(open) {
+        const root = byId("business-analysis-root");
+        const sidebar = byId("business-sidebar");
+        const expand = byId("sidebar-expand");
+        const toggle = byId("sidebar-toggle");
+        if (!root || !sidebar || !expand) return;
+
+        sidebar.classList.toggle("collapsed", !open);
+        root.classList.toggle("sidebar-open", open && isMobileSidebarViewport());
+        expand.style.display = open ? "none" : "inline-flex";
+        expand.setAttribute("aria-expanded", String(open));
+        toggle?.setAttribute("aria-expanded", String(open));
+    }
+
+    function closeSidebarOnMobile() {
+        if (isMobileSidebarViewport()) setSidebarOpen(false);
+    }
+
     function bindSidebar() {
         const sidebar = byId("business-sidebar");
         const toggle = byId("sidebar-toggle");
         const expand = byId("sidebar-expand");
+        const backdrop = byId("sidebar-backdrop");
+        const root = byId("business-analysis-root");
         if (!sidebar || !toggle || !expand) return;
 
-        if (window.matchMedia("(max-width: 820px)").matches) {
-            sidebar.classList.add("collapsed");
-            expand.style.display = "inline-flex";
+        setSidebarOpen(!isMobileSidebarViewport());
+
+        if (root && root.dataset.sidebarMediaBound !== "true") {
+            window.matchMedia("(max-width: 820px)").addEventListener("change", (event) => {
+                setSidebarOpen(!event.matches);
+            });
+            root.dataset.sidebarMediaBound = "true";
         }
 
         bindOnce(toggle, "click", () => {
-            sidebar.classList.add("collapsed");
-            expand.style.display = "inline-flex";
+            setSidebarOpen(false);
         }, "sidebar-toggle");
         bindOnce(expand, "click", () => {
-            sidebar.classList.remove("collapsed");
-            expand.style.display = "none";
+            setSidebarOpen(true);
         }, "sidebar-expand");
+        bindOnce(backdrop, "click", () => {
+            setSidebarOpen(false);
+        }, "sidebar-backdrop");
     }
 
     function bindUpload() {
@@ -2766,9 +2844,11 @@
                 const value = event.target?.value || "";
                 if (value) {
                     drillToDimensionValue(dimension, value);
+                    if (event.target?.closest?.("#business-sidebar")) closeSidebarOnMobile();
                     return;
                 }
                 clearDimensionFilter(dimension);
+                if (event.target?.closest?.("#business-sidebar")) closeSidebarOnMobile();
             }, `ranking-dimension-filter-${select.id || "inline"}`);
         });
 
@@ -2778,7 +2858,10 @@
         bindOnce(byId("btn-reset"), "click", resetFilters, "btn-reset");
         bindOnce(byId("btn-export"), "click", exportSummary, "btn-export");
         Array.from(document.querySelectorAll("[data-ranking-clear]")).forEach((button) => {
-            bindOnce(button, "click", clearLastDimensionFilter, `ranking-clear-${button.id || "inline"}`);
+            bindOnce(button, "click", () => {
+                clearLastDimensionFilter();
+                if (button.closest?.("#business-sidebar")) closeSidebarOnMobile();
+            }, `ranking-clear-${button.id || "inline"}`);
         });
         bindOnce(byId("btn-add-subject-row"), "click", () => {
             syncManualDrafts();

@@ -185,6 +185,8 @@ export default function BusinessAnalysisTool() {
                 </section>
             </aside>
 
+            <div id="sidebar-backdrop" className="sidebar-backdrop" aria-hidden="true" />
+
             <button id="sidebar-expand" className="sidebar-expand" type="button" style={{ display: "none" }} aria-label="展开控制台">
                 控制台
             </button>
