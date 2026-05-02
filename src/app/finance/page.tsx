@@ -50,7 +50,7 @@ export default function FinancePage() {
             </h1>
           </div>
           <p style={{ fontSize: "1rem", color: "var(--muted)", lineHeight: 1.6 }}>
-            这里收录的是我自己搭建并持续打磨的财务模型和分析工具，并整理成可以直接上手使用的版本。
+            这里收录的是我自己搭建并持续打磨的财务模型和分析工具，欢迎大家使用。
           </p>
           <p style={{ fontSize: "0.875rem", color: "var(--muted)", opacity: 0.6, marginTop: "0.5rem" }}>
             共 {financeContent.length} 个模型
