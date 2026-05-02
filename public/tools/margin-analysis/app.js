@@ -21,11 +21,14 @@ const AppState = {
     },
     unitMetricType: '边际',
     availableDimsInData: [],
-    calculationResults: null
+    calculationResults: null,
+    attributionViewModes: {}
 };
 
 const ALL_DIMENSIONS = ['Dim_A', 'Dim_B', 'Dim_C', 'Dim_D', 'Dim_E'];
 const PLOT_FONT_FAMILY = 'PingFang SC, Microsoft YaHei, Helvetica Neue, Arial, sans-serif';
+const ATTRIBUTION_VIEW_SELF = 'self';
+const ATTRIBUTION_VIEW_GLOBAL = 'global';
 
 const DIM_ICONS = {
     Dim_A: '🌍', Dim_B: '🏳️', Dim_C: '🚗',
@@ -59,7 +62,7 @@ if (typeof document !== 'undefined') {
             const expandBtn = document.getElementById("sidebar-expand");
             sidebar.classList.add("collapsed");
             document.body.classList.remove("sidebar-open");
-            expandBtn.style.display = "flex";
+            expandBtn.style.display = "inline-flex";
             schedulePlotResize();
         }
     });
@@ -96,7 +99,7 @@ function initSidebarToggle() {
     const setSidebarOpen = (open) => {
         sidebar.classList.toggle('collapsed', !open);
         document.body.classList.toggle('sidebar-open', open && isSidebarOverlayViewport());
-        expandBtn.style.display = open ? 'none' : 'flex';
+        expandBtn.style.display = open ? 'none' : 'inline-flex';
         expandBtn.setAttribute('aria-expanded', String(open));
         toggleBtn.setAttribute('aria-expanded', String(open));
         schedulePlotResize();
@@ -131,7 +134,6 @@ function schedulePlotResize() {
     window.requestAnimationFrame(resizePlotlyCharts);
     window.setTimeout(resizePlotlyCharts, 320);
 }
-
 
 // ==================== 文件上传 ====================
 function initFileUpload() {
@@ -417,6 +419,7 @@ function processLoadedData(rows, sourceName) {
     // 重置维度筛选
     AppState.selectedDims = {};
     ALL_DIMENSIONS.forEach(d => AppState.selectedDims[d] = null);
+    AppState.attributionViewModes = {};
 
     showMessage('success', `✅ 数据已加载 (${sourceName}): ${rows.length} 行, ${AppState.months.length} 个月份`);
     onDataLoaded();
@@ -684,111 +687,175 @@ function populateDimConfig() {
 }
 
 
-// ==================== 下钻顺序选择器 ====================
-const LEVEL_LABELS = ['①', '②', '③', '④', '⑤'];
-const LEVEL_NAMES = ['一', '二', '三', '四', '五'];
-
+// ==================== 下钻顺序路径 ====================
 function populateDrillOrder() {
     const container = document.getElementById('drill-order-selects');
+    if (!container) return;
     container.innerHTML = '';
 
     const availableDims = AppState.availableDimsInData;
-    const maxLevels = Math.min(5, availableDims.length);
+    if (!availableDims.length) {
+        const empty = document.createElement('p');
+        empty.className = 'drill-train-empty';
+        empty.textContent = '暂无可用维度';
+        container.appendChild(empty);
+        return;
+    }
 
-    for (let level = 0; level < maxLevels; level++) {
-        const group = document.createElement('div');
-        group.className = 'form-group';
+    const activeOrder = getNormalizedDrillOrder(AppState.drillOrder);
+    if (activeOrder.length !== AppState.drillOrder.length || activeOrder.some((dim, index) => dim !== AppState.drillOrder[index])) {
+        AppState.drillOrder = activeOrder;
+    }
 
-        const label = document.createElement('label');
-        label.className = 'form-label';
-        label.textContent = `${LEVEL_LABELS[level]} 第${LEVEL_NAMES[level]}层级`;
+    const activeIndex = getActiveDrillLevelIndex(activeOrder);
+    const activeDim = activeOrder[activeIndex] || activeOrder[0];
+    const unusedDims = availableDims.filter(dim => !activeOrder.includes(dim));
 
-        const select = document.createElement('select');
-        select.className = 'form-select';
-        select.dataset.level = level;
+    const head = document.createElement('div');
+    head.className = 'drill-train-head';
+    head.innerHTML = `
+        <span>维度路径</span>
+        <strong>${activeDim ? `当前层：${escapeHTML(getDimensionLabel(activeDim))}` : '未配置'}</strong>
+    `;
+    container.appendChild(head);
 
-        // 构建选项: "无" + 尚未被更高层级选中的维度
-        rebuildDrillSelectOptions(select, level);
+    const train = document.createElement('div');
+    train.className = 'dimension-train margin-dimension-train';
+    train.setAttribute('aria-label', '下钻维度路径');
 
-        // 设置默认值
-        if (level < AppState.drillOrder.length) {
-            select.value = AppState.drillOrder[level];
-        } else {
-            select.value = '';
-        }
+    activeOrder.forEach((dim, index) => {
+        train.appendChild(buildDrillTrainCar(dim, index, activeIndex, activeOrder.length));
+    });
+    container.appendChild(train);
 
-        select.addEventListener('change', () => {
-            onDrillOrderChange();
+    const hint = document.createElement('p');
+    hint.className = 'dimension-train-hint';
+    hint.textContent = activeOrder.length > 1 ? '调整路径会清空当前钻取并重新计算。' : '至少保留一个下钻维度。';
+    container.appendChild(hint);
+
+    const drawer = document.createElement('div');
+    drawer.className = 'drill-dimension-drawer';
+    const drawerTitle = document.createElement('span');
+    drawerTitle.className = 'drill-dimension-drawer-title';
+    drawerTitle.textContent = '未启用维度';
+    drawer.appendChild(drawerTitle);
+
+    const drawerList = document.createElement('div');
+    drawerList.className = 'drill-dimension-add-list';
+    if (unusedDims.length) {
+        unusedDims.forEach(dim => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'drill-dimension-add';
+            button.textContent = `${DIM_ICONS[dim] || ''} ${getDimensionLabel(dim)}`;
+            button.addEventListener('click', () => {
+                applyDrillOrder(activeOrder.concat(dim));
+            });
+            drawerList.appendChild(button);
         });
-
-        group.appendChild(label);
-        group.appendChild(select);
-        container.appendChild(group);
+    } else {
+        const empty = document.createElement('span');
+        empty.className = 'drill-train-empty';
+        empty.textContent = '全部维度已启用';
+        drawerList.appendChild(empty);
     }
+    drawer.appendChild(drawerList);
+    container.appendChild(drawer);
 }
 
-function rebuildDrillSelectOptions(select, level) {
-    const currentValue = select.value;
-    select.innerHTML = '';
-
-    // "无" 选项
-    const noneOpt = document.createElement('option');
-    noneOpt.value = '';
-    noneOpt.textContent = '无';
-    select.appendChild(noneOpt);
-
-    // 已被其他层级选中的维度（不含当前层级自身）
-    const usedDims = getUsedDimsExcluding(level);
-
-    AppState.availableDimsInData.forEach(dim => {
-        if (!usedDims.includes(dim)) {
-            const opt = document.createElement('option');
-            opt.value = dim;
-            opt.textContent = `${DIM_ICONS[dim] || ''} ${AppState.customDimNames[dim] || dim}`;
-            select.appendChild(opt);
-        }
-    });
-
-    // 恢复之前的值（如果仍然可用）
-    if (currentValue && select.querySelector(`option[value="${currentValue}"]`)) {
-        select.value = currentValue;
-    }
+function getDimensionLabel(dim) {
+    return AppState.customDimNames[dim] || dim;
 }
 
-function getUsedDimsExcluding(excludeLevel) {
-    const container = document.getElementById('drill-order-selects');
-    const selects = container.querySelectorAll('select');
-    const used = [];
-    selects.forEach((sel, idx) => {
-        if (idx !== excludeLevel && sel.value) {
-            used.push(sel.value);
-        }
+function getNormalizedDrillOrder(order) {
+    const used = new Set();
+    const normalized = [];
+    order.forEach(dim => {
+        if (!AppState.availableDimsInData.includes(dim) || used.has(dim)) return;
+        used.add(dim);
+        normalized.push(dim);
     });
-    return used;
+    return normalized.length ? normalized : AppState.availableDimsInData.slice(0, 1);
 }
 
-function onDrillOrderChange() {
-    const container = document.getElementById('drill-order-selects');
-    const selects = container.querySelectorAll('select');
+function getActiveDrillLevelIndex(order = AppState.drillOrder) {
+    const firstOpenIndex = order.findIndex(dim => !(AppState.selectedDims[dim] || []).length);
+    if (firstOpenIndex >= 0) return firstOpenIndex;
+    return Math.max(0, order.length - 1);
+}
 
-    // 收集新的下钻顺序（过滤掉"无"）
-    const newOrder = [];
-    selects.forEach(sel => {
-        if (sel.value) newOrder.push(sel.value);
+function buildDrillTrainCar(dim, index, activeIndex, orderLength) {
+    const car = document.createElement('div');
+    const hasFilter = Boolean((AppState.selectedDims[dim] || []).length);
+    car.className = `dimension-train-car ${hasFilter ? 'filtered' : ''} ${index === activeIndex ? 'active' : ''}`;
+    car.draggable = true;
+    car.dataset.dimensionIndex = String(index);
+    car.dataset.dimension = dim;
+    car.title = '拖动调整顺序';
+    car.innerHTML = `
+        <span>${hasFilter ? '已选' : index === activeIndex ? '当前' : index + 1}</span>
+        <strong>${escapeHTML(DIM_ICONS[dim] || '')} ${escapeHTML(getDimensionLabel(dim))}</strong>
+        <button type="button" class="dimension-train-remove" ${orderLength <= 1 ? 'disabled' : ''} aria-label="移除${escapeHTML(getDimensionLabel(dim))}">×</button>
+    `;
+
+    const removeButton = car.querySelector('.dimension-train-remove');
+    removeButton?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (orderLength <= 1) return;
+        applyDrillOrder(AppState.drillOrder.filter(item => item !== dim));
     });
 
-    // 重建每个 select 的可选项（互斥逻辑）
-    selects.forEach((sel, idx) => {
-        rebuildDrillSelectOptions(sel, idx);
+    car.addEventListener('dragstart', (event) => {
+        car.classList.add('dragging');
+        event.dataTransfer?.setData('text/plain', String(index));
+        if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
     });
 
-    // 更新 AppState
-    AppState.drillOrder = newOrder.length > 0 ? newOrder : AppState.availableDimsInData.slice(0, 1);
+    car.addEventListener('dragend', () => {
+        car.classList.remove('dragging');
+        car.classList.remove('drop-target');
+    });
 
-    // 重置维度筛选
+    car.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        car.classList.add('drop-target');
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    });
+
+    car.addEventListener('dragleave', () => {
+        car.classList.remove('drop-target');
+    });
+
+    car.addEventListener('drop', (event) => {
+        event.preventDefault();
+        car.classList.remove('drop-target');
+        const fromIndex = Number(event.dataTransfer?.getData('text/plain'));
+        moveDrillDimensionInOrder(fromIndex, index);
+    });
+
+    return car;
+}
+
+function moveDrillDimensionInOrder(fromIndex, toIndex) {
+    const order = [...AppState.drillOrder];
+    if (fromIndex === toIndex) return;
+    if (fromIndex < 0 || toIndex < 0 || fromIndex >= order.length || toIndex >= order.length) return;
+    const [moved] = order.splice(fromIndex, 1);
+    order.splice(toIndex, 0, moved);
+    applyDrillOrder(order);
+}
+
+function applyDrillOrder(nextOrder) {
+    const normalized = getNormalizedDrillOrder(nextOrder);
+    const isSame = normalized.length === AppState.drillOrder.length
+        && normalized.every((dim, index) => dim === AppState.drillOrder[index]);
+    if (isSame) return;
+
+    AppState.drillOrder = normalized;
     ALL_DIMENSIONS.forEach(d => AppState.selectedDims[d] = null);
+    AppState.attributionViewModes = {};
+    populateDrillOrder();
     populateDrillFilters();
-
     triggerUpdate();
 }
 
@@ -1016,6 +1083,7 @@ function initResetFilter() {
     if (btn) {
         btn.addEventListener('click', () => {
             ALL_DIMENSIONS.forEach(d => AppState.selectedDims[d] = null);
+            AppState.attributionViewModes = {};
             populateDrillFilters();
             triggerUpdate();
         });
@@ -1227,7 +1295,7 @@ function triggerUpdate() {
         const dfLevel = filterDataForLevel(level);
 
         if (dfLevel.length === 0) {
-            levelResults.push({ dim, effects: null, displayData: null, globalDisplayData: null, drillInfo: [] });
+            levelResults.push({ dim, effects: null, displayData: null, globalEffects: null, globalDisplayData: null, drillInfo: [] });
             continue;
         }
 
@@ -1249,6 +1317,7 @@ function triggerUpdate() {
         );
 
         // 如果是下钻状态，额外计算全球视角的贡献
+        let globalEffects = null;
         let globalDisplayData = null;
         const isDrilled = level > 0 && drillOrder.slice(0, level).some(prevDim => {
             const sel = AppState.selectedDims[prevDim];
@@ -1256,7 +1325,7 @@ function triggerUpdate() {
         });
 
         if (isDrilled) {
-            const globalEffects = calculateDimensionPVMEffects(
+            globalEffects = calculateDimensionPVMEffects(
                 dfLevel, baseMonth, currMonth, dim,
                 globalCurr.totalVol, globalBase.totalVol, globalBase.avgMargin
             );
@@ -1283,6 +1352,7 @@ function triggerUpdate() {
             dim,
             effects,
             displayData,
+            globalEffects,
             globalDisplayData,
             isDrilled,
             drillInfo,
@@ -1332,7 +1402,7 @@ function updateMetricCards(globalBase, globalCurr, totalDiff) {
 // ==================== 渲染图表和表格 ====================
 function renderCharts() {
     if (!AppState.calculationResults) return;
-    const { levelResults } = AppState.calculationResults;
+    const { levelResults, globalBase, globalCurr } = AppState.calculationResults;
     const container = document.getElementById('charts-container');
     hideWaterfallHoverTooltip();
     clearWaterfallTouchCards();
@@ -1353,6 +1423,9 @@ function renderCharts() {
         const dim = lr.dim;
         const dimName = dimNames[dim] || dim;
         const dimIcon = DIM_ICONS[dim] || '📊';
+        const unitMetricLabel = getUnitMetricLabel();
+        const viewMode = getAttributionViewMode(level, lr);
+        const viewConfig = getAttributionViewConfig(lr, dimName, unitMetricLabel, viewMode, globalBase, globalCurr);
 
         // 层级容器
         const section = document.createElement('div');
@@ -1360,12 +1433,7 @@ function renderCharts() {
         section.dataset.level = level;
 
         // 标题
-        const header = document.createElement('h2');
-        header.className = 'chart-level-title';
-        header.innerHTML = `${dimIcon} ${dimName}维度贡献分析`;
-        section.appendChild(header);
-
-        const unitMetricLabel = getUnitMetricLabel();
+        section.appendChild(buildChartLevelHeader(dimIcon, dimName, lr, level, viewMode));
 
         // 下钻信息提示
         if (lr.isDrilled && lr.drillInfo && lr.drillInfo.length > 0) {
@@ -1392,27 +1460,14 @@ function renderCharts() {
         detailDetails.className = 'usage-details chart-detail-table';
         const detailSummary = document.createElement('summary');
         detailSummary.className = 'usage-summary';
-        detailSummary.textContent = `📋 ${dimName}明细数据`;
+        detailSummary.textContent = `📋 ${dimName}明细数据（${viewConfig.tableLabel}）`;
         detailDetails.appendChild(detailSummary);
 
         const detailContent = document.createElement('div');
         detailContent.className = 'usage-content';
-        detailContent.appendChild(buildDetailTable(lr.displayData, dim, dimName));
+        detailContent.id = `detail-table-content-${level}`;
+        detailContent.appendChild(buildDetailTable(viewConfig.displayData, dim, dimName, viewConfig.isGlobal));
         detailDetails.appendChild(detailContent);
-
-        // 全球贡献表 (下钻时显示)
-        if (lr.isDrilled && lr.globalDisplayData) {
-            const globalDivider = document.createElement('hr');
-            globalDivider.className = 'section-divider';
-            detailContent.appendChild(globalDivider);
-
-            const globalTitle = document.createElement('h4');
-            globalTitle.className = 'global-contrib-title';
-            globalTitle.innerHTML = `🌐 对全球整体${unitMetricLabel}的贡献`;
-            detailContent.appendChild(globalTitle);
-
-            detailContent.appendChild(buildDetailTable(lr.globalDisplayData, dim, dimName, true));
-        }
 
         section.appendChild(detailDetails);
 
@@ -1426,13 +1481,14 @@ function renderCharts() {
         // 绘制瀑布图
         renderWaterfallChart(
             chartDiv.id,
-            lr.effects,
+            viewConfig.effects,
             dim,
-            `${dimName}贡献分解（按当前维度）`,
-            lr.levelAvgMarginBase,
-            lr.levelAvgMarginCurr,
+            viewConfig.title,
+            viewConfig.startValue,
+            viewConfig.endValue,
             colorSchemes[level % colorSchemes.length],
-            level
+            level,
+            viewConfig.chartOptions
         );
     });
 
@@ -1455,15 +1511,189 @@ function buildChartInteractionGuide() {
     mobile.className = 'chart-interaction-item';
     mobile.textContent = '手机端：点击柱子展开明细卡，再点卡片按钮进入下一层';
 
+    const viewSwitch = document.createElement('span');
+    viewSwitch.className = 'chart-interaction-item';
+    viewSwitch.textContent = '下钻后：可切换分析自身单车变动或对整体影响';
+
     guide.appendChild(title);
     guide.appendChild(desktop);
     guide.appendChild(mobile);
+    guide.appendChild(viewSwitch);
     return guide;
+}
+
+function canUseGlobalImpactView(levelResult) {
+    return Boolean(
+        levelResult?.isDrilled &&
+        levelResult.globalEffects?.length &&
+        levelResult.globalDisplayData?.length
+    );
+}
+
+function getAttributionViewMode(level, levelResult) {
+    if (!canUseGlobalImpactView(levelResult)) return ATTRIBUTION_VIEW_SELF;
+    return AppState.attributionViewModes[level] === ATTRIBUTION_VIEW_GLOBAL
+        ? ATTRIBUTION_VIEW_GLOBAL
+        : ATTRIBUTION_VIEW_SELF;
+}
+
+function buildChartLevelHeader(dimIcon, dimName, levelResult, level, activeMode) {
+    const header = document.createElement('div');
+    header.className = 'chart-level-header';
+
+    const title = document.createElement('h2');
+    title.className = 'chart-level-title';
+    title.innerHTML = `${dimIcon} ${dimName}维度贡献分析`;
+    header.appendChild(title);
+
+    if (!canUseGlobalImpactView(levelResult)) return header;
+
+    const switcher = document.createElement('div');
+    switcher.className = 'attribution-view-switch';
+    switcher.setAttribute('aria-label', '归因分析视角');
+
+    [
+        { mode: ATTRIBUTION_VIEW_SELF, label: '分析自身单车变动' },
+        { mode: ATTRIBUTION_VIEW_GLOBAL, label: '分析对整体影响' }
+    ].forEach(({ mode, label }) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `attribution-view-btn ${activeMode === mode ? 'active' : ''}`;
+        button.dataset.viewMode = mode;
+        button.textContent = label;
+        button.setAttribute('aria-pressed', activeMode === mode ? 'true' : 'false');
+        button.addEventListener('mousedown', (event) => {
+            event.preventDefault();
+        });
+        button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const currentMode = getAttributionViewMode(level, AppState.calculationResults?.levelResults?.[level]);
+            if (currentMode === mode) return;
+            AppState.attributionViewModes[level] = mode;
+            updateAttributionLevelView(level);
+        });
+        switcher.appendChild(button);
+    });
+
+    header.appendChild(switcher);
+    return header;
+}
+
+function updateAttributionLevelView(level) {
+    if (!AppState.calculationResults) return;
+
+    const renderContext = getAttributionLevelRenderContext(level);
+    if (!renderContext) return;
+
+    const { dim, dimName, viewMode, viewConfig, colorScheme } = renderContext;
+
+    document
+        .querySelectorAll(`.chart-level-section[data-level="${level}"] .attribution-view-btn`)
+        .forEach((button) => {
+            const isActive = button.dataset.viewMode === viewMode;
+            button.classList.toggle('active', isActive);
+            button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+
+    const detailSummary = document.querySelector(`.chart-level-section[data-level="${level}"] .chart-detail-table > summary`);
+    if (detailSummary) {
+        detailSummary.textContent = `📋 ${dimName}明细数据（${viewConfig.tableLabel}）`;
+    }
+
+    const detailContent = document.getElementById(`detail-table-content-${level}`);
+    if (detailContent) {
+        detailContent.innerHTML = '';
+        detailContent.appendChild(buildDetailTable(viewConfig.displayData, dim, dimName, viewConfig.isGlobal));
+    }
+
+    clearWaterfallTouchCards();
+    hideWaterfallHoverTooltip();
+    renderWaterfallChart(
+        `waterfall-chart-${level}`,
+        viewConfig.effects,
+        dim,
+        viewConfig.title,
+        viewConfig.startValue,
+        viewConfig.endValue,
+        colorScheme,
+        level,
+        viewConfig.chartOptions
+    );
+
+}
+
+function getAttributionLevelRenderContext(level) {
+    const { levelResults, globalBase, globalCurr } = AppState.calculationResults || {};
+    const lr = levelResults?.[level];
+    if (!lr?.effects || !lr.displayData) return null;
+
+    const dim = lr.dim;
+    const dimName = AppState.customDimNames[dim] || dim;
+    const unitMetricLabel = getUnitMetricLabel();
+    const viewMode = getAttributionViewMode(level, lr);
+    const viewConfig = getAttributionViewConfig(lr, dimName, unitMetricLabel, viewMode, globalBase, globalCurr);
+    const colorSchemes = ['claude', 'warm', 'soft'];
+
+    return {
+        lr,
+        dim,
+        dimName,
+        unitMetricLabel,
+        viewMode,
+        viewConfig,
+        colorScheme: colorSchemes[level % colorSchemes.length]
+    };
+}
+
+function getAttributionViewConfig(levelResult, dimName, unitMetricLabel, viewMode, globalBase, globalCurr) {
+    if (viewMode === ATTRIBUTION_VIEW_GLOBAL && canUseGlobalImpactView(levelResult)) {
+        const impactValue = levelResult.globalEffects.reduce((sum, row) => sum + (row.Total_Contribution || 0), 0);
+        const impactMetricLabel = `对整体${unitMetricLabel}影响`;
+        return {
+            effects: levelResult.globalEffects,
+            displayData: levelResult.globalDisplayData,
+            isGlobal: true,
+            tableLabel: '对整体影响',
+            title: `${dimName}对整体影响拆解（按当前维度）`,
+            startValue: 0,
+            endValue: impactValue,
+            chartOptions: {
+                startLabel: '贡献起点',
+                endLabel: '对整体影响',
+                yAxisTitle: `${impactMetricLabel} (¥)`,
+                annotationLabel: '对整体影响',
+                showPercent: false,
+                totalVolBase: globalBase.totalVol,
+                totalVolCurr: globalCurr.totalVol,
+                startMeta: {
+                    kicker: '贡献起点',
+                    displayMetricLabel: impactMetricLabel
+                },
+                endMeta: {
+                    kicker: '整体影响',
+                    displayMetricLabel: impactMetricLabel
+                }
+            }
+        };
+    }
+
+    return {
+        effects: levelResult.effects,
+        displayData: levelResult.displayData,
+        isGlobal: false,
+        tableLabel: levelResult.isDrilled ? '自身单车变动' : '整体单车变动',
+        title: levelResult.isDrilled
+            ? `${dimName}贡献分解（下钻对象自身）`
+            : `${dimName}贡献分解（按当前维度）`,
+        startValue: levelResult.levelAvgMarginBase,
+        endValue: levelResult.levelAvgMarginCurr,
+        chartOptions: {}
+    };
 }
 
 
 // ==================== 瀑布图渲染 ====================
-function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargin, currMargin, colorScheme, level = 0) {
+function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargin, currMargin, colorScheme, level = 0, chartOptions = {}) {
     // 按绝对值排序取 Top 10，再按先负后正排列
     const sorted = [...effectsData].sort((a, b) => Math.abs(b.Total_Contribution) - Math.abs(a.Total_Contribution));
 
@@ -1471,8 +1701,10 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
 
     const unitMetricLabel = getUnitMetricLabel();
     const dimName = AppState.customDimNames[dimCol] || dimCol;
-    const totalVolBase = effectsData.reduce((s, r) => s + (r.Vol_Base || 0), 0);
-    const totalVolCurr = effectsData.reduce((s, r) => s + (r.Vol_Curr || 0), 0);
+    const startLabel = chartOptions.startLabel || `基期${unitMetricLabel}`;
+    const endLabel = chartOptions.endLabel || `当期${unitMetricLabel}`;
+    const totalVolBase = chartOptions.totalVolBase ?? effectsData.reduce((s, r) => s + (r.Vol_Base || 0), 0);
+    const totalVolCurr = chartOptions.totalVolCurr ?? effectsData.reduce((s, r) => s + (r.Vol_Curr || 0), 0);
 
     if (sorted.length > 10) {
         const top10 = sorted.slice(0, 10);
@@ -1482,26 +1714,26 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
         // 先负后正排序
         top10.sort((a, b) => a.Total_Contribution - b.Total_Contribution);
 
-        labels = [`基期${unitMetricLabel}`, ...top10.map(r => r[dimCol]), '其他', `当期${unitMetricLabel}`];
+        labels = [startLabel, ...top10.map(r => r[dimCol]), '其他', endLabel];
         values = [baseMargin, ...top10.map(r => r.Total_Contribution), othersSum, 0];
         measures = ['absolute', ...Array(11).fill('relative'), 'total'];
         barMetas = [
-            createWaterfallTotalMeta('base', `基期${unitMetricLabel}`, baseMargin, baseMargin, currMargin, unitMetricLabel),
+            createWaterfallTotalMeta('base', startLabel, baseMargin, baseMargin, currMargin, unitMetricLabel, chartOptions.startMeta),
             ...top10.map(row => createWaterfallItemMeta(row, dimCol, dimName, unitMetricLabel, level, totalVolBase, totalVolCurr)),
             createWaterfallOtherMeta(otherRows, dimCol, dimName, unitMetricLabel, totalVolBase, totalVolCurr),
-            createWaterfallTotalMeta('current', `当期${unitMetricLabel}`, currMargin, baseMargin, currMargin, unitMetricLabel)
+            createWaterfallTotalMeta('current', endLabel, currMargin, baseMargin, currMargin, unitMetricLabel, chartOptions.endMeta)
         ];
     } else {
         // 先负后正排序
         const sortedData = [...sorted].sort((a, b) => a.Total_Contribution - b.Total_Contribution);
 
-        labels = [`基期${unitMetricLabel}`, ...sortedData.map(r => r[dimCol]), `当期${unitMetricLabel}`];
+        labels = [startLabel, ...sortedData.map(r => r[dimCol]), endLabel];
         values = [baseMargin, ...sortedData.map(r => r.Total_Contribution), 0];
         measures = ['absolute', ...Array(sortedData.length).fill('relative'), 'total'];
         barMetas = [
-            createWaterfallTotalMeta('base', `基期${unitMetricLabel}`, baseMargin, baseMargin, currMargin, unitMetricLabel),
+            createWaterfallTotalMeta('base', startLabel, baseMargin, baseMargin, currMargin, unitMetricLabel, chartOptions.startMeta),
             ...sortedData.map(row => createWaterfallItemMeta(row, dimCol, dimName, unitMetricLabel, level, totalVolBase, totalVolCurr)),
-            createWaterfallTotalMeta('current', `当期${unitMetricLabel}`, currMargin, baseMargin, currMargin, unitMetricLabel)
+            createWaterfallTotalMeta('current', endLabel, currMargin, baseMargin, currMargin, unitMetricLabel, chartOptions.endMeta)
         ];
     }
 
@@ -1607,7 +1839,7 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
             fixedrange: true
         },
         yaxis: {
-            title: { text: `${unitMetricLabel} (¥)`, font: { size: 13, color: '#b0aea5' } },
+            title: { text: chartOptions.yAxisTitle || `${unitMetricLabel} (¥)`, font: { size: 13, color: '#b0aea5' } },
             gridcolor: 'rgba(232, 230, 220, 0.5)',
             tickfont: { size: 11, color: '#b0aea5' },
             tickformat: ',.0f',
@@ -1627,7 +1859,7 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
             y: 1.08,
             xref: 'paper',
             yref: 'paper',
-            text: `<b>变动: ¥${formatSignedNumber(deltaVal)}</b>  <span style="color: ${deltaColor}">(${pctChange >= 0 ? '+' : ''}${pctChange.toFixed(2)}%)</span>`,
+            text: `<b>${chartOptions.annotationLabel || '变动'}: ¥${formatSignedNumber(deltaVal)}</b>${chartOptions.showPercent === false ? '' : `  <span style="color: ${deltaColor}">(${pctChange >= 0 ? '+' : ''}${pctChange.toFixed(2)}%)</span>`}`,
             showarrow: false,
             font: { size: 15, color: deltaColor, family: PLOT_FONT_FAMILY },
             bgcolor: 'rgba(255, 255, 255, 0.95)',
@@ -1659,7 +1891,10 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
         staticPlot: false
     };
 
-    Plotly.newPlot(containerId, [trace], layout, config).then(() => {
+    const graphDiv = document.getElementById(containerId);
+    const plotMethod = graphDiv?.classList?.contains('js-plotly-plot') ? Plotly.react : Plotly.newPlot;
+
+    plotMethod(containerId, [trace], layout, config).then(() => {
         attachWaterfallInteractions(containerId, dimCol, level);
     });
 }
@@ -1727,7 +1962,7 @@ function createWaterfallOtherMeta(rows, dimCol, dimName, unitMetricLabel, totalV
     };
 }
 
-function createWaterfallTotalMeta(type, label, value, baseMargin, currMargin, unitMetricLabel) {
+function createWaterfallTotalMeta(type, label, value, baseMargin, currMargin, unitMetricLabel, options = {}) {
     return {
         type,
         label,
@@ -1736,6 +1971,8 @@ function createWaterfallTotalMeta(type, label, value, baseMargin, currMargin, un
         currMargin,
         contribution: type === 'current' ? currMargin - baseMargin : 0,
         unitMetricLabel,
+        displayMetricLabel: options.displayMetricLabel || unitMetricLabel,
+        kicker: options.kicker || '',
         drillable: false
     };
 }
@@ -1744,14 +1981,23 @@ function attachWaterfallInteractions(containerId, dimCol, level) {
     const graphDiv = document.getElementById(containerId);
     if (!graphDiv || !graphDiv.on) return;
 
-    graphDiv.addEventListener('click', (event) => {
+    graphDiv.removeAllListeners?.('plotly_hover');
+    graphDiv.removeAllListeners?.('plotly_unhover');
+    graphDiv.removeAllListeners?.('plotly_click');
+
+    if (graphDiv.__waterfallBlankClickHandler) {
+        graphDiv.removeEventListener('click', graphDiv.__waterfallBlankClickHandler);
+    }
+
+    graphDiv.__waterfallBlankClickHandler = (event) => {
         if (!isMobile()) return;
         const target = event.target;
         if (!(target instanceof Element)) return;
         if (target.closest('.waterfalllayer .point')) return;
         clearWaterfallTouchCards();
         hideWaterfallHoverTooltip();
-    });
+    };
+    graphDiv.addEventListener('click', graphDiv.__waterfallBlankClickHandler);
 
     graphDiv.on('plotly_hover', (eventData) => {
         if (isMobile()) return;
@@ -1841,12 +2087,14 @@ function buildWaterfallTooltipHTML(meta, mode = 'hover') {
         const delta = meta.currMargin - meta.baseMargin;
         const isCurrent = meta.type === 'current';
         const statusText = mode === 'touch' ? '汇总柱仅展示锚点' : '汇总柱不下钻';
+        const kicker = meta.kicker || (isCurrent ? '当期结果' : '基期锚点');
+        const displayMetricLabel = meta.displayMetricLabel || meta.unitMetricLabel;
         return `
             <div class="waterfall-tooltip-card ${isCurrent ? 'total' : 'base'}">
-                <div class="waterfall-tooltip-kicker">${isCurrent ? '当期结果' : '基期锚点'}</div>
+                <div class="waterfall-tooltip-kicker">${escapeHTML(kicker)}</div>
                 <div class="waterfall-tooltip-title">${escapeHTML(meta.label)}</div>
                 <div class="waterfall-tooltip-main">
-                    <span>${escapeHTML(meta.unitMetricLabel)}</span>
+                    <span>${escapeHTML(displayMetricLabel)}</span>
                     <strong>¥${formatNumber(meta.value)}</strong>
                 </div>
                 <div class="waterfall-tooltip-grid">
@@ -1982,6 +2230,14 @@ function handleWaterfallBarClick(meta, dimCol, level) {
         AppState.selectedDims[AppState.drillOrder[i]] = null;
     }
 
+    const currentViewMode = AppState.attributionViewModes[level] === ATTRIBUTION_VIEW_GLOBAL
+        ? ATTRIBUTION_VIEW_GLOBAL
+        : ATTRIBUTION_VIEW_SELF;
+    AppState.attributionViewModes[level + 1] = currentViewMode;
+    for (let i = level + 2; i < AppState.drillOrder.length; i++) {
+        delete AppState.attributionViewModes[i];
+    }
+
     hideWaterfallHoverTooltip();
     populateDrillFilters();
     triggerUpdate();
@@ -2016,9 +2272,9 @@ function buildDetailTable(displayData, dimCol, dimName, isGlobal) {
         { label: '当期占比%', type: 'number', getValue: row => row.Weight_Curr_Pct, format: formatPercent },
         { label: `基期${unitMetricLabel}`, type: 'number', getValue: row => row.Margin_Unit_Base, format: formatCurrency },
         { label: `当期${unitMetricLabel}`, type: 'number', getValue: row => row.Margin_Unit_Curr, format: formatCurrency },
-        { label: isGlobal ? '结构效应（全球）' : '结构效应', type: 'number', getValue: row => row.Mix_Effect, format: formatSignedNumber },
-        { label: isGlobal ? '费率效应（全球）' : '费率效应', type: 'number', getValue: row => row.Rate_Effect, format: formatSignedNumber },
-        { label: isGlobal ? `对全球${unitMetricLabel}贡献` : '总贡献', type: 'number', getValue: row => row.Total_Contribution, format: formatSignedNumber }
+        { label: isGlobal ? '结构效应（整体）' : '结构效应', type: 'number', getValue: row => row.Mix_Effect, format: formatSignedNumber },
+        { label: isGlobal ? '费率效应（整体）' : '费率效应', type: 'number', getValue: row => row.Rate_Effect, format: formatSignedNumber },
+        { label: isGlobal ? `对整体${unitMetricLabel}贡献` : '总贡献', type: 'number', getValue: row => row.Total_Contribution, format: formatSignedNumber }
     ];
     const rowMetas = [];
     const filterState = {

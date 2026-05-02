@@ -18,7 +18,7 @@
 
 <!-- ==================== 侧边栏 ==================== -->
 <aside id="sidebar" class="sidebar">
-    <button id="sidebar-toggle" class="sidebar-toggle" title="收起侧边栏">&laquo;</button>
+    <button id="sidebar-toggle" class="sidebar-toggle" title="收起控制台" aria-label="收起控制台">&laquo;</button>
 
     <!-- 数据中心 - 初始态（未加载数据时展开） -->
     <section id="data-center-init" class="sidebar-section">
@@ -109,7 +109,7 @@
     <section id="drill-order-section" class="sidebar-section" style="display:none;">
         <div class="divider"></div>
         <h2 class="sidebar-title">🔀 下钻顺序</h2>
-        <p class="caption">选择"无"可跳过该层级</p>
+        <p class="caption">拖动胶囊调整路径，点选未启用维度加入</p>
         <div id="drill-order-selects"></div>
     </section>
 
@@ -126,10 +126,7 @@
 <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
 <!-- 侧边栏折叠后的展开按钮 -->
-<button id="sidebar-expand" class="sidebar-expand" style="display:none;" title="展开侧边栏" aria-label="展开控制台">
-    <span class="sidebar-expand-icon">&raquo;</span>
-    <span class="sidebar-expand-text">控制台</span>
-</button>
+<button id="sidebar-expand" class="sidebar-expand" style="display:none;" title="展开控制台" aria-label="展开控制台">控制台</button>
 
 <!-- ==================== 主内容区 ==================== -->
 <main id="main-content" class="main-content">

@@ -131,3 +131,41 @@ test("display total row preserves totals and weighted unit margin", () => {
     approx(totalRow.Margin_Unit_Curr, 13.5, "current total unit margin");
     approx(totalRow.Total_Contribution, -1.5, "display total contribution");
 });
+
+test("drilled global-impact decomposition ties back to parent bar contribution", () => {
+    const data = [
+        { Month: "base", Dim_A: "EU", Dim_B: "DE", "Sales Volume": 100, "Total Margin": 1000 },
+        { Month: "base", Dim_A: "EU", Dim_B: "FR", "Sales Volume": 80, "Total Margin": 1200 },
+        { Month: "base", Dim_A: "NA", Dim_B: "US", "Sales Volume": 120, "Total Margin": 2400 },
+        { Month: "curr", Dim_A: "EU", Dim_B: "DE", "Sales Volume": 110, "Total Margin": 1320 },
+        { Month: "curr", Dim_A: "EU", Dim_B: "FR", "Sales Volume": 60, "Total Margin": 780 },
+        { Month: "curr", Dim_A: "NA", Dim_B: "US", "Sales Volume": 130, "Total Margin": 2600 },
+    ];
+
+    const base = calculateGlobalMetrics(data, "base");
+    const curr = calculateGlobalMetrics(data, "curr");
+    const parentEffects = calculateDimensionPVMEffects(
+        data,
+        "base",
+        "curr",
+        "Dim_A",
+        curr.totalVol,
+        base.totalVol,
+        base.avgMargin
+    );
+    const euParentContribution = rowByDim(parentEffects, "EU").Total_Contribution;
+
+    const euRows = data.filter((row) => row.Dim_A === "EU");
+    const childGlobalEffects = calculateDimensionPVMEffects(
+        euRows,
+        "base",
+        "curr",
+        "Dim_B",
+        curr.totalVol,
+        base.totalVol,
+        base.avgMargin
+    );
+    const childContribution = childGlobalEffects.reduce((sum, row) => sum + row.Total_Contribution, 0);
+
+    approx(childContribution, euParentContribution, "EU child decomposition should equal parent bar height");
+});

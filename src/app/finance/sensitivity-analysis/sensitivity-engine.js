@@ -1542,7 +1542,7 @@ function toggleSidebar(open) {
     const toggle = document.getElementById("sidebar-toggle");
     sidebar.classList.toggle("collapsed", !open);
     root?.classList.toggle("sidebar-open", open && isMobileSidebarViewport());
-    expand.style.display = open ? "none" : "block";
+    expand.style.display = open ? "none" : "inline-flex";
     expand.setAttribute("aria-expanded", String(open));
     toggle?.setAttribute("aria-expanded", String(open));
     schedulePlotResize();

@@ -97,12 +97,12 @@
 
 .sensitivity-tool .sidebar-toggle {
     position: fixed;
-    left: calc(var(--sidebar-width) - 42px);
-    top: 12px;
+    left: calc(var(--sidebar-width) - 46px);
+    top: 14px;
     z-index: 80;
     display: flex;
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     cursor: pointer;
     align-items: center;
     justify-content: center;
@@ -124,20 +124,24 @@
 
 .sensitivity-tool .sidebar-expand {
     position: fixed;
-    left: 14px;
+    left: 16px;
     top: 14px;
-    z-index: 90;
-    min-width: 74px;
-    height: 38px;
+    z-index: 120;
+    display: inline-flex;
+    min-width: 96px;
+    height: 40px;
     cursor: pointer;
+    align-items: center;
+    justify-content: center;
     border: 1px solid rgba(232, 230, 220, 0.95);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.94);
+    background: rgba(255, 255, 255, 0.96);
     color: var(--text-primary);
-    box-shadow: 0 10px 30px rgba(20, 20, 19, 0.13);
+    box-shadow: 0 10px 30px rgba(20, 20, 19, 0.16);
     font-family: var(--font-sans);
     font-size: 0.82rem;
     font-weight: 600;
+    line-height: 1;
 }
 
 .sensitivity-tool .sidebar-block {
@@ -730,10 +734,6 @@
         margin-left: calc(-1 * var(--sidebar-width));
         opacity: 0;
         pointer-events: none;
-    }
-
-    .sensitivity-tool .sidebar-toggle {
-        left: calc(var(--sidebar-width) - 74px);
     }
 
     .sensitivity-tool .main-content {
