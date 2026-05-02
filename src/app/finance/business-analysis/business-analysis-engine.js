@@ -16,7 +16,7 @@
 
     const VARIANCE_DRIVERS = [
         { key: "profitGap", label: "利润总额", gapLabel: "利润差异", actualKey: "profit", budgetKey: "profit", unit: "amount", value: (summary) => summary.profitGap },
-        { key: "salesVolume", label: "发车量", gapLabel: "发车差异", actualKey: "salesVolume", budgetKey: "salesVolume", unit: "volume", value: (summary) => summary.actual.salesVolume - summary.budget.salesVolume },
+        { key: "salesVolume", label: "销量", gapLabel: "销量差异", actualKey: "salesVolume", budgetKey: "salesVolume", unit: "volume", value: (summary) => summary.actual.salesVolume - summary.budget.salesVolume },
         { key: "netRevenue", label: "净收入总额", gapLabel: "净收入差异", actualKey: "netRevenue", budgetKey: "netRevenue", unit: "amount", value: (summary) => summary.revenueGap },
         { key: "contributionMargin", label: "边际总额", gapLabel: "边际差异", actualKey: "contributionMargin", budgetKey: "contributionMargin", unit: "amount", value: (summary) => summary.contributionMarginGap },
         { key: "contributionMarginRate", label: "边际率", gapLabel: "边际率差异", actualKey: "contributionMarginRate", budgetKey: "contributionMarginRate", unit: "percent", value: (summary) => summary.actual.contributionMarginRate - summary.budget.contributionMarginRate },
@@ -34,13 +34,15 @@
     }, {});
 
     const DASHBOARD_METRICS = [
+        { key: "salesVolume", ratioKey: "volumeAchievement", ratioLabel: "达成率", compare: "higher" },
         { key: "netRevenue", ratioKey: "revenueAchievement", ratioLabel: "达成率", compare: "higher" },
         { key: "unitNetRevenue", ratioLabel: "达成率", compare: "higher" },
         { key: "contributionMargin", ratioKey: "contributionMarginAchievement", ratioLabel: "达成率", compare: "higher" },
         { key: "unitContributionMargin", ratioLabel: "达成率", compare: "higher" },
-        { key: "contributionMarginRate", ratioLabel: "达成率", compare: "higher" },
         { key: "profitGap", ratioKey: "profitAchievement", ratioLabel: "达成率", compare: "higher" }
     ];
+
+    const MAX_PERFORMANCE_CARDS = 8;
 
     const SUBJECT_DEFINITIONS = [
         { key: "salesVolume", section: "variable", mode: "add", labels: ["发车量", "发车", "销量", "销售量", "Sales Volume", "volume"] },
@@ -183,6 +185,16 @@
         return `filter-dimension-${normalizeToken(dimension) || fallback}`;
     }
 
+    function hasDimensionValue(row, dimension) {
+        const dimensions = row?.dimensions || {};
+        return Object.prototype.hasOwnProperty.call(dimensions, dimension)
+            && String(dimensions[dimension] || "").trim();
+    }
+
+    function rowsForDimension(rows, dimension) {
+        return safeArray(rows).filter((row) => hasDimensionValue(row, dimension));
+    }
+
     function orderedDimensions(dimensions) {
         const unique = Array.from(new Set(safeArray(dimensions).filter(Boolean)));
         return [
@@ -262,6 +274,12 @@
         return `${sign}${formatAmount(Math.abs(value), digits)}`;
     }
 
+    function formatSignedValue(value, formatter) {
+        if (!Number.isFinite(value)) return "-";
+        const sign = value > 0 ? "+" : value < 0 ? "-" : "";
+        return `${sign}${formatter(Math.abs(value))}`;
+    }
+
     function formatPercent(value, digits = 1) {
         if (!Number.isFinite(value)) return "-";
         return `${formatNumber(value * 100, digits)}%`;
@@ -333,7 +351,6 @@
 
     function currentVarianceDriver() {
         const key = byId("variance-metric-select")?.value
-            || byId("ranking-metric-select")?.value
             || state.activeVarianceKey
             || "contributionMargin";
         return VARIANCE_DRIVER_BY_KEY[key] || VARIANCE_DRIVER_BY_KEY.contributionMargin;
@@ -349,11 +366,7 @@
             return dimensions[deepestFilteredIndex + 1];
         }
 
-        const selected = byId("ranking-dimension-select")?.value
-            || byId("dimension-select")?.value
-            || dimensions[0]
-            || "";
-        return dimensions.includes(selected) ? selected : dimensions[0] || "";
+        return dimensions[0] || "";
     }
 
     function driverByKey(key, fallback = "profitGap") {
@@ -387,10 +400,6 @@
 
     function driverBudget(summary, driver = currentVarianceDriver()) {
         return Number(summary.budget[driver.budgetKey] || 0);
-    }
-
-    function rankingValue(summary, driver = currentVarianceDriver()) {
-        return driverActual(summary, driver);
     }
 
     function varianceClass(value) {
@@ -761,6 +770,21 @@
         }, {});
     }
 
+    function hasOperatingAssumptions(assumptions) {
+        return [
+            "salesVolume",
+            "unitNetRevenue",
+            "unitMaterialCost",
+            "unitVariableManufacturingCost",
+            "unitVariableSalesCost",
+            "netRevenueAmount",
+            "materialCostAmount",
+            "variableManufacturingCostAmount",
+            "variableSalesCostAmount",
+            "contributionMarginAmount"
+        ].some((key) => Math.abs(Number(assumptions?.[key] || 0)) > 1e-9);
+    }
+
     function assignDimensions(target, dimensions) {
         target.dimensions = dimensions;
         Object.entries(dimensions).forEach(([dimension, value]) => {
@@ -825,9 +849,7 @@
             if (!definition) return;
 
             const isDetail = definition.section === "variable";
-            const dimensions = isDetail
-                ? dimensionsFromRow(row, dimensionColumns, "未分类")
-                : dimensionsFromRow(row, dimensionColumns, "未分摊");
+            const dimensions = isDetail ? dimensionsFromRow(row, dimensionColumns, "未分类") : {};
             const parts = {
                 dimensions
             };
@@ -864,14 +886,17 @@
             const budgetAssumptions = applyAggregateFallback(row, buildAssumptions(row, "预算"), "预算");
             if (!hasMeaningfulAssumptions(actualAssumptions) && !hasMeaningfulAssumptions(budgetAssumptions)) return;
 
-            const dimensions = {
-                "大区": dimensionValue(row, ["大区", "区域", "region", "Region"], "未分类"),
-                "国家": dimensionValue(row, ["国家", "市场国家", "国家品牌", "country", "Country"], "未分类"),
-                "品牌市场": dimensionValue(row, ["品牌市场", "品牌", "品牌类型", "市场品牌", "brandMarket", "Brand Market", "brand", "Brand"], "未分类"),
-                "经营模式": dimensionValue(row, ["经营模式", "渠道", "channel", "Channel"], "未分类"),
-                "业务单元": dimensionValue(row, ["业务单元", "事业部", "BU", "businessUnit"], "未分类"),
-                "车型": dimensionValue(row, ["车型", "model", "Model"], "未分类")
-            };
+            const isDetail = hasOperatingAssumptions(actualAssumptions) || hasOperatingAssumptions(budgetAssumptions);
+            const dimensions = isDetail
+                ? {
+                    "大区": dimensionValue(row, ["大区", "区域", "region", "Region"], "未分类"),
+                    "国家": dimensionValue(row, ["国家", "市场国家", "国家品牌", "country", "Country"], "未分类"),
+                    "品牌市场": dimensionValue(row, ["品牌市场", "品牌", "品牌类型", "市场品牌", "brandMarket", "Brand Market", "brand", "Brand"], "未分类"),
+                    "经营模式": dimensionValue(row, ["经营模式", "渠道", "channel", "Channel"], "未分类"),
+                    "业务单元": dimensionValue(row, ["业务单元", "事业部", "BU", "businessUnit"], "未分类"),
+                    "车型": dimensionValue(row, ["车型", "model", "Model"], "未分类")
+                }
+                : {};
 
             parsed.push(assignDimensions({
                 actual: computePnl(actualAssumptions),
@@ -961,14 +986,7 @@
             budget: computePnl({
                 fixedSubjects: budgetFixedSubjects
             })
-        }, {
-            "大区": "汇总调整",
-            "国家": "未分摊",
-            "品牌市场": "未分摊",
-            "经营模式": "未分摊",
-            "业务单元": "未分摊",
-            "车型": "未分摊"
-        }));
+        }, {}));
 
         return rows;
     }
@@ -1026,24 +1044,19 @@
 
     function initDimensionOptions(selectedValue) {
         const select = byId("dimension-select");
-        const rankingSelect = byId("ranking-dimension-select");
-        if (!select && !rankingSelect) return;
+        if (!select) return;
         if (select) select.innerHTML = "";
-        if (rankingSelect) rankingSelect.innerHTML = "";
         currentDimensions().forEach((dimension) => {
             const option = document.createElement("option");
             option.value = dimension;
             option.textContent = dimensionLabel(dimension);
             if (select) select.appendChild(option);
-            if (rankingSelect) rankingSelect.appendChild(option.cloneNode(true));
         });
         if (selectedValue && currentDimensions().includes(selectedValue)) {
             if (select) select.value = selectedValue;
-            if (rankingSelect) rankingSelect.value = selectedValue;
         } else {
             const fallback = currentDimensions()[0] || "";
             if (select) select.value = fallback;
-            if (rankingSelect) rankingSelect.value = fallback;
         }
     }
 
@@ -1105,13 +1118,95 @@
                     return;
                 }
 
-                state.selectedDimensions = available.filter((dimension) => selectedDimensions.includes(dimension));
+                const currentOrder = currentDimensions();
+                state.selectedDimensions = [
+                    ...currentOrder.filter((dimension) => selectedDimensions.includes(dimension)),
+                    ...available.filter((dimension) => selectedDimensions.includes(dimension) && !currentOrder.includes(dimension))
+                ];
                 const dimensionSelect = byId("dimension-select");
-                const rankingDimensionSelect = byId("ranking-dimension-select");
                 const fallback = currentDimensions()[0] || "";
                 if (dimensionSelect && !currentDimensions().includes(dimensionSelect.value)) dimensionSelect.value = fallback;
-                if (rankingDimensionSelect && !currentDimensions().includes(rankingDimensionSelect.value)) rankingDimensionSelect.value = fallback;
                 updateAll();
+            });
+        });
+    }
+
+    function selectedDimensionItems() {
+        return currentDimensions()
+            .map((dimension) => ({ dimension, value: byId(dimensionFilterId(dimension))?.value || "" }))
+            .filter((item) => item.value);
+    }
+
+    function moveDimensionInOrder(fromIndex, toIndex) {
+        const dimensions = currentDimensions();
+        if (fromIndex === toIndex) return;
+        if (fromIndex < 0 || toIndex < 0 || fromIndex >= dimensions.length || toIndex >= dimensions.length) return;
+        const lockThroughIndex = selectedDimensionItems().length ? dimensions.indexOf(currentAnalysisDimension()) : -1;
+        if (lockThroughIndex >= 0 && (fromIndex <= lockThroughIndex || toIndex <= lockThroughIndex)) {
+            showMessage("error", "已下钻层级已锁定，可拖动当前层后面的维度。");
+            return;
+        }
+
+        const [moved] = dimensions.splice(fromIndex, 1);
+        dimensions.splice(toIndex, 0, moved);
+        state.selectedDimensions = dimensions;
+        updateAll();
+    }
+
+    function renderDimensionTrain() {
+        const containers = Array.from(document.querySelectorAll("[data-dimension-train]"));
+        const summaries = Array.from(document.querySelectorAll("[data-dimension-train-summary]"));
+        if (!containers.length) return;
+
+        const dimensions = currentDimensions();
+        const activeDimension = currentAnalysisDimension();
+        const filters = currentControlValues().dimensionFilters;
+        const lockThroughIndex = selectedDimensionItems().length ? dimensions.indexOf(activeDimension) : -1;
+        summaries.forEach((summary) => {
+            summary.textContent = activeDimension ? `当前层：${dimensionLabel(activeDimension)}` : "";
+        });
+
+        const markup = dimensions.map((dimension, index) => `
+            <button
+                type="button"
+                class="dimension-train-car ${filters[dimension] ? "filtered" : ""} ${dimension === activeDimension ? "active" : ""} ${lockThroughIndex >= 0 && index <= lockThroughIndex ? "locked" : ""}"
+                draggable="${lockThroughIndex < 0 || index > lockThroughIndex ? "true" : "false"}"
+                data-dimension-index="${index}"
+                title="${lockThroughIndex >= 0 && index <= lockThroughIndex ? "已下钻层级已锁定" : "拖动调整后续顺序"}"
+                aria-current="${dimension === activeDimension ? "step" : "false"}"
+            >
+                <span>${filters[dimension] ? "已选" : dimension === activeDimension ? "当前" : `${index + 1}`}</span>
+                <strong>${escapeHtml(dimensionLabel(dimension))}</strong>
+            </button>
+        `).join("");
+
+        containers.forEach((container) => {
+            container.innerHTML = markup;
+
+            Array.from(container.querySelectorAll("[data-dimension-index]")).forEach((button) => {
+                button.addEventListener("dragstart", (event) => {
+                    button.classList.add("dragging");
+                    event.dataTransfer?.setData("text/plain", button.getAttribute("data-dimension-index") || "0");
+                    if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+                });
+                button.addEventListener("dragend", () => {
+                    button.classList.remove("dragging");
+                });
+                button.addEventListener("dragover", (event) => {
+                    event.preventDefault();
+                    button.classList.add("drop-target");
+                    if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+                });
+                button.addEventListener("dragleave", () => {
+                    button.classList.remove("drop-target");
+                });
+                button.addEventListener("drop", (event) => {
+                    event.preventDefault();
+                    button.classList.remove("drop-target");
+                    const fromIndex = Number(event.dataTransfer?.getData("text/plain"));
+                    const toIndex = Number(button.getAttribute("data-dimension-index"));
+                    moveDimensionInOrder(fromIndex, toIndex);
+                });
             });
         });
     }
@@ -1121,11 +1216,12 @@
         const controls = currentControlValues();
 
         renderDimensionDisplayControls();
+        renderDimensionTrain();
         renderDimensionFilterControls(controls);
 
         currentDimensions().forEach((dimension) => {
             const rows = filterRowsForControls({ ignoreDimension: dimension });
-            const values = Array.from(new Set(rows.map((row) => row.dimensions?.[dimension] || "未分类"))).sort();
+            const values = Array.from(new Set(rowsForDimension(rows, dimension).map((row) => row.dimensions[dimension]))).sort();
             initSelectOptions(byId(dimensionFilterId(dimension)), values, `全部${dimensionLabel(dimension)}`, controls.dimensionFilters[dimension]);
         });
     }
@@ -1147,11 +1243,43 @@
 
     function buildDimensionRows(rows) {
         const dimension = currentAnalysisDimension();
-        const map = groupBy(rows, (row) => row.dimensions?.[dimension] || "未分类");
-        const driver = currentVarianceDriver();
+        const map = groupBy(rowsForDimension(rows, dimension), (row) => row.dimensions[dimension]);
         return Array.from(map.entries())
-            .map(([name, group]) => ({ name, ...summarize(group) }))
-            .sort((a, b) => Math.abs(rankingValue(b, driver)) - Math.abs(rankingValue(a, driver)));
+            .map(([name, group]) => ({ name, sourceRows: group, ...summarize(group) }))
+            .sort((a, b) => Math.abs(b.contributionMarginGap) - Math.abs(a.contributionMarginGap));
+    }
+
+    function dimensionContributionGap(summary) {
+        return Number(summary?.contributionMarginGap || 0);
+    }
+
+    function sortDimensionContributionRows(rows) {
+        return safeArray(rows).slice().sort((a, b) => {
+            const aGap = dimensionContributionGap(a);
+            const bGap = dimensionContributionGap(b);
+            const aMiss = aGap < -1e-9;
+            const bMiss = bGap < -1e-9;
+            if (aMiss !== bMiss) return aMiss ? -1 : 1;
+            return Math.abs(bGap) - Math.abs(aGap);
+        });
+    }
+
+    function dimensionRowsWithLimit(rows) {
+        const sorted = sortDimensionContributionRows(rows);
+        if (sorted.length <= MAX_PERFORMANCE_CARDS + 1) {
+            return { rows: sorted, hiddenCount: 0 };
+        }
+
+        const visible = sorted.slice(0, MAX_PERFORMANCE_CARDS);
+        const rest = sorted.slice(MAX_PERFORMANCE_CARDS);
+        const restRows = rest.flatMap((item) => safeArray(item.sourceRows));
+        const aggregate = {
+            name: `其他 ${rest.length} 项`,
+            isAggregate: true,
+            sourceRows: restRows,
+            ...summarize(restRows)
+        };
+        return { rows: [...visible, aggregate], hiddenCount: rest.length };
     }
 
     function plotLayout(extra = {}) {
@@ -1198,6 +1326,18 @@
         };
     }
 
+    function drillPlotConfig() {
+        return {
+            responsive: true,
+            displayModeBar: false,
+            displaylogo: false,
+            scrollZoom: false,
+            doubleClick: false,
+            editable: false,
+            staticPlot: false
+        };
+    }
+
     function downstreamDimensions(dimension) {
         const dimensions = currentDimensions();
         const index = dimensions.indexOf(dimension);
@@ -1219,8 +1359,6 @@
         const nextDimension = isSameSelection ? dimension : downstreamDimensions(dimension)[0];
         const dimensionSelect = byId("dimension-select");
         if (dimensionSelect) dimensionSelect.value = nextDimension || dimension;
-        const rankingDimensionSelect = byId("ranking-dimension-select");
-        if (rankingDimensionSelect) rankingDimensionSelect.value = nextDimension || dimension;
 
         updateAll();
     }
@@ -1233,17 +1371,13 @@
         });
         const dimensionSelect = byId("dimension-select");
         if (dimensionSelect) dimensionSelect.value = dimension;
-        const rankingDimensionSelect = byId("ranking-dimension-select");
-        if (rankingDimensionSelect) rankingDimensionSelect.value = dimension;
         updateAll();
     }
 
-    function clearDimensionFilters() {
-        currentDimensions().forEach((dimension) => {
-            const select = byId(dimensionFilterId(dimension));
-            if (select) select.value = "";
-        });
-        updateAll();
+    function clearLastDimensionFilter() {
+        const items = selectedDimensionItems();
+        if (!items.length) return;
+        clearDimensionFilter(items[items.length - 1].dimension);
     }
 
     function renderDrillPath() {
@@ -1251,10 +1385,7 @@
         if (!container) return;
 
         const activeDimension = currentAnalysisDimension();
-        const activeDriver = currentVarianceDriver();
-        const selectedItems = currentDimensions()
-            .map((dimension) => ({ dimension, value: byId(dimensionFilterId(dimension))?.value || "" }))
-            .filter((item) => item.value);
+        const selectedItems = selectedDimensionItems();
 
         const chips = selectedItems.map((item) => `
             <button type="button" class="drill-chip" data-clear-dimension="${item.dimension}">
@@ -1267,18 +1398,18 @@
         container.innerHTML = `
             <div class="drill-path-meta">
                 <span>当前维度：${dimensionLabel(activeDimension)}</span>
-                <span>排序：${activeDriver.label}</span>
+                <span>指标：边际总额</span>
             </div>
             <div class="drill-chip-row">
                 ${chips || '<span class="drill-empty">未选择维度筛选</span>'}
-                ${selectedItems.length ? '<button type="button" class="drill-clear" data-clear-all="true">清空</button>' : ""}
+                ${selectedItems.length ? '<button type="button" class="drill-clear" data-clear-last="true">退一层</button>' : ""}
             </div>
         `;
 
         Array.from(container.querySelectorAll("[data-clear-dimension]")).forEach((button) => {
             button.addEventListener("click", () => clearDimensionFilter(button.getAttribute("data-clear-dimension")));
         });
-        container.querySelector("[data-clear-all]")?.addEventListener("click", resetFilters);
+        container.querySelector("[data-clear-last]")?.addEventListener("click", clearLastDimensionFilter);
     }
 
     function budgetGapLine(actual, budget, driver) {
@@ -1366,63 +1497,13 @@
         `).join("");
     }
 
-    function renderDimensionChart(rows) {
-        const dimension = currentAnalysisDimension();
-        const map = groupBy(rows, (row) => row.dimensions?.[dimension] || "未分类");
-        const dimRows = Array.from(map.entries())
-            .map(([name, group]) => ({ name, ...summarize(group) }))
-            .filter((item) => Math.abs(item.contributionMarginGap) > 1e-9 || Math.abs(item.actual.contributionMargin) > 1e-9 || Math.abs(item.budget.contributionMargin) > 1e-9)
-            .sort((a, b) => a.contributionMarginGap - b.contributionMarginGap)
-            .slice(0, 8)
-            .reverse();
-        const names = dimRows.map((item) => item.name);
-        Plotly.react("dimension-chart", [
-            {
-                type: "bar",
-                orientation: "h",
-                name: "边际预算差异",
-                y: names,
-                x: dimRows.map((item) => displayAmount(item.contributionMarginGap)),
-                marker: { color: dimRows.map((item) => item.contributionMarginGap >= 0 ? COLORS.green : COLORS.red) },
-                text: dimRows.map((item) => `${formatGap(item.contributionMarginGap)}<br>实际 ${formatAmount(item.actual.contributionMargin)}`),
-                textposition: "auto",
-                hovertemplate: `${dimension}：%{y}<br>边际差异：%{text}<extra></extra>`
-            }
-        ], plotLayout({
-            showlegend: false,
-            margin: { l: 104, r: 44, t: 58, b: 52 },
-            annotations: [{
-                xref: "paper",
-                yref: "paper",
-                x: 0,
-                y: 1.12,
-                xanchor: "left",
-                yanchor: "top",
-                showarrow: false,
-                text: `归因维度：${dimensionLabel(dimension)} ｜ 总边际差异 ${formatGap(summarize(rows).contributionMarginGap)}`,
-                font: { size: 12, color: summarize(rows).contributionMarginGap >= 0 ? COLORS.green : COLORS.red },
-                bgcolor: "#ffffff",
-                bordercolor: "rgba(232, 230, 220, 0.95)",
-                borderpad: 5
-            }],
-            xaxis: { title: amountAxisLabel(), gridcolor: COLORS.grid, zerolinecolor: COLORS.grid },
-            yaxis: {
-                categoryorder: "array",
-                categoryarray: names,
-                gridcolor: COLORS.grid,
-                zerolinecolor: COLORS.grid
-            }
-        }), plotConfig());
-
-    }
-
     function renderUnitMarginChart(rows) {
         const summary = summarize(rows);
         const dimension = currentAnalysisDimension();
         const dimRows = buildDimensionRows(rows)
             .filter((item) => Math.abs(item.actual.unitNetRevenue) > 1e-9 || Math.abs(item.actual.unitContributionMargin) > 1e-9)
             .slice(0, 12);
-        const maxRevenue = Math.max(...dimRows.map((item) => Math.abs(item.actual.netRevenue)), 0.1);
+        const maxVolume = Math.max(...dimRows.map((item) => Math.abs(item.actual.salesVolume)), 0.1);
 
         Plotly.react("unit-margin-chart", [
             {
@@ -1436,16 +1517,17 @@
                 textfont: { size: 11, color: COLORS.text },
                 marker: {
                     color: dimRows.map((item) => item.contributionMarginGap >= 0 ? COLORS.green : COLORS.red),
-                    size: dimRows.map((item) => 12 + Math.sqrt(Math.abs(item.actual.netRevenue) / maxRevenue) * 24),
+                    size: dimRows.map((item) => 12 + Math.sqrt(Math.abs(item.actual.salesVolume) / maxVolume) * 24),
                     opacity: 0.72,
                     line: { color: "#ffffff", width: 1 }
                 },
                 customdata: dimRows.map((item) => [
+                    formatVolume(item.actual.salesVolume),
                     formatAmount(item.actual.netRevenue),
                     formatAmount(item.actual.contributionMargin),
                     formatGap(item.contributionMarginGap)
                 ]),
-                hovertemplate: `${dimension}：%{text}<br>单车净收入：%{x:.2f} 万元/辆<br>单车边际：%{y:.2f} 万元/辆<br>净收入总额：%{customdata[0]}<br>边际总额：%{customdata[1]}<br>边际差异：%{customdata[2]}<extra></extra>`
+                hovertemplate: `${dimension}：%{text}<br>单车净收入：%{x:.2f} 万元/辆<br>单车边际：%{y:.2f} 万元/辆<br>销量规模：%{customdata[0]}<br>净收入总额：%{customdata[1]}<br>边际总额：%{customdata[2]}<br>边际差异：%{customdata[3]}<extra></extra>`
             }
         ], plotLayout({
             showlegend: false,
@@ -1606,7 +1688,7 @@
         };
     }
 
-    function bridgeLayout(labels, { margin, shapes = [], annotations = [] } = {}) {
+    function bridgeLayout(labels, { margin, shapes = [], annotations = [], axisRange } = {}) {
         if (isCompactBridgeViewport()) {
             return plotLayout({
                 showlegend: false,
@@ -1616,6 +1698,7 @@
                     title: amountAxisLabel(),
                     tickfont: { size: 10 },
                     automargin: true,
+                    range: axisRange,
                     gridcolor: COLORS.grid,
                     zerolinecolor: COLORS.grid
                 },
@@ -1635,7 +1718,7 @@
             shapes,
             annotations,
             xaxis: { tickangle: -24, tickfont: { size: 10 }, automargin: true, gridcolor: COLORS.grid, zerolinecolor: COLORS.grid },
-            yaxis: { title: amountAxisLabel(), gridcolor: COLORS.grid, zerolinecolor: COLORS.grid }
+            yaxis: { title: amountAxisLabel(), range: axisRange, gridcolor: COLORS.grid, zerolinecolor: COLORS.grid }
         });
     }
 
@@ -1660,6 +1743,11 @@
             ...rows.map((row) => displayAmount(row.value)),
             0
         ];
+        const axisRange = waterfallAxisRange(
+            displayAmount(startValue),
+            rows.map((row) => displayAmount(row.value)),
+            displayAmount(endValue)
+        );
         const text = [
             startText,
             ...rows.map((row) => formatGap(row.value)),
@@ -1671,7 +1759,8 @@
         ], bridgeLayout(labels, {
             margin: { l: 64, r: 24, t: 54, b: 96 },
             shapes: variableFrame ? [variableFrame.shape] : [],
-            annotations: variableFrame ? [variableFrame.annotation] : []
+            annotations: variableFrame ? [variableFrame.annotation] : [],
+            axisRange
         }), plotConfig());
 
     }
@@ -1714,61 +1803,358 @@
 
     }
 
+    function waterfallAxisLabel(value) {
+        const text = String(value || "");
+        if (text.length <= 8) return text;
+        if (text.length <= 12) return `${text.slice(0, 6)}<br>${text.slice(6)}`;
+        return `${text.slice(0, 6)}<br>${text.slice(6, 11)}…`;
+    }
+
+    function waterfallHeight(itemCount) {
+        return Math.max(420, Math.min(560, 320 + itemCount * 22));
+    }
+
+    function waterfallAxisRange(startValue, deltas, endValue) {
+        const points = [startValue];
+        let cumulative = startValue;
+        safeArray(deltas).forEach((delta) => {
+            cumulative += delta;
+            points.push(cumulative);
+        });
+        points.push(endValue);
+
+        const finitePoints = points.filter(Number.isFinite);
+        if (finitePoints.length < 2) return undefined;
+
+        const min = Math.min(...finitePoints);
+        const max = Math.max(...finitePoints);
+        const span = max - min;
+        if (span < 1e-9) return undefined;
+
+        const reference = Math.max(Math.abs(min), Math.abs(max), 1);
+        const upperPadding = Math.max(span * 0.18, reference * 0.025);
+
+        if (min > 0 && max > 0) {
+            const visibleBase = Math.max(span * 0.65, reference * 0.16);
+            return [Math.max(0, min - visibleBase), max + upperPadding];
+        }
+
+        if (min < 0 && max < 0) {
+            const visibleBase = Math.max(span * 0.65, reference * 0.16);
+            return [min - upperPadding, Math.min(0, max + visibleBase)];
+        }
+
+        const mixedPadding = Math.max(span * 0.2, reference * 0.035);
+        return [min - mixedPadding, max + mixedPadding];
+    }
+
+    function isTouchLikeViewport() {
+        return typeof window !== "undefined"
+            && window.matchMedia("(hover: none), (pointer: coarse)").matches;
+    }
+
+    function waterfallCompareRow({ label, actual, budget, formatter }) {
+        const gap = actual - budget;
+        return `
+            <div class="waterfall-compare-row">
+                <span>${label}</span>
+                <strong>${formatter(actual)}</strong>
+                <em>预算 ${formatter(budget)}</em>
+                <b class="${varianceClass(gap)}">${formatSignedValue(gap, formatter)}</b>
+            </div>
+        `;
+    }
+
+    function waterfallComparisonHtml(item) {
+        const rows = [
+            { label: "销量", actual: item.actual.salesVolume, budget: item.budget.salesVolume, formatter: formatVolume },
+            { label: "净收入", actual: item.actual.netRevenue, budget: item.budget.netRevenue, formatter: formatAmount },
+            { label: "边际", actual: item.actual.contributionMargin, budget: item.budget.contributionMargin, formatter: formatAmount }
+        ].map(waterfallCompareRow).join("");
+
+        const unitRows = [
+            { label: "单车净收入", actual: item.actual.unitNetRevenue, budget: item.budget.unitNetRevenue, formatter: formatUnitAmount },
+            { label: "单车边际", actual: item.actual.unitContributionMargin, budget: item.budget.unitContributionMargin, formatter: formatUnitAmount }
+        ].map(waterfallCompareRow).join("");
+
+        return `
+            <div class="waterfall-tooltip-compare">
+                <div class="waterfall-compare-title">
+                    <span>总额口径</span>
+                    <small>实际 / 预算 / 差异</small>
+                </div>
+                <div class="waterfall-compare-rows">${rows}</div>
+                <div class="waterfall-compare-title compact">
+                    <span>单车口径</span>
+                    <small>用于判断结构变化</small>
+                </div>
+                <div class="waterfall-compare-rows unit">${unitRows}</div>
+            </div>
+        `;
+    }
+
+    function waterfallTooltipHtml(item, dimension) {
+        if (!item) return "";
+        const gapClass = varianceClass(item.contributionMarginGap);
+        const achievement = ratioValue(item.actual.contributionMargin, item.budget.contributionMargin);
+        const actionText = item.isAggregate ? "合并项可用上方筛选器进入具体项目" : "点击柱子进入下一层";
+
+        return `
+            <div class="waterfall-tooltip-card">
+                <div class="waterfall-tooltip-top">
+                    <span>${escapeHtml(dimensionLabel(dimension))}</span>
+                    <strong>${escapeHtml(item.name)}</strong>
+                    <b class="${gapClass}">${formatGap(item.contributionMarginGap)}</b>
+                </div>
+                <div class="waterfall-tooltip-hero">
+                    <span>边际达成率</span>
+                    <strong>${formatPercent(achievement)}</strong>
+                    <em class="${gapClass}">${item.contributionMarginGap >= 0 ? "优于预算" : "低于预算"}</em>
+                </div>
+                ${waterfallComparisonHtml(item)}
+                <div class="waterfall-tooltip-foot">${actionText}</div>
+            </div>
+        `;
+    }
+
+    function positionWaterfallTooltip(tooltip, event) {
+        if (!tooltip || !event) return;
+        const margin = 14;
+        const viewportPadding = 12;
+        let left = event.clientX + margin;
+        let top = event.clientY + margin;
+
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+
+        const rect = tooltip.getBoundingClientRect();
+        if (left + rect.width + viewportPadding > window.innerWidth) {
+            left = Math.max(viewportPadding, event.clientX - rect.width - margin);
+        }
+        if (top + rect.height + viewportPadding > window.innerHeight) {
+            top = Math.max(viewportPadding, event.clientY - rect.height - margin);
+        }
+
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+    }
+
+    function showWaterfallTooltip(item, dimension, event) {
+        const tooltip = byId("dimension-waterfall-tooltip");
+        if (!tooltip || !item || isTouchLikeViewport()) return;
+        tooltip.innerHTML = waterfallTooltipHtml(item, dimension);
+        tooltip.classList.add("visible");
+        tooltip.setAttribute("aria-hidden", "false");
+        positionWaterfallTooltip(tooltip, event);
+    }
+
+    function hideWaterfallTooltip() {
+        const tooltip = byId("dimension-waterfall-tooltip");
+        if (!tooltip) return;
+        tooltip.classList.remove("visible");
+        tooltip.setAttribute("aria-hidden", "true");
+    }
+
+    function waterfallPointIndexFromEvent(visual, event) {
+        if (!visual || !event) return -1;
+        const paths = Array.from(visual.querySelectorAll(".waterfalllayer .point path"));
+        return paths.findIndex((path) => {
+            const rect = path.getBoundingClientRect();
+            return event.clientX >= rect.left
+                && event.clientX <= rect.right
+                && event.clientY >= rect.top
+                && event.clientY <= rect.bottom;
+        });
+    }
+
+    function renderWaterfallTouchCard(item, dimension) {
+        const container = byId("dimension-waterfall-touch-card");
+        if (!container) return;
+        if (!item) {
+            container.innerHTML = "";
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="waterfall-touch-card">
+                <div class="waterfall-touch-head">
+                    <span>${escapeHtml(dimensionLabel(dimension))}</span>
+                    <strong>${escapeHtml(item.name)}</strong>
+                </div>
+                <div class="waterfall-touch-summary">
+                    <span>边际达成率 <strong>${formatPercent(ratioValue(item.actual.contributionMargin, item.budget.contributionMargin))}</strong></span>
+                    <b class="${varianceClass(item.contributionMarginGap)}">${formatGap(item.contributionMarginGap)}</b>
+                </div>
+                ${waterfallComparisonHtml(item)}
+                ${item.isAggregate ? '<p>合并项不可直接下钻，可通过上方筛选器进入具体项目。</p>' : `<button type="button" class="btn btn-primary" data-touch-drill="${escapeHtml(item.name)}">进入下一层</button>`}
+            </div>
+        `;
+
+        container.querySelector("[data-touch-drill]")?.addEventListener("click", () => {
+            drillToDimensionValue(dimension, item.name);
+        });
+    }
+
+    function bindWaterfallDrill(visual, dimension, rows) {
+        if (!visual || typeof visual.on !== "function") return;
+        visual.removeAllListeners?.("plotly_click");
+        visual.removeAllListeners?.("plotly_hover");
+        visual.removeAllListeners?.("plotly_unhover");
+        let activeHoverIndex = -1;
+        visual.on("plotly_hover", (event) => {
+            const point = event?.points?.[0];
+            const index = Number(point?.pointNumber);
+            const row = rows[index - 1];
+            if (!row) {
+                hideWaterfallTooltip();
+                return;
+            }
+            showWaterfallTooltip(row, dimension, event?.event);
+        });
+        visual.on("plotly_unhover", hideWaterfallTooltip);
+        visual.addEventListener("mouseleave", hideWaterfallTooltip);
+        visual.addEventListener("mousemove", (event) => {
+            if (isTouchLikeViewport()) return;
+            const index = waterfallPointIndexFromEvent(visual, event);
+            const row = rows[index - 1];
+            if (!row) {
+                activeHoverIndex = -1;
+                hideWaterfallTooltip();
+                return;
+            }
+            if (index !== activeHoverIndex) {
+                activeHoverIndex = index;
+                showWaterfallTooltip(row, dimension, event);
+                return;
+            }
+            const tooltip = byId("dimension-waterfall-tooltip");
+            if (tooltip?.classList.contains("visible")) positionWaterfallTooltip(tooltip, event);
+        });
+        visual.on("plotly_click", (event) => {
+            const point = event?.points?.[0];
+            const index = Number(point?.pointNumber);
+            const row = rows[index - 1];
+            if (!row) return;
+            if (isTouchLikeViewport()) {
+                renderWaterfallTouchCard(row, dimension);
+                return;
+            }
+            if (row.isAggregate) return;
+            drillToDimensionValue(dimension, row.name);
+        });
+    }
+
+    function renderRankingDimensionFilter(dimension, rows) {
+        const selects = Array.from(document.querySelectorAll("[data-ranking-dimension-filter]"));
+        if (!selects.length) return;
+        const selected = byId(dimensionFilterId(dimension))?.value || "";
+        const sortedRows = sortDimensionContributionRows(rows);
+        const options = [
+            `<option value="">选择${escapeHtml(dimensionLabel(dimension))}</option>`,
+            ...sortedRows.map((item) => `<option value="${escapeHtml(item.name)}">${escapeHtml(item.name)} ｜ ${formatGap(item.contributionMarginGap)}</option>`)
+        ].join("");
+
+        selects.forEach((select) => {
+            select.innerHTML = options;
+            select.value = selected;
+            select.disabled = !sortedRows.length;
+        });
+    }
+
     function renderRankingTable(rows) {
         const dimension = currentAnalysisDimension();
-        const driver = currentVarianceDriver();
-        const tableHead = byId("ranking-dimension-head");
-        const focusHead = byId("ranking-focus-head");
-        const tbody = byId("ranking-table-body");
-        const rankingDimensionSelect = byId("ranking-dimension-select");
-        const rankingMetricSelect = byId("ranking-metric-select");
         const rankingStatus = byId("ranking-filter-status");
-        if (tableHead) tableHead.textContent = dimensionLabel(dimension);
-        if (focusHead) focusHead.textContent = driverGapLabel(driver);
-        if (rankingDimensionSelect && rankingDimensionSelect.value !== dimension) {
-            rankingDimensionSelect.value = dimension;
-        }
-        if (rankingMetricSelect && rankingMetricSelect.value !== driver.key) {
-            rankingMetricSelect.value = driver.key;
-        }
+        const allDimRows = buildDimensionRows(rows);
+        const limited = dimensionRowsWithLimit(allDimRows);
+        const summary = summarize(rows);
+        renderRankingDimensionFilter(dimension, allDimRows);
+
         if (rankingStatus) {
-            const selectedItems = currentDimensions()
-                .map((item) => ({ dimension: item, value: byId(dimensionFilterId(item))?.value || "" }))
-                .filter((item) => item.value);
-            rankingStatus.innerHTML = selectedItems.length
-                ? selectedItems.map((item) => `<span>${dimensionLabel(item.dimension)}：<strong>${item.value}</strong></span>`).join("")
-                : `<span>当前无维度筛选，按实际 ${driver.label} 排序，点击排名行可继续下钻。</span>`;
+            const selectedItems = selectedDimensionItems();
+            const statusChips = selectedItems.length
+                ? selectedItems.map((item) => `<span>${dimensionLabel(item.dimension)}：<strong>${item.value}</strong></span>`)
+                : [`<span>当前维度：<strong>${dimensionLabel(dimension)}</strong></span>`];
+            statusChips.push(`<span>指标：<strong>边际总额</strong></span>`);
+            if (limited.hiddenCount) {
+                statusChips.push(`<span>展示策略：<strong>主要 ${MAX_PERFORMANCE_CARDS} 项 + 其他 ${limited.hiddenCount} 项</strong></span>`);
+            } else {
+                statusChips.push(`<span>展示策略：<strong>${limited.rows.length} 项全部展示</strong></span>`);
+            }
+            rankingStatus.innerHTML = statusChips.join("");
         }
-        if (!tbody) return;
 
-        const dimRows = buildDimensionRows(rows).slice(0, 12);
-        tbody.innerHTML = dimRows.map((item) => `
-            <tr data-dimension="${dimension}" data-value="${item.name}" tabindex="0">
-                <td>${item.name}</td>
-                <td>${formatVolume(item.actual.salesVolume)}</td>
-                <td>${formatAmount(item.actual.netRevenue)}</td>
-                <td class="${item.actual.contributionMargin >= 0 ? "positive" : "negative"}">${formatAmount(item.actual.contributionMargin)}</td>
-                <td class="${varianceClass(driverValue(item, driver))}">${formatDriverGap(driverValue(item, driver), driver)}</td>
-                <td class="${item.actual.profitRate >= 0 ? "positive" : "negative"}">${formatPercent(item.actual.profitRate)}</td>
-            </tr>
-        `).join("");
+        const visual = byId("ranking-visual");
+        if (!visual) return;
+        if (!limited.rows.length) {
+            visual.innerHTML = `<div class="waterfall-empty">当前筛选下没有可展示的维度数据。</div>`;
+            return;
+        }
 
-        Array.from(tbody.querySelectorAll("tr[data-dimension]")).forEach((row) => {
-            const drill = () => drillToDimensionValue(row.getAttribute("data-dimension"), row.getAttribute("data-value"));
-            row.addEventListener("click", drill);
-            row.addEventListener("keydown", (event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    drill();
-                }
-            });
-        });
+        visual.innerHTML = `
+            <div id="dimension-waterfall-chart" class="waterfall-chart"></div>
+            <div id="dimension-waterfall-tooltip" class="waterfall-tooltip" aria-hidden="true"></div>
+            <div id="dimension-waterfall-touch-card" class="waterfall-touch-host" aria-live="polite"></div>
+        `;
+
+        const waterfallRows = limited.rows;
+        const labels = [
+            "预算边际总额",
+            ...waterfallRows.map((item) => item.name),
+            "实际边际总额"
+        ];
+        const values = [
+            displayAmount(summary.budget.contributionMargin),
+            ...waterfallRows.map((item) => displayAmount(item.contributionMarginGap)),
+            0
+        ];
+        const deltaValues = waterfallRows.map((item) => displayAmount(item.contributionMarginGap));
+        const axisRange = waterfallAxisRange(
+            displayAmount(summary.budget.contributionMargin),
+            deltaValues,
+            displayAmount(summary.actual.contributionMargin)
+        );
+        const text = [
+            formatAmount(summary.budget.contributionMargin),
+            ...waterfallRows.map((item) => formatGap(item.contributionMarginGap)),
+            formatAmount(summary.actual.contributionMargin)
+        ];
+        const customdata = [
+            { drillable: false, name: "" },
+            ...waterfallRows.map((item) => ({ drillable: !item.isAggregate, name: item.name })),
+            { drillable: false, name: "" }
+        ];
+        const chart = byId("dimension-waterfall-chart");
+
+        Plotly.react("dimension-waterfall-chart", [{
+            type: "waterfall",
+            measure: ["absolute", ...waterfallRows.map(() => "relative"), "total"],
+            x: labels.map(waterfallAxisLabel),
+            y: values,
+            text,
+            customdata,
+            textposition: "outside",
+            cliponaxis: false,
+            connector: { line: { color: "#d9d6cb" } },
+            increasing: { marker: { color: COLORS.green } },
+            decreasing: { marker: { color: COLORS.red } },
+            totals: { marker: { color: COLORS.orange } },
+            hovertemplate: "%{x}<extra></extra>"
+        }], plotLayout({
+            showlegend: false,
+            height: waterfallHeight(waterfallRows.length),
+            margin: { l: 62, r: 30, t: 44, b: 86 },
+            clickmode: "event",
+            xaxis: { tickfont: { size: 10 }, automargin: true, gridcolor: COLORS.grid, zerolinecolor: COLORS.grid },
+            yaxis: { title: amountAxisLabel(), range: axisRange, gridcolor: COLORS.grid, zerolinecolor: COLORS.grid }
+        }), drillPlotConfig());
+
+        bindWaterfallDrill(chart, dimension, waterfallRows);
     }
 
     function renderEmptyState() {
         updateBridgeTitles(hasActiveDimensionFilter());
         renderMetrics(enrichSummary(emptyPnl(), emptyPnl()));
-        ["dimension-chart", "unit-margin-chart", "variance-chart", "profit-bridge-chart"].forEach((id) => {
+        ["unit-margin-chart", "variance-chart", "profit-bridge-chart"].forEach((id) => {
             Plotly.react(id, [], plotLayout({
                 annotations: [{
                     text: "当前筛选无数据",
@@ -1781,8 +2167,9 @@
                 }]
             }), plotConfig());
         });
-        const tbody = byId("ranking-table-body");
-        if (tbody) tbody.innerHTML = "";
+        renderRankingDimensionFilter(currentAnalysisDimension(), []);
+        const visual = byId("ranking-visual");
+        if (visual) visual.innerHTML = `<div class="waterfall-empty">当前筛选无数据。</div>`;
         renderDrillPath();
     }
 
@@ -1800,7 +2187,6 @@
         const summary = summarize(rows);
         state.lastSummary = summary;
         renderMetrics(summary);
-        renderDimensionChart(rows);
         renderUnitMarginChart(rows);
         renderVarianceChart(summary);
         renderProfitBridge(summary);
@@ -2301,8 +2687,6 @@
         const assignments = {
             "dimension-select": currentDimensions()[0] || "",
             "variance-metric-select": "contributionMargin",
-            "ranking-dimension-select": currentDimensions()[0] || "",
-            "ranking-metric-select": "contributionMargin",
             "unit-select": "yi"
         };
         Object.entries(assignments).forEach(([id, value]) => {
@@ -2322,6 +2706,11 @@
         const toggle = byId("sidebar-toggle");
         const expand = byId("sidebar-expand");
         if (!sidebar || !toggle || !expand) return;
+
+        if (window.matchMedia("(max-width: 820px)").matches) {
+            sidebar.classList.add("collapsed");
+            expand.style.display = "inline-flex";
+        }
 
         bindOnce(toggle, "click", () => {
             sidebar.classList.add("collapsed");
@@ -2359,22 +2748,11 @@
         [
             "dimension-select",
             "variance-metric-select",
-            "ranking-dimension-select",
-            "ranking-metric-select",
             "unit-select"
         ].forEach((id) => {
             const el = byId(id);
             if (!el) return;
             bindOnce(el, id.includes("input") ? "input" : "change", () => {
-                if (id === "ranking-dimension-select") {
-                    const dimensionSelect = byId("dimension-select");
-                    if (dimensionSelect) dimensionSelect.value = el.value;
-                }
-                if (id === "ranking-metric-select") {
-                    const metricSelect = byId("variance-metric-select");
-                    if (metricSelect) metricSelect.value = el.value;
-                    state.activeVarianceKey = VARIANCE_DRIVER_BY_KEY[el.value]?.key || "contributionMargin";
-                }
                 if (id === "variance-metric-select") {
                     state.activeVarianceKey = VARIANCE_DRIVER_BY_KEY[el.value]?.key || "contributionMargin";
                 }
@@ -2382,12 +2760,26 @@
             }, `control-${id}`);
         });
 
+        Array.from(document.querySelectorAll("[data-ranking-dimension-filter]")).forEach((select) => {
+            bindOnce(select, "change", (event) => {
+                const dimension = currentAnalysisDimension();
+                const value = event.target?.value || "";
+                if (value) {
+                    drillToDimensionValue(dimension, value);
+                    return;
+                }
+                clearDimensionFilter(dimension);
+            }, `ranking-dimension-filter-${select.id || "inline"}`);
+        });
+
         bindOnce(byId("btn-demo"), "click", loadDemoData, "btn-demo");
         bindOnce(byId("btn-csv-template"), "click", downloadCsvTemplate, "btn-csv-template");
         bindOnce(byId("btn-xlsx-template"), "click", downloadXlsxTemplate, "btn-xlsx-template");
         bindOnce(byId("btn-reset"), "click", resetFilters, "btn-reset");
         bindOnce(byId("btn-export"), "click", exportSummary, "btn-export");
-        bindOnce(byId("btn-ranking-clear"), "click", clearDimensionFilters, "btn-ranking-clear");
+        Array.from(document.querySelectorAll("[data-ranking-clear]")).forEach((button) => {
+            bindOnce(button, "click", clearLastDimensionFilter, `ranking-clear-${button.id || "inline"}`);
+        });
         bindOnce(byId("btn-add-subject-row"), "click", () => {
             syncManualDrafts();
             state.manualSubjectDrafts.push({ subject: "", actual: "", budget: "" });

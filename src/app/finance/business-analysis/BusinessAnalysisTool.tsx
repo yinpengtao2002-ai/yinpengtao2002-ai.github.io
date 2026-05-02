@@ -151,7 +151,24 @@ export default function BusinessAnalysisTool() {
                 </section>
 
                 <section className="sidebar-block">
-                    <h2 className="sidebar-title">维度筛选</h2>
+                    <h2 className="sidebar-title">维度操作台</h2>
+                    <div className="sidebar-dimension-console">
+                        <div className="sidebar-console-head">
+                            <span>维度顺序</span>
+                            <strong id="sidebar-dimension-train-summary" data-dimension-train-summary />
+                        </div>
+                        <div id="sidebar-dimension-train" className="dimension-train sidebar-dimension-train" data-dimension-train aria-label="左侧维度下钻顺序" />
+                        <p className="dimension-train-hint">拖动后续胶囊调整顺序，已下钻层级会保留。</p>
+                        <label className="sidebar-entry-filter" aria-label="左侧当前维度筛选">
+                            <span>进入当前维度</span>
+                            <select id="sidebar-ranking-dimension-filter" className="input" data-ranking-dimension-filter />
+                        </label>
+                        <div className="sidebar-console-actions">
+                            <span>指标：边际总额</span>
+                            <button type="button" className="btn btn-secondary" id="btn-sidebar-ranking-clear" data-ranking-clear>退一层</button>
+                        </div>
+                        <div id="drill-path" className="drill-path" />
+                    </div>
                     <div className="dimension-display-panel">
                         <div className="dimension-display-title">
                             <span>展示维度</span>
@@ -159,8 +176,7 @@ export default function BusinessAnalysisTool() {
                         </div>
                         <div id="dimension-display-grid" className="dimension-display-grid" />
                     </div>
-                    <div id="dimension-filter-grid" className="form-grid" />
-                    <div id="drill-path" className="drill-path" />
+                    <div id="dimension-filter-grid" className="form-grid dimension-filter-grid-hidden" aria-hidden="true" />
                 </section>
 
                 <section className="sidebar-block sidebar-actions">
@@ -178,7 +194,7 @@ export default function BusinessAnalysisTool() {
                     <div>
                         <p className="eyebrow">Financial Modeling</p>
                         <h1>预算实际对比模型</h1>
-                        <p className="model-subtitle">以总部经营明细为主表，核心看单车净收入、单车边际、净收入总额、边际总额、边际率和利润总额；预算口径用于判断偏离，并通过维度归因回答差在哪个国家、业务单元或车型。</p>
+                        <p className="model-subtitle">以总部经营明细为主表，核心看销量、净收入总额、单车净收入、边际总额、单车边际和利润总额；预算口径用于判断偏离，并通过维度归因回答差在哪个国家、业务单元或车型。</p>
                     </div>
                 </header>
 
@@ -189,60 +205,40 @@ export default function BusinessAnalysisTool() {
                         <div className="panel-header">
                             <div>
                                 <h2>维度经营实绩</h2>
-                                <p>按当前维度查看实际规模、实际边际和选定指标的预算偏离。</p>
+                                <p>从预算边际总额出发，按当前维度桥接到实际边际总额，并逐层定位预算缺口来源。</p>
                             </div>
                         </div>
                         <div className="ranking-toolbar" aria-label="维度经营实绩筛选">
-                            <label className="toolbar-field">
-                                <span>排名维度</span>
-                                <select id="ranking-dimension-select" className="input compact-input" />
+                            <div className="dimension-train-panel">
+                                <div className="toolbar-label-row">
+                                    <span>维度顺序</span>
+                                    <strong id="dimension-train-summary" data-dimension-train-summary />
+                                </div>
+                                <div id="dimension-train" className="dimension-train" data-dimension-train aria-label="维度下钻顺序" />
+                                <p className="dimension-train-hint">拖动后续胶囊调整顺序，已下钻层级会保留。</p>
+                            </div>
+                            <label className="waterfall-entry-filter" aria-label="当前维度筛选">
+                                <span>进入当前维度</span>
+                                <select id="ranking-dimension-filter" className="input" data-ranking-dimension-filter />
                             </label>
-                            <label className="toolbar-field">
-                                <span>对照指标</span>
-                                <select id="ranking-metric-select" className="input compact-input" defaultValue="contributionMargin">
-                                    <option value="contributionMargin">边际总额</option>
-                                    <option value="netRevenue">净收入总额</option>
-                                    <option value="unitNetRevenue">单车净收入</option>
-                                    <option value="unitContributionMargin">单车边际</option>
-                                </select>
-                            </label>
-                            <button type="button" className="btn btn-secondary ranking-clear" id="btn-ranking-clear">清空下钻</button>
+                            <div className="waterfall-metric-pill">指标：边际总额</div>
+                            <button type="button" className="btn btn-secondary ranking-clear" id="btn-ranking-clear" data-ranking-clear>退一层</button>
                         </div>
                         <div id="ranking-filter-status" className="ranking-filter-status" />
-                        <div className="table-wrap">
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th id="ranking-dimension-head">维度</th>
-                                        <th>实际发车</th>
-                                        <th>实际净收入</th>
-                                        <th>实际边际</th>
-                                        <th id="ranking-focus-head">预算差异</th>
-                                        <th>实际利润率</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="ranking-table-body" />
-                            </table>
+                        <div className="waterfall-interaction-note" aria-label="维度瀑布图交互方式">
+                            <span><strong>电脑端</strong> 悬停柱子查看实际、预算、差异；点击柱子下钻。</span>
+                            <span><strong>手机端</strong> 点击柱子展开明细卡，再点卡片按钮进入下一层。</span>
                         </div>
+                        <div id="ranking-visual" className="dimension-waterfall" />
                     </article>
                 </section>
 
-                <section className="workspace-grid bottom-grid">
-                    <article className="panel panel-large">
-                        <div className="panel-header">
-                            <div>
-                                <h2>边际预算缺口归因</h2>
-                                <p>当前筛选后，按下一层维度拆解边际总额相对预算的缺口。</p>
-                            </div>
-                        </div>
-                        <div id="dimension-chart" className="chart" />
-                    </article>
-
+                <section className="workspace-grid single-grid">
                     <article className="panel panel-large">
                         <div className="panel-header">
                             <div>
                                 <h2>单车净收入 × 单车边际</h2>
-                                <p>每个维度一个点，横轴单车净收入，纵轴单车边际，气泡代表净收入规模。</p>
+                                <p>每个维度一个点，横轴单车净收入，纵轴单车边际，气泡代表销量规模。</p>
                             </div>
                         </div>
                         <div id="unit-margin-chart" className="chart" />
@@ -273,7 +269,7 @@ export default function BusinessAnalysisTool() {
 
                 <footer className="footer">
                     <span>预算实际对比模型</span>
-                    <span>单车净收入、单车边际、净收入总额、边际总额、边际率、利润总额与维度归因</span>
+                    <span>销量、净收入总额、单车净收入、边际总额、单车边际、利润总额与维度归因</span>
                 </footer>
             </main>
         </div>
