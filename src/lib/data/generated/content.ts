@@ -1,5 +1,5 @@
 // Auto-generated content data from markdown + Notion
-// Generated at: 2026-05-02T11:09:13.627Z
+// Generated at: 2026-05-02T16:12:09.214Z
 // DO NOT EDIT MANUALLY - run 'npm run prebuild' to regenerate
 
 export interface ContentItem {
@@ -37,7 +37,7 @@ export const financeContent: ContentItem[] = [
     "id": 1,
     "slug": "business-analysis",
     "title": "预算实际对比模型",
-    "description": "按企业 FBP 口径比较实际与预算的销量、净收入总额、单车净收入、边际总额、单车边际和利润总额，用于边际复盘与多维度归因分析。",
+    "description": "对比实际与预算的销量、收入、边际和利润表现，支持按国家、车型等维度下钻，定位预算差异来自哪里。",
     "date": "2026-04-29",
     "category": null,
     "href": "/finance/business-analysis",
@@ -48,7 +48,7 @@ export const financeContent: ContentItem[] = [
     "id": 2,
     "slug": "sensitivity-analysis",
     "title": "利润敏感性分析",
-    "description": "按企业 FBP 利润口径，基于现状底表调整销量、收入、成本、固定扣减项和税费假设，分析对边际与利润总额的影响。",
+    "description": "在现状底表上调整销量、收入、成本、费用和税费假设，快速判断边际与利润对关键变量变化的敏感程度。",
     "date": "2026-04-01",
     "category": null,
     "href": "/finance/sensitivity-analysis",
@@ -59,7 +59,7 @@ export const financeContent: ContentItem[] = [
     "id": 3,
     "slug": "margin-analysis",
     "title": "单车指标变动归因模型",
-    "description": "通过上传两期财务数据，自动对比分析单车指标变动的驱动因素。",
+    "description": "上传两期数据，拆解单车指标变化中的结构效应和费率效应，判断变化来自销量结构还是单车水平。",
     "date": "2026-01-01",
     "category": null,
     "href": "/finance/margin-analysis",
