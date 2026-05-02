@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>单车边际变动归因分析</title>
+    <title>单车指标变动归因模型</title>
+    <link rel="icon" href="data:,">
 
     <!-- Plotly.js -->
     <script src="../../vendor/plotly/plotly.min.js"></script>
@@ -61,6 +62,20 @@
                         <button type="button" class="btn-template" data-template-format="xlsx">Excel</button>
                     </div>
                 </div>
+            </div>
+        </details>
+    </section>
+
+    <!-- 用户设置 -->
+    <section id="user-settings-section" class="sidebar-section">
+        <details class="sidebar-details" open>
+            <summary class="sidebar-summary">🧭 用户设置</summary>
+            <div class="details-content">
+                <div class="form-group">
+                    <label class="form-label" for="input-metric-type">分析单车类型</label>
+                    <input id="input-metric-type" class="form-input" type="text" value="边际" placeholder="例如：边际、净收入、材料成本">
+                </div>
+                <p class="caption">填写“边际”时，系统会识别并展示为“单车边际”。</p>
             </div>
         </details>
     </section>
@@ -125,8 +140,8 @@
             <span class="deco-icon">◈</span>
             <span class="deco-line right"></span>
         </div>
-        <h1 class="main-header">单车边际变动归因分析</h1>
-        <p class="sub-header">Unit Margin Attribution Analysis</p>
+        <h1 class="main-header">单车指标变动归因模型</h1>
+        <p class="sub-header">Unit Metric Attribution Model</p>
     </div>
 
     <!-- 未加载数据时的提示 -->
@@ -148,7 +163,7 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td>说明</td><td>月份</td><td>维度A</td><td>维度B</td><td>维度C</td><td>维度D</td><td>维度E</td><td>销量</td><td>边际总额</td>
+                                <td>说明</td><td>月份</td><td>维度A</td><td>维度B</td><td>维度C</td><td>维度D</td><td>维度E</td><td>销量</td><td><span data-total-metric-label>边际总额</span></td>
                             </tr>
                             <tr>
                                 <td>默认</td><td>-</td><td>大区</td><td>国家</td><td>车型</td><td>燃油品类</td><td>品牌</td><td>-</td><td>-</td>
@@ -157,17 +172,17 @@
                     </table>
                 </div>
                 <div class="tip-box">
-                    💡 <strong>提示</strong>：Dim_D 和 Dim_E 为可选列，如果数据中不包含则不会显示。上传数据后可在侧边栏修改各维度的显示名称。
+                    💡 <strong>提示</strong>：Dim_D 和 Dim_E 为可选列，如果数据中不包含则不会显示。上传数据后可在侧边栏修改各维度的显示名称；指标总额列兼容 Total Margin、Total Metric、边际总额、指标总额等列名。
                 </div>
                 <h3>计算逻辑</h3>
                 <ol>
-                    <li><strong>按当前维度分析</strong>：每张图按正在查看的维度汇总销量和边际，例如大区、国家或车型。</li>
-                    <li><strong>结构效应 (Mix)</strong>：该维度销量占比变化带来的单车边际影响。</li>
-                    <li><strong>费率效应 (Rate)</strong>：该维度自身单车边际变化带来的影响。</li>
+                    <li><strong>按当前维度分析</strong>：每张图按正在查看的维度汇总销量和<span data-total-metric-label>边际总额</span>，例如大区、国家或车型。</li>
+                    <li><strong>结构效应 (Mix)</strong>：该维度销量占比变化带来的<span data-unit-metric-label>单车边际</span>影响。</li>
+                    <li><strong>费率效应 (Rate)</strong>：该维度自身<span data-unit-metric-label>单车边际</span>变化带来的影响。</li>
                     <li><strong>下钻阅读</strong>：当某个维度贡献异常时，可以继续下钻到下一层维度查看原因。</li>
                 </ol>
                 <div class="tip-box">
-                    💡 如果某个国家、车型或版型只在其中一期出现，系统会把它视为销量结构变化，而不是费率变化。所有项目汇总后，会与当前图表的单车边际变动一致。
+                    💡 如果某个国家、车型或版型只在其中一期出现，系统会把它视为销量结构变化，而不是费率变化。所有项目汇总后，会与当前图表的<span data-unit-metric-label>单车边际</span>变动一致。
                 </div>
             </div>
         </details>
@@ -188,11 +203,11 @@
                 <span class="metric-delta" id="metric-delta-2"></span>
             </div>
             <div class="metric-card">
-                <span class="metric-label" id="metric-label-3">💎 基期单车边际</span>
+                <span class="metric-label" id="metric-label-3">💎 基期<span data-unit-metric-label>单车边际</span></span>
                 <span class="metric-value" id="metric-value-3">-</span>
             </div>
             <div class="metric-card">
-                <span class="metric-label" id="metric-label-4">💎 当期单车边际</span>
+                <span class="metric-label" id="metric-label-4">💎 当期<span data-unit-metric-label>单车边际</span></span>
                 <span class="metric-value" id="metric-value-4">-</span>
                 <span class="metric-delta" id="metric-delta-4"></span>
             </div>
@@ -212,7 +227,7 @@
         <summary class="usage-summary">📐 归因口径说明</summary>
         <div class="usage-content">
             <p class="assumption-note">
-                本工具按当前展示维度计算单车边际变动贡献。可以先从大区、国家、车型等汇总视角定位主要变化，再通过下钻查看更细层级的驱动因素。
+                本工具按当前展示维度计算<span data-unit-metric-label>单车边际</span>变动贡献。可以先从大区、国家、车型等汇总视角定位主要变化，再通过下钻查看更细层级的驱动因素。
             </p>
             <div class="table-wrapper">
                 <table class="assumption-table">
@@ -226,17 +241,17 @@
                     <tbody>
                         <tr>
                             <td class="product-type">可比维度项</td>
-                            <td class="formula">(当期权重 - 基期权重) × (基期单车边际 - 基期平均单车边际)</td>
-                            <td class="formula">当期权重 × (当期单车边际 - 基期单车边际)</td>
+                            <td class="formula">(当期权重 - 基期权重) × (基期<span data-unit-metric-label>单车边际</span> - 基期平均<span data-unit-metric-label>单车边际</span>)</td>
+                            <td class="formula">当期权重 × (当期<span data-unit-metric-label>单车边际</span> - 基期<span data-unit-metric-label>单车边际</span>)</td>
                         </tr>
                         <tr>
                             <td class="product-type">只在当期出现的项目</td>
-                            <td class="formula">当期权重 × (当期单车边际 - 基期平均单车边际)</td>
+                            <td class="formula">当期权重 × (当期<span data-unit-metric-label>单车边际</span> - 基期平均<span data-unit-metric-label>单车边际</span>)</td>
                             <td style="text-align:center; color:var(--text-secondary);">0</td>
                         </tr>
                         <tr>
                             <td class="product-type">只在基期出现的项目</td>
-                            <td class="formula">- 基期权重 × (基期单车边际 - 基期平均单车边际)</td>
+                            <td class="formula">- 基期权重 × (基期<span data-unit-metric-label>单车边际</span> - 基期平均<span data-unit-metric-label>单车边际</span>)</td>
                             <td style="text-align:center; color:var(--text-secondary);">0</td>
                         </tr>
                     </tbody>
@@ -249,7 +264,7 @@
     </details>
 
     <div class="footer">
-        <span class="footer-brand">Unit Margin Attribution Lab</span>
+        <span class="footer-brand">Unit Metric Attribution Lab</span>
         <br>
         <span class="footer-sub">STRUCTURE, RATE AND MIX DECOMPOSITION</span>
     </div>

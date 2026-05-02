@@ -1,5 +1,5 @@
 /**
- * 单车边际变动归因分析 - Unit Margin Attribution Analysis
+ * 单车指标变动归因模型 - Unit Metric Attribution Model
  * HTML/JS 版本
  */
 
@@ -19,6 +19,7 @@ const AppState = {
         Dim_A: '大区', Dim_B: '国家', Dim_C: '车型',
         Dim_D: '燃油品类', Dim_E: '品牌'
     },
+    unitMetricType: '边际',
     availableDimsInData: []
 };
 
@@ -45,6 +46,7 @@ if (typeof document !== 'undefined') {
         initDemoButton();
         initResetFilter();
         initMonthSelectors();
+        initUserSettings();
 
         // 手机端自动加载示例数据并收起侧边栏
         if (isMobile()) {
@@ -345,7 +347,7 @@ function processLoadedData(rows, sourceName) {
         return row;
     });
 
-    // 4. 移除完全空行 (销量和边际都为 0)
+    // 4. 移除完全空行 (销量和指标总额都为 0)
     rows = rows.filter(r => r['Sales Volume'] !== 0 || r['Total Margin'] !== 0);
 
     if (rows.length === 0) {
@@ -393,8 +395,14 @@ function buildColumnMapping() {
     ['Dim_E', 'dim_e', 'DimE'].forEach(k => map[k] = 'Dim_E');
     // 销量
     ['销量', 'sales volume', 'salesvolume', 'Sales Volume', 'SalesVolume', 'sales_volume'].forEach(k => map[k] = 'Sales Volume');
-    // 边际总额
-    ['边际总额', 'total margin', 'totalmargin', 'Total Margin', 'TotalMargin', 'total_margin'].forEach(k => map[k] = 'Total Margin');
+    // 指标总额（内部沿用 Total Margin 以兼容旧模板）
+    [
+        '边际总额', '指标总额', '指标金额', '指标总量', '单车指标总额',
+        '净收入总额', '收入总额',
+        'total margin', 'totalmargin', 'Total Margin', 'TotalMargin', 'total_margin',
+        'total metric', 'totalmetric', 'Total Metric', 'TotalMetric', 'total_metric',
+        'metric total', 'metrictotal', 'Metric Total', 'MetricTotal', 'metric_total'
+    ].forEach(k => map[k] = 'Total Margin');
     return map;
 }
 
@@ -438,7 +446,7 @@ function generateDemoData() {
         { Month: '2025-01', Dim_A: '美洲区', Dim_B: '巴西', Dim_C: 'Sedan-经典', 'Sales Volume': 1200, 'Total Margin': 1800000 },
 
         // 2025-02 当期数据 (包含结构变化和费率变化)
-        // 亚太区 - 中国SUV增长，单车边际提升; 日本EV占比提升
+        // 亚太区 - 中国SUV增长，单车指标提升; 日本EV占比提升
         { Month: '2025-02', Dim_A: '亚太区', Dim_B: '中国', Dim_C: 'SUV-旗舰', 'Sales Volume': 6200, 'Total Margin': 19840000 },
         { Month: '2025-02', Dim_A: '亚太区', Dim_B: '中国', Dim_C: 'Sedan-经典', 'Sales Volume': 3200, 'Total Margin': 6080000 },
         { Month: '2025-02', Dim_A: '亚太区', Dim_B: '日本', Dim_C: 'SUV-旗舰', 'Sales Volume': 1800, 'Total Margin': 5580000 },
@@ -540,8 +548,57 @@ function populateMonthSelectors() {
 function updateMetricLabels() {
     document.getElementById('metric-label-1').textContent = `📦 ${AppState.baseMonth} 全球销量`;
     document.getElementById('metric-label-2').textContent = `📦 ${AppState.currMonth} 全球销量`;
-    document.getElementById('metric-label-3').textContent = `💎 ${AppState.baseMonth} 单车边际`;
-    document.getElementById('metric-label-4').textContent = `💎 ${AppState.currMonth} 单车边际`;
+    const unitMetricLabel = getUnitMetricLabel();
+    document.getElementById('metric-label-3').textContent = `💎 ${AppState.baseMonth} ${unitMetricLabel}`;
+    document.getElementById('metric-label-4').textContent = `💎 ${AppState.currMonth} ${unitMetricLabel}`;
+}
+
+
+// ==================== 用户设置 ====================
+function initUserSettings() {
+    const metricInput = document.getElementById('input-metric-type');
+    if (!metricInput) return;
+
+    metricInput.value = AppState.unitMetricType;
+    metricInput.addEventListener('change', () => {
+        const nextType = metricInput.value.trim() || '边际';
+        AppState.unitMetricType = nextType;
+        metricInput.value = nextType;
+        updateMetricCopy();
+        if (AppState.dataLoaded) triggerUpdate();
+    });
+
+    updateMetricCopy();
+}
+
+function getUnitMetricType() {
+    return (AppState.unitMetricType || '边际').trim() || '边际';
+}
+
+function getUnitMetricLabel() {
+    const metricType = getUnitMetricType();
+    return metricType.startsWith('单车') ? metricType : `单车${metricType}`;
+}
+
+function getTotalMetricLabel() {
+    const unitMetricLabel = getUnitMetricLabel();
+    return unitMetricLabel.startsWith('单车')
+        ? `${unitMetricLabel.slice(2)}总额`
+        : `${unitMetricLabel}总额`;
+}
+
+function updateMetricCopy() {
+    const unitMetricLabel = getUnitMetricLabel();
+    const totalMetricLabel = getTotalMetricLabel();
+
+    document.querySelectorAll('[data-unit-metric-label]').forEach((el) => {
+        el.textContent = unitMetricLabel;
+    });
+    document.querySelectorAll('[data-total-metric-label]').forEach((el) => {
+        el.textContent = totalMetricLabel;
+    });
+
+    if (AppState.baseMonth && AppState.currMonth) updateMetricLabels();
 }
 
 
@@ -961,7 +1018,7 @@ function calculateGlobalMetrics(data, month) {
  * @param {string} groupDim - 当前展示维度 (如 'Dim_A')
  * @param {number} totalVolCurr - 当期全局/视图总销量（用于计算权重）
  * @param {number} totalVolBase - 基期全局/视图总销量（用于计算权重）
- * @param {number} avgMarginBase - 基期全局/视图平均单车边际
+ * @param {number} avgMarginBase - 基期全局/视图平均单车指标
  * @returns {Array} 当前维度层级的 PVM 效应数组
  */
 function calculateDimensionPVMEffects(data, baseMonth, currMonth, groupDim, totalVolCurr, totalVolBase, avgMarginBase) {
@@ -1031,8 +1088,8 @@ function calculateDimensionPVMEffects(data, baseMonth, currMonth, groupDim, tota
  * @param {string} dimCol - 维度列名
  * @param {number} totalVolBase - 基期总销量（用于计算占比）
  * @param {number} totalVolCurr - 当期总销量（用于计算占比）
- * @param {number|null} totalMarginBase - 基期总边际（用于总计行）
- * @param {number|null} totalMarginCurr - 当期总边际（用于总计行）
+ * @param {number|null} totalMarginBase - 基期指标总额（用于总计行）
+ * @param {number|null} totalMarginCurr - 当期指标总额（用于总计行）
  * @returns {Array} 含占比和总计行的展示数据
  */
 function prepareDisplayData(effectsData, dimCol, totalVolBase, totalVolCurr, totalMarginBase, totalMarginCurr) {
@@ -1065,7 +1122,7 @@ function prepareDisplayData(effectsData, dimCol, totalVolBase, totalVolCurr, tot
         Total_Contribution: sumMix + sumRate
     };
 
-    // 总计行的单车边际
+    // 总计行的单车指标
     if (totalMarginBase != null && totalMarginCurr != null) {
         totalRow.Margin_Unit_Base = sumVolBase > 0 ? totalMarginBase / sumVolBase : 0;
         totalRow.Margin_Unit_Curr = sumVolCurr > 0 ? totalMarginCurr / sumVolCurr : 0;
@@ -1216,10 +1273,10 @@ function updateMetricCards(globalBase, globalCurr, totalDiff) {
     deltaEl2.textContent = formatDelta(volDelta);
     deltaEl2.className = 'metric-delta ' + (volDelta >= 0 ? 'positive' : 'negative');
 
-    // 基期单车边际
+    // 基期单车指标
     document.getElementById('metric-value-3').textContent = '¥' + formatNumber(globalBase.avgMargin);
 
-    // 当期单车边际
+    // 当期单车指标
     document.getElementById('metric-value-4').textContent = '¥' + formatNumber(globalCurr.avgMargin);
     const deltaEl4 = document.getElementById('metric-delta-4');
     deltaEl4.textContent = '¥' + formatDelta(totalDiff);
@@ -1258,6 +1315,8 @@ function renderCharts() {
         header.innerHTML = `${dimIcon} ${dimName}维度贡献分析`;
         section.appendChild(header);
 
+        const unitMetricLabel = getUnitMetricLabel();
+
         // 下钻信息提示
         if (lr.isDrilled && lr.drillInfo && lr.drillInfo.length > 0) {
             const info = document.createElement('div');
@@ -1293,7 +1352,7 @@ function renderCharts() {
 
             const globalTitle = document.createElement('h4');
             globalTitle.className = 'global-contrib-title';
-            globalTitle.innerHTML = '🌐 对全球整体单车边际的贡献';
+            globalTitle.innerHTML = `🌐 对全球整体${unitMetricLabel}的贡献`;
             detailContent.appendChild(globalTitle);
 
             detailContent.appendChild(buildDetailTable(lr.globalDisplayData, dim, dimName, true));
@@ -1331,6 +1390,8 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
 
     let labels, values, measures;
 
+    const unitMetricLabel = getUnitMetricLabel();
+
     if (sorted.length > 10) {
         const top10 = sorted.slice(0, 10);
         const othersSum = sorted.slice(10).reduce((s, r) => s + r.Total_Contribution, 0);
@@ -1338,14 +1399,14 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
         // 先负后正排序
         top10.sort((a, b) => a.Total_Contribution - b.Total_Contribution);
 
-        labels = ['基期单车边际', ...top10.map(r => r[dimCol]), '其他', '当期单车边际'];
+        labels = [`基期${unitMetricLabel}`, ...top10.map(r => r[dimCol]), '其他', `当期${unitMetricLabel}`];
         values = [baseMargin, ...top10.map(r => r.Total_Contribution), othersSum, 0];
         measures = ['absolute', ...Array(11).fill('relative'), 'total'];
     } else {
         // 先负后正排序
         const sortedData = [...sorted].sort((a, b) => a.Total_Contribution - b.Total_Contribution);
 
-        labels = ['基期单车边际', ...sortedData.map(r => r[dimCol]), '当期单车边际'];
+        labels = [`基期${unitMetricLabel}`, ...sortedData.map(r => r[dimCol]), `当期${unitMetricLabel}`];
         values = [baseMargin, ...sortedData.map(r => r.Total_Contribution), 0];
         measures = ['absolute', ...Array(sortedData.length).fill('relative'), 'total'];
     }
@@ -1449,7 +1510,7 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
             fixedrange: true
         },
         yaxis: {
-            title: { text: '单车边际 (¥)', font: { size: 13, color: '#b0aea5' } },
+            title: { text: `${unitMetricLabel} (¥)`, font: { size: 13, color: '#b0aea5' } },
             gridcolor: 'rgba(232, 230, 220, 0.5)',
             tickfont: { size: 11, color: '#b0aea5' },
             tickformat: ',.0f',
@@ -1509,13 +1570,14 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
 function buildDetailTable(displayData, dimCol, dimName, isGlobal) {
     const table = document.createElement('table');
     table.className = 'detail-data-table';
+    const unitMetricLabel = getUnitMetricLabel();
 
     // 表头
     const thead = document.createElement('thead');
     const headerRow = document.createElement('tr');
     const headers = isGlobal
-        ? [dimName, '基期销量', '基期占比%', '当期销量', '当期占比%', '基期单车边际', '当期单车边际', '结构效应（全球）', '费率效应（全球）', '对全球单车边际贡献']
-        : [dimName, '基期销量', '基期占比%', '当期销量', '当期占比%', '基期单车边际', '当期单车边际', '结构效应', '费率效应', '总贡献'];
+        ? [dimName, '基期销量', '基期占比%', '当期销量', '当期占比%', `基期${unitMetricLabel}`, `当期${unitMetricLabel}`, '结构效应（全球）', '费率效应（全球）', `对全球${unitMetricLabel}贡献`]
+        : [dimName, '基期销量', '基期占比%', '当期销量', '当期占比%', `基期${unitMetricLabel}`, `当期${unitMetricLabel}`, '结构效应', '费率效应', '总贡献'];
 
     headers.forEach(h => {
         const th = document.createElement('th');

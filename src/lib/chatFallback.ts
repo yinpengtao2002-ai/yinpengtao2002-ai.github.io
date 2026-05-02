@@ -49,7 +49,7 @@ export function getLocalFallbackResponse(
     if (includesAny(lower, ["单车", "边际", "归因", "结构效应", "费率效应", "变动分析", "margin"])) {
         const cards = financeContent.filter((item) => item.href.includes("margin-analysis") || item.title.includes("单车"));
         return withOfflineNotice({
-            response: "你要找的是 [单车边际变动归因分析](/finance/margin-analysis)。它用于上传两期财务数据，并按用户选择的分析维度拆解结构效应和费率效应。",
+            response: "你要找的是 [单车指标变动归因模型](/finance/margin-analysis)。它用于上传两期财务数据，并按用户选择的分析维度拆解结构效应和费率效应；在用户设置中填写“边际”时会识别为单车边际。",
             contentCards: cards.length > 0 ? cards : undefined,
             cardType: cards.length > 0 ? "finance" : undefined,
         }, options.includeOfflineNotice);
