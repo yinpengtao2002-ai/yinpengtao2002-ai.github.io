@@ -89,7 +89,8 @@
         availableDimensions: DEFAULT_DIMENSIONS.slice(),
         selectedDimensions: DEFAULT_DIMENSIONS.slice(),
         lastSummary: null,
-        activeVarianceKey: "contributionMargin"
+        activeVarianceKey: "contributionMargin",
+        waterfallTouchGesture: null
     };
 
     const COLORS = {
@@ -1993,14 +1994,51 @@
         renderWaterfallTouchCard(null);
     }
 
+    function touchPoint(event) {
+        return event.touches?.[0] || event.changedTouches?.[0] || event;
+    }
+
+    function beginWaterfallTouchGesture(event) {
+        if (!isTouchLikeViewport()) return;
+        const point = touchPoint(event);
+        state.waterfallTouchGesture = {
+            x: Number(point?.clientX || 0),
+            y: Number(point?.clientY || 0),
+            scrollY: window.scrollY,
+            moved: false
+        };
+    }
+
+    function updateWaterfallTouchGesture(event) {
+        const gesture = state.waterfallTouchGesture;
+        if (!gesture || !isTouchLikeViewport()) return;
+        const point = touchPoint(event);
+        const dx = Number(point?.clientX || 0) - gesture.x;
+        const dy = Number(point?.clientY || 0) - gesture.y;
+        if (Math.hypot(dx, dy) > 10 || Math.abs(window.scrollY - gesture.scrollY) > 4) {
+            gesture.moved = true;
+        }
+    }
+
+    function shouldIgnoreWaterfallTouchDismiss() {
+        const gesture = state.waterfallTouchGesture;
+        if (!gesture) return false;
+        const shouldIgnore = gesture.moved || Math.abs(window.scrollY - gesture.scrollY) > 4;
+        state.waterfallTouchGesture = null;
+        return shouldIgnore;
+    }
+
     function bindWaterfallTouchDismiss() {
         const root = byId("business-analysis-root");
         if (!root || root.dataset.waterfallTouchDismissBound === "true") return;
 
+        document.addEventListener("touchstart", beginWaterfallTouchGesture, { passive: true });
+        document.addEventListener("touchmove", updateWaterfallTouchGesture, { passive: true });
         document.addEventListener("click", (event) => {
             if (!isTouchLikeViewport()) return;
             const touchHost = byId("dimension-waterfall-touch-card");
             if (!touchHost || !touchHost.innerHTML.trim()) return;
+            if (shouldIgnoreWaterfallTouchDismiss()) return;
             const target = event.target;
             if (target?.closest?.("#dimension-waterfall-touch-card")) return;
             if (target?.closest?.("#dimension-waterfall-chart")) return;
@@ -2076,6 +2114,7 @@
         });
         visual.addEventListener("click", (event) => {
             if (!isTouchLikeViewport()) return;
+            if (shouldIgnoreWaterfallTouchDismiss()) return;
             const index = waterfallPointIndexFromEvent(visual, event);
             if (index < 0) dismissWaterfallTouchCard();
         });

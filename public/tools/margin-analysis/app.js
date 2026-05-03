@@ -1991,6 +1991,7 @@ function attachWaterfallInteractions(containerId, dimCol, level) {
 
     graphDiv.__waterfallBlankClickHandler = (event) => {
         if (!isMobile()) return;
+        if (graphDiv.__waterfallSuppressBlankClickUntil && Date.now() < graphDiv.__waterfallSuppressBlankClickUntil) return;
         const target = event.target;
         if (!(target instanceof Element)) return;
         if (target.closest('.waterfalllayer .point')) return;
@@ -2021,7 +2022,10 @@ function attachWaterfallInteractions(containerId, dimCol, level) {
                 hideWaterfallHoverTooltip();
                 return;
             }
-            handleWaterfallBarTap(meta, dimCol, level);
+            graphDiv.__waterfallSuppressBlankClickUntil = Date.now() + 350;
+            eventData?.event?.stopPropagation?.();
+            eventData?.event?.stopImmediatePropagation?.();
+            window.requestAnimationFrame(() => handleWaterfallBarTap(meta, dimCol, level));
         } else {
             handleWaterfallBarClick(meta, dimCol, level);
         }
