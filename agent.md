@@ -53,6 +53,14 @@ Finance tools are first-class site pages under `/finance`. Each model should hav
 
 Current models:
 
+- `monthly-trend`: `/finance/monthly-trend`
+  - Route: `src/app/finance/monthly-trend/page.tsx`
+  - Shell: `src/app/finance/monthly-trend/MonthlyTrendTool.tsx`
+  - Engine: `src/app/finance/monthly-trend/monthly-trend-engine.js`
+  - Styles: `src/app/finance/monthly-trend/tool.css`
+  - Content: `content/finance/monthly-trend.md`
+  - Purpose: analyze continuous monthly detail data across dimensions and metrics, including trends, MoM/YoY, same-month comparison, structure share, heatmaps, and concentration.
+
 - `margin-analysis`: `/finance/margin-analysis`
   - Route: `src/app/finance/margin-analysis/page.tsx`
   - Static tool: `public/tools/margin-analysis/index.html`

@@ -1,5 +1,5 @@
 // Auto-generated content data from markdown + Notion
-// Generated at: 2026-05-02T16:12:09.214Z
+// Generated at: 2026-05-04T03:36:36.053Z
 // DO NOT EDIT MANUALLY - run 'npm run prebuild' to regenerate
 
 export interface ContentItem {
@@ -35,6 +35,17 @@ export const aiContent: ContentItem[] = [
 export const financeContent: ContentItem[] = [
   {
     "id": 1,
+    "slug": "monthly-trend",
+    "title": "分月指标趋势分析模型",
+    "description": "上传连续月份明细，自动识别月份列、维度列和指标列，查看销量、单车质量、环比同比、同期对比、结构占比和结构集中度。",
+    "date": "2026-05-03",
+    "category": null,
+    "href": "/finance/monthly-trend",
+    "content": "这个模型用于分析连续多个月的数据走势。它不绑定具体行业或业务场景，只要数据里有月份、维度和数值指标，就可以查看指标在多个月份中的变化节奏。\n\n1. 上传 Excel 或 CSV 明细表，或使用示例数据\n2. 自动识别月份列、维度列和指标列，也可以手动切换分析口径\n3. 通过销量、单车净收入、单车边际、环比同比、同期月度对比和结构趋势观察变化节奏\n4. 用同比热力图、环比热力图和结构集中度定位值得继续下钻的月份和维度",
+    "source": "markdown"
+  },
+  {
+    "id": 2,
     "slug": "business-analysis",
     "title": "预算实际对比模型",
     "description": "对比实际与预算的销量、收入、边际和利润表现，支持按国家、车型等维度下钻，定位预算差异来自哪里。",
@@ -45,7 +56,7 @@ export const financeContent: ContentItem[] = [
     "source": "markdown"
   },
   {
-    "id": 2,
+    "id": 3,
     "slug": "sensitivity-analysis",
     "title": "利润敏感性分析",
     "description": "在现状底表上调整销量、收入、成本、费用和税费假设，快速判断边际与利润对关键变量变化的敏感程度。",
@@ -56,7 +67,7 @@ export const financeContent: ContentItem[] = [
     "source": "markdown"
   },
   {
-    "id": 3,
+    "id": 4,
     "slug": "margin-analysis",
     "title": "单车指标变动归因模型",
     "description": "上传两期数据，拆解单车指标变化中的结构效应和费率效应，判断变化来自销量结构还是单车水平。",
