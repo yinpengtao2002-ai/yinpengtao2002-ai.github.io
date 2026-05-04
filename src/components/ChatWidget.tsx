@@ -12,13 +12,12 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { CHAT_API_TIMEOUT_MS, getLocalFallbackResponse } from "@/lib/chatFallback";
 import {
-    aiContent as staticAI,
-    essaysContent as staticEssays,
     financeContent as staticFinance,
+    thinkingContent as staticThinking,
 } from "@/lib/data/generated/content";
 import { useViewportProfile } from "@/lib/useLowMotionMode";
 
-type ContentCardType = "ai" | "finance" | "essays";
+type ContentCardType = "finance" | "thinking";
 
 interface ContentCard {
     id: number;
@@ -39,16 +38,16 @@ interface Message {
 }
 
 const MOBILE_QUICK_PROMPTS = [
-    "有什么文章值得看？",
-    "Lucas 是谁？",
-    "推荐一个财务模型",
+    "哪个模型适合预算复盘？",
+    "这个网站能看什么？",
+    "推荐一篇思考文章",
 ];
 
 const CHAT_UI_FONT =
     'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
 
 function getGreetingMessage() {
-    return "你好，我是 Lucas AI。\n\n想了解文章、Lucas，或者本站内容，都可以直接问我。";
+    return "你好，我是 Lucas AI。\n\n我可以帮你找财务模型、解释模型怎么用，也可以推荐思考与方法里的文章。";
 }
 
 function getInternalHref(href: string | undefined) {
@@ -187,11 +186,9 @@ function ContentCardList({ cards, cardType, onCardClick }: {
     onCardClick: (card: ContentCard) => void;
 }) {
     const accentColor =
-        cardType === "ai"
-            ? "var(--accent)"
-            : cardType === "finance"
-                ? "var(--accent-secondary)"
-                : "var(--foreground)";
+        cardType === "finance"
+            ? "var(--accent-secondary)"
+            : "var(--accent)";
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 12 }}>
             {cards.map((card, index) => (
@@ -243,15 +240,11 @@ export default function ChatWidget() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
 
-    const aiContent: ContentCard[] = staticAI.map((item) => ({
-        id: item.id, title: item.title, description: item.description,
-        date: item.date, category: item.category ?? undefined, href: item.href,
-    }));
     const financeContent: ContentCard[] = staticFinance.map((item) => ({
         id: item.id, title: item.title, description: item.description,
         date: item.date, category: item.category ?? undefined, href: item.href,
     }));
-    const essaysContent: ContentCard[] = staticEssays.map((item) => ({
+    const thinkingContent: ContentCard[] = staticThinking.map((item) => ({
         id: item.id, title: item.title, description: item.description,
         date: item.date, category: item.category ?? undefined, href: item.href,
     }));
@@ -386,7 +379,7 @@ export default function ChatWidget() {
             includeOfflineNotice = true;
         }
         await new Promise((r) => setTimeout(r, 600 + Math.random() * 400));
-        const result = getLocalFallbackResponse(userMessage.content, aiContent, financeContent, essaysContent, { includeOfflineNotice });
+        const result = getLocalFallbackResponse(userMessage.content, financeContent, thinkingContent, { includeOfflineNotice });
         setMessages((prev) => {
             const filtered = prev.filter((m) => m.id !== "typing" && m.id !== assistantMsgId);
             return [...filtered, {
@@ -709,7 +702,7 @@ export default function ChatWidget() {
                                         </span>
                                         {!compactMobileChat && (
                                             <span style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.1 }}>
-                                                站内文章与人物信息
+                                                模型与思考入口
                                             </span>
                                         )}
                                     </div>

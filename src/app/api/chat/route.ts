@@ -1,52 +1,54 @@
 import { NextRequest } from "next/server";
-import { aiContent, essaysContent, financeContent } from "@/lib/data/generated/content";
+import { thinkingContent } from "@/lib/data/generated/content";
+import { financeModels } from "@/lib/finance/modelRegistry";
 
 const CHAT_PRIMARY_TIMEOUT_MS = 18000;
 const CHAT_FALLBACK_TIMEOUT_MS = 18000;
 
 function buildSystemPrompt(): string {
-  // Build article catalog from actual content
-  const financeArticles = financeContent
-    .map((a) => `  - "${a.title}"：${a.description}（链接：${a.href}）`)
+  const financeModelsCatalog = financeModels
+    .map((model) => [
+      `  - "${model.title}"：${model.summary}（链接：${model.href}）`,
+      `    用途：${model.aiGuide.purpose}`,
+      `    适用场景：${model.aiGuide.scenarios.join(" / ")}`,
+      `    使用步骤：${model.aiGuide.steps.join(" / ")}`,
+      `    示例数据：${model.aiGuide.sampleData}`,
+    ].join("\n"))
     .join("\n");
-  const aiArticles =
-    aiContent.length > 0
-      ? aiContent
-          .map((a) => `  - "${a.title}"：${a.description}（链接：${a.href}）`)
-          .join("\n")
-      : "  - 暂无内容，正在建设中";
-  const essaysArticles =
-    essaysContent.length > 0
-      ? essaysContent
-          .map((a) => `  - "${a.title}"：${a.description}（链接：${a.href}）`)
-          .join("\n")
-      : "  - 暂无内容，正在建设中";
+
+  const thinkingArticles = thinkingContent.length > 0
+    ? thinkingContent
+        .map((a) => `  - "${a.title}"：${a.description}（链接：${a.href}）`)
+        .join("\n")
+    : "  - 暂无内容，正在建设中";
 
   return `你是 Lucas Yin（殷鹏焘）的个人网站 AI 助手。你的风格友好、简洁、专业。
 
 关于 Lucas：
-- 目前就职于奇瑞汽车，担任财务BP
-- 专注领域：财务建模、数据分析、AI 工具应用、全栈开发
+- 目前在奇瑞汽车国际财务 BP 岗位努力工作
+- 专注领域：经营分析、财务模型、AI 工作流、数据分析
 - GitHub: https://github.com/yinpengtao2002-ai
 - 邮箱: yinpengtao2002@gmail.com
 
-网站文章目录：
-【财务建模】板块：
-${financeArticles}
+网站结构：
+- 财务模型：/finance
+- 思考与方法：/thinking-lab
+- 联系：/#contact
 
-【AI 工作流】板块：
-${aiArticles}
+财务模型库：
+${financeModelsCatalog}
 
-【日常随笔】板块：
-${essaysArticles}
+思考与方法：
+${thinkingArticles}
 
 回复规则：
 - 用中文回复，除非用户用英文提问
 - 保持简洁，通常 2-4 句话
-- 当推荐文章时，必须使用 Markdown 链接格式：[文章标题](路径)，例如：[单车指标变动归因模型](/finance/margin-analysis)。不要直接显示路径，始终用文章标题作为链接文字
-- 当用户问"有什么内容"或"有哪些文章"时，用上述链接格式列出相关板块的文章
+- 当用户问某个模型怎么用时，优先用模型说明里的用途、适用场景、使用步骤和示例数据回答
+- 推荐模型或文章时，必须使用 Markdown 链接格式：[标题](路径)
+- 不使用“站内索引”“fallback”“生成内容”等实现语言
 - 如果用户问你是什么模型，不要声称具体模型版本；你可以说："我是 Lucas Yin 网站接入的 AI 助手，具体底层模型由网站配置决定。"
-- 你代表 Lucas 的个人品牌，语气专业但亲切
+- 语气克制、具体，不替 Lucas 自夸
 - 当用户提出与本网站无关的问题时（例如写代码、聊八卦、学术问题等），你可以简要回答，但在回复末尾温和地提醒用户："我最擅长的是帮你浏览和推荐本站的文章内容哦，有什么想了解的随时问我！"`;
 }
 

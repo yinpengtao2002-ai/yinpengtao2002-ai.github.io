@@ -16,7 +16,7 @@ export interface LocalContentCard {
 export interface LocalFallbackResult {
     response: string;
     contentCards?: LocalContentCard[];
-    cardType?: "ai" | "finance" | "essays";
+    cardType?: "finance" | "thinking";
 }
 
 function includesAny(text: string, keywords: string[]) {
@@ -33,16 +33,24 @@ function withOfflineNotice(result: LocalFallbackResult, includeOfflineNotice?: b
 
 export function getLocalFallbackResponse(
     input: string,
-    aiContent: LocalContentCard[],
     financeContent: LocalContentCard[],
-    essaysContent: LocalContentCard[] = [],
+    thinkingContent: LocalContentCard[] = [],
     options: { includeOfflineNotice?: boolean } = {}
 ): LocalFallbackResult {
     const lower = input.toLowerCase().trim();
 
     if (includesAny(lower, ["lucas", "卢卡斯", "站长", "博主", "作者", "yinpengtao", "殷鹏焘", "殷鹏涛"])) {
         return withOfflineNotice({
-            response: "Lucas Yin（殷鹏焘）目前在奇瑞汽车做财务 BP，关注财务建模、数据分析和 AI 工具应用。你可以从 [财务建模](/finance) 或 [AI 工作流](/ai) 开始看。",
+            response: "Lucas Yin（殷鹏焘）关注经营分析、财务模型和 AI 工作流，目前也在奇瑞汽车国际财务 BP 岗位努力工作。你可以先看 [财务模型](/finance)，也可以进入 [思考与方法](/thinking-lab)。",
+        }, options.includeOfflineNotice);
+    }
+
+    if (includesAny(lower, ["预算", "实际", "复盘", "经营看板", "预算复盘", "business"])) {
+        const cards = financeContent.filter((item) => item.href.includes("business-analysis") || item.title.includes("预算"));
+        return withOfflineNotice({
+            response: "预算复盘可以先打开 [预算实际对比模型](/finance/business-analysis)。它适合对比实际与预算的销量、收入、边际和利润表现，再按国家、车型等维度下钻定位差异。",
+            contentCards: cards.length > 0 ? cards : undefined,
+            cardType: cards.length > 0 ? "finance" : undefined,
         }, options.includeOfflineNotice);
     }
 
@@ -55,19 +63,37 @@ export function getLocalFallbackResponse(
         }, options.includeOfflineNotice);
     }
 
+    if (includesAny(lower, ["趋势", "分月", "月度", "同比", "环比", "monthly", "trend"])) {
+        const cards = financeContent.filter((item) => item.href.includes("monthly-trend") || item.title.includes("趋势"));
+        return withOfflineNotice({
+            response: "连续月份走势可以看 [分月指标趋势分析模型](/finance/monthly-trend)。它适合观察销量、单车质量、同比环比、结构占比和集中度。",
+            contentCards: cards.length > 0 ? cards : undefined,
+            cardType: cards.length > 0 ? "finance" : undefined,
+        }, options.includeOfflineNotice);
+    }
+
+    if (includesAny(lower, ["敏感性", "利润", "模拟", "测算", "预测", "sensitivity"])) {
+        const cards = financeContent.filter((item) => item.href.includes("sensitivity-analysis") || item.title.includes("敏感性"));
+        return withOfflineNotice({
+            response: "利润假设推演可以用 [利润敏感性分析](/finance/sensitivity-analysis)。它适合调整销量、收入、成本、费用和税费假设，快速看利润影响。",
+            contentCards: cards.length > 0 ? cards : undefined,
+            cardType: cards.length > 0 ? "finance" : undefined,
+        }, options.includeOfflineNotice);
+    }
+
     if (includesAny(lower, ["ai", "人工智能", "见闻", "chatgpt", "llm", "openai", "gpt", "claude"])) {
-        if (aiContent.length === 0) {
-            return withOfflineNotice({ response: "【AI 工作流】板块暂时还没有内容，敬请期待。" }, options.includeOfflineNotice);
+        if (thinkingContent.length === 0) {
+            return withOfflineNotice({ response: "【思考与方法】暂时还没有内容，敬请期待。" }, options.includeOfflineNotice);
         }
         return withOfflineNotice({
-            response: "这些是【AI 工作流】板块目前可以阅读的内容：",
-            contentCards: aiContent,
-            cardType: "ai",
+            response: "这些是【思考与方法】里可以先看的内容：",
+            contentCards: thinkingContent,
+            cardType: "thinking",
         }, options.includeOfflineNotice);
     }
 
     if (includesAny(lower, ["月光渡口", "渡口", "老陈", "苏晴", "小说", "随笔", "日常随笔", "essays", "essay"])) {
-        const cards = essaysContent.filter((item) => (
+        const cards = thinkingContent.filter((item) => (
             item.title.includes("月光渡口") ||
             item.href.includes("moonlight-ferry") ||
             item.title.includes("随笔") ||
@@ -75,19 +101,19 @@ export function getLocalFallbackResponse(
         ));
         return withOfflineNotice({
             response: cards.length > 0
-                ? "你要找的是 [月光渡口](/article/essays/moonlight-ferry)。它在【日常随笔】栏目里。"
-                : "【日常随笔】栏目暂时没有匹配内容。",
-            contentCards: cards.length > 0 ? cards : essaysContent,
-            cardType: "essays",
+                ? "你要找的是 [月光渡口](/thinking-lab/moonlight-ferry)。它现在放在【思考与方法】里。"
+                : "【思考与方法】暂时没有匹配内容。",
+            contentCards: cards.length > 0 ? cards : thinkingContent,
+            cardType: "thinking",
         }, options.includeOfflineNotice);
     }
 
     if (includesAny(lower, ["财务", "建模", "模型", "金融", "finance", "估值", "驾驶舱"])) {
         if (financeContent.length === 0) {
-            return withOfflineNotice({ response: "【财务建模】板块暂时还没有内容，敬请期待。" }, options.includeOfflineNotice);
+            return withOfflineNotice({ response: "【财务模型】暂时还没有内容，敬请期待。" }, options.includeOfflineNotice);
         }
         return withOfflineNotice({
-            response: "这些是【财务建模】板块目前可以使用的模型和工具：",
+            response: "这些是【财务模型】里目前可以使用的模型和工具：",
             contentCards: financeContent,
             cardType: "finance",
         }, options.includeOfflineNotice);
@@ -95,7 +121,7 @@ export function getLocalFallbackResponse(
 
     if (includesAny(lower, ["文章", "内容", "有什么", "推荐", "目录", "网站", "看什么", "入口", "板块"])) {
         return withOfflineNotice({
-            response: "你可以先看三个入口：[财务建模](/finance)、[AI 工作流](/ai) 和 [日常随笔](/essays)。如果想读小说，可以直接看 [月光渡口](/article/essays/moonlight-ferry)。",
+            response: "你可以先看两个入口：[财务模型](/finance) 和 [思考与方法](/thinking-lab)。如果想直接体验工具，可以先打开 [预算实际对比模型](/finance/business-analysis)。",
         }, options.includeOfflineNotice);
     }
 
