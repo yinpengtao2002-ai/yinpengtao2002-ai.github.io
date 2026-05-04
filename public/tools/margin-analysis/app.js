@@ -53,10 +53,10 @@ if (typeof document !== 'undefined') {
         initUserSettings();
         initWaterfallDismissHandling();
 
-        // 手机端自动加载示例数据并收起侧边栏
+        const demoData = generateDemoData();
+        processLoadedData(demoData, "示例数据");
+
         if (isMobile()) {
-            const demoData = generateDemoData();
-            processLoadedData(demoData, "示例数据");
             // 收起侧边栏
             const sidebar = document.getElementById("sidebar");
             const expandBtn = document.getElementById("sidebar-expand");
