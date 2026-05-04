@@ -103,6 +103,12 @@ function loadExistingGeneratedContent() {
     }
 }
 
+function hasLegacyGeneratedExports() {
+    if (!fs.existsSync(tsOutputPath)) return false;
+    const source = fs.readFileSync(tsOutputPath, 'utf-8');
+    return /export const (aiContent|essaysContent)|export function getContentBySlug/.test(source);
+}
+
 function withoutGeneratedId(item) {
     const copy = { ...item };
     delete copy.id;
@@ -297,9 +303,6 @@ async function main() {
     ]).sort(sortContentByDateDesc));
     console.log(`  ✅ Total Thinking Lab articles: ${thinkingContent.length}`);
 
-    const aiContent = thinkingContent.filter((item) => item.legacyCategory === 'ai');
-    const essaysContent = thinkingContent.filter((item) => item.legacyCategory === 'essays' || item.legacyCategory === 'finance');
-
     const tsContent = `// Auto-generated content data from markdown + Notion
 // Generated at: ${new Date().toISOString()}
 // DO NOT EDIT MANUALLY - run 'npm run prebuild' to regenerate
@@ -322,25 +325,15 @@ export const financeContent: ContentItem[] = ${JSON.stringify(financeContent, nu
 
 export const thinkingContent: ContentItem[] = ${JSON.stringify(thinkingContent, null, 2)};
 
-export const aiContent: ContentItem[] = ${JSON.stringify(aiContent, null, 2)};
-
-export const essaysContent: ContentItem[] = ${JSON.stringify(essaysContent, null, 2)};
-
 export function getThinkingBySlug(slug: string): ContentItem | undefined {
     return thinkingContent.find(item => item.slug === slug || item.aliases?.includes(slug));
-}
-
-export function getContentBySlug(category: 'ai' | 'finance' | 'essays', slug: string): ContentItem | undefined {
-    if (category === 'finance') {
-        return financeContent.find(item => item.slug === slug || item.aliases?.includes(slug));
-    }
-    return getThinkingBySlug(slug);
 }
 `;
 
     if (
         JSON.stringify(existingGeneratedContent.finance) === JSON.stringify(financeContent) &&
-        JSON.stringify(existingGeneratedContent.thinking || []) === JSON.stringify(thinkingContent)
+        JSON.stringify(existingGeneratedContent.thinking || []) === JSON.stringify(thinkingContent) &&
+        !hasLegacyGeneratedExports()
     ) {
         console.log('  ✅ Content unchanged; keeping existing generated file');
         console.log('✨ Content generation complete!');
