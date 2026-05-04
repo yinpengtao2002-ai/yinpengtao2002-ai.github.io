@@ -5,11 +5,10 @@
 
 const fs = require('fs');
 const path = require('path');
-const matter = require('gray-matter');
 
-const contentDirectory = path.join(process.cwd(), 'content');
 const outputDirectory = path.join(process.cwd(), 'src', 'lib', 'data', 'generated');
 const tsOutputPath = path.join(outputDirectory, 'content.ts');
+const financeRegistryPath = path.join(process.cwd(), 'src', 'lib', 'finance', 'model-registry.json');
 
 const NOTION_TOKEN = process.env.NOTION_TOKEN;
 const NOTION_AI_DB = process.env.NOTION_AI_DATABASE_ID;
@@ -80,7 +79,7 @@ function extractGeneratedArray(source, exportName) {
 
 function loadExistingGeneratedContent() {
     if (!fs.existsSync(tsOutputPath)) {
-        return { ai: [], finance: [], essays: [] };
+        return { ai: [], finance: [], essays: [], thinking: [] };
     }
 
     try {
@@ -91,6 +90,7 @@ function loadExistingGeneratedContent() {
         return {
             ai: ai.filter((item) => !isEssayItem(item)),
             finance: finance.filter((item) => !isEssayItem(item)),
+            thinking: extractGeneratedArray(source, 'thinkingContent'),
             essays: dedupeContentItems([
                 ...essays,
                 ...ai.filter(isEssayItem),
@@ -99,7 +99,7 @@ function loadExistingGeneratedContent() {
         };
     } catch (err) {
         console.warn(`  ⚠️  Could not read existing generated content: ${err.message}`);
-        return { ai: [], finance: [], essays: [] };
+        return { ai: [], finance: [], essays: [], thinking: [] };
     }
 }
 
@@ -120,25 +120,22 @@ function isEssayItem(item) {
         item.slug === 'gold-stock-selloff-iran-war-2026';
 }
 
-function normalizeCategoryHref(item, category) {
+function normalizeThinkingHref(item, legacyCategory) {
     const previousSlug = item.slug;
-    const slug = getSemanticSlug(category, item);
+    const slug = getSemanticSlug(legacyCategory, item);
     const aliases = new Set(item.aliases || []);
 
     if (previousSlug !== slug) {
         aliases.add(previousSlug);
     }
 
-    const nextItem = {
+    return {
         ...item,
         slug,
+        legacyCategory,
+        href: `/thinking-lab/${slug}`,
         ...(aliases.size > 0 ? { aliases: Array.from(aliases) } : {}),
     };
-
-    if (!nextItem.href || nextItem.href.startsWith('/article/')) {
-        return { ...nextItem, href: `/article/${category}/${slug}` };
-    }
-    return nextItem;
 }
 
 function renumberContent(items) {
@@ -165,27 +162,23 @@ function sortContentByDateDesc(a, b) {
 
 const existingGeneratedContent = loadExistingGeneratedContent();
 
-function getMarkdownContent(category) {
-    const categoryPath = path.join(contentDirectory, category);
-    if (!fs.existsSync(categoryPath)) return [];
-
-    const filenames = fs.readdirSync(categoryPath).filter(f => f.endsWith('.md'));
-    return filenames.map((filename) => {
-        const filePath = path.join(categoryPath, filename);
-        const fileContent = fs.readFileSync(filePath, 'utf-8');
-        const { data, content } = matter(fileContent);
-        const slug = filename.replace(/\.md$/, '');
-        return {
-            slug,
-            title: data.title || slug,
-            description: data.description || '',
-            date: data.date || '',
-            category: data.category || null,
-            href: data.href || `/article/${category}/${slug}`,
-            content: content.trim(),
-            source: 'markdown',
-        };
-    });
+function getFinanceRegistryContent() {
+    const registry = JSON.parse(fs.readFileSync(financeRegistryPath, 'utf-8'));
+    return registry.models.map((model) => ({
+        slug: model.slug,
+        title: model.title,
+        description: model.summary,
+        date: model.date,
+        category: model.categoryId,
+        href: model.href,
+        content: [
+            model.aiGuide.purpose,
+            '',
+            '使用步骤：',
+            ...model.aiGuide.steps.map((step, index) => `${index + 1}. ${step}`),
+        ].join('\n'),
+        source: 'registry',
+    }));
 }
 
 async function getNotionContent(category, databaseId, fallbackArticles) {
@@ -253,26 +246,6 @@ async function getNotionContent(category, databaseId, fallbackArticles) {
     }
 }
 
-async function getMergedContent(category, databaseId) {
-    const local = getMarkdownContent(category);
-    const fallback = (existingGeneratedContent[category] || [])
-        .filter((item) => item.source === 'notion')
-        .map(withoutGeneratedId);
-    const notion = await getNotionContent(category, databaseId, fallback);
-    const seen = new Set(local.map((a) => a.slug));
-    const merged = [...local];
-    for (const article of notion) {
-        if (!seen.has(article.slug)) merged.push(article);
-    }
-    merged.sort((a, b) => {
-        if (!a.date) return 1;
-        if (!b.date) return -1;
-        return b.date.localeCompare(a.date);
-    });
-    return merged.map((item) => normalizeCategoryHref(item, category))
-        .map((item, i) => ({ id: i + 1, ...item }));
-}
-
 async function main() {
     console.log('📚 Generating content from markdown + Notion...');
 
@@ -280,21 +253,52 @@ async function main() {
         fs.mkdirSync(outputDirectory, { recursive: true });
     }
 
-    const aiContent = renumberContent((await getMergedContent('ai', NOTION_AI_DB)).filter((item) => !isEssayItem(item)));
-    console.log(`  ✅ Total AI articles: ${aiContent.length}`);
+    const financeContent = renumberContent(getFinanceRegistryContent());
+    console.log(`  ✅ Total Finance models: ${financeContent.length}`);
 
-    const mergedFinanceContent = await getMergedContent('finance', NOTION_FINANCE_DB);
-    const financeContent = renumberContent(mergedFinanceContent.filter((item) => !isEssayItem(item)));
-    console.log(`  ✅ Total Finance articles: ${financeContent.length}`);
+    const existingThinking = (existingGeneratedContent.thinking || [])
+        .filter((item) => item.source === 'notion')
+        .map(withoutGeneratedId);
+    const existingAiThinking = existingThinking.filter((item) => item.legacyCategory === 'ai');
+    const existingFinanceThinking = existingThinking.filter((item) => item.legacyCategory === 'finance');
+    const existingEssayThinking = existingThinking.filter((item) => item.legacyCategory === 'essays');
 
-    const financeEssays = mergedFinanceContent
-        .filter(isEssayItem)
-        .map((item) => normalizeCategoryHref(item, 'essays'));
-    const essaysContent = renumberContent(dedupeContentItems([
-        ...(await getMergedContent('essays', null)),
-        ...financeEssays,
+    const aiFallback = dedupeContentItems([
+        ...existingAiThinking,
+        ...(existingGeneratedContent.ai || [])
+            .filter((item) => item.source === 'notion')
+            .map(withoutGeneratedId),
+    ]);
+    const aiThinkingContent = (await getNotionContent('ai', NOTION_AI_DB, aiFallback))
+        .map((item) => normalizeThinkingHref(item, 'ai'));
+
+    const financeFallback = dedupeContentItems([
+        ...existingFinanceThinking,
+        ...(existingGeneratedContent.finance || [])
+            .filter((item) => item.source === 'notion')
+            .map(withoutGeneratedId),
+    ]);
+    const financeThinkingContent = (await getNotionContent('finance', NOTION_FINANCE_DB, financeFallback))
+        .filter((item) => item.source === 'notion')
+        .map((item) => normalizeThinkingHref(item, 'finance'));
+
+    const essayFallback = dedupeContentItems([
+        ...existingEssayThinking,
+        ...(existingGeneratedContent.essays || [])
+            .filter((item) => item.source === 'notion')
+            .map(withoutGeneratedId),
+    ]);
+    const essayThinkingContent = essayFallback.map((item) => normalizeThinkingHref(item, 'essays'));
+
+    const thinkingContent = renumberContent(dedupeContentItems([
+        ...aiThinkingContent,
+        ...financeThinkingContent,
+        ...essayThinkingContent,
     ]).sort(sortContentByDateDesc));
-    console.log(`  ✅ Total Essays: ${essaysContent.length}`);
+    console.log(`  ✅ Total Thinking Lab articles: ${thinkingContent.length}`);
+
+    const aiContent = thinkingContent.filter((item) => item.legacyCategory === 'ai');
+    const essaysContent = thinkingContent.filter((item) => item.legacyCategory === 'essays' || item.legacyCategory === 'finance');
 
     const tsContent = `// Auto-generated content data from markdown + Notion
 // Generated at: ${new Date().toISOString()}
@@ -304,6 +308,7 @@ export interface ContentItem {
     id: number;
     slug: string;
     aliases?: string[];
+    legacyCategory?: string;
     title: string;
     description: string;
     date: string;
@@ -313,22 +318,29 @@ export interface ContentItem {
     source?: string;
 }
 
-export const aiContent: ContentItem[] = ${JSON.stringify(aiContent, null, 2)};
-
 export const financeContent: ContentItem[] = ${JSON.stringify(financeContent, null, 2)};
+
+export const thinkingContent: ContentItem[] = ${JSON.stringify(thinkingContent, null, 2)};
+
+export const aiContent: ContentItem[] = ${JSON.stringify(aiContent, null, 2)};
 
 export const essaysContent: ContentItem[] = ${JSON.stringify(essaysContent, null, 2)};
 
+export function getThinkingBySlug(slug: string): ContentItem | undefined {
+    return thinkingContent.find(item => item.slug === slug || item.aliases?.includes(slug));
+}
+
 export function getContentBySlug(category: 'ai' | 'finance' | 'essays', slug: string): ContentItem | undefined {
-    const content = category === 'ai' ? aiContent : category === 'finance' ? financeContent : essaysContent;
-    return content.find(item => item.slug === slug || item.aliases?.includes(slug));
+    if (category === 'finance') {
+        return financeContent.find(item => item.slug === slug || item.aliases?.includes(slug));
+    }
+    return getThinkingBySlug(slug);
 }
 `;
 
     if (
-        JSON.stringify(existingGeneratedContent.ai) === JSON.stringify(aiContent) &&
         JSON.stringify(existingGeneratedContent.finance) === JSON.stringify(financeContent) &&
-        JSON.stringify(existingGeneratedContent.essays) === JSON.stringify(essaysContent)
+        JSON.stringify(existingGeneratedContent.thinking || []) === JSON.stringify(thinkingContent)
     ) {
         console.log('  ✅ Content unchanged; keeping existing generated file');
         console.log('✨ Content generation complete!');
