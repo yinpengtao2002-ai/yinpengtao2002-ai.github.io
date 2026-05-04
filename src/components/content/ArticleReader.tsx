@@ -12,7 +12,7 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import mermaid from "mermaid";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ContentItem } from "@/lib/data/generated/content";
+import type { ContentItem } from "@/lib/data/generated/content";
 import { normalizeMarkdownStrongEmphasis } from "@/lib/markdown/normalizeStrongEmphasis";
 
 type TocHeading = {
@@ -108,12 +108,13 @@ function MermaidChart({ chart }: { chart: string }) {
     );
 }
 
-interface ArticleClientProps {
+interface ArticleReaderProps {
     article: ContentItem;
-    category: "ai" | "finance" | "essays";
+    sectionLabel: string;
+    backHref: string;
 }
 
-export default function ArticleClient({ article, category }: ArticleClientProps) {
+export default function ArticleReader({ article, sectionLabel, backHref }: ArticleReaderProps) {
     const router = useRouter();
     const articleContent = useMemo(() => normalizeMarkdownStrongEmphasis(article.content), [article.content]);
     const tocHeadings = useMemo(() => extractTableOfContents(articleContent), [articleContent]);
@@ -144,7 +145,7 @@ export default function ArticleClient({ article, category }: ArticleClientProps)
         if (typeof window !== "undefined" && window.history.length > 1) {
             router.back();
         } else {
-            router.push(`/${category}`);
+            router.push(backHref);
         }
     };
     return (
@@ -202,7 +203,7 @@ export default function ArticleClient({ article, category }: ArticleClientProps)
                             textTransform: "uppercase",
                         }}
                     >
-                        {category === "ai" ? "AI Workflow" : category === "finance" ? "Financial Modeling" : "Daily Essays"}
+                        {sectionLabel}
                     </span>
                     <Link
                         href="/"
