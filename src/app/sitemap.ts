@@ -1,5 +1,5 @@
 import { MetadataRoute } from "next";
-import { aiContent, essaysContent, financeContent } from "@/lib/data/generated/content";
+import { financeContent, thinkingContent } from "@/lib/data/generated/content";
 
 const BASE_URL = "https://yinpengtao.cn";
 
@@ -8,21 +8,18 @@ export const dynamic = "force-static";
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages: MetadataRoute.Sitemap = [
     { url: BASE_URL, lastModified: new Date(), priority: 1.0 },
-    { url: `${BASE_URL}/finance`, lastModified: new Date(), priority: 0.8 },
-    { url: `${BASE_URL}/ai`, lastModified: new Date(), priority: 0.8 },
-    { url: `${BASE_URL}/essays`, lastModified: new Date(), priority: 0.7 },
-    { url: `${BASE_URL}/explore`, lastModified: new Date(), priority: 0.7 },
+    { url: `${BASE_URL}/finance`, lastModified: new Date(), priority: 0.9 },
+    { url: `${BASE_URL}/thinking-lab`, lastModified: new Date(), priority: 0.8 },
   ];
 
-  const articlePages: MetadataRoute.Sitemap = [
+  const dynamicPages: MetadataRoute.Sitemap = [
     ...financeContent,
-    ...aiContent,
-    ...essaysContent,
-  ].map((article) => ({
-    url: `${BASE_URL}${article.href}`,
-    lastModified: new Date(),
-    priority: 0.8,
+    ...thinkingContent,
+  ].map((item) => ({
+    url: `${BASE_URL}${item.href}`,
+    lastModified: item.date ? new Date(item.date) : new Date(),
+    priority: item.href.startsWith("/finance/") ? 0.85 : 0.75,
   }));
 
-  return [...staticPages, ...articlePages];
+  return [...staticPages, ...dynamicPages];
 }

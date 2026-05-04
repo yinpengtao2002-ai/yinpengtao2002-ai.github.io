@@ -21,6 +21,31 @@ const nextConfig: NextConfig = {
 
   // Trailing slash for compatibility
   trailingSlash: true,
+
+  async redirects() {
+    return [
+      {
+        source: "/ai",
+        destination: "/thinking-lab",
+        permanent: true,
+      },
+      {
+        source: "/essays",
+        destination: "/thinking-lab",
+        permanent: true,
+      },
+      {
+        source: "/article/ai/:slug",
+        destination: "/thinking-lab/:slug",
+        permanent: true,
+      },
+      {
+        source: "/article/essays/:slug",
+        destination: "/thinking-lab/:slug",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
