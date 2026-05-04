@@ -1,0 +1,110 @@
+{
+  "categories": [
+    {
+      "id": "budget-review",
+      "label": "预算复盘",
+      "description": "对比实际与预算，定位销量、收入、边际和利润差异。"
+    },
+    {
+      "id": "trend-monitoring",
+      "label": "趋势监控",
+      "description": "观察连续月份走势、同比环比、结构变化和集中度。"
+    },
+    {
+      "id": "profit-simulation",
+      "label": "利润模拟",
+      "description": "调整销量、收入、成本、费用和税费假设，查看利润影响。"
+    },
+    {
+      "id": "unit-attribution",
+      "label": "单车归因",
+      "description": "拆解单车指标变化中的结构效应和费率效应。"
+    }
+  ],
+  "models": [
+    {
+      "slug": "business-analysis",
+      "categoryId": "budget-review",
+      "title": "预算实际对比模型",
+      "summary": "对比实际与预算的销量、收入、边际和利润表现，支持按国家、车型等维度下钻。",
+      "href": "/finance/business-analysis",
+      "date": "2026-04-29",
+      "accent": "blue",
+      "aiGuide": {
+        "purpose": "用于经营复盘，帮助用户快速判断预算差异来自销量、单车净收入、单车边际、固定科目还是利润贡献。",
+        "scenarios": ["预算复盘会议", "国家或车型边际差异定位", "总部经营看板拆解"],
+        "steps": ["打开模型后先查看自动加载的示例数据。", "在控制台切换分析维度或上传实际与预算底表。", "从预算到实际边际瀑布图、利润桥和维度经营实绩中定位差异。"],
+        "sampleData": "页面默认加载预算实际示例数据，展示销量、净收入、边际、固定科目和利润桥。",
+        "faq": [
+          {
+            "question": "这个模型适合什么时候用？",
+            "answer": "适合预算实际复盘和经营差异定位，尤其适合需要按国家、车型或自定义维度下钻的场景。"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "monthly-trend",
+      "categoryId": "trend-monitoring",
+      "title": "分月指标趋势分析模型",
+      "summary": "上传连续月份明细，查看销量、单车质量、环比同比、同期对比、结构占比和集中度。",
+      "href": "/finance/monthly-trend",
+      "date": "2026-05-03",
+      "accent": "green",
+      "aiGuide": {
+        "purpose": "用于连续月份指标分析，把月份、维度和数值指标整理成趋势、同比环比和结构观察。",
+        "scenarios": ["月度经营复盘", "跨年趋势监控", "维度结构变化分析"],
+        "steps": ["打开模型后先查看自动加载的示例数据。", "上传包含月份、维度和指标列的 Excel 或 CSV。", "切换指标、维度和图表视图，观察趋势、热力图和结构集中度。"],
+        "sampleData": "页面默认加载连续月份示例明细，包含区域、国家、车型、销量、收入和边际类指标。",
+        "faq": [
+          {
+            "question": "必须用固定模板吗？",
+            "answer": "不必须。模型会自动识别月份列、维度列和指标列，也支持手动切换。"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "sensitivity-analysis",
+      "categoryId": "profit-simulation",
+      "title": "利润敏感性分析",
+      "summary": "调整销量、收入、成本、费用和税费假设，快速判断边际与利润对变量变化的敏感程度。",
+      "href": "/finance/sensitivity-analysis",
+      "date": "2026-04-01",
+      "accent": "orange",
+      "aiGuide": {
+        "purpose": "用于预算、滚动预测和经营复盘中的情景推演，判断利润总额对关键变量变化的敏感程度。",
+        "scenarios": ["年度预算测算", "滚动预测调整", "目标利润倒推"],
+        "steps": ["打开模型后查看默认利润示例数据。", "在控制台调整销量、单车净收入、成本、费用和税费。", "查看关键因素排序、目标利润分析、双变量矩阵和瀑布图。"],
+        "sampleData": "页面默认使用一套利润示例假设，展示销量、净收入、变动成本、固定扣减和利润贡献。",
+        "faq": [
+          {
+            "question": "它和预算实际对比模型有什么区别？",
+            "answer": "预算实际对比模型解释已经发生的差异；利润敏感性分析用于推演假设变化会怎样影响利润。"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "margin-analysis",
+      "categoryId": "unit-attribution",
+      "title": "单车指标变动归因模型",
+      "summary": "上传两期数据，拆解单车指标变化中的结构效应和费率效应，判断变化来源。",
+      "href": "/finance/margin-analysis",
+      "date": "2026-01-01",
+      "accent": "blue",
+      "aiGuide": {
+        "purpose": "用于比较两期单车指标变化，拆解变化来自销量结构还是单车水平。",
+        "scenarios": ["月度单车边际复盘", "车型结构变化分析", "国家组合变化解释"],
+        "steps": ["打开模型后先查看自动加载的示例数据。", "上传两期包含销量、指标总额和维度的数据。", "选择分析维度，查看结构效应、费率效应、瀑布图和明细表。"],
+        "sampleData": "页面默认加载两期单车指标示例数据，包含 Month、Dim_A 至 Dim_E、Sales Volume 和 Total Margin。",
+        "faq": [
+          {
+            "question": "结构效应和费率效应怎么理解？",
+            "answer": "结构效应解释销量组合变化的影响；费率效应解释同一维度下单车水平变化的影响。"
+          }
+        ]
+      }
+    }
+  ]
+}

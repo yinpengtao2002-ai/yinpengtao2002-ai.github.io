@@ -11,6 +11,7 @@
     "lint": "eslint",
     "test:margin": "node --test tests/margin-analysis-attribution.test.mjs",
     "test:sensitivity": "node --test tests/sensitivity-analysis.test.mjs",
+    "test:site": "node --test tests/finance-model-registry.test.mjs tests/generated-content-contract.test.mjs tests/routing-contract.test.mjs",
     "prepare:vendor": "node scripts/prepare-vendor-assets.mjs",
     "gen": "node scripts/generate-content.js",
     "postinstall": "npm run prepare:vendor",
