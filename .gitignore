@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/.worktrees/
 /.playwright-cli/
 /output/
 /public/vendor/
