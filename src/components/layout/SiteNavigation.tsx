@@ -15,15 +15,12 @@ const NAV_FONT =
 const NAV_ITEMS = [
     { label: "首页", href: "/", activePath: "/" },
     { label: "财务模型", href: "/finance", activePath: "/finance" },
-    { label: "AI 工作流", href: "/ai", activePath: "/ai" },
-    { label: "日常随笔", href: "/essays", activePath: "/essays" },
-    { label: "联系", href: "/#footer", sectionId: "footer" },
+    { label: "思考与方法", href: "/thinking-lab", activePath: "/thinking-lab" },
+    { label: "联系", href: "/#contact", sectionId: "contact" },
 ];
 
 function shouldHideNavigation(pathname: string) {
     return (
-        pathname.startsWith("/article/") ||
-        pathname.startsWith("/explore") ||
         pathname.startsWith("/finance/margin-analysis") ||
         pathname.startsWith("/finance/sensitivity-analysis") ||
         pathname.startsWith("/finance/business-analysis") ||
