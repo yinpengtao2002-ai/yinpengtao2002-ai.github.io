@@ -33,3 +33,20 @@ test("finance registry maps every model to an existing category", () => {
     assert.ok(categories.has(model.categoryId), `${model.slug} has unknown category ${model.categoryId}`);
   }
 });
+
+test("finance models include chart-stacked preview assets", async () => {
+  const { access } = await import("node:fs/promises");
+
+  for (const model of registry.models) {
+    assert.match(
+      model.previewImage,
+      /^\/images\/product-stage\/[a-z-]+\.png$/,
+      `${model.slug} needs a product-stage preview image`
+    );
+    assert.equal(typeof model.previewAlt, "string", `${model.slug} needs preview alt text`);
+    assert.ok(model.previewAlt.length >= 12, `${model.slug} preview alt text should be descriptive`);
+
+    const assetPath = new URL(`../public${model.previewImage}`, import.meta.url);
+    await access(assetPath);
+  }
+});

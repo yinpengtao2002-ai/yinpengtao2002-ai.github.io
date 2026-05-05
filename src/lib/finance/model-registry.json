@@ -30,6 +30,8 @@
       "href": "/finance/business-analysis",
       "date": "2026-04-29",
       "accent": "blue",
+      "previewImage": "/images/product-stage/budget-actual-preview.png",
+      "previewAlt": "预算实际对比模型的差异桥、利润桥、KPI 与维度表现图表预览",
       "aiGuide": {
         "purpose": "用于经营复盘，帮助用户快速判断预算差异来自销量、单车净收入、单车边际、固定科目还是利润贡献。",
         "scenarios": ["预算复盘会议", "国家或车型边际差异定位", "总部经营看板拆解"],
@@ -51,6 +53,8 @@
       "href": "/finance/monthly-trend",
       "date": "2026-05-03",
       "accent": "green",
+      "previewImage": "/images/product-stage/monthly-trend-preview.png",
+      "previewAlt": "分月指标趋势分析模型的趋势线、热力图、结构占比与月度指标预览",
       "aiGuide": {
         "purpose": "用于连续月份指标分析，把月份、维度和数值指标整理成趋势、同比环比和结构观察。",
         "scenarios": ["月度经营复盘", "跨年趋势监控", "维度结构变化分析"],
@@ -72,6 +76,8 @@
       "href": "/finance/sensitivity-analysis",
       "date": "2026-04-01",
       "accent": "orange",
+      "previewImage": "/images/product-stage/profit-sensitivity-preview.png",
+      "previewAlt": "利润敏感性分析的敏感性排序、利润瀑布、双变量矩阵与结果卡预览",
       "aiGuide": {
         "purpose": "用于预算、滚动预测和经营复盘中的情景推演，判断利润总额对关键变量变化的敏感程度。",
         "scenarios": ["年度预算测算", "滚动预测调整", "目标利润倒推"],
@@ -93,6 +99,8 @@
       "href": "/finance/margin-analysis",
       "date": "2026-01-01",
       "accent": "blue",
+      "previewImage": "/images/product-stage/unit-attribution-preview.png",
+      "previewAlt": "单车指标变动归因模型的结构效应、费率效应、瀑布拆解与维度下钻预览",
       "aiGuide": {
         "purpose": "用于比较两期单车指标变化，拆解变化来自销量结构还是单车水平。",
         "scenarios": ["月度单车边际复盘", "车型结构变化分析", "国家组合变化解释"],
