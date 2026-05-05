@@ -7,3 +7,7 @@ const eslintConfig = await readFile(new URL("../eslint.config.mjs", import.meta.
 test("eslint ignores project-local worktrees", () => {
   assert.ok(eslintConfig.includes('".worktrees/**"'));
 });
+
+test("eslint ignores local Vercel build output", () => {
+  assert.ok(eslintConfig.includes('".vercel/**"'));
+});

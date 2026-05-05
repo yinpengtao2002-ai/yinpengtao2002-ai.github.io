@@ -72,5 +72,23 @@ test("finance model library keeps filtered cards at a stable preview width", asy
   assert.match(library, /finance-model-library-grid/);
   assert.match(library, /isFiltered/);
   assert.match(globals, /\.finance-model-library-grid\.filtered/);
-  assert.match(globals, /min\(360px,\s*100%\)/);
+  assert.match(globals, /grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(260px,\s*320px\)\)/);
+  assert.doesNotMatch(globals, /min\(360px,\s*100%\)/);
+});
+
+test("finance index page keeps the model library high and readable", async () => {
+  const page = await readFile(
+    new URL("../src/app/finance/page.tsx", import.meta.url),
+    "utf8"
+  );
+  const globals = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
+
+  assert.match(page, /finance-index-page/);
+  assert.match(page, /finance-index-shell/);
+  assert.match(page, /finance-index-intro/);
+  assert.doesNotMatch(page, /style=\{\{/);
+  assert.match(globals, /\.finance-index-page\s*\{/);
+  assert.match(globals, /padding:\s*clamp\(4\.4rem,\s*7vh,\s*5\.2rem\)\s*0\s*2rem/);
+  assert.match(globals, /\.finance-index-intro\s*\{/);
+  assert.match(globals, /color-mix\(in srgb,\s*var\(--foreground\)\s*62%,\s*var\(--muted\)\)/);
 });
