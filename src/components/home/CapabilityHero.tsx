@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { ArrowDown, ArrowRight } from "lucide-react";
-import ArtifactCard, { ChartArtifact, CodeArtifact, ImageArtifact } from "@/components/ui/ArtifactCard";
+import ProductStageVisual from "@/components/home/ProductStageVisual";
 import { financeModels } from "@/lib/finance/modelRegistry";
 import { thinkingContent } from "@/lib/data/generated/content";
 import { useViewportProfile } from "@/lib/useLowMotionMode";
@@ -45,17 +45,6 @@ export default function CapabilityHero() {
       style={{ fontFamily: UI_FONT }}
     >
       <div className="home-hero-pattern" aria-hidden="true" />
-      <div className="home-hero-artifacts" aria-hidden="true">
-        <ArtifactCard delay={0.2} rotate={5} initialY={-8} lowMotion={lowMotion} className="home-artifact-code rounded-md">
-          <CodeArtifact />
-        </ArtifactCard>
-        <ArtifactCard delay={0.35} rotate={-4} initialY={8} lowMotion={lowMotion} className="home-artifact-chart rounded-md">
-          <ChartArtifact />
-        </ArtifactCard>
-        <ArtifactCard delay={0.45} rotate={-7} initialY={0} lowMotion={lowMotion} className="home-artifact-image rounded-md">
-          <ImageArtifact />
-        </ArtifactCard>
-      </div>
 
       <div className="home-shell home-hero-grid">
         <motion.div
@@ -96,6 +85,7 @@ export default function CapabilityHero() {
               查看财务模型 <ArrowRight style={{ width: 15, height: 15 }} />
             </Link>
           </div>
+          <ProductStageVisual />
           <div className="home-proof-grid">
             {PROOFS.map((proof) => (
               <Link key={proof.title} href={proof.href} className="home-proof-card">

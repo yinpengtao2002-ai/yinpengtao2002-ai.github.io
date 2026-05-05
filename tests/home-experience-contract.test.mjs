@@ -30,6 +30,14 @@ test("home hero uses a refined headline treatment without low-value summary copy
   assert.doesNotMatch(hero, /我还是职场新人/);
 });
 
+test("home hero uses the product stage visual instead of decorative artifacts", () => {
+  assert.match(hero, /ProductStageVisual/);
+  assert.doesNotMatch(hero, /ArtifactCard/);
+  assert.doesNotMatch(hero, /CodeArtifact/);
+  assert.doesNotMatch(hero, /ChartArtifact/);
+  assert.doesNotMatch(hero, /ImageArtifact/);
+});
+
 test("visitor-facing copy avoids redesign-process language", () => {
   const banned = [
     "合并成",

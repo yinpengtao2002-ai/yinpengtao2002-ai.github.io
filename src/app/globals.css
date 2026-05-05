@@ -186,6 +186,27 @@ h6 {
   margin-bottom: 18px;
 }
 
+.product-stage-visual {
+  position: relative;
+  width: 100%;
+  height: clamp(220px, 31vh, 340px);
+  margin: 0 0 14px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--border) 50%, transparent) 1px, transparent 1px),
+    linear-gradient(180deg, color-mix(in srgb, var(--border) 42%, transparent) 1px, transparent 1px),
+    color-mix(in srgb, var(--background) 72%, var(--card));
+  background-size: 34px 34px;
+  box-shadow: 0 22px 56px rgba(20, 20, 19, 0.09);
+}
+
+.product-stage-image {
+  object-fit: cover;
+  object-position: center;
+}
+
 .home-primary-action,
 .home-secondary-action {
   display: inline-flex;
@@ -280,13 +301,6 @@ h6 {
   mask-image: radial-gradient(ellipse at center, black 0%, transparent 72%);
 }
 
-.home-hero-artifacts {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-}
-
 .artifact-card {
   transform-origin: center;
 }
@@ -322,36 +336,6 @@ h6 {
 
 .artifact-image {
   width: min(100%, 108px);
-}
-
-.home-artifact-code {
-  top: 8%;
-  right: max(24px, calc((100vw - 1180px) / 2 + 18px));
-  width: 160px;
-  height: 112px;
-  background: color-mix(in srgb, var(--card) 84%, transparent) !important;
-  border-color: color-mix(in srgb, var(--border) 72%, transparent) !important;
-  box-shadow: 0 18px 46px rgba(20, 20, 19, 0.08);
-}
-
-.home-artifact-chart {
-  bottom: 8%;
-  left: max(24px, calc((100vw - 1180px) / 2 + 330px));
-  width: 168px;
-  height: 126px;
-  background: color-mix(in srgb, var(--card) 82%, transparent) !important;
-  border-color: color-mix(in srgb, var(--border) 72%, transparent) !important;
-  box-shadow: 0 18px 46px rgba(20, 20, 19, 0.08);
-}
-
-.home-artifact-image {
-  top: 18%;
-  left: max(34px, calc((100vw - 1180px) / 2 + 48px));
-  width: 140px;
-  height: 108px;
-  background: color-mix(in srgb, var(--card) 82%, transparent) !important;
-  border-color: color-mix(in srgb, var(--border) 72%, transparent) !important;
-  box-shadow: 0 18px 46px rgba(20, 20, 19, 0.08);
 }
 
 .home-section {
@@ -431,16 +415,13 @@ h6 {
     font-size: 12px;
   }
 
+  .product-stage-visual {
+    height: clamp(190px, 28vh, 260px);
+  }
+
   .home-section {
     padding-top: 2.4rem;
     padding-bottom: 2.4rem;
-  }
-
-  .home-artifact-chart {
-    bottom: 5%;
-    left: max(24px, calc((100vw - 1180px) / 2 + 360px));
-    width: 140px;
-    height: 100px;
   }
 
   .index-page {
@@ -513,28 +494,17 @@ h6 {
     padding: 0.42rem 0.66rem;
   }
 
-  .home-hero-artifacts {
-    display: block;
-    opacity: 0.64;
-  }
-
-  .home-artifact-code,
-  .home-artifact-image {
-    display: none;
-  }
-
-  .home-artifact-chart {
-    top: 5.1rem;
-    right: 14px;
-    bottom: auto;
-    left: auto;
-    width: 118px;
-    height: 86px;
-    box-shadow: 0 14px 32px rgba(20, 20, 19, 0.07);
-  }
-
   .home-hero-actions {
     margin-bottom: 12px;
+  }
+
+  .product-stage-visual {
+    height: clamp(164px, 24svh, 210px);
+    margin-bottom: 10px;
+  }
+
+  .product-stage-image {
+    object-position: center top;
   }
 
   .home-primary-action {
