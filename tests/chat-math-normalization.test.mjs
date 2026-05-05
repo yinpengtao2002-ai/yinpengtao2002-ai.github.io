@@ -10,6 +10,11 @@ const chatWidget = await readFile(
   new URL("../src/components/ChatWidget.tsx", import.meta.url),
   "utf8"
 );
+const chatRoute = await readFile(
+  new URL("../src/app/api/chat/route.ts", import.meta.url),
+  "utf8"
+);
+const envExample = await readFile(new URL("../.env.example", import.meta.url), "utf8");
 
 test("converts common AI inline LaTeX delimiters to markdown math", () => {
   const input = "利润公式是 \\(Profit = Revenue - Cost\\)。";
@@ -54,4 +59,12 @@ test("chat widget normalizes math before markdown rendering", () => {
   assert.match(chatWidget, /normalizeChatMathMarkdown/);
   assert.match(chatWidget, /normalizeChatMathMarkdown\(text\)/);
   assert.match(chatWidget, /className="chat-markdown"/);
+});
+
+test("chat API defaults to gpt-5.2 with gpt-5.4 fallback", () => {
+  assert.match(chatRoute, /process\.env\.CHAT_MODEL\s*\|\|\s*"gpt-5\.2"/);
+  assert.match(chatRoute, /process\.env\.CHAT_MODEL_FALLBACK\s*\|\|\s*"gpt-5\.4"/);
+  assert.match(envExample, /CHAT_MODEL=gpt-5\.2/);
+  assert.match(envExample, /CHAT_MODEL_FALLBACK=gpt-5\.4/);
+  assert.doesNotMatch(chatRoute, /gpt-5\.4-mini/);
 });

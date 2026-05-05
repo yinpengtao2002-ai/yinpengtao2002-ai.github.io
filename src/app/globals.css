@@ -109,9 +109,15 @@ h6 {
   padding: clamp(5.4rem, 8vh, 7rem) 0 clamp(4.2rem, 7vh, 5.4rem);
 }
 
-.home-hero-grid {
+.home-hero-frame {
   position: relative;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 2vh, 1.35rem);
+}
+
+.home-hero-grid {
   display: grid;
   grid-template-columns: minmax(260px, 0.9fr) minmax(340px, 1.1fr);
   align-items: center;
@@ -140,6 +146,27 @@ h6 {
   font-size: 12px;
   font-weight: 800;
   margin-bottom: 16px;
+}
+
+.home-hero-copy-card {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 14px;
+  padding: clamp(1.05rem, 2vw, 1.45rem);
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--card) 94%, transparent), color-mix(in srgb, var(--background) 74%, var(--card))),
+    var(--card);
+  box-shadow: 0 18px 48px rgba(20, 20, 19, 0.08);
+}
+
+.home-hero-copy-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-secondary), var(--accent-tertiary));
 }
 
 .home-hero-headline {
@@ -183,7 +210,7 @@ h6 {
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  margin-bottom: 18px;
+  margin-bottom: 0;
 }
 
 .product-stage-visual {
@@ -232,11 +259,13 @@ h6 {
   color: var(--foreground);
 }
 
+.home-hero-continue-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
 .home-hero-continue {
-  position: absolute;
-  z-index: 4;
-  left: 50%;
-  bottom: clamp(1.05rem, 2.2vh, 1.45rem);
   display: inline-flex;
   flex-direction: column;
   align-items: center;
@@ -247,7 +276,6 @@ h6 {
   font-weight: 800;
   letter-spacing: 0.16em;
   text-decoration: none;
-  transform: translateX(-50%);
 }
 
 .home-hero-continue::before {
@@ -390,8 +418,9 @@ h6 {
     margin-bottom: 10px;
   }
 
-  .home-hero-actions {
+  .home-hero-copy-card {
     margin-bottom: 12px;
+    padding: 1rem 1.1rem;
   }
 
   .home-proof-card {
@@ -494,14 +523,15 @@ h6 {
     line-height: 1.15;
   }
 
+  .home-hero-copy-card {
+    margin-bottom: 10px;
+    padding: 0.95rem;
+  }
+
   .home-headline-mark {
     border-left-width: 3px;
     font-size: 0.86rem;
     padding: 0.42rem 0.66rem;
-  }
-
-  .home-hero-actions {
-    margin-bottom: 12px;
   }
 
   .product-stage-visual {
@@ -555,7 +585,6 @@ h6 {
   }
 
   .home-hero-continue {
-    bottom: calc(0.55rem + env(safe-area-inset-bottom));
     gap: 4px;
     font-size: 11px;
   }
@@ -608,6 +637,21 @@ h6 {
     border-color 0.24s ease,
     box-shadow 0.24s ease,
     transform 0.24s ease;
+}
+
+.finance-model-library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.finance-model-library-grid.compact {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.finance-model-library-grid.filtered {
+  grid-template-columns: repeat(auto-fit, minmax(0, min(360px, 100%)));
+  justify-content: start;
 }
 
 .finance-model-card:hover {

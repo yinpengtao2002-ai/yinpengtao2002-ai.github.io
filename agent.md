@@ -108,7 +108,7 @@ Current models:
 ## AI Assistant Configuration
 
 - `/api/chat` expects an OpenAI-compatible endpoint through `CHAT_API_URL` and `CHAT_API_KEY`.
-- Current default models in code: primary `gpt-5.4-mini`, fallback `gpt-5.2`.
+- Current default models in code: primary `gpt-5.2`, fallback `gpt-5.4`.
 - `.env.example` uses the 8848AI endpoint: `https://api.884819.xyz/v1/chat/completions`.
 - Vercel environment variables override code defaults.
 - Local development chat falls back to local content unless `.env.local` provides `CHAT_API_KEY` and `CHAT_API_URL`.

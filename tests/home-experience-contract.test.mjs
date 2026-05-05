@@ -21,10 +21,12 @@ test("home page has an explicit continue cue for below-the-fold content", () => 
   assert.match(hero, /继续看/);
   assert.match(hero, /#finance/);
   assert.match(hero, /home-hero-continue/);
+  assert.match(hero, /home-hero-continue-row/);
   assert.doesNotMatch(hero, /home-secondary-action/);
 });
 
 test("home hero uses a refined headline treatment without low-value summary copy", () => {
+  assert.match(hero, /home-hero-copy-card/);
   assert.match(hero, /home-headline-mark/);
   assert.match(hero, /home-headline-line/);
   assert.doesNotMatch(hero, /我还是职场新人/);
@@ -60,4 +62,9 @@ test("home viewport sections use resilient sizing for shorter desktop heights", 
   assert.match(globals, /\.home-viewport/);
   assert.match(globals, /min-height:\s*min\(100dvh,\s*760px\)/);
   assert.match(globals, /@media\s*\(max-height:\s*760px\)/);
+});
+
+test("home continue cue stays in normal layout flow", () => {
+  assert.doesNotMatch(globals, /\.home-hero-continue\s*\{[^}]*position:\s*absolute/s);
+  assert.match(globals, /\.home-hero-continue-row/);
 });

@@ -13,9 +13,15 @@ const UI_FONT =
 
 export default function FinanceModelLibrary({ compact = false }: { compact?: boolean }) {
   const [activeCategory, setActiveCategory] = useState("all");
+  const isFiltered = activeCategory !== "all";
   const visibleModels = activeCategory === "all"
     ? financeModels
     : financeModels.filter((model) => model.categoryId === activeCategory);
+  const gridClassName = [
+    "finance-model-library-grid",
+    compact ? "compact" : "",
+    isFiltered ? "filtered" : "",
+  ].filter(Boolean).join(" ");
 
   return (
     <section style={{ width: "100%", fontFamily: UI_FONT }}>
@@ -39,7 +45,7 @@ export default function FinanceModelLibrary({ compact = false }: { compact?: boo
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: compact ? "repeat(auto-fit, minmax(220px, 1fr))" : "repeat(auto-fit, minmax(260px, 1fr))", gap: 14 }}>
+      <div className={gridClassName}>
         {visibleModels.map((model, index) => (
           <motion.article
             key={model.slug}

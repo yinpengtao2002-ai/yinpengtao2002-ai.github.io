@@ -61,3 +61,16 @@ test("finance model library renders the preview component", async () => {
   assert.match(library, /previewImage/);
   assert.match(library, /previewAlt/);
 });
+
+test("finance model library keeps filtered cards at a stable preview width", async () => {
+  const library = await readFile(
+    new URL("../src/components/finance/FinanceModelLibrary.tsx", import.meta.url),
+    "utf8"
+  );
+  const globals = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
+
+  assert.match(library, /finance-model-library-grid/);
+  assert.match(library, /isFiltered/);
+  assert.match(globals, /\.finance-model-library-grid\.filtered/);
+  assert.match(globals, /min\(360px,\s*100%\)/);
+});

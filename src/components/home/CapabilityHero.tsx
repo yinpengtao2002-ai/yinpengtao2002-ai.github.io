@@ -46,64 +46,70 @@ export default function CapabilityHero() {
     >
       <div className="home-hero-pattern" aria-hidden="true" />
 
-      <div className="home-shell home-hero-grid">
-        <motion.div
-          initial={lowMotion ? { opacity: 0 } : { opacity: 0, y: 24 }}
-          animate={lowMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="home-hero-identity"
-        >
-          <h1
-            className="home-hero-title"
-            style={{
-              letterSpacing: 0,
-              margin: 0,
-            }}
+      <div className="home-shell home-hero-frame">
+        <div className="home-hero-grid">
+          <motion.div
+            initial={lowMotion ? { opacity: 0 } : { opacity: 0, y: 24 }}
+            animate={lowMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="home-hero-identity"
           >
-            <span className="gradient-text">Lucas<br />Yin</span>
-          </h1>
-          <p className="home-hero-role">
-            奇瑞汽车国际财务 BP · 经营分析 · 财务模型 · AI 协作
-          </p>
-        </motion.div>
+            <h1
+              className="home-hero-title"
+              style={{
+                letterSpacing: 0,
+                margin: 0,
+              }}
+            >
+              <span className="gradient-text">Lucas<br />Yin</span>
+            </h1>
+            <p className="home-hero-role">
+              奇瑞汽车国际财务 BP · 经营分析 · 财务模型 · AI 协作
+            </p>
+          </motion.div>
 
-        <motion.div
-          initial={lowMotion ? { opacity: 0 } : { opacity: 0, y: 24 }}
-          animate={lowMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.12 }}
-          className="home-hero-content"
-        >
-          <p className="home-hero-kicker">
-            Capability Profile
-          </p>
-          <h2 className="home-hero-headline">
-            <span className="home-headline-mark">从业务问题出发</span>
-            <span className="home-headline-line">持续打磨经营分析、财务模型与 AI 工作流</span>
-          </h2>
-          <div className="home-hero-actions">
-            <Link href="/finance" className="home-primary-action">
-              查看财务模型 <ArrowRight style={{ width: 15, height: 15 }} />
-            </Link>
-          </div>
-          <ProductStageVisual />
-          <div className="home-proof-grid">
-            {PROOFS.map((proof) => (
-              <Link key={proof.title} href={proof.href} className="home-proof-card">
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                  <strong style={{ color: "var(--foreground)" }}>{proof.title}</strong>
-                  <span style={{ color: "var(--muted)", fontSize: 12 }}>{proof.meta}</span>
-                </div>
-                <p className="home-proof-body">{proof.body}</p>
-                <span className="home-proof-link">{proof.link}</span>
-              </Link>
-            ))}
-          </div>
-        </motion.div>
+          <motion.div
+            initial={lowMotion ? { opacity: 0 } : { opacity: 0, y: 24 }}
+            animate={lowMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.12 }}
+            className="home-hero-content"
+          >
+            <div className="home-hero-copy-card">
+              <p className="home-hero-kicker">
+                Capability Profile
+              </p>
+              <h2 className="home-hero-headline">
+                <span className="home-headline-mark">从业务问题出发</span>
+                <span className="home-headline-line">持续打磨经营分析、财务模型与 AI 工作流</span>
+              </h2>
+              <div className="home-hero-actions">
+                <Link href="/finance" className="home-primary-action">
+                  查看财务模型 <ArrowRight style={{ width: 15, height: 15 }} />
+                </Link>
+              </div>
+            </div>
+            <ProductStageVisual />
+            <div className="home-proof-grid">
+              {PROOFS.map((proof) => (
+                <Link key={proof.title} href={proof.href} className="home-proof-card">
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                    <strong style={{ color: "var(--foreground)" }}>{proof.title}</strong>
+                    <span style={{ color: "var(--muted)", fontSize: 12 }}>{proof.meta}</span>
+                  </div>
+                  <p className="home-proof-body">{proof.body}</p>
+                  <span className="home-proof-link">{proof.link}</span>
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+        <div className="home-hero-continue-row">
+          <Link href="#finance" className="home-hero-continue">
+            <span>继续看</span>
+            <ArrowDown style={{ width: 15, height: 15 }} />
+          </Link>
+        </div>
       </div>
-      <Link href="#finance" className="home-hero-continue">
-        <span>继续看</span>
-        <ArrowDown style={{ width: 15, height: 15 }} />
-      </Link>
     </section>
   );
 }
