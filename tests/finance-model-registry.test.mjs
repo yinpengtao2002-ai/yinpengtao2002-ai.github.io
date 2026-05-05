@@ -62,7 +62,7 @@ test("finance model library renders the preview component", async () => {
   assert.match(library, /previewAlt/);
 });
 
-test("finance model library keeps filtered cards at a stable preview width", async () => {
+test("finance model library keeps filtered cards aligned with the all-model grid", async () => {
   const library = await readFile(
     new URL("../src/components/finance/FinanceModelLibrary.tsx", import.meta.url),
     "utf8"
@@ -72,8 +72,10 @@ test("finance model library keeps filtered cards at a stable preview width", asy
   assert.match(library, /finance-model-library-grid/);
   assert.match(library, /isFiltered/);
   assert.match(globals, /\.finance-model-library-grid\.filtered/);
-  assert.match(globals, /grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(260px,\s*320px\)\)/);
+  assert.match(globals, /\.finance-model-library-grid\.filtered\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(260px,\s*1fr\)\)/s);
+  assert.match(globals, /\.finance-model-library-grid\.compact\.filtered\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(220px,\s*1fr\)\)/s);
   assert.doesNotMatch(globals, /min\(360px,\s*100%\)/);
+  assert.doesNotMatch(globals, /minmax\(240px,\s*320px\)/);
 });
 
 test("finance index page keeps the model library high and readable", async () => {

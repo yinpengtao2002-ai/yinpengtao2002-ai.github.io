@@ -20,8 +20,13 @@ test("home hero does not split AI workflow and thinking judgment into separate p
 });
 
 test("home page has an explicit continue cue for below-the-fold content", () => {
-  assert.match(hero, /下一屏 · 财务模型/);
+  assert.match(hero, /浏览更多/);
+  assert.doesNotMatch(hero, /下一屏 · 财务模型/);
   assert.match(hero, /#finance/);
+  assert.match(hero, /handleBrowseMore/);
+  assert.match(hero, /scrollIntoView/);
+  assert.match(hero, /behavior:\s*lowMotion \? "auto" : "smooth"/);
+  assert.doesNotMatch(hero, /href="\/finance" className="home-hero-continue"/);
   assert.match(hero, /home-hero-continue/);
   assert.match(hero, /home-hero-continue-row/);
   assert.doesNotMatch(hero, /home-secondary-action/);
@@ -36,13 +41,15 @@ test("home hero returns to a split Lucas plus product-stage layout", () => {
   assert.match(hero, /Lucas Yin/);
   assert.match(hero, /奇瑞汽车国际财务 BP/);
   assert.match(hero, /从经营问题到模型、图表和 AI 解读/);
+  assert.match(hero, /gradient-text/);
   assert.doesNotMatch(hero, /home-identity-panel/);
   assert.doesNotMatch(hero, /home-hero-center/);
 });
 
 test("home hero split layout has concrete responsive styling", () => {
   assert.match(globals, /\.home-hero-split\s*\{/);
-  assert.match(globals, /grid-template-columns:\s*minmax\(300px,\s*0\.82fr\)\s*minmax\(440px,\s*1\.18fr\)/);
+  assert.match(globals, /grid-template-columns:\s*minmax\(420px,\s*0\.84fr\)\s*minmax\(560px,\s*1\.16fr\)/);
+  assert.match(globals, /gap:\s*clamp\(2rem,\s*4vw,\s*4\.25rem\)/);
   assert.match(globals, /\.home-hero-left\s*\{/);
   assert.match(globals, /text-align:\s*left/);
   assert.match(globals, /\.home-hero-right-stack\s*\{/);
@@ -56,7 +63,9 @@ test("home hero desktop intro shifts Lucas left as the right panel enters", () =
   assert.match(hero, /rightInitial/);
   assert.match(hero, /x: "32vw"/);
   assert.match(hero, /x: "8vw"/);
-  assert.match(hero, /delay: 0.28/);
+  assert.match(hero, /centerHoldDelay = 1/);
+  assert.match(hero, /delay: centerHoldDelay/);
+  assert.match(hero, /delay: centerHoldDelay \+ 0\.12/);
   assert.match(hero, /lowMotion/);
 });
 
@@ -67,12 +76,15 @@ test("viewport profile and hero animation avoid mobile hydration drift", () => {
   assert.match(hero, /lowMotion \? \{ opacity: 1, x: 0, y: 0 \}/);
 });
 
-test("home hero left side carries capability evidence without low-value summary copy", () => {
+test("home hero left side keeps identity focused without duplicated cards or buttons", () => {
   assert.match(hero, /home-hero-eyebrow/);
   assert.match(hero, /home-hero-lede/);
-  assert.match(hero, /home-hero-proof-list/);
-  assert.match(hero, /先把经营问题拆清楚/);
-  assert.match(globals, /\.home-hero-proof-list\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/s);
+  assert.match(hero, /从业务问题出发，持续打磨经营分析、财务模型与 AI 工作流/);
+  assert.doesNotMatch(hero, /我把真实经营分析中的预算、单车、趋势和利润问题/);
+  assert.doesNotMatch(hero, /home-hero-proof-list/);
+  assert.doesNotMatch(hero, /home-hero-actions/);
+  assert.match(hero, /home-hero-right-stack/);
+  assert.match(hero, /home-hero-workflow-strip/);
   assert.doesNotMatch(hero, /我还是职场新人/);
 });
 
@@ -102,9 +114,11 @@ test("visitor-facing copy avoids redesign-process language", () => {
   }
 });
 
-test("home viewport sections use resilient sizing for shorter desktop heights", () => {
+test("home viewport sections fill the current viewport after smooth scroll", () => {
   assert.match(globals, /\.home-viewport/);
-  assert.match(globals, /min-height:\s*min\(100dvh,\s*760px\)/);
+  assert.match(globals, /\.home-viewport\s*\{\s*min-height:\s*100dvh;/);
+  assert.doesNotMatch(globals, /\.home-viewport\s*\{\s*min-height:\s*min\(100dvh,\s*760px\)/);
+  assert.match(globals, /\.home-section\s*\{[^}]*padding:\s*clamp\(2\.6rem,\s*5\.5vh,\s*3\.8rem\)\s*0/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)\s*\{\s*\.home-viewport/s);
 });
 
@@ -117,6 +131,10 @@ test("homepage finance section previews models as a composed showcase", () => {
   assert.match(financeSection, /home-finance-showcase/);
   assert.match(financeSection, /home-finance-stage/);
   assert.match(financeSection, /home-finance-switcher/);
+  assert.match(financeSection, /home-finance-switch-open/);
+  assert.match(financeSection, /打开模型/);
+  assert.match(globals, /\.home-finance-section \.finance-model-preview-image\s*\{[^}]*object-fit:\s*contain/s);
+  assert.match(globals, /\.home-finance-stage \.finance-model-preview\s*\{[^}]*aspect-ratio:\s*1\.5/s);
   assert.doesNotMatch(financeSection, /FinanceModelLibrary compact/);
 });
 
@@ -130,14 +148,19 @@ test("homepage finance section defaults to the unit attribution model and switch
   assert.doesNotMatch(financeSection, /slice\(1\)/);
 });
 
-test("home thinking section is a text-first method index", () => {
+test("home thinking section uses a visual card and a clear index link", () => {
   assert.match(thinkingSection, /home-thinking-method-index/);
-  assert.match(thinkingSection, /home-thinking-note/);
+  assert.match(thinkingSection, /next\/image/);
+  assert.match(thinkingSection, /home-thinking-visual-card/);
+  assert.match(thinkingSection, /thinking-methods-tech\.png/);
+  assert.doesNotMatch(thinkingSection, /home-hero-stage\.png/);
+  assert.match(thinkingSection, /查看全部/);
+  assert.match(thinkingSection, /href="\/thinking-lab"/);
   assert.match(thinkingSection, /home-thinking-list/);
-  assert.match(thinkingSection, /判断如何形成/);
   assert.match(thinkingSection, /方法摘句/);
-  assert.doesNotMatch(thinkingSection, /next\/image/);
-  assert.doesNotMatch(thinkingSection, /<Image/);
+  assert.doesNotMatch(thinkingSection, /METHOD_NOTES/);
+  assert.doesNotMatch(thinkingSection, /判断如何形成/);
+  assert.match(globals, /\.home-thinking-visual-card\s*\{/);
   assert.match(globals, /\.home-thinking-method-index\s*\{/);
   assert.match(globals, /\.home-thinking-list\s*\{/);
 });

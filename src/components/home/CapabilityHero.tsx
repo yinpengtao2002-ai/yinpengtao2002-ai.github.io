@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import type { MouseEvent } from "react";
 import { ArrowDown, ArrowRight } from "lucide-react";
 import ProductStageVisual from "@/components/home/ProductStageVisual";
 import { financeModels } from "@/lib/finance/modelRegistry";
@@ -37,8 +38,21 @@ const PROOFS = [
 
 export default function CapabilityHero() {
   const { lowMotion } = useViewportProfile();
+  const centerHoldDelay = 1;
   const leftInitial = lowMotion ? { opacity: 0, y: 16 } : { opacity: 1, x: "32vw" };
   const rightInitial = lowMotion ? { opacity: 0, y: 16 } : { opacity: 0, x: "8vw" };
+  const handleBrowseMore = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+
+    const target = document.getElementById("finance");
+    if (!target) return;
+
+    target.scrollIntoView({
+      behavior: lowMotion ? "auto" : "smooth",
+      block: "start",
+    });
+    window.history.pushState(null, "", "#finance");
+  };
 
   return (
     <section
@@ -53,51 +67,41 @@ export default function CapabilityHero() {
           <motion.div
             initial={leftInitial}
             animate={lowMotion ? { opacity: 1, x: 0, y: 0 } : { opacity: 1, x: 0, y: 0 }}
-            transition={{ duration: 0.76, ease: [0.22, 1, 0.36, 1] }}
+            transition={
+              lowMotion
+                ? { duration: 0.48, ease: [0.22, 1, 0.36, 1] }
+                : { duration: 0.78, delay: centerHoldDelay, ease: [0.22, 1, 0.36, 1] }
+            }
             className="home-hero-left"
           >
             <p className="home-hero-eyebrow">Lucas Yin · 奇瑞汽车国际财务 BP</p>
-            <h1 className="home-hero-title">Lucas<br />Yin</h1>
+            <h1 className="home-hero-title">
+              <span className="gradient-text">Lucas<br />Yin</span>
+            </h1>
             <p className="home-hero-slogan">
               从经营问题到模型、图表和 AI 解读
             </p>
             <p className="home-hero-lede">
-              我把真实经营分析中的预算、单车、趋势和利润问题，沉淀成可以直接使用的财务模型与 AI 协作流程。
+              从业务问题出发，持续打磨经营分析、财务模型与 AI 工作流。
             </p>
-            <div className="home-hero-proof-list">
-              {PROOFS.map((proof) => (
-                <Link key={proof.title} href={proof.href} className="home-proof-card">
-                  <div className="home-proof-heading">
-                    <strong>{proof.title}</strong>
-                    <span>{proof.meta}</span>
-                  </div>
-                  <p className="home-proof-body">{proof.body}</p>
-                  <span className="home-proof-link">{proof.link}</span>
-                </Link>
-              ))}
-            </div>
-            <div className="home-hero-actions">
-              <Link href="/finance" className="home-primary-action">
-                查看财务模型 <ArrowRight style={{ width: 15, height: 15 }} />
-              </Link>
-              <Link href="/thinking-lab" className="home-quiet-action">
-                思考与方法
-              </Link>
-            </div>
           </motion.div>
 
           <motion.div
             initial={rightInitial}
             animate={lowMotion ? { opacity: 1, x: 0, y: 0 } : { opacity: 1, x: 0, y: 0 }}
-            transition={{ duration: 0.72, delay: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            transition={
+              lowMotion
+                ? { duration: 0.48, ease: [0.22, 1, 0.36, 1] }
+                : { duration: 0.72, delay: centerHoldDelay + 0.12, ease: [0.22, 1, 0.36, 1] }
+            }
             className="home-hero-right"
           >
             <div className="home-hero-right-stack">
               <div className="home-hero-copy-card">
                 <p className="home-hero-kicker">Capability Profile</p>
                 <h2 className="home-hero-headline">
-                  <span className="home-headline-mark">从业务问题出发</span>
-                  <span className="home-headline-line">持续打磨经营分析、财务模型与 AI 工作流</span>
+                  <span className="home-headline-mark">能力落在具体工具里</span>
+                  <span className="home-headline-line">财务模型、图表和 AI 解读都围绕真实经营问题展开</span>
                 </h2>
                 <Link href="/finance" className="home-primary-action">
                   查看财务模型 <ArrowRight style={{ width: 15, height: 15 }} />
@@ -121,8 +125,8 @@ export default function CapabilityHero() {
         </div>
 
         <div className="home-hero-continue-row">
-          <Link href="#finance" className="home-hero-continue">
-            <span>下一屏 · 财务模型</span>
+          <Link href="#finance" className="home-hero-continue" onClick={handleBrowseMore}>
+            <span>浏览更多</span>
             <ArrowDown style={{ width: 15, height: 15 }} />
           </Link>
         </div>

@@ -93,7 +93,7 @@ h6 {
 }
 
 .home-viewport {
-  min-height: min(100dvh, 760px);
+  min-height: 100dvh;
 }
 
 .home-shell {
@@ -121,8 +121,8 @@ h6 {
 .home-hero-split {
   display: grid;
   align-items: center;
-  grid-template-columns: minmax(300px, 0.82fr) minmax(440px, 1.18fr);
-  gap: clamp(1rem, 2.4vw, 2.25rem);
+  grid-template-columns: minmax(420px, 0.84fr) minmax(560px, 1.16fr);
+  gap: clamp(2rem, 4vw, 4.25rem);
 }
 
 .home-hero-left {
@@ -569,7 +569,7 @@ h6 {
 }
 
 .home-finance-stage .finance-model-preview {
-  aspect-ratio: 1.78;
+  aspect-ratio: 1.5;
 }
 
 .home-finance-switcher {
@@ -585,7 +585,12 @@ h6 {
 }
 
 .home-finance-switch-card .finance-model-preview {
-  aspect-ratio: 1.42;
+  aspect-ratio: 1.5;
+}
+
+.home-finance-section .finance-model-preview-image {
+  object-fit: contain;
+  object-position: center;
 }
 
 .home-finance-switch-copy {
@@ -599,6 +604,17 @@ h6 {
   font-size: 14px;
   line-height: 1.35;
   margin-top: 5px;
+}
+
+.home-finance-switch-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: color-mix(in srgb, var(--foreground) 78%, var(--accent-secondary));
+  font-family: var(--font-poppins);
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 8px;
 }
 
 .home-hero-pattern {
@@ -653,7 +669,7 @@ h6 {
 .home-section {
   display: flex;
   align-items: center;
-  padding: clamp(3rem, 7vh, 4.5rem) 0;
+  padding: clamp(2.6rem, 5.5vh, 3.8rem) 0;
 }
 
 .index-page {
@@ -709,11 +725,78 @@ h6 {
   gap: clamp(1rem, 2.5vw, 2rem);
 }
 
+.home-thinking-visual-card,
 .home-thinking-note,
 .home-thinking-item {
   border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
   border-radius: 8px;
   background: color-mix(in srgb, var(--card) 92%, transparent);
+}
+
+.home-thinking-visual-card {
+  position: relative;
+  min-height: 100%;
+  overflow: hidden;
+  box-shadow: 0 22px 58px rgba(20, 20, 19, 0.08);
+}
+
+.home-thinking-visual-image {
+  object-fit: cover;
+  object-position: center;
+}
+
+.home-thinking-visual-shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(20, 20, 19, 0.08), rgba(20, 20, 19, 0.58)),
+    linear-gradient(90deg, rgba(250, 249, 245, 0.06), rgba(20, 20, 19, 0.18));
+}
+
+.home-thinking-visual-copy {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: clamp(1.15rem, 2.3vw, 1.8rem);
+}
+
+.home-thinking-visual-copy .home-thinking-kicker,
+.home-thinking-visual-copy h2 {
+  color: #fffaf0;
+}
+
+.home-thinking-visual-copy h2 {
+  font-size: clamp(1.95rem, 4.2vw, 3.15rem);
+  line-height: 1.05;
+  letter-spacing: 0;
+  margin-bottom: 16px;
+}
+
+.home-thinking-all-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  border: 1px solid rgba(255, 250, 240, 0.44);
+  border-radius: 999px;
+  background: rgba(255, 250, 240, 0.92);
+  color: var(--foreground);
+  font-family: var(--font-poppins);
+  font-size: 13px;
+  font-weight: 800;
+  padding: 0 14px;
+  text-decoration: none;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.home-thinking-all-link:hover {
+  background: #fffaf0;
+  transform: translateY(-1px);
 }
 
 .home-thinking-note {
@@ -844,7 +927,7 @@ h6 {
   }
 
   .home-hero-split {
-    gap: 1rem;
+    gap: 1.4rem;
   }
 
   .home-hero-title {
@@ -908,6 +991,10 @@ h6 {
     height: clamp(145px, 24vh, 190px);
   }
 
+  .home-thinking-visual-copy {
+    padding: 1rem;
+  }
+
   .home-thinking-note {
     padding: 1rem;
   }
@@ -945,7 +1032,7 @@ h6 {
   }
 
   .home-finance-stage .finance-model-preview {
-    aspect-ratio: 1.92;
+    aspect-ratio: 1.5;
   }
 
   .home-finance-switch-copy {
@@ -954,6 +1041,11 @@ h6 {
 
   .home-finance-switch-copy strong {
     font-size: 13px;
+  }
+
+  .home-finance-switch-open {
+    font-size: 11px;
+    margin-top: 6px;
   }
 
   .home-section {
@@ -980,6 +1072,22 @@ h6 {
 
   .thinking-index-list {
     padding-bottom: 2rem;
+  }
+}
+
+@media (max-width: 1120px) and (min-width: 769px) {
+  .home-hero-split {
+    grid-template-columns: minmax(280px, 0.8fr) minmax(390px, 1.2fr);
+    gap: 1rem;
+  }
+
+  .home-hero-title {
+    max-width: 520px;
+  }
+
+  .home-hero-proof-list {
+    width: 100%;
+    max-width: none;
   }
 }
 
@@ -1205,7 +1313,7 @@ h6 {
   }
 
   .home-finance-stage .finance-model-preview {
-    aspect-ratio: 1.8;
+    aspect-ratio: 1.5;
   }
 
   .home-finance-switcher {
@@ -1223,6 +1331,11 @@ h6 {
 
   .home-finance-switch-copy strong {
     font-size: 12px;
+  }
+
+  .home-finance-switch-open {
+    font-size: 11px;
+    margin-top: 6px;
   }
 
   .home-section {
@@ -1248,6 +1361,19 @@ h6 {
   .home-thinking-method-index {
     grid-template-columns: 1fr;
     gap: 10px;
+  }
+
+  .home-thinking-visual-card {
+    min-height: 260px;
+  }
+
+  .home-thinking-visual-copy {
+    padding: 1rem;
+  }
+
+  .home-thinking-visual-copy h2 {
+    font-size: clamp(1.7rem, 8vw, 2.25rem);
+    margin-bottom: 12px;
   }
 
   .home-thinking-note {
@@ -1334,12 +1460,12 @@ h6 {
 }
 
 .finance-model-library-grid.filtered {
-  grid-template-columns: repeat(auto-fill, minmax(260px, 320px));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   justify-content: start;
 }
 
 .finance-model-library-grid.compact.filtered {
-  grid-template-columns: repeat(auto-fill, minmax(240px, 320px));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
 
 .finance-model-card:hover {

@@ -112,6 +112,9 @@ export default function HomeFinanceSection() {
                   <div className="home-finance-switch-copy">
                     <span>{getCategoryLabel(model.categoryId)}</span>
                     <strong>{model.title}</strong>
+                    <span className="home-finance-switch-open">
+                      打开模型 <ArrowRight style={{ width: 13, height: 13 }} />
+                    </span>
                   </div>
                 </Link>
               );
