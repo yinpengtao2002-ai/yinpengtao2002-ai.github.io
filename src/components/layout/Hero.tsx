@@ -15,9 +15,9 @@ interface HeroProps {
 }
 
 const MOBILE_SECTION_LINKS = [
-    { label: "财务模型", targetId: "finance-articles" },
-    { label: "AI 工作流", targetId: "ai-articles" },
-    { label: "日常随笔", targetId: "essays" },
+    { label: "财务模型", targetId: "finance" },
+    { label: "思考与方法", targetId: "thinking" },
+    { label: "联系", targetId: "contact" },
 ];
 
 export default function Hero({
@@ -124,7 +124,7 @@ export default function Hero({
                                 transition={{ duration: lowMotion ? 0.35 : 1, delay: lowMotion ? 0.25 : 3.5 }}
                             >
                                 <ThinkingSubtitle
-                                    finalText="这里记录我的财务模型、文章和工具实践。"
+                                    finalText="这里展示我的财务模型、方法文章和工具实践。"
                                     thoughts={["Loading content...", "Preparing welcome message..."]}
                                     reducedMotion={lowMotion}
                                     className={isMobileLike
@@ -207,7 +207,7 @@ export default function Hero({
                 >
                     <motion.button
                         type="button"
-                        onClick={() => scrollToSection("finance-articles")}
+                        onClick={() => scrollToSection("finance")}
                         animate={lowMotion ? undefined : { y: [0, 8, 0] }}
                         transition={lowMotion ? undefined : { duration: 2, repeat: Infinity, ease: "easeInOut" }}
                         className="font-sans flex flex-col items-center gap-2 text-muted hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"

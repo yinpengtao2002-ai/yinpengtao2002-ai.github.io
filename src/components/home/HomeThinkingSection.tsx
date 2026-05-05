@@ -5,8 +5,8 @@ export default function HomeThinkingSection() {
   const latest = thinkingContent.slice(0, 4);
 
   return (
-    <section id="thinking" className="full-viewport" style={{ display: "flex", alignItems: "center", padding: "4rem 1.5rem", borderTop: "1px solid var(--border)" }}>
-      <div style={{ width: "100%", maxWidth: 1040, margin: "0 auto" }}>
+    <section id="thinking" className="home-viewport home-section" style={{ borderTop: "1px solid var(--border)" }}>
+      <div className="home-shell" style={{ maxWidth: 1040 }}>
         <p style={{ color: "var(--accent)", letterSpacing: "0.18em", textTransform: "uppercase", fontSize: 12, fontWeight: 800, marginBottom: 12 }}>
           Thinking Lab
         </p>
@@ -14,7 +14,7 @@ export default function HomeThinkingSection() {
           思考与方法
         </h2>
         <p style={{ maxWidth: 620, color: "var(--muted)", lineHeight: 1.8, fontSize: 14, marginBottom: 24 }}>
-          AI 工作流和随笔合并成持续更新的思考库，记录方法、判断和观察。
+          这里放方法论、业务观察和工具实践：看我如何拆问题、查证据、做取舍。
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
           {latest.map((article) => (

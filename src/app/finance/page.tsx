@@ -9,8 +9,15 @@ export const metadata: Metadata = {
 
 export default function FinancePage() {
   return (
-    <div style={{ minHeight: "100vh", padding: "6.5rem 1.5rem 4rem", background: "var(--background)" }}>
-      <main style={{ maxWidth: 1040, margin: "0 auto" }}>
+    <div
+      className="index-page"
+      style={{
+        minHeight: "min(100dvh, 760px)",
+        padding: "5.5rem 0 2rem",
+        background: "var(--background)",
+      }}
+    >
+      <main className="home-shell" style={{ maxWidth: 1040 }}>
         <p style={{ color: "var(--accent-secondary)", letterSpacing: "0.18em", textTransform: "uppercase", fontSize: 12, fontWeight: 800, marginBottom: 14 }}>
           Finance Model Library
         </p>
@@ -20,7 +27,7 @@ export default function FinancePage() {
         <p style={{ maxWidth: 640, color: "var(--muted)", lineHeight: 1.8, fontSize: 15, marginBottom: 28 }}>
           这里收录的是我自己搭建并持续打磨的财务模型和分析工具。模型库会按经营问题持续扩展，目前共有 {financeModels.length} 个模型。
         </p>
-        <FinanceModelLibrary />
+        <FinanceModelLibrary compact />
       </main>
     </div>
   );

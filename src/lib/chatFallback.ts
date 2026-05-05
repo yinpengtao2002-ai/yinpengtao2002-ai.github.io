@@ -101,7 +101,7 @@ export function getLocalFallbackResponse(
         ));
         return withOfflineNotice({
             response: cards.length > 0
-                ? "你要找的是 [月光渡口](/thinking-lab/moonlight-ferry)。它现在放在【思考与方法】里。"
+                ? "你要找的是 [月光渡口](/thinking-lab/moonlight-ferry)。它属于【思考与方法】里的个人写作样本。"
                 : "【思考与方法】暂时没有匹配内容。",
             contentCards: cards.length > 0 ? cards : thinkingContent,
             cardType: "thinking",

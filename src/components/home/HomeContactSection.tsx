@@ -3,8 +3,8 @@ import { siteConfig } from "@/lib/config/site";
 
 export default function HomeContactSection() {
   return (
-    <section id="contact" style={{ borderTop: "1px solid var(--border)", padding: "4rem 1.5rem 5rem" }}>
-      <div style={{ maxWidth: 760, margin: "0 auto", textAlign: "center" }}>
+    <section id="contact" className="home-section" style={{ borderTop: "1px solid var(--border)" }}>
+      <div style={{ width: "min(760px, calc(100% - 40px))", margin: "0 auto", textAlign: "center" }}>
         <h2 style={{ fontSize: "1.5rem", marginBottom: 10 }}>Lucas Yin</h2>
         <p style={{ color: "var(--muted)", lineHeight: 1.8, marginBottom: 24 }}>
           奇瑞汽车 · 国际 · 财务 BP<br />

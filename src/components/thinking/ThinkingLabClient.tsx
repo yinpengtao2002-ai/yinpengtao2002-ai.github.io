@@ -26,7 +26,10 @@ export default function ThinkingLabClient({ articles }: { articles: ContentItem[
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--background)", color: "var(--foreground)", fontFamily: UI_FONT }}>
-      <section style={{ maxWidth: 1040, margin: "0 auto", padding: "7rem 1.5rem 2.5rem" }}>
+      <section
+        className="thinking-index-hero"
+        style={{ maxWidth: 1040, margin: "0 auto", padding: "5.5rem 1.5rem 1.6rem" }}
+      >
         <p style={{ color: "var(--accent)", letterSpacing: "0.18em", textTransform: "uppercase", fontSize: 12, fontWeight: 700, marginBottom: 14 }}>
           Thinking Lab
         </p>
@@ -34,11 +37,14 @@ export default function ThinkingLabClient({ articles }: { articles: ContentItem[
           思考与方法
         </h1>
         <p style={{ maxWidth: 620, color: "var(--muted)", lineHeight: 1.8, fontSize: 15 }}>
-          这里整理 AI 工作流、经营财务、市场观察和个人随笔。它不是经历列表，而是持续增长的思考样本。
+          这里放我在经营分析、工具实践、市场观察里的思考样本。重点不是经历罗列，而是判断如何形成。
         </p>
       </section>
 
-      <section style={{ maxWidth: 1040, margin: "0 auto", padding: "0 1.5rem 5rem" }}>
+      <section
+        className="thinking-index-list"
+        style={{ maxWidth: 1040, margin: "0 auto", padding: "0 1.5rem 2rem" }}
+      >
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
           {categories.map((category) => (
             <button
