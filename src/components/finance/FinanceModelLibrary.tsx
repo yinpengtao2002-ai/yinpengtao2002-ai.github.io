@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import FinanceModelPreview from "@/components/finance/FinanceModelPreview";
 import { financeModelCategories, financeModels } from "@/lib/finance/modelRegistry";
 
 const UI_FONT =
@@ -47,19 +48,22 @@ export default function FinanceModelLibrary({ compact = false }: { compact?: boo
             transition={{ duration: 0.25, delay: index * 0.04 }}
           >
             <Link href={model.href} style={{ display: "block", height: "100%", textDecoration: "none" }}>
-              <div style={{ height: "100%", padding: compact ? 16 : 20, border: "1px solid var(--border)", borderRadius: 8, background: "var(--card)" }}>
-                <span style={{ color: accentColor(model.accent), fontSize: 12, fontWeight: 800 }}>
-                  {financeModelCategories.find((category) => category.id === model.categoryId)?.label}
-                </span>
-                <h3 style={{ margin: "10px 0 8px", color: "var(--foreground)", fontSize: compact ? 17 : 19, lineHeight: 1.35 }}>
-                  {model.title}
-                </h3>
-                <p style={{ color: "var(--muted)", fontSize: 13, lineHeight: 1.7, marginBottom: 16 }}>
-                  {model.summary}
-                </p>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--foreground)", fontSize: 13, fontWeight: 800 }}>
-                  打开模型 <ArrowRight style={{ width: 14, height: 14 }} />
-                </span>
+              <div className="finance-model-card" style={{ height: "100%" }}>
+                <FinanceModelPreview src={model.previewImage} alt={model.previewAlt} compact={compact} />
+                <div className="finance-model-card-body">
+                  <span style={{ color: accentColor(model.accent), fontSize: 12, fontWeight: 800 }}>
+                    {financeModelCategories.find((category) => category.id === model.categoryId)?.label}
+                  </span>
+                  <h3 style={{ margin: "10px 0 8px", color: "var(--foreground)", fontSize: compact ? 17 : 19, lineHeight: 1.35 }}>
+                    {model.title}
+                  </h3>
+                  <p style={{ color: "var(--muted)", fontSize: 13, lineHeight: 1.7, marginBottom: 16 }}>
+                    {model.summary}
+                  </p>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--foreground)", fontSize: 13, fontWeight: 800 }}>
+                    打开模型 <ArrowRight style={{ width: 14, height: 14 }} />
+                  </span>
+                </div>
               </div>
             </Link>
           </motion.article>

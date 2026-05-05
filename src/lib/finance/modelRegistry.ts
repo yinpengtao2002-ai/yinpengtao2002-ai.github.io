@@ -27,6 +27,8 @@ export interface FinanceModelItem {
   href: string;
   date: string;
   accent: FinanceModelAccent;
+  previewImage: string;
+  previewAlt: string;
   aiGuide: FinanceModelGuide;
 }
 

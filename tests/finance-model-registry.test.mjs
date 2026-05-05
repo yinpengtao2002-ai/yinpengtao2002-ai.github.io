@@ -50,3 +50,14 @@ test("finance models include chart-stacked preview assets", async () => {
     await access(assetPath);
   }
 });
+
+test("finance model library renders the preview component", async () => {
+  const library = await readFile(
+    new URL("../src/components/finance/FinanceModelLibrary.tsx", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(library, /FinanceModelPreview/);
+  assert.match(library, /previewImage/);
+  assert.match(library, /previewAlt/);
+});
