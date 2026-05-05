@@ -440,6 +440,12 @@ h6 {
   }
 }
 
+@media (max-height: 820px) and (min-width: 769px) {
+  .product-stage-visual {
+    height: clamp(178px, 26vh, 220px);
+  }
+}
+
 @media (max-width: 768px) {
   .home-viewport {
     min-height: 100svh;
@@ -452,14 +458,14 @@ h6 {
   .home-hero {
     align-items: stretch;
     min-height: 100svh;
-    padding-top: clamp(4.65rem, 12svh, 5.8rem);
-    padding-bottom: 4.4rem;
+    padding-top: clamp(4.2rem, 10svh, 5.2rem);
+    padding-bottom: 2.75rem;
   }
 
   .home-hero-grid {
     grid-template-columns: 1fr;
-    align-content: center;
-    min-height: calc(100svh - 9.1rem);
+    align-content: start;
+    min-height: 0;
     gap: clamp(0.95rem, 3svh, 1.35rem);
   }
 
@@ -499,7 +505,7 @@ h6 {
   }
 
   .product-stage-visual {
-    height: clamp(164px, 24svh, 210px);
+    height: clamp(150px, 20svh, 178px);
     margin-bottom: 10px;
   }
 
@@ -549,7 +555,7 @@ h6 {
   }
 
   .home-hero-continue {
-    bottom: calc(0.9rem + env(safe-area-inset-bottom));
+    bottom: calc(0.55rem + env(safe-area-inset-bottom));
     gap: 4px;
     font-size: 11px;
   }
