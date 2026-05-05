@@ -49,7 +49,12 @@ export default function FinanceModelLibrary({ compact = false }: { compact?: boo
           >
             <Link href={model.href} style={{ display: "block", height: "100%", textDecoration: "none" }}>
               <div className="finance-model-card" style={{ height: "100%" }}>
-                <FinanceModelPreview src={model.previewImage} alt={model.previewAlt} compact={compact} />
+                <FinanceModelPreview
+                  src={model.previewImage}
+                  alt={model.previewAlt}
+                  compact={compact}
+                  priority={index === 0}
+                />
                 <div className="finance-model-card-body">
                   <span style={{ color: accentColor(model.accent), fontSize: 12, fontWeight: 800 }}>
                     {financeModelCategories.find((category) => category.id === model.categoryId)?.label}

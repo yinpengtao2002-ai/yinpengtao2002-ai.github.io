@@ -535,8 +535,9 @@ export default function ChatWidget() {
                         onClick={handleOpen}
                         style={{
                             position: "fixed",
-                            bottom: 24,
-                            right: 24,
+                            bottom: isMobileLike ? 16 : 24,
+                            right: isMobileLike ? 16 : 24,
+                            width: isMobileLike ? 48 : undefined,
                             height: 48,
                             borderRadius: 24,
                             border: "none",
@@ -545,8 +546,9 @@ export default function ChatWidget() {
                             cursor: "pointer",
                             display: "flex",
                             alignItems: "center",
+                            justifyContent: "center",
                             gap: 8,
-                            padding: "0 18px 0 14px",
+                            padding: isMobileLike ? 0 : "0 18px 0 14px",
                             boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
                             zIndex: 9999,
                             fontSize: 14,
@@ -556,7 +558,7 @@ export default function ChatWidget() {
                         whileTap={{ scale: 0.95 }}
                     >
                         <MessageCircle style={{ width: 20, height: 20 }} />
-                        <span>AI 助手</span>
+                        {!isMobileLike && <span>AI 助手</span>}
                     </motion.button>
                 )}
             </AnimatePresence>
