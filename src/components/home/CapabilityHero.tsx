@@ -39,8 +39,8 @@ const PROOFS = [
 export default function CapabilityHero() {
   const { lowMotion } = useViewportProfile();
   const centerHoldDelay = 1;
-  const leftInitial = lowMotion ? { opacity: 0, y: 16 } : { opacity: 1, x: "32vw" };
-  const rightInitial = lowMotion ? { opacity: 0, y: 16 } : { opacity: 0, x: "8vw" };
+  const leftInitial = lowMotion ? { opacity: 0, y: 16 } : { opacity: 1, x: "min(430px, 32vw)" };
+  const rightInitial = lowMotion ? { opacity: 0, y: 16 } : { opacity: 0, x: "min(110px, 8vw)" };
   const handleBrowseMore = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
 
@@ -82,7 +82,7 @@ export default function CapabilityHero() {
               从经营问题到模型、图表和 AI 解读
             </p>
             <p className="home-hero-lede">
-              从业务问题出发，持续打磨经营分析、财务模型与 AI 工作流。
+              我们需要的是对技术有极致热情的人，而不是习惯用经验找答案的人
             </p>
           </motion.div>
 
@@ -97,6 +97,35 @@ export default function CapabilityHero() {
             className="home-hero-right"
           >
             <div className="home-hero-right-stack">
+              <div className="home-hero-floating-widgets" aria-hidden="true">
+                <div className="home-mini-widget home-mini-widget-window">
+                  <div className="home-mini-widget-chrome">
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                  <div className="home-mini-widget-lines">
+                    <span />
+                    <span />
+                  </div>
+                </div>
+                <div className="home-mini-widget home-mini-widget-bars">
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                <div className="home-mini-widget home-mini-widget-dots">
+                  {Array.from({ length: 14 }).map((_, index) => (
+                    <span key={index} />
+                  ))}
+                </div>
+                <div className="home-mini-widget home-mini-widget-status">
+                  <span />
+                  <strong>AI</strong>
+                  <em />
+                </div>
+              </div>
               <div className="home-hero-copy-card">
                 <p className="home-hero-kicker">Capability Profile</p>
                 <h2 className="home-hero-headline">

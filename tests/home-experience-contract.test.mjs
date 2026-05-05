@@ -61,8 +61,10 @@ test("home hero split layout has concrete responsive styling", () => {
 test("home hero desktop intro shifts Lucas left as the right panel enters", () => {
   assert.match(hero, /leftInitial/);
   assert.match(hero, /rightInitial/);
-  assert.match(hero, /x: "32vw"/);
-  assert.match(hero, /x: "8vw"/);
+  assert.match(hero, /x: "min\(430px, 32vw\)"/);
+  assert.match(hero, /x: "min\(110px, 8vw\)"/);
+  assert.doesNotMatch(hero, /x: "32vw"/);
+  assert.doesNotMatch(hero, /x: "8vw"/);
   assert.match(hero, /centerHoldDelay = 1/);
   assert.match(hero, /delay: centerHoldDelay/);
   assert.match(hero, /delay: centerHoldDelay \+ 0\.12/);
@@ -79,7 +81,8 @@ test("viewport profile and hero animation avoid mobile hydration drift", () => {
 test("home hero left side keeps identity focused without duplicated cards or buttons", () => {
   assert.match(hero, /home-hero-eyebrow/);
   assert.match(hero, /home-hero-lede/);
-  assert.match(hero, /从业务问题出发，持续打磨经营分析、财务模型与 AI 工作流/);
+  assert.match(hero, /我们需要的是对技术有极致热情的人，而不是习惯用经验找答案的人/);
+  assert.doesNotMatch(hero, /从业务问题出发，持续打磨经营分析、财务模型与 AI 工作流/);
   assert.doesNotMatch(hero, /我把真实经营分析中的预算、单车、趋势和利润问题/);
   assert.doesNotMatch(hero, /home-hero-proof-list/);
   assert.doesNotMatch(hero, /home-hero-actions/);
@@ -94,6 +97,20 @@ test("home hero uses the product stage visual instead of decorative artifacts", 
   assert.doesNotMatch(hero, /CodeArtifact/);
   assert.doesNotMatch(hero, /ChartArtifact/);
   assert.doesNotMatch(hero, /ImageArtifact/);
+});
+
+test("home hero keeps the floating mini widgets around the stage", () => {
+  assert.match(hero, /home-hero-floating-widgets/);
+  assert.match(hero, /home-mini-widget/);
+  assert.match(hero, /home-mini-widget-bars/);
+  assert.match(hero, /home-mini-widget-dots/);
+  assert.match(globals, /\.home-hero-floating-widgets\s*\{/);
+  assert.match(globals, /\.home-mini-widget\s*\{/);
+  assert.match(globals, /pointer-events:\s*none/);
+  assert.match(globals, /position:\s*absolute/);
+  assert.match(globals, /@keyframes\s+home-widget-float/);
+  assert.match(globals, /animation:\s*home-widget-float/);
+  assert.match(globals, /@keyframes\s+home-bar-breathe/);
 });
 
 test("visitor-facing copy avoids redesign-process language", () => {
