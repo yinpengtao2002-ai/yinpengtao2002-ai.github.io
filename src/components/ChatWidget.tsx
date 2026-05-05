@@ -15,6 +15,7 @@ import {
     financeContent as staticFinance,
     thinkingContent as staticThinking,
 } from "@/lib/data/generated/content";
+import { normalizeChatMathMarkdown } from "@/lib/markdown/normalizeChatMathMarkdown";
 import { useViewportProfile } from "@/lib/useLowMotionMode";
 
 type ContentCardType = "finance" | "thinking";
@@ -74,54 +75,56 @@ function MessageContent({
     onInternalLinkClick?: (href: string) => void;
 }) {
     return (
-        <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex]}
-            components={{
-                a: ({ href, children }) => (
-                    <Link
-                        href={href || "#"}
-                        onClick={() => {
-                            const internalHref = getInternalHref(href);
-                            if (internalHref) onInternalLinkClick?.(internalHref);
-                        }}
-                        style={{ color: "var(--accent)", textDecoration: "underline", textUnderlineOffset: 3 }}
-                    >
-                        {children}
-                    </Link>
-                ),
-                p: ({ children }) => <p style={{ margin: "0.4em 0" }}>{children}</p>,
-                strong: ({ children }) => <strong style={{ fontWeight: 700, color: "var(--foreground)" }}>{children}</strong>,
-                ul: ({ children }) => <ul style={{ paddingLeft: 18, margin: "0.4em 0" }}>{children}</ul>,
-                ol: ({ children }) => <ol style={{ paddingLeft: 18, margin: "0.4em 0" }}>{children}</ol>,
-                li: ({ children }) => <li style={{ marginBottom: 2 }}>{children}</li>,
-                code: ({ children, className }) => {
-                    if (className?.startsWith("language-")) {
+        <div className="chat-markdown">
+            <ReactMarkdown
+                remarkPlugins={[remarkGfm, [remarkMath, { singleDollarTextMath: true }]]}
+                rehypePlugins={[rehypeKatex]}
+                components={{
+                    a: ({ href, children }) => (
+                        <Link
+                            href={href || "#"}
+                            onClick={() => {
+                                const internalHref = getInternalHref(href);
+                                if (internalHref) onInternalLinkClick?.(internalHref);
+                            }}
+                            style={{ color: "var(--accent)", textDecoration: "underline", textUnderlineOffset: 3 }}
+                        >
+                            {children}
+                        </Link>
+                    ),
+                    p: ({ children }) => <p style={{ margin: "0.4em 0" }}>{children}</p>,
+                    strong: ({ children }) => <strong style={{ fontWeight: 700, color: "var(--foreground)" }}>{children}</strong>,
+                    ul: ({ children }) => <ul style={{ paddingLeft: 18, margin: "0.4em 0" }}>{children}</ul>,
+                    ol: ({ children }) => <ol style={{ paddingLeft: 18, margin: "0.4em 0" }}>{children}</ol>,
+                    li: ({ children }) => <li style={{ marginBottom: 2 }}>{children}</li>,
+                    code: ({ children, className }) => {
+                        if (className?.startsWith("language-")) {
+                            return (
+                                <code style={{
+                                    display: "block", background: "var(--card)", border: "1px solid var(--border)",
+                                    borderRadius: 6, padding: "10px 14px", fontSize: 12, overflowX: "auto", whiteSpace: "pre",
+                                }}>
+                                    {children}
+                                </code>
+                            );
+                        }
                         return (
-                            <code style={{
-                                display: "block", background: "var(--card)", border: "1px solid var(--border)",
-                                borderRadius: 6, padding: "10px 14px", fontSize: 12, overflowX: "auto", whiteSpace: "pre",
-                            }}>
+                            <code style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 3, padding: "1px 4px", fontSize: "0.85em" }}>
                                 {children}
                             </code>
                         );
-                    }
-                    return (
-                        <code style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 3, padding: "1px 4px", fontSize: "0.85em" }}>
+                    },
+                    pre: ({ children }) => <pre style={{ margin: "0.5em 0", overflow: "auto" }}>{children}</pre>,
+                    blockquote: ({ children }) => (
+                        <blockquote style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 10, margin: "0.4em 0", color: "var(--muted)" }}>
                             {children}
-                        </code>
-                    );
-                },
-                pre: ({ children }) => <pre style={{ margin: "0.5em 0", overflow: "auto" }}>{children}</pre>,
-                blockquote: ({ children }) => (
-                    <blockquote style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 10, margin: "0.4em 0", color: "var(--muted)" }}>
-                        {children}
-                    </blockquote>
-                ),
-            }}
-        >
-            {text}
-        </ReactMarkdown>
+                        </blockquote>
+                    ),
+                }}
+            >
+                {normalizeChatMathMarkdown(text)}
+            </ReactMarkdown>
+        </div>
     );
 }
 
