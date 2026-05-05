@@ -39,6 +39,10 @@ export default function HomeFinanceSection() {
   const activeModel =
     financeModels.find((model) => model.slug === activeSlug) ??
     defaultModel;
+  const switcherModels = [
+    ...financeModels.filter((model) => model.slug === DEFAULT_MODEL_SLUG),
+    ...financeModels.filter((model) => model.slug !== DEFAULT_MODEL_SLUG),
+  ];
 
   if (!activeModel) {
     return null;
@@ -93,7 +97,7 @@ export default function HomeFinanceSection() {
             className="home-finance-switcher"
             onMouseLeave={() => setActiveSlug(DEFAULT_MODEL_SLUG)}
           >
-            {financeModels.map((model) => {
+            {switcherModels.map((model) => {
               const isActive = model.slug === activeModel.slug;
               return (
                 <Link

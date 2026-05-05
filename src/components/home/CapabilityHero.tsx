@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, type Transition } from "framer-motion";
 import Link from "next/link";
 import type { MouseEvent } from "react";
 import { ArrowDown, ArrowRight } from "lucide-react";
@@ -11,6 +11,7 @@ import { useViewportProfile } from "@/lib/useLowMotionMode";
 
 const UI_FONT =
   'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
+const HERO_EASE = [0.22, 1, 0.36, 1] as const;
 
 const PROOFS = [
   {
@@ -37,10 +38,26 @@ const PROOFS = [
 ];
 
 export default function CapabilityHero() {
-  const { lowMotion } = useViewportProfile();
-  const centerHoldDelay = 1;
-  const leftInitial = lowMotion ? { opacity: 0, y: 16 } : { opacity: 1, x: "min(430px, 32vw)" };
-  const rightInitial = lowMotion ? { opacity: 0, y: 16 } : { opacity: 0, x: "min(110px, 8vw)" };
+  const { isMobileLike, lowMotion, prefersReducedMotion } = useViewportProfile();
+  const centerHoldDelay = isMobileLike ? 0.95 : 1;
+  const shouldReduceMotion = prefersReducedMotion || (lowMotion && !isMobileLike);
+  const heroAnimate = { opacity: 1, x: 0, y: 0 };
+  const leftInitial = shouldReduceMotion
+    ? { opacity: 0, y: 16 }
+    : isMobileLike
+      ? { opacity: 1, x: 0, y: "20svh" }
+      : { opacity: 1, x: "min(430px, 32vw)" };
+  const rightInitial = shouldReduceMotion
+    ? { opacity: 0, y: 16 }
+    : isMobileLike
+      ? { opacity: 0, x: 0, y: 18 }
+      : { opacity: 0, x: "min(110px, 8vw)" };
+  const leftTransition: Transition = shouldReduceMotion
+    ? { duration: 0.42, ease: HERO_EASE }
+    : { duration: isMobileLike ? 0.72 : 0.78, delay: centerHoldDelay, ease: HERO_EASE };
+  const rightTransition: Transition = shouldReduceMotion
+    ? { duration: 0.42, ease: HERO_EASE }
+    : { duration: isMobileLike ? 0.62 : 0.72, delay: centerHoldDelay + 0.12, ease: HERO_EASE };
   const handleBrowseMore = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
 
@@ -48,7 +65,7 @@ export default function CapabilityHero() {
     if (!target) return;
 
     target.scrollIntoView({
-      behavior: lowMotion ? "auto" : "smooth",
+      behavior: prefersReducedMotion ? "auto" : "smooth",
       block: "start",
     });
     window.history.pushState(null, "", "#finance");
@@ -65,13 +82,10 @@ export default function CapabilityHero() {
       <div className="home-shell home-hero-frame">
         <div className="home-hero-split">
           <motion.div
+            key={`hero-left-${isMobileLike ? "mobile" : "desktop"}`}
             initial={leftInitial}
-            animate={lowMotion ? { opacity: 1, x: 0, y: 0 } : { opacity: 1, x: 0, y: 0 }}
-            transition={
-              lowMotion
-                ? { duration: 0.48, ease: [0.22, 1, 0.36, 1] }
-                : { duration: 0.78, delay: centerHoldDelay, ease: [0.22, 1, 0.36, 1] }
-            }
+            animate={heroAnimate}
+            transition={leftTransition}
             className="home-hero-left"
           >
             <p className="home-hero-eyebrow">Lucas Yin · 奇瑞汽车国际财务 BP</p>
@@ -87,13 +101,10 @@ export default function CapabilityHero() {
           </motion.div>
 
           <motion.div
+            key={`hero-right-${isMobileLike ? "mobile" : "desktop"}`}
             initial={rightInitial}
-            animate={lowMotion ? { opacity: 1, x: 0, y: 0 } : { opacity: 1, x: 0, y: 0 }}
-            transition={
-              lowMotion
-                ? { duration: 0.48, ease: [0.22, 1, 0.36, 1] }
-                : { duration: 0.72, delay: centerHoldDelay + 0.12, ease: [0.22, 1, 0.36, 1] }
-            }
+            animate={heroAnimate}
+            transition={rightTransition}
             className="home-hero-right"
           >
             <div className="home-hero-right-stack">

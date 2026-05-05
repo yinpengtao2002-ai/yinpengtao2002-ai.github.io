@@ -25,7 +25,7 @@ test("home page has an explicit continue cue for below-the-fold content", () => 
   assert.match(hero, /#finance/);
   assert.match(hero, /handleBrowseMore/);
   assert.match(hero, /scrollIntoView/);
-  assert.match(hero, /behavior:\s*lowMotion \? "auto" : "smooth"/);
+  assert.match(hero, /behavior:\s*prefersReducedMotion \? "auto" : "smooth"/);
   assert.doesNotMatch(hero, /href="\/finance" className="home-hero-continue"/);
   assert.match(hero, /home-hero-continue/);
   assert.match(hero, /home-hero-continue-row/);
@@ -65,17 +65,29 @@ test("home hero desktop intro shifts Lucas left as the right panel enters", () =
   assert.match(hero, /x: "min\(110px, 8vw\)"/);
   assert.doesNotMatch(hero, /x: "32vw"/);
   assert.doesNotMatch(hero, /x: "8vw"/);
-  assert.match(hero, /centerHoldDelay = 1/);
+  assert.match(hero, /centerHoldDelay = isMobileLike \? 0\.95 : 1/);
   assert.match(hero, /delay: centerHoldDelay/);
   assert.match(hero, /delay: centerHoldDelay \+ 0\.12/);
   assert.match(hero, /lowMotion/);
 });
 
+test("home hero mobile intro moves Lucas upward before revealing the product stage", () => {
+  assert.match(hero, /isMobileLike/);
+  assert.match(hero, /prefersReducedMotion/);
+  assert.match(hero, /y: "20svh"/);
+  assert.match(hero, /key=\{`hero-left-\$\{isMobileLike \? "mobile" : "desktop"\}`\}/);
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-hero-slogan\s*\{[\s\S]*display:\s*none/s);
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-hero-lede\s*\{[\s\S]*display:\s*none/s);
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-hero-copy-card\s*\{[\s\S]*display:\s*none/s);
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-hero-workflow-strip\s*\{[\s\S]*display:\s*grid/s);
+}
+);
+
 test("viewport profile and hero animation avoid mobile hydration drift", () => {
   assert.match(viewportHook, /useState\(false\)/);
   assert.ok(viewportHook.includes('MOBILE_LIKE_QUERY = "(pointer: coarse), (hover: none), (max-width: 768px)"'));
   assert.match(viewportHook, /matchMedia\(MOBILE_LIKE_QUERY\)/);
-  assert.match(hero, /lowMotion \? \{ opacity: 1, x: 0, y: 0 \}/);
+  assert.match(hero, /const heroAnimate = \{ opacity: 1, x: 0, y: 0 \}/);
 });
 
 test("home hero left side keeps identity focused without duplicated cards or buttons", () => {
@@ -108,6 +120,8 @@ test("home hero keeps the floating mini widgets around the stage", () => {
   assert.match(globals, /\.home-mini-widget\s*\{/);
   assert.match(globals, /pointer-events:\s*none/);
   assert.match(globals, /position:\s*absolute/);
+  assert.match(globals, /\.home-hero-floating-widgets\s*\{[^}]*z-index:\s*1/s);
+  assert.match(globals, /\.product-stage-visual\s*\{[^}]*z-index:\s*2/s);
   assert.match(globals, /@keyframes\s+home-widget-float/);
   assert.match(globals, /animation:\s*home-widget-float/);
   assert.match(globals, /@keyframes\s+home-bar-breathe/);
@@ -154,6 +168,15 @@ test("homepage finance section previews models as a composed showcase", () => {
   assert.match(globals, /\.home-finance-stage \.finance-model-preview\s*\{[^}]*aspect-ratio:\s*1\.5/s);
   assert.doesNotMatch(financeSection, /FinanceModelLibrary compact/);
 });
+
+test("homepage finance section becomes a swipeable model preview carousel on mobile", () => {
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-finance-section\s*\{[\s\S]*height:\s*100svh/s);
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-finance-stage\s*\{[\s\S]*display:\s*none/s);
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-finance-switcher\s*\{[\s\S]*display:\s*flex[\s\S]*overflow-x:\s*auto[\s\S]*scroll-snap-type:\s*x mandatory/s);
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-finance-switch-card\s*\{[\s\S]*flex:\s*0 0/s);
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-finance-switch-card \.finance-model-preview\s*\{[\s\S]*display:\s*block/s);
+}
+);
 
 test("homepage finance section defaults to the unit attribution model and switches on hover", () => {
   assert.match(financeSection, /DEFAULT_MODEL_SLUG = "margin-analysis"/);

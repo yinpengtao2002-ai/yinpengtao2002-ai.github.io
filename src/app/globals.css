@@ -639,7 +639,7 @@ h6 {
 .home-hero-floating-widgets {
   position: absolute;
   inset: -30px -28px -22px;
-  z-index: 3;
+  z-index: 1;
   overflow: visible;
   pointer-events: none;
 }
@@ -1377,47 +1377,41 @@ h6 {
   .home-hero {
     align-items: stretch;
     min-height: 100svh;
-    padding-top: clamp(3.9rem, 7svh, 4.5rem);
-    padding-bottom: 1.4rem;
+    padding-top: clamp(3.2rem, 6svh, 3.9rem);
+    padding-bottom: 1.1rem;
   }
 
   .home-hero-frame {
-    gap: 0.75rem;
+    justify-content: center;
+    gap: 0.65rem;
   }
 
   .home-hero-split {
     grid-template-columns: 1fr;
-    gap: 0.85rem;
+    gap: 0.72rem;
   }
 
   .home-hero-left {
-    align-items: flex-start;
+    align-items: center;
+    text-align: center;
   }
 
   .home-hero-title {
-    font-size: clamp(3.3rem, 18vw, 4.8rem);
+    font-size: clamp(3.45rem, 18vw, 4.8rem);
     line-height: 0.9;
+    text-align: center;
   }
 
   .home-hero-eyebrow {
-    min-height: 28px;
-    margin-bottom: 10px;
-    font-size: 11px;
-    padding-inline: 10px;
+    display: none;
   }
 
   .home-hero-slogan {
-    max-width: 340px;
-    margin-top: 11px;
-    font-size: clamp(1.15rem, 6vw, 1.6rem);
-    line-height: 1.16;
+    display: none;
   }
 
   .home-hero-lede {
-    max-width: 340px;
-    margin-top: 8px;
-    font-size: 12.5px;
-    line-height: 1.55;
+    display: none;
   }
 
   .home-hero-proof-list {
@@ -1435,7 +1429,7 @@ h6 {
   }
 
   .home-hero-copy-card {
-    padding: 0.9rem;
+    display: none;
   }
 
   .home-hero-kicker {
@@ -1457,7 +1451,11 @@ h6 {
   }
 
   .home-hero-workflow-strip {
-    display: none;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+    border-radius: 8px;
   }
 
   .product-stage-image {
@@ -1465,7 +1463,7 @@ h6 {
   }
 
   .product-stage-visual {
-    height: clamp(150px, 23svh, 190px);
+    height: clamp(172px, 28svh, 230px);
   }
 
   .home-primary-action {
@@ -1492,16 +1490,15 @@ h6 {
     font-size: 10px !important;
   }
 
-  .home-proof-body {
-    min-height: 32px;
-    margin: 5px 0 0;
-    font-size: 10.5px;
-    line-height: 1.48;
-    -webkit-line-clamp: 2;
+  .home-hero-workflow-strip .home-proof-body {
+    display: none;
   }
 
-  .home-proof-link {
-    display: none;
+  .home-hero-workflow-strip .home-proof-link {
+    display: block;
+    margin-top: 5px;
+    font-size: 10.5px;
+    line-height: 1.25;
   }
 
   .home-hero-continue {
@@ -1518,22 +1515,18 @@ h6 {
   .home-finance-header {
     align-items: flex-start;
     flex-direction: column;
-    gap: 0.75rem;
-    margin-bottom: 12px;
+    gap: 0.55rem;
+    margin-bottom: 10px;
+  }
+
+  .home-finance-kicker,
+  .home-finance-intro {
+    display: none;
   }
 
   .home-finance-title {
-    font-size: clamp(1.6rem, 7.4vw, 2rem);
-    margin-bottom: 7px;
-  }
-
-  .home-finance-intro {
-    display: -webkit-box;
-    font-size: 12px;
-    line-height: 1.55;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
+    font-size: clamp(1.55rem, 7vw, 1.92rem);
+    margin-bottom: 0;
   }
 
   .home-finance-library-link {
@@ -1542,9 +1535,12 @@ h6 {
   }
 
   .home-finance-showcase {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
+    display: block;
+    min-height: 0;
+  }
+
+  .home-finance-stage {
+    display: none;
   }
 
   .home-finance-stage-copy {
@@ -1591,20 +1587,43 @@ h6 {
   }
 
   .home-finance-switcher {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    display: flex;
+    grid-template-columns: none;
+    gap: 10px;
+    margin-inline: -16px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding: 2px 16px 12px;
+    scroll-padding-inline: 16px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .home-finance-switch-card .finance-model-preview {
+  .home-finance-switcher::-webkit-scrollbar {
     display: none;
   }
 
+  .home-finance-switch-card {
+    flex: 0 0 min(84%, 330px);
+    scroll-snap-align: center;
+  }
+
+  .home-finance-switch-card .finance-model-preview {
+    display: block;
+    aspect-ratio: 1.42;
+  }
+
   .home-finance-switch-copy {
-    padding: 9px 10px;
+    padding: 10px 11px 11px;
   }
 
   .home-finance-switch-copy strong {
-    font-size: 12px;
+    display: -webkit-box;
+    min-height: 34px;
+    font-size: 13px;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
   }
 
   .home-finance-switch-open {
@@ -1615,6 +1634,19 @@ h6 {
   .home-section {
     padding-top: 3.4rem;
     padding-bottom: 3.4rem;
+  }
+
+  .home-finance-section {
+    align-items: flex-start;
+    height: 100svh;
+    min-height: 100svh;
+    overflow: hidden;
+    padding-top: clamp(3.35rem, 7svh, 3.9rem);
+    padding-bottom: 0.95rem;
+  }
+
+  .home-section.home-finance-section {
+    align-items: flex-start;
   }
 
   .finance-index-page {
