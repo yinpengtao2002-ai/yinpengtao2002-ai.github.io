@@ -9,6 +9,7 @@ interface ArtifactCardProps {
     delay?: number;
     initialX?: number;
     initialY?: number;
+    lowMotion?: boolean;
     rotate?: number;
 }
 
@@ -18,45 +19,51 @@ export default function ArtifactCard({
     delay = 0,
     initialX = 0,
     initialY = 0,
+    lowMotion = false,
     rotate = 0
 }: ArtifactCardProps) {
     return (
         <motion.div
-            initial={{ opacity: 0, x: initialX, y: initialY + 20, rotate: rotate - 5 }}
-            animate={{
+            initial={lowMotion ? { opacity: 0, x: initialX, y: initialY, rotate } : { opacity: 0, x: initialX, y: initialY + 20, rotate: rotate - 5 }}
+            animate={lowMotion ? {
+                opacity: 0.72,
+                x: initialX,
+                y: initialY,
+                rotate,
+            } : {
                 opacity: 0.9,
                 x: initialX,
-                y: [initialY, initialY - 15, initialY], // Floating effect
-                rotate: rotate
+                y: [initialY, initialY - 15, initialY],
+                rotate,
             }}
-            transition={{
-                opacity: { duration: 1, delay: delay },
-                y: { duration: 6, repeat: Infinity, ease: "easeInOut", delay: delay }, // Continuous float
-                default: { duration: 1, delay: delay }
+            transition={lowMotion ? {
+                opacity: { duration: 0.4, delay },
+                default: { duration: 0.4, delay },
+            } : {
+                opacity: { duration: 1, delay },
+                y: { duration: 6, repeat: Infinity, ease: "easeInOut", delay },
+                default: { duration: 1, delay },
             }}
-            whileHover={{
+            whileHover={lowMotion ? undefined : {
                 scale: 1.05,
                 rotate: 0,
                 boxShadow: "0 20px 40px -10px rgba(0,0,0,0.1)",
                 zIndex: 50,
                 opacity: 1
             }}
-            className={`absolute backdrop-blur-md bg-white/60 border border-white/50 shadow-sm rounded-xl overflow-hidden cursor-pointer ${className}`}
+            className={`artifact-card absolute backdrop-blur-md bg-white/60 border border-white/50 shadow-sm rounded-xl overflow-hidden cursor-pointer ${className}`}
         >
-            <div className="relative w-full h-full p-4">
-                {/* Header bar mimicking window chrome */}
-                <div className="absolute top-0 left-0 w-full h-6 bg-white/40 border-b border-white/20 flex items-center px-2 gap-1.5">
+            <div className="artifact-card-inner relative w-full h-full">
+                <div className="artifact-window-chrome absolute top-0 left-0 w-full bg-white/40 border-b border-white/20 flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full bg-red-300/60" />
                     <div className="w-2 h-2 rounded-full bg-yellow-300/60" />
                     <div className="w-2 h-2 rounded-full bg-green-300/60" />
                 </div>
 
-                {/* Content Area */}
-                <div className="mt-4">
+                <div className="artifact-card-content">
                     {children}
                 </div>
 
-                {/* Glass reflection shine */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/30 to-white/0 pointer-events-none opacity-50" />
             </div>
         </motion.div>
@@ -66,7 +73,7 @@ export default function ArtifactCard({
 // Pre-defined visual components for the "Artifacts"
 export function CodeArtifact() {
     return (
-        <div className="space-y-2 opacity-80">
+        <div className="artifact-code space-y-2 opacity-80">
             <div className="flex gap-2">
                 <div className="w-8 h-2 bg-blue-400/30 rounded" />
                 <div className="w-16 h-2 bg-gray-400/30 rounded" />
@@ -83,7 +90,7 @@ export function CodeArtifact() {
 
 export function ChartArtifact() {
     return (
-        <div className="flex items-end gap-2 h-16 w-24 px-1 pb-1 border-l border-b border-gray-400/20">
+        <div className="artifact-chart flex items-end gap-2 px-1 pb-1 border-l border-b border-gray-400/20">
             <motion.div
                 className="w-4 bg-[#d97757]/60 rounded-t-sm"
                 animate={{ height: ["40%", "70%", "40%"] }}
@@ -110,7 +117,7 @@ export function ChartArtifact() {
 
 export function ImageArtifact() {
     return (
-        <div className="flex flex-col items-center gap-2">
+        <div className="artifact-image flex flex-col items-center gap-2">
             <div className="w-20 h-14 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-md border border-white/40 shadow-inner flex items-center justify-center">
                 <div className="w-6 h-6 rounded-full bg-white/50 blur-[2px]" />
             </div>

@@ -45,19 +45,17 @@ export default function CapabilityHero() {
       style={{ fontFamily: UI_FONT }}
     >
       <div className="home-hero-pattern" aria-hidden="true" />
-      {!lowMotion && (
-        <div className="home-hero-artifacts" aria-hidden="true">
-          <ArtifactCard delay={0.2} rotate={5} initialY={-8} className="home-artifact-code rounded-md">
-            <CodeArtifact />
-          </ArtifactCard>
-          <ArtifactCard delay={0.35} rotate={-4} initialY={8} className="home-artifact-chart rounded-md">
-            <ChartArtifact />
-          </ArtifactCard>
-          <ArtifactCard delay={0.45} rotate={-7} initialY={0} className="home-artifact-image rounded-md">
-            <ImageArtifact />
-          </ArtifactCard>
-        </div>
-      )}
+      <div className="home-hero-artifacts" aria-hidden="true">
+        <ArtifactCard delay={0.2} rotate={5} initialY={-8} lowMotion={lowMotion} className="home-artifact-code rounded-md">
+          <CodeArtifact />
+        </ArtifactCard>
+        <ArtifactCard delay={0.35} rotate={-4} initialY={8} lowMotion={lowMotion} className="home-artifact-chart rounded-md">
+          <ChartArtifact />
+        </ArtifactCard>
+        <ArtifactCard delay={0.45} rotate={-7} initialY={0} lowMotion={lowMotion} className="home-artifact-image rounded-md">
+          <ImageArtifact />
+        </ArtifactCard>
+      </div>
 
       <div className="home-shell home-hero-grid">
         <motion.div
@@ -86,21 +84,16 @@ export default function CapabilityHero() {
           transition={{ duration: 0.6, delay: 0.12 }}
           className="home-hero-content"
         >
-          <p style={{ color: "var(--accent)", letterSpacing: "0.18em", textTransform: "uppercase", fontSize: 12, fontWeight: 800, marginBottom: 16 }}>
+          <p className="home-hero-kicker">
             Capability Profile
           </p>
           <h2 className="home-hero-headline">
-            从业务问题出发，持续打磨经营分析、财务模型与 AI 工作流。
+            <span className="home-headline-mark">从业务问题出发</span>
+            <span className="home-headline-line">持续打磨经营分析、财务模型与 AI 工作流</span>
           </h2>
-          <p className="home-hero-summary">
-            我还是职场新人，但正在真实业务里认真训练三件事：理解问题、搭建模型、把 AI 放进可复盘的工作流。
-          </p>
           <div className="home-hero-actions">
             <Link href="/finance" className="home-primary-action">
               查看财务模型 <ArrowRight style={{ width: 15, height: 15 }} />
-            </Link>
-            <Link href="#finance" className="home-secondary-action">
-              继续看 <ArrowDown style={{ width: 15, height: 15 }} />
             </Link>
           </div>
           <div className="home-proof-grid">
@@ -117,6 +110,10 @@ export default function CapabilityHero() {
           </div>
         </motion.div>
       </div>
+      <Link href="#finance" className="home-hero-continue">
+        <span>继续看</span>
+        <ArrowDown style={{ width: 15, height: 15 }} />
+      </Link>
     </section>
   );
 }

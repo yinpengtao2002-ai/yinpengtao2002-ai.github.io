@@ -106,7 +106,7 @@ h6 {
   display: flex;
   align-items: center;
   overflow: hidden;
-  padding: clamp(5.4rem, 8vh, 7rem) 0 clamp(2.6rem, 6vh, 4rem);
+  padding: clamp(5.4rem, 8vh, 7rem) 0 clamp(4.2rem, 7vh, 5.4rem);
 }
 
 .home-hero-grid {
@@ -133,19 +133,49 @@ h6 {
   font-size: 14px;
 }
 
+.home-hero-kicker {
+  color: var(--accent);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+
 .home-hero-headline {
-  margin-bottom: 14px;
-  font-size: clamp(1.85rem, 3.6vw, 2.8rem);
-  line-height: 1.14;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 18px;
+  font-family: var(--font-hero-display);
+  font-size: clamp(1.9rem, 3.25vw, 2.75rem);
+  line-height: 1.16;
+  font-weight: 500;
   letter-spacing: 0;
 }
 
-.home-hero-summary {
-  max-width: 620px;
-  color: color-mix(in srgb, var(--foreground) 68%, var(--muted));
-  font-size: 14px;
-  line-height: 1.8;
-  margin-bottom: 18px;
+.home-headline-mark {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border));
+  border-left: 4px solid var(--accent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 86%, transparent);
+  box-shadow: 0 12px 34px rgba(217, 119, 87, 0.09);
+  color: var(--accent);
+  font-family: var(--font-poppins);
+  font-size: clamp(0.92rem, 1.35vw, 1.08rem);
+  font-weight: 800;
+  line-height: 1;
+  padding: 0.48rem 0.78rem;
+}
+
+.home-headline-line {
+  display: block;
+  max-width: 680px;
+  color: color-mix(in srgb, var(--foreground) 88%, var(--accent-secondary));
 }
 
 .home-hero-actions {
@@ -179,6 +209,31 @@ h6 {
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--card) 84%, transparent);
   color: var(--foreground);
+}
+
+.home-hero-continue {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: clamp(1.05rem, 2.2vh, 1.45rem);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  color: color-mix(in srgb, var(--foreground) 62%, var(--muted));
+  font-family: var(--font-poppins);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-decoration: none;
+  transform: translateX(-50%);
+}
+
+.home-hero-continue::before {
+  content: "";
+  width: 1px;
+  height: 28px;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--accent) 48%, var(--border)));
 }
 
 .home-proof-grid {
@@ -228,8 +283,45 @@ h6 {
 .home-hero-artifacts {
   position: absolute;
   inset: 0;
-  z-index: 3;
+  z-index: 1;
   pointer-events: none;
+}
+
+.artifact-card {
+  transform-origin: center;
+}
+
+.artifact-card-inner {
+  padding: 30px 16px 14px;
+}
+
+.artifact-window-chrome {
+  height: 24px;
+  padding-inline: 10px;
+}
+
+.artifact-card-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.artifact-code {
+  width: min(100%, 118px);
+}
+
+.artifact-chart {
+  width: min(100%, 118px);
+  height: min(100%, 70px);
+}
+
+.artifact-image {
+  width: min(100%, 108px);
 }
 
 .home-artifact-code {
@@ -292,7 +384,7 @@ h6 {
 
   .home-hero {
     padding-top: 5rem;
-    padding-bottom: 2rem;
+    padding-bottom: 3.8rem;
   }
 
   .home-hero-grid {
@@ -312,11 +404,6 @@ h6 {
   .home-hero-headline {
     font-size: clamp(1.65rem, 3vw, 2.2rem);
     margin-bottom: 10px;
-  }
-
-  .home-hero-summary {
-    line-height: 1.65;
-    margin-bottom: 12px;
   }
 
   .home-hero-actions {
@@ -350,7 +437,10 @@ h6 {
   }
 
   .home-artifact-chart {
-    display: none;
+    bottom: 5%;
+    left: max(24px, calc((100vw - 1180px) / 2 + 360px));
+    width: 140px;
+    height: 100px;
   }
 
   .index-page {
@@ -371,39 +461,131 @@ h6 {
 
 @media (max-width: 768px) {
   .home-viewport {
-    min-height: auto;
+    min-height: 100svh;
   }
 
   .home-shell {
-    width: min(100% - 40px, 640px);
+    width: min(100% - 32px, 640px);
   }
 
   .home-hero {
-    padding-top: 5.7rem;
-    padding-bottom: 2.7rem;
+    align-items: stretch;
+    min-height: 100svh;
+    padding-top: clamp(4.65rem, 12svh, 5.8rem);
+    padding-bottom: 4.4rem;
   }
 
   .home-hero-grid {
     grid-template-columns: 1fr;
-    gap: 1.7rem;
+    align-content: center;
+    min-height: calc(100svh - 9.1rem);
+    gap: clamp(0.95rem, 3svh, 1.35rem);
   }
 
   .home-hero-title {
-    font-size: clamp(3.25rem, 17vw, 5rem);
+    font-size: clamp(3.1rem, 15.5vw, 4.65rem);
   }
 
   .home-hero-role {
-    margin-top: 20px;
-    padding-top: 15px;
-    line-height: 1.75;
+    max-width: 320px;
+    margin-top: 13px;
+    padding-top: 12px;
+    font-size: 12px;
+    line-height: 1.58;
+  }
+
+  .home-hero-kicker {
+    margin-bottom: 10px;
+    font-size: 10px;
+    letter-spacing: 0.14em;
   }
 
   .home-hero-headline {
-    font-size: clamp(1.8rem, 8vw, 2.35rem);
+    gap: 10px;
+    margin-bottom: 13px;
+    font-size: clamp(1.46rem, 6.5vw, 2rem);
+    line-height: 1.15;
+  }
+
+  .home-headline-mark {
+    border-left-width: 3px;
+    font-size: 0.86rem;
+    padding: 0.42rem 0.66rem;
   }
 
   .home-hero-artifacts {
+    display: block;
+    opacity: 0.64;
+  }
+
+  .home-artifact-code,
+  .home-artifact-image {
     display: none;
+  }
+
+  .home-artifact-chart {
+    top: 5.1rem;
+    right: 14px;
+    bottom: auto;
+    left: auto;
+    width: 118px;
+    height: 86px;
+    box-shadow: 0 14px 32px rgba(20, 20, 19, 0.07);
+  }
+
+  .home-hero-actions {
+    margin-bottom: 12px;
+  }
+
+  .home-primary-action {
+    min-height: 38px;
+    padding-inline: 14px;
+    font-size: 12px;
+  }
+
+  .home-proof-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .home-proof-card {
+    padding: 9px 8px;
+  }
+
+  .home-proof-card>div {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .home-proof-card strong {
+    font-size: 12px;
+    line-height: 1.25;
+  }
+
+  .home-proof-card span {
+    font-size: 10px !important;
+  }
+
+  .home-proof-body {
+    min-height: 32px;
+    margin: 5px 0 0;
+    font-size: 10.5px;
+    line-height: 1.48;
+    -webkit-line-clamp: 2;
+  }
+
+  .home-proof-link {
+    display: none;
+  }
+
+  .home-hero-continue {
+    bottom: calc(0.9rem + env(safe-area-inset-bottom));
+    gap: 4px;
+    font-size: 11px;
+  }
+
+  .home-hero-continue::before {
+    height: 20px;
   }
 
   .home-section {

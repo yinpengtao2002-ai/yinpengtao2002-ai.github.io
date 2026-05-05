@@ -20,6 +20,14 @@ test("home hero does not split AI workflow and thinking judgment into separate p
 test("home page has an explicit continue cue for below-the-fold content", () => {
   assert.match(hero, /继续看/);
   assert.match(hero, /#finance/);
+  assert.match(hero, /home-hero-continue/);
+  assert.doesNotMatch(hero, /home-secondary-action/);
+});
+
+test("home hero uses a refined headline treatment without low-value summary copy", () => {
+  assert.match(hero, /home-headline-mark/);
+  assert.match(hero, /home-headline-line/);
+  assert.doesNotMatch(hero, /我还是职场新人/);
 });
 
 test("visitor-facing copy avoids redesign-process language", () => {
