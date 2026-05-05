@@ -1,72 +1,72 @@
-# Hex Product Stage Design
+# Hex 式产品舞台设计
 
-## Direction
+## 方向
 
-Use Hex-style product staging as the reference for Lucas Yin's homepage and model library, without copying Hex branding. The site should feel like a personal capability profile built around a real finance-model product system.
+以 Hex 的产品舞台式表达作为参考，重塑 Lucas Yin 个人网站首页和模型库，但不复制 Hex 的品牌。网站应当像一份围绕真实财务模型系统展开的个人能力展示，而不是传统作品集或简历页面。
 
-The approved direction is a mixed asset system:
+已确认采用混合素材系统：
 
-- Homepage: product-stage hero with layered model output windows, AI interpretation, charts, and tables.
-- Finance model library: each model gets a chart-stacked preview image that shows what the model produces.
-- Future refinement: generated direction images can be replaced or tightened with real model screenshots and HTML/CSS redraws.
+- 首页：用模型输出窗口、AI 解读、图表和表格组成产品舞台式首屏。
+- 财务模型库：每个模型使用图表堆叠预览图，展示这个模型能产出什么。
+- 后续优化：第一批生成图作为方向稿；真正落地时，可以用真实模型截图或 HTML/CSS 重绘替换不够精确的细节。
 
-## Visual Rules
+## 视觉规则
 
-- Model visuals must show the model itself, especially output charts, tables, KPI cards, and analytical views.
-- Mac-style browser/app window chrome is allowed as a container, but it should not dominate the asset.
-- Do not use scenic covers, mountains, bridges, landscape imagery, or decorative business metaphors as the main model image.
-- Do not emphasize control consoles or settings panels in the model preview images.
-- Keep the warm paper-grid background, soft shadows, ivory surfaces, muted terracotta, soft blue, sage green, warm black, and pale gray.
-- Avoid neon, cyberpunk, generic SaaS gradients, stock-photo styling, and fake readable text inside generated images.
+- 模型视觉必须展示模型本身，尤其是输出图表、表格、KPI 卡片和分析视图。
+- 可以使用 Mac 风格浏览器或应用窗口外框，但它只是容器，不能盖过模型内容。
+- 不使用风景封面、山、桥、景观图或空泛商业隐喻作为模型主图。
+- 模型预览图不突出控制台或设置面板。
+- 保留温暖纸张网格背景、柔和阴影、象牙白界面、克制陶土色、柔和蓝色、鼠尾草绿、暖黑和浅灰。
+- 避免霓虹、赛博、泛 SaaS 渐变、图库风格，以及生成图中的假文字。
 
-## Homepage Hero
+## 首页首屏
 
-The first screen should present Lucas as someone building practical finance-analysis systems, not just listing resume items.
+第一屏要传达：Lucas 正在真实业务中搭建一套可使用、可解释、可扩展的财务分析系统，而不是单纯罗列经历。
 
-The hero should include:
+首屏应包含：
 
-- A large product-stage visual made of layered finance model windows.
-- A visible AI interpretation/chat panel as part of the staged product system.
-- Chart/table modules as the dominant visual content.
-- Clear entry actions for finance models and AI-assisted explanation.
-- Lucas Yin identity retained, but secondary to the capability/product story.
+- 由多层财务模型窗口组成的大型产品舞台视觉。
+- 明确可见的 AI 解读或对话面板，并让它成为模型系统的一部分。
+- 以图表和表格模块为主的视觉内容。
+- 清晰的入口按钮：查看财务模型、让 AI 介绍模型。
+- 保留 Lucas Yin 的个人身份，但让它服务于能力和产品叙事。
 
-## Model Preview Images
+## 模型预览图
 
-Each model preview should be a chart-module collage:
+每个模型预览都应是图表模块拼贴：
 
-- Budget vs Actual Analysis: variance bridge, profit bridge, KPI comparison, dimension performance, variance summary table.
-- Monthly Trend Analysis: trend line, YoY/MoM comparison, heatmap, structure share, concentration/ranking, KPI cards.
-- Profit Sensitivity Analysis: tornado sensitivity ranking, profit waterfall, two-variable matrix, scenario comparison, result cards.
-- Unit Margin Attribution: unit margin waterfall, mix/rate effect comparison, dimension drilldown, contribution table, explanation card.
+- 预算实际对比模型：预算实际差异桥、利润桥、KPI 对比、维度表现、差异汇总表。
+- 分月指标趋势分析模型：趋势线、同比/环比对比、热力图、结构占比、集中度或排名、KPI 卡片。
+- 利润敏感性分析：敏感性排序图、利润瀑布图、双变量矩阵、情景对比、结果卡片。
+- 单车指标变动归因模型：单车指标瀑布图、结构效应/费率效应对比、维度下钻、贡献表、解释卡片。
 
-## Asset Generation
+## 素材生成
 
-Use generated images for direction and mood, especially for:
+可以使用生成图确定方向和氛围，尤其是：
 
-- Homepage product-stage direction image.
-- First-pass model preview direction images.
+- 首页产品舞台方向图。
+- 第一批模型预览方向图。
 
-Use real screenshots or HTML/CSS redraws when precision matters, especially for:
+当准确性影响可信度时，优先使用真实截图或 HTML/CSS 重绘，尤其是：
 
-- Final model preview details.
-- Charts that need to match the actual finance tools.
-- Any asset where fake UI would reduce credibility.
+- 最终模型预览图细节。
+- 需要贴合真实财务工具的图表。
+- 任何生成图细节会削弱专业感的资产。
 
-## Implementation Shape
+## 落地形态
 
-The first implementation pass should:
+第一版落地应当：
 
-- Add a reusable model preview asset system.
-- Update homepage hero from decorative floating widgets to a larger product-stage composition.
-- Upgrade finance model cards to include chart-stacked preview imagery.
-- Preserve existing routes, content sources, and AI assistant behavior.
-- Keep mobile behavior deliberate: preview images should crop or stack cleanly and must not make the first screen feel like a giant poster with no useful content.
+- 增加可复用的模型预览资产系统。
+- 将首页 hero 从装饰性漂浮小组件升级为更大的产品舞台构图。
+- 将财务模型卡片升级为带图表堆叠预览的卡片。
+- 保留现有路由、内容来源和 AI 助手行为。
+- 慎重处理移动端：预览图要能干净裁切或堆叠，不能把第一屏变成只有大海报、没有有效信息的页面。
 
-## Verification
+## 验证
 
-Before shipping:
+上线前需要：
 
-- Run site tests, lint, TypeScript, and the Vercel-equivalent build.
-- Check desktop and mobile screenshots of the homepage and finance page.
-- Confirm generated files are intentional and no unrelated content generation changes were committed.
+- 运行站点测试、lint、TypeScript 检查和 Vercel 等价构建。
+- 检查首页和财务模型页的桌面与移动端截图。
+- 确认生成文件都是有意改动，不能把无关内容生成结果提交进去。
