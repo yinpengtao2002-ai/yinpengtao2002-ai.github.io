@@ -157,7 +157,7 @@ test("home hero arranges floating mini widgets around the Lucas identity", () =>
   assert.doesNotMatch(globals, /\.home-mini-widget-dots\s*\{[^}]*right:/s);
   assert.doesNotMatch(globals, /\.home-mini-widget-window\s*\{[^}]*right:/s);
   assert.match(globals, /@media\s*\(max-width:\s*1180px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-hero-floating-widgets\s*\{[\s\S]*display:\s*none/s);
-  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-hero-floating-widgets\s*\{[\s\S]*display:\s*block/s);
+  assert.match(mobileCssRule(".home-hero-floating-widgets"), /display:\s*none/);
   assert.match(globals, /\.product-stage-visual\s*\{[^}]*z-index:\s*2/s);
   assert.match(globals, /@keyframes\s+home-widget-float/);
   assert.match(globals, /animation:\s*home-widget-float/);
