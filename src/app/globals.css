@@ -2006,15 +2006,18 @@ h6 {
 
   .home-finance-section {
     align-items: flex-start;
-    height: 100svh;
-    min-height: 100svh;
-    overflow: hidden;
+    height: auto;
+    min-height: auto;
+    overflow: visible;
     padding-top: clamp(3.1rem, 6.2svh, 3.6rem);
-    padding-bottom: 0.85rem;
+    padding-bottom: clamp(0.95rem, 3svh, 1.4rem);
   }
 
   .home-section.home-finance-section {
     align-items: flex-start;
+    height: auto;
+    min-height: auto;
+    overflow: visible;
   }
 
   .finance-index-page {
@@ -2030,6 +2033,12 @@ h6 {
     font-size: 13px;
     line-height: 1.68;
     margin-bottom: 18px;
+  }
+
+  .home-section.home-thinking-section {
+    align-items: flex-start;
+    min-height: auto;
+    padding: clamp(1rem, 3svh, 1.5rem) 0 clamp(1.2rem, 4svh, 2rem);
   }
 
   .home-thinking-method-index {

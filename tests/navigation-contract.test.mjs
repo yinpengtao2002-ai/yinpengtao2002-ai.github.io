@@ -36,11 +36,15 @@ test("root layout wraps pages with a restrained route transition", () => {
 
 test("site navigation follows homepage section visibility", () => {
   assert.match(navigation, /sectionId:\s*"home"/);
-  assert.match(navigation, /sectionId:\s*"finance"/);
-  assert.match(navigation, /sectionId:\s*"thinking"/);
+  assert.match(navigation, /href:\s*"\/#finance"[\s\S]*activePath:\s*"\/finance"[\s\S]*sectionId:\s*"finance"/);
+  assert.match(navigation, /href:\s*"\/#thinking"[\s\S]*activePath:\s*"\/thinking-lab"[\s\S]*sectionId:\s*"thinking"/);
   assert.match(navigation, /sectionId:\s*"contact"/);
   assert.match(navigation, /IntersectionObserver/);
   assert.match(navigation, /activeSectionId/);
+  assert.match(navigation, /hashSectionId/);
+  assert.match(navigation, /pendingSectionRef/);
+  assert.match(navigation, /activateSectionFromClick\(item\.sectionId\)/);
+  assert.match(navigation, /scrollToSection\(item\.sectionId\)/);
   assert.match(navigation, /home-nav-active-pill/);
   assert.match(navigation, /layoutId="home-nav-active-pill"/);
 });

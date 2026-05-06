@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Home, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import { scrollToSection } from "@/lib/scroll";
 import { useViewportProfile } from "@/lib/useLowMotionMode";
@@ -14,8 +14,8 @@ const NAV_FONT =
 
 const NAV_ITEMS = [
     { label: "首页", href: "/", activePath: "/", sectionId: "home" },
-    { label: "财务模型", href: "/finance", activePath: "/finance", sectionId: "finance" },
-    { label: "思考与方法", href: "/thinking-lab", activePath: "/thinking-lab", sectionId: "thinking" },
+    { label: "财务模型", href: "/#finance", activePath: "/finance", sectionId: "finance" },
+    { label: "思考与方法", href: "/#thinking", activePath: "/thinking-lab", sectionId: "thinking" },
     { label: "联系", href: "/#contact", sectionId: "contact" },
 ];
 
@@ -40,11 +40,32 @@ export default function SiteNavigation() {
     const { isMobileLike } = useViewportProfile();
     const [open, setOpen] = useState(false);
     const [activeSectionId, setActiveSectionId] = useState("home");
+    const pendingSectionRef = useRef<{ id: string; until: number } | null>(null);
+
+    const activateSectionFromClick = useCallback((sectionId: string) => {
+        if (typeof window !== "undefined") {
+            pendingSectionRef.current = {
+                id: sectionId,
+                until: window.performance.now() + 900,
+            };
+        }
+
+        setActiveSectionId(sectionId);
+    }, []);
 
     useEffect(() => {
         if (pathname !== "/" || typeof window === "undefined" || !("IntersectionObserver" in window)) {
             return;
         }
+
+        const hashSectionId = window.location.hash.replace("#", "");
+        const hashSection = NAV_ITEMS.find((item) => item.sectionId === hashSectionId)?.sectionId;
+        const hashFrame = hashSection
+            ? window.requestAnimationFrame(() => {
+                activateSectionFromClick(hashSection);
+                scrollToSection(hashSection);
+            })
+            : null;
 
         const sections = NAV_ITEMS
             .map((item) => item.sectionId)
@@ -61,6 +82,13 @@ export default function SiteNavigation() {
                     .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
 
                 if (visible?.target.id) {
+                    const pending = pendingSectionRef.current;
+                    if (pending && window.performance.now() < pending.until && visible.target.id !== pending.id) {
+                        return;
+                    }
+                    if (pending && visible.target.id === pending.id) {
+                        pendingSectionRef.current = null;
+                    }
                     setActiveSectionId(visible.target.id);
                 }
             },
@@ -71,8 +99,11 @@ export default function SiteNavigation() {
         );
 
         sections.forEach((section) => observer.observe(section));
-        return () => observer.disconnect();
-    }, [pathname]);
+        return () => {
+            if (hashFrame) window.cancelAnimationFrame(hashFrame);
+            observer.disconnect();
+        };
+    }, [activateSectionFromClick, pathname]);
 
     if (shouldHideNavigation(pathname)) return null;
 
@@ -86,6 +117,7 @@ export default function SiteNavigation() {
 
         if (pathname === "/" && item.href === "/") {
             event.preventDefault();
+            activateSectionFromClick("home");
             window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
             window.history.replaceState(window.history.state, "", "/");
             return;
@@ -93,6 +125,7 @@ export default function SiteNavigation() {
 
         if (pathname === "/" && item.sectionId && item.sectionId !== "home") {
             event.preventDefault();
+            activateSectionFromClick(item.sectionId);
             scrollToSection(item.sectionId);
         }
     };
