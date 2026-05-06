@@ -21,11 +21,14 @@ test("home hero does not split AI workflow and thinking judgment into separate p
 
 test("home page has an explicit continue cue for below-the-fold content", () => {
   assert.match(hero, /浏览更多/);
+  assert.match(hero, /查看财务模型/);
   assert.doesNotMatch(hero, /下一屏 · 财务模型/);
   assert.match(hero, /#finance/);
   assert.match(hero, /handleBrowseMore/);
   assert.match(hero, /scrollIntoView/);
   assert.match(hero, /behavior:\s*prefersReducedMotion \? "auto" : "smooth"/);
+  assert.match(hero, /href="#finance" className="home-primary-action" onClick=\{handleBrowseMore\}/);
+  assert.doesNotMatch(hero, /href="\/finance" className="home-primary-action"/);
   assert.doesNotMatch(hero, /href="\/finance" className="home-hero-continue"/);
   assert.match(hero, /home-hero-continue/);
   assert.match(hero, /home-hero-continue-row/);
@@ -111,7 +114,7 @@ test("home hero uses the product stage visual instead of decorative artifacts", 
   assert.doesNotMatch(hero, /ImageArtifact/);
 });
 
-test("home hero keeps the floating mini widgets around the stage", () => {
+test("home hero keeps the floating mini widgets as left-edge accents only", () => {
   assert.match(hero, /home-hero-floating-widgets/);
   assert.match(hero, /home-mini-widget/);
   assert.match(hero, /home-mini-widget-bars/);
@@ -122,8 +125,12 @@ test("home hero keeps the floating mini widgets around the stage", () => {
   assert.match(globals, /position:\s*absolute/);
   assert.match(globals, /\.home-hero-floating-widgets\s*\{[^}]*inset:\s*0/s);
   assert.match(globals, /\.home-hero-floating-widgets\s*\{[^}]*z-index:\s*3/s);
-  assert.match(globals, /\.home-mini-widget-window\s*\{[^}]*left:\s*clamp\(-150px,\s*-11vw,\s*-112px\)/s);
-  assert.match(globals, /\.home-mini-widget-dots\s*\{[^}]*right:\s*clamp\(-172px,\s*-12vw,\s*-118px\)/s);
+  assert.match(globals, /\.home-mini-widget-window\s*\{[^}]*left:\s*clamp\(-150px,\s*-10vw,\s*-112px\)/s);
+  assert.match(globals, /\.home-mini-widget-bars\s*\{[^}]*left:\s*clamp\(-118px,\s*-8vw,\s*-86px\)/s);
+  assert.match(globals, /\.home-mini-widget-dots\s*\{[^}]*left:\s*clamp\(-186px,\s*-13vw,\s*-138px\)/s);
+  assert.match(globals, /\.home-mini-widget-status\s*\{[^}]*left:\s*clamp\(-166px,\s*-11vw,\s*-120px\)/s);
+  assert.doesNotMatch(globals, /\.home-mini-widget-dots\s*\{[^}]*right:/s);
+  assert.doesNotMatch(globals, /\.home-mini-widget-status\s*\{[^}]*right:/s);
   assert.match(globals, /@media\s*\(max-width:\s*1180px\)[\s\S]*\.home-hero-floating-widgets\s*\{[\s\S]*display:\s*none/s);
   assert.match(globals, /\.product-stage-visual\s*\{[^}]*z-index:\s*2/s);
   assert.match(globals, /@keyframes\s+home-widget-float/);

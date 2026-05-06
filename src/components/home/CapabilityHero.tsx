@@ -143,7 +143,7 @@ export default function CapabilityHero() {
                   <span className="home-headline-mark">能力落在具体工具里</span>
                   <span className="home-headline-line">财务模型、图表和 AI 解读都围绕真实经营问题展开</span>
                 </h2>
-                <Link href="/finance" className="home-primary-action">
+                <Link href="#finance" className="home-primary-action" onClick={handleBrowseMore}>
                   查看财务模型 <ArrowRight style={{ width: 15, height: 15 }} />
                 </Link>
               </div>
