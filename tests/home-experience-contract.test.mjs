@@ -120,7 +120,11 @@ test("home hero keeps the floating mini widgets around the stage", () => {
   assert.match(globals, /\.home-mini-widget\s*\{/);
   assert.match(globals, /pointer-events:\s*none/);
   assert.match(globals, /position:\s*absolute/);
-  assert.match(globals, /\.home-hero-floating-widgets\s*\{[^}]*z-index:\s*1/s);
+  assert.match(globals, /\.home-hero-floating-widgets\s*\{[^}]*inset:\s*0/s);
+  assert.match(globals, /\.home-hero-floating-widgets\s*\{[^}]*z-index:\s*3/s);
+  assert.match(globals, /\.home-mini-widget-window\s*\{[^}]*left:\s*clamp\(-150px,\s*-11vw,\s*-112px\)/s);
+  assert.match(globals, /\.home-mini-widget-dots\s*\{[^}]*right:\s*clamp\(-172px,\s*-12vw,\s*-118px\)/s);
+  assert.match(globals, /@media\s*\(max-width:\s*1180px\)[\s\S]*\.home-hero-floating-widgets\s*\{[\s\S]*display:\s*none/s);
   assert.match(globals, /\.product-stage-visual\s*\{[^}]*z-index:\s*2/s);
   assert.match(globals, /@keyframes\s+home-widget-float/);
   assert.match(globals, /animation:\s*home-widget-float/);
@@ -177,6 +181,14 @@ test("homepage finance section becomes a swipeable model preview carousel on mob
   assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-finance-switch-card \.finance-model-preview\s*\{[\s\S]*display:\s*block/s);
 }
 );
+
+test("homepage finance section compresses in short desktop viewports", () => {
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-section\.home-finance-section\s*\{[\s\S]*height:\s*100dvh[\s\S]*overflow:\s*hidden/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-showcase\s*\{[\s\S]*max-height:\s*calc\(100dvh - 140px\)/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage,\s*\.home-finance-switcher\s*\{[\s\S]*height:\s*min\(420px,\s*calc\(100dvh - 150px\)\)/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage \.finance-model-preview\s*\{[\s\S]*aspect-ratio:\s*auto/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-switch-card \.finance-model-preview\s*\{[\s\S]*aspect-ratio:\s*1\.95/s);
+});
 
 test("homepage finance section defaults to the unit attribution model and switches on hover", () => {
   assert.match(financeSection, /DEFAULT_MODEL_SLUG = "margin-analysis"/);
