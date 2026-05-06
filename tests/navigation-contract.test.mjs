@@ -24,8 +24,12 @@ test("root layout wraps pages with a restrained route transition", () => {
   assert.match(layout, /<PageTransition>\{children\}<\/PageTransition>/);
   assert.match(pageTransition, /AnimatePresence/);
   assert.match(pageTransition, /usePathname/);
+  assert.match(pageTransition, /pageInitial/);
+  assert.match(pageTransition, /pathname === "\/"/);
+  assert.match(pageTransition, /pathname === "\/" \|\| prefersReducedMotion \? false/);
   assert.match(pageTransition, /prefersReducedMotion/);
   assert.match(pageTransition, /mode="wait"/);
+  assert.doesNotMatch(pageTransition, /initial=\{false\}/);
   assert.match(pageTransition, /y:\s*12/);
   assert.doesNotMatch(pageTransition, /x:\s*["'{-]/);
 });
