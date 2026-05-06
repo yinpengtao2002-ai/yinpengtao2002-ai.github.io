@@ -212,19 +212,32 @@ test("home continue cue stays in normal layout flow", () => {
 });
 
 test("homepage finance section previews models as a composed showcase", () => {
+  assert.match(financeSection, /MODEL LIBRARY/);
+  assert.match(financeSection, /问题驱动的财务模型/);
+  assert.match(financeSection, /从复盘、归因、趋势到敏感性，按真实经营问题选择模型。/);
+  assert.doesNotMatch(financeSection, /按经营问题进入模型/);
+  assert.doesNotMatch(financeSection, /四个模型对应四类常见经营问题/);
   assert.match(financeSection, /home-finance-showcase/);
   assert.match(financeSection, /home-finance-stage/);
   assert.match(financeSection, /home-finance-stage-motion/);
   assert.match(financeSection, /home-finance-reveal/);
   assert.match(financeSection, /whileInView/);
-  assert.match(financeSection, /viewport=\{\{ once: true, amount: 0\.28 \}\}/);
+  assert.match(financeSection, /viewport=\{financeRevealViewport\}/);
+  assert.match(financeSection, /filter: "blur\(6px\)"/);
+  assert.match(financeSection, /clipPath: "inset\(10% 5% 8% 5% round 12px\)"/);
+  assert.match(financeSection, /staggerChildren: 0\.07/);
+  assert.match(financeSection, /home-finance-switch-card-motion/);
   assert.match(financeSection, /key=\{`finance-stage-\$\{activeModel\.slug\}`\}/);
   assert.match(financeSection, /home-finance-switcher/);
   assert.match(financeSection, /home-finance-switch-open/);
   assert.match(financeSection, /打开模型/);
+  assert.match(globals, /\.home-finance-title span\s*\{/);
+  assert.match(globals, /\.home-finance-stage-frame::before/);
+  assert.match(globals, /\.home-finance-stage-frame::after/);
   assert.match(globals, /\.home-finance-stage-motion\s*\{/);
   assert.match(globals, /@keyframes\s+home-finance-stage-enter/);
   assert.match(globals, /@keyframes\s+home-finance-preview-settle/);
+  assert.match(globals, /@keyframes\s+home-finance-layer-drift/);
   assert.match(globals, /\.home-finance-section \.finance-model-preview-image\s*\{[^}]*object-fit:\s*contain/s);
   assert.match(globals, /\.home-finance-stage \.finance-model-preview\s*\{[^}]*aspect-ratio:\s*1\.5/s);
   assert.match(cssRule(".home-finance-reveal"), /will-change:\s*transform,\s*opacity/);
@@ -239,6 +252,8 @@ test("homepage finance section uses an automatic mobile preview carousel with fo
   assert.match(financeSection, /mobileCarouselTransitionEnabled/);
   assert.match(financeSection, /mobileCarouselInteractionKey/);
   assert.match(financeSection, /setMobileCarouselInteractionKey/);
+  assert.match(financeSection, /MOBILE_FINANCE_QUERY = "\(max-width: 768px\)"/);
+  assert.match(financeSection, /matchMedia\(MOBILE_FINANCE_QUERY\)\.matches/);
   assert.match(financeSection, /mobileCarouselSlides/);
   assert.match(financeSection, /\[switcherModels\.at\(-1\)!,\s*...switcherModels,\s*switcherModels\[0\]!\]/s);
   assert.match(financeSection, /setInterval/);
@@ -250,6 +265,7 @@ test("homepage finance section uses an automatic mobile preview carousel with fo
   assert.match(financeSection, /mobileCarouselInteractionKey,\s*updateMobileCarousel/);
   assert.match(financeSection, /suppressMobileSlideClickRef/);
   assert.match(financeSection, /home-finance-mobile-carousel/);
+  assert.match(financeSection, /home-finance-mobile-rise/);
   assert.match(financeSection, /home-finance-mobile-track/);
   assert.match(financeSection, /home-finance-mobile-slide/);
   assert.match(financeSection, /home-finance-mobile-dots/);
