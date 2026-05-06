@@ -198,29 +198,31 @@ export default function HomeFinanceSection() {
 
         <div className="home-finance-showcase">
           <Link href={activeModel.href} className="home-finance-stage">
-            <div className="home-finance-stage-copy">
-              <span className="home-finance-category">
-                {getCategoryLabel(activeModel.categoryId)}
-              </span>
-              <h3>{activeModel.title}</h3>
-              <p>{activeDetail?.focus ?? activeModel.summary}</p>
-              <div className="home-finance-detail">
-                {activeDetail?.detail ?? activeModel.summary}
+            <div key={`finance-stage-${activeModel.slug}`} className="home-finance-stage-motion">
+              <div className="home-finance-stage-copy">
+                <span className="home-finance-category">
+                  {getCategoryLabel(activeModel.categoryId)}
+                </span>
+                <h3>{activeModel.title}</h3>
+                <p>{activeDetail?.focus ?? activeModel.summary}</p>
+                <div className="home-finance-detail">
+                  {activeDetail?.detail ?? activeModel.summary}
+                </div>
+                <div className="home-finance-point-row">
+                  {(activeDetail?.points ?? []).map((point) => (
+                    <span key={point}>{point}</span>
+                  ))}
+                </div>
+                <span className="home-finance-open">
+                  打开模型 <ArrowRight style={{ width: 14, height: 14 }} />
+                </span>
               </div>
-              <div className="home-finance-point-row">
-                {(activeDetail?.points ?? []).map((point) => (
-                  <span key={point}>{point}</span>
-                ))}
-              </div>
-              <span className="home-finance-open">
-                打开模型 <ArrowRight style={{ width: 14, height: 14 }} />
-              </span>
+              <FinanceModelPreview
+                src={activeModel.previewImage}
+                alt={activeModel.previewAlt}
+                priority
+              />
             </div>
-            <FinanceModelPreview
-              src={activeModel.previewImage}
-              alt={activeModel.previewAlt}
-              priority
-            />
           </Link>
 
           <div

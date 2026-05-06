@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import type { CSSProperties } from "react";
 import { thinkingContent } from "@/lib/data/generated/content";
 
 export default function HomeThinkingSection() {
@@ -28,8 +29,13 @@ export default function HomeThinkingSection() {
         </div>
 
         <div className="home-thinking-list">
-          {latest.map((article) => (
-            <Link key={article.slug} href={article.href} className="home-thinking-item">
+          {latest.map((article, index) => (
+            <Link
+              key={article.slug}
+              href={article.href}
+              className="home-thinking-item"
+              style={{ "--thinking-item-index": index } as CSSProperties}
+            >
               <span>{article.date}</span>
               <h3>{article.title}</h3>
               <p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { motion, AnimatePresence, useDragControls, type PanInfo } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { MessageCircle, X, ArrowUp, ExternalLink } from "lucide-react";
@@ -20,6 +20,12 @@ import { normalizeChatMathMarkdown } from "@/lib/markdown/normalizeChatMathMarkd
 import { useViewportProfile } from "@/lib/useLowMotionMode";
 
 type ContentCardType = "finance" | "thinking";
+type InternalRouteCard = {
+    href: string;
+    title: string;
+    description: string;
+    accent: string;
+};
 
 interface ContentCard {
     id: number;
@@ -47,6 +53,45 @@ const MOBILE_QUICK_PROMPTS = [
 
 const CHAT_UI_FONT =
     'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
+const INTERNAL_ROUTE_CARDS: Record<string, InternalRouteCard> = {
+    "/finance": {
+        href: "/finance",
+        title: "财务模型库",
+        description: "预算复盘、单车归因、趋势监控和利润敏感性。",
+        accent: "var(--accent-secondary)",
+    },
+    "/thinking-lab": {
+        href: "/thinking-lab",
+        title: "思考与方法",
+        description: "AI 使用、市场观察和方法复盘。",
+        accent: "var(--accent-tertiary)",
+    },
+    "/finance/margin-analysis": {
+        href: "/finance/margin-analysis",
+        title: "单车指标变动归因模型",
+        description: "拆解两期单车指标变化里的结构效应和费率效应。",
+        accent: "var(--accent-secondary)",
+    },
+    "/finance/business-analysis": {
+        href: "/finance/business-analysis",
+        title: "预算实际对比模型",
+        description: "从预算与实际差异定位销量、收入、边际和利润问题。",
+        accent: "var(--accent-secondary)",
+    },
+    "/finance/monthly-trend": {
+        href: "/finance/monthly-trend",
+        title: "分月指标趋势分析模型",
+        description: "观察连续月份的趋势、结构和集中度变化。",
+        accent: "var(--accent-secondary)",
+    },
+    "/finance/sensitivity-analysis": {
+        href: "/finance/sensitivity-analysis",
+        title: "利润敏感性分析",
+        description: "调整关键变量并快速判断利润影响。",
+        accent: "var(--accent-secondary)",
+    },
+};
+const MARKDOWN_INTERNAL_LINK_PATTERN = /\[[^\]]+\]\((\/(?:finance|thinking-lab)(?:\/[A-Za-z0-9-]+)*\/?)\)/g;
 
 function getGreetingMessage() {
     return "你好，我是 Lucas AI。\n\n我可以帮你找财务模型、解释模型怎么用，也可以推荐思考与方法里的文章。";
@@ -66,6 +111,28 @@ function getInternalHref(href: string | undefined) {
     } catch {
         return null;
     }
+}
+
+function normalizeInternalHref(href: string) {
+    return href.length > 1 && href.endsWith("/") ? href.slice(0, -1) : href;
+}
+
+function getInternalRouteCards(markdown: string) {
+    const cards: InternalRouteCard[] = [];
+    const seen = new Set<string>();
+    let match = MARKDOWN_INTERNAL_LINK_PATTERN.exec(markdown);
+
+    while (match) {
+        const href = normalizeInternalHref(match[1] ?? "");
+        const card = INTERNAL_ROUTE_CARDS[href];
+        if (card && !seen.has(card.href)) {
+            cards.push(card);
+            seen.add(card.href);
+        }
+        match = MARKDOWN_INTERNAL_LINK_PATTERN.exec(markdown);
+    }
+
+    return cards.slice(0, 3);
 }
 
 function MessageContent({
@@ -220,6 +287,38 @@ function ContentCardList({ cards, cardType, onCardClick }: {
                         </div>
                         <span style={{ fontSize: 10, color: "var(--muted)", opacity: 0.5, flexShrink: 0 }}>{card.date}</span>
                     </div>
+                </motion.button>
+            ))}
+        </div>
+    );
+}
+
+function InternalRouteCardList({
+    cards,
+    onCardClick,
+}: {
+    cards: InternalRouteCard[];
+    onCardClick: (card: InternalRouteCard) => void;
+}) {
+    return (
+        <div className="chat-route-card-list">
+            {cards.map((card, index) => (
+                <motion.button
+                    key={card.href}
+                    type="button"
+                    className="chat-route-card"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.22, delay: index * 0.04 }}
+                    onClick={() => onCardClick(card)}
+                    style={{ "--route-card-accent": card.accent } as CSSProperties}
+                >
+                    <span className="chat-route-card-marker" />
+                    <span className="chat-route-card-copy">
+                        <strong>{card.title}</strong>
+                        <span>{card.description}</span>
+                    </span>
+                    <ExternalLink className="chat-route-card-icon" aria-hidden="true" />
                 </motion.button>
             ))}
         </div>
@@ -740,14 +839,21 @@ export default function ChatWidget() {
                                 }}
                             >
                                 <AnimatePresence mode="popLayout">
-                                    {messages.map((message) => (
-                                        <motion.div
-                                            key={message.id}
-                                            initial={{ opacity: 0, y: 8 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ duration: 0.2 }}
-                                            style={{ marginBottom: messageGap }}
-                                        >
+                                    {messages.map((message) => {
+                                        const normalizedMessageContent = normalizeChatInternalLinks(normalizeChatMathMarkdown(message.content));
+                                        const routeCards =
+                                            message.role === "assistant" && !message.isTyping
+                                                ? getInternalRouteCards(normalizedMessageContent)
+                                                : [];
+
+                                        return (
+                                            <motion.div
+                                                key={message.id}
+                                                initial={{ opacity: 0, y: 8 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ duration: 0.2 }}
+                                                style={{ marginBottom: messageGap }}
+                                            >
                                             {message.role === "user" ? (
                                                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
                                                     <div
@@ -806,7 +912,7 @@ export default function ChatWidget() {
                                                                     </div>
                                                                 )}
                                                                 <MessageContent
-                                                                    text={message.content}
+                                                                    text={normalizedMessageContent}
                                                                     onInternalLinkClick={() => {
                                                                         if (isMobileLike) handleClose();
                                                                     }}
@@ -833,12 +939,22 @@ export default function ChatWidget() {
                                                                     }}
                                                                 />
                                                             )}
+                                                            {!message.contentCards && routeCards.length > 0 && (
+                                                                <InternalRouteCardList
+                                                                    cards={routeCards}
+                                                                    onCardClick={(card) => {
+                                                                        handleClose();
+                                                                        router.push(card.href);
+                                                                    }}
+                                                                />
+                                                            )}
                                                         </>
                                                     )}
                                                 </div>
                                             )}
-                                        </motion.div>
-                                    ))}
+                                            </motion.div>
+                                        );
+                                    })}
                                 </AnimatePresence>
                                 <div ref={messagesEndRef} />
                             </div>

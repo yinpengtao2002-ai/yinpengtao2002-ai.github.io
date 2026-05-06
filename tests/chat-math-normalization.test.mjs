@@ -65,6 +65,18 @@ test("chat widget normalizes math before markdown rendering", () => {
   assert.match(chatWidget, /className="chat-markdown"/);
 });
 
+test("chat widget turns internal markdown links into compact route cards", () => {
+  assert.match(chatWidget, /INTERNAL_ROUTE_CARDS/);
+  assert.match(chatWidget, /getInternalRouteCards/);
+  assert.match(chatWidget, /InternalRouteCardList/);
+  assert.match(chatWidget, /chat-route-card-list/);
+  assert.match(chatWidget, /routeCards\.length > 0/);
+  assert.match(chatWidget, /!message\.contentCards/);
+  assert.match(chatWidget, /router\.push\(card\.href\)/);
+  assert.match(chatWidget, /\/finance\/business-analysis/);
+  assert.match(chatWidget, /\/thinking-lab/);
+});
+
 test("chat renderer turns bare internal routes into clickable markdown links", () => {
   const input = "财务模型库（/finance）和思考与方法（/thinking-lab）都可以看，也可以直接进 /finance/business-analysis。";
 

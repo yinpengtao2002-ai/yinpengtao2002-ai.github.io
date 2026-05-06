@@ -11,6 +11,9 @@ export default function ProductStageVisual() {
         sizes="(max-width: 768px) 92vw, 680px"
         className="product-stage-image"
       />
+      <div className="product-stage-motion-layer product-stage-motion-shell" aria-hidden="true" />
+      <div className="product-stage-motion-layer product-stage-motion-chart" aria-hidden="true" />
+      <div className="product-stage-motion-layer product-stage-motion-ai" aria-hidden="true" />
     </div>
   );
 }

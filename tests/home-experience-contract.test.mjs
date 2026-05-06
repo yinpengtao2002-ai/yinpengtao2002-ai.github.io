@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const hero = await readFile(new URL("../src/components/home/CapabilityHero.tsx", import.meta.url), "utf8");
+const productStage = await readFile(new URL("../src/components/home/ProductStageVisual.tsx", import.meta.url), "utf8");
 const financeSection = await readFile(new URL("../src/components/home/HomeFinanceSection.tsx", import.meta.url), "utf8");
 const thinkingSection = await readFile(new URL("../src/components/home/HomeThinkingSection.tsx", import.meta.url), "utf8");
 const thinkingLab = await readFile(new URL("../src/components/thinking/ThinkingLabClient.tsx", import.meta.url), "utf8");
@@ -122,6 +123,13 @@ test("home hero left side keeps identity focused without duplicated cards or but
 
 test("home hero uses the product stage visual instead of decorative artifacts", () => {
   assert.match(hero, /ProductStageVisual/);
+  assert.match(productStage, /product-stage-motion-layer/);
+  assert.match(productStage, /product-stage-motion-shell/);
+  assert.match(productStage, /product-stage-motion-chart/);
+  assert.match(productStage, /product-stage-motion-ai/);
+  assert.match(globals, /@keyframes\s+home-product-stage-layer-in/);
+  assert.match(globals, /\.product-stage-motion-layer\s*\{/);
+  assert.match(globals, /\.product-stage-motion-ai\s*\{/);
   assert.doesNotMatch(hero, /ArtifactCard/);
   assert.doesNotMatch(hero, /CodeArtifact/);
   assert.doesNotMatch(hero, /ChartArtifact/);
@@ -206,9 +214,14 @@ test("home continue cue stays in normal layout flow", () => {
 test("homepage finance section previews models as a composed showcase", () => {
   assert.match(financeSection, /home-finance-showcase/);
   assert.match(financeSection, /home-finance-stage/);
+  assert.match(financeSection, /home-finance-stage-motion/);
+  assert.match(financeSection, /key=\{`finance-stage-\$\{activeModel\.slug\}`\}/);
   assert.match(financeSection, /home-finance-switcher/);
   assert.match(financeSection, /home-finance-switch-open/);
   assert.match(financeSection, /打开模型/);
+  assert.match(globals, /\.home-finance-stage-motion\s*\{/);
+  assert.match(globals, /@keyframes\s+home-finance-stage-enter/);
+  assert.match(globals, /@keyframes\s+home-finance-preview-settle/);
   assert.match(globals, /\.home-finance-section \.finance-model-preview-image\s*\{[^}]*object-fit:\s*contain/s);
   assert.match(globals, /\.home-finance-stage \.finance-model-preview\s*\{[^}]*aspect-ratio:\s*1\.5/s);
   assert.doesNotMatch(financeSection, /FinanceModelLibrary compact/);
@@ -287,12 +300,23 @@ test("home thinking section uses a visual card and a clear index link", () => {
   assert.match(thinkingSection, /查看全部/);
   assert.match(thinkingSection, /href="\/thinking-lab"/);
   assert.match(thinkingSection, /home-thinking-list/);
+  assert.match(thinkingSection, /--thinking-item-index/);
   assert.match(thinkingSection, /方法摘句/);
   assert.doesNotMatch(thinkingSection, /METHOD_NOTES/);
   assert.doesNotMatch(thinkingSection, /判断如何形成/);
   assert.match(globals, /\.home-thinking-visual-card\s*\{/);
   assert.match(globals, /\.home-thinking-method-index\s*\{/);
   assert.match(globals, /\.home-thinking-list\s*\{/);
+  assert.match(globals, /@keyframes\s+home-thinking-card-rise/);
+  assert.match(cssRule(".home-thinking-item"), /animation:\s*home-thinking-card-rise/);
+  assert.match(cssRule(".home-thinking-visual-card"), /animation:\s*home-thinking-card-rise/);
+});
+
+test("home animation polish respects reduced-motion preferences", () => {
+  assert.match(globals, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
+  assert.match(globals, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*\.product-stage-motion-layer/s);
+  assert.match(globals, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*\.home-finance-stage-motion/s);
+  assert.match(globals, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*\.home-thinking-item/s);
 });
 
 test("contact section includes Lucas phone number", () => {
