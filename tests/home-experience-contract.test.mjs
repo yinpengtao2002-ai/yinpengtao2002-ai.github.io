@@ -275,10 +275,16 @@ test("homepage finance section uses an automatic mobile preview carousel with fo
 
 test("homepage finance section compresses in short desktop viewports", () => {
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-section\.home-finance-section\s*\{[\s\S]*height:\s*100dvh[\s\S]*overflow:\s*hidden/s);
-  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-showcase\s*\{[\s\S]*max-height:\s*calc\(100dvh - 140px\)/s);
-  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage,\s*\.home-finance-switcher\s*\{[\s\S]*height:\s*min\(420px,\s*calc\(100dvh - 150px\)\)/s);
-  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage \.finance-model-preview\s*\{[\s\S]*aspect-ratio:\s*auto/s);
-  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-switch-card \.finance-model-preview\s*\{[\s\S]*aspect-ratio:\s*1\.95/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-showcase\s*\{[\s\S]*max-height:\s*calc\(100dvh - 132px\)/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage-motion\s*\{[\s\S]*grid-template-rows:\s*auto minmax\(0,\s*1fr\)/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage \.finance-model-preview\s*\{[\s\S]*aspect-ratio:\s*1\.5/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-point-row\s*\{[\s\S]*display:\s*none/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage,\s*\.home-finance-switcher\s*\{[\s\S]*height:\s*100%/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-switcher\s*\{[\s\S]*grid-template-rows:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-switch-card \.finance-model-preview\.compact\s*\{[\s\S]*aspect-ratio:\s*1\.72/s);
+  assert.doesNotMatch(globals, /\.home-finance-stage,\s*\.home-finance-switcher\s*\{[\s\S]*height:\s*min\(420px,\s*calc\(100dvh - 150px\)\)/s);
+  assert.doesNotMatch(globals, /\.home-finance-stage \.finance-model-preview\s*\{[\s\S]*aspect-ratio:\s*auto/s);
+  assert.doesNotMatch(globals, /\.home-finance-switch-card \.finance-model-preview\s*\{[\s\S]*aspect-ratio:\s*1\.95/s);
 });
 
 test("homepage finance section defaults to the unit attribution model and switches on hover", () => {
