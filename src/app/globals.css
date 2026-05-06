@@ -1665,6 +1665,8 @@ h6 {
     position: relative;
     display: block;
     overflow: hidden;
+    touch-action: pan-y;
+    user-select: none;
     border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
     border-radius: 8px;
     background: color-mix(in srgb, var(--card) 94%, transparent);
@@ -1770,6 +1772,11 @@ h6 {
 
   .home-finance-switch-card {
     min-height: 88px;
+  }
+
+  .home-finance-switch-card.is-mobile-current {
+    border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+    box-shadow: 0 14px 34px rgba(217, 120, 92, 0.14);
   }
 
   .home-finance-switch-card .finance-model-preview {

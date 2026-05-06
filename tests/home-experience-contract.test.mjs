@@ -132,7 +132,10 @@ test("home hero arranges floating mini widgets around the Lucas identity", () =>
   assert.match(hero, /home-hero-floating-widgets/);
   assert.match(hero, /home-mini-widget/);
   assert.match(hero, /home-mini-widget-bars/);
-  assert.match(hero, /home-mini-widget-dots/);
+  assert.doesNotMatch(hero, /home-mini-widget-dots/);
+  assert.doesNotMatch(hero, /home-mini-widget-status/);
+  const widgetClassMatches = hero.match(/className="home-mini-widget /g) ?? [];
+  assert.equal(widgetClassMatches.length, 2);
   const leftStart = hero.indexOf('className="home-hero-left"');
   const leftEnd = hero.indexOf("</motion.div>", leftStart);
   const leftMarkup = hero.slice(leftStart, leftEnd);
@@ -151,10 +154,7 @@ test("home hero arranges floating mini widgets around the Lucas identity", () =>
   assert.match(globals, /\.home-hero-left\s*\{[^}]*position:\s*relative/s);
   assert.match(globals, /\.home-hero-left\s*>\s*:not\(\.home-hero-floating-widgets\)\s*\{/);
   assert.match(globals, /\.home-mini-widget-window\s*\{[^}]*top:\s*clamp\(-76px,\s*-8vh,\s*-48px\)[^}]*left:\s*clamp\(4px,\s*2\.4vw,\s*34px\)/s);
-  assert.match(globals, /\.home-mini-widget-status\s*\{[^}]*top:\s*clamp\(-58px,\s*-6vh,\s*-34px\)[^}]*right:\s*clamp\(8px,\s*2\.6vw,\s*44px\)/s);
-  assert.match(globals, /\.home-mini-widget-dots\s*\{[^}]*bottom:\s*clamp\(-70px,\s*-7vh,\s*-44px\)[^}]*left:\s*clamp\(0px,\s*2vw,\s*32px\)/s);
   assert.match(globals, /\.home-mini-widget-bars\s*\{[^}]*bottom:\s*clamp\(-62px,\s*-6vh,\s*-36px\)[^}]*right:\s*clamp\(14px,\s*3vw,\s*48px\)/s);
-  assert.doesNotMatch(globals, /\.home-mini-widget-dots\s*\{[^}]*right:/s);
   assert.doesNotMatch(globals, /\.home-mini-widget-window\s*\{[^}]*right:/s);
   assert.match(globals, /@media\s*\(max-width:\s*1180px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-hero-floating-widgets\s*\{[\s\S]*display:\s*none/s);
   assert.match(mobileCssRule(".home-hero-floating-widgets"), /display:\s*none/);
@@ -216,8 +216,14 @@ test("homepage finance section previews models as a composed showcase", () => {
 
 test("homepage finance section uses an automatic mobile preview carousel with four model entries below", () => {
   assert.match(financeSection, /useEffect/);
+  assert.match(financeSection, /useRef/);
   assert.match(financeSection, /mobileCarouselIndex/);
   assert.match(financeSection, /setInterval/);
+  assert.match(financeSection, /SWIPE_THRESHOLD/);
+  assert.match(financeSection, /handleMobileCarouselTouchStart/);
+  assert.match(financeSection, /handleMobileCarouselTouchMove/);
+  assert.match(financeSection, /handleMobileCarouselTouchEnd/);
+  assert.match(financeSection, /suppressMobileSlideClickRef/);
   assert.match(financeSection, /home-finance-mobile-carousel/);
   assert.match(financeSection, /home-finance-mobile-track/);
   assert.match(financeSection, /home-finance-mobile-slide/);
@@ -225,6 +231,7 @@ test("homepage finance section uses an automatic mobile preview carousel with fo
   assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-finance-section\s*\{[\s\S]*height:\s*100svh/s);
   assert.match(cssRule(".home-finance-mobile-carousel"), /display:\s*none/);
   assert.match(mobileCssRule(".home-finance-mobile-carousel"), /display:\s*block/);
+  assert.match(mobileCssRule(".home-finance-mobile-carousel"), /touch-action:\s*pan-y/);
   assert.match(mobileCssRule(".home-finance-mobile-track"), /display:\s*flex[\s\S]*transition:\s*transform/);
   assert.match(mobileCssRule(".home-finance-mobile-slide"), /flex:\s*0 0 100%/);
   assert.match(mobileCssRule(".home-finance-stage"), /display:\s*none/);

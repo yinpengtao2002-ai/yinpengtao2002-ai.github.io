@@ -167,16 +167,6 @@ function FloatingMiniWidgets() {
         <span />
         <span />
       </div>
-      <div className="home-mini-widget home-mini-widget-dots">
-        {Array.from({ length: 14 }).map((_, index) => (
-          <span key={index} />
-        ))}
-      </div>
-      <div className="home-mini-widget home-mini-widget-status">
-        <span />
-        <strong>AI</strong>
-        <em />
-      </div>
     </div>
   );
 }

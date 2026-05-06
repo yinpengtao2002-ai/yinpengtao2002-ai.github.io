@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type TouchEvent } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import FinanceModelPreview from "@/components/finance/FinanceModelPreview";
 import { financeModelCategories, financeModels } from "@/lib/finance/modelRegistry";
 
 const DEFAULT_MODEL_SLUG = "margin-analysis";
+const SWIPE_THRESHOLD = 46;
 
 const modelDetails: Record<string, { focus: string; detail: string; points: string[] }> = {
   "margin-analysis": {
@@ -34,16 +35,22 @@ const modelDetails: Record<string, { focus: string; detail: string; points: stri
 export default function HomeFinanceSection() {
   const [activeSlug, setActiveSlug] = useState(DEFAULT_MODEL_SLUG);
   const [mobileCarouselIndex, setMobileCarouselIndex] = useState(0);
+  const mobileSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const mobileSwipeMovedRef = useRef(false);
+  const suppressMobileSlideClickRef = useRef(false);
   const defaultModel =
     financeModels.find((model) => model.slug === DEFAULT_MODEL_SLUG) ??
     financeModels.at(0);
   const activeModel =
     financeModels.find((model) => model.slug === activeSlug) ??
     defaultModel;
-  const switcherModels = [
-    ...financeModels.filter((model) => model.slug === DEFAULT_MODEL_SLUG),
-    ...financeModels.filter((model) => model.slug !== DEFAULT_MODEL_SLUG),
-  ];
+  const switcherModels = useMemo(
+    () => [
+      ...financeModels.filter((model) => model.slug === DEFAULT_MODEL_SLUG),
+      ...financeModels.filter((model) => model.slug !== DEFAULT_MODEL_SLUG),
+    ],
+    [],
+  );
 
   useEffect(() => {
     if (switcherModels.length <= 1) return;
@@ -60,6 +67,58 @@ export default function HomeFinanceSection() {
   }
 
   const activeDetail = modelDetails[activeModel.slug];
+  const updateMobileCarousel = (direction: 1 | -1) => {
+    setMobileCarouselIndex(
+      (index) => (index + direction + switcherModels.length) % switcherModels.length,
+    );
+  };
+  const handleMobileCarouselTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    mobileSwipeStartRef.current = { x: touch.clientX, y: touch.clientY };
+    mobileSwipeMovedRef.current = false;
+  };
+  const handleMobileCarouselTouchMove = (event: TouchEvent<HTMLDivElement>) => {
+    const start = mobileSwipeStartRef.current;
+    const touch = event.touches[0];
+    if (!start || !touch) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    if (Math.abs(deltaX) > 12 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      mobileSwipeMovedRef.current = true;
+    }
+  };
+  const handleMobileCarouselTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+    const start = mobileSwipeStartRef.current;
+    const touch = event.changedTouches[0];
+    mobileSwipeStartRef.current = null;
+    if (!start || !touch || switcherModels.length <= 1) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    const isHorizontalSwipe =
+      Math.abs(deltaX) >= SWIPE_THRESHOLD && Math.abs(deltaX) > Math.abs(deltaY) * 1.15;
+    if (!isHorizontalSwipe) return;
+
+    suppressMobileSlideClickRef.current = true;
+    updateMobileCarousel(deltaX < 0 ? 1 : -1);
+    window.setTimeout(() => {
+      suppressMobileSlideClickRef.current = false;
+    }, 260);
+  };
+  const handleMobileCarouselTouchCancel = () => {
+    mobileSwipeStartRef.current = null;
+    mobileSwipeMovedRef.current = false;
+  };
+  const handleMobileSlideClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (!suppressMobileSlideClickRef.current && !mobileSwipeMovedRef.current) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    mobileSwipeMovedRef.current = false;
+  };
 
   return (
     <section id="finance" className="home-viewport home-section home-finance-section">
@@ -104,7 +163,14 @@ export default function HomeFinanceSection() {
             />
           </Link>
 
-          <div className="home-finance-mobile-carousel" aria-label="财务模型预览轮播">
+          <div
+            className="home-finance-mobile-carousel"
+            aria-label="财务模型预览轮播"
+            onTouchStart={handleMobileCarouselTouchStart}
+            onTouchMove={handleMobileCarouselTouchMove}
+            onTouchEnd={handleMobileCarouselTouchEnd}
+            onTouchCancel={handleMobileCarouselTouchCancel}
+          >
             <div
               className="home-finance-mobile-track"
               style={{ transform: `translateX(-${mobileCarouselIndex * 100}%)` }}
@@ -116,6 +182,7 @@ export default function HomeFinanceSection() {
                     key={model.slug}
                     href={model.href}
                     className="home-finance-mobile-slide"
+                    onClick={handleMobileSlideClick}
                   >
                     <div className="home-finance-mobile-copy">
                       <span className="home-finance-category">
@@ -138,13 +205,14 @@ export default function HomeFinanceSection() {
             className="home-finance-switcher"
             onMouseLeave={() => setActiveSlug(DEFAULT_MODEL_SLUG)}
           >
-            {switcherModels.map((model) => {
+            {switcherModels.map((model, index) => {
               const isActive = model.slug === activeModel.slug;
+              const isMobileActive = index === mobileCarouselIndex;
               return (
                 <Link
                   key={model.slug}
                   href={model.href}
-                  className="home-finance-switch-card"
+                  className={`home-finance-switch-card${isMobileActive ? " is-mobile-current" : ""}`}
                   aria-current={isActive ? "true" : undefined}
                   onFocus={() => setActiveSlug(model.slug)}
                   onMouseEnter={() => setActiveSlug(model.slug)}
