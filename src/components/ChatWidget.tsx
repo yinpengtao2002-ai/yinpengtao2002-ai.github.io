@@ -15,6 +15,7 @@ import {
     financeContent as staticFinance,
     thinkingContent as staticThinking,
 } from "@/lib/data/generated/content";
+import { normalizeChatInternalLinks } from "@/lib/markdown/normalizeChatInternalLinks";
 import { normalizeChatMathMarkdown } from "@/lib/markdown/normalizeChatMathMarkdown";
 import { useViewportProfile } from "@/lib/useLowMotionMode";
 
@@ -122,7 +123,7 @@ function MessageContent({
                     ),
                 }}
             >
-                {normalizeChatMathMarkdown(text)}
+                {normalizeChatInternalLinks(normalizeChatMathMarkdown(text))}
             </ReactMarkdown>
         </div>
     );

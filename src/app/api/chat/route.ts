@@ -8,7 +8,7 @@ const CHAT_FALLBACK_TIMEOUT_MS = 18000;
 function buildSystemPrompt(): string {
   const financeModelsCatalog = financeModels
     .map((model) => [
-      `  - "${model.title}"：${model.summary}（链接：${model.href}）`,
+      `  - [${model.title}](${model.href})：${model.summary}`,
       `    用途：${model.aiGuide.purpose}`,
       `    适用场景：${model.aiGuide.scenarios.join(" / ")}`,
       `    使用步骤：${model.aiGuide.steps.join(" / ")}`,
@@ -18,7 +18,7 @@ function buildSystemPrompt(): string {
 
   const thinkingArticles = thinkingContent.length > 0
     ? thinkingContent
-        .map((a) => `  - "${a.title}"：${a.description}（链接：${a.href}）`)
+        .map((a) => `  - [${a.title}](${a.href})：${a.description}`)
         .join("\n")
     : "  - 暂无内容，正在建设中";
 
@@ -31,9 +31,9 @@ function buildSystemPrompt(): string {
 - 邮箱: yinpengtao2002@gmail.com
 
 网站结构：
-- 财务模型：/finance
-- 思考与方法：/thinking-lab
-- 联系：/#contact
+- [财务模型](/finance)
+- [思考与方法](/thinking-lab)
+- [联系](/#contact)
 
 财务模型库：
 ${financeModelsCatalog}
@@ -46,6 +46,7 @@ ${thinkingArticles}
 - 保持简洁，通常 2-4 句话
 - 当用户问某个模型怎么用时，优先用模型说明里的用途、适用场景、使用步骤和示例数据回答
 - 推荐模型或文章时，必须使用 Markdown 链接格式：[标题](路径)
+- 提到站内页面时，不要只裸写 /finance 或 /thinking-lab；必须写成 [财务模型](/finance)、[思考与方法](/thinking-lab) 这样的 Markdown 链接
 - 需要写公式时，使用 Markdown LaTeX：行内公式用 $...$，单独成行公式用 $$...$$
 - 避免暴露内部实现、内容生成机制或调试语言
 - 如果用户问你是什么模型，不要声称具体模型版本；你可以说："我是 Lucas Yin 网站接入的 AI 助手，具体底层模型由网站配置决定。"

@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type MouseEvent, type TouchEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+  type TouchEvent,
+} from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import FinanceModelPreview from "@/components/finance/FinanceModelPreview";
@@ -35,9 +43,13 @@ const modelDetails: Record<string, { focus: string; detail: string; points: stri
 export default function HomeFinanceSection() {
   const [activeSlug, setActiveSlug] = useState(DEFAULT_MODEL_SLUG);
   const [mobileCarouselIndex, setMobileCarouselIndex] = useState(0);
+  const [mobileCarouselVisualIndex, setMobileCarouselVisualIndex] = useState(1);
+  const [mobileCarouselTransitionEnabled, setMobileCarouselTransitionEnabled] = useState(true);
+  const [mobileCarouselInteractionKey, setMobileCarouselInteractionKey] = useState(0);
   const mobileSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const mobileSwipeMovedRef = useRef(false);
   const suppressMobileSlideClickRef = useRef(false);
+  const mobileCarouselResetFrameRef = useRef<number | null>(null);
   const defaultModel =
     financeModels.find((model) => model.slug === DEFAULT_MODEL_SLUG) ??
     financeModels.at(0);
@@ -51,26 +63,58 @@ export default function HomeFinanceSection() {
     ],
     [],
   );
+  const mobileCarouselSlides = useMemo(() => {
+    if (switcherModels.length <= 1) return switcherModels;
+    return [switcherModels.at(-1)!, ...switcherModels, switcherModels[0]!];
+  }, [switcherModels]);
+  const restoreMobileCarouselTransition = useCallback(() => {
+    if (mobileCarouselResetFrameRef.current) {
+      window.cancelAnimationFrame(mobileCarouselResetFrameRef.current);
+    }
+
+    mobileCarouselResetFrameRef.current = window.requestAnimationFrame(() => {
+      mobileCarouselResetFrameRef.current = window.requestAnimationFrame(() => {
+        setMobileCarouselTransitionEnabled(true);
+        mobileCarouselResetFrameRef.current = null;
+      });
+    });
+  }, []);
+  const updateMobileCarousel = useCallback((direction: 1 | -1) => {
+    if (switcherModels.length <= 1) return;
+
+    setMobileCarouselTransitionEnabled(true);
+    setMobileCarouselIndex(
+      (index) => (index + direction + switcherModels.length) % switcherModels.length,
+    );
+    setMobileCarouselVisualIndex((index) => index + direction);
+  }, [switcherModels.length]);
 
   useEffect(() => {
     if (switcherModels.length <= 1) return;
 
     const timer = window.setInterval(() => {
-      setMobileCarouselIndex((index) => (index + 1) % switcherModels.length);
+      updateMobileCarousel(1);
     }, 3600);
 
     return () => window.clearInterval(timer);
-  }, [switcherModels.length]);
+  }, [switcherModels.length, mobileCarouselInteractionKey, updateMobileCarousel]);
+
+  useEffect(() => () => {
+    if (mobileCarouselResetFrameRef.current) {
+      window.cancelAnimationFrame(mobileCarouselResetFrameRef.current);
+    }
+  }, []);
 
   if (!activeModel) {
     return null;
   }
 
   const activeDetail = modelDetails[activeModel.slug];
-  const updateMobileCarousel = (direction: 1 | -1) => {
-    setMobileCarouselIndex(
-      (index) => (index + direction + switcherModels.length) % switcherModels.length,
-    );
+  const selectMobileCarouselIndex = (index: number) => {
+    setMobileCarouselTransitionEnabled(true);
+    setMobileCarouselIndex(index);
+    setMobileCarouselVisualIndex(index + 1);
+    setMobileCarouselInteractionKey((key) => key + 1);
   };
   const handleMobileCarouselTouchStart = (event: TouchEvent<HTMLDivElement>) => {
     const touch = event.touches[0];
@@ -103,10 +147,26 @@ export default function HomeFinanceSection() {
     if (!isHorizontalSwipe) return;
 
     suppressMobileSlideClickRef.current = true;
+    setMobileCarouselInteractionKey((key) => key + 1);
     updateMobileCarousel(deltaX < 0 ? 1 : -1);
     window.setTimeout(() => {
       suppressMobileSlideClickRef.current = false;
     }, 260);
+  };
+  const handleMobileCarouselTransitionEnd = () => {
+    if (switcherModels.length <= 1) return;
+
+    if (mobileCarouselVisualIndex === 0) {
+      setMobileCarouselTransitionEnabled(false);
+      setMobileCarouselVisualIndex(switcherModels.length);
+      restoreMobileCarouselTransition();
+    }
+
+    if (mobileCarouselVisualIndex === switcherModels.length + 1) {
+      setMobileCarouselTransitionEnabled(false);
+      setMobileCarouselVisualIndex(1);
+      restoreMobileCarouselTransition();
+    }
   };
   const handleMobileCarouselTouchCancel = () => {
     mobileSwipeStartRef.current = null;
@@ -173,13 +233,17 @@ export default function HomeFinanceSection() {
           >
             <div
               className="home-finance-mobile-track"
-              style={{ transform: `translateX(-${mobileCarouselIndex * 100}%)` }}
+              onTransitionEnd={handleMobileCarouselTransitionEnd}
+              style={{
+                transform: `translateX(-${mobileCarouselVisualIndex * 100}%)`,
+                transition: mobileCarouselTransitionEnabled ? undefined : "none",
+              }}
             >
-              {switcherModels.map((model) => {
+              {mobileCarouselSlides.map((model, slideIndex) => {
                 const detail = modelDetails[model.slug];
                 return (
                   <Link
-                    key={model.slug}
+                    key={`${model.slug}-${slideIndex}`}
                     href={model.href}
                     className="home-finance-mobile-slide"
                     onClick={handleMobileSlideClick}
@@ -199,6 +263,19 @@ export default function HomeFinanceSection() {
                 );
               })}
             </div>
+          </div>
+
+          <div className="home-finance-mobile-dots" aria-label="财务模型轮播位置">
+            {switcherModels.map((model, index) => (
+              <button
+                key={model.slug}
+                type="button"
+                className={index === mobileCarouselIndex ? "is-current" : undefined}
+                aria-label={`查看${model.title}`}
+                aria-current={index === mobileCarouselIndex ? "true" : undefined}
+                onClick={() => selectMobileCarouselIndex(index)}
+              />
+            ))}
           </div>
 
           <div

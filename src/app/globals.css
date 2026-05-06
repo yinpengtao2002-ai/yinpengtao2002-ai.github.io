@@ -506,6 +506,10 @@ h6 {
   display: none;
 }
 
+.home-finance-mobile-dots {
+  display: none;
+}
+
 .home-finance-stage,
 .home-finance-switch-card {
   border: 1px solid var(--border);
@@ -1712,6 +1716,41 @@ h6 {
   .home-finance-mobile-slide .finance-model-preview {
     aspect-ratio: 1.72;
     border-bottom: 0;
+  }
+
+  .home-finance-mobile-dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 14px;
+    margin-top: -3px;
+  }
+
+  .home-finance-mobile-dots button {
+    display: block;
+    flex: 0 0 6px;
+    inline-size: 6px;
+    block-size: 6px;
+    min-width: 6px;
+    width: 6px;
+    height: 6px;
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--muted) 42%, transparent);
+    cursor: pointer;
+    padding: 0;
+    transition: width 0.22s ease, background 0.22s ease, opacity 0.22s ease;
+  }
+
+  .home-finance-mobile-dots button.is-current {
+    flex-basis: 18px;
+    inline-size: 18px;
+    min-width: 18px;
+    width: 18px;
+    background: var(--accent);
   }
 
   .home-finance-stage-copy {

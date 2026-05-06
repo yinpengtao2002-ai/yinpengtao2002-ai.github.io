@@ -5,6 +5,9 @@ import { readFile } from "node:fs/promises";
 const { normalizeChatMathMarkdown } = await import(
   "../src/lib/markdown/normalizeChatMathMarkdown.ts"
 );
+const { normalizeChatInternalLinks } = await import(
+  "../src/lib/markdown/normalizeChatInternalLinks.ts"
+);
 
 const chatWidget = await readFile(
   new URL("../src/components/ChatWidget.tsx", import.meta.url),
@@ -57,8 +60,27 @@ test("does not rewrite code spans or fenced code blocks", () => {
 
 test("chat widget normalizes math before markdown rendering", () => {
   assert.match(chatWidget, /normalizeChatMathMarkdown/);
-  assert.match(chatWidget, /normalizeChatMathMarkdown\(text\)/);
+  assert.match(chatWidget, /normalizeChatInternalLinks/);
+  assert.match(chatWidget, /normalizeChatInternalLinks\(normalizeChatMathMarkdown\(text\)\)/);
   assert.match(chatWidget, /className="chat-markdown"/);
+});
+
+test("chat renderer turns bare internal routes into clickable markdown links", () => {
+  const input = "财务模型库（/finance）和思考与方法（/thinking-lab）都可以看，也可以直接进 /finance/business-analysis。";
+
+  assert.equal(
+    normalizeChatInternalLinks(input),
+    "[财务模型库](/finance)和[思考与方法](/thinking-lab)都可以看，也可以直接进 [/finance/business-analysis](/finance/business-analysis)。"
+  );
+});
+
+test("chat route link normalization keeps existing markdown links and code untouched", () => {
+  const input = [
+    "已有 [财务模型](/finance) 不要改。",
+    "`/thinking-lab` 也不要改。",
+  ].join("\n");
+
+  assert.equal(normalizeChatInternalLinks(input), input);
 });
 
 test("chat API defaults to gpt-5.2 with gpt-5.4 fallback", () => {
@@ -67,4 +89,14 @@ test("chat API defaults to gpt-5.2 with gpt-5.4 fallback", () => {
   assert.match(envExample, /CHAT_MODEL=gpt-5\.2/);
   assert.match(envExample, /CHAT_MODEL_FALLBACK=gpt-5\.4/);
   assert.doesNotMatch(chatRoute, /gpt-5\.4-mini/);
+});
+
+test("chat API tells the model to avoid bare internal routes", () => {
+  assert.match(chatRoute, /\[财务模型\]\(\/finance\)/);
+  assert.match(chatRoute, /\[思考与方法\]\(\/thinking-lab\)/);
+  assert.doesNotMatch(chatRoute, /财务模型：\/finance/);
+  assert.doesNotMatch(chatRoute, /思考与方法：\/thinking-lab/);
+  assert.match(chatRoute, /不要只裸写 \/finance 或 \/thinking-lab/);
+  assert.match(chatRoute, /\[财务模型\]\(\/finance\)/);
+  assert.match(chatRoute, /\[思考与方法\]\(\/thinking-lab\)/);
 });
