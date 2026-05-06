@@ -12,6 +12,20 @@ const viewportHook = await readFile(new URL("../src/lib/useLowMotionMode.ts", im
 
 const publicHomeCopy = [hero, financeSection, thinkingSection, thinkingLab].join("\n");
 
+function cssRule(selector, css = globals, startAt = 0) {
+  const selectorIndex = css.indexOf(selector, startAt);
+  assert.notEqual(selectorIndex, -1, `Missing CSS selector: ${selector}`);
+  const ruleStart = css.indexOf("{", selectorIndex);
+  const ruleEnd = css.indexOf("}", ruleStart);
+  return css.slice(selectorIndex, ruleEnd + 1);
+}
+
+function mobileCssRule(selector) {
+  const mediaIndex = globals.indexOf("@media (max-width: 768px)");
+  assert.notEqual(mediaIndex, -1, "Missing mobile media block");
+  return cssRule(selector, globals, mediaIndex);
+}
+
 test("home hero does not split AI workflow and thinking judgment into separate proof cards", () => {
   assert.doesNotMatch(hero, /title:\s*"AI 工作流"/);
   assert.doesNotMatch(hero, /title:\s*"思考判断"/);
@@ -81,7 +95,7 @@ test("home hero mobile intro moves Lucas upward before revealing the product sta
   assert.match(hero, /key=\{`hero-left-\$\{isMobileLike \? "mobile" : "desktop"\}`\}/);
   assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-hero-slogan\s*\{[\s\S]*display:\s*none/s);
   assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-hero-lede\s*\{[\s\S]*display:\s*none/s);
-  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-hero-copy-card\s*\{[\s\S]*display:\s*none/s);
+  assert.match(mobileCssRule(".home-hero-copy-card"), /display:\s*block/);
   assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-hero-workflow-strip\s*\{[\s\S]*display:\s*grid/s);
 }
 );
@@ -114,28 +128,48 @@ test("home hero uses the product stage visual instead of decorative artifacts", 
   assert.doesNotMatch(hero, /ImageArtifact/);
 });
 
-test("home hero keeps the floating mini widgets as left-edge accents only", () => {
+test("home hero arranges floating mini widgets around the Lucas identity", () => {
   assert.match(hero, /home-hero-floating-widgets/);
   assert.match(hero, /home-mini-widget/);
   assert.match(hero, /home-mini-widget-bars/);
   assert.match(hero, /home-mini-widget-dots/);
+  const leftStart = hero.indexOf('className="home-hero-left"');
+  const leftEnd = hero.indexOf("</motion.div>", leftStart);
+  const leftMarkup = hero.slice(leftStart, leftEnd);
+  const rightStart = hero.indexOf('className="home-hero-right"');
+  const rightEnd = hero.indexOf("</motion.div>", rightStart);
+  const rightMarkup = hero.slice(rightStart, rightEnd);
+  assert.match(leftMarkup, /FloatingMiniWidgets/);
+  assert.match(hero, /function FloatingMiniWidgets/);
+  assert.doesNotMatch(rightMarkup, /home-hero-floating-widgets/);
   assert.match(globals, /\.home-hero-floating-widgets\s*\{/);
   assert.match(globals, /\.home-mini-widget\s*\{/);
   assert.match(globals, /pointer-events:\s*none/);
   assert.match(globals, /position:\s*absolute/);
   assert.match(globals, /\.home-hero-floating-widgets\s*\{[^}]*inset:\s*0/s);
   assert.match(globals, /\.home-hero-floating-widgets\s*\{[^}]*z-index:\s*3/s);
-  assert.match(globals, /\.home-mini-widget-window\s*\{[^}]*left:\s*clamp\(-150px,\s*-10vw,\s*-112px\)/s);
-  assert.match(globals, /\.home-mini-widget-bars\s*\{[^}]*left:\s*clamp\(-118px,\s*-8vw,\s*-86px\)/s);
-  assert.match(globals, /\.home-mini-widget-dots\s*\{[^}]*left:\s*clamp\(-186px,\s*-13vw,\s*-138px\)/s);
-  assert.match(globals, /\.home-mini-widget-status\s*\{[^}]*left:\s*clamp\(-166px,\s*-11vw,\s*-120px\)/s);
+  assert.match(globals, /\.home-hero-left\s*\{[^}]*position:\s*relative/s);
+  assert.match(globals, /\.home-hero-left\s*>\s*:not\(\.home-hero-floating-widgets\)\s*\{/);
+  assert.match(globals, /\.home-mini-widget-window\s*\{[^}]*top:\s*clamp\(-76px,\s*-8vh,\s*-48px\)[^}]*left:\s*clamp\(4px,\s*2\.4vw,\s*34px\)/s);
+  assert.match(globals, /\.home-mini-widget-status\s*\{[^}]*top:\s*clamp\(-58px,\s*-6vh,\s*-34px\)[^}]*right:\s*clamp\(8px,\s*2\.6vw,\s*44px\)/s);
+  assert.match(globals, /\.home-mini-widget-dots\s*\{[^}]*bottom:\s*clamp\(-70px,\s*-7vh,\s*-44px\)[^}]*left:\s*clamp\(0px,\s*2vw,\s*32px\)/s);
+  assert.match(globals, /\.home-mini-widget-bars\s*\{[^}]*bottom:\s*clamp\(-62px,\s*-6vh,\s*-36px\)[^}]*right:\s*clamp\(14px,\s*3vw,\s*48px\)/s);
   assert.doesNotMatch(globals, /\.home-mini-widget-dots\s*\{[^}]*right:/s);
-  assert.doesNotMatch(globals, /\.home-mini-widget-status\s*\{[^}]*right:/s);
-  assert.match(globals, /@media\s*\(max-width:\s*1180px\)[\s\S]*\.home-hero-floating-widgets\s*\{[\s\S]*display:\s*none/s);
+  assert.doesNotMatch(globals, /\.home-mini-widget-window\s*\{[^}]*right:/s);
+  assert.match(globals, /@media\s*\(max-width:\s*1180px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-hero-floating-widgets\s*\{[\s\S]*display:\s*none/s);
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-hero-floating-widgets\s*\{[\s\S]*display:\s*block/s);
   assert.match(globals, /\.product-stage-visual\s*\{[^}]*z-index:\s*2/s);
   assert.match(globals, /@keyframes\s+home-widget-float/);
   assert.match(globals, /animation:\s*home-widget-float/);
   assert.match(globals, /@keyframes\s+home-bar-breathe/);
+});
+
+test("home mobile hero keeps the finance CTA card as a compact section", () => {
+  assert.match(hero, /home-hero-copy-card/);
+  assert.match(hero, /查看财务模型/);
+  const mobileCopyCard = mobileCssRule(".home-hero-copy-card");
+  assert.doesNotMatch(mobileCopyCard, /display:\s*none/);
+  assert.match(mobileCopyCard, /display:\s*block/);
 });
 
 test("visitor-facing copy avoids redesign-process language", () => {
@@ -180,12 +214,25 @@ test("homepage finance section previews models as a composed showcase", () => {
   assert.doesNotMatch(financeSection, /FinanceModelLibrary compact/);
 });
 
-test("homepage finance section becomes a swipeable model preview carousel on mobile", () => {
+test("homepage finance section uses an automatic mobile preview carousel with four model entries below", () => {
+  assert.match(financeSection, /useEffect/);
+  assert.match(financeSection, /mobileCarouselIndex/);
+  assert.match(financeSection, /setInterval/);
+  assert.match(financeSection, /home-finance-mobile-carousel/);
+  assert.match(financeSection, /home-finance-mobile-track/);
+  assert.match(financeSection, /home-finance-mobile-slide/);
+  assert.match(financeSection, /translateX\(\-\$\{mobileCarouselIndex \* 100\}%\)/);
   assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-finance-section\s*\{[\s\S]*height:\s*100svh/s);
-  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-finance-stage\s*\{[\s\S]*display:\s*none/s);
-  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-finance-switcher\s*\{[\s\S]*display:\s*flex[\s\S]*overflow-x:\s*auto[\s\S]*scroll-snap-type:\s*x mandatory/s);
-  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-finance-switch-card\s*\{[\s\S]*flex:\s*0 0/s);
-  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-finance-switch-card \.finance-model-preview\s*\{[\s\S]*display:\s*block/s);
+  assert.match(cssRule(".home-finance-mobile-carousel"), /display:\s*none/);
+  assert.match(mobileCssRule(".home-finance-mobile-carousel"), /display:\s*block/);
+  assert.match(mobileCssRule(".home-finance-mobile-track"), /display:\s*flex[\s\S]*transition:\s*transform/);
+  assert.match(mobileCssRule(".home-finance-mobile-slide"), /flex:\s*0 0 100%/);
+  assert.match(mobileCssRule(".home-finance-stage"), /display:\s*none/);
+  const mobileSwitcher = mobileCssRule(".home-finance-switcher");
+  assert.match(mobileSwitcher, /display:\s*grid/);
+  assert.match(mobileSwitcher, /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
+  assert.doesNotMatch(mobileSwitcher, /overflow-x:\s*auto/);
+  assert.match(mobileCssRule(".home-finance-switch-card .finance-model-preview"), /display:\s*none/);
 }
 );
 

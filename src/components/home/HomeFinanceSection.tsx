@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import FinanceModelPreview from "@/components/finance/FinanceModelPreview";
@@ -33,6 +33,7 @@ const modelDetails: Record<string, { focus: string; detail: string; points: stri
 
 export default function HomeFinanceSection() {
   const [activeSlug, setActiveSlug] = useState(DEFAULT_MODEL_SLUG);
+  const [mobileCarouselIndex, setMobileCarouselIndex] = useState(0);
   const defaultModel =
     financeModels.find((model) => model.slug === DEFAULT_MODEL_SLUG) ??
     financeModels.at(0);
@@ -43,6 +44,16 @@ export default function HomeFinanceSection() {
     ...financeModels.filter((model) => model.slug === DEFAULT_MODEL_SLUG),
     ...financeModels.filter((model) => model.slug !== DEFAULT_MODEL_SLUG),
   ];
+
+  useEffect(() => {
+    if (switcherModels.length <= 1) return;
+
+    const timer = window.setInterval(() => {
+      setMobileCarouselIndex((index) => (index + 1) % switcherModels.length);
+    }, 3600);
+
+    return () => window.clearInterval(timer);
+  }, [switcherModels.length]);
 
   if (!activeModel) {
     return null;
@@ -92,6 +103,36 @@ export default function HomeFinanceSection() {
               priority
             />
           </Link>
+
+          <div className="home-finance-mobile-carousel" aria-label="财务模型预览轮播">
+            <div
+              className="home-finance-mobile-track"
+              style={{ transform: `translateX(-${mobileCarouselIndex * 100}%)` }}
+            >
+              {switcherModels.map((model) => {
+                const detail = modelDetails[model.slug];
+                return (
+                  <Link
+                    key={model.slug}
+                    href={model.href}
+                    className="home-finance-mobile-slide"
+                  >
+                    <div className="home-finance-mobile-copy">
+                      <span className="home-finance-category">
+                        {getCategoryLabel(model.categoryId)}
+                      </span>
+                      <h3>{model.title}</h3>
+                      <p>{detail?.focus ?? model.summary}</p>
+                    </div>
+                    <FinanceModelPreview
+                      src={model.previewImage}
+                      alt={model.previewAlt}
+                    />
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
 
           <div
             className="home-finance-switcher"

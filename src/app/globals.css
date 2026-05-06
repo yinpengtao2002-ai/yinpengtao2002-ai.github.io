@@ -126,11 +126,19 @@ h6 {
 }
 
 .home-hero-left {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   min-width: 0;
+  padding-block: clamp(1rem, 3.8vh, 2rem);
   text-align: left;
+}
+
+.home-hero-left > :not(.home-hero-floating-widgets) {
+  position: relative;
+  z-index: 4;
 }
 
 .home-hero-right {
@@ -494,6 +502,10 @@ h6 {
   gap: 14px;
 }
 
+.home-finance-mobile-carousel {
+  display: none;
+}
+
 .home-finance-stage,
 .home-finance-switch-card {
   border: 1px solid var(--border);
@@ -658,8 +670,8 @@ h6 {
 }
 
 .home-mini-widget-window {
-  top: 18%;
-  left: clamp(-150px, -10vw, -112px);
+  top: clamp(-76px, -8vh, -48px);
+  left: clamp(4px, 2.4vw, 34px);
   width: 92px;
   height: 60px;
   --widget-duration: 7.4s;
@@ -709,8 +721,8 @@ h6 {
 }
 
 .home-mini-widget-bars {
-  top: 70%;
-  left: clamp(-118px, -8vw, -86px);
+  bottom: clamp(-62px, -6vh, -36px);
+  right: clamp(14px, 3vw, 48px);
   display: flex;
   align-items: flex-end;
   gap: 7px;
@@ -756,8 +768,8 @@ h6 {
 }
 
 .home-mini-widget-dots {
-  top: 43%;
-  left: clamp(-186px, -13vw, -138px);
+  bottom: clamp(-70px, -7vh, -44px);
+  left: clamp(0px, 2vw, 32px);
   width: 118px;
   height: 68px;
   --widget-duration: 8.5s;
@@ -793,8 +805,8 @@ h6 {
 .home-mini-widget-dots span:nth-child(14) { left: 124px; top: 52px; width: 4px; height: 4px; background: color-mix(in srgb, var(--foreground) 36%, transparent); }
 
 .home-mini-widget-status {
-  top: 58%;
-  left: clamp(-166px, -11vw, -120px);
+  top: clamp(-58px, -6vh, -34px);
+  right: clamp(8px, 2.6vw, 44px);
   display: grid;
   grid-template-columns: 18px auto 40px;
   align-items: center;
@@ -830,7 +842,7 @@ h6 {
   background: color-mix(in srgb, var(--accent-secondary) 25%, var(--border));
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1180px) and (min-width: 769px) {
   .home-hero-floating-widgets {
     display: none;
   }
@@ -1205,25 +1217,25 @@ h6 {
   }
 
   .home-mini-widget-window {
-    left: clamp(-138px, -9vw, -100px);
+    left: clamp(0px, 1.6vw, 22px);
     width: 88px;
     height: 58px;
   }
 
   .home-mini-widget-bars {
-    left: clamp(-120px, -8vw, -84px);
+    right: clamp(8px, 2vw, 34px);
     width: 96px;
     height: 62px;
   }
 
   .home-mini-widget-dots {
-    left: clamp(-176px, -12vw, -126px);
+    left: clamp(0px, 1.4vw, 24px);
     width: 112px;
     height: 66px;
   }
 
   .home-mini-widget-status {
-    left: clamp(-154px, -10vw, -112px);
+    right: clamp(8px, 1.8vw, 32px);
   }
 
   .home-hero-copy-card {
@@ -1465,7 +1477,45 @@ h6 {
 
 @media (max-width: 768px) {
   .home-hero-floating-widgets {
-    display: none;
+    display: block;
+    inset: -34px 0 -30px;
+    z-index: 1;
+  }
+
+  .home-mini-widget {
+    transform: scale(0.72) rotate(var(--widget-rotate, 0deg));
+  }
+
+  .home-mini-widget-window {
+    top: -18px;
+    left: 2px;
+    width: 74px;
+    height: 50px;
+    --widget-opacity: 0.36;
+  }
+
+  .home-mini-widget-status {
+    top: -16px;
+    right: 0;
+    width: 86px;
+    height: 34px;
+    --widget-opacity: 0.36;
+  }
+
+  .home-mini-widget-dots {
+    bottom: -20px;
+    left: 0;
+    width: 92px;
+    height: 54px;
+    --widget-opacity: 0.32;
+  }
+
+  .home-mini-widget-bars {
+    right: 2px;
+    bottom: -20px;
+    width: 76px;
+    height: 54px;
+    --widget-opacity: 0.34;
   }
 
   .home-viewport {
@@ -1485,16 +1535,17 @@ h6 {
 
   .home-hero-frame {
     justify-content: center;
-    gap: 0.65rem;
+    gap: 0.58rem;
   }
 
   .home-hero-split {
     grid-template-columns: 1fr;
-    gap: 0.72rem;
+    gap: 0.58rem;
   }
 
   .home-hero-left {
     align-items: center;
+    padding-block: 0.9rem;
     text-align: center;
   }
 
@@ -1531,7 +1582,8 @@ h6 {
   }
 
   .home-hero-copy-card {
-    display: none;
+    display: block;
+    padding: 0.76rem 0.85rem;
   }
 
   .home-hero-kicker {
@@ -1540,15 +1592,15 @@ h6 {
   }
 
   .home-hero-headline {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
 
   .home-headline-mark {
-    font-size: 1.25rem;
+    font-size: 1.08rem;
   }
 
   .home-headline-line {
-    font-size: 0.95rem;
+    font-size: 0.82rem;
     line-height: 1.28;
   }
 
@@ -1565,7 +1617,7 @@ h6 {
   }
 
   .product-stage-visual {
-    height: clamp(172px, 28svh, 230px);
+    height: clamp(142px, 22svh, 196px);
   }
 
   .home-primary-action {
@@ -1637,12 +1689,65 @@ h6 {
   }
 
   .home-finance-showcase {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     min-height: 0;
   }
 
   .home-finance-stage {
     display: none;
+  }
+
+  .home-finance-mobile-carousel {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--card) 94%, transparent);
+    box-shadow: 0 18px 46px rgba(20, 20, 19, 0.08);
+  }
+
+  .home-finance-mobile-track {
+    display: flex;
+    transition: transform 0.62s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
+
+  .home-finance-mobile-slide {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    flex: 0 0 100%;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .home-finance-mobile-copy {
+    padding: 0.86rem 0.9rem 0.68rem;
+  }
+
+  .home-finance-mobile-copy h3 {
+    color: var(--foreground);
+    font-size: 1.18rem;
+    line-height: 1.24;
+    margin: 6px 0 5px;
+  }
+
+  .home-finance-mobile-copy p {
+    display: -webkit-box;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.45;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+  }
+
+  .home-finance-mobile-slide .finance-model-preview {
+    aspect-ratio: 1.72;
+    border-bottom: 0;
   }
 
   .home-finance-stage-copy {
@@ -1689,16 +1794,12 @@ h6 {
   }
 
   .home-finance-switcher {
-    display: flex;
-    grid-template-columns: none;
-    gap: 10px;
-    margin-inline: -16px;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    padding: 2px 16px 12px;
-    scroll-padding-inline: 16px;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-inline: 0;
+    overflow: visible;
+    padding: 0;
   }
 
   .home-finance-switcher::-webkit-scrollbar {
@@ -1706,23 +1807,21 @@ h6 {
   }
 
   .home-finance-switch-card {
-    flex: 0 0 min(84%, 330px);
-    scroll-snap-align: center;
+    min-height: 88px;
   }
 
   .home-finance-switch-card .finance-model-preview {
-    display: block;
-    aspect-ratio: 1.42;
+    display: none;
   }
 
   .home-finance-switch-copy {
-    padding: 10px 11px 11px;
+    padding: 10px;
   }
 
   .home-finance-switch-copy strong {
     display: -webkit-box;
-    min-height: 34px;
-    font-size: 13px;
+    min-height: 32px;
+    font-size: 12.5px;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     overflow: hidden;

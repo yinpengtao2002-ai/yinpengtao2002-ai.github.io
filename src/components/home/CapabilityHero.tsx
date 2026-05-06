@@ -88,6 +88,7 @@ export default function CapabilityHero() {
             transition={leftTransition}
             className="home-hero-left"
           >
+            <FloatingMiniWidgets />
             <p className="home-hero-eyebrow">Lucas Yin · 奇瑞汽车国际财务 BP</p>
             <h1 className="home-hero-title">
               <span className="gradient-text">Lucas<br />Yin</span>
@@ -108,35 +109,6 @@ export default function CapabilityHero() {
             className="home-hero-right"
           >
             <div className="home-hero-right-stack">
-              <div className="home-hero-floating-widgets" aria-hidden="true">
-                <div className="home-mini-widget home-mini-widget-window">
-                  <div className="home-mini-widget-chrome">
-                    <span />
-                    <span />
-                    <span />
-                  </div>
-                  <div className="home-mini-widget-lines">
-                    <span />
-                    <span />
-                  </div>
-                </div>
-                <div className="home-mini-widget home-mini-widget-bars">
-                  <span />
-                  <span />
-                  <span />
-                  <span />
-                </div>
-                <div className="home-mini-widget home-mini-widget-dots">
-                  {Array.from({ length: 14 }).map((_, index) => (
-                    <span key={index} />
-                  ))}
-                </div>
-                <div className="home-mini-widget home-mini-widget-status">
-                  <span />
-                  <strong>AI</strong>
-                  <em />
-                </div>
-              </div>
               <div className="home-hero-copy-card">
                 <p className="home-hero-kicker">Capability Profile</p>
                 <h2 className="home-hero-headline">
@@ -172,5 +144,39 @@ export default function CapabilityHero() {
         </div>
       </div>
     </section>
+  );
+}
+
+function FloatingMiniWidgets() {
+  return (
+    <div className="home-hero-floating-widgets" aria-hidden="true">
+      <div className="home-mini-widget home-mini-widget-window">
+        <div className="home-mini-widget-chrome">
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="home-mini-widget-lines">
+          <span />
+          <span />
+        </div>
+      </div>
+      <div className="home-mini-widget home-mini-widget-bars">
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
+      <div className="home-mini-widget home-mini-widget-dots">
+        {Array.from({ length: 14 }).map((_, index) => (
+          <span key={index} />
+        ))}
+      </div>
+      <div className="home-mini-widget home-mini-widget-status">
+        <span />
+        <strong>AI</strong>
+        <em />
+      </div>
+    </div>
   );
 }
