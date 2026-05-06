@@ -215,6 +215,9 @@ test("homepage finance section previews models as a composed showcase", () => {
   assert.match(financeSection, /home-finance-showcase/);
   assert.match(financeSection, /home-finance-stage/);
   assert.match(financeSection, /home-finance-stage-motion/);
+  assert.match(financeSection, /home-finance-reveal/);
+  assert.match(financeSection, /whileInView/);
+  assert.match(financeSection, /viewport=\{\{ once: true, amount: 0\.28 \}\}/);
   assert.match(financeSection, /key=\{`finance-stage-\$\{activeModel\.slug\}`\}/);
   assert.match(financeSection, /home-finance-switcher/);
   assert.match(financeSection, /home-finance-switch-open/);
@@ -224,6 +227,7 @@ test("homepage finance section previews models as a composed showcase", () => {
   assert.match(globals, /@keyframes\s+home-finance-preview-settle/);
   assert.match(globals, /\.home-finance-section \.finance-model-preview-image\s*\{[^}]*object-fit:\s*contain/s);
   assert.match(globals, /\.home-finance-stage \.finance-model-preview\s*\{[^}]*aspect-ratio:\s*1\.5/s);
+  assert.match(cssRule(".home-finance-reveal"), /will-change:\s*transform,\s*opacity/);
   assert.doesNotMatch(financeSection, /FinanceModelLibrary compact/);
 });
 
@@ -279,7 +283,7 @@ test("homepage finance section compresses in short desktop viewports", () => {
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage-motion\s*\{[\s\S]*grid-template-rows:\s*auto minmax\(0,\s*1fr\)/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage \.finance-model-preview\s*\{[\s\S]*aspect-ratio:\s*1\.5/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-point-row\s*\{[\s\S]*display:\s*none/s);
-  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage,\s*\.home-finance-switcher\s*\{[\s\S]*height:\s*100%/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage,\s*\.home-finance-stage-frame,\s*\.home-finance-switcher\s*\{[\s\S]*height:\s*100%/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-switcher\s*\{[\s\S]*grid-template-rows:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-switch-card \.finance-model-preview\.compact\s*\{[\s\S]*aspect-ratio:\s*1\.72/s);
   assert.doesNotMatch(globals, /\.home-finance-stage,\s*\.home-finance-switcher\s*\{[\s\S]*height:\s*min\(420px,\s*calc\(100dvh - 150px\)\)/s);
@@ -299,6 +303,9 @@ test("homepage finance section defaults to the unit attribution model and switch
 
 test("home thinking section uses a visual card and a clear index link", () => {
   assert.match(thinkingSection, /home-thinking-method-index/);
+  assert.match(thinkingSection, /motion/);
+  assert.match(thinkingSection, /whileInView/);
+  assert.match(thinkingSection, /home-thinking-reveal/);
   assert.match(thinkingSection, /next\/image/);
   assert.match(thinkingSection, /home-thinking-visual-card/);
   assert.match(thinkingSection, /thinking-methods-tech\.png/);
@@ -314,6 +321,7 @@ test("home thinking section uses a visual card and a clear index link", () => {
   assert.match(globals, /\.home-thinking-method-index\s*\{/);
   assert.match(globals, /\.home-thinking-list\s*\{/);
   assert.match(globals, /@keyframes\s+home-thinking-card-rise/);
+  assert.match(cssRule(".home-thinking-reveal"), /will-change:\s*transform,\s*opacity/);
   assert.match(cssRule(".home-thinking-item"), /animation:\s*home-thinking-card-rise/);
   assert.match(cssRule(".home-thinking-visual-card"), /animation:\s*home-thinking-card-rise/);
 });
@@ -322,6 +330,8 @@ test("home animation polish respects reduced-motion preferences", () => {
   assert.match(globals, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
   assert.match(globals, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*\.product-stage-motion-layer/s);
   assert.match(globals, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*\.home-finance-stage-motion/s);
+  assert.match(globals, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*\.home-finance-reveal/s);
+  assert.match(globals, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*\.home-thinking-reveal/s);
   assert.match(globals, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*\.home-thinking-item/s);
 });
 

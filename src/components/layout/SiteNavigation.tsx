@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Home, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { MouseEvent } from "react";
 import { scrollToSection } from "@/lib/scroll";
 import { useViewportProfile } from "@/lib/useLowMotionMode";
@@ -13,9 +13,9 @@ const NAV_FONT =
     'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
 
 const NAV_ITEMS = [
-    { label: "首页", href: "/", activePath: "/" },
-    { label: "财务模型", href: "/finance", activePath: "/finance" },
-    { label: "思考与方法", href: "/thinking-lab", activePath: "/thinking-lab" },
+    { label: "首页", href: "/", activePath: "/", sectionId: "home" },
+    { label: "财务模型", href: "/finance", activePath: "/finance", sectionId: "finance" },
+    { label: "思考与方法", href: "/thinking-lab", activePath: "/thinking-lab", sectionId: "thinking" },
     { label: "联系", href: "/#contact", sectionId: "contact" },
 ];
 
@@ -39,8 +39,47 @@ export default function SiteNavigation() {
     const pathname = usePathname() || "/";
     const { isMobileLike } = useViewportProfile();
     const [open, setOpen] = useState(false);
+    const [activeSectionId, setActiveSectionId] = useState("home");
+
+    useEffect(() => {
+        if (pathname !== "/" || typeof window === "undefined" || !("IntersectionObserver" in window)) {
+            return;
+        }
+
+        const sections = NAV_ITEMS
+            .map((item) => item.sectionId)
+            .filter((sectionId): sectionId is string => Boolean(sectionId))
+            .map((sectionId) => document.getElementById(sectionId))
+            .filter((section): section is HTMLElement => Boolean(section));
+
+        if (!sections.length) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const visible = entries
+                    .filter((entry) => entry.isIntersecting)
+                    .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+                if (visible?.target.id) {
+                    setActiveSectionId(visible.target.id);
+                }
+            },
+            {
+                rootMargin: "-34% 0px -48% 0px",
+                threshold: [0.16, 0.32, 0.48, 0.64],
+            },
+        );
+
+        sections.forEach((section) => observer.observe(section));
+        return () => observer.disconnect();
+    }, [pathname]);
 
     if (shouldHideNavigation(pathname)) return null;
+
+    const itemIsActive = (item: (typeof NAV_ITEMS)[number]) => {
+        if (pathname === "/" && item.sectionId) return activeSectionId === item.sectionId;
+        return isActive(pathname, item.activePath);
+    };
 
     const handleClick = (event: MouseEvent<HTMLAnchorElement>, item: (typeof NAV_ITEMS)[number]) => {
         setOpen(false);
@@ -52,7 +91,7 @@ export default function SiteNavigation() {
             return;
         }
 
-        if (pathname === "/" && item.sectionId) {
+        if (pathname === "/" && item.sectionId && item.sectionId !== "home") {
             event.preventDefault();
             scrollToSection(item.sectionId);
         }
@@ -106,7 +145,7 @@ export default function SiteNavigation() {
                         }}
                     >
                         {NAV_ITEMS.map((item) => {
-                            const active = isActive(pathname, item.activePath);
+                            const active = itemIsActive(item);
                             return (
                                 <Link
                                     key={item.label}
@@ -161,13 +200,14 @@ export default function SiteNavigation() {
             }}
         >
             {NAV_ITEMS.map((item) => {
-                const active = isActive(pathname, item.activePath);
+                const active = itemIsActive(item);
                 return (
                     <Link
                         key={item.label}
                         href={item.href}
                         onClick={(event) => handleClick(event, item)}
                         style={{
+                            position: "relative",
                             display: "inline-flex",
                             alignItems: "center",
                             gap: 6,
@@ -182,8 +222,15 @@ export default function SiteNavigation() {
                             fontFamily: NAV_FONT,
                         }}
                     >
-                        {item.href === "/" && <Home style={{ width: 14, height: 14 }} />}
-                        <span>{item.label}</span>
+                            {active && (
+                                <motion.span
+                                    layoutId="home-nav-active-pill"
+                                    className="home-nav-active-pill"
+                                    transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                                />
+                            )}
+                        {item.href === "/" && <Home style={{ position: "relative", zIndex: 1, width: 14, height: 14 }} />}
+                        <span style={{ position: "relative", zIndex: 1 }}>{item.label}</span>
                     </Link>
                 );
             })}

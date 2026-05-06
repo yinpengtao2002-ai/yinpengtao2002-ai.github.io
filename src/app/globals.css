@@ -92,6 +92,21 @@ h6 {
   height: 100dvh;
 }
 
+.page-transition-shell {
+  width: 100%;
+  min-width: 100%;
+  will-change: transform, opacity;
+}
+
+.home-nav-active-pill {
+  position: absolute;
+  inset: 2px;
+  z-index: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--foreground) 8%, var(--card));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 70%, transparent);
+}
+
 .home-viewport {
   min-height: 100dvh;
 }
@@ -569,6 +584,16 @@ h6 {
 
 .home-finance-mobile-dots {
   display: none;
+}
+
+.home-finance-reveal,
+.home-thinking-reveal {
+  will-change: transform, opacity;
+}
+
+.home-finance-stage-frame {
+  display: block;
+  min-height: 100%;
 }
 
 .home-finance-stage,
@@ -1452,6 +1477,7 @@ h6 {
   }
 
   .home-finance-stage,
+  .home-finance-stage-frame,
   .home-finance-switcher {
     height: 100%;
     min-height: 0;
@@ -1794,6 +1820,10 @@ h6 {
     display: none;
   }
 
+  .home-finance-stage-frame {
+    display: none;
+  }
+
   .home-finance-mobile-carousel {
     position: relative;
     display: block;
@@ -2083,6 +2113,7 @@ h6 {
 }
 
 .finance-model-card {
+  height: 100%;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -2091,6 +2122,12 @@ h6 {
     border-color 0.24s ease,
     box-shadow 0.24s ease,
     transform 0.24s ease;
+}
+
+.finance-model-card-link {
+  display: block;
+  height: 100%;
+  text-decoration: none;
 }
 
 .finance-model-library-grid {
@@ -2122,6 +2159,39 @@ h6 {
   padding: 16px;
 }
 
+.finance-model-card-category {
+  color: var(--finance-card-accent, var(--accent-secondary));
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.finance-model-card-title {
+  margin: 10px 0 8px;
+  color: var(--foreground);
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.finance-model-library-grid:not(.compact) .finance-model-card-title {
+  font-size: 19px;
+}
+
+.finance-model-card-summary {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+  margin-bottom: 16px;
+}
+
+.finance-model-card-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .finance-model-preview {
   position: relative;
   width: 100%;
@@ -2145,16 +2215,76 @@ h6 {
 }
 
 @media (max-width: 768px) {
+  .finance-model-library-grid.compact,
+  .finance-model-library-grid.compact.filtered {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .finance-model-library-grid.compact .finance-model-card-link {
+    height: auto;
+  }
+
+  .finance-model-library-grid.compact .finance-model-card {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    min-height: 104px;
+  }
+
   .finance-model-card-body {
     padding: 14px;
+  }
+
+  .finance-model-library-grid.compact .finance-model-card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    padding: 10px 12px;
   }
 
   .finance-model-preview {
     aspect-ratio: 1.34;
   }
 
+  .finance-model-card .finance-model-preview.compact {
+    height: 100%;
+    min-height: 88px;
+    aspect-ratio: 1.28;
+    border-right: 1px solid var(--border);
+    border-bottom: 0;
+  }
+
   .finance-model-preview-image {
     object-position: center top;
+  }
+
+  .finance-model-card-category {
+    font-size: 11px;
+  }
+
+  .finance-model-card-title {
+    display: -webkit-box;
+    margin: 4px 0 4px;
+    font-size: 14px;
+    line-height: 1.32;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+  }
+
+  .finance-model-card-summary {
+    display: -webkit-box;
+    margin-bottom: 7px;
+    font-size: 12px;
+    line-height: 1.45;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+  }
+
+  .finance-model-card-action {
+    font-size: 11.5px;
   }
 }
 
@@ -2442,8 +2572,12 @@ h6 {
 
 @media (prefers-reduced-motion: reduce) {
   .product-stage-motion-layer,
+  .page-transition-shell,
+  .home-nav-active-pill,
+  .home-finance-reveal,
   .home-finance-stage-motion,
   .home-finance-stage-motion .finance-model-preview,
+  .home-thinking-reveal,
   .home-thinking-visual-card,
   .home-thinking-item,
   .chat-route-card {

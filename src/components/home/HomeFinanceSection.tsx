@@ -10,6 +10,7 @@ import {
   type TouchEvent,
 } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import FinanceModelPreview from "@/components/finance/FinanceModelPreview";
 import { financeModelCategories, financeModels } from "@/lib/finance/modelRegistry";
@@ -183,7 +184,13 @@ export default function HomeFinanceSection() {
   return (
     <section id="finance" className="home-viewport home-section home-finance-section">
       <div className="home-shell home-finance-shell">
-        <header className="home-finance-header">
+        <motion.header
+          className="home-finance-header home-finance-reveal"
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.28 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        >
           <div>
             <p className="home-finance-kicker">Finance Model Library</p>
             <h2 className="home-finance-title">按经营问题进入模型</h2>
@@ -194,36 +201,44 @@ export default function HomeFinanceSection() {
           <Link href="/finance" className="home-finance-library-link">
             全部模型 <ArrowRight style={{ width: 15, height: 15 }} />
           </Link>
-        </header>
+        </motion.header>
 
         <div className="home-finance-showcase">
-          <Link href={activeModel.href} className="home-finance-stage">
-            <div key={`finance-stage-${activeModel.slug}`} className="home-finance-stage-motion">
-              <div className="home-finance-stage-copy">
-                <span className="home-finance-category">
-                  {getCategoryLabel(activeModel.categoryId)}
-                </span>
-                <h3>{activeModel.title}</h3>
-                <p>{activeDetail?.focus ?? activeModel.summary}</p>
-                <div className="home-finance-detail">
-                  {activeDetail?.detail ?? activeModel.summary}
+          <motion.div
+            className="home-finance-stage-frame home-finance-reveal"
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.28 }}
+            transition={{ duration: 0.5, delay: 0.06, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Link href={activeModel.href} className="home-finance-stage">
+              <div key={`finance-stage-${activeModel.slug}`} className="home-finance-stage-motion">
+                <div className="home-finance-stage-copy">
+                  <span className="home-finance-category">
+                    {getCategoryLabel(activeModel.categoryId)}
+                  </span>
+                  <h3>{activeModel.title}</h3>
+                  <p>{activeDetail?.focus ?? activeModel.summary}</p>
+                  <div className="home-finance-detail">
+                    {activeDetail?.detail ?? activeModel.summary}
+                  </div>
+                  <div className="home-finance-point-row">
+                    {(activeDetail?.points ?? []).map((point) => (
+                      <span key={point}>{point}</span>
+                    ))}
+                  </div>
+                  <span className="home-finance-open">
+                    打开模型 <ArrowRight style={{ width: 14, height: 14 }} />
+                  </span>
                 </div>
-                <div className="home-finance-point-row">
-                  {(activeDetail?.points ?? []).map((point) => (
-                    <span key={point}>{point}</span>
-                  ))}
-                </div>
-                <span className="home-finance-open">
-                  打开模型 <ArrowRight style={{ width: 14, height: 14 }} />
-                </span>
+                <FinanceModelPreview
+                  src={activeModel.previewImage}
+                  alt={activeModel.previewAlt}
+                  priority
+                />
               </div>
-              <FinanceModelPreview
-                src={activeModel.previewImage}
-                alt={activeModel.previewAlt}
-                priority
-              />
-            </div>
-          </Link>
+            </Link>
+          </motion.div>
 
           <div
             className="home-finance-mobile-carousel"
@@ -280,9 +295,13 @@ export default function HomeFinanceSection() {
             ))}
           </div>
 
-          <div
-            className="home-finance-switcher"
+          <motion.div
+            className="home-finance-switcher home-finance-reveal"
             onMouseLeave={() => setActiveSlug(DEFAULT_MODEL_SLUG)}
+            initial={{ opacity: 0, y: 22 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.28 }}
+            transition={{ duration: 0.5, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
           >
             {switcherModels.map((model, index) => {
               const isActive = model.slug === activeModel.slug;
@@ -311,7 +330,7 @@ export default function HomeFinanceSection() {
                 </Link>
               );
             })}
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

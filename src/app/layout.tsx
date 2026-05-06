@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import ClientShell from "@/components/ClientShell";
+import PageTransition from "@/components/layout/PageTransition";
 
 const BASE_URL = "https://yinpengtao.cn";
 
@@ -49,7 +50,9 @@ export default function RootLayout({
         className="antialiased gradient-bg overflow-x-hidden selection:bg-[#d97757] selection:text-white"
       >
         <ClientShell />
-        <main style={{ width: "100%", minWidth: "100vw", display: "block" }}>{children}</main>
+        <main style={{ width: "100%", minWidth: "100vw", display: "block" }}>
+          <PageTransition>{children}</PageTransition>
+        </main>
       </body>
     </html>
   );

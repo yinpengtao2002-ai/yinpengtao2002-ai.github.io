@@ -53,8 +53,11 @@ export default function FinanceModelLibrary({ compact = false }: { compact?: boo
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: index * 0.04 }}
           >
-            <Link href={model.href} style={{ display: "block", height: "100%", textDecoration: "none" }}>
-              <div className="finance-model-card" style={{ height: "100%" }}>
+            <Link href={model.href} className="finance-model-card-link">
+              <div
+                className="finance-model-card"
+                style={{ "--finance-card-accent": accentColor(model.accent) } as CSSProperties}
+              >
                 <FinanceModelPreview
                   src={model.previewImage}
                   alt={model.previewAlt}
@@ -62,16 +65,16 @@ export default function FinanceModelLibrary({ compact = false }: { compact?: boo
                   priority={index === 0}
                 />
                 <div className="finance-model-card-body">
-                  <span style={{ color: accentColor(model.accent), fontSize: 12, fontWeight: 800 }}>
+                  <span className="finance-model-card-category">
                     {financeModelCategories.find((category) => category.id === model.categoryId)?.label}
                   </span>
-                  <h3 style={{ margin: "10px 0 8px", color: "var(--foreground)", fontSize: compact ? 17 : 19, lineHeight: 1.35 }}>
+                  <h3 className="finance-model-card-title">
                     {model.title}
                   </h3>
-                  <p style={{ color: "var(--muted)", fontSize: 13, lineHeight: 1.7, marginBottom: 16 }}>
+                  <p className="finance-model-card-summary">
                     {model.summary}
                   </p>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--foreground)", fontSize: 13, fontWeight: 800 }}>
+                  <span className="finance-model-card-action">
                     打开模型 <ArrowRight style={{ width: 14, height: 14 }} />
                   </span>
                 </div>

@@ -1,6 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
 import type { CSSProperties } from "react";
 import { thinkingContent } from "@/lib/data/generated/content";
 
@@ -9,7 +12,13 @@ export default function HomeThinkingSection() {
 
   return (
     <section id="thinking" className="home-viewport home-section home-thinking-section">
-      <div className="home-shell home-thinking-method-index">
+      <motion.div
+        className="home-shell home-thinking-method-index home-thinking-reveal"
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.28 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      >
         <div className="home-thinking-visual-card">
           <Image
             src="/images/home/thinking-methods-tech.png"
@@ -45,7 +54,7 @@ export default function HomeThinkingSection() {
             </Link>
           ))}
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }

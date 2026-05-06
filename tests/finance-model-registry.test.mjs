@@ -62,6 +62,24 @@ test("finance model library renders the preview component", async () => {
   assert.match(library, /previewAlt/);
 });
 
+test("finance model library uses a compact mobile list layout", async () => {
+  const library = await readFile(
+    new URL("../src/components/finance/FinanceModelLibrary.tsx", import.meta.url),
+    "utf8"
+  );
+  const globals = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
+
+  assert.match(library, /finance-model-card-link/);
+  assert.match(library, /finance-model-card-category/);
+  assert.match(library, /finance-model-card-title/);
+  assert.match(library, /finance-model-card-summary/);
+  assert.match(library, /finance-model-card-action/);
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.finance-model-library-grid\.compact\s*\{[\s\S]*grid-template-columns:\s*1fr/s);
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.finance-model-card\s*\{[\s\S]*display:\s*grid[\s\S]*grid-template-columns:\s*96px minmax\(0,\s*1fr\)/s);
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.finance-model-card \.finance-model-preview\.compact\s*\{[\s\S]*aspect-ratio:\s*1\.28/s);
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.finance-model-card-summary\s*\{[\s\S]*-webkit-line-clamp:\s*1/s);
+});
+
 test("finance model library keeps filtered cards aligned with the all-model grid", async () => {
   const library = await readFile(
     new URL("../src/components/finance/FinanceModelLibrary.tsx", import.meta.url),
