@@ -16,7 +16,7 @@ export default function HomeThinkingSection() {
         className="home-shell home-thinking-method-index home-thinking-reveal"
         initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.12 }}
+        viewport={{ once: true, amount: 0.28 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       >
         <div className="home-thinking-visual-card">

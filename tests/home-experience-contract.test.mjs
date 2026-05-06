@@ -255,12 +255,10 @@ test("homepage finance section uses an automatic mobile preview carousel with fo
   assert.match(financeSection, /home-finance-mobile-dots/);
   assert.match(financeSection, /aria-label=\{`查看\$\{model\.title\}`\}/);
   assert.match(financeSection, /translateX\(\-\$\{mobileCarouselVisualIndex \* 100\}%\)/);
-  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-section\.home-finance-section\s*\{[\s\S]*height:\s*auto[\s\S]*min-height:\s*auto/s);
-  assert.match(mobileCssRule(".home-finance-section"), /height:\s*auto/);
-  assert.match(mobileCssRule(".home-finance-section"), /min-height:\s*auto/);
-  assert.doesNotMatch(mobileCssRule(".home-section.home-finance-section"), /height:\s*100svh/);
-  assert.doesNotMatch(mobileCssRule(".home-finance-section"), /height:\s*100svh/);
-  assert.match(mobileCssRule(".home-section.home-thinking-section"), /min-height:\s*auto/);
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-section\.home-finance-section\s*\{[\s\S]*height:\s*100svh[\s\S]*min-height:\s*100svh[\s\S]*overflow:\s*hidden/s);
+  assert.match(mobileCssRule(".home-finance-section"), /height:\s*100svh/);
+  assert.match(mobileCssRule(".home-finance-section"), /min-height:\s*100svh/);
+  assert.match(mobileCssRule(".home-section.home-finance-section"), /height:\s*100svh/);
   assert.match(cssRule(".home-finance-mobile-carousel"), /display:\s*none/);
   assert.match(cssRule(".home-finance-mobile-dots"), /display:\s*none/);
   assert.match(mobileCssRule(".home-finance-mobile-carousel"), /display:\s*block/);
@@ -310,7 +308,7 @@ test("home thinking section uses a visual card and a clear index link", () => {
   assert.match(thinkingSection, /home-thinking-method-index/);
   assert.match(thinkingSection, /motion/);
   assert.match(thinkingSection, /whileInView/);
-  assert.match(thinkingSection, /viewport=\{\{ once: true, amount: 0\.12 \}\}/);
+  assert.match(thinkingSection, /viewport=\{\{ once: true, amount: 0\.28 \}\}/);
   assert.match(thinkingSection, /home-thinking-reveal/);
   assert.match(thinkingSection, /next\/image/);
   assert.match(thinkingSection, /home-thinking-visual-card/);
