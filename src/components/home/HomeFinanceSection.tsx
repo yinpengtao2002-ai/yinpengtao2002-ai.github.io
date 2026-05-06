@@ -213,8 +213,8 @@ export default function HomeFinanceSection() {
           <div>
             <p className="home-finance-kicker">MODEL LIBRARY</p>
             <h2 className="home-finance-title">
-              <span className="home-finance-title-prefix">问题驱动的</span>
-              <span className="home-finance-title-main">财务模型</span>
+              <span className="home-finance-title-meta">Finance Models</span>
+              <span className="home-finance-title-copy">问题驱动的财务模型</span>
             </h2>
             <p className="home-finance-intro">
               从复盘、归因、趋势到敏感性，按真实经营问题选择模型。

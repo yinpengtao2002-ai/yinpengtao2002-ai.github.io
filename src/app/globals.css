@@ -559,6 +559,14 @@ h6 {
   display: inline;
 }
 
+.home-finance-title-meta {
+  display: none;
+}
+
+.home-finance-title-copy {
+  display: inline;
+}
+
 .home-finance-intro {
   max-width: 600px;
   color: var(--muted);
@@ -1884,33 +1892,41 @@ h6 {
 
   .home-finance-title {
     display: grid;
-    gap: 4px;
-    line-height: 1;
+    gap: 3px;
+    line-height: 1.05;
     margin-bottom: 0;
   }
 
-  .home-finance-title-prefix {
+  .home-finance-title-meta {
     display: inline-flex;
     align-items: center;
+    gap: 6px;
     width: fit-content;
-    border: 1px solid color-mix(in srgb, var(--accent-secondary) 30%, var(--border));
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--card) 90%, transparent);
-    color: color-mix(in srgb, var(--accent-secondary) 86%, var(--foreground));
+    color: color-mix(in srgb, var(--accent-secondary) 82%, var(--foreground));
     font-family: var(--font-poppins);
-    font-size: 10px;
+    font-size: 9.5px;
     font-weight: 800;
-    letter-spacing: 0.12em;
-    padding: 0.23rem 0.48rem;
+    letter-spacing: 0.16em;
+    line-height: 1;
+    text-transform: uppercase;
   }
 
-  .home-finance-title-main {
+  .home-finance-title-meta::before {
+    content: "";
+    width: 18px;
+    height: 1px;
+    background: color-mix(in srgb, var(--accent-secondary) 52%, transparent);
+  }
+
+  .home-finance-title-copy {
     display: block;
     color: color-mix(in srgb, var(--foreground) 88%, var(--accent));
-    font-family: var(--font-hero-display);
-    font-size: clamp(1.18rem, 5.7vw, 1.48rem);
-    font-weight: 500;
+    font-family: var(--font-poppins);
+    font-size: clamp(1.08rem, 4.8vw, 1.32rem);
+    font-weight: 650;
     letter-spacing: 0;
+    line-height: 1.18;
+    white-space: nowrap;
   }
 
   .home-finance-library-link {
@@ -2721,13 +2737,17 @@ h6 {
     gap: 2px;
   }
 
-  .home-finance-title-prefix {
-    font-size: 9px;
-    padding: 0.18rem 0.42rem;
+  .home-finance-title-meta {
+    gap: 5px;
+    font-size: 8.5px;
   }
 
-  .home-finance-title-main {
-    font-size: clamp(1.06rem, 5.3vw, 1.28rem);
+  .home-finance-title-meta::before {
+    width: 14px;
+  }
+
+  .home-finance-title-copy {
+    font-size: clamp(1rem, 4.8vw, 1.17rem);
   }
 
   .home-finance-showcase {

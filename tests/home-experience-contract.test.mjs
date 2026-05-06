@@ -214,8 +214,10 @@ test("home continue cue stays in normal layout flow", () => {
 test("homepage finance section previews models as a composed showcase", () => {
   assert.match(financeSection, /MODEL LIBRARY/);
   assert.match(financeSection, /问题驱动的[\s\S]*财务模型/);
-  assert.match(financeSection, /home-finance-title-prefix/);
-  assert.match(financeSection, /home-finance-title-main/);
+  assert.match(financeSection, /home-finance-title-meta/);
+  assert.match(financeSection, /home-finance-title-copy/);
+  assert.doesNotMatch(financeSection, /home-finance-title-prefix/);
+  assert.doesNotMatch(financeSection, /home-finance-title-main/);
   assert.match(financeSection, /从复盘、归因、趋势到敏感性，按真实经营问题选择模型。/);
   assert.doesNotMatch(financeSection, /按经营问题进入模型/);
   assert.doesNotMatch(financeSection, /四个模型对应四类常见经营问题/);
@@ -286,8 +288,12 @@ test("homepage finance section uses an automatic mobile preview carousel with fo
   assert.match(mobileCssRule(".home-finance-showcase"), /align-content:\s*start/);
   assert.match(cssRule(".home-finance-mobile-carousel"), /display:\s*none/);
   assert.match(cssRule(".home-finance-mobile-dots"), /display:\s*none/);
-  assert.match(mobileCssRule(".home-finance-title-prefix"), /border:\s*1px solid/);
-  assert.match(mobileCssRule(".home-finance-title-main"), /display:\s*block/);
+  assert.match(mobileCssRule(".home-finance-title-meta"), /display:\s*inline-flex/);
+  assert.match(mobileCssRule(".home-finance-title-meta"), /letter-spacing:\s*0\.16em/);
+  assert.doesNotMatch(mobileCssRule(".home-finance-title-meta"), /border-radius:\s*999px/);
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-finance-title-meta::before\s*\{[\s\S]*width:\s*18px[\s\S]*height:\s*1px/s);
+  assert.match(mobileCssRule(".home-finance-title-copy"), /display:\s*block/);
+  assert.match(mobileCssRule(".home-finance-title-copy"), /font-family:\s*var\(--font-poppins\)/);
   assert.match(mobileCssRule(".home-finance-mobile-carousel"), /display:\s*block/);
   assert.match(mobileCssRule(".home-finance-mobile-carousel"), /min-height:\s*0/);
   assert.match(mobileCssRule(".home-finance-mobile-carousel"), /touch-action:\s*pan-y/);
