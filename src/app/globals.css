@@ -95,6 +95,8 @@ h6 {
 .page-transition-shell {
   width: 100%;
   min-width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   will-change: transform, opacity;
 }
 
