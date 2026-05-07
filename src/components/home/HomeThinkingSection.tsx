@@ -8,7 +8,7 @@ import type { CSSProperties } from "react";
 import { thinkingContent } from "@/lib/data/generated/content";
 
 export default function HomeThinkingSection() {
-  const latest = thinkingContent.slice(0, 4);
+  const latest = thinkingContent.slice(0, 3);
 
   return (
     <section id="thinking" className="home-viewport home-section home-thinking-section">
@@ -24,7 +24,7 @@ export default function HomeThinkingSection() {
             src="/images/home/thinking-methods-tech.png"
             alt="思考与方法内容预览"
             fill
-            sizes="(max-width: 768px) 100vw, 360px"
+            sizes="(max-width: 768px) 100vw, 520px"
             className="home-thinking-visual-image"
           />
           <div className="home-thinking-visual-shade" aria-hidden="true" />
