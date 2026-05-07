@@ -2042,7 +2042,6 @@
             const target = event.target;
             if (target?.closest?.("#dimension-waterfall-touch-card")) return;
             if (target?.closest?.("#dimension-waterfall-chart")) return;
-            dismissWaterfallTouchCard();
         });
 
         root.dataset.waterfallTouchDismissBound = "true";
@@ -2058,6 +2057,7 @@
 
         container.innerHTML = `
             <div class="waterfall-touch-card">
+                <button type="button" class="waterfall-touch-return" data-waterfall-touch-return>返回图表</button>
                 <div class="waterfall-touch-head">
                     <span>${escapeHtml(dimensionLabel(dimension))}</span>
                     <strong>${escapeHtml(item.name)}</strong>
@@ -2071,7 +2071,12 @@
             </div>
         `;
 
+        container.querySelector("[data-waterfall-touch-return]")?.addEventListener("click", () => {
+            renderWaterfallTouchCard(null);
+        });
+
         container.querySelector("[data-touch-drill]")?.addEventListener("click", () => {
+            renderWaterfallTouchCard(null);
             drillToDimensionValue(dimension, item.name);
         });
     }

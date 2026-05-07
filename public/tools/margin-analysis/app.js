@@ -82,7 +82,6 @@ function initWaterfallDismissHandling() {
         if (!(target instanceof Element)) return;
         if (target.closest('.waterfall-touch-host')) return;
         if (target.closest('.waterfall-chart-container')) return;
-        clearWaterfallTouchCards();
         hideWaterfallHoverTooltip();
     });
 }
@@ -1453,7 +1452,9 @@ function renderCharts() {
         touchCardDiv.id = `waterfall-touch-card-${level}`;
         touchCardDiv.className = 'waterfall-touch-host';
         touchCardDiv.setAttribute('aria-live', 'polite');
-        section.appendChild(touchCardDiv);
+        touchCardDiv.setAttribute('role', 'dialog');
+        touchCardDiv.setAttribute('aria-label', '柱子明细');
+        chartDiv.appendChild(touchCardDiv);
 
         // 明细数据表 (可折叠)
         const detailDetails = document.createElement('details');
@@ -1509,7 +1510,7 @@ function buildChartInteractionGuide() {
 
     const mobile = document.createElement('span');
     mobile.className = 'chart-interaction-item';
-    mobile.textContent = '手机端：点击柱子展开明细卡，再点卡片按钮进入下一层';
+    mobile.textContent = '手机端：点击柱子进入明细层，用返回键回到图表';
 
     const viewSwitch = document.createElement('span');
     viewSwitch.className = 'chart-interaction-item';
@@ -1895,6 +1896,7 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
     const plotMethod = graphDiv?.classList?.contains('js-plotly-plot') ? Plotly.react : Plotly.newPlot;
 
     plotMethod(containerId, [trace], layout, config).then(() => {
+        ensureWaterfallTouchCardContainer(level);
         attachWaterfallInteractions(containerId, dimCol, level);
     });
 }
@@ -2087,6 +2089,10 @@ function positionWaterfallTooltip(tooltip, event) {
 }
 
 function buildWaterfallTooltipHTML(meta, mode = 'hover') {
+    const touchReturn = mode === 'touch'
+        ? '<button type="button" class="waterfall-touch-return" data-waterfall-touch-return>返回图表</button>'
+        : '';
+
     if (meta.type === 'base' || meta.type === 'current') {
         const delta = meta.currMargin - meta.baseMargin;
         const isCurrent = meta.type === 'current';
@@ -2095,6 +2101,7 @@ function buildWaterfallTooltipHTML(meta, mode = 'hover') {
         const displayMetricLabel = meta.displayMetricLabel || meta.unitMetricLabel;
         return `
             <div class="waterfall-tooltip-card ${isCurrent ? 'total' : 'base'}">
+                ${touchReturn}
                 <div class="waterfall-tooltip-kicker">${escapeHTML(kicker)}</div>
                 <div class="waterfall-tooltip-title">${escapeHTML(meta.label)}</div>
                 <div class="waterfall-tooltip-main">
@@ -2126,6 +2133,7 @@ function buildWaterfallTooltipHTML(meta, mode = 'hover') {
 
     return `
         <div class="waterfall-tooltip-card ${tone}">
+            ${touchReturn}
             <div class="waterfall-tooltip-kicker">${escapeHTML(meta.dimName)}贡献拆解</div>
             <div class="waterfall-tooltip-title">${title}</div>
             <div class="waterfall-tooltip-main">
@@ -2186,13 +2194,39 @@ function handleWaterfallBarTap(meta, dimCol, level) {
     renderWaterfallTouchCard(meta, dimCol, level);
 }
 
+function ensureWaterfallTouchCardContainer(level) {
+    const chart = document.getElementById(`waterfall-chart-${level}`);
+    if (!chart) return null;
+
+    let container = document.getElementById(`waterfall-touch-card-${level}`);
+    if (!container) {
+        container = document.createElement('div');
+        container.id = `waterfall-touch-card-${level}`;
+        container.className = 'waterfall-touch-host';
+    }
+
+    container.setAttribute('aria-live', 'polite');
+    container.setAttribute('role', 'dialog');
+    container.setAttribute('aria-label', '柱子明细');
+
+    if (container.parentElement !== chart) {
+        chart.appendChild(container);
+    }
+
+    return container;
+}
+
 function renderWaterfallTouchCard(meta, dimCol, level) {
-    const container = document.getElementById(`waterfall-touch-card-${level}`);
+    const container = ensureWaterfallTouchCardContainer(level);
     if (!container) return;
 
     clearWaterfallTouchCards(container);
     container.innerHTML = buildWaterfallTooltipHTML(meta, 'touch');
     container.classList.add('visible');
+
+    container.querySelector('[data-waterfall-touch-return]')?.addEventListener('click', () => {
+        clearWaterfallTouchCards();
+    });
 
     const drillButton = container.querySelector('[data-waterfall-touch-drill]');
     if (drillButton) {

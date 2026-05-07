@@ -229,7 +229,7 @@ export default function BusinessAnalysisTool() {
                         <div id="ranking-filter-status" className="ranking-filter-status" />
                         <div className="waterfall-interaction-note" aria-label="维度瀑布图交互方式">
                             <span><strong>电脑端</strong> 悬停柱子查看实际、预算、差异；点击柱子下钻。</span>
-                            <span><strong>手机端</strong> 点击柱子展开明细卡，再点卡片按钮进入下一层。</span>
+                            <span><strong>手机端</strong> 点击柱子进入明细层，用返回键回到图表。</span>
                         </div>
                         <div id="ranking-visual" className="dimension-waterfall" />
                     </article>
