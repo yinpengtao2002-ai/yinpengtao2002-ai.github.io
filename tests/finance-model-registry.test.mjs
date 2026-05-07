@@ -106,6 +106,9 @@ test("finance index page keeps the model library high and readable", async () =>
   assert.match(page, /finance-index-page/);
   assert.match(page, /finance-index-shell/);
   assert.match(page, /finance-index-intro/);
+  assert.match(page, /问题驱动的财务模型/);
+  assert.match(page, /从复盘、归因、趋势到敏感性，按真实经营问题选择模型。/);
+  assert.doesNotMatch(page, /按经营问题进入模型/);
   assert.doesNotMatch(page, /style=\{\{/);
   assert.match(globals, /\.finance-index-page\s*\{/);
   assert.match(globals, /padding:\s*clamp\(4\.4rem,\s*7vh,\s*5\.2rem\)\s*0\s*2rem/);

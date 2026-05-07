@@ -14,6 +14,15 @@ const NOTION_TOKEN = process.env.NOTION_TOKEN;
 const NOTION_AI_DB = process.env.NOTION_AI_DATABASE_ID;
 const NOTION_FINANCE_DB = process.env.NOTION_FINANCE_DATABASE_ID;
 
+const GLOBAL_SEMANTIC_SLUG_OVERRIDES = {
+    '月光渡口': 'moonlight-ferry',
+    'notion-355e349d753a': 'moonlight-ferry',
+    '给人文工作者的 AI 使用指南': 'humanities-ai-guide',
+    'notion-24ae349d753a': 'humanities-ai-guide',
+    '当避险失灵：2026美伊战争后股市与黄金双杀的深层逻辑': 'gold-stock-selloff-iran-war-2026',
+    'notion-fbde349d753a': 'gold-stock-selloff-iran-war-2026',
+};
+
 const SEMANTIC_SLUG_OVERRIDES = {
     ai: {
         'notion-24ae349d753a': 'humanities-ai-guide',
@@ -33,7 +42,11 @@ const SEMANTIC_SLUG_OVERRIDES = {
 
 function getSemanticSlug(category, item) {
     const overrides = SEMANTIC_SLUG_OVERRIDES[category] || {};
-    return overrides[item.slug] || overrides[item.title] || item.slug;
+    return overrides[item.slug] ||
+        overrides[item.title] ||
+        GLOBAL_SEMANTIC_SLUG_OVERRIDES[item.slug] ||
+        GLOBAL_SEMANTIC_SLUG_OVERRIDES[item.title] ||
+        item.slug;
 }
 
 function extractGeneratedArray(source, exportName) {
@@ -148,13 +161,25 @@ function renumberContent(items) {
     return items.map((item, index) => ({ ...item, id: index + 1 }));
 }
 
+function contentDedupeKeys(item) {
+    const keys = [
+        item.slug,
+        item.title,
+        getSemanticSlug(item.legacyCategory || item.category || '', item),
+        ...(item.aliases || []),
+    ];
+    return keys
+        .filter(Boolean)
+        .map((key) => String(key).trim().toLowerCase());
+}
+
 function dedupeContentItems(items) {
     const seen = new Set();
     const result = [];
     for (const item of items) {
-        const key = item.slug || item.title;
-        if (seen.has(key)) continue;
-        seen.add(key);
+        const keys = contentDedupeKeys(item);
+        if (keys.some((key) => seen.has(key))) continue;
+        keys.forEach((key) => seen.add(key));
         result.push(item);
     }
     return result;
