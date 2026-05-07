@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import FinanceModelLibrary from "@/components/finance/FinanceModelLibrary";
-import { financeModels } from "@/lib/finance/modelRegistry";
 
 export const metadata: Metadata = {
   title: "财务模型｜Lucas Yin",
@@ -16,7 +15,7 @@ export default function FinancePage() {
             问题驱动的财务模型
           </h1>
           <p className="finance-index-intro">
-            从复盘、归因、趋势到敏感性，按真实经营问题选择模型。目前共有 {financeModels.length} 个模型，后续会继续扩展。
+            从复盘、归因、趋势到敏感性，按真实经营问题选择模型。
           </p>
         </section>
         <FinanceModelLibrary compact />

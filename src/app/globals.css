@@ -1163,6 +1163,7 @@ h6 {
 .finance-index-hero-card {
   position: relative;
   isolation: isolate;
+  width: min(680px, 100%);
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
   border-radius: 10px;
@@ -1191,7 +1192,7 @@ h6 {
   position: relative;
   color: var(--foreground);
   font-family: var(--font-hero-display);
-  font-size: clamp(2.35rem, 5.6vw, 4.2rem);
+  font-size: clamp(2.15rem, 4.25vw, 3.3rem);
   font-weight: 500;
   line-height: 1.03;
   letter-spacing: 0;
