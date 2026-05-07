@@ -11,16 +11,14 @@ export default function FinancePage() {
   return (
     <div className="finance-index-page">
       <main className="home-shell finance-index-shell">
-        <p className="finance-index-kicker">
-          MODEL LIBRARY
-        </p>
-        <h1 className="finance-index-title">
-          <span className="finance-index-title-meta">Finance Models</span>
-          <span className="finance-index-title-copy">问题驱动的财务模型</span>
-        </h1>
-        <p className="finance-index-intro">
-          从复盘、归因、趋势到敏感性，按真实经营问题选择模型。目前共有 {financeModels.length} 个模型，后续会继续扩展。
-        </p>
+        <section className="finance-index-hero-card" aria-labelledby="finance-index-title">
+          <h1 id="finance-index-title" className="finance-index-title">
+            问题驱动的财务模型
+          </h1>
+          <p className="finance-index-intro">
+            从复盘、归因、趋势到敏感性，按真实经营问题选择模型。目前共有 {financeModels.length} 个模型，后续会继续扩展。
+          </p>
+        </section>
         <FinanceModelLibrary compact />
       </main>
     </div>

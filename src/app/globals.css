@@ -513,7 +513,9 @@ h6 {
 .home-finance-section {
   border-top: 1px solid var(--border);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--card) 92%, var(--background)), var(--card));
+    linear-gradient(115deg, color-mix(in srgb, var(--card) 94%, transparent) 0 34%, transparent 34% 100%),
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--foreground) 3%, transparent) 0 1px, transparent 1px 54px),
+    linear-gradient(180deg, color-mix(in srgb, var(--card) 94%, var(--background)), var(--card));
 }
 
 .home-finance-shell {
@@ -528,45 +530,42 @@ h6 {
   margin-bottom: 22px;
 }
 
-.home-finance-kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  color: var(--accent-secondary);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  margin-bottom: 12px;
-  text-transform: uppercase;
+.home-finance-title-card {
+  position: relative;
+  isolation: isolate;
+  width: min(680px, 100%);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--card) 95%, transparent), color-mix(in srgb, var(--accent-soft) 46%, var(--card))),
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--foreground) 4%, transparent) 0 1px, transparent 1px 18px);
+  box-shadow: 0 18px 48px rgba(20, 20, 19, 0.07);
+  padding: clamp(1rem, 2vw, 1.35rem) clamp(1.05rem, 2.4vw, 1.55rem);
 }
 
-.home-finance-kicker::before {
+.home-finance-title-card::before {
   content: "";
-  inline-size: 22px;
-  block-size: 1px;
-  background: color-mix(in srgb, var(--accent-secondary) 56%, transparent);
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: -1;
+  width: 5px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-secondary) 78%, transparent),
+    color-mix(in srgb, var(--accent) 62%, transparent)
+  );
 }
 
 .home-finance-title {
   color: var(--foreground);
   font-family: var(--font-hero-display);
-  font-size: clamp(2rem, 4vw, 2.86rem);
+  font-size: clamp(2.15rem, 4.25vw, 3.3rem);
   font-weight: 500;
-  line-height: 1.08;
+  line-height: 1.04;
   letter-spacing: 0;
   margin-bottom: 12px;
-}
-
-.home-finance-title span {
-  display: inline;
-}
-
-.home-finance-title-meta {
-  display: none;
-}
-
-.home-finance-title-copy {
-  display: inline;
+  text-wrap: balance;
 }
 
 .home-finance-intro {
@@ -1152,77 +1151,61 @@ h6 {
 .finance-index-page {
   min-height: min(100dvh, 760px);
   padding: clamp(4.4rem, 7vh, 5.2rem) 0 2rem;
-  background: var(--background);
+  background:
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--foreground) 3%, transparent) 0 1px, transparent 1px 64px),
+    linear-gradient(180deg, color-mix(in srgb, var(--card) 92%, var(--background)), var(--background) 48%);
 }
 
 .finance-index-shell {
   max-width: 1040px;
 }
 
-.finance-index-kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  color: var(--accent-secondary);
-  font-family: var(--font-poppins);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  margin-bottom: 12px;
-  text-transform: uppercase;
+.finance-index-hero-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--card) 96%, transparent), color-mix(in srgb, var(--accent-soft) 44%, var(--card))),
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--foreground) 4%, transparent) 0 1px, transparent 1px 19px);
+  box-shadow: 0 22px 58px rgba(20, 20, 19, 0.08);
+  margin-bottom: 24px;
+  padding: clamp(1.25rem, 3vw, 2rem) clamp(1.25rem, 3.6vw, 2.3rem);
 }
 
-.finance-index-kicker::before {
+.finance-index-hero-card::before {
   content: "";
-  inline-size: 22px;
-  block-size: 1px;
-  background: color-mix(in srgb, var(--accent-secondary) 56%, transparent);
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: -1;
+  width: 6px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-secondary) 78%, transparent),
+    color-mix(in srgb, var(--accent) 62%, transparent)
+  );
 }
 
 .finance-index-title {
-  display: grid;
-  gap: 8px;
+  position: relative;
   color: var(--foreground);
   font-family: var(--font-hero-display);
-  font-size: clamp(2.25rem, 5.4vw, 4rem);
+  font-size: clamp(2.35rem, 5.6vw, 4.2rem);
   font-weight: 500;
   line-height: 1.03;
   letter-spacing: 0;
   margin-bottom: 16px;
-}
-
-.finance-index-title-meta {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  width: fit-content;
-  color: color-mix(in srgb, var(--accent-secondary) 84%, var(--foreground));
-  font-family: var(--font-poppins);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  line-height: 1;
-  text-transform: uppercase;
-}
-
-.finance-index-title-meta::before {
-  content: "";
-  width: 24px;
-  height: 1px;
-  background: color-mix(in srgb, var(--accent-secondary) 52%, transparent);
-}
-
-.finance-index-title-copy {
-  display: block;
-  color: color-mix(in srgb, var(--foreground) 90%, var(--accent));
+  text-wrap: balance;
 }
 
 .finance-index-intro {
+  position: relative;
   max-width: 660px;
   color: color-mix(in srgb, var(--foreground) 62%, var(--muted));
   font-size: 15px;
   line-height: 1.78;
-  margin-bottom: 24px;
+  margin-bottom: 0;
 }
 
 .home-thinking-section {
@@ -1568,18 +1551,12 @@ h6 {
     margin-bottom: 10px;
   }
 
-  .home-finance-kicker {
-    font-size: 10px;
-    letter-spacing: 0.14em;
-    margin-bottom: 6px;
-  }
-
-  .home-finance-kicker::before {
-    inline-size: 18px;
+  .home-finance-title-card {
+    padding: 0.78rem 0.95rem;
   }
 
   .home-finance-title {
-    font-size: clamp(1.55rem, 3.2vw, 2.06rem);
+    font-size: clamp(1.72rem, 3.35vw, 2.2rem);
     font-weight: 500;
     margin-bottom: 4px;
   }
@@ -1922,53 +1899,19 @@ h6 {
     margin-bottom: 9px;
   }
 
-  .home-finance-header > div {
+  .home-finance-title-card {
     min-width: 0;
-    padding-left: clamp(4.75rem, 21vw, 5.35rem);
+    padding: 10px 12px;
   }
 
-  .home-finance-kicker,
   .home-finance-intro {
     display: none;
   }
 
   .home-finance-title {
-    display: grid;
-    gap: 3px;
-    line-height: 1.05;
+    font-size: clamp(1.28rem, 5.8vw, 1.62rem);
+    line-height: 1.14;
     margin-bottom: 0;
-  }
-
-  .home-finance-title-meta {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    width: fit-content;
-    color: color-mix(in srgb, var(--accent-secondary) 82%, var(--foreground));
-    font-family: var(--font-poppins);
-    font-size: 9.5px;
-    font-weight: 800;
-    letter-spacing: 0.16em;
-    line-height: 1;
-    text-transform: uppercase;
-  }
-
-  .home-finance-title-meta::before {
-    content: "";
-    width: 18px;
-    height: 1px;
-    background: color-mix(in srgb, var(--accent-secondary) 52%, transparent);
-  }
-
-  .home-finance-title-copy {
-    display: block;
-    color: color-mix(in srgb, var(--foreground) 88%, var(--accent));
-    font-family: var(--font-poppins);
-    font-size: clamp(1.08rem, 4.8vw, 1.32rem);
-    font-weight: 650;
-    letter-spacing: 0;
-    line-height: 1.18;
-    white-space: nowrap;
   }
 
   .home-finance-library-link {
@@ -2217,24 +2160,19 @@ h6 {
     padding: 4.2rem 0 1.6rem;
   }
 
+  .finance-index-hero-card {
+    margin-bottom: 18px;
+    padding: 1rem 1rem 1.05rem;
+  }
+
   .finance-index-title {
-    gap: 6px;
-    font-size: clamp(1.85rem, 9vw, 2.45rem);
-  }
-
-  .finance-index-title-meta {
-    gap: 6px;
-    font-size: 9.5px;
-  }
-
-  .finance-index-title-meta::before {
-    width: 18px;
+    font-size: clamp(1.9rem, 9vw, 2.48rem);
+    margin-bottom: 10px;
   }
 
   .finance-index-intro {
     font-size: 13px;
     line-height: 1.68;
-    margin-bottom: 18px;
   }
 
   .home-thinking-method-index {
@@ -2786,20 +2724,7 @@ h6 {
   }
 
   .home-finance-title {
-    gap: 2px;
-  }
-
-  .home-finance-title-meta {
-    gap: 5px;
-    font-size: 8.5px;
-  }
-
-  .home-finance-title-meta::before {
-    width: 14px;
-  }
-
-  .home-finance-title-copy {
-    font-size: clamp(1rem, 4.8vw, 1.17rem);
+    font-size: clamp(1.12rem, 5.1vw, 1.36rem);
   }
 
   .home-finance-showcase {

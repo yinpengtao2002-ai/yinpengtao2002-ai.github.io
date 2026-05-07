@@ -75,6 +75,53 @@ export default function SiteNavigation() {
 
         if (!sections.length) return;
 
+        const setActiveSectionFromId = (sectionId: string) => {
+            const pending = pendingSectionRef.current;
+            if (pending && window.performance.now() < pending.until && sectionId !== pending.id) {
+                return;
+            }
+            if (pending && sectionId === pending.id) {
+                pendingSectionRef.current = null;
+            }
+            setActiveSectionId(sectionId);
+        };
+
+        let scrollFrame: number | null = null;
+        const syncActiveSectionFromScroll = () => {
+            if (scrollFrame !== null) return;
+
+            scrollFrame = window.requestAnimationFrame(() => {
+                scrollFrame = null;
+                const viewportCenter = window.innerHeight / 2;
+                const current = sections
+                    .map((section) => {
+                        const rect = section.getBoundingClientRect();
+                        const containsCenter = rect.top <= viewportCenter && rect.bottom >= viewportCenter;
+                        const visibleHeight = Math.max(0, Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0));
+                        const distance = containsCenter
+                            ? 0
+                            : Math.min(Math.abs(rect.top - viewportCenter), Math.abs(rect.bottom - viewportCenter));
+
+                        return {
+                            id: section.id,
+                            containsCenter,
+                            visibleHeight,
+                            distance,
+                        };
+                    })
+                    .filter((section) => section.visibleHeight > 0)
+                    .sort((a, b) => {
+                        if (a.containsCenter !== b.containsCenter) return a.containsCenter ? -1 : 1;
+                        if (a.distance !== b.distance) return a.distance - b.distance;
+                        return b.visibleHeight - a.visibleHeight;
+                    })[0];
+
+                if (current?.id) {
+                    setActiveSectionFromId(current.id);
+                }
+            });
+        };
+
         const observer = new IntersectionObserver(
             (entries) => {
                 const visible = entries
@@ -82,14 +129,7 @@ export default function SiteNavigation() {
                     .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
 
                 if (visible?.target.id) {
-                    const pending = pendingSectionRef.current;
-                    if (pending && window.performance.now() < pending.until && visible.target.id !== pending.id) {
-                        return;
-                    }
-                    if (pending && visible.target.id === pending.id) {
-                        pendingSectionRef.current = null;
-                    }
-                    setActiveSectionId(visible.target.id);
+                    setActiveSectionFromId(visible.target.id);
                 }
             },
             {
@@ -99,8 +139,14 @@ export default function SiteNavigation() {
         );
 
         sections.forEach((section) => observer.observe(section));
+        syncActiveSectionFromScroll();
+        window.addEventListener("scroll", syncActiveSectionFromScroll, { passive: true });
+        window.addEventListener("resize", syncActiveSectionFromScroll);
         return () => {
             if (hashFrame) window.cancelAnimationFrame(hashFrame);
+            if (scrollFrame !== null) window.cancelAnimationFrame(scrollFrame);
+            window.removeEventListener("scroll", syncActiveSectionFromScroll);
+            window.removeEventListener("resize", syncActiveSectionFromScroll);
             observer.disconnect();
         };
     }, [activateSectionFromClick, pathname]);

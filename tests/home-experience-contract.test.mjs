@@ -212,10 +212,12 @@ test("home continue cue stays in normal layout flow", () => {
 });
 
 test("homepage finance section previews models as a composed showcase", () => {
-  assert.match(financeSection, /MODEL LIBRARY/);
-  assert.match(financeSection, /问题驱动的[\s\S]*财务模型/);
-  assert.match(financeSection, /home-finance-title-meta/);
-  assert.match(financeSection, /home-finance-title-copy/);
+  assert.match(financeSection, /home-finance-title-card/);
+  assert.match(financeSection, /<h2 className="home-finance-title">\s*问题驱动的财务模型\s*<\/h2>/);
+  assert.doesNotMatch(financeSection, /MODEL LIBRARY/);
+  assert.doesNotMatch(financeSection, /Finance Models/);
+  assert.doesNotMatch(financeSection, /home-finance-title-meta/);
+  assert.doesNotMatch(financeSection, /home-finance-title-copy/);
   assert.doesNotMatch(financeSection, /home-finance-title-prefix/);
   assert.doesNotMatch(financeSection, /home-finance-title-main/);
   assert.match(financeSection, /从复盘、归因、趋势到敏感性，按真实经营问题选择模型。/);
@@ -235,7 +237,9 @@ test("homepage finance section previews models as a composed showcase", () => {
   assert.match(financeSection, /home-finance-switcher/);
   assert.match(financeSection, /home-finance-switch-open/);
   assert.match(financeSection, /打开模型/);
-  assert.match(globals, /\.home-finance-title span\s*\{/);
+  assert.match(globals, /\.home-finance-title-card\s*\{/);
+  assert.match(globals, /\.home-finance-title-card::before/);
+  assert.match(globals, /\.home-finance-title\s*\{[^}]*font-family:\s*var\(--font-hero-display\)/s);
   assert.match(globals, /\.home-finance-stage-frame::before/);
   assert.match(globals, /\.home-finance-stage-frame::after/);
   assert.match(globals, /\.home-finance-stage-motion\s*\{/);
@@ -280,7 +284,6 @@ test("homepage finance section uses an automatic mobile preview carousel with fo
   assert.match(mobileCssRule(".home-finance-section"), /min-height:\s*100svh/);
   assert.match(mobileCssRule(".home-finance-section"), /padding-bottom:\s*clamp\(4rem,\s*8\.4svh,\s*4\.6rem\)/);
   assert.match(mobileCssRule(".home-section.home-finance-section"), /height:\s*100svh/);
-  assert.match(mobileCssRule(".home-finance-header > div"), /padding-left:\s*clamp\(4\.75rem,\s*21vw,\s*5\.35rem\)/);
   assert.match(mobileCssRule(".home-finance-shell"), /display:\s*flex/);
   assert.match(mobileCssRule(".home-finance-shell"), /height:\s*100%/);
   assert.match(mobileCssRule(".home-finance-showcase"), /grid-template-columns:\s*minmax\(0,\s*1fr\)/);
@@ -288,12 +291,9 @@ test("homepage finance section uses an automatic mobile preview carousel with fo
   assert.match(mobileCssRule(".home-finance-showcase"), /align-content:\s*start/);
   assert.match(cssRule(".home-finance-mobile-carousel"), /display:\s*none/);
   assert.match(cssRule(".home-finance-mobile-dots"), /display:\s*none/);
-  assert.match(mobileCssRule(".home-finance-title-meta"), /display:\s*inline-flex/);
-  assert.match(mobileCssRule(".home-finance-title-meta"), /letter-spacing:\s*0\.16em/);
-  assert.doesNotMatch(mobileCssRule(".home-finance-title-meta"), /border-radius:\s*999px/);
-  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-finance-title-meta::before\s*\{[\s\S]*width:\s*18px[\s\S]*height:\s*1px/s);
-  assert.match(mobileCssRule(".home-finance-title-copy"), /display:\s*block/);
-  assert.match(mobileCssRule(".home-finance-title-copy"), /font-family:\s*var\(--font-poppins\)/);
+  assert.match(mobileCssRule(".home-finance-title-card"), /padding:\s*10px\s*12px/);
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-finance-title\s*\{[\s\S]*font-size:\s*clamp\(1\.28rem,\s*5\.8vw,\s*1\.62rem\)/s);
+  assert.doesNotMatch(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-finance-title\s*\{[^}]*white-space:\s*nowrap/s);
   assert.match(mobileCssRule(".home-finance-mobile-carousel"), /display:\s*block/);
   assert.match(mobileCssRule(".home-finance-mobile-carousel"), /min-height:\s*0/);
   assert.match(mobileCssRule(".home-finance-mobile-carousel"), /touch-action:\s*pan-y/);

@@ -43,6 +43,10 @@ test("site navigation follows homepage section visibility", () => {
   assert.match(navigation, /activeSectionId/);
   assert.match(navigation, /hashSectionId/);
   assert.match(navigation, /pendingSectionRef/);
+  assert.match(navigation, /syncActiveSectionFromScroll/);
+  assert.match(navigation, /window\.addEventListener\("scroll",\s*syncActiveSectionFromScroll/);
+  assert.match(navigation, /window\.innerHeight\s*\/\s*2/);
+  assert.match(navigation, /getBoundingClientRect\(\)/);
   assert.match(navigation, /activateSectionFromClick\(item\.sectionId\)/);
   assert.match(navigation, /scrollToSection\(item\.sectionId\)/);
   assert.match(navigation, /home-nav-active-pill/);
