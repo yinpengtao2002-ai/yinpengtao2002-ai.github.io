@@ -27,11 +27,19 @@ test("business analysis mobile waterfall detail overlays the chart with a return
 });
 
 test("finance tool workbench titles stay compact", () => {
-  assert.match(marginCss, /\.main-header\s*\{[^}]*font-size:\s*clamp\(1\.55rem,\s*2\.1vw,\s*2\.15rem\)/s);
-  assert.match(businessCss, /\.business-tool \.model-header h1\s*\{[^}]*font-size:\s*clamp\(1\.45rem,\s*2\.05vw,\s*2\.15rem\)/s);
-  assert.match(sensitivityCss, /\.sensitivity-tool \.model-header h1\s*\{[^}]*font-size:\s*clamp\(1\.45rem,\s*2\.05vw,\s*2\.15rem\)/s);
-  assert.match(monthlyCss, /\.monthly-trend-tool \.model-header h1\s*\{[^}]*font-size:\s*clamp\(1\.45rem,\s*2\.05vw,\s*2\.15rem\)/s);
+  assert.match(marginCss, /\.main-header\s*\{[^}]*font-size:\s*clamp\(1\.22rem,\s*1\.45vw,\s*1\.62rem\)/s);
+  assert.match(businessCss, /\.business-tool \.model-header h1\s*\{[^}]*font-size:\s*clamp\(1\.22rem,\s*1\.45vw,\s*1\.62rem\)/s);
+  assert.match(sensitivityCss, /\.sensitivity-tool \.model-header h1\s*\{[^}]*font-size:\s*clamp\(1\.22rem,\s*1\.45vw,\s*1\.62rem\)/s);
+  assert.match(monthlyCss, /\.monthly-trend-tool \.model-header h1\s*\{[^}]*font-size:\s*clamp\(1\.22rem,\s*1\.45vw,\s*1\.62rem\)/s);
+  assert.match(marginCss, /\.main-header\s*\{[^}]*font-size:\s*1\.22rem/s);
+  assert.match(monthlyCss, /\.monthly-trend-tool \.model-header h1\s*\{[^}]*font-size:\s*1\.22rem/s);
   assert.doesNotMatch(marginCss, /\.main-header\s*\{[^}]*font-size:\s*3\.2rem/s);
+  assert.doesNotMatch(marginCss, /\.main-header\s*\{[^}]*font-size:\s*clamp\(1\.55rem,\s*2\.1vw,\s*2\.15rem\)/s);
+  assert.doesNotMatch(marginCss, /\.main-header\s*\{[^}]*font-size:\s*1\.5rem/s);
+  assert.doesNotMatch(businessCss, /\.business-tool \.model-header h1\s*\{[^}]*font-size:\s*clamp\(1\.45rem,\s*2\.05vw,\s*2\.15rem\)/s);
+  assert.doesNotMatch(sensitivityCss, /\.sensitivity-tool \.model-header h1\s*\{[^}]*font-size:\s*clamp\(1\.45rem,\s*2\.05vw,\s*2\.15rem\)/s);
+  assert.doesNotMatch(monthlyCss, /\.monthly-trend-tool \.model-header h1\s*\{[^}]*font-size:\s*clamp\(1\.45rem,\s*2\.05vw,\s*2\.15rem\)/s);
+  assert.doesNotMatch(monthlyCss, /\.monthly-trend-tool \.model-header h1\s*\{[^}]*font-size:\s*1\.5rem/s);
   assert.doesNotMatch(businessCss, /\.business-tool \.model-header h1\s*\{[^}]*font-size:\s*clamp\(1\.9rem,\s*3vw,\s*3rem\)/s);
   assert.doesNotMatch(sensitivityCss, /\.sensitivity-tool \.model-header h1\s*\{[^}]*font-size:\s*clamp\(1\.9rem,\s*3vw,\s*3rem\)/s);
 });

@@ -398,7 +398,7 @@
     margin-top: 0.35rem;
     color: var(--text-primary);
     font-family: var(--font-sans);
-    font-size: clamp(1.45rem, 2.05vw, 2.15rem);
+    font-size: clamp(1.22rem, 1.45vw, 1.62rem);
     line-height: 1.18;
 }
 
@@ -652,7 +652,7 @@
     }
 
     .monthly-trend-tool .model-header h1 {
-        font-size: 1.5rem;
+        font-size: 1.22rem;
     }
 
     .monthly-trend-tool .model-subtitle {

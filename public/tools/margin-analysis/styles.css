@@ -734,16 +734,17 @@ details[open] > .sidebar-summary::after {
 }
 
 .main-header {
-    font-size: clamp(1.55rem, 2.1vw, 2.15rem);
-    font-weight: 700;
+    font-size: clamp(1.22rem, 1.45vw, 1.62rem);
+    font-weight: 650;
     background: linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-blue) 50%, var(--accent-green) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     text-align: center;
-    padding: 0.5rem 0;
-    letter-spacing: 0.08em;
+    padding: 0.25rem 0;
+    letter-spacing: 0.03em;
     font-family: var(--font-sans);
+    line-height: 1.16;
 }
 
 .sub-header {
@@ -1863,7 +1864,7 @@ details[open] > .usage-summary::after {
         grid-template-columns: repeat(2, 1fr);
     }
     .main-header {
-        font-size: clamp(1.5rem, 2.6vw, 1.9rem);
+        font-size: clamp(1.2rem, 2.2vw, 1.45rem);
     }
     .main-content {
         padding: 1rem 1.5rem;
@@ -1919,8 +1920,8 @@ details[open] > .usage-summary::after {
     }
     /* 标题区域精简 */
     .main-header {
-        font-size: 1.5rem;
-        padding: 0.3rem 0;
+        font-size: 1.22rem;
+        padding: 0.2rem 0;
     }
     .sub-header {
         font-size: 0.7rem;
