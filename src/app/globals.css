@@ -431,6 +431,8 @@ h6 {
 }
 
 .home-hero-continue {
+  position: relative;
+  isolation: isolate;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -446,10 +448,48 @@ h6 {
   font-weight: 800;
   padding: 0 14px;
   text-decoration: none;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, color 0.22s ease, transform 0.22s ease;
 }
 
 .home-hero-continue::before {
-  content: none;
+  content: "";
+  position: absolute;
+  inset: -4px;
+  z-index: -1;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 0deg,
+    rgba(217, 119, 87, 0),
+    rgba(217, 119, 87, 0.62),
+    rgba(106, 155, 204, 0.46),
+    rgba(120, 140, 93, 0.36),
+    rgba(217, 119, 87, 0)
+  );
+  filter: blur(2px);
+  opacity: 0.58;
+  animation: homeContinueRing 5.2s linear infinite;
+}
+
+.home-hero-continue::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: -1;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+}
+
+.home-hero-continue:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  color: var(--foreground);
+  box-shadow: 0 14px 34px rgba(20, 20, 19, 0.08), 0 0 26px rgba(217, 119, 87, 0.16);
+  transform: translateY(-1px);
+}
+
+@keyframes homeContinueRing {
+  to {
+    transform: rotate(1turn);
+  }
 }
 
 .home-proof-grid {
@@ -1889,7 +1929,8 @@ h6 {
   }
 
   .home-hero-continue::before {
-    height: 20px;
+    inset: -3px;
+    filter: blur(1.5px);
   }
 
   .home-finance-header {
@@ -2776,6 +2817,7 @@ h6 {
   .home-thinking-reveal,
   .home-thinking-visual-card,
   .home-thinking-item,
+  .home-hero-continue::before,
   .chat-route-card {
     animation: none !important;
     transition: none !important;

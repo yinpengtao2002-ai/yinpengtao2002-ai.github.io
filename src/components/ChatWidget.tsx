@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { motion, AnimatePresence, useDragControls, type PanInfo } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { MessageCircle, X, ArrowUp, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
@@ -15,6 +15,7 @@ import {
     financeContent as staticFinance,
     thinkingContent as staticThinking,
 } from "@/lib/data/generated/content";
+import { financeModels, type FinanceModelItem } from "@/lib/finance/modelRegistry";
 import { normalizeChatInternalLinks } from "@/lib/markdown/normalizeChatInternalLinks";
 import { normalizeChatMathMarkdown } from "@/lib/markdown/normalizeChatMathMarkdown";
 import { useViewportProfile } from "@/lib/useLowMotionMode";
@@ -49,6 +50,11 @@ const MOBILE_QUICK_PROMPTS = [
     "哪个模型适合预算复盘？",
     "这个网站能看什么？",
     "推荐一篇思考文章",
+];
+const CURRENT_MODEL_QUICK_PROMPTS = [
+    "当前模型怎么用？",
+    "应该上传什么数据？",
+    "帮我解释这个模型的图表",
 ];
 
 const CHAT_UI_FONT =
@@ -93,7 +99,16 @@ const INTERNAL_ROUTE_CARDS: Record<string, InternalRouteCard> = {
 };
 const MARKDOWN_INTERNAL_LINK_PATTERN = /\[[^\]]+\]\((\/(?:finance|thinking-lab)(?:\/[A-Za-z0-9-]+)*\/?)\)/g;
 
-function getGreetingMessage() {
+function getCurrentFinanceModelSlug(pathname: string) {
+    const normalizedPathname = normalizeInternalHref(pathname);
+    return financeModels.find((model) => normalizeInternalHref(model.href) === normalizedPathname)?.slug ?? null;
+}
+
+function getGreetingMessage(currentFinanceModel?: FinanceModelItem) {
+    if (currentFinanceModel) {
+        return `你好，我是 Lucas AI。\n\n我看到你正在看「${currentFinanceModel.title}」。你可以直接问我当前模型怎么用、要上传什么数据，或者让我解释图表和指标含义。`;
+    }
+
     return "你好，我是 Lucas AI。\n\n我可以帮你找财务模型、解释模型怎么用，也可以推荐思考与方法里的文章。";
 }
 
@@ -327,6 +342,7 @@ function InternalRouteCardList({
 
 export default function ChatWidget() {
     const router = useRouter();
+    const pathname = usePathname() || "/";
     const { isMobileLike } = useViewportProfile();
     const dragControls = useDragControls();
     const [isOpen, setIsOpen] = useState(false);
@@ -351,6 +367,10 @@ export default function ChatWidget() {
         id: item.id, title: item.title, description: item.description,
         date: item.date, category: item.category ?? undefined, href: item.href,
     }));
+    const currentFinanceModelSlug = getCurrentFinanceModelSlug(pathname);
+    const currentFinanceModel =
+        currentFinanceModelSlug ? financeModels.find((model) => model.slug === currentFinanceModelSlug) : undefined;
+    const quickPrompts = currentFinanceModel ? CURRENT_MODEL_QUICK_PROMPTS : MOBILE_QUICK_PROMPTS;
 
     const currentViewportHeight =
         viewportHeight ?? (typeof window !== "undefined" ? window.innerHeight : null);
@@ -427,7 +447,10 @@ export default function ChatWidget() {
             const res = await fetch("/api/chat/", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ messages: apiMessages }),
+                body: JSON.stringify({
+                    messages: apiMessages,
+                    currentFinanceModelSlug: currentFinanceModel?.slug ?? null,
+                }),
                 signal: controller.signal,
             });
             if (!res.ok || !res.body) return false;
@@ -482,7 +505,10 @@ export default function ChatWidget() {
             includeOfflineNotice = true;
         }
         await new Promise((r) => setTimeout(r, 600 + Math.random() * 400));
-        const result = getLocalFallbackResponse(userMessage.content, financeContent, thinkingContent, { includeOfflineNotice });
+        const result = getLocalFallbackResponse(userMessage.content, financeContent, thinkingContent, {
+            includeOfflineNotice,
+            currentFinanceModel,
+        });
         setMessages((prev) => {
             const filtered = prev.filter((m) => m.id !== "typing" && m.id !== assistantMsgId);
             return [...filtered, {
@@ -518,7 +544,7 @@ export default function ChatWidget() {
             setMessages([{
                 id: "greeting",
                 role: "assistant",
-                content: getGreetingMessage(),
+                content: getGreetingMessage(currentFinanceModel),
             }]);
         }
         setIsOpen(true);
@@ -920,7 +946,7 @@ export default function ChatWidget() {
                                                             </div>
                                                             {message.id === "greeting" && introState && !compactMobileChat && (
                                                                 <QuickPromptRow
-                                                                    prompts={MOBILE_QUICK_PROMPTS}
+                                                                    prompts={quickPrompts}
                                                                     onSelect={(prompt) => {
                                                                         setInputValue(prompt);
                                                                         setTimeout(() => {

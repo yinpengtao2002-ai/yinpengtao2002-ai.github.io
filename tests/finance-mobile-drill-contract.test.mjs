@@ -28,9 +28,18 @@ test("business analysis mobile waterfall detail overlays the chart with a return
 
 test("finance tool workbench titles stay compact", () => {
   assert.match(marginCss, /\.main-header\s*\{[^}]*font-size:\s*clamp\(1\.22rem,\s*1\.45vw,\s*1\.62rem\)/s);
+  assert.match(marginCss, /\.title-container\s*\{[^}]*padding:\s*0\.72rem 0 0\.48rem/s);
+  assert.match(marginCss, /\.title-decoration\s*\{[^}]*display:\s*none/s);
+  assert.match(marginCss, /\.sub-header\s*\{[^}]*font-size:\s*0\.76rem[\s\S]*margin-top:\s*0\.22rem[\s\S]*margin-bottom:\s*0\.45rem/s);
   assert.match(businessCss, /\.business-tool \.model-header h1\s*\{[^}]*font-size:\s*clamp\(1\.22rem,\s*1\.45vw,\s*1\.62rem\)/s);
+  assert.match(businessCss, /\.business-tool \.model-header\s*\{[^}]*margin:\s*0 auto 0\.72rem/s);
+  assert.match(businessCss, /\.business-tool \.model-subtitle\s*\{[^}]*margin-top:\s*0\.3rem[\s\S]*font-size:\s*0\.82rem[\s\S]*line-height:\s*1\.45[\s\S]*-webkit-line-clamp:\s*1/s);
   assert.match(sensitivityCss, /\.sensitivity-tool \.model-header h1\s*\{[^}]*font-size:\s*clamp\(1\.22rem,\s*1\.45vw,\s*1\.62rem\)/s);
+  assert.match(sensitivityCss, /\.sensitivity-tool \.model-header\s*\{[^}]*margin:\s*0 auto 0\.72rem/s);
+  assert.match(sensitivityCss, /\.sensitivity-tool \.model-subtitle\s*\{[^}]*margin-top:\s*0\.3rem[\s\S]*font-size:\s*0\.82rem[\s\S]*line-height:\s*1\.45[\s\S]*-webkit-line-clamp:\s*1/s);
   assert.match(monthlyCss, /\.monthly-trend-tool \.model-header h1\s*\{[^}]*font-size:\s*clamp\(1\.22rem,\s*1\.45vw,\s*1\.62rem\)/s);
+  assert.match(monthlyCss, /\.monthly-trend-tool \.model-header\s*\{[^}]*margin-bottom:\s*0\.72rem/s);
+  assert.match(monthlyCss, /\.monthly-trend-tool \.model-subtitle\s*\{[^}]*margin-top:\s*0\.3rem[\s\S]*font-size:\s*0\.82rem[\s\S]*line-height:\s*1\.45[\s\S]*-webkit-line-clamp:\s*1/s);
   assert.match(marginCss, /\.main-header\s*\{[^}]*font-size:\s*1\.22rem/s);
   assert.match(monthlyCss, /\.monthly-trend-tool \.model-header h1\s*\{[^}]*font-size:\s*1\.22rem/s);
   assert.doesNotMatch(marginCss, /\.main-header\s*\{[^}]*font-size:\s*3\.2rem/s);

@@ -46,6 +46,11 @@ test("site navigation follows homepage section visibility", () => {
   assert.match(navigation, /syncActiveSectionFromScroll/);
   assert.match(navigation, /window\.addEventListener\("scroll",\s*syncActiveSectionFromScroll/);
   assert.match(navigation, /window\.innerHeight\s*\/\s*2/);
+  assert.match(navigation, /pendingSectionRef\.current\s*=\s*null/);
+  assert.match(navigation, /hasStableScrollRange/);
+  assert.match(navigation, /lastSectionVisible/);
+  assert.match(navigation, /window\.addEventListener\("pageshow",\s*scheduleSectionSync/);
+  assert.match(navigation, /window\.addEventListener\("hashchange",\s*scheduleSectionSync/);
   assert.match(navigation, /isAtPageBottom/);
   assert.match(navigation, /sections\.at\(-1\)/);
   assert.equal(navigation.match(/activateLastSectionAtPageBottom\(\)/g)?.length, 2);

@@ -667,7 +667,7 @@ details[open] > .sidebar-summary::after {
 /* ==================== 主内容区 ==================== */
 .main-content {
     flex: 1;
-    padding: 1.5rem 2.5rem 2rem;
+    padding: 1rem 2.5rem 2rem;
     overflow-y: auto;
     min-width: 0;
 }
@@ -675,7 +675,7 @@ details[open] > .sidebar-summary::after {
 /* 标题区域 */
 .title-container {
     text-align: center;
-    padding: 1.5rem 0;
+    padding: 0.72rem 0 0.48rem;
     position: relative;
     overflow: hidden;
 }
@@ -695,19 +695,19 @@ details[open] > .sidebar-summary::after {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 500px;
-    height: 120px;
+    width: 360px;
+    height: 76px;
     background: radial-gradient(ellipse, rgba(217, 119, 87, 0.08) 0%, transparent 70%);
     pointer-events: none;
     z-index: -1;
 }
 
 .title-decoration {
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     gap: 1rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.42rem;
 }
 
 .deco-line {
@@ -750,10 +750,10 @@ details[open] > .sidebar-summary::after {
 .sub-header {
     text-align: center;
     color: var(--text-secondary);
-    font-size: 0.9rem;
-    margin-top: 0.5rem;
-    margin-bottom: 1rem;
-    letter-spacing: 0.25em;
+    font-size: 0.76rem;
+    margin-top: 0.22rem;
+    margin-bottom: 0.45rem;
+    letter-spacing: 0.16em;
     font-weight: 400;
     font-family: var(--font-sans);
 }
@@ -1928,7 +1928,7 @@ details[open] > .usage-summary::after {
         letter-spacing: 0.15em;
     }
     .title-container {
-        padding: 1rem 0;
+        padding: 0.72rem 0 0.48rem;
     }
     .title-decoration {
         display: none;

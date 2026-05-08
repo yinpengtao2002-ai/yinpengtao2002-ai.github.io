@@ -74,6 +74,7 @@ export default function SiteNavigation() {
             .filter((section): section is HTMLElement => Boolean(section));
 
         if (!sections.length) return;
+        pendingSectionRef.current = null;
 
         const setActiveSectionFromId = (sectionId: string) => {
             const pending = pendingSectionRef.current;
@@ -87,18 +88,24 @@ export default function SiteNavigation() {
         };
 
         const activateLastSectionAtPageBottom = () => {
-            const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-            const isAtPageBottom = window.scrollY >= maxScroll - 2;
-            if (!isAtPageBottom) return false;
-
             const lastSection = sections.at(-1);
             if (!lastSection?.id) return false;
+            const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+            const hasStableScrollRange = maxScroll > Math.max(160, window.innerHeight * 0.55);
+            if (!hasStableScrollRange) return false;
+
+            const lastRect = lastSection.getBoundingClientRect();
+            const lastSectionVisible = lastRect.top < window.innerHeight - 2 && lastRect.bottom > 2;
+            const isAtPageBottom = window.scrollY >= maxScroll - 2;
+            if (!isAtPageBottom || !lastSectionVisible) return false;
 
             setActiveSectionFromId(lastSection.id);
             return true;
         };
 
         let scrollFrame: number | null = null;
+        let settleFrame: number | null = null;
+        let secondSettleFrame: number | null = null;
         const syncActiveSectionFromScroll = () => {
             if (scrollFrame !== null) return;
 
@@ -135,6 +142,17 @@ export default function SiteNavigation() {
                 }
             });
         };
+        const scheduleSectionSync = () => {
+            if (settleFrame !== null) window.cancelAnimationFrame(settleFrame);
+            if (secondSettleFrame !== null) window.cancelAnimationFrame(secondSettleFrame);
+            settleFrame = window.requestAnimationFrame(() => {
+                settleFrame = null;
+                secondSettleFrame = window.requestAnimationFrame(() => {
+                    secondSettleFrame = null;
+                    syncActiveSectionFromScroll();
+                });
+            });
+        };
 
         const observer = new IntersectionObserver(
             (entries) => {
@@ -155,14 +173,20 @@ export default function SiteNavigation() {
         );
 
         sections.forEach((section) => observer.observe(section));
-        syncActiveSectionFromScroll();
+        scheduleSectionSync();
         window.addEventListener("scroll", syncActiveSectionFromScroll, { passive: true });
         window.addEventListener("resize", syncActiveSectionFromScroll);
+        window.addEventListener("pageshow", scheduleSectionSync);
+        window.addEventListener("hashchange", scheduleSectionSync);
         return () => {
             if (hashFrame) window.cancelAnimationFrame(hashFrame);
             if (scrollFrame !== null) window.cancelAnimationFrame(scrollFrame);
+            if (settleFrame !== null) window.cancelAnimationFrame(settleFrame);
+            if (secondSettleFrame !== null) window.cancelAnimationFrame(secondSettleFrame);
             window.removeEventListener("scroll", syncActiveSectionFromScroll);
             window.removeEventListener("resize", syncActiveSectionFromScroll);
+            window.removeEventListener("pageshow", scheduleSectionSync);
+            window.removeEventListener("hashchange", scheduleSectionSync);
             observer.disconnect();
         };
     }, [activateSectionFromClick, pathname]);

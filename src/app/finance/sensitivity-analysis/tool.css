@@ -429,7 +429,7 @@
     flex: 1;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 2rem 2.4rem 2.5rem;
+    padding: 1.35rem 2.4rem 2.5rem;
 }
 
 .sensitivity-tool .model-header {
@@ -437,12 +437,12 @@
     align-items: flex-end;
     justify-content: space-between;
     gap: 1.25rem;
-    margin: 0 auto 1.25rem;
+    margin: 0 auto 0.72rem;
     max-width: 1480px;
 }
 
 .sensitivity-tool .eyebrow {
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.22rem;
     color: var(--accent-blue);
     font-family: var(--font-sans);
     font-size: 0.72rem;
@@ -460,11 +460,15 @@
 
 .sensitivity-tool .model-subtitle {
     max-width: 720px;
-    margin-top: 0.65rem;
+    margin-top: 0.3rem;
     color: var(--text-secondary);
     font-family: var(--font-sans);
-    font-size: 0.95rem;
-    line-height: 1.7;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
 }
 
 .sensitivity-tool .header-actions {
@@ -743,10 +747,22 @@
     .sensitivity-tool .model-header {
         align-items: stretch;
         flex-direction: column;
+        position: relative;
+        gap: 0.35rem;
+        padding-right: 4.3rem;
     }
 
     .sensitivity-tool .header-actions {
+        position: absolute;
+        top: 0;
+        right: 0;
         justify-content: flex-start;
+    }
+
+    .sensitivity-tool .header-actions .btn {
+        min-height: 30px;
+        padding: 0 0.64rem;
+        font-size: 0.72rem;
     }
 
     .sensitivity-tool .metrics-grid {

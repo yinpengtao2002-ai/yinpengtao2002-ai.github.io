@@ -1,11 +1,34 @@
 import { NextRequest } from "next/server";
 import { thinkingContent } from "@/lib/data/generated/content";
-import { financeModels } from "@/lib/finance/modelRegistry";
+import { financeModels, getFinanceModelBySlug, type FinanceModelItem } from "@/lib/finance/modelRegistry";
 
 const CHAT_PRIMARY_TIMEOUT_MS = 18000;
 const CHAT_FALLBACK_TIMEOUT_MS = 18000;
 
-function buildSystemPrompt(): string {
+function buildActiveFinanceModelPrompt(activeFinanceModel?: FinanceModelItem) {
+  if (!activeFinanceModel) {
+    return "当前没有打开具体财务模型页面。";
+  }
+
+  const guide = activeFinanceModel.aiGuide;
+  const faq = guide.faq.length > 0
+    ? guide.faq.map((item) => `    - ${item.question}：${item.answer}`).join("\n")
+    : "    - 暂无常见问题。";
+
+  return [
+    `当前打开的财务模型：${activeFinanceModel.title}（${activeFinanceModel.href}）`,
+    `用途：${guide.purpose}`,
+    `适用场景：${guide.scenarios.join(" / ")}`,
+    `使用步骤：${guide.steps.join(" / ")}`,
+    `示例数据：${guide.sampleData}`,
+    "常见问题：",
+    faq,
+    "如果用户说“这个模型”“当前模型”“这里怎么用”，默认指这个当前打开的财务模型。",
+    "你能解释这个模型的用途、口径、上传要求和图表读法；但当前接口还没有接收用户上传数据或图表状态。",
+  ].join("\n");
+}
+
+function buildSystemPrompt(activeFinanceModel?: FinanceModelItem): string {
   const financeModelsCatalog = financeModels
     .map((model) => [
       `  - [${model.title}](${model.href})：${model.summary}`,
@@ -38,13 +61,18 @@ function buildSystemPrompt(): string {
 财务模型库：
 ${financeModelsCatalog}
 
+当前页面上下文：
+${buildActiveFinanceModelPrompt(activeFinanceModel)}
+
 思考与方法：
 ${thinkingArticles}
 
 回复规则：
 - 用中文回复，除非用户用英文提问
 - 保持简洁，通常 2-4 句话
+- 如果当前页面上下文里有“当前打开的财务模型”，用户问“这个模型/当前模型/怎么用/上传什么数据”时，优先回答当前模型，不要泛泛推荐模型库
 - 当用户问某个模型怎么用时，优先用模型说明里的用途、适用场景、使用步骤和示例数据回答
+- 你不能直接读取用户在页面里上传的数据或当前图表状态；如果用户要求分析“当前数据”，要先说明需要用户提供关键数据、截图或等待页面显式发送数据摘要，不要假装看到了当前数据
 - 推荐模型或文章时，必须使用 Markdown 链接格式：[标题](路径)
 - 提到站内页面时，不要只裸写 /finance 或 /thinking-lab；必须写成 [财务模型](/finance)、[思考与方法](/thinking-lab) 这样的 Markdown 链接
 - 需要写公式时，使用 Markdown LaTeX：行内公式用 $...$，单独成行公式用 $$...$$
@@ -56,7 +84,9 @@ ${thinkingArticles}
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages } = await req.json();
+    const { messages, currentFinanceModelSlug } = await req.json();
+    const activeFinanceModel =
+      typeof currentFinanceModelSlug === "string" ? getFinanceModelBySlug(currentFinanceModelSlug) : undefined;
 
     const apiKey = process.env.CHAT_API_KEY?.trim();
     const apiUrl = process.env.CHAT_API_URL?.trim();
@@ -88,7 +118,7 @@ export async function POST(req: NextRequest) {
           max_tokens: 4096,
           stream: true,
           messages: [
-            { role: "system", content: buildSystemPrompt() },
+            { role: "system", content: buildSystemPrompt(activeFinanceModel) },
             ...messages.map((m: { role: string; content: string }) => ({
               role: m.role,
               content: m.content,

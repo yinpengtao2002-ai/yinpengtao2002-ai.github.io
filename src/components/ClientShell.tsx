@@ -8,20 +8,20 @@ const ThemeToggle = dynamic(() => import("@/components/ui/ThemeToggle"), { ssr: 
 const ChatWidget = dynamic(() => import("@/components/ChatWidget"), { ssr: false });
 const SiteNavigation = dynamic(() => import("@/components/layout/SiteNavigation"), { ssr: false });
 
-function shouldHideShellExtras(pathname: string) {
+function shouldHideDecorativeExtras(pathname: string) {
     return pathname.startsWith("/finance/business-analysis");
 }
 
 export default function ClientShell() {
     const pathname = usePathname() || "/";
-    const hideShellExtras = shouldHideShellExtras(pathname);
+    const hideDecorativeExtras = shouldHideDecorativeExtras(pathname);
 
     return (
         <>
-            {!hideShellExtras && <MouseTrail />}
+            {!hideDecorativeExtras && <MouseTrail />}
             <SiteNavigation />
-            {!hideShellExtras && <ThemeToggle />}
-            {!hideShellExtras && <ChatWidget />}
+            {!hideDecorativeExtras && <ThemeToggle />}
+            <ChatWidget />
         </>
     );
 }

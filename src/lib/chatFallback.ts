@@ -1,4 +1,5 @@
 import { allDialoguePatterns, defaultResponses } from "@/lib/data/dialoguePatterns";
+import type { FinanceModelItem } from "@/lib/finance/modelRegistry";
 
 export const CHAT_API_TIMEOUT_MS = 70000;
 
@@ -35,9 +36,25 @@ export function getLocalFallbackResponse(
     input: string,
     financeContent: LocalContentCard[],
     thinkingContent: LocalContentCard[] = [],
-    options: { includeOfflineNotice?: boolean } = {}
+    options: { includeOfflineNotice?: boolean; currentFinanceModel?: FinanceModelItem } = {}
 ): LocalFallbackResult {
     const lower = input.toLowerCase().trim();
+    const currentFinanceModel = options.currentFinanceModel;
+
+    if (
+        currentFinanceModel &&
+        includesAny(lower, ["当前", "这个", "本模型", "怎么用", "使用", "上传", "数据", "图表", "指标", "解释"])
+    ) {
+        const guide = currentFinanceModel.aiGuide;
+        return withOfflineNotice({
+            response: [
+                `你现在打开的是 [${currentFinanceModel.title}](${currentFinanceModel.href})。${guide.purpose}`,
+                `一般可以这样用：${guide.steps.join("；")}`,
+                `示例数据：${guide.sampleData}`,
+                "如果要我判断你当前上传的数据，需要你把关键指标、截图或数据摘要发给我；目前我能先解释模型口径、上传要求和图表读法。",
+            ].join("\n\n"),
+        }, options.includeOfflineNotice);
+    }
 
     if (includesAny(lower, ["lucas", "卢卡斯", "站长", "博主", "作者", "yinpengtao", "殷鹏焘", "殷鹏涛"])) {
         return withOfflineNotice({

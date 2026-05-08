@@ -48,6 +48,10 @@ test("home page has an explicit continue cue for below-the-fold content", () => 
   assert.match(hero, /home-hero-continue/);
   assert.match(hero, /home-hero-continue-row/);
   assert.doesNotMatch(hero, /home-secondary-action/);
+  assert.match(globals, /\.home-hero-continue\s*\{[^}]*position:\s*relative/s);
+  assert.match(globals, /\.home-hero-continue::before\s*\{[^}]*conic-gradient/s);
+  assert.match(globals, /\.home-hero-continue::before\s*\{[^}]*animation:\s*homeContinueRing/s);
+  assert.match(globals, /@keyframes\s+homeContinueRing/);
 });
 
 test("home hero returns to a split Lucas plus product-stage layout", () => {
