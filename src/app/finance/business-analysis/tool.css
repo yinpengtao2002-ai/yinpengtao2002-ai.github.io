@@ -821,7 +821,7 @@
 
 .business-tool .model-header h1 {
     font-family: var(--font-sans);
-    font-size: clamp(1.9rem, 3vw, 3rem);
+    font-size: clamp(1.45rem, 2.05vw, 2.15rem);
     line-height: 1.08;
     letter-spacing: 0;
 }

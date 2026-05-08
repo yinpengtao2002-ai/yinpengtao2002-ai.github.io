@@ -46,6 +46,9 @@ test("site navigation follows homepage section visibility", () => {
   assert.match(navigation, /syncActiveSectionFromScroll/);
   assert.match(navigation, /window\.addEventListener\("scroll",\s*syncActiveSectionFromScroll/);
   assert.match(navigation, /window\.innerHeight\s*\/\s*2/);
+  assert.match(navigation, /isAtPageBottom/);
+  assert.match(navigation, /sections\.at\(-1\)/);
+  assert.equal(navigation.match(/activateLastSectionAtPageBottom\(\)/g)?.length, 2);
   assert.match(navigation, /getBoundingClientRect\(\)/);
   assert.match(navigation, /activateSectionFromClick\(item\.sectionId\)/);
   assert.match(navigation, /scrollToSection\(item\.sectionId\)/);

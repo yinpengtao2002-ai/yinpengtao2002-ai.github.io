@@ -398,7 +398,7 @@
     margin-top: 0.35rem;
     color: var(--text-primary);
     font-family: var(--font-sans);
-    font-size: clamp(1.55rem, 2.6vw, 2.4rem);
+    font-size: clamp(1.45rem, 2.05vw, 2.15rem);
     line-height: 1.18;
 }
 

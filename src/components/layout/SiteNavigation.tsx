@@ -86,12 +86,26 @@ export default function SiteNavigation() {
             setActiveSectionId(sectionId);
         };
 
+        const activateLastSectionAtPageBottom = () => {
+            const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+            const isAtPageBottom = window.scrollY >= maxScroll - 2;
+            if (!isAtPageBottom) return false;
+
+            const lastSection = sections.at(-1);
+            if (!lastSection?.id) return false;
+
+            setActiveSectionFromId(lastSection.id);
+            return true;
+        };
+
         let scrollFrame: number | null = null;
         const syncActiveSectionFromScroll = () => {
             if (scrollFrame !== null) return;
 
             scrollFrame = window.requestAnimationFrame(() => {
                 scrollFrame = null;
+                if (activateLastSectionAtPageBottom()) return;
+
                 const viewportCenter = window.innerHeight / 2;
                 const current = sections
                     .map((section) => {
@@ -124,6 +138,8 @@ export default function SiteNavigation() {
 
         const observer = new IntersectionObserver(
             (entries) => {
+                if (activateLastSectionAtPageBottom()) return;
+
                 const visible = entries
                     .filter((entry) => entry.isIntersecting)
                     .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
