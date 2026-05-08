@@ -106,6 +106,8 @@ test("finance index page keeps the model library high and readable", async () =>
   assert.match(page, /finance-index-page/);
   assert.match(page, /finance-index-shell/);
   assert.match(page, /finance-index-hero-card/);
+  assert.match(page, /home-finance-title-card finance-index-hero-card/);
+  assert.match(page, /className="home-finance-title"/);
   assert.match(page, /finance-index-intro/);
   assert.match(page, /问题驱动的财务模型/);
   assert.match(page, /从复盘、归因、趋势到敏感性，按真实经营问题选择模型。/);
@@ -117,14 +119,12 @@ test("finance index page keeps the model library high and readable", async () =>
   assert.doesNotMatch(page, /style=\{\{/);
   assert.match(globals, /\.finance-index-page\s*\{/);
   assert.match(globals, /\.finance-index-hero-card\s*\{/);
-  assert.match(globals, /\.finance-index-hero-card\s*\{[^}]*width:\s*min\(680px,\s*100%\)/s);
-  assert.match(globals, /\.finance-index-hero-card::before/);
-  assert.match(globals, /\.finance-index-hero-card::after/);
+  assert.doesNotMatch(globals, /\.finance-index-hero-card::before/);
+  assert.doesNotMatch(globals, /\.finance-index-hero-card::after/);
   assert.doesNotMatch(globals, /\.finance-index-title-meta\s*\{/);
   assert.doesNotMatch(globals, /\.finance-index-title-copy\s*\{/);
-  assert.match(globals, /\.finance-index-title\s*\{[^}]*font-family:\s*var\(--font-hero-display\)/s);
-  assert.match(globals, /\.finance-index-title\s*\{[^}]*font-size:\s*clamp\(1\.72rem,\s*3\.15vw,\s*2\.42rem\)/s);
-  assert.doesNotMatch(globals, /\.finance-index-title\s*\{[^}]*font-size:\s*clamp\(2\.15rem,\s*4\.25vw,\s*3\.3rem\)/s);
+  assert.doesNotMatch(globals, /\.finance-index-title\s*\{/);
+  assert.match(globals, /\.home-finance-title\s*\{[^}]*font-family:\s*var\(--font-hero-display\)/s);
   assert.match(globals, /\.finance-index-intro\s*\{/);
   assert.match(globals, /color-mix\(in srgb,\s*var\(--foreground\)\s*62%,\s*var\(--muted\)\)/);
 });

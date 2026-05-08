@@ -453,7 +453,12 @@
 
 .sensitivity-tool .model-header h1 {
     font-family: var(--font-sans);
-    font-size: clamp(1.22rem, 1.45vw, 1.62rem);
+    font-size: clamp(1.55rem, 2.1vw, 2.15rem);
+    font-weight: 650;
+    background: linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-blue) 50%, var(--accent-green) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     line-height: 1.16;
     letter-spacing: 0;
 }
@@ -778,6 +783,10 @@
 }
 
 @media (max-width: 520px) {
+    .sensitivity-tool .model-header h1 {
+        font-size: 1.4rem;
+    }
+
     .sensitivity-tool .metrics-grid {
         grid-template-columns: 1fr;
     }

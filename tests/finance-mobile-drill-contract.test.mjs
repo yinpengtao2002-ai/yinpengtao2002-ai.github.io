@@ -26,22 +26,22 @@ test("business analysis mobile waterfall detail overlays the chart with a return
   assert.match(businessCss, /\.business-tool \.waterfall-touch-host:not\(:empty\)\s*\{[^}]*position:\s*absolute/s);
 });
 
-test("finance tool workbench titles keep their original title rhythm", () => {
-  assert.match(marginCss, /\.title-container\s*\{[^}]*padding:\s*1\.5rem 0/s);
+test("finance tool workbench titles share the generous margin-analysis title rhythm", () => {
   assert.match(marginCss, /\.title-decoration\s*\{[^}]*display:\s*flex/s);
-  assert.match(marginCss, /\.sub-header\s*\{[^}]*font-size:\s*0\.9rem[\s\S]*margin-top:\s*0\.5rem[\s\S]*margin-bottom:\s*1rem/s);
-  assert.match(businessCss, /\.business-tool \.model-header h1\s*\{[^}]*font-size:\s*clamp\(1\.22rem,\s*1\.45vw,\s*1\.62rem\)/s);
+  assert.match(marginCss, /\.main-header\s*\{[^}]*font-size:\s*clamp\(1\.55rem,\s*2\.1vw,\s*2\.15rem\)/s);
+  assert.match(marginCss, /\.main-header\s*\{[^}]*background:\s*linear-gradient\(135deg,\s*var\(--accent-orange\)/s);
+  assert.match(businessCss, /\.business-tool \.model-header h1\s*\{[^}]*font-size:\s*clamp\(1\.55rem,\s*2\.1vw,\s*2\.15rem\)/s);
+  assert.match(businessCss, /\.business-tool \.model-header h1\s*\{[^}]*background:\s*linear-gradient\(135deg,\s*var\(--accent-orange\)/s);
   assert.match(businessCss, /\.business-tool \.model-header\s*\{[^}]*margin:\s*0 auto 1\.25rem/s);
   assert.match(businessCss, /\.business-tool \.model-subtitle\s*\{[^}]*margin-top:\s*0\.65rem[\s\S]*font-size:\s*0\.95rem[\s\S]*line-height:\s*1\.7/s);
-  assert.doesNotMatch(businessCss, /\.business-tool \.model-subtitle\s*\{[^}]*-webkit-line-clamp:\s*1/s);
-  assert.match(sensitivityCss, /\.sensitivity-tool \.model-header h1\s*\{[^}]*font-size:\s*clamp\(1\.22rem,\s*1\.45vw,\s*1\.62rem\)/s);
+  assert.match(sensitivityCss, /\.sensitivity-tool \.model-header h1\s*\{[^}]*font-size:\s*clamp\(1\.55rem,\s*2\.1vw,\s*2\.15rem\)/s);
+  assert.match(sensitivityCss, /\.sensitivity-tool \.model-header h1\s*\{[^}]*background:\s*linear-gradient\(135deg,\s*var\(--accent-orange\)/s);
   assert.match(sensitivityCss, /\.sensitivity-tool \.model-header\s*\{[^}]*margin:\s*0 auto 1\.25rem/s);
   assert.match(sensitivityCss, /\.sensitivity-tool \.model-subtitle\s*\{[^}]*margin-top:\s*0\.65rem[\s\S]*font-size:\s*0\.95rem[\s\S]*line-height:\s*1\.7/s);
-  assert.doesNotMatch(sensitivityCss, /\.sensitivity-tool \.model-subtitle\s*\{[^}]*-webkit-line-clamp:\s*1/s);
-  assert.match(monthlyCss, /\.monthly-trend-tool \.model-header h1\s*\{[^}]*font-size:\s*clamp\(1\.22rem,\s*1\.45vw,\s*1\.62rem\)/s);
+  assert.match(monthlyCss, /\.monthly-trend-tool \.model-header h1\s*\{[^}]*font-size:\s*clamp\(1\.55rem,\s*2\.1vw,\s*2\.15rem\)/s);
+  assert.match(monthlyCss, /\.monthly-trend-tool \.model-header h1\s*\{[^}]*background:\s*linear-gradient\(135deg,\s*var\(--accent-orange\)/s);
   assert.match(monthlyCss, /\.monthly-trend-tool \.model-header\s*\{[^}]*margin-bottom:\s*1rem/s);
   assert.match(monthlyCss, /\.monthly-trend-tool \.model-subtitle\s*\{[^}]*margin-top:\s*0\.55rem[\s\S]*font-size:\s*0\.92rem[\s\S]*line-height:\s*1\.7/s);
-  assert.doesNotMatch(monthlyCss, /\.monthly-trend-tool \.model-subtitle\s*\{[^}]*-webkit-line-clamp:\s*1/s);
-  assert.match(marginCss, /\.main-header\s*\{[^}]*font-size:\s*1\.22rem/s);
-  assert.match(monthlyCss, /\.monthly-trend-tool \.model-header h1\s*\{[^}]*font-size:\s*1\.22rem/s);
+  assert.match(marginCss, /\.main-header\s*\{[^}]*font-size:\s*1\.4rem/s);
+  assert.match(monthlyCss, /\.monthly-trend-tool \.model-header h1\s*\{[^}]*font-size:\s*1\.4rem/s);
 });

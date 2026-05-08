@@ -140,6 +140,7 @@ export default function CapabilityHero() {
           <Link href="#finance" className="home-hero-continue" onClick={handleBrowseMore}>
             <span>浏览更多</span>
             <ArrowDown style={{ width: 15, height: 15 }} />
+            <span className="home-hero-continue-runner" aria-hidden="true" />
           </Link>
         </div>
       </div>

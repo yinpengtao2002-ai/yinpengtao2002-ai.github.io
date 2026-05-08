@@ -10,8 +10,8 @@ export default function FinancePage() {
   return (
     <div className="finance-index-page">
       <main className="home-shell finance-index-shell">
-        <section className="finance-index-hero-card" aria-labelledby="finance-index-title">
-          <h1 id="finance-index-title" className="finance-index-title">
+        <section className="home-finance-title-card finance-index-hero-card" aria-labelledby="finance-index-title">
+          <h1 id="finance-index-title" className="home-finance-title">
             问题驱动的财务模型
           </h1>
           <p className="finance-index-intro">

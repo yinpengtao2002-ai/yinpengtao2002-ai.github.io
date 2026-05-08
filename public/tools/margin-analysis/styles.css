@@ -734,7 +734,7 @@ details[open] > .sidebar-summary::after {
 }
 
 .main-header {
-    font-size: clamp(1.22rem, 1.45vw, 1.62rem);
+    font-size: clamp(1.55rem, 2.1vw, 2.15rem);
     font-weight: 650;
     background: linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-blue) 50%, var(--accent-green) 100%);
     -webkit-background-clip: text;
@@ -1864,7 +1864,7 @@ details[open] > .usage-summary::after {
         grid-template-columns: repeat(2, 1fr);
     }
     .main-header {
-        font-size: clamp(1.2rem, 2.2vw, 1.45rem);
+        font-size: clamp(1.45rem, 2.8vw, 1.75rem);
     }
     .main-content {
         padding: 1rem 1.5rem;
@@ -1920,7 +1920,7 @@ details[open] > .usage-summary::after {
     }
     /* 标题区域精简 */
     .main-header {
-        font-size: 1.22rem;
+        font-size: 1.4rem;
         padding: 0.2rem 0;
     }
     .sub-header {
