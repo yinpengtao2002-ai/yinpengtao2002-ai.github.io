@@ -797,7 +797,7 @@
     flex: 1;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 1.35rem 2.4rem 2.5rem;
+    padding: 2rem 2.4rem 2.5rem;
 }
 
 .business-tool .model-header {
@@ -805,12 +805,12 @@
     align-items: flex-end;
     justify-content: space-between;
     gap: 1.25rem;
-    margin: 0 auto 0.72rem;
+    margin: 0 auto 1.25rem;
     max-width: 1480px;
 }
 
 .business-tool .eyebrow {
-    margin-bottom: 0.22rem;
+    margin-bottom: 0.4rem;
     color: var(--accent-blue);
     font-family: var(--font-sans);
     font-size: 0.72rem;
@@ -828,15 +828,11 @@
 
 .business-tool .model-subtitle {
     max-width: 760px;
-    margin-top: 0.3rem;
+    margin-top: 0.65rem;
     color: var(--text-secondary);
     font-family: var(--font-sans);
-    font-size: 0.82rem;
-    line-height: 1.45;
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
+    font-size: 0.95rem;
+    line-height: 1.7;
 }
 
 .business-tool .metrics-grid {

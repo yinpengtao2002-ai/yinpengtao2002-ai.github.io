@@ -60,21 +60,13 @@ export default function SiteNavigation() {
 
         const hashSectionId = window.location.hash.replace("#", "");
         const hashSection = NAV_ITEMS.find((item) => item.sectionId === hashSectionId)?.sectionId;
-        const hashFrame = hashSection
-            ? window.requestAnimationFrame(() => {
-                activateSectionFromClick(hashSection);
-                scrollToSection(hashSection);
-            })
-            : null;
+        pendingSectionRef.current = null;
 
-        const sections = NAV_ITEMS
+        const getSections = () => NAV_ITEMS
             .map((item) => item.sectionId)
             .filter((sectionId): sectionId is string => Boolean(sectionId))
             .map((sectionId) => document.getElementById(sectionId))
             .filter((section): section is HTMLElement => Boolean(section));
-
-        if (!sections.length) return;
-        pendingSectionRef.current = null;
 
         const setActiveSectionFromId = (sectionId: string) => {
             const pending = pendingSectionRef.current;
@@ -88,6 +80,7 @@ export default function SiteNavigation() {
         };
 
         const activateLastSectionAtPageBottom = () => {
+            const sections = getSections();
             const lastSection = sections.at(-1);
             if (!lastSection?.id) return false;
             const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
@@ -106,11 +99,45 @@ export default function SiteNavigation() {
         let scrollFrame: number | null = null;
         let settleFrame: number | null = null;
         let secondSettleFrame: number | null = null;
+        let sectionRetry: number | null = null;
+        let observer: IntersectionObserver | null = null;
+        let sectionRetryCount = 0;
+
+        const setupObserver = () => {
+            const sections = getSections();
+            if (!sections.length) return false;
+
+            observer?.disconnect();
+            observer = new IntersectionObserver(
+                (entries) => {
+                    if (activateLastSectionAtPageBottom()) return;
+
+                    const visible = entries
+                        .filter((entry) => entry.isIntersecting)
+                        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+                    if (visible?.target.id) {
+                        setActiveSectionFromId(visible.target.id);
+                    }
+                },
+                {
+                    rootMargin: "-34% 0px -48% 0px",
+                    threshold: [0.16, 0.32, 0.48, 0.64],
+                },
+            );
+
+            sections.forEach((section) => observer?.observe(section));
+            sectionRetryCount = 0;
+            return true;
+        };
+
         const syncActiveSectionFromScroll = () => {
             if (scrollFrame !== null) return;
 
             scrollFrame = window.requestAnimationFrame(() => {
                 scrollFrame = null;
+                const sections = getSections();
+                if (!sections.length) return;
                 if (activateLastSectionAtPageBottom()) return;
 
                 const viewportCenter = window.innerHeight / 2;
@@ -145,34 +172,31 @@ export default function SiteNavigation() {
         const scheduleSectionSync = () => {
             if (settleFrame !== null) window.cancelAnimationFrame(settleFrame);
             if (secondSettleFrame !== null) window.cancelAnimationFrame(secondSettleFrame);
+            if (sectionRetry !== null) window.clearTimeout(sectionRetry);
             settleFrame = window.requestAnimationFrame(() => {
                 settleFrame = null;
                 secondSettleFrame = window.requestAnimationFrame(() => {
                     secondSettleFrame = null;
+                    if (!setupObserver()) {
+                        if (sectionRetryCount < 12) {
+                            sectionRetryCount += 1;
+                            sectionRetry = window.setTimeout(scheduleSectionSync, 120);
+                        }
+                        return;
+                    }
                     syncActiveSectionFromScroll();
                 });
             });
         };
 
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (activateLastSectionAtPageBottom()) return;
+        const hashFrame = hashSection
+            ? window.requestAnimationFrame(() => {
+                activateSectionFromClick(hashSection);
+                scrollToSection(hashSection);
+                scheduleSectionSync();
+            })
+            : null;
 
-                const visible = entries
-                    .filter((entry) => entry.isIntersecting)
-                    .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-
-                if (visible?.target.id) {
-                    setActiveSectionFromId(visible.target.id);
-                }
-            },
-            {
-                rootMargin: "-34% 0px -48% 0px",
-                threshold: [0.16, 0.32, 0.48, 0.64],
-            },
-        );
-
-        sections.forEach((section) => observer.observe(section));
         scheduleSectionSync();
         window.addEventListener("scroll", syncActiveSectionFromScroll, { passive: true });
         window.addEventListener("resize", syncActiveSectionFromScroll);
@@ -183,11 +207,12 @@ export default function SiteNavigation() {
             if (scrollFrame !== null) window.cancelAnimationFrame(scrollFrame);
             if (settleFrame !== null) window.cancelAnimationFrame(settleFrame);
             if (secondSettleFrame !== null) window.cancelAnimationFrame(secondSettleFrame);
+            if (sectionRetry !== null) window.clearTimeout(sectionRetry);
             window.removeEventListener("scroll", syncActiveSectionFromScroll);
             window.removeEventListener("resize", syncActiveSectionFromScroll);
             window.removeEventListener("pageshow", scheduleSectionSync);
             window.removeEventListener("hashchange", scheduleSectionSync);
-            observer.disconnect();
+            observer?.disconnect();
         };
     }, [activateSectionFromClick, pathname]);
 

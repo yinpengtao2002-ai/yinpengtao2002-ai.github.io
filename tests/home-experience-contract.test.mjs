@@ -51,6 +51,8 @@ test("home page has an explicit continue cue for below-the-fold content", () => 
   assert.match(globals, /\.home-hero-continue\s*\{[^}]*position:\s*relative/s);
   assert.match(globals, /\.home-hero-continue::before\s*\{[^}]*conic-gradient/s);
   assert.match(globals, /\.home-hero-continue::before\s*\{[^}]*animation:\s*homeContinueRing/s);
+  assert.match(globals, /\.home-hero-continue::before\s*\{[^}]*padding:\s*1px/s);
+  assert.match(globals, /\.home-hero-continue::before\s*\{[^}]*mask-composite:\s*exclude/s);
   assert.match(globals, /@keyframes\s+homeContinueRing/);
 });
 

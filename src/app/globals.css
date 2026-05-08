@@ -454,8 +454,9 @@ h6 {
 .home-hero-continue::before {
   content: "";
   position: absolute;
-  inset: -4px;
+  inset: -3px;
   z-index: -1;
+  padding: 1px;
   border-radius: inherit;
   background: conic-gradient(
     from 0deg,
@@ -465,8 +466,15 @@ h6 {
     rgba(120, 140, 93, 0.36),
     rgba(217, 119, 87, 0)
   );
-  filter: blur(2px);
-  opacity: 0.58;
+  opacity: 0.86;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
   animation: homeContinueRing 5.2s linear infinite;
 }
 
@@ -1228,13 +1236,29 @@ h6 {
   );
 }
 
+.finance-index-hero-card::after {
+  content: "";
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  z-index: -1;
+  width: 104px;
+  height: 34px;
+  border: 1px solid color-mix(in srgb, var(--accent-secondary) 24%, transparent);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 22% 50%, color-mix(in srgb, var(--accent) 28%, transparent), transparent 24px),
+    color-mix(in srgb, var(--card) 68%, transparent);
+  opacity: 0.72;
+}
+
 .finance-index-title {
   position: relative;
   color: var(--foreground);
   font-family: var(--font-hero-display);
-  font-size: clamp(2.15rem, 4.25vw, 3.3rem);
+  font-size: clamp(1.72rem, 3.15vw, 2.42rem);
   font-weight: 500;
-  line-height: 1.03;
+  line-height: 1.1;
   letter-spacing: 0;
   margin-bottom: 16px;
   text-wrap: balance;
@@ -1930,7 +1954,6 @@ h6 {
 
   .home-hero-continue::before {
     inset: -3px;
-    filter: blur(1.5px);
   }
 
   .home-finance-header {
@@ -2208,7 +2231,7 @@ h6 {
   }
 
   .finance-index-title {
-    font-size: clamp(1.9rem, 9vw, 2.48rem);
+    font-size: clamp(1.52rem, 7.4vw, 2rem);
     margin-bottom: 10px;
   }
 

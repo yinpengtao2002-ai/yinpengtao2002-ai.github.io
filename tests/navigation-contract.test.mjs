@@ -43,8 +43,12 @@ test("site navigation follows homepage section visibility", () => {
   assert.match(navigation, /activeSectionId/);
   assert.match(navigation, /hashSectionId/);
   assert.match(navigation, /pendingSectionRef/);
+  assert.match(navigation, /const getSections = \(\) =>/);
   assert.match(navigation, /syncActiveSectionFromScroll/);
   assert.match(navigation, /window\.addEventListener\("scroll",\s*syncActiveSectionFromScroll/);
+  assert.doesNotMatch(navigation, /const sections = NAV_ITEMS[\s\S]{0,420}if \(!sections\.length\) return;/);
+  assert.match(navigation, /if \(!setupObserver\(\)\)/);
+  assert.match(navigation, /window\.setTimeout\(scheduleSectionSync/);
   assert.match(navigation, /window\.innerHeight\s*\/\s*2/);
   assert.match(navigation, /pendingSectionRef\.current\s*=\s*null/);
   assert.match(navigation, /hasStableScrollRange/);

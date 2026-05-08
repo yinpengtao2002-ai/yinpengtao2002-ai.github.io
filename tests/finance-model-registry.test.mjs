@@ -119,10 +119,12 @@ test("finance index page keeps the model library high and readable", async () =>
   assert.match(globals, /\.finance-index-hero-card\s*\{/);
   assert.match(globals, /\.finance-index-hero-card\s*\{[^}]*width:\s*min\(680px,\s*100%\)/s);
   assert.match(globals, /\.finance-index-hero-card::before/);
+  assert.match(globals, /\.finance-index-hero-card::after/);
   assert.doesNotMatch(globals, /\.finance-index-title-meta\s*\{/);
   assert.doesNotMatch(globals, /\.finance-index-title-copy\s*\{/);
   assert.match(globals, /\.finance-index-title\s*\{[^}]*font-family:\s*var\(--font-hero-display\)/s);
-  assert.match(globals, /\.finance-index-title\s*\{[^}]*font-size:\s*clamp\(2\.15rem,\s*4\.25vw,\s*3\.3rem\)/s);
+  assert.match(globals, /\.finance-index-title\s*\{[^}]*font-size:\s*clamp\(1\.72rem,\s*3\.15vw,\s*2\.42rem\)/s);
+  assert.doesNotMatch(globals, /\.finance-index-title\s*\{[^}]*font-size:\s*clamp\(2\.15rem,\s*4\.25vw,\s*3\.3rem\)/s);
   assert.match(globals, /\.finance-index-intro\s*\{/);
   assert.match(globals, /color-mix\(in srgb,\s*var\(--foreground\)\s*62%,\s*var\(--muted\)\)/);
 });
