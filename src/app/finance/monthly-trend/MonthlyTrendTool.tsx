@@ -117,6 +117,7 @@ export default function MonthlyTrendTool() {
 
                 <section className="sidebar-block">
                     <h2 className="sidebar-title">维度与筛选</h2>
+                    <div className="filter-summary" id="monthly-filter-summary" />
                     <div className="dimension-picker" id="monthly-dimension-picker" />
                     <div className="form-grid filter-grid" id="monthly-filter-grid" />
                 </section>

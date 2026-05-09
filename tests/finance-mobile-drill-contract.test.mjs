@@ -19,6 +19,10 @@ const monthlyEngine = await readFile(
   new URL("../src/app/finance/monthly-trend/monthly-trend-engine.js", import.meta.url),
   "utf8"
 );
+const monthlyTool = await readFile(
+  new URL("../src/app/finance/monthly-trend/MonthlyTrendTool.tsx", import.meta.url),
+  "utf8"
+);
 
 test("margin analysis mobile waterfall detail overlays the chart with a return action", () => {
   assert.match(marginApp, /waterfall-touch-return/);
@@ -72,6 +76,16 @@ test("finance model charts are locked against accidental zoom and drag by defaul
 test("monthly trend rebinds sidebar controls when the route remounts", () => {
   assert.match(monthlyEngine, /function initApp\(\)\s*\{\s*initSidebar\(\);\s*initResponsiveMonthAxis\(\);\s*bindControls\(\);\s*if \(state\.initialized\)/s);
   assert.doesNotMatch(monthlyEngine, /if \(state\.initialized\)\s*\{[\s\S]*?return;\s*\}[\s\S]*?bindControls\(\);/s);
+});
+
+test("monthly trend dimension filters have a compact guided summary", () => {
+  assert.match(monthlyTool, /monthly-filter-summary/);
+  assert.match(monthlyEngine, /function renderFilterSummary\(\)/);
+  assert.match(monthlyEngine, /class="check-pill \$\{checked \? "is-selected" : ""\}"/);
+  assert.match(monthlyEngine, /class="field filter-card"/);
+  assert.match(monthlyCss, /\.monthly-trend-tool \.filter-summary\s*\{/);
+  assert.match(monthlyCss, /\.monthly-trend-tool \.filter-card\s*\{/);
+  assert.match(monthlyCss, /\.monthly-trend-tool \.check-pill\.is-selected\s*\{/);
 });
 
 test("sensitivity metric cards use the refined finance dashboard card treatment", () => {

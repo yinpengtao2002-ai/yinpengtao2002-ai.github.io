@@ -336,6 +336,104 @@
     max-width: 150px;
 }
 
+.monthly-trend-tool .filter-summary {
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 0.72rem;
+    border: 1px solid rgba(232, 230, 220, 0.95);
+    border-radius: 8px;
+    background:
+        linear-gradient(135deg, rgba(217, 119, 87, 0.12), rgba(92, 143, 186, 0.08) 52%, rgba(120, 140, 93, 0.1)),
+        #fffdfa;
+    padding: 0.72rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.84);
+    font-family: var(--font-sans);
+}
+
+.monthly-trend-tool .filter-summary::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--accent-orange), var(--accent-blue), var(--accent-green));
+}
+
+.monthly-trend-tool .filter-summary-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.65rem;
+}
+
+.monthly-trend-tool .filter-summary-head span {
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.monthly-trend-tool .filter-summary-head strong {
+    max-width: 145px;
+    overflow: hidden;
+    color: var(--text-primary);
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.monthly-trend-tool .filter-summary-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+    margin-top: 0.62rem;
+}
+
+.monthly-trend-tool .filter-summary-stats span {
+    border: 1px solid rgba(255, 255, 255, 0.74);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.62);
+    color: var(--text-secondary);
+    padding: 0.44rem 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.monthly-trend-tool .filter-summary-stats strong {
+    color: var(--accent-orange);
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.monthly-trend-tool .filter-summary-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.36rem;
+    margin-top: 0.56rem;
+}
+
+.monthly-trend-tool .filter-chip {
+    max-width: 100%;
+    overflow: hidden;
+    border: 1px solid rgba(232, 230, 220, 0.9);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.78);
+    color: var(--text-secondary);
+    padding: 0.24rem 0.48rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.monthly-trend-tool .filter-chip.is-active {
+    border-color: rgba(92, 143, 186, 0.32);
+    background: rgba(92, 143, 186, 0.1);
+    color: #466f91;
+}
+
 .monthly-trend-tool .dimension-picker {
     display: flex;
     flex-wrap: wrap;
@@ -356,6 +454,21 @@
     font-family: var(--font-sans);
     font-size: 0.74rem;
     font-weight: 700;
+    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.monthly-trend-tool .check-pill:hover {
+    transform: translateY(-1px);
+    border-color: rgba(217, 119, 87, 0.34);
+    background: #fff7f2;
+    color: var(--text-primary);
+}
+
+.monthly-trend-tool .check-pill.is-selected {
+    border-color: rgba(217, 119, 87, 0.38);
+    background: linear-gradient(135deg, rgba(217, 119, 87, 0.16), rgba(255, 255, 255, 0.92));
+    color: var(--text-primary);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.78);
 }
 
 .monthly-trend-tool .check-pill input {
@@ -365,7 +478,20 @@
 }
 
 .monthly-trend-tool .filter-grid {
-    padding-top: 0.2rem;
+    gap: 0.52rem;
+    padding-top: 0.05rem;
+}
+
+.monthly-trend-tool .filter-card {
+    border: 1px solid rgba(232, 230, 220, 0.95);
+    border-radius: 8px;
+    background: linear-gradient(180deg, #ffffff, #fbfaf7);
+    padding: 0.56rem;
+}
+
+.monthly-trend-tool .filter-card .input {
+    min-height: 34px;
+    background: rgba(255, 255, 255, 0.92);
 }
 
 .monthly-trend-tool .main-content {

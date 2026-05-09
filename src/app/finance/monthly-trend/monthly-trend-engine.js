@@ -625,14 +625,15 @@
         if (!state.dimensionColumns.length) {
             picker.innerHTML = `<p class="empty-note">当前数据没有识别到维度列。</p>`;
             byId("monthly-filter-grid").innerHTML = "";
+            renderFilterSummary();
             return;
         }
 
         picker.innerHTML = state.dimensionColumns.map((dimension) => {
-            const checked = state.selectedDimensions.includes(dimension) ? "checked" : "";
+            const checked = state.selectedDimensions.includes(dimension);
             return `
-                <label class="check-pill">
-                    <input type="checkbox" value="${escapeHtml(dimension)}" ${checked} />
+                <label class="check-pill ${checked ? "is-selected" : ""}">
+                    <input type="checkbox" value="${escapeHtml(dimension)}" ${checked ? "checked" : ""} />
                     <span>${escapeHtml(dimension)}</span>
                 </label>
             `;
@@ -653,6 +654,35 @@
         renderFilterControls();
     }
 
+    function renderFilterSummary() {
+        const summary = byId("monthly-filter-summary");
+        if (!summary) return;
+
+        const selectedDimensions = state.selectedDimensions.length ? state.selectedDimensions : state.dimensionColumns;
+        const activeFilters = Object.entries(state.filters).filter(([, value]) => value && value !== "__all__");
+        const filterChips = activeFilters.length
+            ? activeFilters.map(([dimension, value]) => `
+                <span class="filter-chip is-active">
+                    ${escapeHtml(dimension)}：${escapeHtml(value)}
+                </span>
+            `).join("")
+            : `<span class="filter-chip">全部数据</span>`;
+
+        summary.innerHTML = `
+            <div class="filter-summary-head">
+                <span>当前视角</span>
+                <strong>${escapeHtml(state.selectedMetric || "未选择指标")}</strong>
+            </div>
+            <div class="filter-summary-stats">
+                <span><strong>${selectedDimensions.length}</strong> 个维度</span>
+                <span><strong>${activeFilters.length}</strong> 项筛选</span>
+            </div>
+            <div class="filter-summary-chips">
+                ${filterChips}
+            </div>
+        `;
+    }
+
     function renderFilterControls() {
         const grid = byId("monthly-filter-grid");
         if (!grid) return;
@@ -665,7 +695,7 @@
                 .join("");
 
             return `
-                <label class="field">
+                <label class="field filter-card">
                     <span>${escapeHtml(dimension)}</span>
                     <select class="input" data-filter-dimension="${escapeHtml(dimension)}">${options}</select>
                 </label>
@@ -679,6 +709,8 @@
                 renderAll();
             });
         });
+
+        renderFilterSummary();
     }
 
     function distinctDimensionValues(dimension) {
@@ -710,6 +742,7 @@
 
     function renderAll() {
         renderDataStatus();
+        renderFilterSummary();
         renderTrendChart();
         renderMomChart();
         renderYearComparisonChart();
