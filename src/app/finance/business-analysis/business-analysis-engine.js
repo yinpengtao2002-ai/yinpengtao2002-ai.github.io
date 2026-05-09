@@ -1288,7 +1288,7 @@
     }
 
     function plotLayout(extra = {}) {
-        return {
+        const baseLayout = {
             paper_bgcolor: COLORS.paper,
             plot_bgcolor: COLORS.paper,
             font: {
@@ -1313,10 +1313,32 @@
             },
             dragmode: false,
             clickmode: "none",
-            xaxis: { gridcolor: COLORS.grid, zerolinecolor: COLORS.grid },
-            yaxis: { gridcolor: COLORS.grid, zerolinecolor: COLORS.grid },
+            xaxis: { gridcolor: COLORS.grid, zerolinecolor: COLORS.grid, fixedrange: true },
+            yaxis: { gridcolor: COLORS.grid, zerolinecolor: COLORS.grid, fixedrange: true },
             ...extra
         };
+        const layout = {
+            ...baseLayout,
+            legend: {
+                ...(baseLayout.legend || {}),
+                ...(extra.legend || {}),
+                itemclick: false,
+                itemdoubleclick: false
+            },
+            dragmode: false,
+            clickmode: extra.clickmode || "none"
+        };
+
+        Object.keys(layout).forEach((key) => {
+            if (/^[xy]axis\d*$/.test(key)) {
+                layout[key] = {
+                    ...(layout[key] || {}),
+                    fixedrange: true
+                };
+            }
+        });
+
+        return layout;
     }
 
     function plotConfig() {

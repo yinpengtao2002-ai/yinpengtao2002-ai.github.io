@@ -737,22 +737,54 @@
     }
 
     function chartLayout(extra = {}) {
-        return {
+        const baseLayout = {
             paper_bgcolor: COLORS.paper,
             plot_bgcolor: COLORS.paper,
             font: { family: "PingFang SC, Microsoft YaHei, Arial, sans-serif", color: COLORS.text, size: 12 },
             margin: { l: 52, r: 20, t: 16, b: 52 },
-            xaxis: { tickfont: { color: COLORS.muted }, gridcolor: COLORS.grid, zeroline: false },
-            yaxis: numericAxis({ tickfont: { color: COLORS.muted }, gridcolor: COLORS.grid, zerolinecolor: COLORS.grid }),
+            dragmode: false,
+            clickmode: "none",
+            xaxis: { tickfont: { color: COLORS.muted }, gridcolor: COLORS.grid, zeroline: false, fixedrange: true },
+            yaxis: numericAxis({ tickfont: { color: COLORS.muted }, gridcolor: COLORS.grid, zerolinecolor: COLORS.grid, fixedrange: true }),
             hoverlabel: { bgcolor: "#ffffff", bordercolor: COLORS.grid, font: { color: COLORS.text } },
             showlegend: true,
-            legend: { orientation: "h", y: -0.2, x: 0, font: { color: COLORS.muted } },
+            legend: { orientation: "h", y: -0.2, x: 0, font: { color: COLORS.muted }, itemclick: false, itemdoubleclick: false },
             ...extra
         };
+        const layout = {
+            ...baseLayout,
+            legend: {
+                ...(baseLayout.legend || {}),
+                ...(extra.legend || {}),
+                itemclick: false,
+                itemdoubleclick: false
+            },
+            dragmode: false,
+            clickmode: extra.clickmode || "none"
+        };
+
+        Object.keys(layout).forEach((key) => {
+            if (/^[xy]axis\d*$/.test(key)) {
+                layout[key] = {
+                    ...(layout[key] || {}),
+                    fixedrange: true
+                };
+            }
+        });
+
+        return layout;
     }
 
     function chartConfig() {
-        return { responsive: true, displayModeBar: false };
+        return {
+            responsive: true,
+            displayModeBar: false,
+            displaylogo: false,
+            scrollZoom: false,
+            doubleClick: false,
+            editable: false,
+            staticPlot: false
+        };
     }
 
     function isCompactMonthAxis() {

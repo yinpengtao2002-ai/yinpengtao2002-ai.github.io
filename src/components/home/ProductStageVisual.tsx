@@ -8,6 +8,7 @@ export default function ProductStageVisual() {
         alt="财务模型工作台、图表输出、表格和 AI 解读窗口的产品舞台预览"
         fill
         priority
+        draggable={false}
         sizes="(max-width: 768px) 92vw, 680px"
         className="product-stage-image"
       />

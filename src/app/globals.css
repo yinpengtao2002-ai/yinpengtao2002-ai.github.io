@@ -342,6 +342,9 @@ h6 {
 .product-stage-image {
   object-fit: cover;
   object-position: center;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .product-stage-motion-layer {
@@ -2384,6 +2387,9 @@ h6 {
 .finance-model-preview-image {
   object-fit: cover;
   object-position: center;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 @media (max-width: 768px) {

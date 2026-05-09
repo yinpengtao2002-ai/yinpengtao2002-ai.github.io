@@ -6,6 +6,15 @@ const registry = JSON.parse(
   await readFile(new URL("../src/lib/finance/model-registry.json", import.meta.url), "utf8")
 );
 
+function assertCssRuleHas(css, selector, declarations) {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = css.match(new RegExp(`(^|\\n)\\s*${escapedSelector}\\s*\\{([^}]*)\\}`));
+  assert.ok(match, `${selector} rule should exist`);
+  for (const declaration of declarations) {
+    assert.match(match[2], new RegExp(declaration.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+}
+
 test("finance registry contains the approved categories in order", () => {
   assert.deepEqual(
     registry.categories.map((category) => category.id),
@@ -56,10 +65,31 @@ test("finance model library renders the preview component", async () => {
     new URL("../src/components/finance/FinanceModelLibrary.tsx", import.meta.url),
     "utf8"
   );
+  const preview = await readFile(
+    new URL("../src/components/finance/FinanceModelPreview.tsx", import.meta.url),
+    "utf8"
+  );
+  const productStage = await readFile(
+    new URL("../src/components/home/ProductStageVisual.tsx", import.meta.url),
+    "utf8"
+  );
+  const globals = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
 
   assert.match(library, /FinanceModelPreview/);
   assert.match(library, /previewImage/);
   assert.match(library, /previewAlt/);
+  assert.match(preview, /draggable=\{false\}/);
+  assert.match(productStage, /draggable=\{false\}/);
+  assertCssRuleHas(globals, ".finance-model-preview-image", [
+    "pointer-events: none",
+    "user-select: none",
+    "-webkit-user-drag: none",
+  ]);
+  assertCssRuleHas(globals, ".product-stage-image", [
+    "pointer-events: none",
+    "user-select: none",
+    "-webkit-user-drag: none",
+  ]);
 });
 
 test("finance model library uses a compact mobile list layout", async () => {

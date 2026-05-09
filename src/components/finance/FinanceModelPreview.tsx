@@ -15,6 +15,7 @@ export default function FinanceModelPreview({ src, alt, compact = false, priorit
         alt={alt}
         fill
         priority={priority}
+        draggable={false}
         sizes={compact ? "(max-width: 768px) 100vw, 280px" : "(max-width: 768px) 100vw, 380px"}
         className="finance-model-preview-image"
       />
