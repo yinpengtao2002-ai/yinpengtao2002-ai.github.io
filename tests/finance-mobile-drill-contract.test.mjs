@@ -78,14 +78,13 @@ test("monthly trend rebinds sidebar controls when the route remounts", () => {
   assert.doesNotMatch(monthlyEngine, /if \(state\.initialized\)\s*\{[\s\S]*?return;\s*\}[\s\S]*?bindControls\(\);/s);
 });
 
-test("monthly trend dimension filters have a compact guided summary", () => {
-  assert.match(monthlyTool, /monthly-filter-summary/);
-  assert.match(monthlyEngine, /function renderFilterSummary\(\)/);
-  assert.match(monthlyEngine, /class="check-pill \$\{checked \? "is-selected" : ""\}"/);
+test("monthly trend uses uploaded dimensions directly as filter cards", () => {
+  assert.doesNotMatch(monthlyTool, /monthly-filter-summary|monthly-dimension-picker/);
+  assert.doesNotMatch(monthlyEngine, /function renderFilterSummary\(\)/);
+  assert.doesNotMatch(monthlyEngine, /check-pill/);
   assert.match(monthlyEngine, /class="field filter-card"/);
-  assert.match(monthlyCss, /\.monthly-trend-tool \.filter-summary\s*\{/);
   assert.match(monthlyCss, /\.monthly-trend-tool \.filter-card\s*\{/);
-  assert.match(monthlyCss, /\.monthly-trend-tool \.check-pill\.is-selected\s*\{/);
+  assert.doesNotMatch(monthlyCss, /\.monthly-trend-tool \.(filter-summary|dimension-picker|check-pill)\b/);
 });
 
 test("sensitivity metric cards use the refined finance dashboard card treatment", () => {

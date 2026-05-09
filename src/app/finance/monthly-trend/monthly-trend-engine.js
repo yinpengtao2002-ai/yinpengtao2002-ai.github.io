@@ -619,75 +619,25 @@
     }
 
     function renderDimensionControls() {
-        const picker = byId("monthly-dimension-picker");
-        if (!picker) return;
-
-        if (!state.dimensionColumns.length) {
-            picker.innerHTML = `<p class="empty-note">当前数据没有识别到维度列。</p>`;
-            byId("monthly-filter-grid").innerHTML = "";
-            renderFilterSummary();
-            return;
-        }
-
-        picker.innerHTML = state.dimensionColumns.map((dimension) => {
-            const checked = state.selectedDimensions.includes(dimension);
-            return `
-                <label class="check-pill ${checked ? "is-selected" : ""}">
-                    <input type="checkbox" value="${escapeHtml(dimension)}" ${checked ? "checked" : ""} />
-                    <span>${escapeHtml(dimension)}</span>
-                </label>
-            `;
-        }).join("");
-
-        picker.querySelectorAll("input[type='checkbox']").forEach((input) => {
-            input.addEventListener("change", () => {
-                const selected = Array.from(picker.querySelectorAll("input[type='checkbox']:checked")).map((item) => item.value);
-                state.selectedDimensions = selected.length ? selected : state.dimensionColumns.slice(0, 1);
-                Object.keys(state.filters).forEach((dimension) => {
-                    if (!state.selectedDimensions.includes(dimension)) delete state.filters[dimension];
-                });
-                renderDimensionControls();
-                renderAll();
-            });
+        const dimensions = state.dimensionColumns.filter(Boolean);
+        state.selectedDimensions = dimensions.slice();
+        Object.keys(state.filters).forEach((dimension) => {
+            if (!dimensions.includes(dimension)) delete state.filters[dimension];
         });
-
         renderFilterControls();
-    }
-
-    function renderFilterSummary() {
-        const summary = byId("monthly-filter-summary");
-        if (!summary) return;
-
-        const selectedDimensions = state.selectedDimensions.length ? state.selectedDimensions : state.dimensionColumns;
-        const activeFilters = Object.entries(state.filters).filter(([, value]) => value && value !== "__all__");
-        const filterChips = activeFilters.length
-            ? activeFilters.map(([dimension, value]) => `
-                <span class="filter-chip is-active">
-                    ${escapeHtml(dimension)}：${escapeHtml(value)}
-                </span>
-            `).join("")
-            : `<span class="filter-chip">全部数据</span>`;
-
-        summary.innerHTML = `
-            <div class="filter-summary-head">
-                <span>当前视角</span>
-                <strong>${escapeHtml(state.selectedMetric || "未选择指标")}</strong>
-            </div>
-            <div class="filter-summary-stats">
-                <span><strong>${selectedDimensions.length}</strong> 个维度</span>
-                <span><strong>${activeFilters.length}</strong> 项筛选</span>
-            </div>
-            <div class="filter-summary-chips">
-                ${filterChips}
-            </div>
-        `;
     }
 
     function renderFilterControls() {
         const grid = byId("monthly-filter-grid");
         if (!grid) return;
 
-        grid.innerHTML = state.selectedDimensions.map((dimension) => {
+        const dimensions = state.selectedDimensions.length ? state.selectedDimensions : state.dimensionColumns;
+        if (!dimensions.length) {
+            grid.innerHTML = `<p class="empty-note">当前数据没有识别到维度列。</p>`;
+            return;
+        }
+
+        grid.innerHTML = dimensions.map((dimension) => {
             const values = distinctDimensionValues(dimension);
             const current = state.filters[dimension] || "__all__";
             const options = [`<option value="__all__"${current === "__all__" ? " selected" : ""}>全部</option>`]
@@ -709,8 +659,6 @@
                 renderAll();
             });
         });
-
-        renderFilterSummary();
     }
 
     function distinctDimensionValues(dimension) {
@@ -742,7 +690,6 @@
 
     function renderAll() {
         renderDataStatus();
-        renderFilterSummary();
         renderTrendChart();
         renderMomChart();
         renderYearComparisonChart();
