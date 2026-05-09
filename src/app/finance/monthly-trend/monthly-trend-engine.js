@@ -1677,14 +1677,15 @@
     }
 
     function initApp() {
+        initSidebar();
+        initResponsiveMonthAxis();
+        bindControls();
+
         if (state.initialized) {
             renderAll();
             return;
         }
         state.initialized = true;
-        initSidebar();
-        initResponsiveMonthAxis();
-        bindControls();
         loadRows(createSampleRows(), "示例数据");
     }
 

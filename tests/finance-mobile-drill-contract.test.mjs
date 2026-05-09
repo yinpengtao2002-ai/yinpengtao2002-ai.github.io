@@ -68,3 +68,20 @@ test("finance model charts are locked against accidental zoom and drag by defaul
   assert.match(marginApp, /const config = \{[\s\S]*displayModeBar:\s*false[\s\S]*scrollZoom:\s*false[\s\S]*doubleClick:\s*false[\s\S]*editable:\s*false/s);
   assert.match(marginApp, /dragmode:\s*false[\s\S]*clickmode:\s*'event'/s);
 });
+
+test("monthly trend rebinds sidebar controls when the route remounts", () => {
+  assert.match(monthlyEngine, /function initApp\(\)\s*\{\s*initSidebar\(\);\s*initResponsiveMonthAxis\(\);\s*bindControls\(\);\s*if \(state\.initialized\)/s);
+  assert.doesNotMatch(monthlyEngine, /if \(state\.initialized\)\s*\{[\s\S]*?return;\s*\}[\s\S]*?bindControls\(\);/s);
+});
+
+test("sensitivity metric cards use the refined finance dashboard card treatment", () => {
+  assert.match(sensitivityEngine, /function metricComparisonMeta\(currentValue,\s*baseValue\)/);
+  assert.match(sensitivityEngine, /<article class="metric-card metric-\$\{card\.tone\}">/);
+  assert.match(sensitivityEngine, /metric-topline/);
+  assert.match(sensitivityEngine, /metric-status \$\{card\.deltaClass\}/);
+  assert.match(sensitivityEngine, /metric-sub-label/);
+  assert.match(sensitivityCss, /\.sensitivity-tool \.metric-card::before/s);
+  assert.match(sensitivityCss, /\.sensitivity-tool \.metric-card\.metric-green/s);
+  assert.match(sensitivityCss, /\.sensitivity-tool \.metric-status\.positive/s);
+  assert.match(sensitivityCss, /\.sensitivity-tool \.metric-sub strong/s);
+});

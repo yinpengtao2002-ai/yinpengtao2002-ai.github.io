@@ -481,43 +481,147 @@
 
 .sensitivity-tool .metrics-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.85rem;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.62rem;
     max-width: 1480px;
     margin: 0 auto 1rem;
 }
 
 .sensitivity-tool .metric-card {
-    min-height: 118px;
+    --metric-accent: var(--accent-orange);
+    --metric-soft: rgba(217, 119, 87, 0.11);
+    position: relative;
+    display: flex;
+    min-height: 148px;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.56rem;
+    overflow: hidden;
     border: 1px solid var(--border-light);
     border-radius: 8px;
-    background: var(--bg-card);
-    padding: 1rem;
-    box-shadow: var(--shadow-soft);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(253, 252, 249, 0.96) 100%),
+        var(--bg-card);
+    padding: 0.76rem 0.72rem 0.68rem;
+    box-shadow: 0 8px 22px rgba(20, 20, 19, 0.055);
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.sensitivity-tool .metric-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3px;
+    background: linear-gradient(90deg, var(--metric-accent), color-mix(in srgb, var(--metric-accent) 24%, transparent));
+}
+
+.sensitivity-tool .metric-card:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--metric-accent) 42%, var(--border-light));
+    box-shadow: 0 14px 34px rgba(20, 20, 19, 0.075);
+}
+
+.sensitivity-tool .metric-card.metric-blue {
+    --metric-accent: var(--accent-blue);
+    --metric-soft: rgba(92, 143, 186, 0.11);
+}
+
+.sensitivity-tool .metric-card.metric-orange {
+    --metric-accent: var(--accent-orange);
+    --metric-soft: rgba(217, 119, 87, 0.11);
+}
+
+.sensitivity-tool .metric-card.metric-green {
+    --metric-accent: var(--accent-green);
+    --metric-soft: rgba(120, 140, 93, 0.12);
+}
+
+.sensitivity-tool .metric-card.metric-red {
+    --metric-accent: var(--accent-red);
+    --metric-soft: rgba(182, 95, 85, 0.1);
+}
+
+.sensitivity-tool .metric-topline,
+.sensitivity-tool .metric-sub {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.46rem;
 }
 
 .sensitivity-tool .metric-label {
-    color: var(--text-secondary);
+    min-width: 0;
+    color: var(--text-primary);
     font-family: var(--font-sans);
-    font-size: 0.73rem;
-    font-weight: 700;
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.sensitivity-tool .metric-status {
+    display: inline-flex;
+    min-height: 20px;
+    flex: 0 0 auto;
+    align-items: center;
+    border-radius: 999px;
+    background: rgba(116, 113, 104, 0.12);
+    color: var(--text-secondary);
+    padding: 0.18rem 0.42rem;
+    font-family: var(--font-sans);
+    font-size: 0.6rem;
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.sensitivity-tool .metric-status.positive {
+    background: rgba(120, 140, 93, 0.13);
+    color: var(--accent-green);
+}
+
+.sensitivity-tool .metric-status.negative {
+    background: rgba(182, 95, 85, 0.12);
+    color: var(--accent-red);
 }
 
 .sensitivity-tool .metric-value {
-    margin-top: 0.55rem;
+    margin-top: 0.2rem;
     color: var(--text-primary);
     font-family: var(--font-sans);
-    font-size: clamp(1.25rem, 1.8vw, 1.85rem);
+    font-size: clamp(1.02rem, 1.18vw, 1.26rem);
     font-weight: 800;
     line-height: 1.15;
+    overflow-wrap: anywhere;
 }
 
 .sensitivity-tool .metric-sub {
-    margin-top: 0.4rem;
-    color: var(--text-muted);
+    margin-top: auto;
+    border-radius: 8px;
+    background: var(--metric-soft);
+    padding: 0.46rem 0.52rem;
     font-family: var(--font-sans);
+    line-height: 1.2;
+}
+
+.sensitivity-tool .metric-sub-label {
+    color: var(--text-muted);
+    font-size: 0.62rem;
+    font-weight: 800;
+}
+
+.sensitivity-tool .metric-sub strong {
+    color: var(--text-secondary);
     font-size: 0.72rem;
-    line-height: 1.4;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.sensitivity-tool .metric-sub strong.positive {
+    color: var(--accent-green);
+}
+
+.sensitivity-tool .metric-sub strong.negative {
+    color: var(--accent-red);
 }
 
 .sensitivity-tool .workspace-grid {
@@ -788,7 +892,7 @@
     }
 
     .sensitivity-tool .metrics-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .sensitivity-tool .button-grid {

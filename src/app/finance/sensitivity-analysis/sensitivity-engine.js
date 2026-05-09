@@ -384,14 +384,31 @@ function isCompactViewport() {
     return typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
 }
 
-function formatDeltaPercent(currentValue, baseValue) {
+function metricComparisonMeta(currentValue, baseValue) {
     const current = Number(currentValue || 0);
     const base = Number(baseValue || 0);
-    if (Math.abs(base) < 1e-9) {
-        if (Math.abs(current) < 1e-9) return "较现状 0.0%";
-        return "较现状新增";
+    const delta = current - base;
+    if (Math.abs(delta) < 1e-9) {
+        return {
+            status: "持平",
+            deltaClass: "neutral",
+            deltaText: "0.0%"
+        };
     }
-    return `较现状 ${formatSignedPercent(((current - base) / Math.abs(base)) * 100, 1)}`;
+    if (Math.abs(base) < 1e-9) {
+        return {
+            status: current > 0 ? "新增" : "减少",
+            deltaClass: current > 0 ? "positive" : "negative",
+            deltaText: current > 0 ? "新增" : "减少"
+        };
+    }
+
+    const deltaPercent = (delta / Math.abs(base)) * 100;
+    return {
+        status: delta > 0 ? "提升" : "下降",
+        deltaClass: delta > 0 ? "positive" : "negative",
+        deltaText: formatSignedPercent(deltaPercent, 1)
+    };
 }
 
 function formatDriverAnalysisValue(key, value, assumptions = AppState.assumptions) {
@@ -1047,41 +1064,53 @@ function renderMetrics(result, baseResult) {
         {
             label: "销量",
             value: formatVolume(result.salesVolume, 1),
-            sub: formatDeltaPercent(result.salesVolume, baseResult.salesVolume)
+            tone: "blue",
+            ...metricComparisonMeta(result.salesVolume, baseResult.salesVolume)
         },
         {
             label: "单车净收入",
             value: formatUnitAmount(result.unitNetRevenue, 2),
-            sub: formatDeltaPercent(result.unitNetRevenue, baseResult.unitNetRevenue)
+            tone: "orange",
+            ...metricComparisonMeta(result.unitNetRevenue, baseResult.unitNetRevenue)
         },
         {
             label: "净收入总额",
             value: formatAmount(result.netRevenue, 1),
-            sub: formatDeltaPercent(result.netRevenue, baseResult.netRevenue)
+            tone: "orange",
+            ...metricComparisonMeta(result.netRevenue, baseResult.netRevenue)
         },
         {
             label: "边际总额",
             value: formatAmount(result.contributionMargin, 1),
-            sub: formatDeltaPercent(result.contributionMargin, baseResult.contributionMargin)
+            tone: "green",
+            ...metricComparisonMeta(result.contributionMargin, baseResult.contributionMargin)
         },
         {
             label: "单车边际",
             value: formatUnitAmount(result.unitContributionMargin, 2),
-            sub: formatDeltaPercent(result.unitContributionMargin, baseResult.unitContributionMargin)
+            tone: "green",
+            ...metricComparisonMeta(result.unitContributionMargin, baseResult.unitContributionMargin)
         },
         {
             label: "利润总额",
             value: formatAmount(result.profit, 1),
-            sub: formatDeltaPercent(result.profit, baseResult.profit)
+            tone: "orange",
+            ...metricComparisonMeta(result.profit, baseResult.profit)
         }
     ];
 
     document.getElementById("metrics-grid").innerHTML = cards.map((card) => `
-        <div class="metric-card">
-            <div class="metric-label">${card.label}</div>
+        <article class="metric-card metric-${card.tone}">
+            <div class="metric-topline">
+                <div class="metric-label">${card.label}</div>
+                <span class="metric-status ${card.deltaClass}">${card.status}</span>
+            </div>
             <div class="metric-value">${card.value}</div>
-            <div class="metric-sub">${card.sub}</div>
-        </div>
+            <div class="metric-sub">
+                <span class="metric-sub-label">较现状</span>
+                <strong class="${card.deltaClass}">${card.deltaText}</strong>
+            </div>
+        </article>
     `).join("");
 }
 
