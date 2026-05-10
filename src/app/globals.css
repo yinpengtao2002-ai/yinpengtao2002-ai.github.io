@@ -220,6 +220,47 @@ h6 {
   margin-top: 6px;
 }
 
+.home-hero-capability-trail {
+  display: grid;
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 14px;
+}
+
+.home-hero-capability-trail .home-hero-kicker {
+  grid-column: 1 / -1;
+  margin-bottom: -1px;
+}
+
+.home-hero-path-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-width: 0;
+}
+
+.home-hero-path-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 72%, transparent);
+  color: color-mix(in srgb, var(--foreground) 82%, var(--muted));
+  font-size: clamp(0.82rem, 1.05vw, 0.94rem);
+  font-weight: 800;
+  padding: 0 10px;
+}
+
+.home-hero-path-arrow {
+  width: 14px;
+  height: 14px;
+  color: color-mix(in srgb, var(--accent-secondary) 60%, var(--muted));
+  flex: 0 0 auto;
+}
+
 .home-hero-title {
   margin: 0;
   color: color-mix(in srgb, var(--foreground) 92%, var(--accent-secondary));
@@ -477,32 +518,6 @@ h6 {
   -webkit-user-drag: none;
 }
 
-.home-hero-stage-glass {
-  position: absolute;
-  z-index: 3;
-  border: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--card) 62%, transparent);
-  box-shadow: 0 16px 34px rgba(20, 20, 19, 0.08);
-  pointer-events: none;
-  animation: homeHeroStageFloat 6.4s ease-in-out infinite;
-}
-
-.home-hero-stage-glass-main {
-  right: 8%;
-  top: 10%;
-  width: 32%;
-  height: 18%;
-}
-
-.home-hero-stage-glass-side {
-  left: 8%;
-  bottom: 12%;
-  width: 26%;
-  height: 16%;
-  animation-delay: -2.1s;
-}
-
 .home-hero-stage-float {
   position: absolute;
   z-index: 4;
@@ -632,16 +647,6 @@ h6 {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
     filter: blur(0);
-  }
-}
-
-@keyframes homeHeroStageFloat {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(0, -7px, 0);
   }
 }
 
@@ -2262,6 +2267,27 @@ h6 {
     padding: 0.76rem 0.85rem;
   }
 
+  .home-hero-capability-trail {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .home-hero-path-row {
+    gap: 5px;
+  }
+
+  .home-hero-path-step {
+    min-height: 25px;
+    font-size: 11px;
+    padding-inline: 8px;
+  }
+
+  .home-hero-path-arrow {
+    width: 12px;
+    height: 12px;
+  }
+
   .home-hero-kicker {
     font-size: 10px;
     margin-bottom: 7px;
@@ -2360,7 +2386,6 @@ h6 {
     padding: 8px;
   }
 
-  .home-hero-stage-glass,
   .home-hero-stage-float-note {
     display: none;
   }
@@ -3339,7 +3364,6 @@ h6 {
   .home-hero-continue-runner,
   .home-hero-stage-copy,
   .home-hero-stage-preview,
-  .home-hero-stage-glass,
   .home-hero-stage-scan,
   .home-hero-stage-tab,
   .home-hero-question-card,

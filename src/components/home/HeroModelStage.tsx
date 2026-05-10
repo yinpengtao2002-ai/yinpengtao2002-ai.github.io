@@ -93,8 +93,6 @@ export default function HeroModelStage() {
             sizes="(max-width: 768px) 92vw, 520px"
             className="home-hero-stage-image"
           />
-          <div className="home-hero-stage-glass home-hero-stage-glass-main" aria-hidden="true" />
-          <div className="home-hero-stage-glass home-hero-stage-glass-side" aria-hidden="true" />
           <div className="home-hero-stage-float home-hero-stage-float-metric">
             <span>{activeStage.metricLabel}</span>
             <strong>{activeStage.metricValue}</strong>

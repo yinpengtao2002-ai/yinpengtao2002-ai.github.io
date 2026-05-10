@@ -66,8 +66,12 @@ test("home hero returns to a split Lucas plus product-stage layout", () => {
   assert.match(hero, /home-hero-right/);
   assert.match(hero, /home-hero-right-stack/);
   assert.match(hero, /home-hero-copy-card/);
-  assert.match(hero, /把经营问题，变成可计算的判断/);
-  assert.match(hero, /预算偏差、单车变化、趋势异常和利润敏感性，都可以从一个问题进入一个模型。/);
+  assert.match(hero, /home-hero-capability-trail/);
+  assert.match(hero, /经营问题/);
+  assert.match(hero, /财务模型/);
+  assert.match(hero, /分析判断/);
+  assert.match(hero, /可视化表达/);
+  assert.doesNotMatch(hero, /把经营问题，变成可计算的判断/);
   assert.doesNotMatch(hero, /<span className="home-headline-mark">从问题进入模型<\/span>/);
   assert.match(hero, /Lucas Yin/);
   assert.match(hero, /奇瑞汽车国际财务 BP/);
@@ -154,12 +158,14 @@ test("home hero uses an interactive model stage instead of a static question gri
   assert.match(heroModelStage, /趋势哪里异常/);
   assert.match(heroModelStage, /哪个变量最影响利润/);
   assert.doesNotMatch(heroModelStage, /校对模型口径/);
+  assert.doesNotMatch(heroModelStage, /home-hero-stage-glass/);
   assert.match(globals, /\.home-hero-stage-shell\s*\{/);
   assert.match(globals, /\.home-hero-stage-panel\s*\{/);
   assert.match(globals, /\.home-hero-stage-preview\s*\{/);
   assert.match(globals, /\.home-hero-stage-tab\s*\{/);
   assert.match(globals, /@keyframes\s+homeHeroStageIn/);
-  assert.match(globals, /@keyframes\s+homeHeroStageFloat/);
+  assert.doesNotMatch(globals, /\.home-hero-stage-glass/);
+  assert.doesNotMatch(globals, /@keyframes\s+homeHeroStageFloat/);
   assert.match(productStage, /分析判断/);
   assert.doesNotMatch(productStage, /AI 解读/);
   assert.doesNotMatch(hero, /ArtifactCard/);
@@ -265,14 +271,14 @@ test("home continue cue stays in normal layout flow", () => {
 
 test("homepage finance section previews models as a composed showcase", () => {
   assert.match(financeSection, /home-finance-title-card/);
-  assert.match(financeSection, /<h2 className="home-finance-title">\s*选择你正在面对的经营问题\s*<\/h2>/);
+  assert.match(financeSection, /<h2 className="home-finance-title">\s*问题驱动的模型库\s*<\/h2>/);
   assert.doesNotMatch(financeSection, /MODEL LIBRARY/);
   assert.doesNotMatch(financeSection, /Finance Models/);
   assert.doesNotMatch(financeSection, /home-finance-title-meta/);
   assert.doesNotMatch(financeSection, /home-finance-title-copy/);
   assert.doesNotMatch(financeSection, /home-finance-title-prefix/);
   assert.doesNotMatch(financeSection, /home-finance-title-main/);
-  assert.match(financeSection, /四个模型，对应四类经营判断；从复盘、归因、趋势和情景推演开始选择。/);
+  assert.match(financeSection, /这里收录的是我自己搭建并持续打磨的财务模型和分析工具，适合从复盘、归因、趋势和情景推演开始使用。/);
   assert.doesNotMatch(financeSection, /按经营问题进入模型/);
   assert.doesNotMatch(financeSection, /四个模型对应四类常见经营问题/);
   assert.match(financeSection, /home-finance-showcase/);
