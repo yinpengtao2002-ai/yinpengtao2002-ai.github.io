@@ -242,6 +242,7 @@ h6 {
 
 .home-hero-path-step {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   min-height: 28px;
@@ -251,6 +252,7 @@ h6 {
   color: color-mix(in srgb, var(--foreground) 82%, var(--muted));
   font-size: clamp(0.76rem, 0.92vw, 0.86rem);
   font-weight: 800;
+  white-space: nowrap;
   padding: 0 8px;
 }
 
@@ -2299,19 +2301,19 @@ h6 {
   }
 
   .home-hero-path-row {
-    flex-wrap: wrap;
-    gap: 5px;
+    flex-wrap: nowrap;
+    gap: 3px;
   }
 
   .home-hero-path-step {
-    min-height: 25px;
-    font-size: 11px;
-    padding-inline: 8px;
+    min-height: 22px;
+    font-size: 9.5px;
+    padding-inline: 5px;
   }
 
   .home-hero-path-arrow {
-    width: 12px;
-    height: 12px;
+    width: 8px;
+    height: 8px;
   }
 
   .home-hero-kicker {

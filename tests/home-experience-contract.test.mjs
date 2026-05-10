@@ -75,7 +75,12 @@ test("home hero returns to a split Lucas plus product-stage layout", () => {
   assert.match(hero, /从经营问题到模型、判断和图表/);
   assert.match(hero, /gradient-text/);
   assert.match(cssRule(".home-hero-path-row"), /flex-wrap:\s*nowrap/);
-  assert.match(mobileCssRule(".home-hero-path-row"), /flex-wrap:\s*wrap/);
+  assert.match(mobileCssRule(".home-hero-path-row"), /flex-wrap:\s*nowrap/);
+  assert.match(mobileCssRule(".home-hero-path-row"), /gap:\s*3px/);
+  assert.match(cssRule(".home-hero-path-step"), /flex:\s*0 0 auto/);
+  assert.match(cssRule(".home-hero-path-step"), /white-space:\s*nowrap/);
+  assert.match(mobileCssRule(".home-hero-path-step"), /font-size:\s*9\.5px/);
+  assert.match(mobileCssRule(".home-hero-path-step"), /padding-inline:\s*5px/);
   assert.doesNotMatch(hero, /home-identity-panel/);
   assert.doesNotMatch(hero, /home-hero-center/);
 });
