@@ -1119,6 +1119,42 @@ function calculateGlobalMetrics(data, month) {
 }
 
 
+function createPVMBucket() {
+    return {
+        vol: 0,
+        margin: 0,
+        volumeBackedMargin: 0,
+        auxiliaryMargin: 0
+    };
+}
+
+function addRowToPVMBucket(bucket, row) {
+    const volume = Number(row['Sales Volume']) || 0;
+    const margin = Number(row['Total Margin']) || 0;
+
+    bucket.vol += volume;
+    bucket.margin += margin;
+
+    if (volume === 0 && margin !== 0) {
+        bucket.auxiliaryMargin += margin;
+    } else {
+        bucket.volumeBackedMargin += margin;
+    }
+}
+
+function calculateVolumeBackedAvgMargin(data, month, totalVol) {
+    if (totalVol <= 0) return 0;
+    const margin = data
+        .filter(row => row['Month'] === month)
+        .reduce((sum, row) => {
+            const volume = Number(row['Sales Volume']) || 0;
+            const rowMargin = Number(row['Total Margin']) || 0;
+            return volume === 0 && rowMargin !== 0 ? sum : sum + rowMargin;
+        }, 0);
+    return margin / totalVol;
+}
+
+
 // ==================== 当前维度 PVM 效应计算 ====================
 /**
  * 在当前展示维度上计算 Mix 和 Rate 效应。
@@ -1131,9 +1167,10 @@ function calculateGlobalMetrics(data, month) {
  * @param {number} totalVolCurr - 当期全局/视图总销量（用于计算权重）
  * @param {number} totalVolBase - 基期全局/视图总销量（用于计算权重）
  * @param {number} avgMarginBase - 基期全局/视图平均单车指标
+ * @param {Object} options - 可选全局口径配置
  * @returns {Array} 当前维度层级的 PVM 效应数组
  */
-function calculateDimensionPVMEffects(data, baseMonth, currMonth, groupDim, totalVolCurr, totalVolBase, avgMarginBase) {
+function calculateDimensionPVMEffects(data, baseMonth, currMonth, groupDim, totalVolCurr, totalVolBase, avgMarginBase, options = {}) {
     const baseAgg = {};
     const currAgg = {};
 
@@ -1144,26 +1181,37 @@ function calculateDimensionPVMEffects(data, baseMonth, currMonth, groupDim, tota
     data.forEach(row => {
         const key = getDimValue(row);
         if (row['Month'] === baseMonth) {
-            if (!baseAgg[key]) baseAgg[key] = { vol: 0, margin: 0 };
-            baseAgg[key].vol += row['Sales Volume'];
-            baseAgg[key].margin += row['Total Margin'];
+            if (!baseAgg[key]) baseAgg[key] = createPVMBucket();
+            addRowToPVMBucket(baseAgg[key], row);
         }
         if (row['Month'] === currMonth) {
-            if (!currAgg[key]) currAgg[key] = { vol: 0, margin: 0 };
-            currAgg[key].vol += row['Sales Volume'];
-            currAgg[key].margin += row['Total Margin'];
+            if (!currAgg[key]) currAgg[key] = createPVMBucket();
+            addRowToPVMBucket(currAgg[key], row);
         }
     });
 
     const allKeys = new Set([...Object.keys(baseAgg), ...Object.keys(currAgg)]);
+    const safeAvgMarginBase = Number.isFinite(avgMarginBase) ? avgMarginBase : 0;
+    const observedVolBase = Object.values(baseAgg).reduce((sum, item) => sum + item.vol, 0);
+    const usesCompleteBaseVolume = Math.abs(observedVolBase - totalVolBase) < 1e-9;
+    const inferredVolumeBackedAvgBase = calculateVolumeBackedAvgMargin(data, baseMonth, totalVolBase);
+    const volumeBackedAvgBase = Number.isFinite(options.avgVolumeBackedMarginBase)
+        ? options.avgVolumeBackedMarginBase
+        : (usesCompleteBaseVolume && Number.isFinite(inferredVolumeBackedAvgBase) ? inferredVolumeBackedAvgBase : safeAvgMarginBase);
 
     return [...allKeys].map(key => {
-        const baseData = baseAgg[key] || { vol: 0, margin: 0 };
-        const currData = currAgg[key] || { vol: 0, margin: 0 };
+        const baseData = baseAgg[key] || createPVMBucket();
+        const currData = currAgg[key] || createPVMBucket();
         const weightBase = totalVolBase > 0 ? baseData.vol / totalVolBase : 0;
         const weightCurr = totalVolCurr > 0 ? currData.vol / totalVolCurr : 0;
-        const marginUnitBase = baseData.vol > 0 ? baseData.margin / baseData.vol : 0;
-        const marginUnitCurr = currData.vol > 0 ? currData.margin / currData.vol : 0;
+        const marginUnitBase = baseData.vol !== 0 ? baseData.margin / baseData.vol : 0;
+        const marginUnitCurr = currData.vol !== 0 ? currData.margin / currData.vol : 0;
+        const volumeBackedUnitBase = baseData.vol !== 0 ? baseData.volumeBackedMargin / baseData.vol : 0;
+        const volumeBackedUnitCurr = currData.vol !== 0 ? currData.volumeBackedMargin / currData.vol : 0;
+        // 零销量但有金额的附属项没有自身分母；按“金额/总销量”的单车贡献折入费率效应，保证分解合计等于真实单车变动。
+        const auxiliaryEffect =
+            (totalVolCurr > 0 ? currData.auxiliaryMargin / totalVolCurr : 0) -
+            (totalVolBase > 0 ? baseData.auxiliaryMargin / totalVolBase : 0);
 
         const row = {
             [groupDim]: key,
@@ -1172,20 +1220,22 @@ function calculateDimensionPVMEffects(data, baseMonth, currMonth, groupDim, tota
             Total_Margin_Base: baseData.margin,
             Total_Margin_Curr: currData.margin,
             Margin_Unit_Base: marginUnitBase,
-            Margin_Unit_Curr: marginUnitCurr
+            Margin_Unit_Curr: marginUnitCurr,
+            Auxiliary_Effect: auxiliaryEffect
         };
 
-        if (baseData.vol === 0 && currData.vol > 0) {
-            row.Mix_Effect = weightCurr * (marginUnitCurr - avgMarginBase);
+        if (baseData.vol === 0 && currData.vol !== 0) {
+            row.Mix_Effect = weightCurr * (volumeBackedUnitCurr - volumeBackedAvgBase);
             row.Rate_Effect = 0;
-        } else if (currData.vol === 0 && baseData.vol > 0) {
-            row.Mix_Effect = -weightBase * (marginUnitBase - avgMarginBase);
+        } else if (currData.vol === 0 && baseData.vol !== 0) {
+            row.Mix_Effect = -weightBase * (volumeBackedUnitBase - volumeBackedAvgBase);
             row.Rate_Effect = 0;
         } else {
-            row.Mix_Effect = (weightCurr - weightBase) * (marginUnitBase - avgMarginBase);
-            row.Rate_Effect = weightCurr * (marginUnitCurr - marginUnitBase);
+            row.Mix_Effect = (weightCurr - weightBase) * (volumeBackedUnitBase - volumeBackedAvgBase);
+            row.Rate_Effect = weightCurr * (volumeBackedUnitCurr - volumeBackedUnitBase);
         }
 
+        row.Rate_Effect += auxiliaryEffect;
         row.Total_Contribution = row.Mix_Effect + row.Rate_Effect;
         return row;
     });
@@ -1239,11 +1289,19 @@ function prepareDisplayData(effectsData, dimCol, totalVolBase, totalVolCurr, tot
         totalRow.Margin_Unit_Base = sumVolBase > 0 ? totalMarginBase / sumVolBase : 0;
         totalRow.Margin_Unit_Curr = sumVolCurr > 0 ? totalMarginCurr / sumVolCurr : 0;
     } else {
-        // 加权平均
-        const wmBase = data.reduce((s, r) => s + r.Vol_Base * r.Margin_Unit_Base, 0);
-        const wmCurr = data.reduce((s, r) => s + r.Vol_Curr * r.Margin_Unit_Curr, 0);
-        totalRow.Margin_Unit_Base = sumVolBase > 0 ? wmBase / sumVolBase : 0;
-        totalRow.Margin_Unit_Curr = sumVolCurr > 0 ? wmCurr / sumVolCurr : 0;
+        // 下钻“对整体影响”视角没有传入总额时，优先用行级总金额汇总，避免零销量附属金额在加权平均里被漏掉。
+        const marginBase = data.reduce((s, r) => s + (Number(r.Total_Margin_Base) || 0), 0);
+        const marginCurr = data.reduce((s, r) => s + (Number(r.Total_Margin_Curr) || 0), 0);
+        if (marginBase || marginCurr) {
+            totalRow.Margin_Unit_Base = sumVolBase > 0 ? marginBase / sumVolBase : 0;
+            totalRow.Margin_Unit_Curr = sumVolCurr > 0 ? marginCurr / sumVolCurr : 0;
+        } else {
+            // 加权平均
+            const wmBase = data.reduce((s, r) => s + r.Vol_Base * r.Margin_Unit_Base, 0);
+            const wmCurr = data.reduce((s, r) => s + r.Vol_Curr * r.Margin_Unit_Curr, 0);
+            totalRow.Margin_Unit_Base = sumVolBase > 0 ? wmBase / sumVolBase : 0;
+            totalRow.Margin_Unit_Curr = sumVolCurr > 0 ? wmCurr / sumVolCurr : 0;
+        }
     }
 
     data.push(totalRow);
@@ -1281,6 +1339,7 @@ function triggerUpdate() {
     // 1. 全局指标
     const globalBase = calculateGlobalMetrics(AppState.df, baseMonth);
     const globalCurr = calculateGlobalMetrics(AppState.df, currMonth);
+    const globalVolumeBackedAvgBase = calculateVolumeBackedAvgMargin(AppState.df, baseMonth, globalBase.totalVol);
     const totalDiff = globalCurr.avgMargin - globalBase.avgMargin;
 
     // 2. 更新顶部指标卡片
@@ -1326,7 +1385,8 @@ function triggerUpdate() {
         if (isDrilled) {
             globalEffects = calculateDimensionPVMEffects(
                 dfLevel, baseMonth, currMonth, dim,
-                globalCurr.totalVol, globalBase.totalVol, globalBase.avgMargin
+                globalCurr.totalVol, globalBase.totalVol, globalBase.avgMargin,
+                { avgVolumeBackedMarginBase: globalVolumeBackedAvgBase }
             );
             globalDisplayData = prepareDisplayData(
                 globalEffects, dim,

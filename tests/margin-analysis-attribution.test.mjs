@@ -132,6 +132,70 @@ test("display total row preserves totals and weighted unit margin", () => {
     approx(totalRow.Total_Contribution, -1.5, "display total contribution");
 });
 
+test("zero-volume nonzero-margin rows reconcile into the unit metric movement", () => {
+    const data = [
+        { Month: "base", Dim_A: "Core", "Sales Volume": 100, "Total Margin": 1000 },
+        { Month: "base", Dim_A: "Accessory", "Sales Volume": 0, "Total Margin": 100 },
+        { Month: "curr", Dim_A: "Core", "Sales Volume": 100, "Total Margin": 1000 },
+        { Month: "curr", Dim_A: "Accessory", "Sales Volume": 0, "Total Margin": 200 },
+    ];
+
+    const base = calculateGlobalMetrics(data, "base");
+    const curr = calculateGlobalMetrics(data, "curr");
+    const effects = calculateDimensionPVMEffects(
+        data,
+        "base",
+        "curr",
+        "Dim_A",
+        curr.totalVol,
+        base.totalVol,
+        base.avgMargin
+    );
+    const displayData = prepareDisplayData(
+        effects,
+        "Dim_A",
+        base.totalVol,
+        curr.totalVol,
+        base.totalMargin,
+        curr.totalMargin
+    );
+
+    const accessory = rowByDim(effects, "Accessory");
+    approx(accessory.Total_Contribution, 1, "zero-volume accessory contribution");
+
+    const totalContribution = effects.reduce((sum, row) => sum + row.Total_Contribution, 0);
+    approx(totalContribution, curr.avgMargin - base.avgMargin, "sum ties to true unit metric movement");
+
+    const totalRow = rowByDim(displayData, "总计");
+    approx(totalRow.Total_Contribution, curr.avgMargin - base.avgMargin, "display total ties to true unit metric movement");
+    approx(totalRow.Margin_Unit_Base, 11, "base total unit metric includes zero-volume margin");
+    approx(totalRow.Margin_Unit_Curr, 12, "current total unit metric includes zero-volume margin");
+});
+
+test("negative-volume dimension groups reconcile instead of dropping their margin", () => {
+    const data = [
+        { Month: "base", Dim_A: "Core", "Sales Volume": 100, "Total Margin": 1000 },
+        { Month: "base", Dim_A: "Return", "Sales Volume": -10, "Total Margin": -100 },
+        { Month: "curr", Dim_A: "Core", "Sales Volume": 100, "Total Margin": 1000 },
+        { Month: "curr", Dim_A: "Return", "Sales Volume": -10, "Total Margin": -200 },
+    ];
+
+    const base = calculateGlobalMetrics(data, "base");
+    const curr = calculateGlobalMetrics(data, "curr");
+    const effects = calculateDimensionPVMEffects(
+        data,
+        "base",
+        "curr",
+        "Dim_A",
+        curr.totalVol,
+        base.totalVol,
+        base.avgMargin
+    );
+
+    const totalContribution = effects.reduce((sum, row) => sum + row.Total_Contribution, 0);
+    approx(totalContribution, curr.avgMargin - base.avgMargin, "sum ties to true unit metric movement with negative volume");
+});
+
 test("drilled global-impact decomposition ties back to parent bar contribution", () => {
     const data = [
         { Month: "base", Dim_A: "EU", Dim_B: "DE", "Sales Volume": 100, "Total Margin": 1000 },
