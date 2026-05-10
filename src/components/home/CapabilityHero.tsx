@@ -84,13 +84,13 @@ export default function CapabilityHero() {
           >
             <div className="home-hero-right-stack">
               <div className="home-hero-copy-card">
-                <p className="home-hero-kicker">Capability Profile</p>
+                <p className="home-hero-kicker">Model Entry</p>
                 <h2 className="home-hero-headline">
-                  <span className="home-headline-mark">从问题进入模型</span>
-                  <span className="home-headline-line">预算偏差、趋势异常、单车变化和利润敏感性，都落到可计算、可展示的判断里</span>
+                  <span className="home-headline-mark">把经营问题，变成可计算的判断</span>
+                  <span className="home-headline-line">预算偏差、单车变化、趋势异常和利润敏感性，都可以从一个问题进入一个模型。</span>
                 </h2>
                 <Link href="#finance" className="home-primary-action" onClick={handleBrowseMore}>
-                  查看财务模型 <ArrowRight style={{ width: 15, height: 15 }} />
+                  浏览全部模型 <ArrowRight style={{ width: 15, height: 15 }} />
                 </Link>
               </div>
               <HeroModelStage />

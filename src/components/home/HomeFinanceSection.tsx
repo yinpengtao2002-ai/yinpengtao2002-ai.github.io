@@ -212,10 +212,10 @@ export default function HomeFinanceSection() {
         >
           <div className="home-finance-title-card">
             <h2 className="home-finance-title">
-              问题驱动的财务模型
+              选择你正在面对的经营问题
             </h2>
             <p className="home-finance-intro">
-              从复盘、归因、趋势到敏感性，按真实经营问题选择模型。
+              四个模型，对应四类经营判断；从复盘、归因、趋势和情景推演开始选择。
             </p>
           </div>
           <Link href="/finance" className="home-finance-library-link" aria-label="查看完整财务模型列表">

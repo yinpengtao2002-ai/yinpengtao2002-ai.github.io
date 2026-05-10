@@ -173,21 +173,23 @@ h6 {
 .home-hero-copy-card {
   position: relative;
   z-index: 2;
-  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 68%, transparent);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--card) 94%, transparent);
-  box-shadow: 0 22px 58px rgba(20, 20, 19, 0.08);
-  padding: clamp(1rem, 1.8vw, 1.35rem);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--card) 90%, transparent), color-mix(in srgb, var(--accent-soft) 28%, var(--card))),
+    color-mix(in srgb, var(--card) 88%, transparent);
+  box-shadow: 0 14px 38px rgba(20, 20, 19, 0.055);
+  padding: clamp(0.86rem, 1.5vw, 1.08rem);
 }
 
 .home-hero-kicker {
   display: block;
   color: var(--accent-secondary);
   font-family: var(--font-poppins);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.18em;
-  margin-bottom: 9px;
+  letter-spacing: 0.16em;
+  margin-bottom: 7px;
   text-transform: uppercase;
 }
 
@@ -198,23 +200,24 @@ h6 {
 }
 
 .home-hero-headline {
-  margin-bottom: 13px;
+  margin-bottom: 11px;
 }
 
 .home-headline-mark {
-  color: var(--accent);
+  color: color-mix(in srgb, var(--foreground) 88%, var(--accent-secondary));
   font-family: var(--font-hero-display);
-  font-size: clamp(1.35rem, 2.6vw, 2.15rem);
+  font-size: clamp(1.22rem, 2vw, 1.66rem);
   font-weight: 500;
-  line-height: 1.08;
+  line-height: 1.12;
 }
 
 .home-headline-line {
-  color: color-mix(in srgb, var(--foreground) 82%, var(--muted));
-  font-size: clamp(1.02rem, 1.7vw, 1.25rem);
-  font-weight: 800;
-  line-height: 1.32;
-  margin-top: 5px;
+  max-width: 34rem;
+  color: color-mix(in srgb, var(--foreground) 66%, var(--muted));
+  font-size: clamp(0.92rem, 1.22vw, 1.04rem);
+  font-weight: 650;
+  line-height: 1.48;
+  margin-top: 6px;
 }
 
 .home-hero-title {
@@ -779,6 +782,12 @@ h6 {
 .home-primary-action {
   background: var(--foreground);
   color: var(--background);
+}
+
+.home-hero-copy-card .home-primary-action {
+  min-height: 34px;
+  padding-inline: 13px;
+  font-size: 12px;
 }
 
 .home-hero-continue-row {

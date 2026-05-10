@@ -38,7 +38,7 @@ test("home hero does not split AI workflow and thinking judgment into separate p
 
 test("home page has an explicit continue cue for below-the-fold content", () => {
   assert.match(hero, /浏览更多/);
-  assert.match(hero, /查看财务模型/);
+  assert.match(hero, /浏览全部模型/);
   assert.doesNotMatch(hero, /下一屏 · 财务模型/);
   assert.match(hero, /#finance/);
   assert.match(hero, /handleBrowseMore/);
@@ -66,6 +66,9 @@ test("home hero returns to a split Lucas plus product-stage layout", () => {
   assert.match(hero, /home-hero-right/);
   assert.match(hero, /home-hero-right-stack/);
   assert.match(hero, /home-hero-copy-card/);
+  assert.match(hero, /把经营问题，变成可计算的判断/);
+  assert.match(hero, /预算偏差、单车变化、趋势异常和利润敏感性，都可以从一个问题进入一个模型。/);
+  assert.doesNotMatch(hero, /<span className="home-headline-mark">从问题进入模型<\/span>/);
   assert.match(hero, /Lucas Yin/);
   assert.match(hero, /奇瑞汽车国际财务 BP/);
   assert.match(hero, /从经营问题到模型、判断和图表/);
@@ -203,7 +206,7 @@ test("home hero arranges floating mini widgets around the Lucas identity", () =>
 
 test("home mobile hero keeps the finance CTA card as a compact section", () => {
   assert.match(hero, /home-hero-copy-card/);
-  assert.match(hero, /查看财务模型/);
+  assert.match(hero, /浏览全部模型/);
   assert.match(hero, /HeroModelStage/);
   const mobileCopyCard = mobileCssRule(".home-hero-copy-card");
   assert.doesNotMatch(mobileCopyCard, /display:\s*none/);
@@ -262,14 +265,14 @@ test("home continue cue stays in normal layout flow", () => {
 
 test("homepage finance section previews models as a composed showcase", () => {
   assert.match(financeSection, /home-finance-title-card/);
-  assert.match(financeSection, /<h2 className="home-finance-title">\s*问题驱动的财务模型\s*<\/h2>/);
+  assert.match(financeSection, /<h2 className="home-finance-title">\s*选择你正在面对的经营问题\s*<\/h2>/);
   assert.doesNotMatch(financeSection, /MODEL LIBRARY/);
   assert.doesNotMatch(financeSection, /Finance Models/);
   assert.doesNotMatch(financeSection, /home-finance-title-meta/);
   assert.doesNotMatch(financeSection, /home-finance-title-copy/);
   assert.doesNotMatch(financeSection, /home-finance-title-prefix/);
   assert.doesNotMatch(financeSection, /home-finance-title-main/);
-  assert.match(financeSection, /从复盘、归因、趋势到敏感性，按真实经营问题选择模型。/);
+  assert.match(financeSection, /四个模型，对应四类经营判断；从复盘、归因、趋势和情景推演开始选择。/);
   assert.doesNotMatch(financeSection, /按经营问题进入模型/);
   assert.doesNotMatch(financeSection, /四个模型对应四类常见经营问题/);
   assert.match(financeSection, /home-finance-showcase/);
