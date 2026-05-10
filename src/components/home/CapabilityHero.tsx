@@ -4,39 +4,15 @@ import { motion, type Transition } from "framer-motion";
 import Link from "next/link";
 import type { MouseEvent } from "react";
 import { ArrowDown, ArrowRight } from "lucide-react";
-import ProductStageVisual from "@/components/home/ProductStageVisual";
+import HeroModelStage from "@/components/home/HeroModelStage";
 import { useViewportProfile } from "@/lib/useLowMotionMode";
 
 const UI_FONT =
   'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
 const HERO_EASE = [0.22, 1, 0.36, 1] as const;
 
-const HERO_FINANCE_QUESTIONS = [
-  {
-    question: "如何找出单车变动的罪魁祸首？",
-    model: "使用单车指标变动归因模型",
-    meta: "单车归因",
-  },
-  {
-    question: "预算到底偏在哪里？",
-    model: "使用预算实际对比模型",
-    meta: "预算复盘",
-  },
-  {
-    question: "销量、收入、成本哪个最影响利润？",
-    model: "使用利润敏感性分析模型",
-    meta: "利润模拟",
-  },
-  {
-    question: "月度趋势从哪里开始异常？",
-    model: "使用分月指标趋势分析模型",
-    meta: "趋势监控",
-  },
-];
-
 export default function CapabilityHero() {
   const { isMobileLike, lowMotion, prefersReducedMotion } = useViewportProfile();
-  const visibleHeroQuestions = isMobileLike ? HERO_FINANCE_QUESTIONS.slice(0, 2) : HERO_FINANCE_QUESTIONS;
   const centerHoldDelay = isMobileLike ? 0.95 : 1;
   const shouldReduceMotion = prefersReducedMotion || (lowMotion && !isMobileLike);
   const heroAnimate = { opacity: 1, x: 0, y: 0 };
@@ -117,23 +93,7 @@ export default function CapabilityHero() {
                   查看财务模型 <ArrowRight style={{ width: 15, height: 15 }} />
                 </Link>
               </div>
-              <ProductStageVisual />
-              <div className="home-hero-question-strip" aria-label="按业务问题进入财务模型">
-                {visibleHeroQuestions.map((item) => (
-                  <Link
-                    key={item.question}
-                    href="#finance"
-                    className="home-hero-question-card"
-                    onClick={handleBrowseMore}
-                  >
-                    <span className="home-hero-question-meta">{item.meta}</span>
-                    <strong>{item.question}</strong>
-                    <span className="home-hero-question-model">
-                      {item.model} <ArrowRight style={{ width: 12, height: 12 }} />
-                    </span>
-                  </Link>
-                ))}
-              </div>
+              <HeroModelStage />
             </div>
           </motion.div>
         </div>

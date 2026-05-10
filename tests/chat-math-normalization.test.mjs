@@ -93,12 +93,14 @@ test("chat widget sends current finance model context to the API", () => {
   assert.match(chatWidget, /当前模型/);
 });
 
-test("chat widget frames Lucas AI as a model calibration and visualization assistant", () => {
-  assert.match(chatWidget, /模型使用、口径校对、可视化建议和分析框架/);
+test("chat widget frames Lucas AI with practical model and chart questions", () => {
+  assert.match(chatWidget, /模型选择、使用说明、图表阅读和文章推荐/);
   assert.match(chatWidget, /这个模型适合解决什么问题/);
-  assert.match(chatWidget, /上传前要校对哪些口径/);
-  assert.match(chatWidget, /图表应该按什么顺序看/);
-  assert.match(chatWidget, /我可以帮你选择财务模型、校对模型口径、梳理可视化阅读顺序/);
+  assert.match(chatWidget, /这个模型怎么看结论/);
+  assert.match(chatWidget, /帮我理解这个图表/);
+  assert.match(chatWidget, /我可以帮你选择财务模型、说明模型用法、梳理图表阅读顺序/);
+  assert.doesNotMatch(chatWidget, /怎么校对模型口径/);
+  assert.doesNotMatch(chatWidget, /上传前要校对哪些口径/);
   assert.doesNotMatch(chatWidget, /我看到你正在看[^`]*直接问我当前模型怎么用、要上传什么数据/);
 });
 
@@ -150,7 +152,7 @@ test("chat API injects active finance model guidance when a model page is open",
   assert.match(chatRoute, /activeFinanceModel/);
   assert.match(chatRoute, /当前打开的财务模型/);
   assert.match(chatRoute, /如果用户说“这个模型”/);
-  assert.match(chatRoute, /口径校对/);
+  assert.match(chatRoute, /模型选择/);
   assert.match(chatRoute, /可视化建议/);
   assert.match(chatRoute, /分析框架/);
   assert.match(chatRoute, /不要假装看到了当前数据/);

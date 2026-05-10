@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 
 const hero = await readFile(new URL("../src/components/home/CapabilityHero.tsx", import.meta.url), "utf8");
 const productStage = await readFile(new URL("../src/components/home/ProductStageVisual.tsx", import.meta.url), "utf8");
+const heroModelStage = await readFile(new URL("../src/components/home/HeroModelStage.tsx", import.meta.url), "utf8").catch(() => "");
 const financeSection = await readFile(new URL("../src/components/home/HomeFinanceSection.tsx", import.meta.url), "utf8");
 const thinkingSection = await readFile(new URL("../src/components/home/HomeThinkingSection.tsx", import.meta.url), "utf8");
 const thinkingLab = await readFile(new URL("../src/components/thinking/ThinkingLabClient.tsx", import.meta.url), "utf8");
@@ -32,7 +33,7 @@ test("home hero does not split AI workflow and thinking judgment into separate p
   assert.doesNotMatch(hero, /title:\s*"思考判断"/);
   assert.doesNotMatch(hero, /title:\s*"业务理解"/);
   assert.doesNotMatch(hero, /title:\s*"方法沉淀"/);
-  assert.match(hero, /HERO_FINANCE_QUESTIONS/);
+  assert.match(hero, /HeroModelStage/);
 });
 
 test("home page has an explicit continue cue for below-the-fold content", () => {
@@ -106,7 +107,7 @@ test("home hero mobile intro moves Lucas upward before revealing the product sta
   assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-hero-slogan\s*\{[\s\S]*display:\s*none/s);
   assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-hero-lede\s*\{[\s\S]*display:\s*none/s);
   assert.match(mobileCssRule(".home-hero-copy-card"), /display:\s*block/);
-  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-hero-workflow-strip\s*\{[\s\S]*display:\s*grid/s);
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-hero-stage-shell\s*\{[\s\S]*display:\s*grid/s);
 }
 );
 
@@ -126,21 +127,38 @@ test("home hero left side keeps identity focused without duplicated cards or but
   assert.doesNotMatch(hero, /home-hero-proof-list/);
   assert.doesNotMatch(hero, /home-hero-actions/);
   assert.match(hero, /home-hero-right-stack/);
-  assert.match(hero, /home-hero-question-strip/);
+  assert.match(hero, /HeroModelStage/);
+  assert.doesNotMatch(hero, /home-hero-question-strip/);
   assert.doesNotMatch(hero, /我还是职场新人/);
 });
 
-test("home hero uses the product stage visual instead of decorative artifacts", () => {
-  assert.match(hero, /ProductStageVisual/);
+test("home hero uses an interactive model stage instead of a static question grid", () => {
+  assert.match(hero, /HeroModelStage/);
+  assert.doesNotMatch(hero, /ProductStageVisual/);
+  assert.match(heroModelStage, /HERO_MODEL_STAGES/);
+  assert.match(heroModelStage, /useState/);
+  assert.match(heroModelStage, /onMouseEnter/);
+  assert.match(heroModelStage, /onFocus/);
+  assert.match(heroModelStage, /home-hero-stage-shell/);
+  assert.match(heroModelStage, /home-hero-stage-panel/);
+  assert.match(heroModelStage, /home-hero-stage-preview/);
+  assert.match(heroModelStage, /home-hero-stage-picker/);
+  assert.match(heroModelStage, /home-hero-stage-tab/);
+  assert.match(heroModelStage, /选择一个经营问题，进入对应模型/);
+  assert.match(heroModelStage, /进入这个模型/);
+  assert.match(heroModelStage, /单车为什么变了/);
+  assert.match(heroModelStage, /预算偏在哪里/);
+  assert.match(heroModelStage, /趋势哪里异常/);
+  assert.match(heroModelStage, /哪个变量最影响利润/);
+  assert.doesNotMatch(heroModelStage, /校对模型口径/);
+  assert.match(globals, /\.home-hero-stage-shell\s*\{/);
+  assert.match(globals, /\.home-hero-stage-panel\s*\{/);
+  assert.match(globals, /\.home-hero-stage-preview\s*\{/);
+  assert.match(globals, /\.home-hero-stage-tab\s*\{/);
+  assert.match(globals, /@keyframes\s+homeHeroStageIn/);
+  assert.match(globals, /@keyframes\s+homeHeroStageFloat/);
   assert.match(productStage, /分析判断/);
   assert.doesNotMatch(productStage, /AI 解读/);
-  assert.match(productStage, /product-stage-motion-layer/);
-  assert.match(productStage, /product-stage-motion-shell/);
-  assert.match(productStage, /product-stage-motion-chart/);
-  assert.match(productStage, /product-stage-motion-ai/);
-  assert.match(globals, /@keyframes\s+home-product-stage-layer-in/);
-  assert.match(globals, /\.product-stage-motion-layer\s*\{/);
-  assert.match(globals, /\.product-stage-motion-ai\s*\{/);
   assert.doesNotMatch(hero, /ArtifactCard/);
   assert.doesNotMatch(hero, /CodeArtifact/);
   assert.doesNotMatch(hero, /ChartArtifact/);
@@ -186,28 +204,29 @@ test("home hero arranges floating mini widgets around the Lucas identity", () =>
 test("home mobile hero keeps the finance CTA card as a compact section", () => {
   assert.match(hero, /home-hero-copy-card/);
   assert.match(hero, /查看财务模型/);
+  assert.match(hero, /HeroModelStage/);
   const mobileCopyCard = mobileCssRule(".home-hero-copy-card");
   assert.doesNotMatch(mobileCopyCard, /display:\s*none/);
   assert.match(mobileCopyCard, /display:\s*block/);
 });
 
-test("home hero surfaces business-question entries without changing the finance section list", () => {
-  assert.match(hero, /HERO_FINANCE_QUESTIONS/);
-  assert.match(hero, /home-hero-question-strip/);
-  assert.match(hero, /home-hero-question-card/);
-  assert.match(hero, /如何找出单车变动的罪魁祸首/);
-  assert.match(hero, /预算到底偏在哪里/);
-  assert.match(hero, /销量、收入、成本哪个最影响利润/);
-  assert.match(hero, /月度趋势从哪里开始异常/);
+test("home hero stages business-question controls without changing the finance section list", () => {
+  assert.match(heroModelStage, /HERO_MODEL_STAGES/);
+  assert.match(heroModelStage, /单车为什么变了/);
+  assert.match(heroModelStage, /预算偏在哪里/);
+  assert.match(heroModelStage, /趋势哪里异常/);
+  assert.match(heroModelStage, /哪个变量最影响利润/);
+  assert.match(heroModelStage, /\/finance\/margin-analysis/);
+  assert.match(heroModelStage, /\/finance\/business-analysis/);
+  assert.match(heroModelStage, /\/finance\/monthly-trend/);
+  assert.match(heroModelStage, /\/finance\/sensitivity-analysis/);
   assert.match(hero, /href="#finance"/);
-  assert.match(hero, /onClick=\{handleBrowseMore\}/);
-  assert.match(globals, /\.home-hero-question-strip\s*\{/);
-  assert.match(globals, /\.home-hero-question-card\s*\{/);
-  assert.match(mobileCssRule(".home-hero-question-strip"), /grid-template-columns:\s*1fr/);
-  assert.doesNotMatch(financeSection, /如何找出单车变动的罪魁祸首/);
-  assert.doesNotMatch(financeSection, /预算到底偏在哪里/);
-  assert.doesNotMatch(financeSection, /销量、收入、成本哪个最影响利润/);
-  assert.doesNotMatch(financeSection, /月度趋势从哪里开始异常/);
+  assert.match(hero, /handleBrowseMore/);
+  assert.doesNotMatch(hero, /home-hero-question-card/);
+  assert.doesNotMatch(financeSection, /单车为什么变了/);
+  assert.doesNotMatch(financeSection, /预算偏在哪里/);
+  assert.doesNotMatch(financeSection, /趋势哪里异常/);
+  assert.doesNotMatch(financeSection, /哪个变量最影响利润/);
 });
 
 test("visitor-facing copy avoids redesign-process language", () => {

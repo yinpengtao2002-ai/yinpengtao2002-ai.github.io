@@ -48,15 +48,15 @@ interface Message {
 
 const MOBILE_QUICK_PROMPTS = [
     "哪个模型适合预算复盘？",
-    "怎么校对模型口径？",
+    "我该先看哪个模型？",
     "推荐一篇思考文章",
 ];
 const CURRENT_MODEL_QUICK_PROMPTS = [
     "这个模型适合解决什么问题？",
-    "上传前要校对哪些口径？",
-    "图表应该按什么顺序看？",
+    "这个模型怎么看结论？",
+    "帮我理解这个图表",
 ];
-const AI_ASSISTANT_SCOPE = "模型使用、口径校对、可视化建议和分析框架";
+const AI_ASSISTANT_SCOPE = "模型选择、使用说明、图表阅读和文章推荐";
 
 const CHAT_UI_FONT =
     'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
@@ -107,10 +107,10 @@ function getCurrentFinanceModelSlug(pathname: string) {
 
 function getGreetingMessage(currentFinanceModel?: FinanceModelItem) {
     if (currentFinanceModel) {
-        return `你好，我是 Lucas AI。\n\n我看到你正在看「${currentFinanceModel.title}」。我可以围绕当前模型做${AI_ASSISTANT_SCOPE}，比如判断这个模型适合解决什么问题、上传前要校对哪些口径，或者图表应该按什么顺序看。`;
+        return `你好，我是 Lucas AI。\n\n我看到你正在看「${currentFinanceModel.title}」。我可以围绕当前模型做${AI_ASSISTANT_SCOPE}，比如判断这个模型适合解决什么问题、怎么看主要图表，或者怎么组织一段汇报说明。`;
     }
 
-    return `你好，我是 Lucas AI。\n\n我可以帮你选择财务模型、校对模型口径、梳理可视化阅读顺序，也可以推荐思考与方法里的文章。`;
+    return `你好，我是 Lucas AI。\n\n我可以帮你选择财务模型、说明模型用法、梳理图表阅读顺序，也可以推荐思考与方法里的文章。`;
 }
 
 function getInternalHref(href: string | undefined) {
