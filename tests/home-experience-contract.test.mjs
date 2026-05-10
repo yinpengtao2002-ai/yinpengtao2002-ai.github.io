@@ -30,8 +30,9 @@ function mobileCssRule(selector) {
 test("home hero does not split AI workflow and thinking judgment into separate proof cards", () => {
   assert.doesNotMatch(hero, /title:\s*"AI 工作流"/);
   assert.doesNotMatch(hero, /title:\s*"思考判断"/);
-  assert.match(hero, /业务理解/);
-  assert.match(hero, /方法沉淀/);
+  assert.doesNotMatch(hero, /title:\s*"业务理解"/);
+  assert.doesNotMatch(hero, /title:\s*"方法沉淀"/);
+  assert.match(hero, /HERO_FINANCE_QUESTIONS/);
 });
 
 test("home page has an explicit continue cue for below-the-fold content", () => {
@@ -66,7 +67,7 @@ test("home hero returns to a split Lucas plus product-stage layout", () => {
   assert.match(hero, /home-hero-copy-card/);
   assert.match(hero, /Lucas Yin/);
   assert.match(hero, /奇瑞汽车国际财务 BP/);
-  assert.match(hero, /从经营问题到模型、图表和 AI 解读/);
+  assert.match(hero, /从经营问题到模型、判断和图表/);
   assert.match(hero, /gradient-text/);
   assert.doesNotMatch(hero, /home-identity-panel/);
   assert.doesNotMatch(hero, /home-hero-center/);
@@ -125,12 +126,14 @@ test("home hero left side keeps identity focused without duplicated cards or but
   assert.doesNotMatch(hero, /home-hero-proof-list/);
   assert.doesNotMatch(hero, /home-hero-actions/);
   assert.match(hero, /home-hero-right-stack/);
-  assert.match(hero, /home-hero-workflow-strip/);
+  assert.match(hero, /home-hero-question-strip/);
   assert.doesNotMatch(hero, /我还是职场新人/);
 });
 
 test("home hero uses the product stage visual instead of decorative artifacts", () => {
   assert.match(hero, /ProductStageVisual/);
+  assert.match(productStage, /分析判断/);
+  assert.doesNotMatch(productStage, /AI 解读/);
   assert.match(productStage, /product-stage-motion-layer/);
   assert.match(productStage, /product-stage-motion-shell/);
   assert.match(productStage, /product-stage-motion-chart/);
@@ -186,6 +189,25 @@ test("home mobile hero keeps the finance CTA card as a compact section", () => {
   const mobileCopyCard = mobileCssRule(".home-hero-copy-card");
   assert.doesNotMatch(mobileCopyCard, /display:\s*none/);
   assert.match(mobileCopyCard, /display:\s*block/);
+});
+
+test("home hero surfaces business-question entries without changing the finance section list", () => {
+  assert.match(hero, /HERO_FINANCE_QUESTIONS/);
+  assert.match(hero, /home-hero-question-strip/);
+  assert.match(hero, /home-hero-question-card/);
+  assert.match(hero, /如何找出单车变动的罪魁祸首/);
+  assert.match(hero, /预算到底偏在哪里/);
+  assert.match(hero, /销量、收入、成本哪个最影响利润/);
+  assert.match(hero, /月度趋势从哪里开始异常/);
+  assert.match(hero, /href="#finance"/);
+  assert.match(hero, /onClick=\{handleBrowseMore\}/);
+  assert.match(globals, /\.home-hero-question-strip\s*\{/);
+  assert.match(globals, /\.home-hero-question-card\s*\{/);
+  assert.match(mobileCssRule(".home-hero-question-strip"), /grid-template-columns:\s*1fr/);
+  assert.doesNotMatch(financeSection, /如何找出单车变动的罪魁祸首/);
+  assert.doesNotMatch(financeSection, /预算到底偏在哪里/);
+  assert.doesNotMatch(financeSection, /销量、收入、成本哪个最影响利润/);
+  assert.doesNotMatch(financeSection, /月度趋势从哪里开始异常/);
 });
 
 test("visitor-facing copy avoids redesign-process language", () => {

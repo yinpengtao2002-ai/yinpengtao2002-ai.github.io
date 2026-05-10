@@ -51,7 +51,7 @@ export function getLocalFallbackResponse(
                 `你现在打开的是 [${currentFinanceModel.title}](${currentFinanceModel.href})。${guide.purpose}`,
                 `一般可以这样用：${guide.steps.join("；")}`,
                 `示例数据：${guide.sampleData}`,
-                "如果要我判断你当前上传的数据，需要你把关键指标、截图或数据摘要发给我；目前我能先解释模型口径、上传要求和图表读法。",
+                "如果要做具体数据判断，可以把关键指标、截图或数据摘要发给我；我也可以先帮你校对口径、整理图表阅读顺序和汇报框架。",
             ].join("\n\n"),
         }, options.includeOfflineNotice);
     }

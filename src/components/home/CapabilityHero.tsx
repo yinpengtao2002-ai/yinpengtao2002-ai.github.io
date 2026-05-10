@@ -5,40 +5,38 @@ import Link from "next/link";
 import type { MouseEvent } from "react";
 import { ArrowDown, ArrowRight } from "lucide-react";
 import ProductStageVisual from "@/components/home/ProductStageVisual";
-import { financeModels } from "@/lib/finance/modelRegistry";
-import { thinkingContent } from "@/lib/data/generated/content";
 import { useViewportProfile } from "@/lib/useLowMotionMode";
 
 const UI_FONT =
   'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
 const HERO_EASE = [0.22, 1, 0.36, 1] as const;
 
-const PROOFS = [
+const HERO_FINANCE_QUESTIONS = [
   {
-    title: "业务理解",
-    meta: "真实问题",
-    body: "先把经营问题拆清楚，再选择模型和工具。",
-    href: "/finance",
-    link: "看模型如何落地",
+    question: "如何找出单车变动的罪魁祸首？",
+    model: "使用单车指标变动归因模型",
+    meta: "单车归因",
   },
   {
-    title: "建模能力",
-    meta: `${financeModels.length} 个模型`,
-    body: "把预算复盘、趋势跟踪、归因拆解和敏感性测算做成工作台。",
-    href: "/finance",
-    link: "进入财务模型",
+    question: "预算到底偏在哪里？",
+    model: "使用预算实际对比模型",
+    meta: "预算复盘",
   },
   {
-    title: "方法沉淀",
-    meta: `${thinkingContent.length} 篇`,
-    body: "记录资料处理、AI 协作、市场观察和个人复盘里的证据与取舍。",
-    href: "/thinking-lab",
-    link: "阅读思考与方法",
+    question: "销量、收入、成本哪个最影响利润？",
+    model: "使用利润敏感性分析模型",
+    meta: "利润模拟",
+  },
+  {
+    question: "月度趋势从哪里开始异常？",
+    model: "使用分月指标趋势分析模型",
+    meta: "趋势监控",
   },
 ];
 
 export default function CapabilityHero() {
   const { isMobileLike, lowMotion, prefersReducedMotion } = useViewportProfile();
+  const visibleHeroQuestions = isMobileLike ? HERO_FINANCE_QUESTIONS.slice(0, 2) : HERO_FINANCE_QUESTIONS;
   const centerHoldDelay = isMobileLike ? 0.95 : 1;
   const shouldReduceMotion = prefersReducedMotion || (lowMotion && !isMobileLike);
   const heroAnimate = { opacity: 1, x: 0, y: 0 };
@@ -94,7 +92,7 @@ export default function CapabilityHero() {
               <span className="gradient-text">Lucas<br />Yin</span>
             </h1>
             <p className="home-hero-slogan">
-              从经营问题到模型、图表和 AI 解读
+              从经营问题到模型、判断和图表
             </p>
             <p className="home-hero-lede">
               我们需要的是对技术有极致热情的人，而不是习惯用经验找答案的人
@@ -112,23 +110,27 @@ export default function CapabilityHero() {
               <div className="home-hero-copy-card">
                 <p className="home-hero-kicker">Capability Profile</p>
                 <h2 className="home-hero-headline">
-                  <span className="home-headline-mark">能力落在具体工具里</span>
-                  <span className="home-headline-line">财务模型、图表和 AI 解读都围绕真实经营问题展开</span>
+                  <span className="home-headline-mark">从问题进入模型</span>
+                  <span className="home-headline-line">预算偏差、趋势异常、单车变化和利润敏感性，都落到可计算、可展示的判断里</span>
                 </h2>
                 <Link href="#finance" className="home-primary-action" onClick={handleBrowseMore}>
                   查看财务模型 <ArrowRight style={{ width: 15, height: 15 }} />
                 </Link>
               </div>
               <ProductStageVisual />
-              <div className="home-hero-workflow-strip">
-                {PROOFS.map((proof) => (
-                  <Link key={proof.title} href={proof.href} className="home-proof-card">
-                    <div className="home-proof-heading">
-                      <strong>{proof.title}</strong>
-                      <span>{proof.meta}</span>
-                    </div>
-                    <p className="home-proof-body">{proof.body}</p>
-                    <span className="home-proof-link">{proof.link}</span>
+              <div className="home-hero-question-strip" aria-label="按业务问题进入财务模型">
+                {visibleHeroQuestions.map((item) => (
+                  <Link
+                    key={item.question}
+                    href="#finance"
+                    className="home-hero-question-card"
+                    onClick={handleBrowseMore}
+                  >
+                    <span className="home-hero-question-meta">{item.meta}</span>
+                    <strong>{item.question}</strong>
+                    <span className="home-hero-question-model">
+                      {item.model} <ArrowRight style={{ width: 12, height: 12 }} />
+                    </span>
                   </Link>
                 ))}
               </div>
