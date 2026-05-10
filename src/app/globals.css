@@ -235,8 +235,8 @@ h6 {
 .home-hero-path-row {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 7px;
+  flex-wrap: nowrap;
+  gap: 5px;
   min-width: 0;
 }
 
@@ -249,9 +249,9 @@ h6 {
   border-radius: 999px;
   background: color-mix(in srgb, var(--card) 72%, transparent);
   color: color-mix(in srgb, var(--foreground) 82%, var(--muted));
-  font-size: clamp(0.82rem, 1.05vw, 0.94rem);
+  font-size: clamp(0.76rem, 0.92vw, 0.86rem);
   font-weight: 800;
-  padding: 0 10px;
+  padding: 0 8px;
 }
 
 .home-hero-path-arrow {
@@ -1164,6 +1164,31 @@ h6 {
   line-height: 1.62;
   margin-bottom: 10px;
   padding-left: 11px;
+}
+
+.home-finance-stage-guide {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+  border: 1px solid color-mix(in srgb, var(--accent-secondary) 20%, var(--border));
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent-soft) 24%, transparent), transparent),
+    color-mix(in srgb, var(--card) 76%, transparent);
+  padding: 9px 10px;
+}
+
+.home-finance-stage-guide span {
+  color: color-mix(in srgb, var(--accent-secondary) 76%, var(--foreground));
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.home-finance-stage-guide p {
+  color: color-mix(in srgb, var(--foreground) 74%, var(--muted));
+  font-size: 12px;
+  line-height: 1.55;
+  margin-bottom: 0;
 }
 
 .home-finance-point-row {
@@ -2274,6 +2299,7 @@ h6 {
   }
 
   .home-hero-path-row {
+    flex-wrap: wrap;
     gap: 5px;
   }
 
@@ -2387,7 +2413,14 @@ h6 {
   }
 
   .home-hero-stage-float-note {
-    display: none;
+    display: block;
+    left: 8px;
+    top: auto;
+    bottom: 7px;
+    max-width: calc(100% - 126px);
+    padding: 7px 8px;
+    font-size: 10px;
+    line-height: 1.35;
   }
 
   .home-hero-stage-float-metric {

@@ -35,25 +35,29 @@ const financeSwitchCardVariants = {
   visible: { opacity: 1, y: 0, scale: 1 },
 };
 
-const modelDetails: Record<string, { focus: string; detail: string; points: string[] }> = {
+const modelDetails: Record<string, { focus: string; detail: string; guide: string; points: string[] }> = {
   "margin-analysis": {
     focus: "两期单车指标的结构效应与费率效应拆解",
     detail: "适合解释单车边际、单车收入或单车成本变化：到底是销量结构变了，还是同一维度下的单车水平变了。",
+    guide: "先确认总差异，再拆结构效应和费率效应，最后判断问题来自组合变化还是单车水平变化。",
     points: ["两期数据对比", "结构 / 费率双拆解", "适合月度经营复盘"],
   },
   "business-analysis": {
     focus: "预算与实际的经营差异复盘",
     detail: "把销量、净收入、边际、固定科目和利润贡献串成一条复盘链路，支持按国家、车型等维度下钻。",
+    guide: "先看预算差异落在哪个利润环节，再沿销量、净收入、边际和固定科目逐层下钻。",
     points: ["预算实际对比", "利润桥与差异桥", "维度下钻定位"],
   },
   "monthly-trend": {
     focus: "连续月份指标趋势与结构监控",
     detail: "用于查看连续月份中的同比、环比、同期对比、结构占比和集中度，帮助快速发现趋势变化。",
+    guide: "先找趋势断点，再看同比环比和结构占比，最后回到具体维度确认异常来源。",
     points: ["连续月份明细", "同比环比观察", "结构与集中度"],
   },
   "sensitivity-analysis": {
     focus: "利润变量变化的情景推演",
     detail: "围绕销量、净收入、成本、费用和税费做假设调整，判断利润对关键变量的敏感程度。",
+    guide: "先设置关键变量假设，再看利润影响排序，用敏感变量反推需要优先管理的经营动作。",
     points: ["利润情景测算", "变量敏感性排序", "目标利润倒推"],
   },
 };
@@ -257,6 +261,12 @@ export default function HomeFinanceSection() {
                   <div className="home-finance-detail">
                     {activeDetail?.detail ?? activeModel.summary}
                   </div>
+                  {activeDetail?.guide ? (
+                    <div className="home-finance-stage-guide">
+                      <span>怎么看</span>
+                      <p>{activeDetail.guide}</p>
+                    </div>
+                  ) : null}
                   <div className="home-finance-point-row">
                     {(activeDetail?.points ?? []).map((point) => (
                       <span key={point}>{point}</span>

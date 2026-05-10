@@ -90,9 +90,11 @@ export default function CapabilityHero() {
                   <ArrowRight className="home-hero-path-arrow" />
                   <span className="home-hero-path-step">财务模型</span>
                   <ArrowRight className="home-hero-path-arrow" />
+                  <span className="home-hero-path-step">可视化分析</span>
+                  <ArrowRight className="home-hero-path-arrow" />
                   <span className="home-hero-path-step">分析判断</span>
                   <ArrowRight className="home-hero-path-arrow" />
-                  <span className="home-hero-path-step">可视化表达</span>
+                  <span className="home-hero-path-step">业务结论</span>
                 </div>
                 <Link href="#finance" className="home-primary-action" onClick={handleBrowseMore}>
                   浏览全部模型 <ArrowRight style={{ width: 15, height: 15 }} />
