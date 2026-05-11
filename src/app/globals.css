@@ -1645,7 +1645,7 @@ h6 {
 .home-thinking-method-index {
   display: grid;
   align-items: stretch;
-  grid-template-columns: minmax(360px, 1.05fr) minmax(360px, 0.95fr);
+  grid-template-columns: minmax(280px, 0.72fr) minmax(0, 1.28fr);
   gap: clamp(1rem, 2.5vw, 2rem);
 }
 
@@ -1661,7 +1661,7 @@ h6 {
 
 .home-thinking-visual-card {
   position: relative;
-  min-height: clamp(460px, 62vh, 640px);
+  min-height: clamp(390px, 54vh, 540px);
   overflow: hidden;
   box-shadow: 0 22px 58px rgba(20, 20, 19, 0.08);
 }
@@ -1782,12 +1782,13 @@ h6 {
 
 .home-thinking-list {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .home-thinking-item {
   display: block;
+  min-height: clamp(160px, 21vh, 196px);
   padding: clamp(0.95rem, 1.8vw, 1.25rem);
   text-decoration: none;
   transition:
@@ -2893,7 +2894,7 @@ h6 {
   }
 
   .home-thinking-visual-card {
-    min-height: 260px;
+    min-height: 220px;
   }
 
   .home-thinking-visual-copy {
@@ -2929,7 +2930,12 @@ h6 {
     padding-top: 9px;
   }
 
+  .home-thinking-list {
+    grid-template-columns: 1fr;
+  }
+
   .home-thinking-item {
+    min-height: 0;
     padding: 0.9rem 1rem;
   }
 

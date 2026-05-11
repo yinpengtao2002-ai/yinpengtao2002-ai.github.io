@@ -425,7 +425,7 @@ test("home thinking section uses a visual card and a clear index link", () => {
   assert.match(thinkingSection, /查看全部/);
   assert.match(thinkingSection, /href="\/thinking-lab"/);
   assert.match(thinkingSection, /home-thinking-list/);
-  assert.match(thinkingSection, /thinkingLabContent\.slice\(0,\s*3\)/);
+  assert.match(thinkingSection, /thinkingLabContent\.slice\(0,\s*4\)/);
   assert.doesNotMatch(thinkingLab, /thinking-tool-entry/);
   assert.match(thinkingSection, /--thinking-item-index/);
   assert.match(thinkingSection, /方法摘句/);
@@ -433,7 +433,9 @@ test("home thinking section uses a visual card and a clear index link", () => {
   assert.doesNotMatch(thinkingSection, /判断如何形成/);
   assert.match(globals, /\.home-thinking-visual-card\s*\{/);
   assert.match(globals, /\.home-thinking-method-index\s*\{/);
-  assert.match(globals, /grid-template-columns:\s*minmax\(360px,\s*1\.05fr\)\s*minmax\(360px,\s*0\.95fr\)/);
+  assert.match(globals, /grid-template-columns:\s*minmax\(280px,\s*0\.72fr\)\s*minmax\(0,\s*1\.28fr\)/);
+  assert.match(globals, /\.home-thinking-visual-card\s*\{[^}]*min-height:\s*clamp\(390px,\s*54vh,\s*540px\)/s);
+  assert.match(cssRule(".home-thinking-list"), /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
   assert.match(globals, /\.home-thinking-list\s*\{/);
   assert.match(globals, /@keyframes\s+home-thinking-card-rise/);
   assert.match(cssRule(".home-thinking-reveal"), /will-change:\s*transform,\s*opacity/);
