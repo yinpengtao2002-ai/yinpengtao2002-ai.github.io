@@ -389,7 +389,7 @@ test("homepage finance section uses an automatic mobile preview carousel with fo
 );
 
 test("homepage finance section compresses in short desktop viewports", () => {
-  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-section\.home-finance-section\s*\{[\s\S]*height:\s*100dvh[\s\S]*overflow:\s*hidden/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-section\.home-finance-section\s*\{[\s\S]*height:\s*auto[\s\S]*overflow:\s*visible/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-showcase\s*\{[\s\S]*max-height:\s*calc\(100dvh - 132px\)/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage-motion\s*\{[\s\S]*grid-template-rows:\s*auto minmax\(0,\s*1fr\)/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage \.finance-model-preview\s*\{[\s\S]*aspect-ratio:\s*1\.5/s);
@@ -435,7 +435,9 @@ test("home thinking section uses a visual card and a clear index link", () => {
   assert.match(globals, /\.home-thinking-method-index\s*\{/);
   assert.match(globals, /grid-template-columns:\s*minmax\(280px,\s*0\.72fr\)\s*minmax\(0,\s*1\.28fr\)/);
   assert.match(globals, /\.home-thinking-visual-card\s*\{[^}]*min-height:\s*clamp\(390px,\s*54vh,\s*540px\)/s);
-  assert.match(cssRule(".home-thinking-list"), /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(cssRule(".home-thinking-section"), /align-items:\s*flex-start/);
+  assert.match(cssRule(".home-thinking-list"), /grid-template-columns:\s*1fr/);
+  assert.doesNotMatch(cssRule(".home-thinking-list"), /repeat\(2/);
   assert.match(globals, /\.home-thinking-list\s*\{/);
   assert.match(globals, /@keyframes\s+home-thinking-card-rise/);
   assert.match(cssRule(".home-thinking-reveal"), /will-change:\s*transform,\s*opacity/);
