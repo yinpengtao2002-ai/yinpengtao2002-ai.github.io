@@ -1638,9 +1638,16 @@ h6 {
 }
 
 .home-thinking-section {
+  position: relative;
   align-items: flex-start;
-  border-top: 1px solid var(--border);
-  background: var(--background);
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 9%, var(--border));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--card) 42%, var(--background)) 0, var(--background) 96px),
+    var(--background);
+}
+
+.home-section.home-thinking-section {
+  padding-top: clamp(4.6rem, 8vh, 6.2rem);
 }
 
 .home-thinking-method-index {
@@ -2259,7 +2266,7 @@ h6 {
     min-height: 100dvh;
     overflow: visible;
     padding-top: clamp(1.05rem, 2.6vh, 1.4rem);
-    padding-bottom: 0.8rem;
+    padding-bottom: clamp(3rem, 7vh, 4.6rem);
   }
 
   .index-page {
@@ -2859,6 +2866,10 @@ h6 {
     height: 100svh;
     min-height: 100svh;
     overflow: hidden;
+  }
+
+  .home-section.home-thinking-section {
+    padding-top: clamp(3.4rem, 7svh, 4.3rem);
   }
 
   .finance-index-page {
