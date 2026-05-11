@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ArrowLeft, ExternalLink } from "lucide-react";
 
 const SUBTITLE_WORKBENCH_URL = "https://yptt-subtitle-workbench.hf.space/";
 
@@ -12,29 +10,6 @@ export const metadata: Metadata = {
 export default function SubtitleWorkbenchPage() {
   return (
     <div className="subtitle-workbench-page">
-      <header className="subtitle-workbench-topbar">
-        <div className="subtitle-workbench-title-group">
-          <Link href="/thinking-lab" className="subtitle-workbench-back">
-            <ArrowLeft aria-hidden="true" />
-            <span>思考与方法</span>
-          </Link>
-          <div>
-            <p>AI Workflow</p>
-            <h1>视频字幕与总结工作台</h1>
-          </div>
-        </div>
-
-        <a
-          href={SUBTITLE_WORKBENCH_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="subtitle-workbench-open"
-        >
-          <span>新窗口打开</span>
-          <ExternalLink aria-hidden="true" />
-        </a>
-      </header>
-
       <section className="subtitle-workbench-frame-shell" aria-label="视频字幕与总结工作台">
         <iframe
           src={SUBTITLE_WORKBENCH_URL}

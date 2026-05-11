@@ -33,12 +33,17 @@ test("route transition shell keeps fixed finance tool pages full height", () => 
   assert.match(globals, /\.page-transition-shell\s*\{[^}]*min-height:\s*100vh[^}]*min-height:\s*100dvh/s);
 });
 
-test("subtitle workbench is embedded as a hosted tool with an external fallback", () => {
+test("subtitle workbench is embedded as a seamless hosted tool", () => {
   assert.match(subtitleWorkbenchPage, /https:\/\/yptt-subtitle-workbench\.hf\.space\//);
   assert.match(subtitleWorkbenchPage, /<iframe/);
   assert.match(subtitleWorkbenchPage, /allow="clipboard-read; clipboard-write"/);
-  assert.match(subtitleWorkbenchPage, /target="_blank"/);
   assert.match(subtitleWorkbenchPage, /视频字幕与总结工作台/);
+  assert.doesNotMatch(subtitleWorkbenchPage, /subtitle-workbench-topbar/);
+  assert.doesNotMatch(subtitleWorkbenchPage, /subtitle-workbench-open/);
+  assert.doesNotMatch(subtitleWorkbenchPage, /新窗口打开/);
+  assert.doesNotMatch(subtitleWorkbenchPage, /<h1>/);
+  assert.match(globals, /\.subtitle-workbench-page\s*\{[^}]*padding:\s*0/s);
+  assert.match(globals, /\.subtitle-workbench-frame-shell\s*\{[^}]*width:\s*100%[^}]*border:\s*0[^}]*border-radius:\s*0[^}]*box-shadow:\s*none/s);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/subtitle-workbench/);
   assert.match(thinkingLabContent, /href:\s*"\/tools\/subtitle-workbench"/);
   assert.match(thinkingLabContent, /title:\s*"视频字幕与总结工作台"/);
