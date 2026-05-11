@@ -2121,24 +2121,24 @@ h6 {
   .home-finance-header {
     align-items: center;
     gap: 1.2rem;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
 
   .home-finance-title-card {
-    padding: 0.78rem 0.95rem;
+    padding: 0.62rem 0.86rem;
   }
 
   .home-finance-title {
-    font-size: clamp(1.72rem, 3.35vw, 2.2rem);
+    font-size: clamp(1.52rem, 2.8vw, 1.92rem);
     font-weight: 500;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
 
   .home-finance-intro {
     display: -webkit-box;
     max-width: 520px;
-    font-size: 12px;
-    line-height: 1.35;
+    font-size: 11.5px;
+    line-height: 1.3;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 1;
     overflow: hidden;
@@ -2153,7 +2153,8 @@ h6 {
   .home-finance-showcase {
     grid-template-columns: minmax(0, 0.96fr) minmax(340px, 1.04fr);
     gap: 10px;
-    max-height: calc(100dvh - 132px);
+    height: clamp(456px, calc(100dvh - 160px), 540px);
+    min-height: 0;
   }
 
   .home-finance-stage,
@@ -2170,8 +2171,12 @@ h6 {
     min-height: 0;
   }
 
+  .home-finance-stage-motion .finance-model-preview {
+    height: 100%;
+  }
+
   .home-finance-stage-copy {
-    padding: 0.7rem 0.86rem 0.72rem;
+    padding: 0.64rem 0.8rem;
   }
 
   .home-finance-category,
@@ -2180,18 +2185,22 @@ h6 {
   }
 
   .home-finance-stage h3 {
-    font-size: 1.16rem;
-    margin: 6px 0 4px;
+    font-size: 1.1rem;
+    margin: 5px 0 3px;
   }
 
   .home-finance-stage p {
     display: -webkit-box;
-    font-size: 12px;
-    line-height: 1.4;
-    margin-bottom: 7px;
+    font-size: 11.5px;
+    line-height: 1.35;
+    margin-bottom: 6px;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 1;
     overflow: hidden;
+  }
+
+  .home-finance-stage-guide {
+    display: none;
   }
 
   .home-finance-detail {
@@ -2212,7 +2221,7 @@ h6 {
   }
 
   .home-finance-stage .finance-model-preview {
-    aspect-ratio: 1.5;
+    aspect-ratio: 1.8;
     border-top: 1px solid var(--border);
     border-bottom: 0;
   }
@@ -2237,22 +2246,22 @@ h6 {
   }
 
   .home-finance-switch-card .finance-model-preview.compact {
-    aspect-ratio: 1.72;
+    aspect-ratio: 1.9;
   }
 
   .home-finance-switch-copy {
-    padding: 7px 9px 8px;
+    padding: 6px 9px 7px;
   }
 
   .home-finance-switch-copy strong {
-    font-size: 11.5px;
-    line-height: 1.3;
-    margin-top: 4px;
+    font-size: 11px;
+    line-height: 1.25;
+    margin-top: 3px;
   }
 
   .home-finance-switch-open {
-    font-size: 10.5px;
-    margin-top: 4px;
+    font-size: 10px;
+    margin-top: 3px;
   }
 
   .home-section {
@@ -2262,11 +2271,11 @@ h6 {
 
   .home-section.home-finance-section {
     align-items: flex-start;
-    height: auto;
+    height: 100dvh;
     min-height: 100dvh;
     overflow: visible;
-    padding-top: clamp(1.05rem, 2.6vh, 1.4rem);
-    padding-bottom: clamp(3rem, 7vh, 4.6rem);
+    padding-top: clamp(0.9rem, 2.2vh, 1.2rem);
+    padding-bottom: clamp(1.75rem, 4.4vh, 2.25rem);
   }
 
   .index-page {

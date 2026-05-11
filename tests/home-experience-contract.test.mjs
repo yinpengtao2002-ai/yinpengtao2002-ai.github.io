@@ -28,6 +28,12 @@ function mobileCssRule(selector) {
   return cssRule(selector, globals, mediaIndex);
 }
 
+function shortDesktopCssRule(selector) {
+  const mediaIndex = globals.indexOf("@media (max-height: 820px) and (min-width: 769px)");
+  assert.notEqual(mediaIndex, -1, "Missing short desktop media block");
+  return cssRule(selector, globals, mediaIndex);
+}
+
 test("home hero does not split AI workflow and thinking judgment into separate proof cards", () => {
   assert.doesNotMatch(hero, /title:\s*"AI 工作流"/);
   assert.doesNotMatch(hero, /title:\s*"思考判断"/);
@@ -389,16 +395,21 @@ test("homepage finance section uses an automatic mobile preview carousel with fo
 );
 
 test("homepage finance section compresses in short desktop viewports", () => {
-  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-section\.home-finance-section\s*\{[\s\S]*height:\s*auto[\s\S]*overflow:\s*visible/s);
-  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-section\.home-finance-section\s*\{[\s\S]*padding-bottom:\s*clamp\(3rem,\s*7vh,\s*4\.6rem\)/s);
-  assert.doesNotMatch(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-section\.home-finance-section\s*\{[\s\S]*padding-bottom:\s*0\.8rem/s);
-  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-showcase\s*\{[\s\S]*max-height:\s*calc\(100dvh - 132px\)/s);
+  const shortFinanceSection = shortDesktopCssRule(".home-section.home-finance-section");
+  assert.match(shortFinanceSection, /height:\s*100dvh/);
+  assert.match(shortFinanceSection, /overflow:\s*visible/);
+  assert.match(shortFinanceSection, /padding-bottom:\s*clamp\(1\.75rem,\s*4\.4vh,\s*2\.25rem\)/);
+  assert.doesNotMatch(shortFinanceSection, /height:\s*auto/);
+  assert.doesNotMatch(shortFinanceSection, /padding-bottom:\s*0\.8rem/);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-showcase\s*\{[\s\S]*height:\s*clamp\(456px,\s*calc\(100dvh - 160px\),\s*540px\)/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage-motion\s*\{[\s\S]*grid-template-rows:\s*auto minmax\(0,\s*1fr\)/s);
-  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage \.finance-model-preview\s*\{[\s\S]*aspect-ratio:\s*1\.5/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage-guide\s*\{[\s\S]*display:\s*none/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage-motion \.finance-model-preview\s*\{[\s\S]*height:\s*100%/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage \.finance-model-preview\s*\{[\s\S]*aspect-ratio:\s*1\.8/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-point-row\s*\{[\s\S]*display:\s*none/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage,\s*\.home-finance-stage-frame,\s*\.home-finance-switcher\s*\{[\s\S]*height:\s*100%/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-switcher\s*\{[\s\S]*grid-template-rows:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
-  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-switch-card \.finance-model-preview\.compact\s*\{[\s\S]*aspect-ratio:\s*1\.72/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-switch-card \.finance-model-preview\.compact\s*\{[\s\S]*aspect-ratio:\s*1\.9/s);
   assert.doesNotMatch(globals, /\.home-finance-stage,\s*\.home-finance-switcher\s*\{[\s\S]*height:\s*min\(420px,\s*calc\(100dvh - 150px\)\)/s);
   assert.doesNotMatch(globals, /\.home-finance-stage \.finance-model-preview\s*\{[^}]*aspect-ratio:\s*auto/s);
   assert.doesNotMatch(globals, /\.home-finance-switch-card \.finance-model-preview\s*\{[\s\S]*aspect-ratio:\s*1\.95/s);
