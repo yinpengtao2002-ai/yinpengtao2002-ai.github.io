@@ -10,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: BASE_URL, lastModified: new Date(), priority: 1.0 },
     { url: `${BASE_URL}/finance`, lastModified: new Date(), priority: 0.9 },
     { url: `${BASE_URL}/thinking-lab`, lastModified: new Date(), priority: 0.8 },
+    { url: `${BASE_URL}/tools/subtitle-workbench`, lastModified: new Date(), priority: 0.7 },
   ];
 
   const dynamicPages: MetadataRoute.Sitemap = [
