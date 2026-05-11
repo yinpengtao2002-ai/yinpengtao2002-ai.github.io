@@ -11,10 +11,8 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { CHAT_API_TIMEOUT_MS, getLocalFallbackResponse } from "@/lib/chatFallback";
-import {
-    financeContent as staticFinance,
-    thinkingContent as staticThinking,
-} from "@/lib/data/generated/content";
+import { financeContent as staticFinance } from "@/lib/data/generated/content";
+import { thinkingLabContent as staticThinking } from "@/lib/data/thinkingLabContent";
 import { financeModels, type FinanceModelItem } from "@/lib/finance/modelRegistry";
 import { normalizeChatInternalLinks } from "@/lib/markdown/normalizeChatInternalLinks";
 import { normalizeChatMathMarkdown } from "@/lib/markdown/normalizeChatMathMarkdown";

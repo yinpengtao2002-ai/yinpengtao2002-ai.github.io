@@ -7,6 +7,7 @@ const sitemap = await readFile(new URL("../src/app/sitemap.ts", import.meta.url)
 const globals = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
 const clientShell = await readFile(new URL("../src/components/ClientShell.tsx", import.meta.url), "utf8");
 const thinkingClient = await readFile(new URL("../src/components/thinking/ThinkingLabClient.tsx", import.meta.url), "utf8");
+const thinkingLabContent = await readFile(new URL("../src/lib/data/thinkingLabContent.ts", import.meta.url), "utf8");
 const subtitleWorkbenchPage = await readFile(
   new URL("../src/app/tools/subtitle-workbench/page.tsx", import.meta.url),
   "utf8"
@@ -39,7 +40,8 @@ test("subtitle workbench is embedded as a hosted tool with an external fallback"
   assert.match(subtitleWorkbenchPage, /target="_blank"/);
   assert.match(subtitleWorkbenchPage, /视频字幕与总结工作台/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/subtitle-workbench/);
-  assert.match(thinkingClient, /\/tools\/subtitle-workbench/);
-  assert.match(thinkingClient, /视频字幕与总结工作台/);
+  assert.match(thinkingLabContent, /href:\s*"\/tools\/subtitle-workbench"/);
+  assert.match(thinkingLabContent, /title:\s*"视频字幕与总结工作台"/);
+  assert.doesNotMatch(thinkingClient, /thinking-tool-entry/);
   assert.match(clientShell, /\/tools\/subtitle-workbench/);
 });

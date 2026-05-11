@@ -5,10 +5,10 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import type { CSSProperties } from "react";
-import { thinkingContent } from "@/lib/data/generated/content";
+import { thinkingLabContent } from "@/lib/data/thinkingLabContent";
 
 export default function HomeThinkingSection() {
-  const latest = thinkingContent.slice(0, 3);
+  const latest = thinkingLabContent.slice(0, 3);
 
   return (
     <section id="thinking" className="home-viewport home-section home-thinking-section">

@@ -425,7 +425,8 @@ test("home thinking section uses a visual card and a clear index link", () => {
   assert.match(thinkingSection, /查看全部/);
   assert.match(thinkingSection, /href="\/thinking-lab"/);
   assert.match(thinkingSection, /home-thinking-list/);
-  assert.match(thinkingSection, /thinkingContent\.slice\(0,\s*3\)/);
+  assert.match(thinkingSection, /thinkingLabContent\.slice\(0,\s*3\)/);
+  assert.doesNotMatch(thinkingLab, /thinking-tool-entry/);
   assert.match(thinkingSection, /--thinking-item-index/);
   assert.match(thinkingSection, /方法摘句/);
   assert.doesNotMatch(thinkingSection, /METHOD_NOTES/);

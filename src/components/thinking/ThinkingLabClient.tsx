@@ -10,13 +10,6 @@ import type { ContentItem } from "@/lib/data/generated/content";
 const UI_FONT =
   'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
 
-const SUBTITLE_WORKBENCH = {
-  href: "/tools/subtitle-workbench",
-  title: "视频字幕与总结工作台",
-  description: "把 B站、小红书视频或本地音视频转换成字幕与总结材料。",
-  category: "AI 工作流",
-};
-
 function getCategory(item: ContentItem) {
   return item.category || "思考记录";
 }
@@ -52,17 +45,6 @@ export default function ThinkingLabClient({ articles }: { articles: ContentItem[
         className="thinking-index-list"
         style={{ maxWidth: 1040, margin: "0 auto", padding: "0 1.5rem 2rem" }}
       >
-        <Link href={SUBTITLE_WORKBENCH.href} className="thinking-tool-entry">
-          <div>
-            <span>{SUBTITLE_WORKBENCH.category}</span>
-            <h2>{SUBTITLE_WORKBENCH.title}</h2>
-            <p>{SUBTITLE_WORKBENCH.description}</p>
-          </div>
-          <strong>
-            打开工作台 <ArrowRight style={{ width: 14, height: 14 }} />
-          </strong>
-        </Link>
-
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
           {categories.map((category) => (
             <button

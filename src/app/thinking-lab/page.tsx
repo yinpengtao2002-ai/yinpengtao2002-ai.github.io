@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { thinkingContent } from "@/lib/data/generated/content";
 import ThinkingLabClient from "@/components/thinking/ThinkingLabClient";
+import { thinkingLabContent } from "@/lib/data/thinkingLabContent";
 
 export const metadata: Metadata = {
   title: "思考与方法｜Lucas Yin",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function ThinkingLabPage() {
-  return <ThinkingLabClient articles={thinkingContent} />;
+  return <ThinkingLabClient articles={thinkingLabContent} />;
 }

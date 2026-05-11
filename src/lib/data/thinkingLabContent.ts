@@ -1,0 +1,18 @@
+import { thinkingContent, type ContentItem } from "@/lib/data/generated/content";
+
+export const subtitleWorkbenchContent: ContentItem = {
+  id: 9001,
+  slug: "subtitle-workbench",
+  title: "视频字幕与总结工作台",
+  description: "把 B站、小红书视频或本地音视频转换成字幕与总结材料。",
+  date: "2026-05-11",
+  category: "AI 工作流",
+  href: "/tools/subtitle-workbench",
+  content: "",
+  source: "hosted-tool",
+};
+
+export const thinkingLabContent: ContentItem[] = [
+  subtitleWorkbenchContent,
+  ...thinkingContent,
+];

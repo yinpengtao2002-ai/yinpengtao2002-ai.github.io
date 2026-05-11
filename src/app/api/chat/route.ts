@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { thinkingContent } from "@/lib/data/generated/content";
+import { thinkingLabContent } from "@/lib/data/thinkingLabContent";
 import { financeModels, getFinanceModelBySlug, type FinanceModelItem } from "@/lib/finance/modelRegistry";
 
 const CHAT_PRIMARY_TIMEOUT_MS = 18000;
@@ -39,8 +39,8 @@ function buildSystemPrompt(activeFinanceModel?: FinanceModelItem): string {
     ].join("\n"))
     .join("\n");
 
-  const thinkingArticles = thinkingContent.length > 0
-    ? thinkingContent
+  const thinkingArticles = thinkingLabContent.length > 0
+    ? thinkingLabContent
         .map((a) => `  - [${a.title}](${a.href})：${a.description}`)
         .join("\n")
     : "  - 暂无内容，正在建设中";
