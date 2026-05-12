@@ -122,6 +122,7 @@ h6 {
   position: relative;
   display: flex;
   align-items: center;
+  min-height: calc(100dvh - 42px);
   overflow: hidden;
   padding: clamp(4.6rem, 7vh, 5.8rem) 0 clamp(1.6rem, 3.8vh, 2.4rem);
 }
@@ -445,6 +446,7 @@ h6 {
   position: relative;
   z-index: 3;
   align-self: center;
+  min-width: 0;
   padding: clamp(1rem, 2vw, 1.35rem);
   animation: homeHeroStageIn 0.58s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -501,6 +503,7 @@ h6 {
   position: relative;
   z-index: 2;
   align-self: stretch;
+  min-width: 0;
   min-height: 100%;
   margin: 14px 14px 14px 0;
   overflow: hidden;
@@ -820,7 +823,7 @@ h6 {
   font-family: var(--font-poppins);
   font-size: 12px;
   font-weight: 800;
-  padding: 0 14px;
+  padding: 0 17px;
   text-decoration: none;
   transition: border-color 0.22s ease, box-shadow 0.22s ease, color 0.22s ease, transform 0.22s ease;
 }
@@ -949,6 +952,606 @@ h6 {
   font-weight: 800;
 }
 
+.home-workflow-section {
+  position: relative;
+  isolation: isolate;
+  border-top: 1px solid var(--border);
+  background:
+    radial-gradient(circle at 22% 24%, color-mix(in srgb, var(--accent-secondary) 10%, transparent), transparent 30%),
+    linear-gradient(90deg, color-mix(in srgb, var(--foreground) 3%, transparent) 1px, transparent 1px),
+    linear-gradient(180deg, color-mix(in srgb, var(--foreground) 3%, transparent) 1px, transparent 1px),
+    color-mix(in srgb, var(--background) 86%, var(--card));
+  background-size: auto, 44px 44px, 44px 44px, auto;
+}
+
+.home-workflow-shell {
+  display: grid;
+  align-items: center;
+  grid-template-columns: minmax(340px, 0.86fr) minmax(520px, 1.14fr);
+  gap: clamp(1.8rem, 4.2vw, 4.6rem);
+}
+
+.home-workflow-copy {
+  min-width: 0;
+}
+
+.home-workflow-kicker {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  border: 1px solid color-mix(in srgb, var(--accent-secondary) 28%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 72%, transparent);
+  color: var(--accent-secondary);
+  font-size: 11px;
+  font-weight: 900;
+  padding: 0 10px;
+}
+
+.home-workflow-copy h2 {
+  max-width: 9em;
+  margin-top: 16px;
+  color: var(--foreground);
+  font-family: var(--font-hero-display);
+  font-size: clamp(2.45rem, 5.5vw, 5.1rem);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 0.98;
+}
+
+.home-workflow-copy > p {
+  max-width: 32rem;
+  margin-top: 16px;
+  color: color-mix(in srgb, var(--foreground) 64%, var(--muted));
+  font-size: clamp(0.94rem, 1.25vw, 1.08rem);
+  font-weight: 720;
+  line-height: 1.74;
+}
+
+.home-workflow-context-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 18px;
+}
+
+.home-workflow-context-strip span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 74%, transparent);
+  color: color-mix(in srgb, var(--foreground) 68%, var(--muted));
+  font-size: 11px;
+  font-weight: 850;
+  padding: 0 10px;
+}
+
+.home-workflow-step-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 24px;
+}
+
+.home-workflow-step {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--card) 84%, transparent);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 12px 14px 12px 17px;
+  text-align: left;
+  transition:
+    border-color 0.24s ease,
+    box-shadow 0.24s ease,
+    transform 0.24s ease;
+}
+
+.home-workflow-step::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--accent-secondary), var(--accent));
+  opacity: 0;
+  transform: scaleY(0.35);
+  transform-origin: top;
+  transition: opacity 0.24s ease, transform 0.24s ease;
+}
+
+.home-workflow-step span {
+  color: var(--accent-secondary);
+  font-size: 10.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.home-workflow-step strong {
+  color: var(--foreground);
+  font-size: 15px;
+}
+
+.home-workflow-step em {
+  color: color-mix(in srgb, var(--foreground) 56%, var(--muted));
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.home-workflow-step:hover,
+.home-workflow-step:focus-visible,
+.home-workflow-step.is-active {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+  box-shadow: 0 16px 34px rgba(20, 20, 19, 0.07);
+  transform: translateY(-1px);
+}
+
+.home-workflow-step.is-active::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.home-workflow-scene {
+  position: relative;
+  isolation: isolate;
+  min-height: clamp(520px, 64vh, 680px);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 74% 18%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 32%),
+    linear-gradient(135deg, color-mix(in srgb, var(--card) 94%, transparent), color-mix(in srgb, var(--background) 88%, var(--card)));
+  box-shadow: 0 28px 78px rgba(20, 20, 19, 0.105);
+  padding: clamp(1rem, 2.4vw, 1.45rem);
+}
+
+.home-workflow-scene::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent-secondary) 11%, transparent), transparent);
+  opacity: 0.62;
+  transform: translateX(-105%);
+  animation: homeWorkflowScan 5.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.home-workflow-scene-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 38px;
+  margin-bottom: 12px;
+}
+
+.home-workflow-scene-header div {
+  display: grid;
+  gap: 2px;
+}
+
+.home-workflow-scene-header span {
+  color: color-mix(in srgb, var(--foreground) 52%, var(--muted));
+  font-family: var(--font-poppins);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.home-workflow-scene-header strong {
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.home-workflow-scene-header p {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  margin: 0;
+  border: 1px solid color-mix(in srgb, var(--accent-tertiary) 28%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 74%, transparent);
+  color: color-mix(in srgb, var(--foreground) 64%, var(--muted));
+  font-size: 11px;
+  font-weight: 850;
+  padding: 0 10px;
+}
+
+.home-workflow-scene-header i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--accent-tertiary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-tertiary) 14%, transparent);
+}
+
+.home-workflow-dock {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  gap: 7px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.home-workflow-dock button {
+  flex: 0 0 auto;
+  min-height: 30px;
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 74%, transparent);
+  color: color-mix(in srgb, var(--foreground) 58%, var(--muted));
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 0 11px;
+  transition:
+    border-color 0.22s ease,
+    background 0.22s ease,
+    color 0.22s ease,
+    transform 0.22s ease;
+}
+
+.home-workflow-dock button:hover,
+.home-workflow-dock button:focus-visible,
+.home-workflow-dock button.is-active {
+  border-color: color-mix(in srgb, var(--accent-secondary) 34%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 36%, var(--card));
+  color: var(--foreground);
+  transform: translateY(-1px);
+}
+
+.home-workflow-question,
+.home-workflow-board,
+.home-workflow-share {
+  position: relative;
+  z-index: 1;
+}
+
+.home-workflow-question {
+  display: grid;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--card) 78%, transparent);
+  padding: 14px 16px;
+}
+
+.home-workflow-question span,
+.home-workflow-panel-head span {
+  color: var(--accent-secondary);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.home-workflow-question strong {
+  color: var(--foreground);
+  font-size: clamp(1.05rem, 1.8vw, 1.44rem);
+  line-height: 1.28;
+}
+
+.home-workflow-question em {
+  color: color-mix(in srgb, var(--foreground) 58%, var(--muted));
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 760;
+  line-height: 1.45;
+}
+
+.home-workflow-board {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  grid-template-rows: minmax(210px, 1fr) minmax(170px, 0.78fr);
+  gap: 12px;
+  margin-top: 12px;
+  transform-style: preserve-3d;
+}
+
+.home-workflow-layer-stack {
+  perspective: 1200px;
+}
+
+.home-workflow-board::before,
+.home-workflow-board::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  background: color-mix(in srgb, var(--accent-secondary) 24%, transparent);
+  pointer-events: none;
+}
+
+.home-workflow-board::before {
+  left: 50%;
+  top: 18%;
+  width: 1px;
+  height: 64%;
+}
+
+.home-workflow-board::after {
+  left: 11%;
+  right: 11%;
+  top: 54%;
+  height: 1px;
+}
+
+.home-workflow-notebook,
+.home-workflow-app-card,
+.home-workflow-ai-card {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--card) 86%, transparent);
+  box-shadow: 0 18px 42px rgba(20, 20, 19, 0.06);
+  padding: 14px;
+}
+
+.home-workflow-depth-card {
+  transform-style: preserve-3d;
+  transition:
+    box-shadow 0.28s ease,
+    transform 0.28s ease,
+    border-color 0.28s ease;
+}
+
+.home-workflow-depth-card:hover {
+  border-color: color-mix(in srgb, var(--accent-secondary) 30%, var(--border));
+  box-shadow: 0 24px 58px rgba(20, 20, 19, 0.095);
+}
+
+.home-workflow-notebook {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  transform: translate3d(-6px, 0, 34px) rotateX(1deg);
+}
+
+.home-workflow-app-card {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  transform: translate3d(10px, 18px, 14px) rotateZ(0.6deg);
+}
+
+.home-workflow-ai-card {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 0.3fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  transform: translate3d(18px, -8px, 46px) rotateX(-0.8deg);
+}
+
+.home-workflow-cursor {
+  position: absolute;
+  right: clamp(14px, 2vw, 24px);
+  top: clamp(14px, 2vw, 24px);
+  z-index: 4;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 86%, transparent);
+  box-shadow: 0 12px 28px rgba(20, 20, 19, 0.08);
+  color: color-mix(in srgb, var(--foreground) 62%, var(--muted));
+  font-family: var(--font-poppins);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  padding: 7px 10px;
+  text-transform: uppercase;
+  animation: homeWorkflowCursor 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.home-workflow-panel-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.home-workflow-panel-head svg {
+  width: 16px;
+  height: 16px;
+  color: var(--accent-secondary);
+}
+
+.home-workflow-code-lines {
+  display: grid;
+  align-content: center;
+  gap: 12px;
+}
+
+.home-workflow-code-lines span {
+  display: block;
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent-secondary) 62%, var(--card)), color-mix(in srgb, var(--border) 75%, transparent));
+  animation: homeWorkflowPulse 3.2s ease-in-out infinite;
+}
+
+.home-workflow-code-lines span:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.home-workflow-code-lines span:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+.home-workflow-cell-result {
+  display: grid;
+  gap: 4px;
+  border: 1px solid color-mix(in srgb, var(--accent-secondary) 24%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--background) 74%, var(--card));
+  padding: 11px 12px;
+  animation: homeWorkflowCardIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.home-workflow-cell-result span,
+.home-workflow-cell-result small {
+  color: color-mix(in srgb, var(--foreground) 56%, var(--muted));
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.home-workflow-cell-result strong {
+  color: var(--accent-secondary);
+  font-size: 1.72rem;
+  line-height: 1.08;
+}
+
+.home-workflow-bars {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  min-height: 164px;
+  padding: 16px 8px 0;
+}
+
+.home-workflow-bars span {
+  flex: 1;
+  min-width: 0;
+  border-radius: 10px 10px 3px 3px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 72%, var(--card)), color-mix(in srgb, var(--accent-secondary) 62%, var(--card)));
+  animation: homeWorkflowCardIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.home-workflow-app-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 2px 10px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  padding-top: 9px;
+}
+
+.home-workflow-app-meta span {
+  color: color-mix(in srgb, var(--foreground) 54%, var(--muted));
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.home-workflow-app-meta strong {
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.home-workflow-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.home-workflow-pills span {
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--foreground) 64%, var(--muted));
+  font-size: 11px;
+  font-weight: 800;
+  padding: 0.28rem 0.5rem;
+}
+
+.home-workflow-ai-card p {
+  color: color-mix(in srgb, var(--foreground) 70%, var(--muted));
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.62;
+}
+
+.home-workflow-ai-action,
+.home-workflow-share {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.home-workflow-ai-action svg,
+.home-workflow-share svg {
+  width: 15px;
+  height: 15px;
+  color: var(--accent);
+}
+
+.home-workflow-share {
+  justify-content: center;
+  width: 100%;
+  min-height: 42px;
+  margin-top: 12px;
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 76%, transparent);
+}
+
+.home-workflow-share strong {
+  color: color-mix(in srgb, var(--foreground) 74%, var(--muted));
+  font-size: 12px;
+  font-weight: 850;
+}
+
+@keyframes homeWorkflowScan {
+  0%,
+  48% {
+    transform: translateX(-105%);
+  }
+  82%,
+  100% {
+    transform: translateX(105%);
+  }
+}
+
+@keyframes homeWorkflowPulse {
+  0%,
+  100% {
+    opacity: 0.48;
+    transform: scaleX(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes homeWorkflowCardIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.98);
+    filter: blur(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes homeWorkflowCursor {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-8px, 7px, 0);
+  }
+}
+
 .home-finance-section {
   border-top: 1px solid var(--border);
   background:
@@ -958,7 +1561,7 @@ h6 {
 }
 
 .home-finance-shell {
-  max-width: 1100px;
+  max-width: 1180px;
 }
 
 .home-finance-header {
@@ -1039,8 +1642,8 @@ h6 {
 .home-finance-showcase {
   display: grid;
   align-items: stretch;
-  grid-template-columns: minmax(0, 0.96fr) minmax(360px, 1.04fr);
-  gap: 12px;
+  grid-template-columns: minmax(0, 0.82fr) minmax(460px, 1.18fr);
+  gap: clamp(14px, 2.2vw, 24px);
 }
 
 .home-finance-mobile-carousel {
@@ -1107,6 +1710,12 @@ h6 {
     border-color 0.24s ease,
     box-shadow 0.24s ease,
     transform 0.24s ease;
+}
+
+.home-finance-switch-card {
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
 }
 
 .home-finance-stage:hover,
@@ -1216,12 +1825,103 @@ h6 {
 
 .home-finance-stage .finance-model-preview {
   aspect-ratio: 1.5;
+  min-height: clamp(300px, 42vh, 520px);
+}
+
+.home-finance-operating-room {
+  display: grid;
+  grid-template-rows: minmax(430px, 1fr) auto;
+  gap: 12px;
+  min-width: 0;
+  perspective: 1400px;
+  transform-style: preserve-3d;
+}
+
+.home-finance-layer-stack {
+  position: relative;
+  min-height: clamp(430px, 58vh, 620px);
+  transform-style: preserve-3d;
+}
+
+.home-finance-depth-card {
+  position: absolute;
+  inset: 0;
+  z-index: calc(5 - var(--finance-depth-index));
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  border-radius: 8px;
+  background: var(--card);
+  box-shadow: 0 24px 68px rgba(20, 20, 19, calc(0.12 - var(--finance-depth-index) * 0.025));
+  overflow: hidden;
+  transform:
+    translate3d(var(--finance-depth-shift), calc(var(--finance-depth-shift) * -0.72), var(--finance-depth-z))
+    scale(var(--finance-depth-scale))
+    rotateZ(var(--finance-depth-rotate));
+  transform-origin: right bottom;
+  transition:
+    opacity 0.28s ease,
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.28s ease;
+}
+
+.home-finance-depth-card:not(.is-layer-0) {
+  opacity: 0.68;
+}
+
+.home-finance-depth-card.is-layer-2 {
+  opacity: 0.42;
+}
+
+.home-finance-depth-card a {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.home-finance-depth-card .finance-model-preview {
+  aspect-ratio: 1.34;
+  min-height: clamp(250px, 34vh, 410px);
+  border-bottom: 1px solid var(--border);
+}
+
+.home-finance-depth-card .finance-model-preview-image {
+  object-fit: contain;
+}
+
+.home-finance-depth-copy {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px 16px;
+}
+
+.home-finance-depth-copy span {
+  color: var(--accent-secondary);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.home-finance-depth-copy strong {
+  color: var(--foreground);
+  font-size: clamp(1.12rem, 1.8vw, 1.48rem);
+  line-height: 1.16;
+}
+
+.home-finance-depth-copy p {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 720;
+  line-height: 1.48;
+}
+
+.home-finance-model-rail {
+  position: relative;
 }
 
 .home-finance-switcher {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
 }
 
 .home-finance-switch-card-motion {
@@ -1231,14 +1931,20 @@ h6 {
 }
 
 .home-finance-switch-card {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
   inline-size: 100%;
+  min-width: 0;
   min-height: 0;
+  padding: 0;
 }
 
 .home-finance-switch-card .finance-model-preview.compact {
-  aspect-ratio: 1.5;
+  height: 100%;
+  min-height: 82px;
+  aspect-ratio: 1;
+  border-bottom: 0;
+  border-right: 1px solid var(--border);
   transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -1254,15 +1960,15 @@ h6 {
 
 .home-finance-switch-copy {
   min-width: 0;
-  padding: 10px 12px;
+  padding: 9px 10px;
 }
 
 .home-finance-switch-copy strong {
   display: block;
   color: var(--foreground);
-  font-size: 14px;
+  font-size: 12px;
   line-height: 1.35;
-  margin-top: 5px;
+  margin-top: 4px;
 }
 
 .home-finance-switch-open {
@@ -1271,9 +1977,9 @@ h6 {
   gap: 5px;
   color: color-mix(in srgb, var(--foreground) 78%, var(--accent-secondary));
   font-family: var(--font-poppins);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 @keyframes home-finance-stage-enter {
@@ -2159,8 +2865,18 @@ h6 {
 
   .home-finance-stage,
   .home-finance-stage-frame,
+  .home-finance-operating-room,
   .home-finance-switcher {
     height: 100%;
+    min-height: 0;
+  }
+
+  .home-finance-operating-room {
+    grid-template-rows: minmax(288px, 1fr) auto;
+    gap: 8px;
+  }
+
+  .home-finance-layer-stack {
     min-height: 0;
   }
 
@@ -2222,8 +2938,13 @@ h6 {
 
   .home-finance-stage .finance-model-preview {
     aspect-ratio: 1.8;
+    min-height: 0;
     border-top: 1px solid var(--border);
     border-bottom: 0;
+  }
+
+  .home-finance-depth-card .finance-model-preview {
+    min-height: clamp(190px, 28vh, 300px);
   }
 
   .home-finance-switcher {
@@ -2236,17 +2957,18 @@ h6 {
   }
 
   .home-finance-switcher {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: repeat(2, minmax(0, 1fr));
   }
 
   .home-finance-switch-card {
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-columns: 62px minmax(0, 1fr);
     min-height: 0;
   }
 
   .home-finance-switch-card .finance-model-preview.compact {
-    aspect-ratio: 1.9;
+    min-height: 0;
+    aspect-ratio: 1;
   }
 
   .home-finance-switch-copy {
@@ -2318,6 +3040,95 @@ h6 {
     width: 100%;
     max-width: none;
   }
+
+  .home-hero-stage-panel {
+    grid-template-columns: minmax(160px, 0.52fr) minmax(0, 1fr);
+  }
+
+  .home-hero-stage-preview {
+    margin-right: 8px;
+  }
+
+  .home-hero-stage-float-metric {
+    right: 5%;
+    min-width: 108px;
+  }
+}
+
+@media (max-width: 980px) and (min-width: 769px) {
+  .home-workflow-section {
+    min-height: auto;
+    padding-top: clamp(4.6rem, 7vh, 5.8rem);
+    padding-bottom: clamp(3rem, 6vh, 4rem);
+  }
+
+  .home-workflow-shell {
+    width: min(680px, calc(100% - 48px));
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 1.25rem;
+  }
+
+  .home-workflow-copy h2 {
+    max-width: 9.5em;
+    margin-top: 12px;
+    font-size: clamp(2.7rem, 8vw, 4rem);
+  }
+
+  .home-workflow-copy > p {
+    margin-top: 10px;
+    line-height: 1.56;
+  }
+
+  .home-workflow-step-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .home-workflow-step {
+    padding: 10px 12px 10px 14px;
+  }
+
+  .home-workflow-scene {
+    min-height: 0;
+    padding: 18px;
+  }
+
+  .home-workflow-question {
+    padding: 12px 14px;
+  }
+
+  .home-workflow-board {
+    grid-template-rows: minmax(172px, 0.8fr) minmax(126px, 0.58fr);
+    gap: 10px;
+  }
+
+  .home-workflow-notebook,
+  .home-workflow-app-card,
+  .home-workflow-ai-card {
+    padding: 12px;
+  }
+
+  .home-workflow-bars {
+    min-height: 122px;
+    padding-top: 10px;
+  }
+
+  .home-workflow-ai-card {
+    grid-template-columns: minmax(0, 0.24fr) minmax(0, 1fr) auto;
+    min-height: 126px;
+  }
+
+  .home-workflow-ai-card p {
+    font-size: 12px;
+    line-height: 1.48;
+  }
+
+  .home-workflow-share {
+    min-height: 38px;
+    margin-top: 10px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -2335,7 +3146,7 @@ h6 {
 
   .home-hero {
     align-items: stretch;
-    min-height: 100svh;
+    min-height: calc(100svh - 34px);
     padding-top: clamp(3.2rem, 6svh, 3.9rem);
     padding-bottom: 1.1rem;
   }
@@ -2601,7 +3412,7 @@ h6 {
     gap: 6px;
     font-size: 11px;
     min-height: 34px;
-    padding-inline: 12px;
+    padding-inline: 15px;
   }
 
   .home-hero-continue::before {
@@ -2611,6 +3422,196 @@ h6 {
   .home-hero-continue-runner {
     width: 5px;
     height: 5px;
+  }
+
+  .home-workflow-section {
+    min-height: auto;
+    padding-top: clamp(3.2rem, 7svh, 4rem);
+    padding-bottom: clamp(2.4rem, 6svh, 3.4rem);
+  }
+
+  .home-workflow-shell {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .home-workflow-copy h2 {
+    max-width: 10em;
+    margin-top: 12px;
+    font-size: clamp(2.04rem, 10vw, 3rem);
+    line-height: 1.03;
+  }
+
+  .home-workflow-copy > p {
+    margin-top: 11px;
+    font-size: 13px;
+    line-height: 1.58;
+  }
+
+  .home-workflow-context-strip {
+    margin-top: 13px;
+    gap: 6px;
+  }
+
+  .home-workflow-context-strip span {
+    min-height: 25px;
+    font-size: 10.5px;
+    padding-inline: 8px;
+  }
+
+  .home-workflow-step-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    margin-top: 14px;
+  }
+
+  .home-workflow-step {
+    min-height: 104px;
+    padding: 10px 10px 10px 12px;
+  }
+
+  .home-workflow-step span {
+    font-size: 9.5px;
+  }
+
+  .home-workflow-step strong {
+    font-size: 13px;
+  }
+
+  .home-workflow-step em {
+    display: -webkit-box;
+    font-size: 10.5px;
+    line-height: 1.4;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+  }
+
+  .home-workflow-scene {
+    min-height: 0;
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  .home-workflow-scene-header {
+    min-height: 32px;
+    margin-bottom: 9px;
+  }
+
+  .home-workflow-scene-header span {
+    font-size: 9px;
+  }
+
+  .home-workflow-scene-header strong {
+    font-size: 12px;
+  }
+
+  .home-workflow-scene-header p {
+    min-height: 25px;
+    font-size: 10px;
+    padding-inline: 8px;
+  }
+
+  .home-workflow-question {
+    gap: 5px;
+    padding: 10px 11px;
+  }
+
+  .home-workflow-question span,
+  .home-workflow-panel-head span {
+    font-size: 10px;
+  }
+
+  .home-workflow-question strong {
+    font-size: 0.95rem;
+    line-height: 1.26;
+  }
+
+  .home-workflow-question em {
+    font-size: 10.5px;
+  }
+
+  .home-workflow-board {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .home-workflow-board::before,
+  .home-workflow-board::after {
+    display: none;
+  }
+
+  .home-workflow-notebook,
+  .home-workflow-app-card,
+  .home-workflow-ai-card {
+    padding: 10px;
+  }
+
+  .home-workflow-notebook,
+  .home-workflow-app-card {
+    min-height: 146px;
+  }
+
+  .home-workflow-ai-card {
+    grid-column: auto;
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .home-workflow-code-lines {
+    gap: 8px;
+    padding-block: 12px;
+  }
+
+  .home-workflow-code-lines span {
+    height: 8px;
+  }
+
+  .home-workflow-cell-result {
+    padding: 8px 9px;
+  }
+
+  .home-workflow-cell-result strong {
+    font-size: 1.22rem;
+  }
+
+  .home-workflow-bars {
+    min-height: 88px;
+    gap: 7px;
+    padding-top: 11px;
+  }
+
+  .home-workflow-app-meta {
+    margin-bottom: 7px;
+    padding-top: 7px;
+  }
+
+  .home-workflow-pills span {
+    font-size: 10px;
+    padding: 0.2rem 0.42rem;
+  }
+
+  .home-workflow-ai-card p {
+    font-size: 11.5px;
+    line-height: 1.48;
+  }
+
+  .home-workflow-ai-action,
+  .home-workflow-share {
+    font-size: 11px;
+  }
+
+  .home-workflow-share {
+    justify-content: flex-start;
+    min-height: 38px;
+    border-radius: 8px;
+    padding: 0 10px;
+  }
+
+  .home-workflow-share strong {
+    font-size: 10.5px;
   }
 
   .home-finance-header {
@@ -2664,6 +3665,14 @@ h6 {
   }
 
   .home-finance-stage-frame {
+    display: none;
+  }
+
+  .home-finance-operating-room {
+    display: contents;
+  }
+
+  .home-finance-layer-stack {
     display: none;
   }
 
@@ -3510,6 +4519,10 @@ h6 {
   .home-hero-stage-scan,
   .home-hero-stage-tab,
   .home-hero-question-card,
+  .home-workflow-scene::before,
+  .home-workflow-code-lines span,
+  .home-workflow-cell-result,
+  .home-workflow-bars span,
   .chat-route-card {
     animation: none !important;
     transition: none !important;

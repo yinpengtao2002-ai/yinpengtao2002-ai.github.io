@@ -3,7 +3,7 @@ import FinanceModelLibrary from "@/components/finance/FinanceModelLibrary";
 
 export const metadata: Metadata = {
   title: "财务模型｜Lucas Yin",
-  description: "从复盘、归因、趋势到敏感性，按真实经营问题选择 Lucas Yin 持续打磨的财务模型。",
+  description: "从复盘、归因、趋势、收入桥、汇率到现金占用，按真实经营问题选择 Lucas Yin 持续打磨的财务模型。",
 };
 
 export default function FinancePage() {
@@ -15,7 +15,7 @@ export default function FinancePage() {
             问题驱动的财务模型
           </h1>
           <p className="finance-index-intro">
-            从复盘、归因、趋势到敏感性，按真实经营问题选择模型。
+            从复盘、归因、趋势、收入桥、汇率到现金占用，按真实经营问题选择模型。
           </p>
         </section>
         <FinanceModelLibrary compact />

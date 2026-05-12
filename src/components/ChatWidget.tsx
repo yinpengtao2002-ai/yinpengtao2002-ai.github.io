@@ -62,7 +62,7 @@ const INTERNAL_ROUTE_CARDS: Record<string, InternalRouteCard> = {
     "/finance": {
         href: "/finance",
         title: "财务模型库",
-        description: "预算复盘、单车归因、趋势监控和利润敏感性。",
+        description: "预算复盘、趋势监控、利润模拟和单车归因。",
         accent: "var(--accent-secondary)",
     },
     "/thinking-lab": {
@@ -83,16 +83,34 @@ const INTERNAL_ROUTE_CARDS: Record<string, InternalRouteCard> = {
         description: "从预算与实际差异定位销量、收入、边际和利润问题。",
         accent: "var(--accent-secondary)",
     },
+    "/finance/price-volume-mix": {
+        href: "/finance/price-volume-mix",
+        title: "价量结构收入桥模型",
+        description: "把收入差异拆成销量、单价和结构组合贡献。",
+        accent: "var(--accent-secondary)",
+    },
     "/finance/monthly-trend": {
         href: "/finance/monthly-trend",
         title: "分月指标趋势分析模型",
         description: "观察连续月份的趋势、结构和集中度变化。",
         accent: "var(--accent-secondary)",
     },
+    "/finance/working-capital": {
+        href: "/finance/working-capital",
+        title: "库存周转与现金占用模型",
+        description: "用库存、应收和应付天数估算资金占用。",
+        accent: "var(--accent-secondary)",
+    },
     "/finance/sensitivity-analysis": {
         href: "/finance/sensitivity-analysis",
         title: "利润敏感性分析",
         description: "调整关键变量并快速判断利润影响。",
+        accent: "var(--accent-secondary)",
+    },
+    "/finance/fx-exposure": {
+        href: "/finance/fx-exposure",
+        title: "汇率敞口敏感性模型",
+        description: "估算外币敞口、实际汇率和锁汇比例对利润的影响。",
         accent: "var(--accent-secondary)",
     },
 };
