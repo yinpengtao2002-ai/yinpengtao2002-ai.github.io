@@ -74,6 +74,29 @@ export interface ScenarioDecisionCard {
   note: string;
 }
 
+export interface ScenarioDimensionItem {
+  label: string;
+  value: string;
+  magnitude: number;
+  share: string;
+  status: string;
+  note: string;
+}
+
+export interface ScenarioResponsibilityRow {
+  owner: string;
+  action: string;
+  metric: string;
+  risk: string;
+}
+
+export interface ScenarioExecutiveBrief {
+  title: string;
+  body: string;
+  primary: string;
+  secondary: string;
+}
+
 export interface ScenarioResult {
   headline: string;
   metrics: ScenarioMetric[];
@@ -84,6 +107,9 @@ export interface ScenarioResult {
   sensitivity: ScenarioSensitivityItem[];
   timeline: ScenarioTimelineItem[];
   decisionCards: ScenarioDecisionCard[];
+  dimensionBreakdown: ScenarioDimensionItem[];
+  responsibilityRows: ScenarioResponsibilityRow[];
+  executiveBrief: ScenarioExecutiveBrief;
   insights: string[];
 }
 
@@ -230,6 +256,10 @@ export const scenarioModels: ScenarioModelDefinition[] = [
           : Math.abs(priceImpact) >= Math.abs(mixImpact)
             ? "价格贡献"
             : "结构贡献";
+      const totalDriverAbs = Math.max(
+        Math.abs(volumeImpact) + Math.abs(priceImpact) + Math.abs(mixImpact),
+        1,
+      );
 
       return {
         headline: `收入差异 ${millionCny(totalImpact)}，增幅 ${percent(growthRate)}`,
@@ -275,6 +305,60 @@ export const scenarioModels: ScenarioModelDefinition[] = [
           { label: "汇报重点", value: totalImpact >= 0 ? "解释增量质量" : "解释收入缺口", note: "先给桥，再给动作" },
           { label: "下钻路径", value: "车型 / 国家 / 渠道", note: "回到可执行责任线" },
         ],
+        dimensionBreakdown: [
+          {
+            label: "规模兑现",
+            value: signedMillionCny(volumeImpact),
+            magnitude: Math.abs(volumeImpact),
+            share: percent((Math.abs(volumeImpact) / totalDriverAbs) * 100),
+            status: volumeImpact >= 0 ? "正向" : "拖累",
+            note: "先确认销售计划、订单交付和区域配车节奏。",
+          },
+          {
+            label: "单车净收",
+            value: signedMillionCny(priceImpact),
+            magnitude: Math.abs(priceImpact),
+            share: percent((Math.abs(priceImpact) / totalDriverAbs) * 100),
+            status: priceImpact >= 0 ? "改善" : "承压",
+            note: "拆折扣、返利和渠道价格，避免把价格压力归到销量。",
+          },
+          {
+            label: "组合质量",
+            value: signedMillionCny(mixImpact),
+            magnitude: Math.abs(mixImpact),
+            share: percent((Math.abs(mixImpact) / totalDriverAbs) * 100),
+            status: mixImpact >= 0 ? "升级" : "下沉",
+            note: "继续拆车型、国家和渠道占比，解释结构贡献质量。",
+          },
+        ],
+        responsibilityRows: [
+          {
+            owner: "区域销售",
+            action: "核对销量兑现与交付节奏",
+            metric: `${formatNumber(currentVolume - baseVolume)} 台`,
+            risk: "规模差异被误读为价格变化",
+          },
+          {
+            owner: "产品定价",
+            action: "拆净收入、折扣和返利",
+            metric: `${formatNumber(currentAsp - baseAsp, 2)} 万元/台`,
+            risk: "单车口径不一致导致收入桥失真",
+          },
+          {
+            owner: "经营分析",
+            action: "把结构贡献落到车型、国家、渠道",
+            metric: signedMillionCny(mixImpact),
+            risk: "只看收入增量，忽略增量质量",
+          },
+        ],
+        executiveBrief: {
+          title: `${strongestDriver}是当前收入桥主线`,
+          body: totalImpact >= 0
+            ? "收入差异为正，但仍要先判断增量来自规模兑现、价格改善还是组合升级。"
+            : "收入差异为负，汇报时应先拆缺口来源，再明确对应责任线。",
+          primary: `收入差异 ${signedMillionCny(totalImpact)}`,
+          secondary: `结构贡献 ${signedMillionCny(mixImpact)}`,
+        },
         insights: [
           Math.abs(volumeImpact) >= Math.abs(priceImpact)
             ? "当前差异首先要解释销量兑现和区域结构，而不是先讨论单价。"
@@ -384,6 +468,10 @@ export const scenarioModels: ScenarioModelDefinition[] = [
       const netImpact = currentValue - budgetValue;
       const openExposure = exposure * (1 - hedgeRatio);
       const openRateRisk = openExposure * 0.1;
+      const totalFxAbs = Math.max(
+        Math.abs(pureFxImpact) + Math.abs(hedgeImpact) + Math.abs(netImpact),
+        1,
+      );
 
       return {
         headline: `汇率净影响 ${signedMillionCny(netImpact)}，未锁敞口 ${formatNumber(openExposure)} 万美元`,
@@ -429,6 +517,58 @@ export const scenarioModels: ScenarioModelDefinition[] = [
           { label: "策略判断", value: hedgeImpact < 0 ? "有机会成本" : "形成保护", note: "锁汇影响单列" },
           { label: "汇报位置", value: "汇率桥", note: "与经营利润拆开看" },
         ],
+        dimensionBreakdown: [
+          {
+            label: "现货重估",
+            value: signedMillionCny(pureFxImpact),
+            magnitude: Math.abs(pureFxImpact),
+            share: percent((Math.abs(pureFxImpact) / totalFxAbs) * 100),
+            status: pureFxImpact >= 0 ? "收益" : "压力",
+            note: "全部敞口按实际汇率重估，先和经营因素隔离。",
+          },
+          {
+            label: "锁汇保护",
+            value: signedMillionCny(hedgeImpact),
+            magnitude: Math.abs(hedgeImpact),
+            share: percent((Math.abs(hedgeImpact) / totalFxAbs) * 100),
+            status: hedgeImpact >= 0 ? "保护" : "成本",
+            note: "锁汇汇率和现货汇率对比，单列保护或机会成本。",
+          },
+          {
+            label: "未锁敞口",
+            value: `${formatNumber(openExposure)} 万美元`,
+            magnitude: Math.abs(openExposure * (actualRate - budgetRate)),
+            share: percent((1 - hedgeRatio) * 100),
+            status: "待管理",
+            note: "未锁部分继续暴露在现货波动中，需要资金和业务共同确认。",
+          },
+        ],
+        responsibilityRows: [
+          {
+            owner: "资金管理",
+            action: "复核锁汇比例和锁汇汇率",
+            metric: percent(hedgeRatio * 100),
+            risk: "只看净影响，忽略机会成本",
+          },
+          {
+            owner: "海外业务",
+            action: "确认外币敞口和结算时点",
+            metric: `${formatNumber(exposure)} 万美元`,
+            risk: "敞口基数不准会放大汇率判断偏差",
+          },
+          {
+            owner: "预算财务",
+            action: "区分预算汇率与实际汇率贡献",
+            metric: rate(actualRate - budgetRate),
+            risk: "把汇率贡献误判为经营改善",
+          },
+        ],
+        executiveBrief: {
+          title: netImpact >= 0 ? "汇率形成正向净影响" : "汇率形成利润压力",
+          body: "汇率桥要把现货重估、锁汇保护和未锁敞口拆开，避免和经营质量混在一起。",
+          primary: `净影响 ${signedMillionCny(netImpact)}`,
+          secondary: `未锁敞口 ${formatNumber(openExposure)} 万美元`,
+        },
         insights: [
           netImpact >= 0
             ? "当前汇率口径对收入或利润有正向影响，但仍要区分经营改善和汇率贡献。"
@@ -538,6 +678,10 @@ export const scenarioModels: ScenarioModelDefinition[] = [
       const receivableCapital = dailyCogs * receivableDays;
       const payableBuffer = -dailyCogs * payableDays;
       const mainPressure = inventoryDays >= receivableDays ? "库存周转" : "回款周期";
+      const totalWorkingAbs = Math.max(
+        Math.abs(inventoryCapital) + Math.abs(receivableCapital) + Math.abs(payableBuffer),
+        1,
+      );
 
       return {
         headline: `现金转换周期 ${formatNumber(cashCycle)} 天，可释放空间 ${signedMillionCny(releasePotential)}`,
@@ -584,6 +728,58 @@ export const scenarioModels: ScenarioModelDefinition[] = [
           { label: "释放空间", value: signedMillionCny(releasePotential), note: `目标 ${formatNumber(targetCycle)} 天` },
           { label: "责任线", value: "库存 / 应收 / 应付", note: "分别给动作" },
         ],
+        dimensionBreakdown: [
+          {
+            label: "库存周转",
+            value: millionCny(inventoryCapital),
+            magnitude: Math.abs(inventoryCapital),
+            share: percent((Math.abs(inventoryCapital) / totalWorkingAbs) * 100),
+            status: inventoryDays > targetCycle * 0.55 ? "偏重" : "可控",
+            note: "继续拆库龄、在途和滞销车型，判断库存释放空间。",
+          },
+          {
+            label: "销售回款",
+            value: millionCny(receivableCapital),
+            magnitude: Math.abs(receivableCapital),
+            share: percent((Math.abs(receivableCapital) / totalWorkingAbs) * 100),
+            status: receivableDays > targetCycle * 0.55 ? "拉长" : "稳定",
+            note: "按客户、区域和账期拆分，识别逾期和结构问题。",
+          },
+          {
+            label: "供应账期",
+            value: signedMillionCny(payableBuffer),
+            magnitude: Math.abs(payableBuffer),
+            share: percent((Math.abs(payableBuffer) / totalWorkingAbs) * 100),
+            status: "缓冲",
+            note: "应付账期是缓冲，不应牺牲供应稳定性换短期现金。",
+          },
+        ],
+        responsibilityRows: [
+          {
+            owner: "供应链",
+            action: "拆库龄、在途和备货节奏",
+            metric: `${formatNumber(inventoryDays)} 天`,
+            risk: "库存释放空间被总周期掩盖",
+          },
+          {
+            owner: "销售 / 信控",
+            action: "核对客户账期和逾期回款",
+            metric: `${formatNumber(receivableDays)} 天`,
+            risk: "回款压力被销量增长掩盖",
+          },
+          {
+            owner: "采购 / 财务",
+            action: "评估账期缓冲和供应安全",
+            metric: `${formatNumber(payableDays)} 天`,
+            risk: "过度拉长账期影响供应稳定",
+          },
+        ],
+        executiveBrief: {
+          title: `${mainPressure}是当前现金压力主线`,
+          body: "现金占用要同时看库存、应收和应付，先量化释放空间，再把动作分配到责任线。",
+          primary: `现金周期 ${formatNumber(cashCycle)} 天`,
+          secondary: `释放空间 ${signedMillionCny(releasePotential)}`,
+        },
         insights: [
           inventoryDays >= receivableDays
             ? "现金压力主要来自库存周转，优先看备货节奏、库龄和滞销车型。"

@@ -196,7 +196,7 @@
   margin-top: 8px;
   color: #141413;
   font-family: var(--font-hero-display), "Songti SC", STSong, Georgia, serif;
-  font-size: clamp(2.25rem, 5vw, 4.7rem);
+  font-size: clamp(2.25rem, 4.15vw, 4.05rem);
   font-weight: 500;
   letter-spacing: 0;
   line-height: 0.98;
@@ -270,7 +270,8 @@
 .scenario-operations-ribbon span,
 .scenario-sensitivity-list span,
 .scenario-timeline-list span,
-.scenario-assumption-list span {
+.scenario-assumption-list span,
+.scenario-responsibility-list span {
   color: rgba(20, 20, 19, 0.5);
   font-size: 11px;
   font-weight: 850;
@@ -293,6 +294,9 @@
 .scenario-model-bridge,
 .scenario-model-table,
 .scenario-model-insight,
+.scenario-executive-brief,
+.scenario-dimension-ladder,
+.scenario-responsibility-board,
 .scenario-comparison-table,
 .scenario-assumption-matrix,
 .scenario-sensitivity-grid,
@@ -330,6 +334,167 @@
   line-height: 1.5;
 }
 
+.scenario-executive-brief {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.62fr);
+  gap: 16px;
+  align-items: end;
+  margin-top: 14px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--scenario-accent) 11%, #ffffff), rgba(255, 255, 255, 0.9)),
+    #ffffff;
+}
+
+.scenario-executive-brief .scenario-panel-heading {
+  grid-column: 1 / -1;
+}
+
+.scenario-executive-brief h3 {
+  color: #141413;
+  font-family: var(--font-hero-display), "Songti SC", STSong, Georgia, serif;
+  font-size: clamp(1.55rem, 3vw, 2.45rem);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.05;
+}
+
+.scenario-executive-brief p {
+  max-width: 740px;
+  margin-top: 8px;
+  color: rgba(20, 20, 19, 0.62);
+  font-size: 13px;
+  font-weight: 740;
+  line-height: 1.62;
+}
+
+.scenario-executive-brief dl {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+}
+
+.scenario-executive-brief dl div {
+  display: grid;
+  gap: 4px;
+  border: 1px solid color-mix(in srgb, var(--scenario-accent) 20%, rgba(232, 230, 220, 0.92));
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.68);
+  padding: 11px 12px;
+}
+
+.scenario-executive-brief dt {
+  color: rgba(20, 20, 19, 0.5);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.scenario-executive-brief dd {
+  margin: 0;
+  color: color-mix(in srgb, var(--scenario-accent) 72%, #141413);
+  font-size: 14px;
+  font-weight: 880;
+  line-height: 1.25;
+}
+
+.scenario-diagnostic-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(320px, 0.88fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.scenario-dimension-list,
+.scenario-responsibility-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.scenario-dimension-list article {
+  display: grid;
+  grid-template-columns: minmax(112px, 0.3fr) minmax(0, 1fr) minmax(82px, 0.22fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.scenario-dimension-list article > div {
+  display: grid;
+  gap: 4px;
+}
+
+.scenario-dimension-list span {
+  color: rgba(20, 20, 19, 0.5);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.scenario-dimension-list strong {
+  color: #141413;
+  font-size: 13px;
+  font-weight: 880;
+}
+
+.scenario-dimension-list i {
+  display: block;
+  width: var(--scenario-dimension-size);
+  min-width: 22px;
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--scenario-accent), color-mix(in srgb, var(--scenario-accent) 20%, #ffffff));
+  animation: scenarioDimensionRise 0.52s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--scenario-dimension-index) * 80ms);
+}
+
+.scenario-dimension-list small {
+  color: rgba(20, 20, 19, 0.56);
+  font-size: 11px;
+  font-weight: 820;
+}
+
+.scenario-dimension-list p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: rgba(20, 20, 19, 0.52);
+  font-size: 11px;
+  font-weight: 710;
+  line-height: 1.48;
+}
+
+.scenario-responsibility-list article {
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 0.55fr);
+  gap: 5px 10px;
+  border-bottom: 1px solid rgba(232, 230, 220, 0.78);
+  padding-bottom: 10px;
+}
+
+.scenario-responsibility-list article:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.scenario-responsibility-list strong {
+  color: color-mix(in srgb, var(--scenario-accent) 70%, #141413);
+  font-size: 12px;
+  font-weight: 880;
+  text-align: right;
+}
+
+.scenario-responsibility-list p,
+.scenario-responsibility-list em {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: rgba(20, 20, 19, 0.54);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 720;
+  line-height: 1.45;
+}
+
+.scenario-responsibility-list em {
+  color: rgba(190, 83, 52, 0.78);
+}
+
 .scenario-main-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
@@ -340,6 +505,9 @@
 .scenario-model-bridge,
 .scenario-model-table,
 .scenario-model-insight,
+.scenario-executive-brief,
+.scenario-dimension-ladder,
+.scenario-responsibility-board,
 .scenario-comparison-table,
 .scenario-assumption-matrix,
 .scenario-sensitivity-grid,
@@ -683,8 +851,13 @@
 
   .scenario-model-hero,
   .scenario-main-grid,
+  .scenario-diagnostic-grid,
   .scenario-analysis-grid,
   .scenario-analysis-grid.secondary {
+    grid-template-columns: 1fr;
+  }
+
+  .scenario-executive-brief {
     grid-template-columns: 1fr;
   }
 }
@@ -759,8 +932,13 @@
   }
 
   .scenario-assumption-list article,
+  .scenario-dimension-list article,
   .scenario-timeline-list article {
     grid-template-columns: 1fr;
+  }
+
+  .scenario-dimension-list p {
+    grid-column: auto;
   }
 
   .scenario-timeline-list p {
@@ -780,5 +958,16 @@
   100% {
     opacity: 1;
     transform: scaleY(1) translateY(0);
+  }
+}
+
+@keyframes scenarioDimensionRise {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.28) translateX(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleX(1) translateX(0);
   }
 }

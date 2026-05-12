@@ -4,6 +4,8 @@ import { useMemo, useState, type CSSProperties } from "react";
 import {
   ArrowRight,
   BarChart3,
+  ClipboardCheck,
+  GitBranch,
   RotateCcw,
   SlidersHorizontal,
   Sparkles,
@@ -26,6 +28,10 @@ export default function ScenarioModelTool({ slug }: ScenarioModelToolProps) {
   const [activePreset, setActivePreset] = useState(model.scenarioPresets[0]?.label ?? "自定义");
   const result = useMemo(() => model.compute(values), [model, values]);
   const maxBridgeValue = Math.max(...result.bridge.map((item) => Math.abs(item.value)), 1);
+  const maxDimensionValue = Math.max(
+    ...result.dimensionBreakdown.map((item) => Math.abs(item.magnitude)),
+    1,
+  );
 
   const updateValue = (key: string, value: number) => {
     setActivePreset("自定义");
@@ -117,6 +123,27 @@ export default function ScenarioModelTool({ slug }: ScenarioModelToolProps) {
           ))}
         </div>
 
+        <section className="scenario-executive-brief" aria-labelledby="scenario-executive-title">
+          <div className="scenario-panel-heading">
+            <Sparkles aria-hidden="true" />
+            <h2 id="scenario-executive-title">经营简报</h2>
+          </div>
+          <div>
+            <h3>{result.executiveBrief.title}</h3>
+            <p>{result.executiveBrief.body}</p>
+          </div>
+          <dl>
+            <div>
+              <dt>主判断</dt>
+              <dd>{result.executiveBrief.primary}</dd>
+            </div>
+            <div>
+              <dt>复核点</dt>
+              <dd>{result.executiveBrief.secondary}</dd>
+            </div>
+          </dl>
+        </section>
+
         <div className="scenario-metric-grid">
           {result.metrics.map((metric) => (
             <article key={metric.label} className="scenario-metric-card">
@@ -125,6 +152,54 @@ export default function ScenarioModelTool({ slug }: ScenarioModelToolProps) {
               <p>{metric.note}</p>
             </article>
           ))}
+        </div>
+
+        <div className="scenario-diagnostic-grid">
+          <section className="scenario-dimension-ladder" aria-labelledby="scenario-dimension-title">
+            <div className="scenario-panel-heading">
+              <GitBranch aria-hidden="true" />
+              <h2 id="scenario-dimension-title">维度拆解</h2>
+            </div>
+            <div className="scenario-dimension-list">
+              {result.dimensionBreakdown.map((item, index) => (
+                <article
+                  key={item.label}
+                  style={{
+                    "--scenario-dimension-size": `${Math.max((item.magnitude / maxDimensionValue) * 100, 10)}%`,
+                    "--scenario-dimension-index": index,
+                  } as CSSProperties}
+                >
+                  <div>
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                  </div>
+                  <i aria-hidden="true" />
+                  <div>
+                    <small>{item.status}</small>
+                    <small>{item.share}</small>
+                  </div>
+                  <p>{item.note}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="scenario-responsibility-board" aria-labelledby="scenario-responsibility-title">
+            <div className="scenario-panel-heading">
+              <ClipboardCheck aria-hidden="true" />
+              <h2 id="scenario-responsibility-title">责任线看板</h2>
+            </div>
+            <div className="scenario-responsibility-list">
+              {result.responsibilityRows.map((row) => (
+                <article key={row.owner}>
+                  <span>{row.owner}</span>
+                  <strong>{row.metric}</strong>
+                  <p>{row.action}</p>
+                  <em>{row.risk}</em>
+                </article>
+              ))}
+            </div>
+          </section>
         </div>
 
         <div className="scenario-main-grid">
