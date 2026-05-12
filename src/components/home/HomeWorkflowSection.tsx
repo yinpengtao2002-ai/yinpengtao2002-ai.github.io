@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { motion, useMotionValueEvent, useScroll, useTransform } from "framer-motion";
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { ArrowRight, Bot, ChartSpline, NotebookTabs, Share2 } from "lucide-react";
 
 const WORKFLOW_STEPS = [
@@ -81,69 +81,19 @@ const WORKFLOW_CONTEXTS = [
 const WORKFLOW_EASE = [0.22, 1, 0.36, 1] as const;
 
 export default function HomeWorkflowSection() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const manualHoldRef = useRef(false);
-  const manualReleaseTimerRef = useRef<number | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const activeStep = WORKFLOW_STEPS[activeIndex] ?? WORKFLOW_STEPS[0];
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start end", "end start"],
-  });
-  const sceneY = useTransform(scrollYProgress, [0, 0.45, 1], [48, 0, -36]);
-  const sceneScale = useTransform(scrollYProgress, [0, 0.28, 0.86], [0.96, 1, 0.985]);
-  const sceneRotate = useTransform(scrollYProgress, [0, 0.5, 1], [2.8, 0, -1.6]);
-  const notebookX = useTransform(scrollYProgress, [0.08, 0.55, 0.92], [-18, 0, 12]);
-  const notebookY = useTransform(scrollYProgress, [0.08, 0.55, 0.92], [20, 0, -10]);
-  const appX = useTransform(scrollYProgress, [0.12, 0.62, 0.94], [24, 0, -16]);
-  const appY = useTransform(scrollYProgress, [0.12, 0.62, 0.94], [34, 10, -4]);
-  const briefY = useTransform(scrollYProgress, [0.18, 0.68, 0.96], [38, -6, -18]);
-  const progressScale = useTransform(scrollYProgress, [0.16, 0.86], [0.08, 1]);
-
-  const setManualActiveIndex = (index: number) => {
-    manualHoldRef.current = true;
-    if (manualReleaseTimerRef.current) {
-      window.clearTimeout(manualReleaseTimerRef.current);
-    }
-    manualReleaseTimerRef.current = window.setTimeout(() => {
-      manualHoldRef.current = false;
-      manualReleaseTimerRef.current = null;
-    }, 2200);
-    setActiveIndex(index);
-  };
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      if (manualHoldRef.current) return;
-
       setActiveIndex((index) => (index + 1) % WORKFLOW_STEPS.length);
     }, 4200);
 
-    return () => {
-      window.clearInterval(timer);
-      if (manualReleaseTimerRef.current) {
-        window.clearTimeout(manualReleaseTimerRef.current);
-      }
-    };
+    return () => window.clearInterval(timer);
   }, []);
 
-  useMotionValueEvent(scrollYProgress, "change", (latest) => {
-    if (manualHoldRef.current) return;
-
-    const nextIndex = Math.min(
-      WORKFLOW_STEPS.length - 1,
-      Math.max(0, Math.floor(latest * WORKFLOW_STEPS.length)),
-    );
-    setActiveIndex((current) => (current === nextIndex ? current : nextIndex));
-  });
-
   return (
-    <section
-      ref={sectionRef}
-      id="workflow"
-      className="home-viewport home-section home-workflow-section"
-      aria-labelledby="workflow-title"
-    >
+    <section id="workflow" className="home-viewport home-section home-workflow-section" aria-labelledby="workflow-title">
       <div className="home-shell home-workflow-shell">
         <motion.div
           className="home-workflow-copy"
@@ -172,9 +122,9 @@ export default function HomeWorkflowSection() {
                   type="button"
                   className={`home-workflow-step${isActive ? " is-active" : ""}`}
                   aria-pressed={isActive}
-                  onMouseEnter={() => setManualActiveIndex(index)}
-                  onFocus={() => setManualActiveIndex(index)}
-                  onClick={() => setManualActiveIndex(index)}
+                  onMouseEnter={() => setActiveIndex(index)}
+                  onFocus={() => setActiveIndex(index)}
+                  onClick={() => setActiveIndex(index)}
                 >
                   <span>{step.label}</span>
                   <strong>{step.title}</strong>
@@ -186,18 +136,12 @@ export default function HomeWorkflowSection() {
         </motion.div>
 
         <motion.div
-          className="home-workflow-scene home-workflow-scroll-stage"
+          className="home-workflow-scene"
           initial={{ opacity: 0, y: 26, scale: 0.97 }}
           whileInView={{ opacity: 1, y: 0, scale: 1 }}
           viewport={{ once: true, amount: 0.32 }}
           transition={{ duration: 0.7, delay: 0.08, ease: WORKFLOW_EASE }}
-          style={{ y: sceneY, scale: sceneScale, rotateX: sceneRotate }}
         >
-          <motion.span
-            className="home-workflow-scroll-progress"
-            aria-hidden="true"
-            style={{ scaleX: progressScale }}
-          />
           <div className="home-workflow-scene-header">
             <div>
               <span>Analysis Workspace</span>
@@ -209,12 +153,6 @@ export default function HomeWorkflowSection() {
             </p>
           </div>
 
-          <div className="home-workflow-command-strip">
-            <span>{activeStep.title}</span>
-            <strong>{activeStep.handoff}</strong>
-            <em>{activeStep.share}</em>
-          </div>
-
           <div className="home-workflow-dock" aria-label="工作台视图切换">
             {WORKFLOW_STEPS.map((step, index) => (
               <button
@@ -222,7 +160,7 @@ export default function HomeWorkflowSection() {
                 type="button"
                 className={index === activeIndex ? "is-active" : undefined}
                 aria-pressed={index === activeIndex}
-                onClick={() => setManualActiveIndex(index)}
+                onClick={() => setActiveIndex(index)}
               >
                 {step.label}
               </button>
@@ -236,25 +174,10 @@ export default function HomeWorkflowSection() {
           </div>
 
           <div className="home-workflow-board home-workflow-layer-stack">
-            <div className="home-workflow-depth-rail" aria-label="滚动分析层级">
-              {WORKFLOW_STEPS.map((step, index) => (
-                <button
-                  key={`rail-${step.title}`}
-                  type="button"
-                  className={index === activeIndex ? "is-active" : undefined}
-                  aria-pressed={index === activeIndex}
-                  onClick={() => setManualActiveIndex(index)}
-                >
-                  <span>{String(index + 1).padStart(2, "0")}</span>
-                  <strong>{step.title}</strong>
-                </button>
-              ))}
-            </div>
             <motion.div
               layoutId="workflow-notebook"
               className="home-workflow-notebook home-workflow-depth-card"
               transition={{ duration: 0.38, ease: WORKFLOW_EASE }}
-              style={{ x: notebookX, y: notebookY }}
             >
               <div className="home-workflow-panel-head">
                 <NotebookTabs aria-hidden="true" />
@@ -276,7 +199,6 @@ export default function HomeWorkflowSection() {
               layoutId="workflow-data-app"
               className="home-workflow-app-card home-workflow-depth-card"
               transition={{ duration: 0.38, ease: WORKFLOW_EASE }}
-              style={{ x: appX, y: appY }}
             >
               <div className="home-workflow-panel-head">
                 <ChartSpline aria-hidden="true" />
@@ -302,7 +224,6 @@ export default function HomeWorkflowSection() {
               layoutId="workflow-ai-brief"
               className="home-workflow-ai-card home-workflow-depth-card"
               transition={{ duration: 0.38, ease: WORKFLOW_EASE }}
-              style={{ y: briefY }}
             >
               <div className="home-workflow-panel-head">
                 <Bot aria-hidden="true" />

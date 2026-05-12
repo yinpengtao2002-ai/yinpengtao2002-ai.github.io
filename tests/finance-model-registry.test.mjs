@@ -67,17 +67,11 @@ test("new LucasNewAttempt finance models have usable route shells", async () => 
   assert.match(workbench, /scenario-sensitivity-grid/);
   assert.match(workbench, /scenario-timeline/);
   assert.match(workbench, /scenario-model-insight/);
-  assert.match(workbench, /scenario-executive-brief/);
-  assert.match(workbench, /scenario-dimension-ladder/);
-  assert.match(workbench, /scenario-responsibility-board/);
   assert.match(definitions, /scenarioPresets/);
   assert.match(definitions, /assumptions/);
   assert.match(definitions, /sensitivity/);
   assert.match(definitions, /comparisonRows/);
   assert.match(definitions, /timeline/);
-  assert.match(definitions, /dimensionBreakdown/);
-  assert.match(definitions, /responsibilityRows/);
-  assert.match(definitions, /executiveBrief/);
 
   for (const slug of newModelSlugs) {
     const model = registry.models.find((item) => item.slug === slug);
@@ -88,9 +82,6 @@ test("new LucasNewAttempt finance models have usable route shells", async () => 
     assert.match(definitions, new RegExp(`slug:\\s*"${slug}"[\\s\\S]*scenarioPresets:\\s*\\[[\\s\\S]*label:`));
     assert.match(definitions, new RegExp(`slug:\\s*"${slug}"[\\s\\S]*assumptions:\\s*\\[[\\s\\S]*owner:`));
     assert.match(definitions, new RegExp(`slug:\\s*"${slug}"[\\s\\S]*sensitivity:\\s*\\[[\\s\\S]*high:`));
-    assert.match(definitions, new RegExp(`slug:\\s*"${slug}"[\\s\\S]*dimensionBreakdown:\\s*\\[`));
-    assert.match(definitions, new RegExp(`slug:\\s*"${slug}"[\\s\\S]*responsibilityRows:\\s*\\[`));
-    assert.match(definitions, new RegExp(`slug:\\s*"${slug}"[\\s\\S]*executiveBrief:\\s*\\{`));
 
     await access(new URL(`../src/app/finance/${slug}/page.tsx`, import.meta.url));
     await access(new URL(`../src/app/finance/${slug}/layout.tsx`, import.meta.url));

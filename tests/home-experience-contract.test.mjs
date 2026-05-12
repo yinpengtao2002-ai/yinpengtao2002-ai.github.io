@@ -507,36 +507,6 @@ test("homepage finance section defaults to the unit attribution model and switch
   assert.doesNotMatch(financeSection, /slice\(1\)/);
 });
 
-test("home workflow uses scroll-linked layered storytelling instead of static reveal panels", () => {
-  assert.match(workflowSection, /useScroll/);
-  assert.match(workflowSection, /useTransform/);
-  assert.match(workflowSection, /useMotionValueEvent/);
-  assert.match(workflowSection, /home-workflow-scroll-stage/);
-  assert.match(workflowSection, /home-workflow-depth-rail/);
-  assert.match(workflowSection, /home-workflow-command-strip/);
-  assert.match(workflowSection, /home-workflow-scroll-progress/);
-  assert.match(workflowSection, /scrollYProgress/);
-  assert.match(globals, /\.home-workflow-scroll-stage\s*\{/);
-  assert.match(globals, /\.home-workflow-depth-rail\s*\{/);
-  assert.match(globals, /\.home-workflow-command-strip\s*\{/);
-  assert.match(globals, /\.home-workflow-scroll-progress\s*\{/);
-});
-
-test("home finance section reads as an operating cockpit with live model context", () => {
-  assert.match(financeSection, /useScroll/);
-  assert.match(financeSection, /useTransform/);
-  assert.match(financeSection, /home-finance-cockpit-grid/);
-  assert.match(financeSection, /home-finance-command-strip/);
-  assert.match(financeSection, /home-finance-floating-ledger/);
-  assert.match(financeSection, /home-finance-live-brief/);
-  assert.match(financeSection, /home-finance-responsibility-path/);
-  assert.match(globals, /\.home-finance-cockpit-grid\s*\{/);
-  assert.match(globals, /\.home-finance-command-strip\s*\{/);
-  assert.match(globals, /\.home-finance-floating-ledger\s*\{/);
-  assert.match(globals, /\.home-finance-live-brief\s*\{/);
-  assert.match(globals, /\.home-finance-responsibility-path\s*\{/);
-});
-
 test("home thinking section uses a visual card and a clear index link", () => {
   assert.match(thinkingSection, /home-thinking-method-index/);
   assert.match(thinkingSection, /motion/);

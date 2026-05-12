@@ -989,11 +989,11 @@ h6 {
 }
 
 .home-workflow-copy h2 {
-  max-width: none;
+  max-width: 9em;
   margin-top: 16px;
   color: var(--foreground);
   font-family: var(--font-hero-display);
-  font-size: clamp(2.45rem, 4.6vw, 4.45rem);
+  font-size: clamp(2.45rem, 5.5vw, 5.1rem);
   font-weight: 500;
   letter-spacing: 0;
   line-height: 0.98;
@@ -1112,24 +1112,6 @@ h6 {
   padding: clamp(1rem, 2.4vw, 1.45rem);
 }
 
-.home-workflow-scroll-stage {
-  transform-style: preserve-3d;
-  will-change: transform;
-}
-
-.home-workflow-scroll-progress {
-  position: absolute;
-  left: 0;
-  top: 0;
-  z-index: 5;
-  width: 100%;
-  height: 3px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--accent-secondary), var(--accent), var(--accent-tertiary));
-  transform-origin: left center;
-  pointer-events: none;
-}
-
 .home-workflow-scene::before {
   content: "";
   position: absolute;
@@ -1140,44 +1122,6 @@ h6 {
   transform: translateX(-105%);
   animation: homeWorkflowScan 5.4s ease-in-out infinite;
   pointer-events: none;
-}
-
-.home-workflow-command-strip {
-  position: relative;
-  z-index: 2;
-  display: grid;
-  grid-template-columns: auto minmax(0, 0.52fr) minmax(0, 1fr);
-  gap: 10px;
-  align-items: center;
-  min-height: 40px;
-  margin-bottom: 12px;
-  border: 1px solid color-mix(in srgb, var(--accent-secondary) 20%, var(--border));
-  border-radius: 8px;
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--accent-soft) 22%, transparent), transparent),
-    color-mix(in srgb, var(--card) 78%, transparent);
-  padding: 8px 11px;
-}
-
-.home-workflow-command-strip span {
-  color: var(--accent-secondary);
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.home-workflow-command-strip strong {
-  color: var(--foreground);
-  font-size: 12px;
-  font-weight: 900;
-  white-space: nowrap;
-}
-
-.home-workflow-command-strip em {
-  color: color-mix(in srgb, var(--foreground) 60%, var(--muted));
-  font-size: 11px;
-  font-style: normal;
-  font-weight: 760;
-  line-height: 1.35;
 }
 
 .home-workflow-scene-header {
@@ -1315,65 +1259,7 @@ h6 {
   grid-template-rows: minmax(210px, 1fr) minmax(170px, 0.78fr);
   gap: 12px;
   margin-top: 12px;
-  padding-left: min(158px, 28%);
   transform-style: preserve-3d;
-}
-
-.home-workflow-depth-rail {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  z-index: 5;
-  display: grid;
-  gap: 7px;
-  width: min(146px, 34%);
-  transform: translateY(-50%);
-  pointer-events: auto;
-}
-
-.home-workflow-depth-rail button {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 8px;
-  align-items: center;
-  min-height: 34px;
-  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--card) 84%, transparent);
-  box-shadow: 0 10px 24px rgba(20, 20, 19, 0.055);
-  color: inherit;
-  cursor: pointer;
-  font: inherit;
-  padding: 0 10px;
-  text-align: left;
-  transition:
-    border-color 0.22s ease,
-    transform 0.22s ease,
-    background 0.22s ease;
-}
-
-.home-workflow-depth-rail button:hover,
-.home-workflow-depth-rail button:focus-visible,
-.home-workflow-depth-rail button.is-active {
-  border-color: color-mix(in srgb, var(--accent-secondary) 34%, var(--border));
-  background: color-mix(in srgb, var(--accent-soft) 34%, var(--card));
-  transform: translateX(3px);
-}
-
-.home-workflow-depth-rail span {
-  color: var(--accent-secondary);
-  font-family: var(--font-poppins);
-  font-size: 10px;
-  font-weight: 900;
-}
-
-.home-workflow-depth-rail strong {
-  overflow: hidden;
-  color: var(--foreground);
-  font-size: 11px;
-  font-weight: 850;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .home-workflow-layer-stack {
@@ -1686,71 +1572,6 @@ h6 {
   margin-bottom: 22px;
 }
 
-.home-finance-command-strip {
-  display: grid;
-  grid-template-columns: auto minmax(180px, 0.36fr) minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: center;
-  min-height: 42px;
-  margin: -4px 0 16px;
-  border: 1px solid color-mix(in srgb, var(--accent-secondary) 22%, var(--border));
-  border-radius: 999px;
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--card) 92%, transparent), color-mix(in srgb, var(--accent-soft) 36%, var(--card))),
-    var(--card);
-  box-shadow: 0 14px 38px rgba(20, 20, 19, 0.055);
-  color: inherit;
-  padding: 7px 8px 7px 15px;
-  will-change: transform;
-}
-
-.home-finance-command-strip span {
-  color: var(--accent-secondary);
-  font-size: 11px;
-  font-weight: 900;
-  white-space: nowrap;
-}
-
-.home-finance-command-strip strong {
-  overflow: hidden;
-  color: var(--foreground);
-  font-size: 13px;
-  font-weight: 900;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.home-finance-command-strip em {
-  overflow: hidden;
-  color: color-mix(in srgb, var(--foreground) 62%, var(--muted));
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 760;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.home-finance-command-strip a {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 30px;
-  border-radius: 999px;
-  background: var(--foreground);
-  color: var(--card);
-  font-size: 12px;
-  font-weight: 850;
-  padding: 0 12px;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.home-finance-command-strip svg {
-  width: 13px;
-  height: 13px;
-}
-
 .home-finance-title-card {
   position: relative;
   isolation: isolate;
@@ -1823,11 +1644,6 @@ h6 {
   align-items: stretch;
   grid-template-columns: minmax(0, 0.82fr) minmax(460px, 1.18fr);
   gap: clamp(14px, 2.2vw, 24px);
-}
-
-.home-finance-cockpit-grid {
-  perspective: 1400px;
-  transform-style: preserve-3d;
 }
 
 .home-finance-mobile-carousel {
@@ -2013,115 +1829,12 @@ h6 {
 }
 
 .home-finance-operating-room {
-  position: relative;
   display: grid;
   grid-template-rows: minmax(430px, 1fr) auto;
   gap: 12px;
   min-width: 0;
   perspective: 1400px;
   transform-style: preserve-3d;
-}
-
-.home-finance-floating-ledger,
-.home-finance-live-brief,
-.home-finance-responsibility-path {
-  position: absolute;
-  z-index: 7;
-  pointer-events: none;
-}
-
-.home-finance-floating-ledger {
-  left: clamp(-18px, -1.8vw, -10px);
-  top: clamp(18px, 4.2vh, 36px);
-  display: grid;
-  gap: 7px;
-  width: min(214px, 42%);
-}
-
-.home-finance-floating-ledger article {
-  display: grid;
-  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1fr);
-  gap: 4px 9px;
-  border: 1px solid color-mix(in srgb, var(--accent-secondary) 22%, var(--border));
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--card) 88%, transparent);
-  box-shadow: 0 14px 34px rgba(20, 20, 19, 0.075);
-  backdrop-filter: blur(16px);
-  padding: 9px 10px;
-}
-
-.home-finance-floating-ledger span,
-.home-finance-live-brief span {
-  color: var(--accent-secondary);
-  font-size: 10.5px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.home-finance-floating-ledger strong {
-  color: var(--foreground);
-  font-size: 12px;
-  font-weight: 900;
-  text-align: right;
-}
-
-.home-finance-floating-ledger em {
-  grid-column: 1 / -1;
-  color: color-mix(in srgb, var(--foreground) 54%, var(--muted));
-  font-size: 10.5px;
-  font-style: normal;
-  font-weight: 760;
-}
-
-.home-finance-live-brief {
-  right: clamp(14px, 2.2vw, 28px);
-  bottom: clamp(104px, 14vh, 144px);
-  display: grid;
-  gap: 6px;
-  width: min(285px, 48%);
-  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
-  border-radius: 8px;
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--accent-soft) 28%, transparent), transparent),
-    color-mix(in srgb, var(--card) 88%, transparent);
-  box-shadow: 0 18px 44px rgba(20, 20, 19, 0.085);
-  backdrop-filter: blur(16px);
-  padding: 12px 13px;
-}
-
-.home-finance-live-brief strong {
-  color: var(--foreground);
-  font-size: 12px;
-  font-weight: 900;
-  line-height: 1.35;
-}
-
-.home-finance-live-brief p {
-  color: color-mix(in srgb, var(--foreground) 58%, var(--muted));
-  font-size: 11px;
-  font-weight: 750;
-  line-height: 1.45;
-}
-
-.home-finance-responsibility-path {
-  right: clamp(14px, 2.2vw, 28px);
-  top: clamp(14px, 3vh, 28px);
-  display: flex;
-  max-width: min(430px, 66%);
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 6px;
-}
-
-.home-finance-responsibility-path span {
-  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--card) 82%, transparent);
-  box-shadow: 0 10px 24px rgba(20, 20, 19, 0.05);
-  color: color-mix(in srgb, var(--foreground) 70%, var(--muted));
-  font-size: 10.5px;
-  font-weight: 850;
-  padding: 5px 8px;
 }
 
 .home-finance-layer-stack {
@@ -3780,11 +3493,6 @@ h6 {
     padding: 12px;
   }
 
-  .home-workflow-command-strip,
-  .home-workflow-depth-rail {
-    display: none;
-  }
-
   .home-workflow-scene-header {
     min-height: 32px;
     margin-bottom: 9px;
@@ -3828,7 +3536,6 @@ h6 {
     grid-template-rows: auto auto auto;
     gap: 8px;
     margin-top: 8px;
-    padding-left: 0;
   }
 
   .home-workflow-board::before,
@@ -3935,13 +3642,6 @@ h6 {
     min-height: 30px;
     font-size: 11.5px;
     padding-inline: 10px;
-  }
-
-  .home-finance-command-strip,
-  .home-finance-floating-ledger,
-  .home-finance-live-brief,
-  .home-finance-responsibility-path {
-    display: none;
   }
 
   .home-finance-shell {
