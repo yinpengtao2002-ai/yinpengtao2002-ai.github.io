@@ -22,11 +22,8 @@ test("generated content does not emit old article hrefs for thinking content", (
 
 test("finance generated content points to finance tool routes", () => {
   assert.match(generated, /"href": "\/finance\/business-analysis"/);
-  assert.match(generated, /"href": "\/finance\/price-volume-mix"/);
   assert.match(generated, /"href": "\/finance\/monthly-trend"/);
-  assert.match(generated, /"href": "\/finance\/working-capital"/);
   assert.match(generated, /"href": "\/finance\/sensitivity-analysis"/);
-  assert.match(generated, /"href": "\/finance\/fx-exposure"/);
   assert.match(generated, /"href": "\/finance\/margin-analysis"/);
 });
 

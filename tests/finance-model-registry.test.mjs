@@ -22,18 +22,10 @@ test("finance registry contains the approved categories in order", () => {
   );
 });
 
-test("finance registry contains the complete LucasNewAttempt model routes", () => {
+test("finance registry contains the four existing model routes", () => {
   assert.deepEqual(
     registry.models.map((model) => model.slug).sort(),
-    [
-      "business-analysis",
-      "fx-exposure",
-      "margin-analysis",
-      "monthly-trend",
-      "price-volume-mix",
-      "sensitivity-analysis",
-      "working-capital",
-    ]
+    ["business-analysis", "margin-analysis", "monthly-trend", "sensitivity-analysis"]
   );
   for (const model of registry.models) {
     assert.match(model.href, /^\/finance\/[a-z-]+$/);
@@ -41,58 +33,6 @@ test("finance registry contains the complete LucasNewAttempt model routes", () =
     assert.ok(model.summary.length >= 18, `${model.slug} summary should be visitor-facing`);
     assert.ok(Array.isArray(model.aiGuide.steps), `${model.slug} needs AI guide steps`);
     assert.ok(model.aiGuide.steps.length >= 3, `${model.slug} needs at least three usage steps`);
-  }
-});
-
-test("new LucasNewAttempt finance models have usable route shells", async () => {
-  const { access, readFile } = await import("node:fs/promises");
-  const newModelSlugs = ["price-volume-mix", "fx-exposure", "working-capital"];
-  const workbench = await readFile(
-    new URL("../src/components/finance/ScenarioModelTool.tsx", import.meta.url),
-    "utf8"
-  );
-  const definitions = await readFile(
-    new URL("../src/lib/finance/scenarioModels.ts", import.meta.url),
-    "utf8"
-  );
-
-  assert.match(workbench, /ScenarioModelTool/);
-  assert.match(workbench, /scenario-model-console/);
-  assert.match(workbench, /scenario-preset-grid/);
-  assert.match(workbench, /scenario-operations-ribbon/);
-  assert.match(workbench, /scenario-model-bridge/);
-  assert.match(workbench, /scenario-waterfall-chart/);
-  assert.match(workbench, /scenario-comparison-table/);
-  assert.match(workbench, /scenario-assumption-matrix/);
-  assert.match(workbench, /scenario-sensitivity-grid/);
-  assert.match(workbench, /scenario-timeline/);
-  assert.match(workbench, /scenario-model-insight/);
-  assert.match(definitions, /scenarioPresets/);
-  assert.match(definitions, /assumptions/);
-  assert.match(definitions, /sensitivity/);
-  assert.match(definitions, /comparisonRows/);
-  assert.match(definitions, /timeline/);
-
-  for (const slug of newModelSlugs) {
-    const model = registry.models.find((item) => item.slug === slug);
-    assert.ok(model, `${slug} should be registered`);
-    assert.ok(model.summary.length >= 24, `${slug} should have a visitor-facing summary`);
-    assert.ok(model.aiGuide.scenarios.length >= 3, `${slug} should list real scenarios`);
-    assert.match(definitions, new RegExp(`slug:\\s*"${slug}"`));
-    assert.match(definitions, new RegExp(`slug:\\s*"${slug}"[\\s\\S]*scenarioPresets:\\s*\\[[\\s\\S]*label:`));
-    assert.match(definitions, new RegExp(`slug:\\s*"${slug}"[\\s\\S]*assumptions:\\s*\\[[\\s\\S]*owner:`));
-    assert.match(definitions, new RegExp(`slug:\\s*"${slug}"[\\s\\S]*sensitivity:\\s*\\[[\\s\\S]*high:`));
-
-    await access(new URL(`../src/app/finance/${slug}/page.tsx`, import.meta.url));
-    await access(new URL(`../src/app/finance/${slug}/layout.tsx`, import.meta.url));
-    const page = await readFile(
-      new URL(`../src/app/finance/${slug}/page.tsx`, import.meta.url),
-      "utf8"
-    );
-    assert.match(page, /ToolBackButton/);
-    assert.match(page, /ScenarioModelTool/);
-    assert.match(page, /ProjectDescription/);
-    assert.match(page, /<noscript>/);
   }
 });
 
@@ -200,7 +140,7 @@ test("finance index page keeps the model library high and readable", async () =>
   assert.match(page, /className="home-finance-title"/);
   assert.match(page, /finance-index-intro/);
   assert.match(page, /问题驱动的财务模型/);
-  assert.match(page, /从复盘、归因、趋势、收入桥、汇率到现金占用，按真实经营问题选择模型。/);
+  assert.match(page, /从复盘、归因、趋势到敏感性，按真实经营问题选择模型。/);
   assert.doesNotMatch(page, /目前共有 \{financeModels\.length\} 个模型/);
   assert.doesNotMatch(page, /Finance Model Library/);
   assert.doesNotMatch(page, /MODEL LIBRARY/);

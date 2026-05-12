@@ -1,5 +1,5 @@
 // Auto-generated content data from markdown + Notion
-// Generated at: 2026-05-11T15:53:44.355Z
+// Generated at: 2026-05-04T18:02:44.732Z
 // DO NOT EDIT MANUALLY - run 'npm run prebuild' to regenerate
 
 export interface ContentItem {
@@ -29,17 +29,6 @@ export const financeContent: ContentItem[] = [
     "id": 1
   },
   {
-    "slug": "price-volume-mix",
-    "title": "价量结构收入桥模型",
-    "description": "把收入变化拆成销量、单价和结构组合贡献，适合解释预算、预测与实际之间的收入差异。",
-    "date": "2026-05-11",
-    "category": "budget-review",
-    "href": "/finance/price-volume-mix",
-    "content": "用于收入差异复盘，把收入变化拆成销量、价格和结构组合三类贡献，避免只看总收入增减。\n\n使用步骤：\n1. 打开模型后查看默认示例口径。\n2. 调整基准销量、当前销量、单车净收入和结构组合影响。\n3. 查看收入差异桥和汇报判断，决定先解释销量、价格还是结构。",
-    "source": "registry",
-    "id": 2
-  },
-  {
     "slug": "monthly-trend",
     "title": "分月指标趋势分析模型",
     "description": "上传连续月份明细，查看销量、单车质量、环比同比、同期对比、结构占比和集中度。",
@@ -48,18 +37,7 @@ export const financeContent: ContentItem[] = [
     "href": "/finance/monthly-trend",
     "content": "用于连续月份指标分析，把月份、维度和数值指标整理成趋势、同比环比和结构观察。\n\n使用步骤：\n1. 打开模型后先查看自动加载的示例数据。\n2. 上传包含月份、维度和指标列的 Excel 或 CSV。\n3. 切换指标、维度和图表视图，观察趋势、热力图和结构集中度。",
     "source": "registry",
-    "id": 3
-  },
-  {
-    "slug": "working-capital",
-    "title": "库存周转与现金占用模型",
-    "description": "用库存天数、应收天数和应付天数搭出现金周转链，估算资金占用和可释放空间。",
-    "date": "2026-05-11",
-    "category": "trend-monitoring",
-    "href": "/finance/working-capital",
-    "content": "用于库存和回款复盘，把库存天数、应收天数、应付天数串成现金转换周期，判断资金占用来自哪里。\n\n使用步骤：\n1. 打开模型后查看默认示例口径。\n2. 调整月均成本消耗、库存天数、应收天数、应付天数和目标周期。\n3. 查看资金占用、释放空间和汇报判断，拆到库存、应收和应付责任线。",
-    "source": "registry",
-    "id": 4
+    "id": 2
   },
   {
     "slug": "sensitivity-analysis",
@@ -70,18 +48,7 @@ export const financeContent: ContentItem[] = [
     "href": "/finance/sensitivity-analysis",
     "content": "用于预算、滚动预测和经营复盘中的情景推演，判断利润总额对关键变量变化的敏感程度。\n\n使用步骤：\n1. 打开模型后查看默认利润示例数据。\n2. 在控制台调整销量、单车净收入、成本、费用和税费。\n3. 查看关键因素排序、目标利润分析、双变量矩阵和瀑布图。",
     "source": "registry",
-    "id": 5
-  },
-  {
-    "slug": "fx-exposure",
-    "title": "汇率敞口敏感性模型",
-    "description": "把外币敞口、预算汇率、实际汇率和锁汇比例放在一起，估算汇率对利润的影响。",
-    "date": "2026-05-11",
-    "category": "profit-simulation",
-    "href": "/finance/fx-exposure",
-    "content": "用于海外业务汇率风险测算，把外币收入敞口、预算汇率、实际汇率和锁汇比例放在同一口径下解释。\n\n使用步骤：\n1. 打开模型后查看默认示例口径。\n2. 调整外币敞口、预算汇率、实际汇率、锁汇比例和锁汇汇率。\n3. 查看纯汇率影响、锁汇保护和未锁敞口，区分经营贡献和汇率贡献。",
-    "source": "registry",
-    "id": 6
+    "id": 3
   },
   {
     "slug": "margin-analysis",
@@ -92,7 +59,7 @@ export const financeContent: ContentItem[] = [
     "href": "/finance/margin-analysis",
     "content": "用于比较两期单车指标变化，拆解变化来自销量结构还是单车水平。\n\n使用步骤：\n1. 打开模型后先查看自动加载的示例数据。\n2. 上传两期包含销量、指标总额和维度的数据。\n3. 选择分析维度，查看结构效应、费率效应、瀑布图和明细表。",
     "source": "registry",
-    "id": 7
+    "id": 4
   }
 ];
 

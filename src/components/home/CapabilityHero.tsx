@@ -32,17 +32,17 @@ export default function CapabilityHero() {
   const rightTransition: Transition = shouldReduceMotion
     ? { duration: 0.42, ease: HERO_EASE }
     : { duration: isMobileLike ? 0.62 : 0.72, delay: centerHoldDelay + 0.12, ease: HERO_EASE };
-  const handleSectionJump = (event: MouseEvent<HTMLAnchorElement>, targetId: string) => {
+  const handleBrowseMore = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
 
-    const target = document.getElementById(targetId);
+    const target = document.getElementById("finance");
     if (!target) return;
 
     target.scrollIntoView({
       behavior: prefersReducedMotion ? "auto" : "smooth",
       block: "start",
     });
-    window.history.pushState(null, "", `#${targetId}`);
+    window.history.pushState(null, "", "#finance");
   };
 
   return (
@@ -96,7 +96,7 @@ export default function CapabilityHero() {
                   <ArrowRight className="home-hero-path-arrow" />
                   <span className="home-hero-path-step">业务结论</span>
                 </div>
-                <Link href="#finance" className="home-primary-action" onClick={(event) => handleSectionJump(event, "finance")}>
+                <Link href="#finance" className="home-primary-action" onClick={handleBrowseMore}>
                   浏览全部模型 <ArrowRight style={{ width: 15, height: 15 }} />
                 </Link>
               </div>
@@ -106,7 +106,7 @@ export default function CapabilityHero() {
         </div>
 
         <div className="home-hero-continue-row">
-          <Link href="#workflow" className="home-hero-continue" onClick={(event) => handleSectionJump(event, "workflow")}>
+          <Link href="#finance" className="home-hero-continue" onClick={handleBrowseMore}>
             <span>浏览更多</span>
             <ArrowDown style={{ width: 15, height: 15 }} />
             <span className="home-hero-continue-runner" aria-hidden="true" />

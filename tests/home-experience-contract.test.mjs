@@ -5,7 +5,6 @@ import { readFile } from "node:fs/promises";
 const hero = await readFile(new URL("../src/components/home/CapabilityHero.tsx", import.meta.url), "utf8");
 const productStage = await readFile(new URL("../src/components/home/ProductStageVisual.tsx", import.meta.url), "utf8");
 const heroModelStage = await readFile(new URL("../src/components/home/HeroModelStage.tsx", import.meta.url), "utf8").catch(() => "");
-const workflowSection = await readFile(new URL("../src/components/home/HomeWorkflowSection.tsx", import.meta.url), "utf8").catch(() => "");
 const financeSection = await readFile(new URL("../src/components/home/HomeFinanceSection.tsx", import.meta.url), "utf8");
 const thinkingSection = await readFile(new URL("../src/components/home/HomeThinkingSection.tsx", import.meta.url), "utf8");
 const thinkingLab = await readFile(new URL("../src/components/thinking/ThinkingLabClient.tsx", import.meta.url), "utf8");
@@ -13,7 +12,7 @@ const contactSection = await readFile(new URL("../src/components/home/HomeContac
 const globals = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
 const viewportHook = await readFile(new URL("../src/lib/useLowMotionMode.ts", import.meta.url), "utf8");
 
-const publicHomeCopy = [hero, workflowSection, financeSection, thinkingSection, thinkingLab].join("\n");
+const publicHomeCopy = [hero, financeSection, thinkingSection, thinkingLab].join("\n");
 
 function cssRule(selector, css = globals, startAt = 0) {
   const selectorIndex = css.indexOf(selector, startAt);
@@ -35,12 +34,6 @@ function shortDesktopCssRule(selector) {
   return cssRule(selector, globals, mediaIndex);
 }
 
-function tabletCssRule(selector) {
-  const mediaIndex = globals.indexOf("@media (max-width: 1120px) and (min-width: 769px)");
-  assert.notEqual(mediaIndex, -1, "Missing tablet desktop media block");
-  return cssRule(selector, globals, mediaIndex);
-}
-
 test("home hero does not split AI workflow and thinking judgment into separate proof cards", () => {
   assert.doesNotMatch(hero, /title:\s*"AI 工作流"/);
   assert.doesNotMatch(hero, /title:\s*"思考判断"/);
@@ -54,12 +47,10 @@ test("home page has an explicit continue cue for below-the-fold content", () => 
   assert.match(hero, /浏览全部模型/);
   assert.doesNotMatch(hero, /下一屏 · 财务模型/);
   assert.match(hero, /#finance/);
-  assert.match(hero, /#workflow/);
-  assert.match(hero, /handleSectionJump/);
+  assert.match(hero, /handleBrowseMore/);
   assert.match(hero, /scrollIntoView/);
   assert.match(hero, /behavior:\s*prefersReducedMotion \? "auto" : "smooth"/);
-  assert.match(hero, /href="#finance" className="home-primary-action" onClick=\{\(event\) => handleSectionJump\(event, "finance"\)\}/);
-  assert.match(hero, /href="#workflow" className="home-hero-continue" onClick=\{\(event\) => handleSectionJump\(event, "workflow"\)\}/);
+  assert.match(hero, /href="#finance" className="home-primary-action" onClick=\{handleBrowseMore\}/);
   assert.doesNotMatch(hero, /href="\/finance" className="home-primary-action"/);
   assert.doesNotMatch(hero, /href="\/finance" className="home-hero-continue"/);
   assert.match(hero, /home-hero-continue/);
@@ -110,11 +101,6 @@ test("home hero split layout has concrete responsive styling", () => {
   assert.match(globals, /\.home-hero-slogan\s*\{/);
   assert.doesNotMatch(globals, /\.home-hero-center\s*\{/);
   assert.doesNotMatch(globals, /\.home-hero-product-shell\s*\{/);
-  assert.match(cssRule(".home-hero"), /min-height:\s*calc\(100dvh - 42px\)/);
-  assert.match(cssRule(".home-hero-stage-copy"), /min-width:\s*0/);
-  assert.match(cssRule(".home-hero-stage-preview"), /min-width:\s*0/);
-  assert.match(tabletCssRule(".home-hero-stage-panel"), /grid-template-columns:\s*minmax\(160px,\s*0\.52fr\)\s*minmax\(0,\s*1fr\)/);
-  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-hero\s*\{[\s\S]*min-height:\s*calc\(100svh - 34px\)/s);
 });
 
 test("home hero desktop intro shifts Lucas left as the right panel enters", () => {
@@ -257,7 +243,7 @@ test("home hero stages business-question controls without changing the finance s
   assert.match(heroModelStage, /\/finance\/monthly-trend/);
   assert.match(heroModelStage, /\/finance\/sensitivity-analysis/);
   assert.match(hero, /href="#finance"/);
-  assert.match(hero, /handleSectionJump/);
+  assert.match(hero, /handleBrowseMore/);
   assert.doesNotMatch(hero, /home-hero-question-card/);
   assert.doesNotMatch(financeSection, /单车为什么变了/);
   assert.doesNotMatch(financeSection, /预算偏在哪里/);
@@ -296,61 +282,6 @@ test("home continue cue stays in normal layout flow", () => {
   assert.match(globals, /\.home-hero-continue-row/);
 });
 
-test("homepage adds a product-workspace narrative between hero and model library", async () => {
-  const page = await readFile(new URL("../src/app/page.tsx", import.meta.url), "utf8");
-
-  assert.match(page, /HomeWorkflowSection/);
-  assert.match(page, /<CapabilityHero \/>[\s\S]*<HomeWorkflowSection \/>[\s\S]*<HomeFinanceSection \/>/);
-  assert.match(workflowSection, /id="workflow"/);
-  assert.match(workflowSection, /经营分析工作台/);
-  assert.match(workflowSection, /业务问题[\s\S]*模型单元[\s\S]*应用视图[\s\S]*AI 判断/);
-  assert.match(workflowSection, /为什么欧洲区收入超预算，但利润没有同步改善/);
-  assert.match(workflowSection, /Notebook/);
-  assert.match(workflowSection, /Data App/);
-  assert.match(workflowSection, /AI Brief/);
-  assert.match(workflowSection, /Analysis Workspace/);
-  assert.match(workflowSection, /Shareable context/);
-  assert.match(workflowSection, /WORKFLOW_CONTEXTS/);
-  assert.match(workflowSection, /home-workflow-context-strip/);
-  assert.match(workflowSection, /home-workflow-scene-header/);
-  assert.match(workflowSection, /activeStep\.signal/);
-  assert.match(workflowSection, /activeStep\.brief/);
-  assert.match(workflowSection, /activeStep\.share/);
-  assert.match(workflowSection, /home-workflow-step/);
-  assert.match(workflowSection, /home-workflow-scene/);
-  assert.match(workflowSection, /home-workflow-notebook/);
-  assert.match(workflowSection, /home-workflow-ai-card/);
-  assert.match(workflowSection, /home-workflow-layer-stack/);
-  assert.match(workflowSection, /home-workflow-depth-card/);
-  assert.match(workflowSection, /home-workflow-dock/);
-  assert.match(workflowSection, /home-workflow-cursor/);
-  assert.match(workflowSection, /layoutId=/);
-  assert.match(workflowSection, /setActiveIndex/);
-  assert.match(workflowSection, /setInterval/);
-  assert.match(globals, /\.home-workflow-section\s*\{/);
-  assert.match(globals, /\.home-workflow-shell\s*\{/);
-  assert.match(globals, /\.home-workflow-context-strip\s*\{/);
-  assert.match(globals, /\.home-workflow-scene\s*\{/);
-  assert.match(globals, /\.home-workflow-scene-header\s*\{/);
-  assert.match(globals, /\.home-workflow-notebook\s*\{/);
-  assert.match(globals, /\.home-workflow-ai-card\s*\{/);
-  assert.match(globals, /\.home-workflow-layer-stack\s*\{/);
-  assert.match(globals, /\.home-workflow-depth-card\s*\{/);
-  assert.match(globals, /\.home-workflow-cursor\s*\{/);
-  assert.match(globals, /transform-style:\s*preserve-3d/);
-  assert.match(globals, /@keyframes\s+homeWorkflowCursor/);
-  assert.match(globals, /\.home-workflow-board::before/);
-  assert.match(globals, /\.home-workflow-app-meta\s*\{/);
-  assert.match(globals, /@keyframes\s+homeWorkflowScan/);
-  assert.match(globals, /@keyframes\s+homeWorkflowPulse/);
-  assert.match(globals, /@keyframes\s+homeWorkflowCardIn/);
-  assert.match(mobileCssRule(".home-workflow-section"), /min-height:\s*auto/);
-  assert.match(mobileCssRule(".home-workflow-shell"), /grid-template-columns:\s*1fr/);
-  assert.match(mobileCssRule(".home-workflow-step-list"), /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
-  assert.match(mobileCssRule(".home-workflow-board"), /grid-template-columns:\s*1fr/);
-  assert.match(globals, /@media\s*\(max-width:\s*980px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-workflow-shell\s*\{[\s\S]*grid-template-columns:\s*1fr/s);
-});
-
 test("homepage finance section previews models as a composed showcase", () => {
   assert.match(financeSection, /home-finance-title-card/);
   assert.match(financeSection, /<h2 className="home-finance-title">\s*问题驱动的模型库\s*<\/h2>/);
@@ -360,17 +291,10 @@ test("homepage finance section previews models as a composed showcase", () => {
   assert.doesNotMatch(financeSection, /home-finance-title-copy/);
   assert.doesNotMatch(financeSection, /home-finance-title-prefix/);
   assert.doesNotMatch(financeSection, /home-finance-title-main/);
-  assert.match(financeSection, /这里收录的是我自己搭建并持续打磨的财务模型和分析工具，适合从复盘、归因、趋势、收入桥、汇率和现金占用开始使用。/);
+  assert.match(financeSection, /这里收录的是我自己搭建并持续打磨的财务模型和分析工具，适合从复盘、归因、趋势和情景推演开始使用。/);
   assert.doesNotMatch(financeSection, /按经营问题进入模型/);
   assert.doesNotMatch(financeSection, /四个模型对应四类常见经营问题/);
   assert.match(financeSection, /home-finance-showcase/);
-  assert.match(financeSection, /home-finance-operating-room/);
-  assert.match(financeSection, /home-finance-layer-stack/);
-  assert.match(financeSection, /home-finance-depth-card/);
-  assert.match(financeSection, /home-finance-model-rail/);
-  assert.match(financeSection, /layeredModels/);
-  assert.match(financeSection, /layoutId=\{`finance-depth-\$\{model\.slug\}`\}/);
-  assert.match(financeSection, /onClick=\{\(\) => setActiveSlug\(model\.slug\)\}/);
   assert.match(financeSection, /home-finance-stage/);
   assert.match(financeSection, /home-finance-stage-motion/);
   assert.match(financeSection, /home-finance-stage-guide/);
@@ -392,23 +316,17 @@ test("homepage finance section previews models as a composed showcase", () => {
   assert.match(globals, /\.home-finance-title\s*\{[^}]*font-family:\s*var\(--font-hero-display\)/s);
   assert.match(globals, /\.home-finance-stage-frame::before/);
   assert.match(globals, /\.home-finance-stage-frame::after/);
-  assert.match(globals, /\.home-finance-operating-room\s*\{/);
-  assert.match(globals, /\.home-finance-layer-stack\s*\{/);
-  assert.match(globals, /\.home-finance-depth-card\s*\{/);
-  assert.match(globals, /\.home-finance-model-rail\s*\{/);
   assert.match(globals, /\.home-finance-stage-motion\s*\{/);
   assert.match(globals, /@keyframes\s+home-finance-stage-enter/);
   assert.match(globals, /@keyframes\s+home-finance-preview-settle/);
   assert.match(globals, /@keyframes\s+home-finance-layer-drift/);
   assert.match(globals, /\.home-finance-section \.finance-model-preview-image\s*\{[^}]*object-fit:\s*contain/s);
   assert.match(globals, /\.home-finance-stage \.finance-model-preview\s*\{[^}]*aspect-ratio:\s*1\.5/s);
-  assert.match(globals, /\.home-finance-stage \.finance-model-preview\s*\{[^}]*min-height:\s*clamp\(300px,\s*42vh,\s*520px\)/s);
-  assert.match(globals, /\.home-finance-depth-card \.finance-model-preview\s*\{[^}]*min-height:\s*clamp\(250px,\s*34vh,\s*410px\)/s);
   assert.match(cssRule(".home-finance-reveal"), /will-change:\s*transform,\s*opacity/);
   assert.doesNotMatch(financeSection, /FinanceModelLibrary compact/);
 });
 
-test("homepage finance section uses an automatic mobile preview carousel with model entries below", () => {
+test("homepage finance section uses an automatic mobile preview carousel with four model entries below", () => {
   assert.match(financeSection, /useEffect/);
   assert.match(financeSection, /useRef/);
   assert.match(financeSection, /mobileCarouselIndex/);
@@ -489,9 +407,9 @@ test("homepage finance section compresses in short desktop viewports", () => {
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage-motion \.finance-model-preview\s*\{[\s\S]*height:\s*100%/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage \.finance-model-preview\s*\{[\s\S]*aspect-ratio:\s*1\.8/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-point-row\s*\{[\s\S]*display:\s*none/s);
-  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage,\s*\.home-finance-stage-frame,\s*\.home-finance-operating-room,\s*\.home-finance-switcher\s*\{[\s\S]*height:\s*100%/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage,\s*\.home-finance-stage-frame,\s*\.home-finance-switcher\s*\{[\s\S]*height:\s*100%/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-switcher\s*\{[\s\S]*grid-template-rows:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
-  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-switch-card \.finance-model-preview\.compact\s*\{[\s\S]*aspect-ratio:\s*1/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-switch-card \.finance-model-preview\.compact\s*\{[\s\S]*aspect-ratio:\s*1\.9/s);
   assert.doesNotMatch(globals, /\.home-finance-stage,\s*\.home-finance-switcher\s*\{[\s\S]*height:\s*min\(420px,\s*calc\(100dvh - 150px\)\)/s);
   assert.doesNotMatch(globals, /\.home-finance-stage \.finance-model-preview\s*\{[^}]*aspect-ratio:\s*auto/s);
   assert.doesNotMatch(globals, /\.home-finance-switch-card \.finance-model-preview\s*\{[\s\S]*aspect-ratio:\s*1\.95/s);

@@ -6,7 +6,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type MouseEvent,
   type TouchEvent,
 } from "react";
@@ -49,35 +48,17 @@ const modelDetails: Record<string, { focus: string; detail: string; guide: strin
     guide: "先看预算差异落在哪个利润环节，再沿销量、净收入、边际和固定科目逐层下钻。",
     points: ["预算实际对比", "利润桥与差异桥", "维度下钻定位"],
   },
-  "price-volume-mix": {
-    focus: "收入变化中的销量、单价与结构贡献",
-    detail: "把预算、预测或实际之间的收入差异拆成销量贡献、价格贡献和结构组合贡献，适合做收入桥和汇报说明。",
-    guide: "先看总收入差异，再拆销量、价格和结构贡献，最后决定优先解释规模、单车净收入还是组合变化。",
-    points: ["收入桥", "价量拆解", "结构组合"],
-  },
   "monthly-trend": {
     focus: "连续月份指标趋势与结构监控",
     detail: "用于查看连续月份中的同比、环比、同期对比、结构占比和集中度，帮助快速发现趋势变化。",
     guide: "先找趋势断点，再看同比环比和结构占比，最后回到具体维度确认异常来源。",
     points: ["连续月份明细", "同比环比观察", "结构与集中度"],
   },
-  "working-capital": {
-    focus: "库存、应收和应付带来的现金占用",
-    detail: "用库存天数、应收天数和应付天数搭出现金转换周期，估算资金占用规模和相对目标的释放空间。",
-    guide: "先看现金转换周期，再把资金占用拆到库存、应收和应付三条责任线。",
-    points: ["现金周期", "资金占用", "释放空间"],
-  },
   "sensitivity-analysis": {
     focus: "利润变量变化的情景推演",
     detail: "围绕销量、净收入、成本、费用和税费做假设调整，判断利润对关键变量的敏感程度。",
     guide: "先设置关键变量假设，再看利润影响排序，用敏感变量反推需要优先管理的经营动作。",
     points: ["利润情景测算", "变量敏感性排序", "目标利润倒推"],
-  },
-  "fx-exposure": {
-    focus: "外币敞口、汇率变化与锁汇保护",
-    detail: "把预算汇率、实际汇率、外币敞口和锁汇比例放在同一口径，判断汇率对收入或利润的影响。",
-    guide: "先拆纯汇率影响，再看锁汇保护或机会成本，最后回到未锁敞口的风险。",
-    points: ["汇率敏感性", "锁汇比例", "未锁敞口"],
   },
 };
 
@@ -108,16 +89,6 @@ export default function HomeFinanceSection() {
     if (switcherModels.length <= 1) return switcherModels;
     return [switcherModels.at(-1)!, ...switcherModels, switcherModels[0]!];
   }, [switcherModels]);
-  const layeredModels = useMemo(() => {
-    if (!activeModel || switcherModels.length === 0) return [];
-
-    const activeIndex = Math.max(
-      switcherModels.findIndex((model) => model.slug === activeModel.slug),
-      0,
-    );
-
-    return [0, 1, 2].map((offset) => switcherModels[(activeIndex + offset) % switcherModels.length]);
-  }, [activeModel, switcherModels]);
   const restoreMobileCarouselTransition = useCallback(() => {
     if (mobileCarouselResetFrameRef.current) {
       window.cancelAnimationFrame(mobileCarouselResetFrameRef.current);
@@ -248,7 +219,7 @@ export default function HomeFinanceSection() {
               问题驱动的模型库
             </h2>
             <p className="home-finance-intro">
-              这里收录的是我自己搭建并持续打磨的财务模型和分析工具，适合从复盘、归因、趋势、收入桥、汇率和现金占用开始使用。
+              这里收录的是我自己搭建并持续打磨的财务模型和分析工具，适合从复盘、归因、趋势和情景推演开始使用。
             </p>
           </div>
           <Link href="/finance" className="home-finance-library-link" aria-label="查看完整财务模型列表">
@@ -374,90 +345,46 @@ export default function HomeFinanceSection() {
           </div>
 
           <motion.div
-            className="home-finance-operating-room home-finance-reveal"
+            className="home-finance-switcher home-finance-reveal"
             onMouseLeave={() => setActiveSlug(DEFAULT_MODEL_SLUG)}
+            variants={financeSwitcherVariants}
+            initial="hidden"
+            whileInView="visible"
             viewport={financeRevealViewport}
-            initial={{ opacity: 0, y: 28, rotateX: 4, filter: "blur(6px)" }}
-            whileInView={{ opacity: 1, y: 0, rotateX: 0, filter: "blur(0px)" }}
-            transition={{ duration: 0.68, delay: 0.12, ease: financeEase }}
           >
-            <div className="home-finance-layer-stack" aria-label="模型工作台层叠预览">
-              {layeredModels.map((model, index) => {
-                const detail = modelDetails[model.slug];
-                return (
-                  <motion.div
-                    key={`finance-layer-${model.slug}`}
-                    layoutId={`finance-depth-${model.slug}`}
-                    className={`home-finance-depth-card is-layer-${index}`}
-                    style={{
-                      "--finance-depth-index": index,
-                      "--finance-depth-shift": `${index * 22}px`,
-                      "--finance-depth-scale": 1 - index * 0.045,
-                      "--finance-depth-z": `${34 - index * 18}px`,
-                      "--finance-depth-rotate": `${index * -0.8}deg`,
-                    } as CSSProperties}
-                    transition={{ duration: 0.42, ease: financeEase }}
+            {switcherModels.map((model, index) => {
+              const isActive = model.slug === activeModel.slug;
+              const isMobileActive = index === mobileCarouselIndex;
+              return (
+                <motion.div
+                  key={model.slug}
+                  className="home-finance-switch-card-motion"
+                  variants={financeSwitchCardVariants}
+                  transition={{ duration: 0.46, ease: financeEase }}
+                >
+                  <Link
+                    href={model.href}
+                    className={`home-finance-switch-card${isMobileActive ? " is-mobile-current" : ""}`}
+                    aria-current={isActive ? "true" : undefined}
+                    onFocus={() => setActiveSlug(model.slug)}
+                    onMouseEnter={() => setActiveSlug(model.slug)}
                   >
-                    <Link href={model.href} aria-label={`打开${model.title}`}>
-                      <FinanceModelPreview
-                        src={model.previewImage}
-                        alt={model.previewAlt}
-                        compact
-                      />
-                      <div className="home-finance-depth-copy">
-                        <span>{getCategoryLabel(model.categoryId)}</span>
-                        <strong>{model.title}</strong>
-                        <p>{detail?.focus ?? model.summary}</p>
-                      </div>
-                    </Link>
-                  </motion.div>
-                );
-              })}
-            </div>
-
-            <motion.div
-              className="home-finance-switcher home-finance-model-rail"
-              variants={financeSwitcherVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={financeRevealViewport}
-            >
-              {switcherModels.map((model, index) => {
-                const isActive = model.slug === activeModel.slug;
-                const isMobileActive = index === mobileCarouselIndex;
-                return (
-                  <motion.div
-                    key={model.slug}
-                    className="home-finance-switch-card-motion"
-                    variants={financeSwitchCardVariants}
-                    transition={{ duration: 0.46, ease: financeEase }}
-                  >
-                    <button
-                      type="button"
-                      className={`home-finance-switch-card${isMobileActive ? " is-mobile-current" : ""}`}
-                      aria-current={isActive ? "true" : undefined}
-                      aria-label={`预览${model.title}`}
-                      onClick={() => setActiveSlug(model.slug)}
-                      onFocus={() => setActiveSlug(model.slug)}
-                      onMouseEnter={() => setActiveSlug(model.slug)}
-                    >
-                      <FinanceModelPreview
-                        src={model.previewImage}
-                        alt={model.previewAlt}
-                        compact
-                      />
-                      <div className="home-finance-switch-copy">
-                        <span>{getCategoryLabel(model.categoryId)}</span>
-                        <strong>{model.title}</strong>
-                        <span className="home-finance-switch-open">
-                          预览模型 <ArrowRight style={{ width: 13, height: 13 }} />
-                        </span>
-                      </div>
-                    </button>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
+                    <FinanceModelPreview
+                      src={model.previewImage}
+                      alt={model.previewAlt}
+                      compact
+                    />
+                    <div className="home-finance-switch-copy">
+                      <span>{getCategoryLabel(model.categoryId)}</span>
+                      <strong>{model.title}</strong>
+                      <span className="home-finance-switch-open">
+                        打开模型 <ArrowRight style={{ width: 13, height: 13 }} />
+                      </span>
+                    </div>
+                  </Link>
+                </motion.div>
+              );
+            })}
           </motion.div>
         </div>
       </div>
