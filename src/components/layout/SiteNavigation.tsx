@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Home, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import type { MouseEvent } from "react";
 import { scrollToSection } from "@/lib/scroll";
 import { useViewportProfile } from "@/lib/useLowMotionMode";
@@ -14,8 +14,8 @@ const NAV_FONT =
 
 const NAV_ITEMS = [
     { label: "首页", href: "/", activePath: "/", sectionId: "home" },
-    { label: "财务模型", href: "/#finance", activePath: "/finance", sectionId: "finance" },
-    { label: "思考与方法", href: "/#thinking", activePath: "/thinking-lab", sectionId: "thinking" },
+    { label: "财务模型", href: "/finance", activePath: "/finance" },
+    { label: "思考与方法", href: "/thinking-lab", activePath: "/thinking-lab" },
     { label: "联系", href: "/#contact", sectionId: "contact" },
 ];
 
@@ -40,187 +40,10 @@ export default function SiteNavigation() {
     const pathname = usePathname() || "/";
     const { isMobileLike } = useViewportProfile();
     const [open, setOpen] = useState(false);
-    const [activeSectionId, setActiveSectionId] = useState("home");
-    const pendingSectionRef = useRef<{ id: string; until: number } | null>(null);
-
-    const activateSectionFromClick = useCallback((sectionId: string) => {
-        if (typeof window !== "undefined") {
-            pendingSectionRef.current = {
-                id: sectionId,
-                until: window.performance.now() + 900,
-            };
-        }
-
-        setActiveSectionId(sectionId);
-    }, []);
-
-    useEffect(() => {
-        if (pathname !== "/" || typeof window === "undefined" || !("IntersectionObserver" in window)) {
-            return;
-        }
-
-        const hashSectionId = window.location.hash.replace("#", "");
-        const hashSection = NAV_ITEMS.find((item) => item.sectionId === hashSectionId)?.sectionId;
-        pendingSectionRef.current = null;
-
-        const getSections = () => NAV_ITEMS
-            .map((item) => item.sectionId)
-            .filter((sectionId): sectionId is string => Boolean(sectionId))
-            .map((sectionId) => document.getElementById(sectionId))
-            .filter((section): section is HTMLElement => Boolean(section));
-
-        const setActiveSectionFromId = (sectionId: string) => {
-            const pending = pendingSectionRef.current;
-            if (pending && window.performance.now() < pending.until && sectionId !== pending.id) {
-                return;
-            }
-            if (pending && sectionId === pending.id) {
-                pendingSectionRef.current = null;
-            }
-            setActiveSectionId(sectionId);
-        };
-
-        const activateLastSectionAtPageBottom = () => {
-            const sections = getSections();
-            const lastSection = sections.at(-1);
-            if (!lastSection?.id) return false;
-            const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-            const hasStableScrollRange = maxScroll > Math.max(160, window.innerHeight * 0.55);
-            if (!hasStableScrollRange) return false;
-
-            const lastRect = lastSection.getBoundingClientRect();
-            const lastSectionVisible = lastRect.top < window.innerHeight - 2 && lastRect.bottom > 2;
-            const isAtPageBottom = window.scrollY >= maxScroll - 2;
-            if (!isAtPageBottom || !lastSectionVisible) return false;
-
-            setActiveSectionFromId(lastSection.id);
-            return true;
-        };
-
-        let scrollFrame: number | null = null;
-        let settleFrame: number | null = null;
-        let secondSettleFrame: number | null = null;
-        let sectionRetry: number | null = null;
-        let observer: IntersectionObserver | null = null;
-        let sectionRetryCount = 0;
-
-        const setupObserver = () => {
-            const sections = getSections();
-            if (!sections.length) return false;
-
-            observer?.disconnect();
-            observer = new IntersectionObserver(
-                (entries) => {
-                    if (activateLastSectionAtPageBottom()) return;
-
-                    const visible = entries
-                        .filter((entry) => entry.isIntersecting)
-                        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-
-                    if (visible?.target.id) {
-                        setActiveSectionFromId(visible.target.id);
-                    }
-                },
-                {
-                    rootMargin: "-34% 0px -48% 0px",
-                    threshold: [0.16, 0.32, 0.48, 0.64],
-                },
-            );
-
-            sections.forEach((section) => observer?.observe(section));
-            sectionRetryCount = 0;
-            return true;
-        };
-
-        const syncActiveSectionFromScroll = () => {
-            if (scrollFrame !== null) return;
-
-            scrollFrame = window.requestAnimationFrame(() => {
-                scrollFrame = null;
-                const sections = getSections();
-                if (!sections.length) return;
-                if (activateLastSectionAtPageBottom()) return;
-
-                const viewportCenter = window.innerHeight / 2;
-                const current = sections
-                    .map((section) => {
-                        const rect = section.getBoundingClientRect();
-                        const containsCenter = rect.top <= viewportCenter && rect.bottom >= viewportCenter;
-                        const visibleHeight = Math.max(0, Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0));
-                        const distance = containsCenter
-                            ? 0
-                            : Math.min(Math.abs(rect.top - viewportCenter), Math.abs(rect.bottom - viewportCenter));
-
-                        return {
-                            id: section.id,
-                            containsCenter,
-                            visibleHeight,
-                            distance,
-                        };
-                    })
-                    .filter((section) => section.visibleHeight > 0)
-                    .sort((a, b) => {
-                        if (a.containsCenter !== b.containsCenter) return a.containsCenter ? -1 : 1;
-                        if (a.distance !== b.distance) return a.distance - b.distance;
-                        return b.visibleHeight - a.visibleHeight;
-                    })[0];
-
-                if (current?.id) {
-                    setActiveSectionFromId(current.id);
-                }
-            });
-        };
-        const scheduleSectionSync = () => {
-            if (settleFrame !== null) window.cancelAnimationFrame(settleFrame);
-            if (secondSettleFrame !== null) window.cancelAnimationFrame(secondSettleFrame);
-            if (sectionRetry !== null) window.clearTimeout(sectionRetry);
-            settleFrame = window.requestAnimationFrame(() => {
-                settleFrame = null;
-                secondSettleFrame = window.requestAnimationFrame(() => {
-                    secondSettleFrame = null;
-                    if (!setupObserver()) {
-                        if (sectionRetryCount < 12) {
-                            sectionRetryCount += 1;
-                            sectionRetry = window.setTimeout(scheduleSectionSync, 120);
-                        }
-                        return;
-                    }
-                    syncActiveSectionFromScroll();
-                });
-            });
-        };
-
-        const hashFrame = hashSection
-            ? window.requestAnimationFrame(() => {
-                activateSectionFromClick(hashSection);
-                scrollToSection(hashSection);
-                scheduleSectionSync();
-            })
-            : null;
-
-        scheduleSectionSync();
-        window.addEventListener("scroll", syncActiveSectionFromScroll, { passive: true });
-        window.addEventListener("resize", syncActiveSectionFromScroll);
-        window.addEventListener("pageshow", scheduleSectionSync);
-        window.addEventListener("hashchange", scheduleSectionSync);
-        return () => {
-            if (hashFrame) window.cancelAnimationFrame(hashFrame);
-            if (scrollFrame !== null) window.cancelAnimationFrame(scrollFrame);
-            if (settleFrame !== null) window.cancelAnimationFrame(settleFrame);
-            if (secondSettleFrame !== null) window.cancelAnimationFrame(secondSettleFrame);
-            if (sectionRetry !== null) window.clearTimeout(sectionRetry);
-            window.removeEventListener("scroll", syncActiveSectionFromScroll);
-            window.removeEventListener("resize", syncActiveSectionFromScroll);
-            window.removeEventListener("pageshow", scheduleSectionSync);
-            window.removeEventListener("hashchange", scheduleSectionSync);
-            observer?.disconnect();
-        };
-    }, [activateSectionFromClick, pathname]);
 
     if (shouldHideNavigation(pathname)) return null;
 
     const itemIsActive = (item: (typeof NAV_ITEMS)[number]) => {
-        if (pathname === "/" && item.sectionId) return activeSectionId === item.sectionId;
         return isActive(pathname, item.activePath);
     };
 
@@ -229,16 +52,15 @@ export default function SiteNavigation() {
 
         if (pathname === "/" && item.href === "/") {
             event.preventDefault();
-            activateSectionFromClick("home");
             window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
             window.history.replaceState(window.history.state, "", "/");
             return;
         }
 
-        if (pathname === "/" && item.sectionId && item.sectionId !== "home") {
+        if (pathname === "/" && item.sectionId === "contact") {
             event.preventDefault();
-            activateSectionFromClick(item.sectionId);
-            scrollToSection(item.sectionId);
+            scrollToSection("contact");
+            window.history.pushState(window.history.state, "", "#contact");
         }
     };
 

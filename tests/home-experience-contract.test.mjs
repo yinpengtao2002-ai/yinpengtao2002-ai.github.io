@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const hero = await readFile(new URL("../src/components/home/CapabilityHero.tsx", import.meta.url), "utf8");
+const homePage = await readFile(new URL("../src/app/page.tsx", import.meta.url), "utf8");
 const productStage = await readFile(new URL("../src/components/home/ProductStageVisual.tsx", import.meta.url), "utf8");
 const heroModelStage = await readFile(new URL("../src/components/home/HeroModelStage.tsx", import.meta.url), "utf8").catch(() => "");
 const financeSection = await readFile(new URL("../src/components/home/HomeFinanceSection.tsx", import.meta.url), "utf8");
@@ -46,13 +47,14 @@ test("home page has an explicit continue cue for below-the-fold content", () => 
   assert.match(hero, /浏览更多/);
   assert.match(hero, /浏览全部模型/);
   assert.doesNotMatch(hero, /下一屏 · 财务模型/);
-  assert.match(hero, /#finance/);
+  assert.match(hero, /#thinking/);
   assert.match(hero, /handleBrowseMore/);
   assert.match(hero, /scrollIntoView/);
   assert.match(hero, /behavior:\s*prefersReducedMotion \? "auto" : "smooth"/);
-  assert.match(hero, /href="#finance" className="home-primary-action" onClick=\{handleBrowseMore\}/);
-  assert.doesNotMatch(hero, /href="\/finance" className="home-primary-action"/);
+  assert.match(hero, /href="\/finance" className="home-primary-action"/);
+  assert.doesNotMatch(hero, /href="#finance" className="home-primary-action"/);
   assert.doesNotMatch(hero, /href="\/finance" className="home-hero-continue"/);
+  assert.match(hero, /href="#thinking" className="home-hero-continue" onClick=\{handleBrowseMore\}/);
   assert.match(hero, /home-hero-continue/);
   assert.match(hero, /home-hero-continue-row/);
   assert.doesNotMatch(hero, /home-secondary-action/);
@@ -64,6 +66,15 @@ test("home page has an explicit continue cue for below-the-fold content", () => 
   assert.match(globals, /\.home-hero-continue::before\s*\{[^}]*mask-composite:\s*exclude/s);
   assert.match(globals, /\.home-hero-continue-runner\s*\{[^}]*animation:\s*homeContinueRunner/s);
   assert.match(globals, /@keyframes\s+homeContinueRunner/);
+});
+
+test("home page removes the duplicate finance section and links to the real finance page", () => {
+  assert.doesNotMatch(homePage, /HomeFinanceSection/);
+  assert.match(homePage, /<CapabilityHero \/>/);
+  assert.match(homePage, /<HomeThinkingSection \/>/);
+  assert.match(homePage, /<HomeContactSection \/>/);
+  assert.match(hero, /href="\/finance" className="home-primary-action"/);
+  assert.doesNotMatch(hero, /document\.getElementById\("finance"\)/);
 });
 
 test("home hero returns to a split Lucas plus product-stage layout", () => {
@@ -154,6 +165,13 @@ test("home hero uses an interactive model stage instead of a static question gri
   assert.doesNotMatch(hero, /ProductStageVisual/);
   assert.match(heroModelStage, /HERO_MODEL_STAGES/);
   assert.match(heroModelStage, /useState/);
+  assert.match(heroModelStage, /useRef/);
+  assert.match(heroModelStage, /SWIPE_THRESHOLD/);
+  assert.match(heroModelStage, /onTouchStart/);
+  assert.match(heroModelStage, /onTouchMove/);
+  assert.match(heroModelStage, /onTouchEnd/);
+  assert.match(heroModelStage, /home-hero-stage-swipe-cue/);
+  assert.match(heroModelStage, /左右滑动切换/);
   assert.match(heroModelStage, /onMouseEnter/);
   assert.match(heroModelStage, /onFocus/);
   assert.match(heroModelStage, /home-hero-stage-shell/);
@@ -242,7 +260,8 @@ test("home hero stages business-question controls without changing the finance s
   assert.match(heroModelStage, /\/finance\/business-analysis/);
   assert.match(heroModelStage, /\/finance\/monthly-trend/);
   assert.match(heroModelStage, /\/finance\/sensitivity-analysis/);
-  assert.match(hero, /href="#finance"/);
+  assert.match(hero, /href="\/finance"/);
+  assert.doesNotMatch(hero, /href="#finance"/);
   assert.match(hero, /handleBrowseMore/);
   assert.doesNotMatch(hero, /home-hero-question-card/);
   assert.doesNotMatch(financeSection, /单车为什么变了/);

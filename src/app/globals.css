@@ -639,6 +639,10 @@ h6 {
   transform: scaleX(1);
 }
 
+.home-hero-stage-swipe-cue {
+  display: none;
+}
+
 @keyframes homeHeroStageIn {
   0% {
     opacity: 0;
@@ -2552,6 +2556,25 @@ h6 {
 
   .home-hero-stage-tab strong {
     font-size: 10.5px;
+  }
+
+  .home-hero-stage-swipe-cue {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    color: color-mix(in srgb, var(--foreground) 54%, var(--muted));
+    font-size: 10.5px;
+    font-weight: 800;
+    line-height: 1;
+    margin-top: 1px;
+  }
+
+  .home-hero-stage-swipe-cue span {
+    width: 18px;
+    height: 1px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--hero-stage-accent) 42%, var(--border));
   }
 
   .product-stage-image {

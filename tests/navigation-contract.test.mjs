@@ -34,33 +34,20 @@ test("root layout wraps pages with a restrained route transition", () => {
   assert.doesNotMatch(pageTransition, /x:\s*["'{-]/);
 });
 
-test("site navigation follows homepage section visibility", () => {
+test("site navigation uses page links instead of scroll-tracked homepage sections", () => {
   assert.match(navigation, /sectionId:\s*"home"/);
-  assert.match(navigation, /href:\s*"\/#finance"[\s\S]*activePath:\s*"\/finance"[\s\S]*sectionId:\s*"finance"/);
-  assert.match(navigation, /href:\s*"\/#thinking"[\s\S]*activePath:\s*"\/thinking-lab"[\s\S]*sectionId:\s*"thinking"/);
+  assert.match(navigation, /href:\s*"\/finance"[\s\S]*activePath:\s*"\/finance"/);
+  assert.match(navigation, /href:\s*"\/thinking-lab"[\s\S]*activePath:\s*"\/thinking-lab"/);
+  assert.doesNotMatch(navigation, /href:\s*"\/#finance"/);
+  assert.doesNotMatch(navigation, /href:\s*"\/#thinking"/);
   assert.match(navigation, /sectionId:\s*"contact"/);
-  assert.match(navigation, /IntersectionObserver/);
-  assert.match(navigation, /activeSectionId/);
-  assert.match(navigation, /hashSectionId/);
-  assert.match(navigation, /pendingSectionRef/);
-  assert.match(navigation, /const getSections = \(\) =>/);
-  assert.match(navigation, /syncActiveSectionFromScroll/);
-  assert.match(navigation, /window\.addEventListener\("scroll",\s*syncActiveSectionFromScroll/);
-  assert.doesNotMatch(navigation, /const sections = NAV_ITEMS[\s\S]{0,420}if \(!sections\.length\) return;/);
-  assert.match(navigation, /if \(!setupObserver\(\)\)/);
-  assert.match(navigation, /window\.setTimeout\(scheduleSectionSync/);
-  assert.match(navigation, /window\.innerHeight\s*\/\s*2/);
-  assert.match(navigation, /pendingSectionRef\.current\s*=\s*null/);
-  assert.match(navigation, /hasStableScrollRange/);
-  assert.match(navigation, /lastSectionVisible/);
-  assert.match(navigation, /window\.addEventListener\("pageshow",\s*scheduleSectionSync/);
-  assert.match(navigation, /window\.addEventListener\("hashchange",\s*scheduleSectionSync/);
-  assert.match(navigation, /isAtPageBottom/);
-  assert.match(navigation, /sections\.at\(-1\)/);
-  assert.equal(navigation.match(/activateLastSectionAtPageBottom\(\)/g)?.length, 2);
-  assert.match(navigation, /getBoundingClientRect\(\)/);
-  assert.match(navigation, /activateSectionFromClick\(item\.sectionId\)/);
-  assert.match(navigation, /scrollToSection\(item\.sectionId\)/);
+  assert.doesNotMatch(navigation, /IntersectionObserver/);
+  assert.doesNotMatch(navigation, /activeSectionId/);
+  assert.doesNotMatch(navigation, /hashSectionId/);
+  assert.doesNotMatch(navigation, /pendingSectionRef/);
+  assert.doesNotMatch(navigation, /syncActiveSectionFromScroll/);
+  assert.doesNotMatch(navigation, /window\.addEventListener\("scroll"/);
+  assert.match(navigation, /scrollToSection\("contact"\)/);
   assert.match(navigation, /home-nav-active-pill/);
   assert.match(navigation, /layoutId="home-nav-active-pill"/);
 });

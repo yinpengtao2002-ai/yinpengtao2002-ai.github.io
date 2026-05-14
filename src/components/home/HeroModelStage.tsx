@@ -2,8 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, type CSSProperties } from "react";
+import { useRef, useState, type CSSProperties, type TouchEvent } from "react";
 import { ArrowRight } from "lucide-react";
+
+const SWIPE_THRESHOLD = 46;
 
 const HERO_MODEL_STAGES = [
   {
@@ -66,12 +68,55 @@ const HERO_MODEL_STAGES = [
 
 export default function HeroModelStage() {
   const [activeIndex, setActiveIndex] = useState(0);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const touchMovedRef = useRef(false);
   const activeStage = HERO_MODEL_STAGES[activeIndex] ?? HERO_MODEL_STAGES[0];
+  const updateActiveStage = (direction: 1 | -1) => {
+    setActiveIndex(
+      (index) => (index + direction + HERO_MODEL_STAGES.length) % HERO_MODEL_STAGES.length,
+    );
+  };
+  const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    touchMovedRef.current = false;
+  };
+  const handleTouchMove = (event: TouchEvent<HTMLDivElement>) => {
+    const start = touchStartRef.current;
+    const touch = event.touches[0];
+    if (!start || !touch) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    if (Math.abs(deltaX) > 12 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      touchMovedRef.current = true;
+    }
+  };
+  const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+    const start = touchStartRef.current;
+    const touch = event.changedTouches[0];
+    touchStartRef.current = null;
+    if (!start || !touch) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    const isHorizontalSwipe =
+      Math.abs(deltaX) >= SWIPE_THRESHOLD && Math.abs(deltaX) > Math.abs(deltaY) * 1.15;
+    if (!touchMovedRef.current || !isHorizontalSwipe) return;
+
+    updateActiveStage(deltaX < 0 ? 1 : -1);
+    touchMovedRef.current = false;
+  };
 
   return (
     <div
       className="home-hero-stage-shell"
       style={{ "--hero-stage-accent": activeStage.accent } as CSSProperties}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       <div className="home-hero-stage-panel" aria-live="polite">
         <div className="home-hero-stage-copy" key={`stage-copy-${activeStage.slug}`}>
@@ -122,6 +167,11 @@ export default function HeroModelStage() {
             </button>
           );
         })}
+      </div>
+      <div className="home-hero-stage-swipe-cue" aria-hidden="true">
+        <span />
+        左右滑动切换
+        <span />
       </div>
     </div>
   );
