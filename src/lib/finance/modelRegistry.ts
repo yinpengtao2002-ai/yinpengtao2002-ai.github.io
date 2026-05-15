@@ -13,6 +13,11 @@ export interface FinanceModelGuide {
   scenarios: string[];
   steps: string[];
   sampleData: string;
+  fields: Array<{
+    name: string;
+    description: string;
+  }>;
+  pitfalls: string[];
   faq: Array<{
     question: string;
     answer: string;

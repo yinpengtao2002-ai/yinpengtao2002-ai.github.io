@@ -43,13 +43,18 @@ export function getLocalFallbackResponse(
 
     if (
         currentFinanceModel &&
-        includesAny(lower, ["当前", "这个", "本模型", "怎么用", "使用", "上传", "数据", "图表", "指标", "解释"])
+        includesAny(lower, ["当前", "这个", "本模型", "怎么用", "使用", "上传", "数据", "图表", "指标", "解释", "字段", "步骤", "误区", "适用", "场景"])
     ) {
         const guide = currentFinanceModel.aiGuide;
+        const fieldSummary = guide.fields.map((field) => `${field.name}：${field.description}`).join("；");
+        const pitfallSummary = guide.pitfalls.join("；");
         return withOfflineNotice({
             response: [
                 `你现在打开的是 [${currentFinanceModel.title}](${currentFinanceModel.href})。${guide.purpose}`,
+                `适用场景：${guide.scenarios.join("；")}`,
                 `一般可以这样用：${guide.steps.join("；")}`,
+                `字段可以这样理解：${fieldSummary}`,
+                `常见误区：${pitfallSummary}`,
                 `示例数据：${guide.sampleData}`,
                 "如果要做具体数据判断，可以把关键指标、截图或数据摘要发给我；我也可以先帮你整理图表阅读顺序和汇报框架。",
             ].join("\n\n"),

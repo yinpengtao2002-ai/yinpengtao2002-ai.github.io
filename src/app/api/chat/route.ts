@@ -14,6 +14,12 @@ function buildActiveFinanceModelPrompt(activeFinanceModel?: FinanceModelItem) {
   const faq = guide.faq.length > 0
     ? guide.faq.map((item) => `    - ${item.question}：${item.answer}`).join("\n")
     : "    - 暂无常见问题。";
+  const fields = guide.fields.length > 0
+    ? guide.fields.map((item) => `    - ${item.name}：${item.description}`).join("\n")
+    : "    - 暂无字段说明。";
+  const pitfalls = guide.pitfalls.length > 0
+    ? guide.pitfalls.map((item) => `    - ${item}`).join("\n")
+    : "    - 暂无常见误区。";
 
   return [
     `当前打开的财务模型：${activeFinanceModel.title}（${activeFinanceModel.href}）`,
@@ -21,10 +27,14 @@ function buildActiveFinanceModelPrompt(activeFinanceModel?: FinanceModelItem) {
     `适用场景：${guide.scenarios.join(" / ")}`,
     `使用步骤：${guide.steps.join(" / ")}`,
     `示例数据：${guide.sampleData}`,
+    "字段说明：",
+    fields,
+    "常见误区：",
+    pitfalls,
     "常见问题：",
     faq,
     "如果用户说“这个模型”“当前模型”“这里怎么用”，默认指这个当前打开的财务模型。",
-    "你能围绕这个模型提供模型选择、使用说明、可视化建议和分析框架。",
+    "你能围绕这个模型提供字段解释、操作步骤、适用场景、常见误区、可视化建议和分析框架。",
   ].join("\n");
 }
 
@@ -36,6 +46,7 @@ function buildSystemPrompt(activeFinanceModel?: FinanceModelItem): string {
       `    适用场景：${model.aiGuide.scenarios.join(" / ")}`,
       `    使用步骤：${model.aiGuide.steps.join(" / ")}`,
       `    示例数据：${model.aiGuide.sampleData}`,
+      `    关键字段：${model.aiGuide.fields.map((item) => item.name).join(" / ")}`,
     ].join("\n"))
     .join("\n");
 
@@ -71,9 +82,9 @@ ${thinkingArticles}
 - 用中文回复，除非用户用英文提问
 - 保持简洁，通常 2-4 句话
 - 如果当前页面上下文里有“当前打开的财务模型”，用户问“这个模型/当前模型/怎么用/上传什么数据/图表怎么看/怎么形成判断”时，优先回答当前模型，不要泛泛推荐模型库
-- 当用户问某个模型怎么用时，优先用模型说明里的用途、适用场景、使用步骤和示例数据回答
-- 优先提供模型选择、使用说明、可视化建议和分析框架
-- 如果用户要求分析“当前数据”，先请用户提供关键数据、截图或页面显式发送的数据摘要；不要假装看到了当前数据
+- 当用户问某个模型怎么用时，优先用模型说明里的用途、适用场景、操作步骤、字段说明、常见误区和示例数据回答
+- 优先提供模型选择、使用说明、字段解释、可视化建议和分析框架
+- 如果用户要求分析“当前数据”，只基于用户主动发来的截图、指标或数据摘要；不要假装看到了当前数据
 - 推荐模型或文章时，必须使用 Markdown 链接格式：[标题](路径)
 - 提到站内页面时，不要只裸写 /finance 或 /thinking-lab；必须写成 [财务模型](/finance)、[思考与方法](/thinking-lab) 这样的 Markdown 链接
 - 需要写公式时，使用 Markdown LaTeX：行内公式用 $...$，单独成行公式用 $$...$$

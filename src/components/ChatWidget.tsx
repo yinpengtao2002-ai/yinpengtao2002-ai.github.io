@@ -49,10 +49,11 @@ const MOBILE_QUICK_PROMPTS = [
     "我该先看哪个模型？",
     "推荐一篇思考文章",
 ];
-const CURRENT_MODEL_QUICK_PROMPTS = [
-    "这个模型适合解决什么问题？",
-    "这个模型怎么看结论？",
-    "帮我理解这个图表",
+const MODEL_ASSISTANT_QUICK_PROMPTS = [
+    "适用场景",
+    "操作步骤",
+    "字段说明",
+    "常见误区",
 ];
 const AI_ASSISTANT_SCOPE = "模型选择、使用说明、图表阅读和文章推荐";
 
@@ -105,10 +106,19 @@ function getCurrentFinanceModelSlug(pathname: string) {
 
 function getGreetingMessage(currentFinanceModel?: FinanceModelItem) {
     if (currentFinanceModel) {
-        return `你好，我是 Lucas AI。\n\n我看到你正在看「${currentFinanceModel.title}」。我可以围绕当前模型做${AI_ASSISTANT_SCOPE}，比如判断这个模型适合解决什么问题、怎么看主要图表，或者怎么组织一段汇报说明。`;
+        return getModelAssistantGreeting(currentFinanceModel);
     }
 
-    return `你好，我是 Lucas AI。\n\n我可以帮你选择财务模型、说明模型用法、梳理图表阅读顺序，也可以推荐思考与方法里的文章。`;
+    return `你好，我是 Lucas AI。\n\n我可以帮你选择财务模型、说明模型用法、梳理图表阅读顺序，也可以推荐思考与方法里的文章。\n\n当前支持范围：${AI_ASSISTANT_SCOPE}。`;
+}
+
+function getModelAssistantGreeting(currentFinanceModel: FinanceModelItem) {
+    return [
+        "当前模型助手",
+        `当前模型：${currentFinanceModel.title}`,
+        currentFinanceModel.aiGuide.purpose,
+        "我可以直接解释适用场景、操作步骤、字段说明、图表阅读和常见误区。",
+    ].join("\n\n");
 }
 
 function getInternalHref(href: string | undefined) {
@@ -357,6 +367,7 @@ export default function ChatWidget() {
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    const currentFinanceModelSlugRef = useRef<string | null>(null);
 
     const financeContent: ContentCard[] = staticFinance.map((item) => ({
         id: item.id, title: item.title, description: item.description,
@@ -369,7 +380,7 @@ export default function ChatWidget() {
     const currentFinanceModelSlug = getCurrentFinanceModelSlug(pathname);
     const currentFinanceModel =
         currentFinanceModelSlug ? financeModels.find((model) => model.slug === currentFinanceModelSlug) : undefined;
-    const quickPrompts = currentFinanceModel ? CURRENT_MODEL_QUICK_PROMPTS : MOBILE_QUICK_PROMPTS;
+    const quickPrompts = currentFinanceModel ? MODEL_ASSISTANT_QUICK_PROMPTS : MOBILE_QUICK_PROMPTS;
 
     const currentViewportHeight =
         viewportHeight ?? (typeof window !== "undefined" ? window.innerHeight : null);
@@ -410,6 +421,33 @@ export default function ChatWidget() {
     useEffect(() => {
         if (isOpen && !isMobileLike) inputRef.current?.focus();
     }, [isMobileLike, isOpen]);
+
+    useEffect(() => {
+        const previousSlug = currentFinanceModelSlugRef.current;
+        if (previousSlug === currentFinanceModelSlug) return;
+
+        currentFinanceModelSlugRef.current = currentFinanceModelSlug;
+        if (!initialized || !currentFinanceModel) return;
+
+        setMessages((prev) => {
+            if (prev.length === 0 || (prev.length === 1 && prev[0]?.id === "greeting")) {
+                return [{
+                    id: "greeting",
+                    role: "assistant",
+                    content: getModelAssistantGreeting(currentFinanceModel),
+                }];
+            }
+
+            return [
+                ...prev,
+                {
+                    id: `model-switch-${Date.now()}`,
+                    role: "assistant",
+                    content: `已切换到「${currentFinanceModel.title}」。接下来我会按这个模型回答字段、步骤、图表和常见误区。`,
+                },
+            ];
+        });
+    }, [currentFinanceModel, currentFinanceModelSlug, initialized]);
 
     useEffect(() => {
         if (!isOpen || !isMobileLike || typeof window === "undefined") return;
@@ -832,7 +870,7 @@ export default function ChatWidget() {
                                         </span>
                                         {!compactMobileChat && (
                                             <span style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.1 }}>
-                                                模型与思考入口
+                                                {currentFinanceModel ? "当前模型助手" : "模型与思考入口"}
                                             </span>
                                         )}
                                     </div>

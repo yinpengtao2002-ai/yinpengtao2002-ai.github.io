@@ -21,6 +21,10 @@ const chatFallback = await readFile(
   new URL("../src/lib/chatFallback.ts", import.meta.url),
   "utf8"
 );
+const financeRegistry = await readFile(
+  new URL("../src/lib/finance/model-registry.json", import.meta.url),
+  "utf8"
+);
 const clientShell = await readFile(
   new URL("../src/components/ClientShell.tsx", import.meta.url),
   "utf8"
@@ -95,13 +99,28 @@ test("chat widget sends current finance model context to the API", () => {
 
 test("chat widget frames Lucas AI with practical model and chart questions", () => {
   assert.match(chatWidget, /模型选择、使用说明、图表阅读和文章推荐/);
-  assert.match(chatWidget, /这个模型适合解决什么问题/);
-  assert.match(chatWidget, /这个模型怎么看结论/);
-  assert.match(chatWidget, /帮我理解这个图表/);
+  assert.match(chatWidget, /适用场景/);
+  assert.match(chatWidget, /操作步骤/);
+  assert.match(chatWidget, /字段说明/);
+  assert.match(chatWidget, /图表阅读/);
   assert.match(chatWidget, /我可以帮你选择财务模型、说明模型用法、梳理图表阅读顺序/);
   assert.doesNotMatch(chatWidget, /怎么校对模型口径/);
   assert.doesNotMatch(chatWidget, /上传前要校对哪些口径/);
   assert.doesNotMatch(chatWidget, /我看到你正在看[^`]*直接问我当前模型怎么用、要上传什么数据/);
+});
+
+test("chat widget turns finance detail pages into model assistant mode", () => {
+  assert.match(chatWidget, /MODEL_ASSISTANT_QUICK_PROMPTS/);
+  assert.match(chatWidget, /适用场景/);
+  assert.match(chatWidget, /操作步骤/);
+  assert.match(chatWidget, /字段说明/);
+  assert.match(chatWidget, /常见误区/);
+  assert.match(chatWidget, /getModelAssistantGreeting/);
+  assert.match(chatWidget, /当前模型助手/);
+  assert.match(chatWidget, /当前模型：/);
+  assert.match(chatWidget, /currentFinanceModelSlugRef/);
+  assert.match(chatWidget, /已切换到/);
+  assert.match(chatWidget, /字段、步骤、图表和常见误区/);
 });
 
 test("finance detail pages keep the AI assistant available", () => {
@@ -151,12 +170,32 @@ test("chat API injects active finance model guidance when a model page is open",
   assert.match(chatRoute, /getFinanceModelBySlug/);
   assert.match(chatRoute, /activeFinanceModel/);
   assert.match(chatRoute, /当前打开的财务模型/);
+  assert.match(chatRoute, /字段说明：/);
+  assert.match(chatRoute, /常见误区：/);
+  assert.match(chatRoute, /guide\.fields\.map/);
+  assert.match(chatRoute, /guide\.pitfalls\.map/);
   assert.match(chatRoute, /如果用户说“这个模型”/);
   assert.match(chatRoute, /模型选择/);
   assert.match(chatRoute, /可视化建议/);
   assert.match(chatRoute, /分析框架/);
+  assert.match(chatRoute, /字段解释/);
+  assert.match(chatRoute, /操作步骤/);
+  assert.match(chatRoute, /适用场景/);
   assert.match(chatRoute, /不要假装看到了当前数据/);
+  assert.match(chatRoute, /只基于用户主动发来的截图、指标或数据摘要/);
   assert.match(chatFallback, /如果要做具体数据判断，可以把关键指标、截图或数据摘要发给我/);
+  assert.match(chatFallback, /字段可以这样理解/);
+  assert.match(chatFallback, /常见误区/);
   assert.doesNotMatch(chatFallback, /目前我能先解释模型口径、上传要求和图表读法/);
   assert.match(chatRoute, /faq\.map/);
+});
+
+test("finance model registry provides field explanations and common pitfalls for the AI assistant", () => {
+  const registry = JSON.parse(financeRegistry);
+  for (const model of registry.models) {
+    assert.ok(Array.isArray(model.aiGuide.fields), `${model.slug} should define aiGuide.fields`);
+    assert.ok(model.aiGuide.fields.length >= 3, `${model.slug} should explain key fields`);
+    assert.ok(Array.isArray(model.aiGuide.pitfalls), `${model.slug} should define aiGuide.pitfalls`);
+    assert.ok(model.aiGuide.pitfalls.length >= 2, `${model.slug} should define common pitfalls`);
+  }
 });
