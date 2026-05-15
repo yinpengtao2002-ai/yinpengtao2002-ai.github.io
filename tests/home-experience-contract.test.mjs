@@ -180,6 +180,10 @@ test("home hero uses an interactive model stage instead of a static question gri
   assert.match(heroModelStage, /home-hero-stage-picker/);
   assert.match(heroModelStage, /home-hero-stage-tab/);
   assert.match(heroModelStage, /选择一个经营问题，进入对应模型/);
+  assert.match(heroModelStage, /href=\{stage\.href\}/);
+  assert.match(heroModelStage, /aria-current=\{isActive \? "true" : undefined\}/);
+  assert.doesNotMatch(heroModelStage, /aria-pressed=\{isActive\}/);
+  assert.doesNotMatch(heroModelStage, /onClick=\{\(\) => setActiveIndex\(index\)\}/);
   assert.match(heroModelStage, /进入这个模型/);
   assert.match(heroModelStage, /单车为什么变了/);
   assert.match(heroModelStage, /预算偏在哪里/);

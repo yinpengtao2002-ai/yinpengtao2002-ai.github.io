@@ -593,6 +593,7 @@ h6 {
   font-family: var(--font-poppins);
   padding: 9px 10px;
   text-align: left;
+  text-decoration: none;
   transition:
     border-color 0.22s ease,
     box-shadow 0.22s ease,

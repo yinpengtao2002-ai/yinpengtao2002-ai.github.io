@@ -153,18 +153,17 @@ export default function HeroModelStage() {
         {HERO_MODEL_STAGES.map((stage, index) => {
           const isActive = index === activeIndex;
           return (
-            <button
+            <Link
               key={stage.slug}
-              type="button"
+              href={stage.href}
               className={`home-hero-stage-tab${isActive ? " is-active" : ""}`}
-              aria-pressed={isActive}
+              aria-current={isActive ? "true" : undefined}
               onMouseEnter={() => setActiveIndex(index)}
               onFocus={() => setActiveIndex(index)}
-              onClick={() => setActiveIndex(index)}
             >
               <span>{stage.label}</span>
               <strong>{stage.question}</strong>
-            </button>
+            </Link>
           );
         })}
       </div>
