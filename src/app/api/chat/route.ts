@@ -54,8 +54,7 @@ function getThinkingArticleByHref(href?: string) {
 
 function buildSystemPrompt(
   activeFinanceModel?: FinanceModelItem,
-  activeThinkingArticle?: ReturnType<typeof getThinkingArticleByHref>,
-  latestUserQuestion = ""
+  activeThinkingArticle?: ReturnType<typeof getThinkingArticleByHref>
 ): string {
   const financeModelsCatalog = financeModels
     .map((model) => [
@@ -92,7 +91,7 @@ ${financeModelsCatalog}
 
 当前页面上下文：
 ${buildActiveFinanceModelPrompt(activeFinanceModel)}
-${buildActiveThinkingArticlePrompt(activeThinkingArticle, latestUserQuestion)}
+${buildActiveThinkingArticlePrompt(activeThinkingArticle)}
 
 思考与方法：
 ${thinkingArticles}
@@ -121,9 +120,6 @@ export async function POST(req: NextRequest) {
       typeof currentFinanceModelSlug === "string" ? getFinanceModelBySlug(currentFinanceModelSlug) : undefined;
     const activeThinkingArticle =
       typeof currentThinkingArticleHref === "string" ? getThinkingArticleByHref(currentThinkingArticleHref) : undefined;
-    const latestUserQuestion = Array.isArray(messages)
-      ? [...messages].reverse().find((m: { role?: string; content?: string }) => m.role === "user" && typeof m.content === "string")?.content ?? ""
-      : "";
 
     const apiKey = process.env.CHAT_API_KEY?.trim();
     const apiUrl = process.env.CHAT_API_URL?.trim();
@@ -155,7 +151,7 @@ export async function POST(req: NextRequest) {
           max_tokens: 4096,
           stream: true,
           messages: [
-            { role: "system", content: buildSystemPrompt(activeFinanceModel, activeThinkingArticle, latestUserQuestion) },
+            { role: "system", content: buildSystemPrompt(activeFinanceModel, activeThinkingArticle) },
             ...messages.map((m: { role: string; content: string }) => ({
               role: m.role,
               content: m.content,

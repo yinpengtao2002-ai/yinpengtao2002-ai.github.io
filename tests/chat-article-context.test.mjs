@@ -5,7 +5,6 @@ const {
   buildActiveThinkingArticlePrompt,
   getArticleFallbackFocus,
   getCachedArticleSummary,
-  selectRelevantArticleSections,
 } = await import("../src/lib/chatArticleContext.ts");
 
 const longArticle = {
@@ -34,25 +33,24 @@ const longArticle = {
   ].join("\n"),
 };
 
-test("article prompt keeps compact metadata and does not include the full body", () => {
+test("article prompt keeps compact metadata and does not retrieve body sections by question", () => {
   const prompt = buildActiveThinkingArticlePrompt(longArticle, "总结这篇文章");
 
   assert.match(prompt, /当前打开的文章：长文章上下文测试/);
   assert.match(prompt, /文章目录/);
   assert.match(prompt, /文章摘要缓存/);
-  assert.match(prompt, /相关正文片段/);
   assert.match(prompt, /原则 8：改产线，不改结果/);
   assert.doesNotMatch(prompt, /ZERO_ONLY_MARKER ZERO_ONLY_MARKER ZERO_ONLY_MARKER ZERO_ONLY_MARKER/);
+  assert.doesNotMatch(prompt, /相关正文片段/);
   assert.ok(prompt.length < 3600, `prompt should stay compact, got ${prompt.length}`);
 });
 
-test("article retrieval selects the section that matches the user's question", () => {
-  const sections = selectRelevantArticleSections(longArticle, "原则 8 怎么理解？", { maxSections: 2 });
-  const joined = sections.map((section) => section.text).join("\n");
+test("article prompt does not include matched section bodies for specific questions", () => {
+  const prompt = buildActiveThinkingArticlePrompt(longArticle, "原则 8 怎么理解？");
 
-  assert.match(joined, /原则 8：改产线，不改结果/);
-  assert.match(joined, /PIPELINE_SECTION_MARKER/);
-  assert.doesNotMatch(joined, /ZERO_ONLY_MARKER/);
+  assert.match(prompt, /文章摘要缓存/);
+  assert.doesNotMatch(prompt, /PIPELINE_SECTION_MARKER/);
+  assert.doesNotMatch(prompt, /相关正文片段/);
 });
 
 test("article summary cache exposes stable summary material without expanding the full article", () => {
