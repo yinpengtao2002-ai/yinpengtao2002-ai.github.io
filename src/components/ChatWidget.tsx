@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, type CSSProperties } from "react";
+import { useState, useEffect, useMemo, useRef, type CSSProperties } from "react";
 import { motion, AnimatePresence, useDragControls, type PanInfo } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
 import { MessageCircle, X, ArrowUp, ExternalLink } from "lucide-react";
@@ -11,7 +11,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { CHAT_API_TIMEOUT_MS, getLocalFallbackResponse } from "@/lib/chatFallback";
-import { financeContent as staticFinance } from "@/lib/data/generated/content";
+import { financeContent as staticFinance, type ContentItem } from "@/lib/data/generated/content";
 import { thinkingLabContent as staticThinking } from "@/lib/data/thinkingLabContent";
 import { financeModels, type FinanceModelItem } from "@/lib/finance/modelRegistry";
 import { normalizeChatInternalLinks } from "@/lib/markdown/normalizeChatInternalLinks";
@@ -32,6 +32,7 @@ interface ContentCard {
     category?: string;
     date: string;
     href: string;
+    content?: string;
 }
 
 interface Message {
@@ -54,6 +55,12 @@ const MODEL_ASSISTANT_QUICK_PROMPTS = [
     "字段说明",
     "常见误区",
 ];
+const ARTICLE_ASSISTANT_QUICK_PROMPTS = [
+    "总结这篇文章",
+    "核心观点",
+    "段落逻辑",
+    "相关模型",
+];
 const AI_ASSISTANT_SCOPE = "模型选择、使用说明、图表阅读和文章推荐";
 
 const CHAT_UI_FONT =
@@ -64,9 +71,23 @@ function getCurrentFinanceModelSlug(pathname: string) {
     return financeModels.find((model) => normalizeInternalHref(model.href) === normalizedPathname)?.slug ?? null;
 }
 
-function getGreetingMessage(currentFinanceModel?: FinanceModelItem) {
+function getCurrentThinkingArticle(pathname: string, thinkingContent: ContentItem[]) {
+    const normalizedPathname = normalizeInternalHref(pathname);
+    if (!normalizedPathname.startsWith("/thinking-lab/")) return undefined;
+
+    return thinkingContent.find((item) => (
+        normalizeInternalHref(item.href) === normalizedPathname ||
+        item.aliases?.some((alias) => normalizeInternalHref(`/thinking-lab/${alias}`) === normalizedPathname)
+    ));
+}
+
+function getGreetingMessage(currentFinanceModel?: FinanceModelItem, currentThinkingArticle?: ContentCard) {
     if (currentFinanceModel) {
         return getModelAssistantGreeting(currentFinanceModel);
+    }
+
+    if (currentThinkingArticle) {
+        return getArticleAssistantGreeting(currentThinkingArticle);
     }
 
     return `你好，我是 Lucas AI。\n\n我可以帮你选择财务模型、说明模型用法、梳理图表阅读顺序，也可以推荐思考与方法里的文章。\n\n当前支持范围：${AI_ASSISTANT_SCOPE}。`;
@@ -78,6 +99,15 @@ function getModelAssistantGreeting(currentFinanceModel: FinanceModelItem) {
         `当前模型：${currentFinanceModel.title}`,
         currentFinanceModel.aiGuide.purpose,
         "我可以直接解释适用场景、操作步骤、字段说明、图表阅读和常见误区。",
+    ].join("\n\n");
+}
+
+function getArticleAssistantGreeting(currentThinkingArticle: ContentCard) {
+    return [
+        "当前文章助手",
+        `当前文章：${currentThinkingArticle.title}`,
+        currentThinkingArticle.description,
+        "我可以帮你总结这篇文章、提炼核心观点、解释段落逻辑，也可以关联到站内模型或其他文章。",
     ].join("\n\n");
 }
 
@@ -329,6 +359,7 @@ export default function ChatWidget() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const currentFinanceModelSlugRef = useRef<string | null>(null);
+    const currentThinkingArticleHrefRef = useRef<string | null>(null);
 
     const financeContent: ContentCard[] = staticFinance.map((item) => ({
         id: item.id, title: item.title, description: item.description,
@@ -336,12 +367,31 @@ export default function ChatWidget() {
     }));
     const thinkingContent: ContentCard[] = staticThinking.map((item) => ({
         id: item.id, title: item.title, description: item.description,
-        date: item.date, category: item.category ?? undefined, href: item.href,
+        date: item.date, category: item.category ?? undefined, href: item.href, content: item.content,
     }));
     const currentFinanceModelSlug = getCurrentFinanceModelSlug(pathname);
     const currentFinanceModel =
         currentFinanceModelSlug ? financeModels.find((model) => model.slug === currentFinanceModelSlug) : undefined;
-    const quickPrompts = currentFinanceModel ? MODEL_ASSISTANT_QUICK_PROMPTS : MOBILE_QUICK_PROMPTS;
+    const currentThinkingArticle = getCurrentThinkingArticle(pathname, staticThinking);
+    const currentThinkingArticleCard = useMemo<ContentCard | undefined>(
+        () => currentThinkingArticle
+            ? {
+            id: currentThinkingArticle.id,
+            title: currentThinkingArticle.title,
+            description: currentThinkingArticle.description,
+            date: currentThinkingArticle.date,
+            category: currentThinkingArticle.category ?? undefined,
+            href: currentThinkingArticle.href,
+            content: currentThinkingArticle.content,
+        }
+            : undefined,
+        [currentThinkingArticle],
+    );
+    const quickPrompts = currentFinanceModel
+        ? MODEL_ASSISTANT_QUICK_PROMPTS
+        : currentThinkingArticleCard
+            ? ARTICLE_ASSISTANT_QUICK_PROMPTS
+            : MOBILE_QUICK_PROMPTS;
 
     const currentViewportHeight =
         viewportHeight ?? (typeof window !== "undefined" ? window.innerHeight : null);
@@ -411,6 +461,34 @@ export default function ChatWidget() {
     }, [currentFinanceModel, currentFinanceModelSlug, initialized]);
 
     useEffect(() => {
+        const currentHref = currentThinkingArticleCard?.href ?? null;
+        const previousHref = currentThinkingArticleHrefRef.current;
+        if (previousHref === currentHref) return;
+
+        currentThinkingArticleHrefRef.current = currentHref;
+        if (!initialized || !currentThinkingArticleCard || currentFinanceModel) return;
+
+        setMessages((prev) => {
+            if (prev.length === 0 || (prev.length === 1 && prev[0]?.id === "greeting")) {
+                return [{
+                    id: "greeting",
+                    role: "assistant",
+                    content: getArticleAssistantGreeting(currentThinkingArticleCard),
+                }];
+            }
+
+            return [
+                ...prev,
+                {
+                    id: `article-switch-${Date.now()}`,
+                    role: "assistant",
+                    content: `已切换到「${currentThinkingArticleCard.title}」。接下来我会围绕这篇文章回答总结、观点、结构和相关内容。`,
+                },
+            ];
+        });
+    }, [currentFinanceModel, currentThinkingArticleCard, initialized]);
+
+    useEffect(() => {
         if (!isOpen || !isMobileLike || typeof window === "undefined") return;
 
         const viewport = window.visualViewport;
@@ -448,6 +526,7 @@ export default function ChatWidget() {
                 body: JSON.stringify({
                     messages: apiMessages,
                     currentFinanceModelSlug: currentFinanceModel?.slug ?? null,
+                    currentThinkingArticleHref: currentThinkingArticleCard?.href ?? null,
                 }),
                 signal: controller.signal,
             });
@@ -506,6 +585,7 @@ export default function ChatWidget() {
         const result = getLocalFallbackResponse(userMessage.content, financeContent, thinkingContent, {
             includeOfflineNotice,
             currentFinanceModel,
+            currentThinkingArticle: currentThinkingArticleCard,
         });
         setMessages((prev) => {
             const filtered = prev.filter((m) => m.id !== "typing" && m.id !== assistantMsgId);
@@ -542,7 +622,7 @@ export default function ChatWidget() {
             setMessages([{
                 id: "greeting",
                 role: "assistant",
-                content: getGreetingMessage(currentFinanceModel),
+                content: getGreetingMessage(currentFinanceModel, currentThinkingArticleCard),
             }]);
         }
         setIsOpen(true);
@@ -831,7 +911,7 @@ export default function ChatWidget() {
                                         </span>
                                         {!compactMobileChat && (
                                             <span style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.1 }}>
-                                                {currentFinanceModel ? "当前模型助手" : "模型与思考入口"}
+                                                {currentFinanceModel ? "当前模型助手" : currentThinkingArticleCard ? "当前文章助手" : "模型与思考入口"}
                                             </span>
                                         )}
                                     </div>

@@ -12,6 +12,7 @@ export interface LocalContentCard {
     category?: string;
     date: string;
     href: string;
+    content?: string;
 }
 
 export interface LocalFallbackResult {
@@ -32,14 +33,44 @@ function withOfflineNotice(result: LocalFallbackResult, includeOfflineNotice?: b
     };
 }
 
+function normalizeMarkdownText(text: string) {
+    return text
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+        .replace(/[`*_>#~|-]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function getArticleFallbackFocus(article: LocalContentCard) {
+    if (!article.content) return "";
+
+    const headings = Array.from(article.content.matchAll(/^#{1,3}\s+(.+)$/gm))
+        .map((match) => normalizeMarkdownText(match[1]))
+        .filter(Boolean)
+        .slice(0, 4);
+
+    if (headings.length > 0) {
+        return `可以先抓住这几层：${headings.join("；")}。`;
+    }
+
+    const paragraphs = article.content
+        .split(/\n{2,}/)
+        .map(normalizeMarkdownText)
+        .filter((paragraph) => paragraph.length >= 32 && !paragraph.startsWith("作者："))
+        .slice(0, 2);
+
+    return paragraphs.length > 0 ? `核心内容可以先从这里看：${paragraphs.join(" ")}` : "";
+}
+
 export function getLocalFallbackResponse(
     input: string,
     financeContent: LocalContentCard[],
     thinkingContent: LocalContentCard[] = [],
-    options: { includeOfflineNotice?: boolean; currentFinanceModel?: FinanceModelItem } = {}
+    options: { includeOfflineNotice?: boolean; currentFinanceModel?: FinanceModelItem; currentThinkingArticle?: LocalContentCard } = {}
 ): LocalFallbackResult {
     const lower = input.toLowerCase().trim();
     const currentFinanceModel = options.currentFinanceModel;
+    const currentThinkingArticle = options.currentThinkingArticle;
 
     if (
         currentFinanceModel &&
@@ -58,6 +89,20 @@ export function getLocalFallbackResponse(
                 `示例数据：${guide.sampleData}`,
                 "如果要做具体数据判断，可以把关键指标、截图或数据摘要发给我；我也可以先帮你整理图表阅读顺序和汇报框架。",
             ].join("\n\n"),
+        }, options.includeOfflineNotice);
+    }
+
+    if (
+        currentThinkingArticle &&
+        includesAny(lower, ["当前", "这篇", "文章", "总结", "核心", "观点", "讲什么", "内容", "段落", "逻辑", "方法", "提炼", "相关"])
+    ) {
+        const articleFocus = getArticleFallbackFocus(currentThinkingArticle);
+        return withOfflineNotice({
+            response: [
+                `你现在打开的是 [${currentThinkingArticle.title}](${currentThinkingArticle.href})。${currentThinkingArticle.description}`,
+                articleFocus,
+                "我可以帮你概括核心观点、解释段落逻辑、提炼方法，也可以继续关联到站内财务模型或其他思考文章。",
+            ].filter(Boolean).join("\n\n"),
         }, options.includeOfflineNotice);
     }
 

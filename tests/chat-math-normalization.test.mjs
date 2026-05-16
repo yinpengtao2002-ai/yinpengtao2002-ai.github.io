@@ -121,6 +121,19 @@ test("chat widget turns finance detail pages into model assistant mode", () => {
   assert.match(chatWidget, /字段、步骤、图表和常见误区/);
 });
 
+test("chat widget turns thinking article pages into article assistant mode", () => {
+  assert.match(chatWidget, /getCurrentThinkingArticle/);
+  assert.match(chatWidget, /currentThinkingArticle/);
+  assert.match(chatWidget, /startsWith\("\/thinking-lab\/"\)/);
+  assert.match(chatWidget, /currentThinkingArticleHref:\s*currentThinkingArticleCard\?\.href/);
+  assert.match(chatWidget, /content:\s*currentThinkingArticle\.content/);
+  assert.match(chatWidget, /当前文章助手/);
+  assert.match(chatWidget, /当前文章：/);
+  assert.match(chatWidget, /总结这篇文章/);
+  assert.match(chatWidget, /核心观点/);
+  assert.match(chatWidget, /相关模型/);
+});
+
 test("finance detail pages keep the AI assistant available", () => {
   assert.match(clientShell, /<ChatWidget \/>/);
   assert.doesNotMatch(clientShell, /!\s*hideShellExtras\s*&&\s*<ChatWidget \/>/);
@@ -186,6 +199,18 @@ test("chat API injects active finance model guidance when a model page is open",
   assert.match(chatFallback, /常见误区/);
   assert.doesNotMatch(chatFallback, /目前我能先解释模型口径、上传要求和图表读法/);
   assert.match(chatRoute, /faq\.map/);
+});
+
+test("chat API injects active thinking article guidance when an article page is open", () => {
+  assert.match(chatRoute, /currentThinkingArticleHref/);
+  assert.match(chatRoute, /getThinkingArticleByHref/);
+  assert.match(chatRoute, /activeThinkingArticle/);
+  assert.match(chatRoute, /当前打开的文章/);
+  assert.match(chatRoute, /如果用户说“这篇文章”/);
+  assert.match(chatRoute, /优先回答当前打开的文章/);
+  assert.match(chatFallback, /你现在打开的是/);
+  assert.match(chatFallback, /getArticleFallbackFocus/);
+  assert.match(chatFallback, /我可以帮你概括核心观点、解释段落逻辑、提炼方法/);
 });
 
 test("finance model registry provides field explanations and common pitfalls for the AI assistant", () => {
