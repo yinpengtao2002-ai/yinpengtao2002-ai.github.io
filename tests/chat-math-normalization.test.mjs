@@ -21,6 +21,10 @@ const chatFallback = await readFile(
   new URL("../src/lib/chatFallback.ts", import.meta.url),
   "utf8"
 );
+const chatArticleContext = await readFile(
+  new URL("../src/lib/chatArticleContext.ts", import.meta.url),
+  "utf8"
+);
 const financeRegistry = await readFile(
   new URL("../src/lib/finance/model-registry.json", import.meta.url),
   "utf8"
@@ -205,8 +209,13 @@ test("chat API injects active thinking article guidance when an article page is 
   assert.match(chatRoute, /currentThinkingArticleHref/);
   assert.match(chatRoute, /getThinkingArticleByHref/);
   assert.match(chatRoute, /activeThinkingArticle/);
-  assert.match(chatRoute, /当前打开的文章/);
-  assert.match(chatRoute, /如果用户说“这篇文章”/);
+  assert.match(chatRoute, /buildActiveThinkingArticlePrompt\(activeThinkingArticle,\s*latestUserQuestion\)/);
+  assert.match(chatRoute, /latestUserQuestion/);
+  assert.match(chatArticleContext, /当前打开的文章/);
+  assert.match(chatArticleContext, /如果用户说“这篇文章”/);
+  assert.match(chatArticleContext, /文章摘要缓存/);
+  assert.match(chatArticleContext, /相关正文片段/);
+  assert.match(chatArticleContext, /selectRelevantArticleSections/);
   assert.match(chatRoute, /优先回答当前打开的文章/);
   assert.match(chatFallback, /你现在打开的是/);
   assert.match(chatFallback, /getArticleFallbackFocus/);

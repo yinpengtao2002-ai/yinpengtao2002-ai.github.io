@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
+import { buildActiveThinkingArticlePrompt } from "@/lib/chatArticleContext";
 import { thinkingLabContent } from "@/lib/data/thinkingLabContent";
-import type { ContentItem } from "@/lib/data/generated/content";
 import { financeModels, getFinanceModelBySlug, type FinanceModelItem } from "@/lib/finance/modelRegistry";
 
 const CHAT_PRIMARY_TIMEOUT_MS = 18000;
@@ -52,29 +52,11 @@ function getThinkingArticleByHref(href?: string) {
   ));
 }
 
-function getContentExcerpt(content: string, maxLength = 1600) {
-  const compact = content.replace(/\s+/g, " ").trim();
-  if (compact.length <= maxLength) return compact;
-  return `${compact.slice(0, maxLength)}...`;
-}
-
-function buildActiveThinkingArticlePrompt(activeThinkingArticle?: ContentItem) {
-  if (!activeThinkingArticle) {
-    return "当前没有打开具体思考与方法文章。";
-  }
-
-  return [
-    `当前打开的文章：${activeThinkingArticle.title}（${activeThinkingArticle.href}）`,
-    `文章摘要：${activeThinkingArticle.description}`,
-    `文章分类：${activeThinkingArticle.category ?? "未分类"}`,
-    `发布日期：${activeThinkingArticle.date}`,
-    `正文片段：${getContentExcerpt(activeThinkingArticle.content || activeThinkingArticle.description)}`,
-    "如果用户说“这篇文章”“当前文章”“总结一下”“核心观点”“讲什么”，默认指这个当前打开的文章。",
-    "你能围绕这篇文章提供内容总结、核心观点、段落逻辑、方法提炼、相关模型和延展阅读建议。",
-  ].join("\n");
-}
-
-function buildSystemPrompt(activeFinanceModel?: FinanceModelItem, activeThinkingArticle?: ContentItem): string {
+function buildSystemPrompt(
+  activeFinanceModel?: FinanceModelItem,
+  activeThinkingArticle?: ReturnType<typeof getThinkingArticleByHref>,
+  latestUserQuestion = ""
+): string {
   const financeModelsCatalog = financeModels
     .map((model) => [
       `  - [${model.title}](${model.href})：${model.summary}`,
@@ -110,7 +92,7 @@ ${financeModelsCatalog}
 
 当前页面上下文：
 ${buildActiveFinanceModelPrompt(activeFinanceModel)}
-${buildActiveThinkingArticlePrompt(activeThinkingArticle)}
+${buildActiveThinkingArticlePrompt(activeThinkingArticle, latestUserQuestion)}
 
 思考与方法：
 ${thinkingArticles}
@@ -139,6 +121,9 @@ export async function POST(req: NextRequest) {
       typeof currentFinanceModelSlug === "string" ? getFinanceModelBySlug(currentFinanceModelSlug) : undefined;
     const activeThinkingArticle =
       typeof currentThinkingArticleHref === "string" ? getThinkingArticleByHref(currentThinkingArticleHref) : undefined;
+    const latestUserQuestion = Array.isArray(messages)
+      ? [...messages].reverse().find((m: { role?: string; content?: string }) => m.role === "user" && typeof m.content === "string")?.content ?? ""
+      : "";
 
     const apiKey = process.env.CHAT_API_KEY?.trim();
     const apiUrl = process.env.CHAT_API_URL?.trim();
@@ -170,7 +155,7 @@ export async function POST(req: NextRequest) {
           max_tokens: 4096,
           stream: true,
           messages: [
-            { role: "system", content: buildSystemPrompt(activeFinanceModel, activeThinkingArticle) },
+            { role: "system", content: buildSystemPrompt(activeFinanceModel, activeThinkingArticle, latestUserQuestion) },
             ...messages.map((m: { role: string; content: string }) => ({
               role: m.role,
               content: m.content,

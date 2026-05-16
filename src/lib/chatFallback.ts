@@ -1,4 +1,5 @@
 import { allDialoguePatterns, defaultResponses } from "@/lib/data/dialoguePatterns";
+import { getArticleFallbackFocus } from "@/lib/chatArticleContext";
 import type { FinanceModelItem } from "@/lib/finance/modelRegistry";
 
 export const CHAT_API_TIMEOUT_MS = 70000;
@@ -31,35 +32,6 @@ function withOfflineNotice(result: LocalFallbackResult, includeOfflineNotice?: b
         ...result,
         response: `${OFFLINE_INDEX_NOTICE}\n\n${result.response}`,
     };
-}
-
-function normalizeMarkdownText(text: string) {
-    return text
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-        .replace(/[`*_>#~|-]/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
-}
-
-function getArticleFallbackFocus(article: LocalContentCard) {
-    if (!article.content) return "";
-
-    const headings = Array.from(article.content.matchAll(/^#{1,3}\s+(.+)$/gm))
-        .map((match) => normalizeMarkdownText(match[1]))
-        .filter(Boolean)
-        .slice(0, 4);
-
-    if (headings.length > 0) {
-        return `可以先抓住这几层：${headings.join("；")}。`;
-    }
-
-    const paragraphs = article.content
-        .split(/\n{2,}/)
-        .map(normalizeMarkdownText)
-        .filter((paragraph) => paragraph.length >= 32 && !paragraph.startsWith("作者："))
-        .slice(0, 2);
-
-    return paragraphs.length > 0 ? `核心内容可以先从这里看：${paragraphs.join(" ")}` : "";
 }
 
 export function getLocalFallbackResponse(
