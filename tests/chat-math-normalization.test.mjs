@@ -78,15 +78,13 @@ test("chat widget normalizes math before markdown rendering", () => {
 });
 
 test("chat widget turns internal markdown links into compact route cards", () => {
-  assert.match(chatWidget, /INTERNAL_ROUTE_CARDS/);
-  assert.match(chatWidget, /getInternalRouteCards/);
+  assert.match(chatWidget, /getMarkdownRouteBlocks/);
   assert.match(chatWidget, /InternalRouteCardList/);
+  assert.match(chatWidget, /chat-markdown-block/);
   assert.match(chatWidget, /chat-route-card-list/);
-  assert.match(chatWidget, /routeCards\.length > 0/);
-  assert.match(chatWidget, /!message\.contentCards/);
   assert.match(chatWidget, /router\.push\(card\.href\)/);
-  assert.match(chatWidget, /\/finance\/business-analysis/);
-  assert.match(chatWidget, /\/thinking-lab/);
+  assert.match(chatWidget, /block\.cards\.length > 0/);
+  assert.doesNotMatch(chatWidget, /routeCards\.length > 0/);
 });
 
 test("chat widget sends current finance model context to the API", () => {

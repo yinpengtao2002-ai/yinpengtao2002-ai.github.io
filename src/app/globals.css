@@ -3402,6 +3402,15 @@ h6 {
   white-space: nowrap;
 }
 
+.chat-markdown-block + .chat-markdown-block {
+  margin-top: 0.55em;
+}
+
+.chat-markdown-block .chat-route-card-list {
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+
 .chat-route-card-list {
   display: grid;
   gap: 7px;

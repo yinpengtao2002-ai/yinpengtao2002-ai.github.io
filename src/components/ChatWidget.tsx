@@ -16,15 +16,14 @@ import { thinkingLabContent as staticThinking } from "@/lib/data/thinkingLabCont
 import { financeModels, type FinanceModelItem } from "@/lib/finance/modelRegistry";
 import { normalizeChatInternalLinks } from "@/lib/markdown/normalizeChatInternalLinks";
 import { normalizeChatMathMarkdown } from "@/lib/markdown/normalizeChatMathMarkdown";
+import {
+    getMarkdownRouteBlocks,
+    normalizeInternalHref,
+    type InternalRouteCard,
+} from "@/lib/chatRouteCards";
 import { useViewportProfile } from "@/lib/useLowMotionMode";
 
 type ContentCardType = "finance" | "thinking";
-type InternalRouteCard = {
-    href: string;
-    title: string;
-    description: string;
-    accent: string;
-};
 
 interface ContentCard {
     id: number;
@@ -59,45 +58,6 @@ const AI_ASSISTANT_SCOPE = "模型选择、使用说明、图表阅读和文章�
 
 const CHAT_UI_FONT =
     'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
-const INTERNAL_ROUTE_CARDS: Record<string, InternalRouteCard> = {
-    "/finance": {
-        href: "/finance",
-        title: "财务模型库",
-        description: "预算复盘、单车归因、趋势监控和利润敏感性。",
-        accent: "var(--accent-secondary)",
-    },
-    "/thinking-lab": {
-        href: "/thinking-lab",
-        title: "思考与方法",
-        description: "AI 使用、市场观察和方法复盘。",
-        accent: "var(--accent-tertiary)",
-    },
-    "/finance/margin-analysis": {
-        href: "/finance/margin-analysis",
-        title: "单车指标变动归因模型",
-        description: "拆解两期单车指标变化里的结构效应和费率效应。",
-        accent: "var(--accent-secondary)",
-    },
-    "/finance/business-analysis": {
-        href: "/finance/business-analysis",
-        title: "预算实际对比模型",
-        description: "从预算与实际差异定位销量、收入、边际和利润问题。",
-        accent: "var(--accent-secondary)",
-    },
-    "/finance/monthly-trend": {
-        href: "/finance/monthly-trend",
-        title: "分月指标趋势分析模型",
-        description: "观察连续月份的趋势、结构和集中度变化。",
-        accent: "var(--accent-secondary)",
-    },
-    "/finance/sensitivity-analysis": {
-        href: "/finance/sensitivity-analysis",
-        title: "利润敏感性分析",
-        description: "调整关键变量并快速判断利润影响。",
-        accent: "var(--accent-secondary)",
-    },
-};
-const MARKDOWN_INTERNAL_LINK_PATTERN = /\[[^\]]+\]\((\/(?:finance|thinking-lab)(?:\/[A-Za-z0-9-]+)*\/?)\)/g;
 
 function getCurrentFinanceModelSlug(pathname: string) {
     const normalizedPathname = normalizeInternalHref(pathname);
@@ -137,85 +97,86 @@ function getInternalHref(href: string | undefined) {
     }
 }
 
-function normalizeInternalHref(href: string) {
-    return href.length > 1 && href.endsWith("/") ? href.slice(0, -1) : href;
-}
-
-function getInternalRouteCards(markdown: string) {
-    const cards: InternalRouteCard[] = [];
-    const seen = new Set<string>();
-    let match = MARKDOWN_INTERNAL_LINK_PATTERN.exec(markdown);
-
-    while (match) {
-        const href = normalizeInternalHref(match[1] ?? "");
-        const card = INTERNAL_ROUTE_CARDS[href];
-        if (card && !seen.has(card.href)) {
-            cards.push(card);
-            seen.add(card.href);
-        }
-        match = MARKDOWN_INTERNAL_LINK_PATTERN.exec(markdown);
-    }
-
-    return cards.slice(0, 3);
-}
-
 function MessageContent({
     text,
     onInternalLinkClick,
+    onRouteCardClick,
 }: {
     text: string;
     onInternalLinkClick?: (href: string) => void;
+    onRouteCardClick?: (card: InternalRouteCard) => void;
 }) {
+    const normalizedText = normalizeChatInternalLinks(normalizeChatMathMarkdown(text));
+    const routeBlocks = getMarkdownRouteBlocks(normalizedText);
+
     return (
         <div className="chat-markdown">
-            <ReactMarkdown
-                remarkPlugins={[remarkGfm, [remarkMath, { singleDollarTextMath: true }]]}
-                rehypePlugins={[rehypeKatex]}
-                components={{
-                    a: ({ href, children }) => (
-                        <Link
-                            href={href || "#"}
-                            onClick={() => {
-                                const internalHref = getInternalHref(href);
-                                if (internalHref) onInternalLinkClick?.(internalHref);
-                            }}
-                            style={{ color: "var(--accent)", textDecoration: "underline", textUnderlineOffset: 3 }}
-                        >
-                            {children}
-                        </Link>
-                    ),
-                    p: ({ children }) => <p style={{ margin: "0.4em 0" }}>{children}</p>,
-                    strong: ({ children }) => <strong style={{ fontWeight: 700, color: "var(--foreground)" }}>{children}</strong>,
-                    ul: ({ children }) => <ul style={{ paddingLeft: 18, margin: "0.4em 0" }}>{children}</ul>,
-                    ol: ({ children }) => <ol style={{ paddingLeft: 18, margin: "0.4em 0" }}>{children}</ol>,
-                    li: ({ children }) => <li style={{ marginBottom: 2 }}>{children}</li>,
-                    code: ({ children, className }) => {
-                        if (className?.startsWith("language-")) {
-                            return (
-                                <code style={{
-                                    display: "block", background: "var(--card)", border: "1px solid var(--border)",
-                                    borderRadius: 6, padding: "10px 14px", fontSize: 12, overflowX: "auto", whiteSpace: "pre",
-                                }}>
+            {routeBlocks.map((block, index) => (
+                <div key={`${block.markdown.slice(0, 24)}-${index}`} className="chat-markdown-block">
+                    <ReactMarkdown
+                        remarkPlugins={[remarkGfm, [remarkMath, { singleDollarTextMath: true }]]}
+                        rehypePlugins={[rehypeKatex]}
+                        components={{
+                            a: ({ href, children }) => (
+                                <Link
+                                    href={href || "#"}
+                                    onClick={() => {
+                                        const internalHref = getInternalHref(href);
+                                        if (internalHref) onInternalLinkClick?.(internalHref);
+                                    }}
+                                    style={{ color: "var(--accent)", textDecoration: "underline", textUnderlineOffset: 3 }}
+                                >
                                     {children}
-                                </code>
-                            );
-                        }
-                        return (
-                            <code style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 3, padding: "1px 4px", fontSize: "0.85em" }}>
-                                {children}
-                            </code>
-                        );
-                    },
-                    pre: ({ children }) => <pre style={{ margin: "0.5em 0", overflow: "auto" }}>{children}</pre>,
-                    blockquote: ({ children }) => (
-                        <blockquote style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 10, margin: "0.4em 0", color: "var(--muted)" }}>
-                            {children}
-                        </blockquote>
-                    ),
-                }}
-            >
-                {normalizeChatInternalLinks(normalizeChatMathMarkdown(text))}
-            </ReactMarkdown>
+                                </Link>
+                            ),
+                            p: ({ children }) => <p style={{ margin: "0.4em 0" }}>{children}</p>,
+                            strong: ({ children }) => <strong style={{ fontWeight: 700, color: "var(--foreground)" }}>{children}</strong>,
+                            ul: ({ children }) => <ul style={{ paddingLeft: 18, margin: "0.4em 0" }}>{children}</ul>,
+                            ol: ({ children }) => <ol style={{ paddingLeft: 18, margin: "0.4em 0" }}>{children}</ol>,
+                            li: ({ children }) => <li style={{ marginBottom: 2 }}>{children}</li>,
+                            code: ({ children, className }) => {
+                                if (className?.startsWith("language-")) {
+                                    return (
+                                        <code style={{
+                                            display: "block", background: "var(--card)", border: "1px solid var(--border)",
+                                            borderRadius: 6, padding: "10px 14px", fontSize: 12, overflowX: "auto", whiteSpace: "pre",
+                                        }}>
+                                            {children}
+                                        </code>
+                                    );
+                                }
+                                return (
+                                    <code style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 3, padding: "1px 4px", fontSize: "0.85em" }}>
+                                        {children}
+                                    </code>
+                                );
+                            },
+                            pre: ({ children }) => <pre style={{ margin: "0.5em 0", overflow: "auto" }}>{children}</pre>,
+                            blockquote: ({ children }) => (
+                                <blockquote style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 10, margin: "0.4em 0", color: "var(--muted)" }}>
+                                    {children}
+                                </blockquote>
+                            ),
+                        }}
+                    >
+                        {block.markdown}
+                    </ReactMarkdown>
+                    {block.cards.length > 0 && onRouteCardClick && (
+                        <InternalRouteCardList
+                            cards={block.cards}
+                            onCardClick={onRouteCardClick}
+                        />
+                    )}
+                </div>
+            ))}
+            {routeBlocks.length === 0 && (
+                <ReactMarkdown
+                    remarkPlugins={[remarkGfm, [remarkMath, { singleDollarTextMath: true }]]}
+                    rehypePlugins={[rehypeKatex]}
+                >
+                    {normalizedText}
+                </ReactMarkdown>
+            )}
         </div>
     );
 }
@@ -903,12 +864,6 @@ export default function ChatWidget() {
                             >
                                 <AnimatePresence mode="popLayout">
                                     {messages.map((message) => {
-                                        const normalizedMessageContent = normalizeChatInternalLinks(normalizeChatMathMarkdown(message.content));
-                                        const routeCards =
-                                            message.role === "assistant" && !message.isTyping
-                                                ? getInternalRouteCards(normalizedMessageContent)
-                                                : [];
-
                                         return (
                                             <motion.div
                                                 key={message.id}
@@ -975,10 +930,18 @@ export default function ChatWidget() {
                                                                     </div>
                                                                 )}
                                                                 <MessageContent
-                                                                    text={normalizedMessageContent}
+                                                                    text={message.content}
                                                                     onInternalLinkClick={() => {
                                                                         if (isMobileLike) handleClose();
                                                                     }}
+                                                                    onRouteCardClick={
+                                                                        message.contentCards && message.contentCards.length > 0
+                                                                            ? undefined
+                                                                            : (card) => {
+                                                                                handleClose();
+                                                                                router.push(card.href);
+                                                                            }
+                                                                    }
                                                                 />
                                                             </div>
                                                             {message.id === "greeting" && introState && !compactMobileChat && (
@@ -996,15 +959,6 @@ export default function ChatWidget() {
                                                                 <ContentCardList
                                                                     cards={message.contentCards}
                                                                     cardType={message.cardType}
-                                                                    onCardClick={(card) => {
-                                                                        handleClose();
-                                                                        router.push(card.href);
-                                                                    }}
-                                                                />
-                                                            )}
-                                                            {!message.contentCards && routeCards.length > 0 && (
-                                                                <InternalRouteCardList
-                                                                    cards={routeCards}
                                                                     onCardClick={(card) => {
                                                                         handleClose();
                                                                         router.push(card.href);
