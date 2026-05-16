@@ -29,3 +29,15 @@ test("chat route cards dedupe repeated links inside the same paragraph", () => {
   assert.equal(cards.length, 1);
   assert.equal(cards[0].title, "预算实际对比模型");
 });
+
+test("chat route cards also attach thinking article links to the paragraph", () => {
+  const blocks = getMarkdownRouteBlocks(
+    "如果你想看 AI 使用方法，可以读 [给人文工作者的 AI 使用指南](/thinking-lab/humanities-ai-guide)。",
+  );
+
+  assert.equal(blocks.length, 1);
+  assert.equal(blocks[0].cards.length, 1);
+  assert.equal(blocks[0].cards[0].href, "/thinking-lab/humanities-ai-guide");
+  assert.equal(blocks[0].cards[0].title, "给人文工作者的 AI 使用指南");
+  assert.match(blocks[0].cards[0].description, /思考与方法文章/);
+});

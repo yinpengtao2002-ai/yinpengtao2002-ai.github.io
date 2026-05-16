@@ -50,7 +50,7 @@ export const INTERNAL_ROUTE_CARDS: Record<string, InternalRouteCard> = {
 };
 
 const MARKDOWN_INTERNAL_LINK_PATTERN =
-    /\[[^\]]+\]\((\/(?:finance|thinking-lab)(?:\/[A-Za-z0-9-]+)*\/?)\)/g;
+    /\[([^\]]+)\]\((\/(?:finance|thinking-lab)(?:\/[A-Za-z0-9-]+)*\/?)\)/g;
 
 export function normalizeInternalHref(href: string) {
     return href.length > 1 && href.endsWith("/") ? href.slice(0, -1) : href;
@@ -61,8 +61,9 @@ export function getInternalRouteCards(markdown: string, limit = 3) {
     const seen = new Set<string>();
 
     for (const match of markdown.matchAll(MARKDOWN_INTERNAL_LINK_PATTERN)) {
-        const href = normalizeInternalHref(match[1] ?? "");
-        const card = INTERNAL_ROUTE_CARDS[href];
+        const label = match[1] ?? "";
+        const href = normalizeInternalHref(match[2] ?? "");
+        const card = INTERNAL_ROUTE_CARDS[href] ?? getFallbackRouteCard(href, label);
         if (card && !seen.has(card.href)) {
             cards.push(card);
             seen.add(card.href);
@@ -71,6 +72,19 @@ export function getInternalRouteCards(markdown: string, limit = 3) {
     }
 
     return cards;
+}
+
+function getFallbackRouteCard(href: string, label: string): InternalRouteCard | null {
+    if (href.startsWith("/thinking-lab/")) {
+        return {
+            href,
+            title: label,
+            description: "查看这篇思考与方法文章。",
+            accent: "var(--accent-tertiary)",
+        };
+    }
+
+    return null;
 }
 
 export function getMarkdownRouteBlocks(markdown: string): MarkdownRouteBlock[] {
