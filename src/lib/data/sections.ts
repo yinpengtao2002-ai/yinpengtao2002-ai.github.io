@@ -14,8 +14,8 @@ export const sections: SectionData[] = [
     },
     {
         id: "thinking",
-        title: "Thinking Lab",
-        subtitle: "思考与方法",
+        title: "Tools & Thinking",
+        subtitle: "工具与思考",
         description: "记录经营分析、工具实践、市场观察和个人复盘",
         icon: Sparkles,
         href: "/thinking-lab",

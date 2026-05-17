@@ -22,15 +22,15 @@ export default function HomeThinkingSection() {
         <div className="home-thinking-visual-card">
           <Image
             src="/images/home/thinking-methods-tech.png"
-            alt="思考与方法内容预览"
+            alt="工具与思考内容预览"
             fill
             sizes="(max-width: 768px) 100vw, 420px"
             className="home-thinking-visual-image"
           />
           <div className="home-thinking-visual-shade" aria-hidden="true" />
           <div className="home-thinking-visual-copy">
-            <p className="home-thinking-kicker">Thinking Lab</p>
-            <h2>思考与方法</h2>
+            <p className="home-thinking-kicker">Tools & Thinking</p>
+            <h2>工具与思考</h2>
             <Link href="/thinking-lab" className="home-thinking-all-link">
               查看全部 <ArrowRight style={{ width: 15, height: 15 }} />
             </Link>

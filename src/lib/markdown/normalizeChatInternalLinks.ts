@@ -1,12 +1,12 @@
 const CODE_SEGMENT_PATTERN = /(```[\s\S]*?```|`[^`\n]*`)/g;
 const LABELED_INTERNAL_ROUTE_PATTERN =
-    /(财务模型库|财务模型|思考与方法|日常随笔)\s*[（(]\s*(\/(?:finance|thinking-lab)\/?)\s*[）)]/g;
+    /(财务模型库|财务模型|工具与思考|日常随笔)\s*[（(]\s*(\/(?:finance|thinking-lab)\/?)\s*[）)]/g;
 const INTERNAL_ROUTE_PATTERN =
     /(^|[^\w\]])((?:\/(?:finance|thinking-lab)(?:\/[A-Za-z0-9-]+)*\/?))(?![A-Za-z0-9/_-])/g;
 
 const ROUTE_LABELS: Record<string, string> = {
     "/finance": "财务模型库",
-    "/thinking-lab": "思考与方法",
+    "/thinking-lab": "工具与思考",
 };
 
 function normalizeHref(href: string) {

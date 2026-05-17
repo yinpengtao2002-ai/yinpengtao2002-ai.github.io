@@ -19,7 +19,7 @@ export const INTERNAL_ROUTE_CARDS: Record<string, InternalRouteCard> = {
     },
     "/thinking-lab": {
         href: "/thinking-lab",
-        title: "思考与方法",
+        title: "工具与思考",
         description: "AI 使用、市场观察和方法复盘。",
         accent: "var(--accent-tertiary)",
     },
@@ -79,7 +79,7 @@ function getFallbackRouteCard(href: string, label: string): InternalRouteCard | 
         return {
             href,
             title: label,
-            description: "查看这篇思考与方法文章。",
+            description: "查看这篇工具与思考文章。",
             accent: "var(--accent-tertiary)",
         };
     }

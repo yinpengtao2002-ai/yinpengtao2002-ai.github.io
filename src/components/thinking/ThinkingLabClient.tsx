@@ -10,19 +10,38 @@ import type { ContentItem } from "@/lib/data/generated/content";
 const UI_FONT =
   'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
 
-function getCategory(item: ContentItem) {
-  return item.category || "思考记录";
+const THINKING_CATEGORY_ORDER = ["全部", "工具", "AI 工作流", "思考记录"];
+
+function getDisplayCategory(item: ContentItem) {
+  if (item.source === "hosted-tool") {
+    return "工具";
+  }
+
+  if (item.legacyCategory === "ai") {
+    return "AI 工作流";
+  }
+
+  if (item.legacyCategory === "finance" || item.legacyCategory === "essays") {
+    return "思考记录";
+  }
+
+  return "思考记录";
 }
 
 export default function ThinkingLabClient({ articles }: { articles: ContentItem[] }) {
   const categories = useMemo(() => {
-    const values = Array.from(new Set(articles.map(getCategory)));
-    return ["全部", ...values];
+    return THINKING_CATEGORY_ORDER.filter((category) => {
+      if (category === "全部") {
+        return true;
+      }
+
+      return articles.some((item) => getDisplayCategory(item) === category);
+    });
   }, [articles]);
   const [activeCategory, setActiveCategory] = useState("全部");
   const visibleArticles = activeCategory === "全部"
     ? articles
-    : articles.filter((item) => getCategory(item) === activeCategory);
+    : articles.filter((item) => getDisplayCategory(item) === activeCategory);
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--background)", color: "var(--foreground)", fontFamily: UI_FONT }}>
@@ -31,10 +50,10 @@ export default function ThinkingLabClient({ articles }: { articles: ContentItem[
         style={{ maxWidth: 1040, margin: "0 auto", padding: "5.5rem 1.5rem 1.6rem" }}
       >
         <p style={{ color: "var(--accent)", letterSpacing: "0.18em", textTransform: "uppercase", fontSize: 12, fontWeight: 700, marginBottom: 14 }}>
-          Thinking Lab
+          Tools & Thinking
         </p>
         <h1 style={{ fontSize: "clamp(2rem, 5vw, 3.5rem)", lineHeight: 1.1, letterSpacing: 0, marginBottom: 16 }}>
-          思考与方法
+          工具与思考
         </h1>
         <p style={{ maxWidth: 620, color: "var(--muted)", lineHeight: 1.8, fontSize: 15 }}>
           这里放我在经营分析、工具实践、市场观察里的思考样本。重点不是经历罗列，而是判断如何形成。
@@ -69,7 +88,7 @@ export default function ThinkingLabClient({ articles }: { articles: ContentItem[
               <Link href={article.href} style={{ display: "block", height: "100%", textDecoration: "none" }}>
                 <div style={{ height: "100%", border: "1px solid var(--border)", borderRadius: 8, background: "var(--card)", padding: 18 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
-                    <span style={{ color: "var(--accent)", fontSize: 12, fontWeight: 700 }}>{getCategory(article)}</span>
+                    <span style={{ color: "var(--accent)", fontSize: 12, fontWeight: 700 }}>{getDisplayCategory(article)}</span>
                     <span style={{ color: "var(--muted)", fontSize: 12 }}>{article.date}</span>
                   </div>
                   <h2 style={{ fontSize: 18, lineHeight: 1.35, color: "var(--foreground)", marginBottom: 10 }}>

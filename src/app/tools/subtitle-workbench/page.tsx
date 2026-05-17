@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function SubtitleWorkbenchPage() {
   return (
     <div className="subtitle-workbench-page">
-      <Link href="/thinking-lab" className="subtitle-workbench-back-link" aria-label="返回思考与方法">
+      <Link href="/thinking-lab" className="subtitle-workbench-back-link" aria-label="返回工具与思考">
         <ArrowLeft aria-hidden="true" />
         <span>返回</span>
       </Link>

@@ -39,5 +39,5 @@ test("chat route cards also attach thinking article links to the paragraph", () 
   assert.equal(blocks[0].cards.length, 1);
   assert.equal(blocks[0].cards[0].href, "/thinking-lab/humanities-ai-guide");
   assert.equal(blocks[0].cards[0].title, "给人文工作者的 AI 使用指南");
-  assert.match(blocks[0].cards[0].description, /思考与方法文章/);
+  assert.match(blocks[0].cards[0].description, /工具与思考文章/);
 });

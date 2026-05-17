@@ -6,7 +6,7 @@ export const subtitleWorkbenchContent: ContentItem = {
   title: "视频字幕与总结工作台",
   description: "把 B站、小红书视频或本地音视频转换成字幕与总结材料。",
   date: "2026-05-11",
-  category: "AI 工作流",
+  category: "工具",
   href: "/tools/subtitle-workbench",
   content: "",
   source: "hosted-tool",

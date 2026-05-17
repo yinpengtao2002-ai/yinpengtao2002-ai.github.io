@@ -15,7 +15,7 @@ const NAV_FONT =
 const NAV_ITEMS = [
     { label: "首页", href: "/", activePath: "/", sectionId: "home" },
     { label: "财务模型", href: "/finance", activePath: "/finance" },
-    { label: "思考与方法", href: "/thinking-lab", activePath: "/thinking-lab" },
+    { label: "工具与思考", href: "/thinking-lab", activePath: "/thinking-lab" },
     { label: "联系", href: "/#contact", sectionId: "contact" },
 ];
 

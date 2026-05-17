@@ -16,7 +16,7 @@ interface HeroProps {
 
 const MOBILE_SECTION_LINKS = [
     { label: "财务模型", targetId: "finance" },
-    { label: "思考与方法", targetId: "thinking" },
+    { label: "工具与思考", targetId: "thinking" },
     { label: "联系", targetId: "contact" },
 ];
 

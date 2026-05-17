@@ -59,7 +59,7 @@ export default async function ThinkingArticlePage({ params }: PageProps) {
         <div style={{ textAlign: "center" }}>
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--foreground)", marginBottom: 16 }}>文章未找到</h1>
           <Link href="/thinking-lab" style={{ color: "var(--accent)", textDecoration: "underline" }}>
-            返回思考与方法
+            返回工具与思考
           </Link>
         </div>
       </div>
@@ -69,7 +69,7 @@ export default async function ThinkingArticlePage({ params }: PageProps) {
   return (
     <ArticleReader
       article={article}
-      sectionLabel="Thinking Lab"
+      sectionLabel="Tools & Thinking"
       backHref="/thinking-lab"
     />
   );

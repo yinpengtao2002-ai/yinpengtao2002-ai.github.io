@@ -90,7 +90,7 @@ function getGreetingMessage(currentFinanceModel?: FinanceModelItem, currentThink
         return getArticleAssistantGreeting(currentThinkingArticle);
     }
 
-    return `你好，我是 Lucas AI。\n\n我可以帮你选择财务模型、说明模型用法、梳理图表阅读顺序，也可以推荐思考与方法里的文章。\n\n当前支持范围：${AI_ASSISTANT_SCOPE}。`;
+    return `你好，我是 Lucas AI。\n\n我可以帮你选择财务模型、说明模型用法、梳理图表阅读顺序，也可以推荐工具与思考里的文章。\n\n当前支持范围：${AI_ASSISTANT_SCOPE}。`;
 }
 
 function getModelAssistantGreeting(currentFinanceModel: FinanceModelItem) {

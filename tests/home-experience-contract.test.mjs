@@ -9,6 +9,7 @@ const heroModelStage = await readFile(new URL("../src/components/home/HeroModelS
 const financeSection = await readFile(new URL("../src/components/home/HomeFinanceSection.tsx", import.meta.url), "utf8");
 const thinkingSection = await readFile(new URL("../src/components/home/HomeThinkingSection.tsx", import.meta.url), "utf8");
 const thinkingLab = await readFile(new URL("../src/components/thinking/ThinkingLabClient.tsx", import.meta.url), "utf8");
+const thinkingLabContent = await readFile(new URL("../src/lib/data/thinkingLabContent.ts", import.meta.url), "utf8");
 const contactSection = await readFile(new URL("../src/components/home/HomeContactSection.tsx", import.meta.url), "utf8");
 const globals = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
 const viewportHook = await readFile(new URL("../src/lib/useLowMotionMode.ts", import.meta.url), "utf8");
@@ -480,6 +481,21 @@ test("home thinking section uses a visual card and a clear index link", () => {
   assert.match(cssRule(".home-thinking-reveal"), /will-change:\s*transform,\s*opacity/);
   assert.match(cssRule(".home-thinking-item"), /animation:\s*home-thinking-card-rise/);
   assert.match(cssRule(".home-thinking-visual-card"), /animation:\s*home-thinking-card-rise/);
+});
+
+test("thinking lab keeps the original index layout with source-backed fixed categories", () => {
+  assert.match(thinkingLab, /THINKING_CATEGORY_ORDER = \["全部", "工具", "AI 工作流", "思考记录"\]/);
+  assert.match(thinkingLab, /function getDisplayCategory/);
+  assert.match(thinkingLab, /item\.source === "hosted-tool"/);
+  assert.match(thinkingLab, /item\.legacyCategory === "ai"/);
+  assert.match(thinkingLab, /item\.legacyCategory === "finance"/);
+  assert.match(thinkingLab, /setActiveCategory/);
+  assert.match(thinkingLab, /thinking-index-list/);
+  assert.doesNotMatch(thinkingLab, /new Set\(articles\.map\(getCategory\)\)/);
+  assert.doesNotMatch(thinkingLab, /category \|\| "思考记录"/);
+  assert.match(thinkingLabContent, /category:\s*"工具"/);
+  assert.match(thinkingLabContent, /source:\s*"hosted-tool"/);
+  assert.doesNotMatch(thinkingLabContent, /category:\s*"AI 工作流",\s*\n\s*href:\s*"\/tools\/subtitle-workbench"/);
 });
 
 test("home animation polish respects reduced-motion preferences", () => {

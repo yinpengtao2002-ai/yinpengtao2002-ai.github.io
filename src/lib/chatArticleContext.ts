@@ -106,7 +106,7 @@ export function getArticleFallbackFocus(article: Pick<ArticleContextSource, "tit
 
 export function buildActiveThinkingArticlePrompt(activeThinkingArticle?: ContentItem) {
     if (!activeThinkingArticle) {
-        return "当前没有打开具体思考与方法文章。";
+        return "当前没有打开具体工具与思考文章。";
     }
 
     const summary = getCachedArticleSummary(activeThinkingArticle);

@@ -80,7 +80,7 @@ export function getLocalFallbackResponse(
 
     if (includesAny(lower, ["lucas", "卢卡斯", "站长", "博主", "作者", "yinpengtao", "殷鹏焘", "殷鹏涛"])) {
         return withOfflineNotice({
-            response: "Lucas Yin（殷鹏焘）关注经营分析、财务模型和 AI 工作流，目前也在奇瑞汽车国际财务 BP 岗位努力工作。你可以先看 [财务模型](/finance)，也可以进入 [思考与方法](/thinking-lab)。",
+            response: "Lucas Yin（殷鹏焘）关注经营分析、财务模型和 AI 工作流，目前也在奇瑞汽车国际财务 BP 岗位努力工作。你可以先看 [财务模型](/finance)，也可以进入 [工具与思考](/thinking-lab)。",
         }, options.includeOfflineNotice);
     }
 
@@ -122,10 +122,10 @@ export function getLocalFallbackResponse(
 
     if (includesAny(lower, ["ai", "人工智能", "见闻", "chatgpt", "llm", "openai", "gpt", "claude"])) {
         if (thinkingContent.length === 0) {
-            return withOfflineNotice({ response: "【思考与方法】暂时还没有内容，敬请期待。" }, options.includeOfflineNotice);
+            return withOfflineNotice({ response: "【工具与思考】暂时还没有内容，敬请期待。" }, options.includeOfflineNotice);
         }
         return withOfflineNotice({
-            response: "这些是【思考与方法】里可以先看的内容：",
+            response: "这些是【工具与思考】里可以先看的内容：",
             contentCards: thinkingContent,
             cardType: "thinking",
         }, options.includeOfflineNotice);
@@ -140,8 +140,8 @@ export function getLocalFallbackResponse(
         ));
         return withOfflineNotice({
             response: cards.length > 0
-                ? "你要找的是 [月光渡口](/thinking-lab/moonlight-ferry)。它属于【思考与方法】里的个人写作样本。"
-                : "【思考与方法】暂时没有匹配内容。",
+                ? "你要找的是 [月光渡口](/thinking-lab/moonlight-ferry)。它属于【工具与思考】里的个人写作样本。"
+                : "【工具与思考】暂时没有匹配内容。",
             contentCards: cards.length > 0 ? cards : thinkingContent,
             cardType: "thinking",
         }, options.includeOfflineNotice);
@@ -160,7 +160,7 @@ export function getLocalFallbackResponse(
 
     if (includesAny(lower, ["文章", "内容", "有什么", "推荐", "目录", "网站", "看什么", "入口", "板块"])) {
         return withOfflineNotice({
-            response: "你可以先看两个入口：[财务模型](/finance) 和 [思考与方法](/thinking-lab)。如果想直接体验工具，可以先打开 [预算实际对比模型](/finance/business-analysis)。",
+            response: "你可以先看两个入口：[财务模型](/finance) 和 [工具与思考](/thinking-lab)。如果想直接体验工具，可以先打开 [预算实际对比模型](/finance/business-analysis)。",
         }, options.includeOfflineNotice);
     }
 

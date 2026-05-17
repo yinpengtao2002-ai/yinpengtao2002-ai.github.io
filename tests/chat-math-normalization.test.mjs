@@ -145,11 +145,11 @@ test("finance detail pages keep the AI assistant available", () => {
 });
 
 test("chat renderer turns bare internal routes into clickable markdown links", () => {
-  const input = "财务模型库（/finance）和思考与方法（/thinking-lab）都可以看，也可以直接进 /finance/business-analysis。";
+  const input = "财务模型库（/finance）和工具与思考（/thinking-lab）都可以看，也可以直接进 /finance/business-analysis。";
 
   assert.equal(
     normalizeChatInternalLinks(input),
-    "[财务模型库](/finance)和[思考与方法](/thinking-lab)都可以看，也可以直接进 [/finance/business-analysis](/finance/business-analysis)。"
+    "[财务模型库](/finance)和[工具与思考](/thinking-lab)都可以看，也可以直接进 [/finance/business-analysis](/finance/business-analysis)。"
   );
 });
 
@@ -172,12 +172,12 @@ test("chat API defaults to gpt-5.2 with gpt-5.4 fallback", () => {
 
 test("chat API tells the model to avoid bare internal routes", () => {
   assert.match(chatRoute, /\[财务模型\]\(\/finance\)/);
-  assert.match(chatRoute, /\[思考与方法\]\(\/thinking-lab\)/);
+  assert.match(chatRoute, /\[工具与思考\]\(\/thinking-lab\)/);
   assert.doesNotMatch(chatRoute, /财务模型：\/finance/);
-  assert.doesNotMatch(chatRoute, /思考与方法：\/thinking-lab/);
+  assert.doesNotMatch(chatRoute, /工具与思考：\/thinking-lab/);
   assert.match(chatRoute, /不要只裸写 \/finance 或 \/thinking-lab/);
   assert.match(chatRoute, /\[财务模型\]\(\/finance\)/);
-  assert.match(chatRoute, /\[思考与方法\]\(\/thinking-lab\)/);
+  assert.match(chatRoute, /\[工具与思考\]\(\/thinking-lab\)/);
 });
 
 test("chat API injects active finance model guidance when a model page is open", () => {
