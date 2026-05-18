@@ -14,6 +14,14 @@ const pageTransition = await readFile(
   new URL("../src/components/layout/PageTransition.tsx", import.meta.url),
   "utf8"
 );
+const clientShell = await readFile(
+  new URL("../src/components/ClientShell.tsx", import.meta.url),
+  "utf8"
+);
+const globals = await readFile(
+  new URL("../src/app/globals.css", import.meta.url),
+  "utf8"
+);
 
 test("thinking lab list page keeps global navigation even with a trailing slash", () => {
   assert.match(navigation, /pathname !== "\/thinking-lab\/"/);
@@ -50,4 +58,11 @@ test("site navigation uses page links instead of scroll-tracked homepage section
   assert.match(navigation, /scrollToSection\("contact"\)/);
   assert.match(navigation, /home-nav-active-pill/);
   assert.match(navigation, /layoutId="home-nav-active-pill"/);
+});
+
+test("site keeps a single light theme without a dark-mode toggle", () => {
+  assert.doesNotMatch(clientShell, /ThemeToggle/);
+  assert.doesNotMatch(clientShell, /theme/i);
+  assert.doesNotMatch(globals, /\[data-theme="dark"\]/);
+  assert.doesNotMatch(globals, /Dark Theme/);
 });

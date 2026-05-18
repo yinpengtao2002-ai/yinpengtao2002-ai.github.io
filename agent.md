@@ -102,6 +102,7 @@ Current models:
 - Back buttons should use `router.back()` when browser history exists, with a sensible fallback.
 - Mobile AI links to internal pages should close the AI panel so the destination page is not covered.
 - Desktop AI should remain a side/floating assistant where possible.
+- The public site is intentionally single-theme light mode. Do not reintroduce a dark-mode toggle or `data-theme="dark"` styling unless the user explicitly asks for it.
 - Do not revert user changes or generated work unless the user explicitly asks.
 - Keep mobile and desktop in one responsive implementation when feasible.
 

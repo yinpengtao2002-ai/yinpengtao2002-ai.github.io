@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Anthropic Brand Colors - WARM LIGHT THEME */
+/* Anthropic Brand Colors - Warm Light Theme */
 :root {
   --background: #faf9f5;
   --foreground: #141413;
@@ -13,18 +13,6 @@
   --font-poppins: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   --font-lora: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
   --font-hero-display: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
-}
-
-/* Dark Theme */
-[data-theme="dark"] {
-  --background: #1a1a1a;
-  --foreground: #e8e6dc;
-  --accent: #e08b6d;
-  --accent-secondary: #7dade0;
-  --accent-tertiary: #8fa86e;
-  --muted: #7a7870;
-  --card: #242424;
-  --border: #333330;
 }
 
 @theme inline {
