@@ -2,10 +2,17 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRef, useState, type CSSProperties, type TouchEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type TouchEvent } from "react";
 import { ArrowRight } from "lucide-react";
 
 const SWIPE_THRESHOLD = 46;
+const STAGE_PRELOAD_DELAY = 720;
+
+type IdleWindow = Window &
+  typeof globalThis & {
+    requestIdleCallback?: (callback: () => void, options?: { timeout?: number }) => number;
+    cancelIdleCallback?: (handle: number) => void;
+  };
 
 const HERO_MODEL_STAGES = [
   {
@@ -68,9 +75,36 @@ const HERO_MODEL_STAGES = [
 
 export default function HeroModelStage() {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [loadedImageSlugs, setLoadedImageSlugs] = useState(() => new Set<string>());
+  const [shouldPreloadStageImages, setShouldPreloadStageImages] = useState(false);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const touchMovedRef = useRef(false);
   const activeStage = HERO_MODEL_STAGES[activeIndex] ?? HERO_MODEL_STAGES[0];
+  const activeStageImageLoaded = loadedImageSlugs.has(activeStage.slug);
+
+  useEffect(() => {
+    const idleWindow = window as IdleWindow;
+    const warmStageImages = () => setShouldPreloadStageImages(true);
+
+    if (idleWindow.requestIdleCallback) {
+      const idleId = idleWindow.requestIdleCallback(warmStageImages, { timeout: 1800 });
+      return () => idleWindow.cancelIdleCallback?.(idleId);
+    }
+
+    const fallbackTimer = idleWindow.setTimeout(warmStageImages, STAGE_PRELOAD_DELAY);
+    return () => idleWindow.clearTimeout(fallbackTimer);
+  }, []);
+
+  const markStageImageLoaded = (slug: string) => {
+    setLoadedImageSlugs((current) => {
+      if (current.has(slug)) return current;
+
+      const next = new Set(current);
+      next.add(slug);
+      return next;
+    });
+  };
+
   const updateActiveStage = (direction: 1 | -1) => {
     setActiveIndex(
       (index) => (index + direction + HERO_MODEL_STAGES.length) % HERO_MODEL_STAGES.length,
@@ -129,6 +163,37 @@ export default function HeroModelStage() {
         </div>
 
         <div className="home-hero-stage-preview" key={`stage-preview-${activeStage.slug}`}>
+          <div
+            className={`home-hero-stage-skeleton${activeStageImageLoaded ? " is-hidden" : ""}`}
+            aria-hidden="true"
+          >
+            <div className="home-hero-stage-skeleton-window">
+              <div className="home-hero-stage-skeleton-toolbar">
+                <span />
+                <span />
+                <span />
+              </div>
+              <div className="home-hero-stage-skeleton-grid">
+                <div className="home-hero-stage-skeleton-bars">
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                <div className="home-hero-stage-skeleton-cards">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                <div className="home-hero-stage-skeleton-lines">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              </div>
+            </div>
+          </div>
           <Image
             src={activeStage.previewImage}
             alt={activeStage.previewAlt}
@@ -136,7 +201,8 @@ export default function HeroModelStage() {
             priority={activeIndex === 0}
             draggable={false}
             sizes="(max-width: 768px) 92vw, 520px"
-            className="home-hero-stage-image"
+            className={`home-hero-stage-image${activeStageImageLoaded ? " is-loaded" : ""}`}
+            onLoad={() => markStageImageLoaded(activeStage.slug)}
           />
           <div className="home-hero-stage-float home-hero-stage-float-metric">
             <span>{activeStage.metricLabel}</span>
@@ -183,6 +249,23 @@ export default function HeroModelStage() {
           );
         })}
       </div>
+
+      {shouldPreloadStageImages ? (
+        <div className="home-hero-stage-preloader" aria-hidden="true">
+          {HERO_MODEL_STAGES.map((stage) => (
+            <Image
+              key={`preload-${stage.slug}`}
+              src={stage.previewImage}
+              alt=""
+              width={640}
+              height={420}
+              loading="eager"
+              fetchPriority="low"
+              draggable={false}
+            />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

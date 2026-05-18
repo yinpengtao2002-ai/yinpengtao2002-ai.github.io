@@ -166,9 +166,16 @@ test("home hero uses an interactive model stage instead of a static question gri
   assert.doesNotMatch(hero, /ProductStageVisual/);
   assert.match(heroModelStage, /HERO_MODEL_STAGES/);
   assert.match(heroModelStage, /useState/);
+  assert.match(heroModelStage, /useEffect/);
   assert.match(heroModelStage, /useRef/);
   assert.match(heroModelStage, /SWIPE_THRESHOLD/);
   assert.match(heroModelStage, /\(index \+ direction \+ HERO_MODEL_STAGES\.length\) % HERO_MODEL_STAGES\.length/);
+  assert.match(heroModelStage, /requestIdleCallback/);
+  assert.match(heroModelStage, /home-hero-stage-preloader/);
+  assert.match(heroModelStage, /markStageImageLoaded/);
+  assert.match(heroModelStage, /home-hero-stage-skeleton/);
+  assert.match(heroModelStage, /home-hero-stage-skeleton-window/);
+  assert.match(heroModelStage, /is-loaded/);
   assert.match(heroModelStage, /onTouchStart/);
   assert.match(heroModelStage, /onTouchMove/);
   assert.match(heroModelStage, /onTouchEnd/);
@@ -201,6 +208,10 @@ test("home hero uses an interactive model stage instead of a static question gri
   assert.match(globals, /\.home-hero-stage-shell\s*\{/);
   assert.match(globals, /\.home-hero-stage-panel\s*\{/);
   assert.match(globals, /\.home-hero-stage-preview\s*\{/);
+  assert.match(globals, /\.home-hero-stage-skeleton\s*\{/);
+  assert.match(globals, /\.home-hero-stage-skeleton-window\s*\{/);
+  assert.match(globals, /\.home-hero-stage-image\.is-loaded\s*\{/);
+  assert.match(globals, /\.home-hero-stage-preloader\s*\{/);
   assert.match(globals, /\.home-hero-stage-tab\s*\{/);
   assert.match(globals, /@keyframes\s+homeHeroStageIn/);
   assert.doesNotMatch(globals, /\.home-hero-stage-glass/);
