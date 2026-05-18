@@ -149,6 +149,22 @@ export default function HeroModelStage() {
         </div>
       </div>
 
+      <div className="home-hero-stage-dots" aria-label="当前模型轮播位置">
+        {HERO_MODEL_STAGES.map((stage, index) => {
+          const isActive = index === activeIndex;
+          return (
+            <button
+              key={stage.slug}
+              type="button"
+              className={`home-hero-stage-dot${isActive ? " is-active" : ""}`}
+              aria-label={`切换到${stage.label}`}
+              aria-current={isActive ? "true" : undefined}
+              onClick={() => setActiveIndex(index)}
+            />
+          );
+        })}
+      </div>
+
       <div className="home-hero-stage-picker" aria-label="选择一个经营问题，进入对应模型">
         {HERO_MODEL_STAGES.map((stage, index) => {
           const isActive = index === activeIndex;
@@ -166,11 +182,6 @@ export default function HeroModelStage() {
             </Link>
           );
         })}
-      </div>
-      <div className="home-hero-stage-swipe-cue" aria-hidden="true">
-        <span />
-        左右滑动切换
-        <span />
       </div>
     </div>
   );

@@ -168,11 +168,14 @@ test("home hero uses an interactive model stage instead of a static question gri
   assert.match(heroModelStage, /useState/);
   assert.match(heroModelStage, /useRef/);
   assert.match(heroModelStage, /SWIPE_THRESHOLD/);
+  assert.match(heroModelStage, /\(index \+ direction \+ HERO_MODEL_STAGES\.length\) % HERO_MODEL_STAGES\.length/);
   assert.match(heroModelStage, /onTouchStart/);
   assert.match(heroModelStage, /onTouchMove/);
   assert.match(heroModelStage, /onTouchEnd/);
-  assert.match(heroModelStage, /home-hero-stage-swipe-cue/);
-  assert.match(heroModelStage, /左右滑动切换/);
+  assert.match(heroModelStage, /home-hero-stage-dots/);
+  assert.match(heroModelStage, /home-hero-stage-dot/);
+  assert.match(heroModelStage, /当前模型轮播位置/);
+  assert.doesNotMatch(heroModelStage, /左右滑动切换/);
   assert.match(heroModelStage, /onMouseEnter/);
   assert.match(heroModelStage, /onFocus/);
   assert.match(heroModelStage, /home-hero-stage-shell/);
@@ -183,8 +186,8 @@ test("home hero uses an interactive model stage instead of a static question gri
   assert.match(heroModelStage, /选择一个经营问题，进入对应模型/);
   assert.match(heroModelStage, /href=\{stage\.href\}/);
   assert.match(heroModelStage, /aria-current=\{isActive \? "true" : undefined\}/);
+  assert.match(heroModelStage, /onClick=\{\(\) => setActiveIndex\(index\)\}/);
   assert.doesNotMatch(heroModelStage, /aria-pressed=\{isActive\}/);
-  assert.doesNotMatch(heroModelStage, /onClick=\{\(\) => setActiveIndex\(index\)\}/);
   assert.match(heroModelStage, /进入这个模型/);
   assert.match(heroModelStage, /单车为什么变了/);
   assert.match(heroModelStage, /预算偏在哪里/);
