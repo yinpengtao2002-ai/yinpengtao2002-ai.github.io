@@ -542,7 +542,7 @@ test("home thinking section uses a visual card and a clear index link", () => {
 });
 
 test("home thinking section keeps its visual card readable in short desktop viewports", () => {
-  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-section\.home-thinking-section\s*\{[\s\S]*padding-top:\s*clamp\(2\.6rem,\s*5\.4vh,\s*3\.4rem\)[\s\S]*padding-bottom:\s*clamp\(1\.3rem,\s*2\.8vh,\s*2rem\)/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-section\.home-thinking-section\s*\{[\s\S]*padding-top:\s*clamp\(5rem,\s*10\.5vh,\s*6rem\)[\s\S]*padding-bottom:\s*clamp\(0\.9rem,\s*2vh,\s*1\.4rem\)/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-thinking-visual-card\s*\{[\s\S]*min-height:\s*clamp\(410px,\s*62dvh,\s*460px\)/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-thinking-visual-copy h2\s*\{[\s\S]*font-size:\s*clamp\(1\.75rem,\s*3\.1vw,\s*2\.35rem\)/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-thinking-preview-item:nth-child\(n \+ 4\)\s*\{[\s\S]*display:\s*none/s);

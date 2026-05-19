@@ -2510,8 +2510,8 @@ h6 {
   }
 
   .home-section.home-thinking-section {
-    padding-top: clamp(2.6rem, 5.4vh, 3.4rem);
-    padding-bottom: clamp(1.3rem, 2.8vh, 2rem);
+    padding-top: clamp(5rem, 10.5vh, 6rem);
+    padding-bottom: clamp(0.9rem, 2vh, 1.4rem);
   }
 
   .home-thinking-method-index {
