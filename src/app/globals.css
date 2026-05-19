@@ -2489,8 +2489,86 @@ h6 {
     height: clamp(145px, 24vh, 190px);
   }
 
+  .home-section.home-thinking-section {
+    padding-top: clamp(2.6rem, 5.4vh, 3.4rem);
+    padding-bottom: clamp(1.3rem, 2.8vh, 2rem);
+  }
+
+  .home-thinking-method-index {
+    align-items: center;
+    gap: clamp(0.8rem, 1.8vw, 1.35rem);
+  }
+
+  .home-thinking-visual-card {
+    min-height: clamp(410px, 62dvh, 460px);
+  }
+
   .home-thinking-visual-copy {
-    padding: 1rem;
+    padding: clamp(0.85rem, 1.45vw, 1.05rem);
+  }
+
+  .home-thinking-visual-copy .home-thinking-kicker {
+    font-size: 10px;
+    margin-bottom: 7px;
+  }
+
+  .home-thinking-visual-copy h2 {
+    font-size: clamp(1.75rem, 3.1vw, 2.35rem);
+    margin-bottom: 8px;
+  }
+
+  .home-thinking-featured-intro {
+    display: -webkit-box;
+    font-size: 12px;
+    line-height: 1.5;
+    margin-bottom: 9px;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .home-thinking-featured-meta {
+    gap: 5px;
+    margin-bottom: 9px;
+  }
+
+  .home-thinking-featured-meta span {
+    min-height: 23px;
+    font-size: 10px;
+    padding-inline: 7px;
+  }
+
+  .home-thinking-preview-panel {
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+
+  .home-thinking-preview-summary {
+    margin-top: 6px;
+    -webkit-line-clamp: 1;
+  }
+
+  .home-thinking-preview-list {
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .home-thinking-preview-item {
+    min-height: 27px;
+  }
+
+  .home-thinking-preview-item:nth-child(n + 4) {
+    display: none;
+  }
+
+  .home-thinking-preview-action {
+    margin-top: 8px;
+  }
+
+  .home-thinking-all-link {
+    min-height: 34px;
+    font-size: 12px;
+    padding-inline: 12px;
   }
 
   .home-thinking-note {
@@ -2502,7 +2580,21 @@ h6 {
   }
 
   .home-thinking-track-card {
+    min-height: clamp(104px, 14vh, 120px);
     padding: 0.86rem 1rem;
+  }
+
+  .home-thinking-track-rail {
+    gap: 9px;
+  }
+
+  .home-thinking-track-card p {
+    margin-top: 8px;
+    -webkit-line-clamp: 1;
+  }
+
+  .home-thinking-track-foot {
+    margin-top: 10px;
   }
 
   .home-finance-header {

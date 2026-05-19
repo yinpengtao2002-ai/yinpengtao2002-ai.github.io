@@ -539,6 +539,14 @@ test("home thinking section uses a visual card and a clear index link", () => {
   assert.match(cssRule(".home-thinking-visual-card"), /animation:\s*home-thinking-card-rise/);
 });
 
+test("home thinking section keeps its visual card readable in short desktop viewports", () => {
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-section\.home-thinking-section\s*\{[\s\S]*padding-top:\s*clamp\(2\.6rem,\s*5\.4vh,\s*3\.4rem\)[\s\S]*padding-bottom:\s*clamp\(1\.3rem,\s*2\.8vh,\s*2rem\)/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-thinking-visual-card\s*\{[\s\S]*min-height:\s*clamp\(410px,\s*62dvh,\s*460px\)/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-thinking-visual-copy h2\s*\{[\s\S]*font-size:\s*clamp\(1\.75rem,\s*3\.1vw,\s*2\.35rem\)/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-thinking-preview-item:nth-child\(n \+ 4\)\s*\{[\s\S]*display:\s*none/s);
+  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-thinking-track-card p\s*\{[\s\S]*-webkit-line-clamp:\s*1/s);
+});
+
 test("thinking lab keeps the original index layout with source-backed fixed categories", () => {
   assert.match(thinkingLab, /THINKING_CATEGORY_ORDER = \["全部", "工具", "AI创作", "思考记录"\]/);
   assert.match(thinkingLab, /useSearchParams/);
