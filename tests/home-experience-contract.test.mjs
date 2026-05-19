@@ -547,6 +547,11 @@ test("home thinking section keeps its visual card readable in short desktop view
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-thinking-track-card p\s*\{[\s\S]*-webkit-line-clamp:\s*1/s);
 });
 
+test("home thinking count pills remain legible on the image card and category cards", () => {
+  assert.match(globals, /\.home-thinking-preview-panel \.home-thinking-count-pill\s*\{[\s\S]*background:\s*rgba\(255,\s*250,\s*240,\s*0\.92\)[\s\S]*color:\s*color-mix\(in srgb,\s*var\(--thinking-track-accent,\s*#fffaf0\)\s*70%,\s*var\(--foreground\)\)[\s\S]*box-shadow:\s*0\s*8px\s*18px\s*rgba\(20,\s*20,\s*19,\s*0\.2\)/s);
+  assert.match(globals, /\.home-thinking-track-head \.home-thinking-count-pill\s*\{[\s\S]*min-width:\s*58px[\s\S]*justify-content:\s*center[\s\S]*background:\s*color-mix\(in srgb,\s*var\(--thinking-track-accent,\s*var\(--accent-secondary\)\)\s*16%,\s*var\(--card\)\)/s);
+});
+
 test("thinking lab keeps the original index layout with source-backed fixed categories", () => {
   assert.match(thinkingLab, /THINKING_CATEGORY_ORDER = \["全部", "工具", "AI创作", "思考记录"\]/);
   assert.match(thinkingLab, /useSearchParams/);

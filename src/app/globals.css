@@ -2057,6 +2057,26 @@ h6 {
   white-space: nowrap;
 }
 
+.home-thinking-preview-panel .home-thinking-count-pill {
+  justify-content: center;
+  min-width: 62px;
+  border-color: rgba(255, 250, 240, 0.62);
+  background: rgba(255, 250, 240, 0.92);
+  color: color-mix(in srgb, var(--thinking-track-accent, #fffaf0) 70%, var(--foreground));
+  box-shadow: 0 8px 18px rgba(20, 20, 19, 0.2);
+  padding: 0 10px;
+}
+
+.home-thinking-track-head .home-thinking-count-pill {
+  position: relative;
+  z-index: 2;
+  min-width: 58px;
+  justify-content: center;
+  background: color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 16%, var(--card));
+  color: color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 82%, var(--foreground));
+  box-shadow: 0 6px 16px rgba(20, 20, 19, 0.055);
+}
+
 .home-thinking-note {
   display: flex;
   flex-direction: column;
