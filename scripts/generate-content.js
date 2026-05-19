@@ -27,6 +27,8 @@ const SEMANTIC_SLUG_OVERRIDES = {
     ai: {
         'notion-24ae349d753a': 'humanities-ai-guide',
         '给人文工作者的 AI 使用指南': 'humanities-ai-guide',
+        'notion-355e349d753a': 'moonlight-ferry',
+        '月光渡口': 'moonlight-ferry',
     },
     finance: {
         'notion-fbde349d753a': 'gold-stock-selloff-iran-war-2026',
@@ -35,8 +37,6 @@ const SEMANTIC_SLUG_OVERRIDES = {
     essays: {
         'notion-fbde349d753a': 'gold-stock-selloff-iran-war-2026',
         '当避险失灵：2026美伊战争后股市与黄金双杀的深层逻辑': 'gold-stock-selloff-iran-war-2026',
-        'notion-355e349d753a': 'moonlight-ferry',
-        '月光渡口': 'moonlight-ferry',
     },
 };
 
@@ -133,10 +133,18 @@ function isEssayItem(item) {
     return category === 'essay' ||
         category === 'essays' ||
         category === '随笔' ||
-        item.title === '月光渡口' ||
         item.title === '当避险失灵：2026美伊战争后股市与黄金双杀的深层逻辑' ||
         item.slug === 'notion-fbde349d753a' ||
         item.slug === 'gold-stock-selloff-iran-war-2026';
+}
+
+function isAiCreationItem(item) {
+    const category = String(item.legacyCategory || item.category || '').toLowerCase();
+    const semanticSlug = getSemanticSlug('ai', item);
+    return category === 'ai' ||
+        category === 'ai创作' ||
+        semanticSlug === 'humanities-ai-guide' ||
+        semanticSlug === 'moonlight-ferry';
 }
 
 function normalizeThinkingHref(item, legacyCategory) {
@@ -290,9 +298,9 @@ async function main() {
     const existingThinking = (existingGeneratedContent.thinking || [])
         .filter((item) => item.source === 'notion')
         .map(withoutGeneratedId);
-    const existingAiThinking = existingThinking.filter((item) => item.legacyCategory === 'ai');
-    const existingFinanceThinking = existingThinking.filter((item) => item.legacyCategory === 'finance');
-    const existingEssayThinking = existingThinking.filter((item) => item.legacyCategory === 'essays');
+    const existingAiThinking = existingThinking.filter(isAiCreationItem);
+    const existingFinanceThinking = existingThinking.filter((item) => item.legacyCategory === 'finance' && !isAiCreationItem(item));
+    const existingEssayThinking = existingThinking.filter((item) => item.legacyCategory === 'essays' && !isAiCreationItem(item));
 
     const aiFallback = dedupeContentItems([
         ...existingAiThinking,

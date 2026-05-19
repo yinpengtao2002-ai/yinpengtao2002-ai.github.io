@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import ThinkingLabClient from "@/components/thinking/ThinkingLabClient";
 import { thinkingLabContent } from "@/lib/data/thinkingLabContent";
 
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function ThinkingLabPage() {
-  return <ThinkingLabClient articles={thinkingLabContent} />;
+  return (
+    <Suspense fallback={null}>
+      <ThinkingLabClient articles={thinkingLabContent} />
+    </Suspense>
+  );
 }

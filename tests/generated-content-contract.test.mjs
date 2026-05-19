@@ -27,6 +27,11 @@ test("finance generated content points to finance tool routes", () => {
   assert.match(generated, /"href": "\/finance\/margin-analysis"/);
 });
 
+test("AI fiction stays in the AI creation thinking category", () => {
+  assert.match(generated, /"slug": "moonlight-ferry"[\s\S]*"legacyCategory": "ai"/);
+  assert.doesNotMatch(generator, /item\.title === '月光渡口'/);
+});
+
 test("thinking generation canonicalizes duplicate Notion articles across databases", () => {
   assert.match(generator, /GLOBAL_SEMANTIC_SLUG_OVERRIDES[\s\S]*月光渡口[\s\S]*moonlight-ferry/);
   assert.match(generator, /function contentDedupeKeys/);

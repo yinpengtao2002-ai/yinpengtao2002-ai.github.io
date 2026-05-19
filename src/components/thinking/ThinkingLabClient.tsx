@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import type { ContentItem } from "@/lib/data/generated/content";
 
@@ -28,7 +29,19 @@ function getDisplayCategory(item: ContentItem) {
   return "思考记录";
 }
 
+function normalizeRequestedCategory(value: string | null, categories: string[]) {
+  if (!value) return "全部";
+
+  try {
+    const category = decodeURIComponent(value);
+    return categories.includes(category) ? category : "全部";
+  } catch {
+    return "全部";
+  }
+}
+
 export default function ThinkingLabClient({ articles }: { articles: ContentItem[] }) {
+  const searchParams = useSearchParams();
   const categories = useMemo(() => {
     return THINKING_CATEGORY_ORDER.filter((category) => {
       if (category === "全部") {
@@ -38,7 +51,13 @@ export default function ThinkingLabClient({ articles }: { articles: ContentItem[
       return articles.some((item) => getDisplayCategory(item) === category);
     });
   }, [articles]);
-  const [activeCategory, setActiveCategory] = useState("全部");
+  const requestedCategory = useMemo(() => {
+    return normalizeRequestedCategory(searchParams.get("category"), categories);
+  }, [categories, searchParams]);
+  const [activeCategory, setActiveCategory] = useState(requestedCategory);
+  useEffect(() => {
+    setActiveCategory(requestedCategory);
+  }, [requestedCategory]);
   const visibleArticles = activeCategory === "全部"
     ? articles
     : articles.filter((item) => getDisplayCategory(item) === activeCategory);

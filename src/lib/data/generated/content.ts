@@ -1,5 +1,5 @@
 // Auto-generated content data from markdown + Notion
-// Generated at: 2026-05-04T18:02:44.732Z
+// Generated at: 2026-05-19T07:41:35.058Z
 // DO NOT EDIT MANUALLY - run 'npm run prebuild' to regenerate
 
 export interface ContentItem {
@@ -76,7 +76,7 @@ export const thinkingContent: ContentItem[] = [
     "aliases": [
       "notion-355e349d753a"
     ],
-    "legacyCategory": "essays",
+    "legacyCategory": "ai",
     "id": 1
   },
   {

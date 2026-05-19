@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
 import { thinkingLabContent } from "@/lib/data/thinkingLabContent";
 import type { ContentItem } from "@/lib/data/generated/content";
 
@@ -16,6 +17,9 @@ const THINKING_TRACKS: Array<{
   source: string;
   summary: string;
   action: string;
+  accent: string;
+  soft: string;
+  countUnit: string;
 }> = [
   {
     id: "tool",
@@ -23,6 +27,9 @@ const THINKING_TRACKS: Array<{
     source: "代码型 / iframe / 独立工具",
     summary: "把重复处理、资料整理和内容转换沉淀成可以直接打开的工作台。",
     action: "打开工具",
+    accent: "#3f8f9f",
+    soft: "rgba(63, 143, 159, 0.13)",
+    countUnit: "个入口",
   },
   {
     id: "ai",
@@ -30,6 +37,9 @@ const THINKING_TRACKS: Array<{
     source: "Notion AI 创作数据源",
     summary: "收录 AI 小说和内容实验，关注叙事、设定、表达和创作过程。",
     action: "查看创作",
+    accent: "#b46b8d",
+    soft: "rgba(180, 107, 141, 0.14)",
+    countUnit: "篇创作",
   },
   {
     id: "record",
@@ -37,6 +47,9 @@ const THINKING_TRACKS: Array<{
     source: "Notion 财务 / 观察数据源",
     summary: "沉淀经营分析、市场观察和判断过程，让观点背后的链路被看见。",
     action: "阅读记录",
+    accent: "#7d8c45",
+    soft: "rgba(125, 140, 69, 0.14)",
+    countUnit: "篇记录",
   },
 ];
 
@@ -52,20 +65,40 @@ function itemBelongsToTrack(item: ContentItem, trackId: ThinkingTrackId) {
   return item.legacyCategory === "finance" || item.legacyCategory === "essays";
 }
 
+function categoryHref(label: string) {
+  return `/thinking-lab?category=${encodeURIComponent(label)}`;
+}
+
 export default function HomeThinkingSection() {
+  const router = useRouter();
   const trackCards = useMemo(() => {
     return THINKING_TRACKS.map((track) => {
-      const item =
-        thinkingLabContent.find((candidate) => itemBelongsToTrack(candidate, track.id)) ??
-        thinkingLabContent[0];
+      const items = thinkingLabContent.filter((candidate) => itemBelongsToTrack(candidate, track.id));
+      const trackItems = items.length > 0 ? items : thinkingLabContent.slice(0, 1);
+      const item = trackItems[0];
 
-      return item ? { ...track, item } : null;
-    }).filter((track): track is (typeof THINKING_TRACKS)[number] & { item: ContentItem } => Boolean(track));
+      return item ? { ...track, item, items: trackItems, categoryHref: categoryHref(track.label) } : null;
+    }).filter((track): track is (typeof THINKING_TRACKS)[number] & {
+      item: ContentItem;
+      items: ContentItem[];
+      categoryHref: string;
+    } => Boolean(track));
   }, []);
   const [activeTrackId, setActiveTrackId] = useState<ThinkingTrackId>("tool");
   const activeTrack = trackCards.find((track) => track.id === activeTrackId) ?? trackCards[0];
 
   if (!activeTrack) return null;
+  const activeMoreItems = activeTrack.items.slice(1, 3);
+  const openCategoryFromCard = (event: MouseEvent<HTMLElement>, href: string) => {
+    if ((event.target as HTMLElement).closest("a")) return;
+    router.push(href);
+  };
+  const openCategoryFromKeyboard = (event: KeyboardEvent<HTMLElement>, href: string) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    if ((event.target as HTMLElement).closest("a")) return;
+    event.preventDefault();
+    router.push(href);
+  };
 
   return (
     <section id="thinking" className="home-viewport home-section home-thinking-section">
@@ -98,10 +131,32 @@ export default function HomeThinkingSection() {
                 </span>
               ))}
             </div>
-            <div className="home-thinking-featured-entry">
-              <span className="home-thinking-source-pill">{activeTrack.source}</span>
-              <h3>{activeTrack.item.title}</h3>
+            <div
+              className="home-thinking-featured-entry"
+              style={{
+                "--thinking-track-accent": activeTrack.accent,
+                "--thinking-track-soft": activeTrack.soft,
+              } as CSSProperties}
+            >
+              <div className="home-thinking-featured-row">
+                <span className="home-thinking-source-pill">{activeTrack.source}</span>
+                <span className="home-thinking-count-pill">
+                  {activeTrack.items.length} {activeTrack.countUnit}
+                </span>
+              </div>
+              <h3>
+                <Link href={activeTrack.item.href}>{activeTrack.item.title}</Link>
+              </h3>
               <p>{activeTrack.item.description}</p>
+              {activeMoreItems.length > 0 ? (
+                <div className="home-thinking-more-list" aria-label={`${activeTrack.label}更多内容`}>
+                  {activeMoreItems.map((item) => (
+                    <Link key={item.slug} href={item.href}>
+                      {item.title}
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
               <Link href={activeTrack.item.href} className="home-thinking-featured-link">
                 {activeTrack.action} <ArrowRight style={{ width: 14, height: 14 }} />
               </Link>
@@ -114,27 +169,48 @@ export default function HomeThinkingSection() {
 
         <div className="home-thinking-track-rail" aria-label="工具与思考入口">
           {trackCards.map((track, index) => (
-            <Link
+            <article
               key={track.id}
-              href={track.item.href}
+              tabIndex={0}
+              aria-label={`查看全部 ${track.label}`}
               className={`home-thinking-track-card${track.id === activeTrack.id ? " is-active" : ""}`}
-              style={{ "--thinking-track-index": index } as CSSProperties}
+              style={{
+                "--thinking-track-index": index,
+                "--thinking-track-accent": track.accent,
+                "--thinking-track-soft": track.soft,
+              } as CSSProperties}
+              onClick={(event) => openCategoryFromCard(event, track.categoryHref)}
+              onKeyDown={(event) => openCategoryFromKeyboard(event, track.categoryHref)}
               onMouseEnter={() => setActiveTrackId(track.id)}
-              onFocus={() => setActiveTrackId(track.id)}
+              onFocusCapture={() => setActiveTrackId(track.id)}
             >
+              <span className="home-thinking-track-orbit" aria-hidden="true" />
               <div className="home-thinking-track-head">
                 <span className="home-thinking-track-label">{track.label}</span>
-                <span className="home-thinking-track-date">{track.item.date}</span>
+                <span className="home-thinking-count-pill">
+                  {track.items.length} {track.countUnit}
+                </span>
               </div>
-              <h3>{track.item.title}</h3>
+              <h3>
+                <Link href={track.item.href}>{track.item.title}</Link>
+              </h3>
               <p>{track.summary}</p>
+              {track.items.length > 1 ? (
+                <div className="home-thinking-more-list" aria-label={`${track.label}更多内容`}>
+                  {track.items.slice(1, 3).map((item) => (
+                    <Link key={item.slug} href={item.href}>
+                      {item.title}
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
               <div className="home-thinking-track-foot">
                 <span className="home-thinking-source-pill">{track.source}</span>
-                <strong>
-                  {track.action} <ArrowRight style={{ width: 13, height: 13 }} />
-                </strong>
+                <Link href={track.categoryHref} className="home-thinking-category-link">
+                  查看全部 {track.label} <ArrowRight style={{ width: 13, height: 13 }} />
+                </Link>
               </div>
-            </Link>
+            </article>
           ))}
         </div>
       </motion.div>

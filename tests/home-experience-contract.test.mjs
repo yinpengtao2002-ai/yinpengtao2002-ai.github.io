@@ -482,8 +482,24 @@ test("home thinking section uses a visual card and a clear index link", () => {
   assert.match(thinkingSection, /代码型 \/ iframe \/ 独立工具/);
   assert.match(thinkingSection, /Notion AI 创作数据源/);
   assert.match(thinkingSection, /Notion 财务 \/ 观察数据源/);
+  assert.match(thinkingSection, /accent:/);
+  assert.match(thinkingSection, /--thinking-track-accent/);
+  assert.match(thinkingSection, /--thinking-track-soft/);
   assert.match(thinkingSection, /home-thinking-track-rail/);
   assert.match(thinkingSection, /home-thinking-track-card/);
+  assert.match(thinkingSection, /home-thinking-track-orbit/);
+  assert.match(thinkingSection, /home-thinking-count-pill/);
+  assert.match(thinkingSection, /home-thinking-more-list/);
+  assert.match(thinkingSection, /home-thinking-category-link/);
+  assert.match(thinkingSection, /categoryHref/);
+  assert.match(thinkingSection, /encodeURIComponent\(label\)/);
+  assert.match(thinkingSection, /useRouter/);
+  assert.match(thinkingSection, /router\.push\(href\)/);
+  assert.match(thinkingSection, /openCategoryFromCard\(event,\s*track\.categoryHref\)/);
+  assert.match(thinkingSection, /openCategoryFromKeyboard\(event,\s*track\.categoryHref\)/);
+  assert.match(thinkingSection, /closest\("a"\)/);
+  assert.match(thinkingSection, /track\.items\.slice\(1,\s*3\)/);
+  assert.match(thinkingSection, /查看全部 \{track\.label\}/);
   assert.match(thinkingSection, /home-thinking-source-pill/);
   assert.match(thinkingSection, /home-thinking-featured-meta/);
   assert.match(thinkingSection, /把日常工作里沉淀下来的工具、AI创作和判断方法，放成可以直接打开的入口。/);
@@ -501,6 +517,11 @@ test("home thinking section uses a visual card and a clear index link", () => {
   assert.match(globals, /\.home-thinking-visual-card\s*\{[^}]*min-height:\s*clamp\(390px,\s*54vh,\s*540px\)/s);
   assert.match(globals, /\.home-thinking-track-rail\s*\{/);
   assert.match(globals, /\.home-thinking-track-card\s*\{/);
+  assert.match(globals, /\.home-thinking-track-card::before\s*\{/);
+  assert.match(globals, /\.home-thinking-track-orbit\s*\{/);
+  assert.match(globals, /\.home-thinking-count-pill\s*\{/);
+  assert.match(globals, /\.home-thinking-more-list\s*\{/);
+  assert.match(globals, /\.home-thinking-category-link\s*\{/);
   assert.match(globals, /\.home-thinking-featured-meta\s*\{/);
   assert.match(globals, /\.home-thinking-source-pill\s*\{/);
   assert.match(cssRule(".home-thinking-section"), /align-items:\s*flex-start/);
@@ -514,6 +535,9 @@ test("home thinking section uses a visual card and a clear index link", () => {
 
 test("thinking lab keeps the original index layout with source-backed fixed categories", () => {
   assert.match(thinkingLab, /THINKING_CATEGORY_ORDER = \["全部", "工具", "AI创作", "思考记录"\]/);
+  assert.match(thinkingLab, /useSearchParams/);
+  assert.match(thinkingLab, /searchParams\.get\("category"\)/);
+  assert.match(thinkingLab, /decodeURIComponent/);
   assert.match(thinkingLab, /function getDisplayCategory/);
   assert.match(thinkingLab, /item\.source === "hosted-tool"/);
   assert.match(thinkingLab, /item\.legacyCategory === "ai"/);
