@@ -14,9 +14,7 @@ type ThinkingTrackId = "tool" | "ai" | "record";
 const THINKING_TRACKS: Array<{
   id: ThinkingTrackId;
   label: string;
-  source: string;
   summary: string;
-  action: string;
   accent: string;
   soft: string;
   countUnit: string;
@@ -24,9 +22,7 @@ const THINKING_TRACKS: Array<{
   {
     id: "tool",
     label: "工具",
-    source: "代码型 / iframe / 独立工具",
     summary: "把重复处理、资料整理和内容转换沉淀成可以直接打开的工作台。",
-    action: "打开工具",
     accent: "#3f8f9f",
     soft: "rgba(63, 143, 159, 0.13)",
     countUnit: "个入口",
@@ -34,9 +30,7 @@ const THINKING_TRACKS: Array<{
   {
     id: "ai",
     label: "AI创作",
-    source: "Notion AI 创作数据源",
     summary: "收录 AI 小说和内容实验，关注叙事、设定、表达和创作过程。",
-    action: "查看创作",
     accent: "#b46b8d",
     soft: "rgba(180, 107, 141, 0.14)",
     countUnit: "篇创作",
@@ -44,9 +38,7 @@ const THINKING_TRACKS: Array<{
   {
     id: "record",
     label: "思考记录",
-    source: "Notion 财务 / 观察数据源",
     summary: "沉淀经营分析、市场观察和判断过程，让观点背后的链路被看见。",
-    action: "阅读记录",
     accent: "#7d8c45",
     soft: "rgba(125, 140, 69, 0.14)",
     countUnit: "篇记录",
@@ -88,7 +80,7 @@ export default function HomeThinkingSection() {
   const activeTrack = trackCards.find((track) => track.id === activeTrackId) ?? trackCards[0];
 
   if (!activeTrack) return null;
-  const activeMoreItems = activeTrack.items.slice(1, 3);
+  const activePreviewItems = activeTrack.items.slice(0, 4);
   const openCategoryFromCard = (event: MouseEvent<HTMLElement>, href: string) => {
     if ((event.target as HTMLElement).closest("a")) return;
     router.push(href);
@@ -132,33 +124,36 @@ export default function HomeThinkingSection() {
               ))}
             </div>
             <div
-              className="home-thinking-featured-entry"
+              className="home-thinking-preview-panel"
               style={{
                 "--thinking-track-accent": activeTrack.accent,
                 "--thinking-track-soft": activeTrack.soft,
               } as CSSProperties}
             >
               <div className="home-thinking-featured-row">
-                <span className="home-thinking-source-pill">{activeTrack.source}</span>
+                <span className="home-thinking-preview-label">{activeTrack.label}</span>
                 <span className="home-thinking-count-pill">
                   {activeTrack.items.length} {activeTrack.countUnit}
                 </span>
               </div>
-              <h3>
-                <Link href={activeTrack.item.href}>{activeTrack.item.title}</Link>
-              </h3>
-              <p>{activeTrack.item.description}</p>
-              {activeMoreItems.length > 0 ? (
-                <div className="home-thinking-more-list" aria-label={`${activeTrack.label}更多内容`}>
-                  {activeMoreItems.map((item) => (
-                    <Link key={item.slug} href={item.href}>
-                      {item.title}
-                    </Link>
-                  ))}
-                </div>
-              ) : null}
-              <Link href={activeTrack.item.href} className="home-thinking-featured-link">
-                {activeTrack.action} <ArrowRight style={{ width: 14, height: 14 }} />
+              <p className="home-thinking-preview-summary">{activeTrack.summary}</p>
+              <div className="home-thinking-preview-list" aria-label={`${activeTrack.label}代表内容`}>
+                {activePreviewItems.map((item, index) => (
+                  <Link
+                    key={item.slug}
+                    href={item.href}
+                    className="home-thinking-preview-item"
+                    style={{
+                      "--thinking-item-index": index,
+                    } as CSSProperties}
+                  >
+                    <span>{String(index + 1).padStart(2, "0")}</span>
+                    <strong>{item.title}</strong>
+                  </Link>
+                ))}
+              </div>
+              <Link href={activeTrack.categoryHref} className="home-thinking-preview-action">
+                查看全部 {activeTrack.label} <ArrowRight style={{ width: 14, height: 14 }} />
               </Link>
             </div>
             <Link href="/thinking-lab" className="home-thinking-all-link">
@@ -191,21 +186,8 @@ export default function HomeThinkingSection() {
                   {track.items.length} {track.countUnit}
                 </span>
               </div>
-              <h3>
-                <Link href={track.item.href}>{track.item.title}</Link>
-              </h3>
               <p>{track.summary}</p>
-              {track.items.length > 1 ? (
-                <div className="home-thinking-more-list" aria-label={`${track.label}更多内容`}>
-                  {track.items.slice(1, 3).map((item) => (
-                    <Link key={item.slug} href={item.href}>
-                      {item.title}
-                    </Link>
-                  ))}
-                </div>
-              ) : null}
               <div className="home-thinking-track-foot">
-                <span className="home-thinking-source-pill">{track.source}</span>
                 <Link href={track.categoryHref} className="home-thinking-category-link">
                   查看全部 {track.label} <ArrowRight style={{ width: 13, height: 13 }} />
                 </Link>
