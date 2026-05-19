@@ -507,7 +507,7 @@ test("home thinking section uses a visual card and a clear index link", () => {
   assert.match(thinkingSection, /activePreviewItems\.map/);
   assert.match(thinkingSection, /查看全部 \{track\.label\}/);
   assert.match(thinkingSection, /home-thinking-featured-meta/);
-  assert.match(thinkingSection, /把日常工作里沉淀下来的工具、AI创作和判断方法，放成可以直接打开的入口。/);
+  assert.doesNotMatch(thinkingSection, /把日常工作里沉淀下来的工具、AI创作和判断方法，放成可以直接打开的入口。/);
   assert.match(thinkingSection, /查看全部工具与思考/);
   assert.match(thinkingSection, /href="\/thinking-lab"/);
   assert.doesNotMatch(thinkingSection, /thinkingLabContent\.slice\(0,\s*4\)/);

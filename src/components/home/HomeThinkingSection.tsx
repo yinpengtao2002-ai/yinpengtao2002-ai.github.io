@@ -113,9 +113,6 @@ export default function HomeThinkingSection() {
           <div className="home-thinking-visual-copy">
             <p className="home-thinking-kicker">Tools & Thinking</p>
             <h2>工具与思考</h2>
-            <p className="home-thinking-featured-intro">
-              把日常工作里沉淀下来的工具、AI创作和判断方法，放成可以直接打开的入口。
-            </p>
             <div className="home-thinking-featured-meta" aria-label="工具与思考分类">
               {trackCards.map((track) => (
                 <span key={track.id} className={track.id === activeTrack.id ? "is-active" : ""}>
