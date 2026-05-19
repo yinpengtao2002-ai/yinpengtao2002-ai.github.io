@@ -38,9 +38,11 @@ export default function CapabilityHero() {
     const target = document.getElementById("thinking");
     if (!target) return;
 
-    target.scrollIntoView({
+    const top = target.getBoundingClientRect().top + window.scrollY;
+
+    window.scrollTo({
+      top,
       behavior: prefersReducedMotion ? "auto" : "smooth",
-      block: "start",
     });
     window.history.pushState(null, "", "#thinking");
   };

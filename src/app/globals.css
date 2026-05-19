@@ -3412,7 +3412,9 @@ h6 {
   }
 
   .home-section.home-thinking-section {
-    padding-top: clamp(3.4rem, 7svh, 4.3rem);
+    scroll-margin-top: 0;
+    padding-top: clamp(2.6rem, 6.1svh, 3.3rem);
+    padding-bottom: clamp(1.1rem, 3svh, 1.7rem);
   }
 
   .finance-index-page {
@@ -3431,31 +3433,35 @@ h6 {
 
   .home-thinking-method-index {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 8px;
   }
 
   .home-thinking-visual-card {
-    min-height: 420px;
+    min-height: clamp(330px, 43svh, 370px);
   }
 
   .home-thinking-visual-copy {
-    padding: 1rem;
+    padding: 0.82rem;
   }
 
   .home-thinking-visual-copy h2 {
-    font-size: clamp(1.7rem, 8vw, 2.25rem);
-    margin-bottom: 8px;
+    font-size: clamp(1.58rem, 7.4vw, 2.05rem);
+    margin-bottom: 6px;
   }
 
   .home-thinking-featured-intro {
-    font-size: 12px;
-    line-height: 1.55;
-    margin-bottom: 10px;
+    display: -webkit-box;
+    font-size: 11.5px;
+    line-height: 1.45;
+    margin-bottom: 8px;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
   }
 
   .home-thinking-featured-meta {
     gap: 5px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
 
   .home-thinking-featured-meta span {
@@ -3465,8 +3471,8 @@ h6 {
   }
 
   .home-thinking-preview-panel {
-    padding: 10px;
-    margin-bottom: 12px;
+    padding: 9px;
+    margin-bottom: 9px;
   }
 
   .home-thinking-preview-summary {
@@ -3500,7 +3506,7 @@ h6 {
   .home-thinking-track-rail {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 8px;
     margin-inline: 0;
     overflow: visible;
     padding: 0;
@@ -3508,8 +3514,19 @@ h6 {
 
   .home-thinking-track-card {
     width: 100%;
-    min-height: 96px;
-    padding: 0.9rem 1rem;
+    min-height: 82px;
+    padding: 0.72rem 0.9rem;
+  }
+
+  .home-thinking-track-card p {
+    font-size: 11.5px;
+    line-height: 1.42;
+    margin-top: 6px;
+    -webkit-line-clamp: 1;
+  }
+
+  .home-thinking-track-foot {
+    margin-top: 7px;
   }
 
   .home-thinking-track-orbit {

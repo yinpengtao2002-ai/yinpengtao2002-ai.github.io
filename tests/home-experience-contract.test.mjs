@@ -50,8 +50,10 @@ test("home page has an explicit continue cue for below-the-fold content", () => 
   assert.doesNotMatch(hero, /下一屏 · 财务模型/);
   assert.match(hero, /#thinking/);
   assert.match(hero, /handleBrowseMore/);
-  assert.match(hero, /scrollIntoView/);
+  assert.match(hero, /getBoundingClientRect\(\)\.top \+ window\.scrollY/);
+  assert.match(hero, /window\.scrollTo\(\{/);
   assert.match(hero, /behavior:\s*prefersReducedMotion \? "auto" : "smooth"/);
+  assert.doesNotMatch(hero, /target\.scrollIntoView/);
   assert.match(hero, /href="\/finance" className="home-primary-action"/);
   assert.doesNotMatch(hero, /href="#finance" className="home-primary-action"/);
   assert.doesNotMatch(hero, /href="\/finance" className="home-hero-continue"/);
@@ -553,16 +555,21 @@ test("home thinking count pills remain legible on the image card and category ca
 });
 
 test("home thinking mobile stacks category cards vertically", () => {
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-section\.home-thinking-section\s*\{[\s\S]*scroll-margin-top:\s*0[\s\S]*padding-top:\s*clamp\(2\.6rem,\s*6\.1svh,\s*3\.3rem\)[\s\S]*padding-bottom:\s*clamp\(1\.1rem,\s*3svh,\s*1\.7rem\)/s);
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-thinking-visual-card\s*\{[\s\S]*min-height:\s*clamp\(330px,\s*43svh,\s*370px\)/s);
+
   const mobileThinkingRail = mobileCssRule(".home-thinking-track-rail");
   assert.match(mobileThinkingRail, /display:\s*grid/);
   assert.match(mobileThinkingRail, /grid-template-columns:\s*1fr/);
+  assert.match(mobileThinkingRail, /gap:\s*8px/);
   assert.match(mobileThinkingRail, /margin-inline:\s*0/);
   assert.match(mobileThinkingRail, /overflow:\s*visible/);
   assert.match(mobileThinkingRail, /padding:\s*0/);
   assert.doesNotMatch(mobileThinkingRail, /overflow-x:\s*auto/);
   assert.doesNotMatch(mobileThinkingRail, /scroll-snap-type/);
 
-  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-thinking-track-card\s*\{[\s\S]*width:\s*100%[\s\S]*min-height:\s*96px/s);
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-thinking-track-card\s*\{[\s\S]*width:\s*100%[\s\S]*min-height:\s*82px[\s\S]*padding:\s*0\.72rem\s*0\.9rem/s);
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-thinking-track-card p\s*\{[\s\S]*font-size:\s*11\.5px[\s\S]*line-height:\s*1\.42[\s\S]*-webkit-line-clamp:\s*1/s);
   assert.doesNotMatch(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-thinking-track-card\s*\{[\s\S]*flex:\s*0\s*0\s*min\(82vw,\s*320px\)[\s\S]*\}/s);
   assert.doesNotMatch(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-thinking-track-card\s*\{[\s\S]*scroll-snap-align/s);
 });
