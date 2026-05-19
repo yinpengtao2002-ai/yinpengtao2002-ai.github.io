@@ -13,7 +13,7 @@ const longArticle = {
   title: "长文章上下文测试",
   description: "这是一篇用来验证文章助手不会塞全文的长文章。",
   date: "2026-05-16",
-  category: "AI 工作流",
+  category: "AI创作",
   href: "/thinking-lab/long-context-test",
   content: [
     "# 开头",

@@ -10,7 +10,7 @@ import type { ContentItem } from "@/lib/data/generated/content";
 const UI_FONT =
   'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
 
-const THINKING_CATEGORY_ORDER = ["全部", "工具", "AI 工作流", "思考记录"];
+const THINKING_CATEGORY_ORDER = ["全部", "工具", "AI创作", "思考记录"];
 
 function getDisplayCategory(item: ContentItem) {
   if (item.source === "hosted-tool") {
@@ -18,7 +18,7 @@ function getDisplayCategory(item: ContentItem) {
   }
 
   if (item.legacyCategory === "ai") {
-    return "AI 工作流";
+    return "AI创作";
   }
 
   if (item.legacyCategory === "finance" || item.legacyCategory === "essays") {

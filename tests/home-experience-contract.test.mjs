@@ -477,16 +477,16 @@ test("home thinking section uses a visual card and a clear index link", () => {
   assert.doesNotMatch(thinkingSection, /home-hero-stage\.png/);
   assert.match(thinkingSection, /THINKING_TRACKS/);
   assert.match(thinkingSection, /工具/);
-  assert.match(thinkingSection, /AI 工作流/);
+  assert.match(thinkingSection, /AI创作/);
   assert.match(thinkingSection, /思考记录/);
   assert.match(thinkingSection, /代码型 \/ iframe \/ 独立工具/);
-  assert.match(thinkingSection, /Notion AI 数据源/);
+  assert.match(thinkingSection, /Notion AI 创作数据源/);
   assert.match(thinkingSection, /Notion 财务 \/ 观察数据源/);
   assert.match(thinkingSection, /home-thinking-track-rail/);
   assert.match(thinkingSection, /home-thinking-track-card/);
   assert.match(thinkingSection, /home-thinking-source-pill/);
   assert.match(thinkingSection, /home-thinking-featured-meta/);
-  assert.match(thinkingSection, /把日常工作里沉淀下来的工具、AI 用法和判断方法，放成可以直接打开的入口。/);
+  assert.match(thinkingSection, /把日常工作里沉淀下来的工具、AI创作和判断方法，放成可以直接打开的入口。/);
   assert.match(thinkingSection, /查看全部工具与思考/);
   assert.match(thinkingSection, /href="\/thinking-lab"/);
   assert.doesNotMatch(thinkingSection, /thinkingLabContent\.slice\(0,\s*4\)/);
@@ -513,7 +513,7 @@ test("home thinking section uses a visual card and a clear index link", () => {
 });
 
 test("thinking lab keeps the original index layout with source-backed fixed categories", () => {
-  assert.match(thinkingLab, /THINKING_CATEGORY_ORDER = \["全部", "工具", "AI 工作流", "思考记录"\]/);
+  assert.match(thinkingLab, /THINKING_CATEGORY_ORDER = \["全部", "工具", "AI创作", "思考记录"\]/);
   assert.match(thinkingLab, /function getDisplayCategory/);
   assert.match(thinkingLab, /item\.source === "hosted-tool"/);
   assert.match(thinkingLab, /item\.legacyCategory === "ai"/);

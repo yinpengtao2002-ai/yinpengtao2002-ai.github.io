@@ -26,10 +26,10 @@ const THINKING_TRACKS: Array<{
   },
   {
     id: "ai",
-    label: "AI 工作流",
-    source: "Notion AI 数据源",
-    summary: "记录 AI 怎样进入真实任务：材料处理、流程拆解、质量校对和方法复用。",
-    action: "查看工作流",
+    label: "AI创作",
+    source: "Notion AI 创作数据源",
+    summary: "收录 AI 小说和内容实验，关注叙事、设定、表达和创作过程。",
+    action: "查看创作",
   },
   {
     id: "record",
@@ -89,7 +89,7 @@ export default function HomeThinkingSection() {
             <p className="home-thinking-kicker">Tools & Thinking</p>
             <h2>工具与思考</h2>
             <p className="home-thinking-featured-intro">
-              把日常工作里沉淀下来的工具、AI 用法和判断方法，放成可以直接打开的入口。
+              把日常工作里沉淀下来的工具、AI创作和判断方法，放成可以直接打开的入口。
             </p>
             <div className="home-thinking-featured-meta" aria-label="工具与思考分类">
               {trackCards.map((track) => (
