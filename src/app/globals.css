@@ -3498,19 +3498,25 @@ h6 {
   }
 
   .home-thinking-track-rail {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr;
     gap: 10px;
-    margin-inline: -16px;
-    overflow-x: auto;
-    padding: 0 16px 2px;
-    scroll-snap-type: x mandatory;
+    margin-inline: 0;
+    overflow: visible;
+    padding: 0;
   }
 
   .home-thinking-track-card {
-    flex: 0 0 min(82vw, 320px);
-    min-height: 0;
+    width: 100%;
+    min-height: 96px;
     padding: 0.9rem 1rem;
-    scroll-snap-align: start;
+  }
+
+  .home-thinking-track-orbit {
+    top: 12px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
   }
 }
 

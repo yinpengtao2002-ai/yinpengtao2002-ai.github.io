@@ -552,6 +552,21 @@ test("home thinking count pills remain legible on the image card and category ca
   assert.match(globals, /\.home-thinking-track-head \.home-thinking-count-pill\s*\{[\s\S]*min-width:\s*58px[\s\S]*justify-content:\s*center[\s\S]*background:\s*color-mix\(in srgb,\s*var\(--thinking-track-accent,\s*var\(--accent-secondary\)\)\s*16%,\s*var\(--card\)\)/s);
 });
 
+test("home thinking mobile stacks category cards vertically", () => {
+  const mobileThinkingRail = mobileCssRule(".home-thinking-track-rail");
+  assert.match(mobileThinkingRail, /display:\s*grid/);
+  assert.match(mobileThinkingRail, /grid-template-columns:\s*1fr/);
+  assert.match(mobileThinkingRail, /margin-inline:\s*0/);
+  assert.match(mobileThinkingRail, /overflow:\s*visible/);
+  assert.match(mobileThinkingRail, /padding:\s*0/);
+  assert.doesNotMatch(mobileThinkingRail, /overflow-x:\s*auto/);
+  assert.doesNotMatch(mobileThinkingRail, /scroll-snap-type/);
+
+  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-thinking-track-card\s*\{[\s\S]*width:\s*100%[\s\S]*min-height:\s*96px/s);
+  assert.doesNotMatch(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-thinking-track-card\s*\{[\s\S]*flex:\s*0\s*0\s*min\(82vw,\s*320px\)[\s\S]*\}/s);
+  assert.doesNotMatch(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-thinking-track-card\s*\{[\s\S]*scroll-snap-align/s);
+});
+
 test("thinking lab keeps the original index layout with source-backed fixed categories", () => {
   assert.match(thinkingLab, /THINKING_CATEGORY_ORDER = \["全部", "工具", "AI创作", "思考记录"\]/);
   assert.match(thinkingLab, /useSearchParams/);
