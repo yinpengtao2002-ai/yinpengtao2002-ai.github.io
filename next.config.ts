@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
   // Pin the workspace root so Turbopack does not infer the parent home folder.
   turbopack: {
     root: projectRoot,
+    resolveAlias: {
+      "@perspective-dev/viewer/src/ts/extensions.js":
+        "./src/app/finance/perspective-bi/perspective-extensions-shim.js",
+    },
   },
 
   // Disable image optimization for compatibility

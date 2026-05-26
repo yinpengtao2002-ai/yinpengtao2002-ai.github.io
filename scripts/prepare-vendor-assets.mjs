@@ -13,6 +13,22 @@ const assets = [
     source: "node_modules/xlsx/dist/xlsx.full.min.js",
     target: "public/vendor/xlsx/xlsx.full.min.js",
   },
+  {
+    source: "node_modules/@perspective-dev/server/dist/wasm/perspective-server.wasm",
+    target: "public/vendor/perspective/perspective-server.wasm",
+  },
+  {
+    source: "node_modules/@perspective-dev/viewer/dist/wasm/perspective-viewer.wasm",
+    target: "public/vendor/perspective/perspective-viewer.wasm",
+  },
+  {
+    source: "node_modules/@perspective-dev/viewer/dist/css/pro.css",
+    target: "public/vendor/perspective/pro.css",
+  },
+  {
+    source: "node_modules/@perspective-dev/viewer/dist/css/intl/zh.css",
+    target: "public/vendor/perspective/zh.css",
+  },
 ];
 
 for (const asset of assets) {

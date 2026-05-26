@@ -19,6 +19,11 @@
       "id": "unit-attribution",
       "label": "单车归因",
       "description": "拆解单车指标变化中的结构效应和费率效应。"
+    },
+    {
+      "id": "bi-workbench",
+      "label": "BI 工作台",
+      "description": "上传明细数据，自由拖拽字段并快速生成透视表和图表。"
     }
   ],
   "models": [
@@ -202,6 +207,52 @@
           {
             "question": "结构效应和费率效应怎么理解？",
             "answer": "结构效应解释销量组合变化的影响；费率效应解释同一维度下单车水平变化的影响。"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "perspective-bi",
+      "categoryId": "bi-workbench",
+      "title": "Perspective BI 分析台",
+      "summary": "上传 CSV 或 Excel 明细数据，在网页内完成字段拖拽、透视表、筛选、排序和图表分析。",
+      "href": "/finance/perspective-bi",
+      "date": "2026-05-26",
+      "accent": "green",
+      "previewImage": "/images/product-stage/perspective-bi-preview.png",
+      "previewAlt": "Perspective BI 分析台的上传控制台、数据透视表、字段配置和图表预览",
+      "aiGuide": {
+        "purpose": "用于探索式 BI 分析，把用户上传的经营明细快速变成可拖拽字段、可筛选、可排序、可切换图表的网页工作台。",
+        "scenarios": ["临时数据探索", "维度和指标口径确认", "专项财务模型前的数据预检"],
+        "steps": ["打开模型后先查看自动加载的示例数据。", "上传 CSV、XLSX 或 XLS 明细表，页面会读取第一张表。", "在右侧拖动维度和指标字段，切换透视表、柱状图、折线图、热力图或散点图。"],
+        "sampleData": "页面默认加载一套经营明细示例数据，包含月份、大区、国家、车型、渠道、销量、净收入、边际和预算达成率。",
+        "fields": [
+          {
+            "name": "维度字段",
+            "description": "例如月份、大区、国家、车型、渠道等，用于分组、拆分、筛选和排序。"
+          },
+          {
+            "name": "指标字段",
+            "description": "例如销量、净收入、边际总额、单车净收入、单车边际等，用于聚合和图表展示。"
+          },
+          {
+            "name": "看板预设",
+            "description": "左侧预设提供收入按区域、单车质量矩阵、月份热力图和明细透视表，用户可以继续自由调整。"
+          },
+          {
+            "name": "当前视图导出",
+            "description": "用于把当前透视结果导出为 CSV，便于继续做汇报或留档。"
+          }
+        ],
+        "pitfalls": [
+          "上传文件第一行需要是表头，否则字段会无法正确识别。",
+          "同一列不要混合文本和数字，否则 Perspective 会把它当作维度而不是指标。",
+          "BI 分析台适合探索数据结构，严肃归因和预算复盘仍建议进入专项模型。"
+        ],
+        "faq": [
+          {
+            "question": "它和其他财务模型有什么区别？",
+            "answer": "Perspective BI 分析台更像通用数据透视工作台，适合先看数据；预算实际、分月趋势和单车归因模型则适合解决更明确的财务问题。"
           }
         ]
       }

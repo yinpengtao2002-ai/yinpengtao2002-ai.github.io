@@ -20,6 +20,11 @@
   },
   "dependencies": {
     "@notionhq/client": "^2.3.0",
+    "@perspective-dev/client": "^4.4.1",
+    "@perspective-dev/server": "^4.4.1",
+    "@perspective-dev/viewer": "^4.4.1",
+    "@perspective-dev/viewer-d3fc": "^4.4.1",
+    "@perspective-dev/viewer-datagrid": "^4.4.1",
     "framer-motion": "^12.23.26",
     "katex": "^0.16.45",
     "lucide-react": "^0.562.0",

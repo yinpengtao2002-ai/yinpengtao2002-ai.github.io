@@ -1,5 +1,5 @@
 // Auto-generated content data from markdown + Notion
-// Generated at: 2026-05-19T07:41:35.058Z
+// Generated at: 2026-05-26T09:08:13.995Z
 // DO NOT EDIT MANUALLY - run 'npm run prebuild' to regenerate
 
 export interface ContentItem {
@@ -60,6 +60,17 @@ export const financeContent: ContentItem[] = [
     "content": "用于比较两期单车指标变化，拆解变化来自销量结构还是单车水平。\n\n使用步骤：\n1. 打开模型后先查看自动加载的示例数据。\n2. 上传两期包含销量、指标总额和维度的数据。\n3. 选择分析维度，查看结构效应、费率效应、瀑布图和明细表。",
     "source": "registry",
     "id": 4
+  },
+  {
+    "slug": "perspective-bi",
+    "title": "Perspective BI 分析台",
+    "description": "上传 CSV 或 Excel 明细数据，在网页内完成字段拖拽、透视表、筛选、排序和图表分析。",
+    "date": "2026-05-26",
+    "category": "bi-workbench",
+    "href": "/finance/perspective-bi",
+    "content": "用于探索式 BI 分析，把用户上传的经营明细快速变成可拖拽字段、可筛选、可排序、可切换图表的网页工作台。\n\n使用步骤：\n1. 打开模型后先查看自动加载的示例数据。\n2. 上传 CSV、XLSX 或 XLS 明细表，页面会读取第一张表。\n3. 在右侧拖动维度和指标字段，切换透视表、柱状图、折线图、热力图或散点图。",
+    "source": "registry",
+    "id": 5
   }
 ];
 

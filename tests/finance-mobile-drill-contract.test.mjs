@@ -23,6 +23,18 @@ const monthlyTool = await readFile(
   new URL("../src/app/finance/monthly-trend/MonthlyTrendTool.tsx", import.meta.url),
   "utf8"
 );
+const perspectiveTool = await readFile(
+  new URL("../src/app/finance/perspective-bi/PerspectiveBITool.tsx", import.meta.url),
+  "utf8"
+).catch(() => "");
+const perspectiveEngine = await readFile(
+  new URL("../src/app/finance/perspective-bi/perspective-bi-engine.js", import.meta.url),
+  "utf8"
+).catch(() => "");
+const perspectiveCss = await readFile(
+  new URL("../src/app/finance/perspective-bi/tool.css", import.meta.url),
+  "utf8"
+).catch(() => "");
 
 test("margin analysis mobile waterfall detail overlays the chart with a return action", () => {
   assert.match(marginApp, /waterfall-touch-return/);
@@ -56,6 +68,40 @@ test("finance tool workbench titles share the generous margin-analysis title rhy
   assert.match(monthlyCss, /\.monthly-trend-tool \.model-subtitle\s*\{[^}]*margin-top:\s*0\.55rem[\s\S]*font-size:\s*0\.92rem[\s\S]*line-height:\s*1\.7/s);
   assert.match(marginCss, /\.main-header\s*\{[^}]*font-size:\s*1\.4rem/s);
   assert.match(monthlyCss, /\.monthly-trend-tool \.model-header h1\s*\{[^}]*font-size:\s*1\.4rem/s);
+});
+
+test("Perspective BI follows the finance workbench shell and upload controls", () => {
+  assert.match(perspectiveTool, /id="perspective-bi-root"/);
+  assert.match(perspectiveTool, /Perspective BI 分析台/);
+  assert.match(perspectiveTool, /id="perspective-file-input"/);
+  assert.match(perspectiveTool, /id="perspective-btn-demo"/);
+  assert.match(perspectiveTool, /id="perspective-btn-csv-template"/);
+  assert.match(perspectiveTool, /id="perspective-btn-xlsx-template"/);
+  assert.match(perspectiveTool, /createElement\("perspective-viewer"/);
+  assert.match(perspectiveEngine, /@perspective-dev\/client/);
+  assert.match(perspectiveEngine, /@perspective-dev\/viewer-datagrid/);
+  assert.match(perspectiveEngine, /@perspective-dev\/viewer-d3fc/);
+  assert.match(perspectiveEngine, /viewer\.load\(table\)/);
+  assert.match(perspectiveEngine, /viewer\.restore/);
+  assert.match(perspectiveEngine, /XLSX\.read/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.sidebar\s*\{/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.sidebar-backdrop\.visible\s*\{/);
+  assert.match(perspectiveCss, /@media\s*\(max-width:\s*860px\)/);
+});
+
+test("Perspective BI keeps uploaded file and field text out of HTML injection paths", () => {
+  assert.doesNotMatch(perspectiveEngine, /innerHTML/);
+});
+
+test("Perspective BI swaps the viewer to a new upload before deleting the previous table", () => {
+  assert.match(perspectiveEngine, /const previousTable = state\.table/);
+  assert.match(perspectiveEngine, /await viewer\.load\(table\)[\s\S]*await previousTable\?\.delete\(\)/);
+});
+
+test("Perspective BI keeps month and period columns as dimensions after upload parsing", () => {
+  assert.match(perspectiveEngine, /function isTimeDimensionColumn/);
+  assert.match(perspectiveEngine, /function normalizeValue\(value,\s*key = ""\)/);
+  assert.match(perspectiveEngine, /isTimeDimensionColumn\(key\)/);
 });
 
 test("finance model charts are locked against accidental zoom and drag by default", () => {

@@ -1,0 +1,588 @@
+.perspective-bi-tool {
+    --bg-primary: #faf9f5;
+    --bg-card: #ffffff;
+    --bg-soft: #fbfaf7;
+    --text-primary: #141413;
+    --text-secondary: #747168;
+    --text-muted: #aaa79d;
+    --accent-orange: #d97757;
+    --accent-blue: #5c8fba;
+    --accent-green: #788c5d;
+    --accent-red: #b65f55;
+    --border-light: #e8e6dc;
+    --shadow-soft: 0 10px 28px rgba(20, 20, 19, 0.07);
+    --sidebar-width: 300px;
+    --font-sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    --font-serif: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
+}
+
+.perspective-bi-tool,
+.perspective-bi-tool * {
+    box-sizing: border-box;
+}
+
+.perspective-bi-tool * {
+    margin: 0;
+    padding: 0;
+}
+
+.perspective-bi-tool {
+    display: flex;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: hidden;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-serif);
+}
+
+.perspective-bi-tool button,
+.perspective-bi-tool input,
+.perspective-bi-tool select {
+    font: inherit;
+}
+
+.perspective-bi-tool button {
+    border: 0;
+}
+
+.perspective-bi-tool .sidebar,
+.perspective-bi-tool .main-content {
+    scrollbar-width: thin;
+    scrollbar-color: #d9d6cb var(--bg-primary);
+}
+
+.perspective-bi-tool .sidebar::-webkit-scrollbar,
+.perspective-bi-tool .main-content::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.perspective-bi-tool .sidebar::-webkit-scrollbar-thumb,
+.perspective-bi-tool .main-content::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: #d9d6cb;
+}
+
+.perspective-bi-tool .sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    width: var(--sidebar-width);
+    min-width: var(--sidebar-width);
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+    border-right: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.94);
+    padding: 1.15rem 0.95rem 1.35rem;
+    transition: margin-left 0.25s ease, opacity 0.25s ease, transform 0.25s ease;
+}
+
+.perspective-bi-tool .sidebar.collapsed {
+    margin-left: calc(-1 * var(--sidebar-width));
+    opacity: 0;
+    pointer-events: none;
+}
+
+.perspective-bi-tool .sidebar-backdrop {
+    display: none;
+}
+
+.perspective-bi-tool .sidebar-toggle {
+    position: fixed;
+    top: 14px;
+    left: calc(var(--sidebar-width) - 46px);
+    z-index: 80;
+    display: flex;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-card);
+    color: var(--accent-orange);
+    box-shadow: 0 6px 18px rgba(20, 20, 19, 0.08);
+    font-family: var(--font-sans);
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.perspective-bi-tool .sidebar-expand {
+    position: fixed;
+    top: 14px;
+    left: 16px;
+    z-index: 120;
+    display: inline-flex;
+    min-width: 96px;
+    height: 40px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(232, 230, 220, 0.95);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.96);
+    color: var(--text-primary);
+    box-shadow: 0 10px 30px rgba(20, 20, 19, 0.16);
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.perspective-bi-tool .sidebar-block {
+    margin-bottom: 0.9rem;
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 0.9rem;
+}
+
+.perspective-bi-tool .sidebar-block:last-child {
+    border-bottom: 0;
+}
+
+.perspective-bi-tool .sidebar-kicker {
+    color: var(--accent-orange);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+.perspective-bi-tool .sidebar-heading {
+    margin-top: 0.35rem;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 1.42rem;
+    line-height: 1.2;
+}
+
+.perspective-bi-tool .sidebar-copy,
+.perspective-bi-tool .sidebar-note {
+    margin-top: 0.55rem;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    line-height: 1.65;
+}
+
+.perspective-bi-tool .sidebar-title {
+    margin-bottom: 0.75rem;
+    border-left: 3px solid var(--accent-orange);
+    padding-left: 0.65rem;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.perspective-bi-tool .message-area {
+    margin-top: 0.75rem;
+}
+
+.perspective-bi-tool .message {
+    border-radius: 8px;
+    padding: 0.55rem 0.7rem;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+.perspective-bi-tool .message.success {
+    border: 1px solid rgba(120, 140, 93, 0.28);
+    background: rgba(120, 140, 93, 0.1);
+    color: #5f7544;
+}
+
+.perspective-bi-tool .message.error {
+    border: 1px solid rgba(182, 95, 85, 0.28);
+    background: rgba(182, 95, 85, 0.1);
+    color: var(--accent-red);
+}
+
+.perspective-bi-tool .upload-zone {
+    display: block;
+    cursor: pointer;
+    border: 1px dashed rgba(217, 119, 87, 0.55);
+    border-radius: 8px;
+    background: rgba(217, 119, 87, 0.06);
+    padding: 0.9rem;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.perspective-bi-tool .upload-zone:hover,
+.perspective-bi-tool .upload-zone.drag-over {
+    border-color: var(--accent-orange);
+    background: rgba(217, 119, 87, 0.1);
+}
+
+.perspective-bi-tool .upload-label {
+    display: grid;
+    gap: 0.35rem;
+    cursor: pointer;
+    font-family: var(--font-sans);
+}
+
+.perspective-bi-tool .upload-title {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.perspective-bi-tool .upload-hint {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+.perspective-bi-tool .button-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-top: 0.65rem;
+}
+
+.perspective-bi-tool .button-grid .btn:first-child {
+    grid-column: 1 / -1;
+}
+
+.perspective-bi-tool .btn {
+    display: inline-flex;
+    min-height: 36px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    padding: 0.45rem 0.75rem;
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: 700;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.perspective-bi-tool .btn:hover {
+    transform: translateY(-1px);
+}
+
+.perspective-bi-tool .btn-primary {
+    background: var(--accent-orange);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(217, 119, 87, 0.22);
+}
+
+.perspective-bi-tool .btn-secondary {
+    border: 1px solid var(--border-light);
+    background: var(--bg-card);
+    color: var(--text-primary);
+}
+
+.perspective-bi-tool .sidebar-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+}
+
+.perspective-bi-tool .field {
+    display: grid;
+    gap: 0.35rem;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.perspective-bi-tool .input {
+    width: 100%;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    padding: 0.55rem 0.65rem;
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+}
+
+.perspective-bi-tool .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.perspective-bi-tool .summary-card {
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-soft);
+    padding: 0.65rem;
+    font-family: var(--font-sans);
+}
+
+.perspective-bi-tool .summary-card span {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+}
+
+.perspective-bi-tool .summary-card strong {
+    display: block;
+    margin-top: 0.2rem;
+    color: var(--text-primary);
+    font-size: 1.08rem;
+}
+
+.perspective-bi-tool .field-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.65rem;
+}
+
+.perspective-bi-tool .field-pill {
+    border: 1px solid var(--border-light);
+    border-radius: 999px;
+    padding: 0.3rem 0.55rem;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.perspective-bi-tool .field-pill.metric {
+    border-color: rgba(92, 143, 186, 0.32);
+    background: rgba(92, 143, 186, 0.09);
+    color: #426f96;
+}
+
+.perspective-bi-tool .field-pill.dimension {
+    border-color: rgba(120, 140, 93, 0.32);
+    background: rgba(120, 140, 93, 0.09);
+    color: #63774b;
+}
+
+.perspective-bi-tool .main-content {
+    flex: 1;
+    min-width: 0;
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+    padding: 1.25rem 1.35rem 1.6rem;
+}
+
+.perspective-bi-tool .model-header {
+    display: flex;
+    max-width: 1420px;
+    margin: 0 auto 1.25rem;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.perspective-bi-tool .eyebrow {
+    color: var(--accent-orange);
+    font-family: var(--font-sans);
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+.perspective-bi-tool .model-header h1 {
+    margin-top: 0.25rem;
+    background: linear-gradient(135deg, var(--accent-orange), var(--accent-blue));
+    background-clip: text;
+    color: transparent;
+    font-family: var(--font-sans);
+    font-size: clamp(1.55rem, 2.1vw, 2.15rem);
+    font-weight: 800;
+    line-height: 1.18;
+}
+
+.perspective-bi-tool .model-subtitle {
+    max-width: 760px;
+    margin-top: 0.65rem;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    line-height: 1.7;
+}
+
+.perspective-bi-tool .data-status,
+.perspective-bi-tool .panel-pill {
+    border: 1px solid rgba(92, 143, 186, 0.25);
+    border-radius: 999px;
+    background: rgba(92, 143, 186, 0.1);
+    color: #426f96;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 800;
+    padding: 0.4rem 0.65rem;
+    white-space: nowrap;
+}
+
+.perspective-bi-tool .workspace-grid {
+    display: grid;
+    max-width: 1420px;
+    margin: 0 auto;
+}
+
+.perspective-bi-tool .featured-grid {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.perspective-bi-tool .panel {
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-card);
+    box-shadow: var(--shadow-soft);
+}
+
+.perspective-bi-tool .perspective-panel {
+    min-height: calc(100vh - 8.5rem);
+    overflow: hidden;
+}
+
+.perspective-bi-tool .panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid var(--border-light);
+    padding: 1rem 1rem 0.85rem;
+}
+
+.perspective-bi-tool .panel-header h2 {
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.perspective-bi-tool .panel-header p {
+    margin-top: 0.35rem;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    line-height: 1.55;
+}
+
+.perspective-bi-tool .viewer-frame {
+    height: calc(100vh - 14rem);
+    min-height: 620px;
+    padding: 0.85rem;
+}
+
+.perspective-bi-tool perspective-viewer {
+    width: 100%;
+    height: 100%;
+    min-height: 600px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: #fff;
+    color: #1f2933;
+    font-family: var(--font-sans);
+    --plugin--background: #ffffff;
+    --rt-pos-cell--color: #5f7544;
+    --rt-neg-cell--color: #b65f55;
+    --psp-d3fc--series--color: #5c8fba;
+    --psp-d3fc--series-1--color: #d97757;
+    --psp-d3fc--series-2--color: #788c5d;
+    --psp-d3fc--series-3--color: #5c8fba;
+    --psp-d3fc--gridline--color: #e8e6dc;
+    --psp-d3fc--axis-lines--color: #d9d6cb;
+    --psp-label--group-by--content: "分组";
+    --psp-label--split-by--content: "拆分";
+    --psp-label--sort--content: "排序";
+    --psp-label--filter--content: "筛选";
+    --psp-label--transpose-button--content: "交换行列";
+    --psp-label--config-button--content: "配置";
+    --psp-label--all-columns--content: "全部字段";
+    --psp-label--untitled--content: "未命名图表";
+    --psp-plugin-name--datagrid--content: "数据表";
+    --psp-plugin-name--treemap--content: "矩形树图";
+    --psp-plugin-name--sunburst--content: "旭日图";
+    --psp-plugin-name--heatmap--content: "热力图";
+    --psp-plugin-name--x-bar--content: "横向柱状图";
+    --psp-plugin-name--y-bar--content: "纵向柱状图";
+    --psp-plugin-name--y-line--content: "折线图";
+    --psp-plugin-name--x-y-line--content: "XY 折线图";
+    --psp-plugin-name--x-y-scatter--content: "散点图";
+    --psp-plugin-name--y-scatter--content: "Y 轴散点图";
+    --psp-plugin-name--y-area--content: "面积图";
+}
+
+@media (max-width: 1080px) {
+    .perspective-bi-tool .model-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 860px) {
+    .perspective-bi-tool {
+        display: block;
+    }
+
+    .perspective-bi-tool .sidebar {
+        position: fixed;
+        left: 0;
+        z-index: 110;
+        width: min(86vw, var(--sidebar-width));
+        min-width: 0;
+        transform: translateX(0);
+    }
+
+    .perspective-bi-tool .sidebar.collapsed {
+        margin-left: 0;
+        opacity: 1;
+        transform: translateX(-104%);
+    }
+
+    .perspective-bi-tool .sidebar-toggle {
+        display: none;
+    }
+
+    .perspective-bi-tool .sidebar-backdrop.visible {
+        position: fixed;
+        inset: 0;
+        z-index: 90;
+        display: block;
+        background: rgba(20, 20, 19, 0.28);
+    }
+
+    .perspective-bi-tool .main-content {
+        height: 100vh;
+        height: 100dvh;
+        padding: 4.2rem 0.75rem 1rem;
+    }
+
+    .perspective-bi-tool .model-header {
+        margin-bottom: 0.85rem;
+    }
+
+    .perspective-bi-tool .model-header h1 {
+        font-size: 1.4rem;
+    }
+
+    .perspective-bi-tool .model-subtitle {
+        font-size: 0.86rem;
+    }
+
+    .perspective-bi-tool .panel-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .perspective-bi-tool .viewer-frame {
+        min-height: 640px;
+        height: calc(100vh - 17rem);
+        padding: 0.55rem;
+    }
+
+    .perspective-bi-tool perspective-viewer {
+        min-height: 620px;
+    }
+}

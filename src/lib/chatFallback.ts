@@ -84,6 +84,15 @@ export function getLocalFallbackResponse(
         }, options.includeOfflineNotice);
     }
 
+    if (includesAny(lower, ["perspective", "bi", "透视", "数据看板", "拖拽字段", "自助分析"])) {
+        const cards = financeContent.filter((item) => item.href.includes("perspective-bi") || item.title.includes("BI"));
+        return withOfflineNotice({
+            response: "自助 BI 可以先打开 [Perspective BI 分析台](/finance/perspective-bi)。它适合上传 CSV 或 Excel 明细数据，在网页内拖拽字段、切换透视表和图表，先做探索式分析。",
+            contentCards: cards.length > 0 ? cards : undefined,
+            cardType: cards.length > 0 ? "finance" : undefined,
+        }, options.includeOfflineNotice);
+    }
+
     if (includesAny(lower, ["预算", "实际", "复盘", "经营看板", "预算复盘", "business"])) {
         const cards = financeContent.filter((item) => item.href.includes("business-analysis") || item.title.includes("预算"));
         return withOfflineNotice({

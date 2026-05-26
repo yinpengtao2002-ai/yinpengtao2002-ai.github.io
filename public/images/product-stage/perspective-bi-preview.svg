@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1536" height="1024" viewBox="0 0 1536 1024">
+  <rect width="1536" height="1024" fill="#faf9f5"/>
+  <rect x="70" y="68" width="328" height="888" rx="18" fill="#ffffff" stroke="#e8e6dc"/>
+  <text x="102" y="126" fill="#d97757" font-family="Arial, sans-serif" font-size="26" font-weight="700" letter-spacing="4">PERSPECTIVE BI</text>
+  <text x="102" y="178" fill="#141413" font-family="Arial, sans-serif" font-size="40" font-weight="800">BI Workbench</text>
+  <rect x="102" y="226" width="264" height="116" rx="14" fill="#fbfaf7" stroke="#d97757" stroke-dasharray="12 10"/>
+  <text x="128" y="294" fill="#747168" font-family="Arial, sans-serif" font-size="28" font-weight="700">Upload CSV / XLSX</text>
+  <rect x="102" y="380" width="264" height="50" rx="12" fill="#d97757"/>
+  <text x="178" y="414" fill="#ffffff" font-family="Arial, sans-serif" font-size="24" font-weight="700">Demo Data</text>
+  <rect x="102" y="452" width="124" height="48" rx="12" fill="#ffffff" stroke="#e8e6dc"/>
+  <rect x="242" y="452" width="124" height="48" rx="12" fill="#ffffff" stroke="#e8e6dc"/>
+  <text x="136" y="484" fill="#141413" font-family="Arial, sans-serif" font-size="20" font-weight="700">CSV</text>
+  <text x="272" y="484" fill="#141413" font-family="Arial, sans-serif" font-size="20" font-weight="700">Excel</text>
+  <rect x="102" y="548" width="264" height="50" rx="12" fill="#ffffff" stroke="#e8e6dc"/>
+  <text x="128" y="581" fill="#141413" font-family="Arial, sans-serif" font-size="22" font-weight="700">Revenue by Region</text>
+  <g>
+    <rect x="102" y="642" width="118" height="76" rx="14" fill="#fbfaf7" stroke="#e8e6dc"/>
+    <rect x="248" y="642" width="118" height="76" rx="14" fill="#fbfaf7" stroke="#e8e6dc"/>
+    <rect x="102" y="738" width="118" height="76" rx="14" fill="#fbfaf7" stroke="#e8e6dc"/>
+    <rect x="248" y="738" width="118" height="76" rx="14" fill="#fbfaf7" stroke="#e8e6dc"/>
+    <text x="126" y="687" fill="#5c8fba" font-family="Arial, sans-serif" font-size="28" font-weight="800">12</text>
+    <text x="272" y="687" fill="#788c5d" font-family="Arial, sans-serif" font-size="28" font-weight="800">5</text>
+    <text x="126" y="783" fill="#d97757" font-family="Arial, sans-serif" font-size="28" font-weight="800">7</text>
+    <text x="272" y="783" fill="#141413" font-family="Arial, sans-serif" font-size="28" font-weight="800">11</text>
+  </g>
+  <rect x="452" y="68" width="1014" height="888" rx="22" fill="#ffffff" stroke="#e8e6dc"/>
+  <text x="506" y="136" fill="#d97757" font-family="Arial, sans-serif" font-size="24" font-weight="800" letter-spacing="4">FINANCIAL MODELING</text>
+  <text x="506" y="196" fill="#141413" font-family="Arial, sans-serif" font-size="54" font-weight="900">Perspective BI</text>
+  <rect x="506" y="250" width="906" height="642" rx="18" fill="#ffffff" stroke="#e8e6dc"/>
+  <rect x="506" y="250" width="906" height="72" rx="18" fill="#fbfaf7"/>
+  <rect x="536" y="274" width="152" height="28" rx="14" fill="#e8e6dc"/>
+  <rect x="710" y="274" width="152" height="28" rx="14" fill="#e8e6dc"/>
+  <rect x="884" y="274" width="152" height="28" rx="14" fill="#d97757" opacity=".28"/>
+  <rect x="1060" y="274" width="152" height="28" rx="14" fill="#5c8fba" opacity=".24"/>
+  <g stroke="#e8e6dc" stroke-width="2">
+    <line x1="536" y1="368" x2="1376" y2="368"/>
+    <line x1="536" y1="436" x2="1376" y2="436"/>
+    <line x1="536" y1="504" x2="1376" y2="504"/>
+    <line x1="536" y1="572" x2="1376" y2="572"/>
+    <line x1="536" y1="640" x2="1376" y2="640"/>
+    <line x1="536" y1="708" x2="1376" y2="708"/>
+    <line x1="536" y1="776" x2="1376" y2="776"/>
+    <line x1="676" y1="338" x2="676" y2="838"/>
+    <line x1="878" y1="338" x2="878" y2="838"/>
+    <line x1="1080" y1="338" x2="1080" y2="838"/>
+    <line x1="1282" y1="338" x2="1282" y2="838"/>
+  </g>
+  <g fill="#d97757" opacity=".88">
+    <rect x="720" y="526" width="96" height="250" rx="10"/>
+    <rect x="922" y="466" width="96" height="310" rx="10"/>
+    <rect x="1124" y="594" width="96" height="182" rx="10"/>
+    <rect x="1326" y="414" width="50" height="362" rx="10"/>
+  </g>
+  <g fill="#5c8fba" opacity=".86">
+    <rect x="720" y="628" width="96" height="148" rx="10"/>
+    <rect x="922" y="570" width="96" height="206" rx="10"/>
+    <rect x="1124" y="664" width="96" height="112" rx="10"/>
+    <rect x="1326" y="550" width="50" height="226" rx="10"/>
+  </g>
+  <text x="548" y="384" fill="#747168" font-family="Arial, sans-serif" font-size="22" font-weight="700">Region</text>
+  <text x="548" y="452" fill="#747168" font-family="Arial, sans-serif" font-size="22" font-weight="700">Country</text>
+  <text x="548" y="520" fill="#747168" font-family="Arial, sans-serif" font-size="22" font-weight="700">Model</text>
+  <text x="548" y="588" fill="#747168" font-family="Arial, sans-serif" font-size="22" font-weight="700">Revenue</text>
+  <text x="548" y="656" fill="#747168" font-family="Arial, sans-serif" font-size="22" font-weight="700">Margin</text>
+  <text x="548" y="724" fill="#747168" font-family="Arial, sans-serif" font-size="22" font-weight="700">Budget</text>
+</svg>

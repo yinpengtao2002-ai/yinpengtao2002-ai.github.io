@@ -3,7 +3,13 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const eslintConfig = await readFile(new URL("../eslint.config.mjs", import.meta.url), "utf8");
+const nextConfig = await readFile(new URL("../next.config.ts", import.meta.url), "utf8");
 const packageJson = await readFile(new URL("../package.json", import.meta.url), "utf8");
+const vendorScript = await readFile(new URL("../scripts/prepare-vendor-assets.mjs", import.meta.url), "utf8");
+const perspectiveShim = await readFile(
+  new URL("../src/app/finance/perspective-bi/perspective-extensions-shim.js", import.meta.url),
+  "utf8"
+).catch(() => "");
 const notionSyncScript = await readFile(new URL("../scripts/sync-notion-content.mjs", import.meta.url), "utf8").catch(() => "");
 
 test("eslint ignores project-local worktrees", () => {
@@ -24,4 +30,20 @@ test("project exposes a manual Notion content sync command", () => {
   assert.match(notionSyncScript, /git commit --allow-empty/);
   assert.match(notionSyncScript, /src\/lib\/data\/generated\/content\.ts/);
   assert.doesNotMatch(notionSyncScript, /NOTION_TOKEN=/);
+});
+
+test("Perspective BI dependencies and local browser assets are wired", () => {
+  assert.match(packageJson, /"@perspective-dev\/client":/);
+  assert.match(packageJson, /"@perspective-dev\/server":/);
+  assert.match(packageJson, /"@perspective-dev\/viewer":/);
+  assert.match(packageJson, /"@perspective-dev\/viewer-datagrid":/);
+  assert.match(packageJson, /"@perspective-dev\/viewer-d3fc":/);
+  assert.match(vendorScript, /@perspective-dev\/server\/dist\/wasm\/perspective-server\.wasm/);
+  assert.match(vendorScript, /@perspective-dev\/viewer\/dist\/wasm\/perspective-viewer\.wasm/);
+  assert.match(vendorScript, /@perspective-dev\/viewer\/dist\/css\/pro\.css/);
+  assert.match(vendorScript, /@perspective-dev\/viewer\/dist\/css\/intl\/zh\.css/);
+  assert.match(nextConfig, /@perspective-dev\/viewer\/src\/ts\/extensions\.js/);
+  assert.match(nextConfig, /perspective-extensions-shim\.js/);
+  assert.match(perspectiveShim, /class PerspectiveSelectDetail/);
+  assert.match(perspectiveShim, /removeFilters/);
 });

@@ -8,7 +8,11 @@ const ChatWidget = dynamic(() => import("@/components/ChatWidget"), { ssr: false
 const SiteNavigation = dynamic(() => import("@/components/layout/SiteNavigation"), { ssr: false });
 
 function shouldHideDecorativeExtras(pathname: string) {
-    return pathname.startsWith("/finance/business-analysis") || pathname.startsWith("/tools/subtitle-workbench");
+    return (
+        pathname.startsWith("/finance/business-analysis") ||
+        pathname.startsWith("/finance/perspective-bi") ||
+        pathname.startsWith("/tools/subtitle-workbench")
+    );
 }
 
 function shouldHideAssistant(pathname: string) {

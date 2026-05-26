@@ -18,14 +18,14 @@ function assertCssRuleHas(css, selector, declarations) {
 test("finance registry contains the approved categories in order", () => {
   assert.deepEqual(
     registry.categories.map((category) => category.id),
-    ["budget-review", "trend-monitoring", "profit-simulation", "unit-attribution"]
+    ["budget-review", "trend-monitoring", "profit-simulation", "unit-attribution", "bi-workbench"]
   );
 });
 
-test("finance registry contains the four existing model routes", () => {
+test("finance registry contains the approved model routes", () => {
   assert.deepEqual(
     registry.models.map((model) => model.slug).sort(),
-    ["business-analysis", "margin-analysis", "monthly-trend", "sensitivity-analysis"]
+    ["business-analysis", "margin-analysis", "monthly-trend", "perspective-bi", "sensitivity-analysis"]
   );
   for (const model of registry.models) {
     assert.match(model.href, /^\/finance\/[a-z-]+$/);
@@ -34,6 +34,19 @@ test("finance registry contains the four existing model routes", () => {
     assert.ok(Array.isArray(model.aiGuide.steps), `${model.slug} needs AI guide steps`);
     assert.ok(model.aiGuide.steps.length >= 3, `${model.slug} needs at least three usage steps`);
   }
+});
+
+test("Perspective BI is registered as a user-operable finance model", () => {
+  const model = registry.models.find((item) => item.slug === "perspective-bi");
+
+  assert.ok(model, "perspective-bi should be present in the finance model registry");
+  assert.equal(model.href, "/finance/perspective-bi");
+  assert.equal(model.categoryId, "bi-workbench");
+  assert.match(model.title, /BI/);
+  assert.match(model.summary, /上传/);
+  assert.match(model.summary, /透视|看板|分析/);
+  assert.ok(model.aiGuide.fields.some((field) => /维度|指标/.test(field.name)));
+  assert.ok(model.aiGuide.steps.some((step) => /上传|示例数据/.test(step)));
 });
 
 test("finance registry maps every model to an existing category", () => {

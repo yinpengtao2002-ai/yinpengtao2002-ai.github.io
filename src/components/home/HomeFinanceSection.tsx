@@ -60,6 +60,12 @@ const modelDetails: Record<string, { focus: string; detail: string; guide: strin
     guide: "先设置关键变量假设，再看利润影响排序，用敏感变量反推需要优先管理的经营动作。",
     points: ["利润情景测算", "变量敏感性排序", "目标利润倒推"],
   },
+  "perspective-bi": {
+    focus: "上传明细后的自助 BI 数据透视",
+    detail: "适合先把 CSV 或 Excel 明细放进网页工作台，拖动字段、切换图表、筛选排序，快速判断数据里有什么。",
+    guide: "先上传明细或查看示例数据，再用字段拖拽确认维度和指标，最后把清晰的问题带入专项模型。",
+    points: ["自助 BI 透视", "字段拖拽分析", "上传明细探索"],
+  },
 };
 
 export default function HomeFinanceSection() {

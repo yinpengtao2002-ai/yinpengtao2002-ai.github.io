@@ -47,6 +47,12 @@ export const INTERNAL_ROUTE_CARDS: Record<string, InternalRouteCard> = {
         description: "调整关键变量并快速判断利润影响。",
         accent: "var(--accent-secondary)",
     },
+    "/finance/perspective-bi": {
+        href: "/finance/perspective-bi",
+        title: "Perspective BI 分析台",
+        description: "上传明细数据，拖拽字段并生成透视表和图表。",
+        accent: "var(--accent-tertiary)",
+    },
 };
 
 const MARKDOWN_INTERNAL_LINK_PATTERN =
