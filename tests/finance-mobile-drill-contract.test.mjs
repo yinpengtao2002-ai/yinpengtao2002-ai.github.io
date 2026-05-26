@@ -77,6 +77,7 @@ test("Perspective BI follows the finance workbench shell and upload controls", (
   assert.match(perspectiveTool, /id="perspective-btn-demo"/);
   assert.match(perspectiveTool, /id="perspective-btn-csv-template"/);
   assert.match(perspectiveTool, /id="perspective-btn-xlsx-template"/);
+  assert.match(perspectiveTool, /id="perspective-field-roles"/);
   assert.match(perspectiveTool, /createElement\("perspective-viewer"/);
   assert.match(perspectiveEngine, /@perspective-dev\/client/);
   assert.match(perspectiveEngine, /@perspective-dev\/viewer-datagrid/);
@@ -84,9 +85,38 @@ test("Perspective BI follows the finance workbench shell and upload controls", (
   assert.match(perspectiveEngine, /viewer\.load\(table\)/);
   assert.match(perspectiveEngine, /viewer\.restore/);
   assert.match(perspectiveEngine, /XLSX\.read/);
-  assert.match(perspectiveCss, /\.perspective-bi-tool \.sidebar\s*\{/);
-  assert.match(perspectiveCss, /\.perspective-bi-tool \.sidebar-backdrop\.visible\s*\{/);
-  assert.match(perspectiveCss, /@media\s*\(max-width:\s*860px\)/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.data-toolbar\s*\{/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.field-role-row\s*\{/);
+  assert.doesNotMatch(perspectiveTool, /id="perspective-sidebar"/);
+  assert.doesNotMatch(perspectiveCss, /\.perspective-bi-tool \.sidebar\s*\{/);
+  assert.doesNotMatch(perspectiveCss, /\.perspective-bi-tool \.sidebar-backdrop/);
+});
+
+test("Perspective BI templates only ask for base business fields and derive unit metrics", () => {
+  const templateRowsMatch = perspectiveEngine.match(/const TEMPLATE_ROWS = \[([\s\S]*?)\];/);
+  assert.ok(templateRowsMatch, "template rows should be declared");
+  assert.doesNotMatch(templateRowsMatch[1], /单车净收入|单车边际|预算达成率/);
+  assert.match(templateRowsMatch[1], /销量/);
+  assert.match(templateRowsMatch[1], /净收入/);
+  assert.match(templateRowsMatch[1], /边际总额/);
+  assert.match(perspectiveEngine, /function enrichDerivedMetrics\(rows\)/);
+  assert.match(perspectiveEngine, /单车净收入/);
+  assert.match(perspectiveEngine, /单车边际/);
+  assert.doesNotMatch(perspectiveEngine, /预算达成率/);
+});
+
+test("Perspective BI lets users confirm field roles and aggregations before analysis", () => {
+  assert.match(perspectiveEngine, /const FIELD_ROLE_OPTIONS = \["dimension", "metric", "ignore"\]/);
+  assert.match(perspectiveEngine, /function inferFieldRoles\(rows\)/);
+  assert.match(perspectiveEngine, /function renderFieldRoles\(rows\)/);
+  assert.match(perspectiveEngine, /function handleFieldRoleChange/);
+  assert.match(perspectiveEngine, /function handleAggregationChange/);
+  assert.match(perspectiveEngine, /data-role-select/);
+  assert.match(perspectiveEngine, /data-aggregate-select/);
+});
+
+test("Perspective BI revenue preset uses a stable aggregate table before chart tweaks", () => {
+  assert.match(perspectiveEngine, /title:\s*"收入按区域"[\s\S]*plugin:\s*"Datagrid"[\s\S]*group_by:\s*\[region\]\.filter\(Boolean\)[\s\S]*split_by:\s*\[\]/s);
 });
 
 test("Perspective BI keeps uploaded file and field text out of HTML injection paths", () => {

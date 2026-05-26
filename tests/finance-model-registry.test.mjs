@@ -47,6 +47,8 @@ test("Perspective BI is registered as a user-operable finance model", () => {
   assert.match(model.summary, /透视|看板|分析/);
   assert.ok(model.aiGuide.fields.some((field) => /维度|指标/.test(field.name)));
   assert.ok(model.aiGuide.steps.some((step) => /上传|示例数据/.test(step)));
+  assert.doesNotMatch(model.aiGuide.sampleData, /预算达成率/);
+  assert.ok(model.aiGuide.fields.some((field) => /派生指标/.test(field.name)));
 });
 
 test("finance registry maps every model to an existing category", () => {

@@ -5,23 +5,42 @@ import "@perspective-dev/viewer-d3fc";
 import * as XLSX from "xlsx";
 
 const SAMPLE_ROWS = [
-    { 月份: "2026-01", 大区: "欧洲", 国家: "德国", 车型: "Alpha", 渠道: "经销", 销量: 1280, 净收入: 16840, 单车净收入: 13.16, 边际总额: 4120, 单车边际: 3.22, 预算达成率: 0.94 },
-    { 月份: "2026-01", 大区: "欧洲", 国家: "法国", 车型: "Alpha", 渠道: "直营", 销量: 960, 净收入: 12620, 单车净收入: 13.15, 边际总额: 2980, 单车边际: 3.1, 预算达成率: 0.9 },
-    { 月份: "2026-01", 大区: "拉美", 国家: "巴西", 车型: "Beta", 渠道: "经销", 销量: 1420, 净收入: 15650, 单车净收入: 11.02, 边际总额: 3540, 单车边际: 2.49, 预算达成率: 1.04 },
-    { 月份: "2026-02", 大区: "欧洲", 国家: "德国", 车型: "Gamma", 渠道: "经销", 销量: 1360, 净收入: 18940, 单车净收入: 13.93, 边际总额: 4860, 单车边际: 3.57, 预算达成率: 1.02 },
-    { 月份: "2026-02", 大区: "中东", 国家: "阿联酋", 车型: "Beta", 渠道: "直营", 销量: 820, 净收入: 10890, 单车净收入: 13.28, 边际总额: 2680, 单车边际: 3.27, 预算达成率: 0.97 },
-    { 月份: "2026-02", 大区: "拉美", 国家: "墨西哥", 车型: "Alpha", 渠道: "经销", 销量: 1190, 净收入: 13780, 单车净收入: 11.58, 边际总额: 2910, 单车边际: 2.45, 预算达成率: 0.88 },
-    { 月份: "2026-03", 大区: "欧洲", 国家: "西班牙", 车型: "Beta", 渠道: "直营", 销量: 1040, 净收入: 13490, 单车净收入: 12.97, 边际总额: 3310, 单车边际: 3.18, 预算达成率: 0.99 },
-    { 月份: "2026-03", 大区: "中东", 国家: "沙特", 车型: "Gamma", 渠道: "经销", 销量: 910, 净收入: 13240, 单车净收入: 14.55, 边际总额: 3860, 单车边际: 4.24, 预算达成率: 1.08 },
-    { 月份: "2026-03", 大区: "拉美", 国家: "巴西", 车型: "Gamma", 渠道: "经销", 销量: 1510, 净收入: 18480, 单车净收入: 12.24, 边际总额: 4380, 单车边际: 2.9, 预算达成率: 1.06 },
-    { 月份: "2026-04", 大区: "欧洲", 国家: "法国", 车型: "Gamma", 渠道: "直营", 销量: 1120, 净收入: 16130, 单车净收入: 14.4, 边际总额: 4210, 单车边际: 3.76, 预算达成率: 1.03 },
-    { 月份: "2026-04", 大区: "中东", 国家: "阿联酋", 车型: "Alpha", 渠道: "经销", 销量: 990, 净收入: 12120, 单车净收入: 12.24, 边际总额: 2860, 单车边际: 2.89, 预算达成率: 0.92 },
-    { 月份: "2026-04", 大区: "拉美", 国家: "墨西哥", 车型: "Beta", 渠道: "直营", 销量: 1320, 净收入: 15690, 单车净收入: 11.89, 边际总额: 3620, 单车边际: 2.74, 预算达成率: 1.01 },
+    { 月份: "2026-01", 大区: "欧洲", 国家: "德国", 车型: "Alpha", 渠道: "经销", 销量: 1280, 净收入: 16840, 边际总额: 4120 },
+    { 月份: "2026-01", 大区: "欧洲", 国家: "法国", 车型: "Alpha", 渠道: "直营", 销量: 960, 净收入: 12620, 边际总额: 2980 },
+    { 月份: "2026-01", 大区: "拉美", 国家: "巴西", 车型: "Beta", 渠道: "经销", 销量: 1420, 净收入: 15650, 边际总额: 3540 },
+    { 月份: "2026-02", 大区: "欧洲", 国家: "德国", 车型: "Gamma", 渠道: "经销", 销量: 1360, 净收入: 18940, 边际总额: 4860 },
+    { 月份: "2026-02", 大区: "中东", 国家: "阿联酋", 车型: "Beta", 渠道: "直营", 销量: 820, 净收入: 10890, 边际总额: 2680 },
+    { 月份: "2026-02", 大区: "拉美", 国家: "墨西哥", 车型: "Alpha", 渠道: "经销", 销量: 1190, 净收入: 13780, 边际总额: 2910 },
+    { 月份: "2026-03", 大区: "欧洲", 国家: "西班牙", 车型: "Beta", 渠道: "直营", 销量: 1040, 净收入: 13490, 边际总额: 3310 },
+    { 月份: "2026-03", 大区: "中东", 国家: "沙特", 车型: "Gamma", 渠道: "经销", 销量: 910, 净收入: 13240, 边际总额: 3860 },
+    { 月份: "2026-03", 大区: "拉美", 国家: "巴西", 车型: "Gamma", 渠道: "经销", 销量: 1510, 净收入: 18480, 边际总额: 4380 },
+    { 月份: "2026-04", 大区: "欧洲", 国家: "法国", 车型: "Gamma", 渠道: "直营", 销量: 1120, 净收入: 16130, 边际总额: 4210 },
+    { 月份: "2026-04", 大区: "中东", 国家: "阿联酋", 车型: "Alpha", 渠道: "经销", 销量: 990, 净收入: 12120, 边际总额: 2860 },
+    { 月份: "2026-04", 大区: "拉美", 国家: "墨西哥", 车型: "Beta", 渠道: "直营", 销量: 1320, 净收入: 15690, 边际总额: 3620 },
 ];
 
 const TEMPLATE_ROWS = [
-    { 月份: "2026-01", 大区: "欧洲", 国家: "德国", 车型: "Alpha", 渠道: "经销", 销量: 1000, 净收入: 12000, 单车净收入: 12, 边际总额: 3200, 单车边际: 3.2, 预算达成率: 0.96 },
-    { 月份: "2026-02", 大区: "拉美", 国家: "巴西", 车型: "Beta", 渠道: "直营", 销量: 900, 净收入: 10350, 单车净收入: 11.5, 边际总额: 2520, 单车边际: 2.8, 预算达成率: 1.02 },
+    { 月份: "2026-01", 大区: "欧洲", 国家: "德国", 车型: "Alpha", 渠道: "经销", 销量: 1000, 净收入: 12000, 边际总额: 3200 },
+    { 月份: "2026-02", 大区: "拉美", 国家: "巴西", 车型: "Beta", 渠道: "直营", 销量: 900, 净收入: 10350, 边际总额: 2520 },
+];
+
+const FIELD_ROLE_OPTIONS = ["dimension", "metric", "ignore"];
+const AGGREGATION_OPTIONS = ["sum", "avg", "count", "min", "max"];
+const ROLE_LABELS = {
+    dimension: "维度",
+    metric: "指标",
+    ignore: "忽略",
+};
+const AGGREGATION_LABELS = {
+    sum: "求和",
+    avg: "平均",
+    count: "计数",
+    min: "最小",
+    max: "最大",
+};
+const DERIVED_METRICS = [
+    { field: "单车净收入", numerator: "净收入", denominator: "销量" },
+    { field: "单车边际", numerator: "边际总额", denominator: "销量" },
 ];
 
 const state = {
@@ -30,6 +49,7 @@ const state = {
     worker: null,
     table: null,
     rows: SAMPLE_ROWS,
+    fieldRoles: {},
     preset: "revenue-by-region",
 };
 
@@ -80,10 +100,14 @@ function isTimeDimensionColumn(key) {
     return /月份|年月|期间|日期|month|period|date/i.test(key);
 }
 
+function isIdentifierDimensionColumn(key) {
+    return /id|编号|编码|代码|sku|code|no\.?$/i.test(key);
+}
+
 function normalizeValue(value, key = "") {
     if (value === null || value === undefined) return "";
     if (value instanceof Date) return value.toISOString().slice(0, 10);
-    if (isTimeDimensionColumn(key)) return String(value).trim();
+    if (isTimeDimensionColumn(key) || isIdentifierDimensionColumn(key)) return String(value).trim();
     if (typeof value === "string") {
         const trimmed = value.trim();
         if (!trimmed) return "";
@@ -105,8 +129,28 @@ function normalizeRows(rows) {
         .filter((row) => Object.values(row).some((value) => value !== ""));
 }
 
+function safeRatio(numerator, denominator) {
+    if (typeof numerator !== "number" || typeof denominator !== "number") return "";
+    if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) return "";
+    return Number((numerator / denominator).toFixed(4));
+}
+
+function enrichDerivedMetrics(rows) {
+    return rows.map((row) => {
+        const enriched = { ...row };
+        DERIVED_METRICS.forEach(({ field, numerator, denominator }) => {
+            const value = safeRatio(row[numerator], row[denominator]);
+            if (value !== "") enriched[field] = value;
+        });
+        return enriched;
+    });
+}
+
 function getColumns(rows) {
-    return rows.length ? Object.keys(rows[0]) : [];
+    return Array.from(rows.reduce((columns, row) => {
+        Object.keys(row).forEach((column) => columns.add(column));
+        return columns;
+    }, new Set()));
 }
 
 function isNumericColumn(rows, column) {
@@ -114,10 +158,50 @@ function isNumericColumn(rows, column) {
     return values.length > 0 && values.every((value) => typeof value === "number" && Number.isFinite(value));
 }
 
+function isDerivedMetric(column) {
+    return DERIVED_METRICS.some(({ field }) => field === column);
+}
+
+function defaultAggregationForColumn(column) {
+    if (/率|单车|均|占比|margin|rate|avg/i.test(column)) return "avg";
+    return "sum";
+}
+
+function inferFieldRole(rows, column) {
+    if (isDerivedMetric(column)) {
+        return { role: "metric", aggregation: "avg", derived: true };
+    }
+
+    if (isTimeDimensionColumn(column) || isIdentifierDimensionColumn(column)) {
+        return { role: "dimension", aggregation: "sum", derived: false };
+    }
+
+    if (isNumericColumn(rows, column)) {
+        return { role: "metric", aggregation: defaultAggregationForColumn(column), derived: false };
+    }
+
+    return { role: "dimension", aggregation: "sum", derived: false };
+}
+
+function inferFieldRoles(rows) {
+    const columns = getColumns(rows);
+    return Object.fromEntries(columns.map((column) => {
+        const inferred = inferFieldRole(rows, column);
+        const current = state.fieldRoles[column];
+        if (!current || inferred.derived) return [column, inferred];
+        return [column, {
+            ...inferred,
+            role: FIELD_ROLE_OPTIONS.includes(current.role) ? current.role : inferred.role,
+            aggregation: AGGREGATION_OPTIONS.includes(current.aggregation) ? current.aggregation : inferred.aggregation,
+        }];
+    }));
+}
+
 function classifyColumns(rows) {
     const columns = getColumns(rows);
-    const metrics = columns.filter((column) => isNumericColumn(rows, column));
-    const dimensions = columns.filter((column) => !metrics.includes(column));
+    const fieldRoles = state.fieldRoles;
+    const metrics = columns.filter((column) => fieldRoles[column]?.role === "metric");
+    const dimensions = columns.filter((column) => fieldRoles[column]?.role === "dimension");
     return { columns, metrics, dimensions };
 }
 
@@ -127,10 +211,7 @@ function pickColumn(candidates, available, fallback) {
 
 function buildAggregates(rows) {
     const { metrics } = classifyColumns(rows);
-    return Object.fromEntries(metrics.map((metric) => {
-        if (/率|单车|均|占比|margin|rate|avg/i.test(metric)) return [metric, "avg"];
-        return [metric, "sum"];
-    }));
+    return Object.fromEntries(metrics.map((metric) => [metric, state.fieldRoles[metric]?.aggregation ?? defaultAggregationForColumn(metric)]));
 }
 
 function buildConfig(rows, preset = state.preset) {
@@ -181,9 +262,9 @@ function buildConfig(rows, preset = state.preset) {
 
     return {
         title: "收入按区域",
-        plugin: "Y Bar",
-        group_by: [region, model].filter(Boolean),
-        split_by: model ? [model] : [],
+        plugin: "Datagrid",
+        group_by: [region].filter(Boolean),
+        split_by: [],
         columns: [revenue ?? margin].filter(Boolean),
         aggregates,
         sort: revenue ? [[revenue, "desc"]] : [],
@@ -194,7 +275,6 @@ function buildConfig(rows, preset = state.preset) {
 function updateSummary(rows) {
     const { columns, metrics, dimensions } = classifyColumns(rows);
     const summary = byId("perspective-data-summary");
-    const fieldList = byId("perspective-field-list");
     const status = byId("perspective-data-status");
 
     if (status) status.textContent = `${rows.length} 行`;
@@ -203,7 +283,7 @@ function updateSummary(rows) {
             ["行数", rows.length],
             ["维度", dimensions.length],
             ["指标", metrics.length],
-            ["字段", columns.length],
+            ["忽略", columns.length - metrics.length - dimensions.length],
         ].map(([label, value]) => {
             const card = document.createElement("div");
             const labelNode = document.createElement("span");
@@ -216,40 +296,79 @@ function updateSummary(rows) {
         });
         summary.replaceChildren(...cards);
     }
-
-    if (fieldList) {
-        const fieldPills = [
-            ...dimensions.slice(0, 8).map((field) => ({ field, type: "dimension" })),
-            ...metrics.slice(0, 8).map((field) => ({ field, type: "metric" })),
-        ].map(({ field, type }) => {
-            const pill = document.createElement("span");
-            pill.className = `field-pill ${type}`;
-            pill.textContent = field;
-            return pill;
-        });
-        fieldList.replaceChildren(...fieldPills);
-    }
 }
 
-async function loadRows(rows, sourceLabel = "示例数据") {
+function createOption(value, label, selected = false) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    option.selected = selected;
+    return option;
+}
+
+function renderFieldRoles(rows) {
+    const fieldRoles = byId("perspective-field-roles");
+    if (!fieldRoles) return;
+
+    const columns = getColumns(rows);
+    const items = columns.map((column) => {
+        const config = state.fieldRoles[column] ?? inferFieldRole(rows, column);
+        const row = document.createElement("div");
+        const fieldName = document.createElement("div");
+        const roleSelect = document.createElement("select");
+        const aggregateSelect = document.createElement("select");
+        const note = document.createElement("span");
+
+        row.className = `field-role-row role-${config.role}${config.derived ? " derived" : ""}`;
+        fieldName.className = "field-role-name";
+        fieldName.textContent = column;
+
+        roleSelect.className = "field-role-select";
+        roleSelect.setAttribute("aria-label", `${column} 字段类型`);
+        roleSelect.setAttribute("data-role-select", column);
+        FIELD_ROLE_OPTIONS.forEach((role) => {
+            const option = createOption(role, ROLE_LABELS[role], role === config.role);
+            if (role === "metric" && !isNumericColumn(rows, column)) option.disabled = true;
+            roleSelect.append(option);
+        });
+        roleSelect.disabled = config.derived;
+
+        aggregateSelect.className = "field-role-select";
+        aggregateSelect.setAttribute("aria-label", `${column} 聚合方式`);
+        aggregateSelect.setAttribute("data-aggregate-select", column);
+        AGGREGATION_OPTIONS.forEach((aggregation) => {
+            aggregateSelect.append(createOption(aggregation, AGGREGATION_LABELS[aggregation], aggregation === config.aggregation));
+        });
+        aggregateSelect.disabled = config.role !== "metric" || config.derived;
+
+        note.className = "field-role-note";
+        note.textContent = config.derived ? "派生指标" : ROLE_LABELS[config.role];
+
+        row.append(fieldName, roleSelect, aggregateSelect, note);
+        return row;
+    });
+
+    fieldRoles.replaceChildren(...items);
+}
+
+function getAnalysisRows(rows) {
+    const activeColumns = getColumns(rows).filter((column) => state.fieldRoles[column]?.role !== "ignore");
+    return rows.map((row) => Object.fromEntries(activeColumns.map((column) => [column, row[column] ?? ""])));
+}
+
+async function reloadViewer(sourceLabel) {
     const viewer = byId("perspective-viewer");
     if (!viewer) return;
-
-    const normalizedRows = normalizeRows(rows);
-    if (!normalizedRows.length) {
-        showMessage("没有读取到可分析的数据。", "error");
-        return;
-    }
 
     await ensurePerspectiveRuntime();
     state.worker = state.worker ?? await perspective.worker();
 
+    const analysisRows = getAnalysisRows(state.rows);
     const previousTable = state.table;
-    const table = await state.worker.table(normalizedRows);
+    const table = await state.worker.table(analysisRows);
     state.table = table;
-    state.rows = normalizedRows;
     await viewer.load(table);
-    await viewer.restore(buildConfig(normalizedRows));
+    await viewer.restore(buildConfig(analysisRows));
 
     try {
         await previousTable?.delete();
@@ -257,8 +376,21 @@ async function loadRows(rows, sourceLabel = "示例数据") {
         console.warn("Previous Perspective table cleanup was deferred.", error);
     }
 
-    updateSummary(normalizedRows);
-    showMessage(`${sourceLabel}已载入，可以在右侧拖动字段继续分析。`);
+    updateSummary(state.rows);
+    renderFieldRoles(state.rows);
+    showMessage(`${sourceLabel}已载入，可以在右侧 Perspective 面板继续分析。`);
+}
+
+async function loadRows(rows, sourceLabel = "示例数据") {
+    const normalizedRows = enrichDerivedMetrics(normalizeRows(rows));
+    if (!normalizedRows.length) {
+        showMessage("没有读取到可分析的数据。", "error");
+        return;
+    }
+
+    state.rows = normalizedRows;
+    state.fieldRoles = inferFieldRoles(normalizedRows);
+    await reloadViewer(sourceLabel);
 }
 
 async function parseFile(file) {
@@ -319,6 +451,59 @@ async function exportCurrentCsv() {
     downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), "perspective-bi-current-view.csv");
 }
 
+function handleFieldRoleChange(event) {
+    const select = event.target;
+    const field = select?.getAttribute?.("data-role-select");
+    if (!field || !FIELD_ROLE_OPTIONS.includes(select.value)) return;
+
+    const current = state.fieldRoles[field] ?? inferFieldRole(state.rows, field);
+    if (current.derived) {
+        renderFieldRoles(state.rows);
+        return;
+    }
+
+    if (select.value === "metric" && !isNumericColumn(state.rows, field)) {
+        showMessage("这个字段不是纯数字列，不能作为指标。", "error");
+        renderFieldRoles(state.rows);
+        return;
+    }
+
+    state.fieldRoles[field] = {
+        ...current,
+        role: select.value,
+        aggregation: select.value === "metric" ? (current.aggregation ?? defaultAggregationForColumn(field)) : "sum",
+    };
+    void reloadViewer("字段口径");
+}
+
+function handleAggregationChange(event) {
+    const select = event.target;
+    const field = select?.getAttribute?.("data-aggregate-select");
+    if (!field || !AGGREGATION_OPTIONS.includes(select.value)) return;
+
+    const current = state.fieldRoles[field] ?? inferFieldRole(state.rows, field);
+    if (current.derived || current.role !== "metric") {
+        renderFieldRoles(state.rows);
+        return;
+    }
+
+    state.fieldRoles[field] = { ...current, aggregation: select.value };
+    void reloadViewer("聚合方式");
+}
+
+function bindFieldRoleControls() {
+    byId("perspective-field-roles")?.addEventListener("change", (event) => {
+        const target = event.target;
+        if (target?.matches?.("[data-role-select]")) {
+            handleFieldRoleChange(event);
+            return;
+        }
+        if (target?.matches?.("[data-aggregate-select]")) {
+            handleAggregationChange(event);
+        }
+    });
+}
+
 function bindUpload() {
     const input = byId("perspective-file-input");
     const zone = byId("perspective-upload-zone");
@@ -356,42 +541,24 @@ function bindControls() {
     byId("perspective-btn-export-csv")?.addEventListener("click", () => void exportCurrentCsv());
     byId("perspective-btn-reset-view")?.addEventListener("click", () => {
         const viewer = byId("perspective-viewer");
-        void viewer?.restore?.(buildConfig(state.rows));
+        void viewer?.restore?.(buildConfig(getAnalysisRows(state.rows)));
     });
     byId("perspective-preset-select")?.addEventListener("change", (event) => {
         state.preset = event.target.value;
         const viewer = byId("perspective-viewer");
-        void viewer?.restore?.(buildConfig(state.rows));
+        void viewer?.restore?.(buildConfig(getAnalysisRows(state.rows)));
     });
-}
-
-function initSidebar() {
-    const root = byId("perspective-bi-root");
-    const sidebar = byId("perspective-sidebar");
-    const toggle = byId("perspective-sidebar-toggle");
-    const expand = byId("perspective-sidebar-expand");
-    const backdrop = byId("perspective-sidebar-backdrop");
-
-    const setOpen = (open) => {
-        sidebar?.classList.toggle("collapsed", !open);
-        backdrop?.classList.toggle("visible", open && window.innerWidth <= 860);
-        if (expand) expand.style.display = open ? "none" : "inline-flex";
-        toggle?.setAttribute("title", open ? "收起控制台" : "展开控制台");
-        toggle?.setAttribute("aria-label", open ? "收起控制台" : "展开控制台");
-        root?.classList.toggle("sidebar-open", open);
-    };
-
-    toggle?.addEventListener("click", () => setOpen(sidebar?.classList.contains("collapsed") ?? true));
-    expand?.addEventListener("click", () => setOpen(true));
-    backdrop?.addEventListener("click", () => setOpen(false));
-    setOpen(window.innerWidth > 860);
 }
 
 async function initApp() {
     ensurePerspectiveStyles();
-    initSidebar();
-    bindUpload();
-    bindControls();
+    const root = byId("perspective-bi-root");
+    if (root?.dataset.controlsBound !== "true") {
+        bindUpload();
+        bindControls();
+        bindFieldRoleControls();
+        if (root) root.dataset.controlsBound = "true";
+    }
     await loadRows(SAMPLE_ROWS, "示例数据");
     state.initialized = true;
 }
