@@ -115,6 +115,18 @@ test("Perspective BI lets users confirm field roles and aggregations before anal
   assert.match(perspectiveEngine, /data-aggregate-select/);
 });
 
+test("Perspective BI control rows prevent toolbar and field role overlap", () => {
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.data-toolbar > \*\s*\{[^}]*min-width:\s*0/s);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.toolbar-upload\s*\{[^}]*min-width:\s*0/s);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.toolbar-upload\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*0\.95fr\)\s*minmax\(0,\s*1\.05fr\)/s);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.button-grid\s*\{[^}]*min-width:\s*0/s);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.toolbar-preset\s*\{[^}]*min-width:\s*220px/s);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.field-role-list\s*\{[^}]*minmax\(min\(100%,\s*380px\),\s*1fr\)/s);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.field-role-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(108px,\s*0\.55fr\)\s*minmax\(108px,\s*0\.55fr\)/s);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.field-role-name\s*\{[^}]*overflow-wrap:\s*anywhere/s);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.field-role-note\s*\{[^}]*grid-column:\s*1 \/ -1/s);
+});
+
 test("Perspective BI revenue preset uses a stable aggregate table before chart tweaks", () => {
   assert.match(perspectiveEngine, /title:\s*"收入按区域"[\s\S]*plugin:\s*"Datagrid"[\s\S]*group_by:\s*\[region\]\.filter\(Boolean\)[\s\S]*split_by:\s*\[\]/s);
 });

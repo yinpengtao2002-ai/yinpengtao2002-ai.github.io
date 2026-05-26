@@ -131,16 +131,21 @@
 
 .perspective-bi-tool .data-toolbar {
     display: grid;
-    grid-template-columns: minmax(280px, 1.15fr) minmax(180px, 0.65fr) minmax(280px, 0.95fr) minmax(190px, 0.55fr);
+    grid-template-columns: minmax(420px, 1.22fr) minmax(220px, 0.58fr) minmax(300px, 0.9fr) minmax(170px, 0.5fr);
     gap: 0.85rem;
     margin-bottom: 0.85rem;
-    align-items: center;
+    align-items: stretch;
     padding: 0.85rem;
+}
+
+.perspective-bi-tool .data-toolbar > * {
+    min-width: 0;
 }
 
 .perspective-bi-tool .toolbar-upload {
     display: grid;
-    grid-template-columns: minmax(190px, 0.9fr) minmax(250px, 1.1fr);
+    min-width: 0;
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
     gap: 0.6rem;
     align-items: stretch;
 }
@@ -183,6 +188,7 @@
 
 .perspective-bi-tool .button-grid {
     display: grid;
+    min-width: 0;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.45rem;
 }
@@ -199,6 +205,7 @@
     font-size: 0.8rem;
     font-weight: 800;
     line-height: 1.15;
+    overflow-wrap: anywhere;
     text-align: center;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -221,6 +228,7 @@
 
 .perspective-bi-tool .field {
     display: grid;
+    min-width: 0;
     gap: 0.35rem;
     color: var(--text-secondary);
     font-family: var(--font-sans);
@@ -228,9 +236,14 @@
     font-weight: 800;
 }
 
+.perspective-bi-tool .toolbar-preset {
+    min-width: 220px;
+}
+
 .perspective-bi-tool .input,
 .perspective-bi-tool .field-role-select {
     width: 100%;
+    min-width: 0;
     border: 1px solid var(--border-light);
     border-radius: 8px;
     background: var(--bg-card);
@@ -242,6 +255,7 @@
 
 .perspective-bi-tool .summary-grid {
     display: grid;
+    min-width: 0;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.45rem;
 }
@@ -269,6 +283,7 @@
 
 .perspective-bi-tool .toolbar-actions {
     display: grid;
+    min-width: 0;
     grid-template-columns: 1fr;
     gap: 0.45rem;
 }
@@ -328,13 +343,13 @@
 
 .perspective-bi-tool .field-role-list {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
     gap: 0.52rem;
 }
 
 .perspective-bi-tool .field-role-row {
     display: grid;
-    grid-template-columns: minmax(88px, 1fr) 92px 92px auto;
+    grid-template-columns: minmax(0, 1fr) minmax(108px, 0.55fr) minmax(108px, 0.55fr);
     min-height: 42px;
     align-items: center;
     gap: 0.45rem;
@@ -361,17 +376,18 @@
 
 .perspective-bi-tool .field-role-name {
     min-width: 0;
-    overflow: hidden;
     color: var(--text-primary);
     font-family: var(--font-sans);
     font-size: 0.8rem;
     font-weight: 800;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .perspective-bi-tool .field-role-note {
-    justify-self: end;
+    grid-column: 1 / -1;
+    justify-self: start;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.82);
     color: var(--text-secondary);
@@ -464,14 +480,19 @@
     --psp-plugin-name--y-area--content: "面积图";
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1260px) {
     .perspective-bi-tool .data-toolbar {
-        grid-template-columns: minmax(0, 1fr) minmax(170px, 0.5fr);
+        grid-template-columns: minmax(0, 1fr) minmax(220px, 0.42fr);
     }
 
-    .perspective-bi-tool .summary-grid,
+    .perspective-bi-tool .summary-grid {
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(4, minmax(110px, 1fr));
+    }
+
     .perspective-bi-tool .toolbar-actions {
-        grid-column: auto;
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
