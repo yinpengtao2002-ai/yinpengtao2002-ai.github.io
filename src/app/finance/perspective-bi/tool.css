@@ -66,6 +66,7 @@
 .perspective-bi-tool .model-header,
 .perspective-bi-tool .data-toolbar,
 .perspective-bi-tool .field-role-panel,
+.perspective-bi-tool .calculated-metric-panel,
 .perspective-bi-tool .workspace-grid {
     max-width: 1480px;
     margin-right: auto;
@@ -214,6 +215,35 @@
     min-height: 34px;
     padding: 0.42rem 0.62rem;
     white-space: nowrap;
+}
+
+.perspective-bi-tool .important-action-btn {
+    min-height: 42px;
+    padding: 0.52rem 0.86rem;
+    box-shadow: 0 10px 22px rgba(217, 119, 87, 0.28);
+    white-space: nowrap;
+}
+
+.perspective-bi-tool .focus-action-btn {
+    min-height: 42px;
+    border: 1px solid rgba(92, 143, 186, 0.28);
+    background: #426f96;
+    color: #fff;
+    padding: 0.52rem 0.86rem;
+    box-shadow: 0 10px 22px rgba(92, 143, 186, 0.26);
+    white-space: nowrap;
+}
+
+.perspective-bi-tool .focus-action-btn[aria-pressed="true"] {
+    border-color: rgba(20, 20, 19, 0.2);
+    background: var(--text-primary);
+}
+
+.perspective-bi-tool .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.48;
+    transform: none;
+    box-shadow: none;
 }
 
 .perspective-bi-tool .btn:hover {
@@ -400,11 +430,6 @@
     background: rgba(120, 140, 93, 0.07);
 }
 
-.perspective-bi-tool .field-role-row.derived {
-    border-color: rgba(217, 119, 87, 0.24);
-    background: rgba(217, 119, 87, 0.07);
-}
-
 .perspective-bi-tool .field-role-name {
     min-width: 0;
     color: var(--text-primary);
@@ -427,6 +452,155 @@
     font-weight: 800;
     padding: 0.24rem 0.42rem;
     white-space: nowrap;
+}
+
+.perspective-bi-tool .calculated-metric-panel {
+    margin-bottom: 0.85rem;
+    padding: 0.9rem;
+}
+
+.perspective-bi-tool .calculated-metric-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.perspective-bi-tool .calculated-metric-header h2 {
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.perspective-bi-tool .calculated-metric-header p {
+    max-width: 720px;
+    margin-top: 0.3rem;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+.perspective-bi-tool .calculated-metric-toggle {
+    min-height: 40px;
+    border-color: rgba(217, 119, 87, 0.28);
+    background: rgba(217, 119, 87, 0.09);
+    color: #a95438;
+    padding: 0.5rem 0.8rem;
+    white-space: nowrap;
+}
+
+.perspective-bi-tool .calculated-metric-body {
+    display: grid;
+    gap: 0.7rem;
+    margin-top: 0.85rem;
+}
+
+.perspective-bi-tool .calculated-metric-panel.collapsed .calculated-metric-body,
+.perspective-bi-tool .calculated-metric-panel.collapsed .calculated-metric-table {
+    display: none;
+}
+
+.perspective-bi-tool .calculated-form {
+    display: grid;
+    grid-template-columns: minmax(160px, 1fr) repeat(3, minmax(120px, 0.75fr));
+    gap: 0.6rem;
+}
+
+.perspective-bi-tool .calculated-dimension-field {
+    display: grid;
+    gap: 0.42rem;
+}
+
+.perspective-bi-tool .calculated-dimension-title {
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 800;
+}
+
+.perspective-bi-tool .calculated-dimensions {
+    display: flex;
+    min-height: 38px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.76rem;
+}
+
+.perspective-bi-tool .dimension-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: 1px solid rgba(120, 140, 93, 0.24);
+    border-radius: 999px;
+    background: rgba(120, 140, 93, 0.08);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 0.76rem;
+    font-weight: 800;
+    padding: 0.32rem 0.5rem;
+}
+
+.perspective-bi-tool .dimension-chip input {
+    accent-color: var(--accent-green);
+}
+
+.perspective-bi-tool .calculated-generate-btn {
+    justify-self: start;
+    min-width: 140px;
+}
+
+.perspective-bi-tool .calculated-metric-table {
+    margin-top: 0.85rem;
+    overflow-x: auto;
+    scrollbar-color: #d9d6cb #fff;
+    scrollbar-width: thin;
+}
+
+.perspective-bi-tool .calculated-empty,
+.perspective-bi-tool .calculated-formula {
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+.perspective-bi-tool .calculated-formula {
+    margin-bottom: 0.5rem;
+    color: #426f96;
+    font-weight: 800;
+}
+
+.perspective-bi-tool .calculated-metric-table table {
+    width: 100%;
+    min-width: 620px;
+    border-collapse: collapse;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+}
+
+.perspective-bi-tool .calculated-metric-table th,
+.perspective-bi-tool .calculated-metric-table td {
+    border-bottom: 1px solid var(--border-light);
+    padding: 0.52rem 0.58rem;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.perspective-bi-tool .calculated-metric-table th {
+    background: var(--bg-soft);
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.perspective-bi-tool .calculated-metric-table td {
+    color: var(--text-primary);
+    font-weight: 700;
 }
 
 .perspective-bi-tool .workspace-grid {
@@ -493,6 +667,14 @@
 }
 
 .perspective-bi-tool.workspace-focus-mode .field-role-panel {
+    display: none;
+}
+
+.perspective-bi-tool.workspace-focus-mode .calculated-metric-panel {
+    display: none;
+}
+
+body.perspective-bi-workspace-focus #perspective-tool-back-button {
     display: none;
 }
 
@@ -600,12 +782,14 @@
     }
 
     .perspective-bi-tool .field-role-header,
+    .perspective-bi-tool .calculated-metric-header,
     .perspective-bi-tool .panel-header {
         align-items: flex-start;
         flex-direction: column;
     }
 
     .perspective-bi-tool .field-role-actions,
+    .perspective-bi-tool .calculated-metric-toggle,
     .perspective-bi-tool .workbench-controls {
         width: 100%;
     }
@@ -617,6 +801,16 @@
 
     .perspective-bi-tool .workbench-controls {
         grid-template-columns: minmax(0, 1fr);
+    }
+
+    .perspective-bi-tool .calculated-form {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .perspective-bi-tool .calculated-generate-btn,
+    .perspective-bi-tool .important-action-btn,
+    .perspective-bi-tool .focus-action-btn {
+        width: 100%;
     }
 
     .perspective-bi-tool .field-role-list {
@@ -654,6 +848,10 @@
     }
 
     .perspective-bi-tool .field-role-row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .perspective-bi-tool .calculated-form {
         grid-template-columns: minmax(0, 1fr);
     }
 }

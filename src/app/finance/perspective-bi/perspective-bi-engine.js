@@ -38,10 +38,11 @@ const AGGREGATION_LABELS = {
     min: "最小",
     max: "最大",
 };
-const DERIVED_METRICS = [
-    { field: "单车净收入", numerator: "净收入", denominator: "销量" },
-    { field: "单车边际", numerator: "边际总额", denominator: "销量" },
-];
+const CALCULATED_FORMAT_LABELS = {
+    unit: "元每台",
+    number: "数值",
+    percent: "百分比",
+};
 
 const state = {
     initialized: false,
@@ -53,6 +54,15 @@ const state = {
     fieldRolesCollapsed: false,
     workbenchFocusMode: false,
     preset: "revenue-by-region",
+    calculatedMetric: {
+        panelOpen: false,
+        generated: false,
+        name: "",
+        numerator: "",
+        denominator: "",
+        dimensions: [],
+        format: "unit",
+    },
 };
 
 function byId(id) {
@@ -131,23 +141,6 @@ function normalizeRows(rows) {
         .filter((row) => Object.values(row).some((value) => value !== ""));
 }
 
-function safeRatio(numerator, denominator) {
-    if (typeof numerator !== "number" || typeof denominator !== "number") return "";
-    if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) return "";
-    return Number((numerator / denominator).toFixed(4));
-}
-
-function enrichDerivedMetrics(rows) {
-    return rows.map((row) => {
-        const enriched = { ...row };
-        DERIVED_METRICS.forEach(({ field, numerator, denominator }) => {
-            const value = safeRatio(row[numerator], row[denominator]);
-            if (value !== "") enriched[field] = value;
-        });
-        return enriched;
-    });
-}
-
 function getColumns(rows) {
     return Array.from(rows.reduce((columns, row) => {
         Object.keys(row).forEach((column) => columns.add(column));
@@ -160,29 +153,21 @@ function isNumericColumn(rows, column) {
     return values.length > 0 && values.every((value) => typeof value === "number" && Number.isFinite(value));
 }
 
-function isDerivedMetric(column) {
-    return DERIVED_METRICS.some(({ field }) => field === column);
-}
-
 function defaultAggregationForColumn(column) {
     if (/率|单车|均|占比|margin|rate|avg/i.test(column)) return "avg";
     return "sum";
 }
 
 function inferFieldRole(rows, column) {
-    if (isDerivedMetric(column)) {
-        return { role: "metric", aggregation: "avg", derived: true };
-    }
-
     if (isTimeDimensionColumn(column) || isIdentifierDimensionColumn(column)) {
-        return { role: "dimension", aggregation: "sum", derived: false };
+        return { role: "dimension", aggregation: "sum" };
     }
 
     if (isNumericColumn(rows, column)) {
-        return { role: "metric", aggregation: defaultAggregationForColumn(column), derived: false };
+        return { role: "metric", aggregation: defaultAggregationForColumn(column) };
     }
 
-    return { role: "dimension", aggregation: "sum", derived: false };
+    return { role: "dimension", aggregation: "sum" };
 }
 
 function inferFieldRoles(rows) {
@@ -190,7 +175,7 @@ function inferFieldRoles(rows) {
     return Object.fromEntries(columns.map((column) => {
         const inferred = inferFieldRole(rows, column);
         const current = state.fieldRoles[column];
-        if (!current || inferred.derived) return [column, inferred];
+        if (!current) return [column, inferred];
         return [column, {
             ...inferred,
             role: FIELD_ROLE_OPTIONS.includes(current.role) ? current.role : inferred.role,
@@ -224,8 +209,6 @@ function buildConfig(rows, preset = state.preset) {
     const model = pickColumn(["车型", "产品", "车系", "Model", "model"], dimensions, dimensions[2] ?? dimensions[0]);
     const revenue = pickColumn(["净收入", "收入", "Revenue", "revenue"], metrics, metrics[0]);
     const margin = pickColumn(["边际总额", "边际", "毛利", "Margin", "margin"], metrics, metrics[1] ?? metrics[0]);
-    const unitRevenue = pickColumn(["单车净收入", "单车收入", "Unit Revenue"], metrics, metrics[0]);
-    const unitMargin = pickColumn(["单车边际", "Unit Margin"], metrics, metrics[1] ?? metrics[0]);
     const aggregates = buildAggregates(rows);
 
     if (preset === "detail-table") {
@@ -239,13 +222,15 @@ function buildConfig(rows, preset = state.preset) {
         };
     }
 
-    if (preset === "unit-quality") {
+    if (preset === "margin-by-region") {
         return {
-            title: "单车质量矩阵",
-            plugin: "X/Y Scatter",
+            title: "边际按区域",
+            plugin: "Datagrid",
             group_by: [region, model].filter(Boolean),
-            columns: [unitRevenue, unitMargin, revenue].filter(Boolean),
+            split_by: [],
+            columns: [margin ?? revenue].filter(Boolean),
             aggregates,
+            sort: margin ? [[margin, "desc"]] : [],
             settings: true,
         };
     }
@@ -310,7 +295,7 @@ function renderFieldRoleSummary(rows) {
     const ignored = columns.length - metrics.length - dimensions.length;
     summary.textContent = `${dimensions.length} 个维度 / ${metrics.length} 个指标 / ${ignored} 个忽略`;
     panel.classList.toggle("collapsed", state.fieldRolesCollapsed);
-    toggle.textContent = state.fieldRolesCollapsed ? "重新确认" : "收起字段";
+    toggle.textContent = state.fieldRolesCollapsed ? "重新确认字段" : "完成字段确认";
     toggle.setAttribute("aria-expanded", String(!state.fieldRolesCollapsed));
 }
 
@@ -335,7 +320,7 @@ function renderFieldRoles(rows) {
         const aggregateSelect = document.createElement("select");
         const note = document.createElement("span");
 
-        row.className = `field-role-row role-${config.role}${config.derived ? " derived" : ""}`;
+        row.className = `field-role-row role-${config.role}`;
         fieldName.className = "field-role-name";
         fieldName.textContent = column;
 
@@ -347,7 +332,6 @@ function renderFieldRoles(rows) {
             if (role === "metric" && !isNumericColumn(rows, column)) option.disabled = true;
             roleSelect.append(option);
         });
-        roleSelect.disabled = config.derived;
 
         aggregateSelect.className = "field-role-select";
         aggregateSelect.setAttribute("aria-label", `${column} 聚合方式`);
@@ -355,10 +339,10 @@ function renderFieldRoles(rows) {
         AGGREGATION_OPTIONS.forEach((aggregation) => {
             aggregateSelect.append(createOption(aggregation, AGGREGATION_LABELS[aggregation], aggregation === config.aggregation));
         });
-        aggregateSelect.disabled = config.role !== "metric" || config.derived;
+        aggregateSelect.disabled = config.role !== "metric";
 
         note.className = "field-role-note";
-        note.textContent = config.derived ? "派生指标" : ROLE_LABELS[config.role];
+        note.textContent = ROLE_LABELS[config.role];
 
         row.append(fieldName, roleSelect, aggregateSelect, note);
         return row;
@@ -366,6 +350,193 @@ function renderFieldRoles(rows) {
 
     fieldRoles.replaceChildren(...items);
     renderFieldRoleSummary(rows);
+}
+
+function getMetricColumns(rows) {
+    return getColumns(rows).filter((column) => state.fieldRoles[column]?.role === "metric" && isNumericColumn(rows, column));
+}
+
+function getDimensionColumns(rows) {
+    return getColumns(rows).filter((column) => state.fieldRoles[column]?.role === "dimension");
+}
+
+function ensureCalculatedMetricDefaults(rows) {
+    const metricColumns = getMetricColumns(rows);
+    const dimensionColumns = getDimensionColumns(rows);
+    const calculatedMetric = state.calculatedMetric;
+
+    if (!metricColumns.includes(calculatedMetric.numerator)) {
+        calculatedMetric.numerator = pickColumn(["净收入", "收入", "Revenue", "revenue"], metricColumns, metricColumns[0] ?? "");
+    }
+
+    if (!metricColumns.includes(calculatedMetric.denominator)) {
+        const fallbackDenominator = metricColumns.find((column) => column !== calculatedMetric.numerator) ?? metricColumns[0] ?? "";
+        calculatedMetric.denominator = pickColumn(["销量", "销售量", "Volume", "volume"], metricColumns, fallbackDenominator);
+    }
+
+    calculatedMetric.dimensions = calculatedMetric.dimensions.filter((dimension) => dimensionColumns.includes(dimension));
+    if (!calculatedMetric.dimensions.length && dimensionColumns.length) {
+        calculatedMetric.dimensions = [pickColumn(["大区", "区域", "地区", "Region", "region"], dimensionColumns, dimensionColumns[0])];
+    }
+
+    if (!CALCULATED_FORMAT_LABELS[calculatedMetric.format]) {
+        calculatedMetric.format = "unit";
+    }
+}
+
+function replaceSelectOptions(select, options, selectedValue, emptyLabel) {
+    if (!select) return;
+    const optionNodes = options.length
+        ? options.map((option) => createOption(option, option, option === selectedValue))
+        : [createOption("", emptyLabel, true)];
+    select.replaceChildren(...optionNodes);
+    select.disabled = options.length === 0;
+}
+
+function renderCalculatedMetricControls(rows) {
+    const panel = byId("perspective-calculated-metric-panel");
+    const toggle = byId("perspective-calculated-metric-toggle");
+    const nameInput = byId("perspective-calculated-metric-name");
+    const numeratorSelect = byId("perspective-calculated-numerator");
+    const denominatorSelect = byId("perspective-calculated-denominator");
+    const formatSelect = byId("perspective-calculated-format");
+    const dimensionArea = byId("perspective-calculated-dimensions");
+    const generateButton = byId("perspective-calculated-generate");
+
+    if (!panel || !toggle || !dimensionArea) return;
+
+    ensureCalculatedMetricDefaults(rows);
+    const calculatedMetric = state.calculatedMetric;
+    const metricColumns = getMetricColumns(rows);
+    const dimensionColumns = getDimensionColumns(rows);
+    const canGenerate = Boolean(calculatedMetric.numerator && calculatedMetric.denominator);
+
+    panel.classList.toggle("collapsed", !calculatedMetric.panelOpen);
+    toggle.textContent = calculatedMetric.panelOpen ? "收起计算指标" : "添加计算指标";
+    toggle.setAttribute("aria-expanded", String(calculatedMetric.panelOpen));
+
+    if (nameInput && document.activeElement !== nameInput) {
+        nameInput.value = calculatedMetric.name;
+    }
+    replaceSelectOptions(numeratorSelect, metricColumns, calculatedMetric.numerator, "暂无可用指标");
+    replaceSelectOptions(denominatorSelect, metricColumns, calculatedMetric.denominator, "暂无可用指标");
+    if (formatSelect) formatSelect.value = calculatedMetric.format;
+    if (generateButton) generateButton.disabled = !canGenerate;
+
+    const dimensionNodes = dimensionColumns.length
+        ? dimensionColumns.map((dimension) => {
+            const label = document.createElement("label");
+            const checkbox = document.createElement("input");
+            const text = document.createElement("span");
+
+            label.className = "dimension-chip";
+            checkbox.type = "checkbox";
+            checkbox.checked = calculatedMetric.dimensions.includes(dimension);
+            checkbox.setAttribute("data-calculated-dimension", dimension);
+            text.textContent = dimension;
+            label.append(checkbox, text);
+            return label;
+        })
+        : [document.createTextNode("未识别到维度，计算结果将按全表汇总。")];
+    dimensionArea.replaceChildren(...dimensionNodes);
+}
+
+function formatNumber(value) {
+    if (value === "" || value === null || value === undefined || Number.isNaN(value)) return "-";
+    return new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 4 }).format(value);
+}
+
+function formatCalculatedValue(value, format) {
+    if (value === "" || value === null || value === undefined) return "-";
+    if (format === "percent") return `${formatNumber(value * 100)}%`;
+    if (format === "unit") return `${formatNumber(value)} 元/台`;
+    return formatNumber(value);
+}
+
+function calculateMetricRows(rows) {
+    ensureCalculatedMetricDefaults(rows);
+    const { numerator, denominator, dimensions } = state.calculatedMetric;
+    if (!numerator || !denominator) return [];
+
+    const groups = new Map();
+    rows.forEach((row) => {
+        const dimensionValues = dimensions.map((dimension) => String(row[dimension] ?? ""));
+        const key = dimensionValues.length ? dimensionValues.join("\u0001") : "__total__";
+        const current = groups.get(key) ?? {
+            dimensionValues,
+            numeratorTotal: 0,
+            denominatorTotal: 0,
+        };
+        const numeratorValue = row[numerator];
+        const denominatorValue = row[denominator];
+        if (typeof numeratorValue === "number" && Number.isFinite(numeratorValue)) current.numeratorTotal += numeratorValue;
+        if (typeof denominatorValue === "number" && Number.isFinite(denominatorValue)) current.denominatorTotal += denominatorValue;
+        groups.set(key, current);
+    });
+
+    return Array.from(groups.values())
+        .map((group) => {
+            const { numeratorTotal, denominatorTotal } = group;
+            return {
+                ...group,
+                calculatedValue: denominatorTotal === 0 ? "" : numeratorTotal / denominatorTotal,
+            };
+        })
+        .sort((a, b) => b.numeratorTotal - a.numeratorTotal);
+}
+
+function appendTableCell(row, text, tagName = "td") {
+    const cell = document.createElement(tagName);
+    cell.textContent = text;
+    row.append(cell);
+}
+
+function renderCalculatedMetricTable(rows) {
+    const host = byId("perspective-calculated-metric-table");
+    if (!host) return;
+
+    host.replaceChildren();
+    if (!state.calculatedMetric.generated) {
+        const empty = document.createElement("div");
+        empty.className = "calculated-empty";
+        empty.textContent = "选择分子、分母和分组维度后，可以在这里生成加权计算结果。";
+        host.append(empty);
+        return;
+    }
+
+    const calculatedRows = calculateMetricRows(rows);
+    const { name, numerator, denominator, dimensions, format } = state.calculatedMetric;
+    const metricName = name.trim() || "计算指标";
+    const formula = document.createElement("div");
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+    const tbody = document.createElement("tbody");
+
+    formula.className = "calculated-formula";
+    formula.textContent = `${metricName}: SUM(${numerator}) / SUM(${denominator})`;
+
+    const headers = [
+        ...(dimensions.length ? dimensions : ["范围"]),
+        `${numerator}合计`,
+        `${denominator}合计`,
+        metricName,
+    ];
+    headers.forEach((header) => appendTableCell(headerRow, header, "th"));
+    thead.append(headerRow);
+
+    calculatedRows.forEach((row) => {
+        const tableRow = document.createElement("tr");
+        const dimensionValues = dimensions.length ? row.dimensionValues : ["全部"];
+        dimensionValues.forEach((value) => appendTableCell(tableRow, value || "-"));
+        appendTableCell(tableRow, formatNumber(row.numeratorTotal));
+        appendTableCell(tableRow, formatNumber(row.denominatorTotal));
+        appendTableCell(tableRow, formatCalculatedValue(row.calculatedValue, format));
+        tbody.append(tableRow);
+    });
+
+    table.append(thead, tbody);
+    host.append(formula, table);
 }
 
 function getAnalysisRows(rows) {
@@ -395,11 +566,13 @@ async function reloadViewer(sourceLabel) {
 
     updateSummary(state.rows);
     renderFieldRoles(state.rows);
+    renderCalculatedMetricControls(state.rows);
+    renderCalculatedMetricTable(state.rows);
     showMessage(`${sourceLabel}已载入，可以在右侧 Perspective 面板继续分析。`);
 }
 
 async function loadRows(rows, sourceLabel = "示例数据") {
-    const normalizedRows = enrichDerivedMetrics(normalizeRows(rows));
+    const normalizedRows = normalizeRows(rows);
     if (!normalizedRows.length) {
         showMessage("没有读取到可分析的数据。", "error");
         return;
@@ -475,10 +648,6 @@ function handleFieldRoleChange(event) {
     if (!field || !FIELD_ROLE_OPTIONS.includes(select.value)) return;
 
     const current = state.fieldRoles[field] ?? inferFieldRole(state.rows, field);
-    if (current.derived) {
-        renderFieldRoles(state.rows);
-        return;
-    }
 
     if (select.value === "metric" && !isNumericColumn(state.rows, field)) {
         showMessage("这个字段不是纯数字列，不能作为指标。", "error");
@@ -500,13 +669,74 @@ function handleAggregationChange(event) {
     if (!field || !AGGREGATION_OPTIONS.includes(select.value)) return;
 
     const current = state.fieldRoles[field] ?? inferFieldRole(state.rows, field);
-    if (current.derived || current.role !== "metric") {
+    if (current.role !== "metric") {
         renderFieldRoles(state.rows);
         return;
     }
 
     state.fieldRoles[field] = { ...current, aggregation: select.value };
     void reloadViewer("聚合方式");
+}
+
+function toggleCalculatedMetricPanel() {
+    state.calculatedMetric.panelOpen = !state.calculatedMetric.panelOpen;
+    renderCalculatedMetricControls(state.rows);
+    renderCalculatedMetricTable(state.rows);
+}
+
+function handleCalculatedMetricChange(event) {
+    const target = event.target;
+    if (!target) return;
+
+    if (target.id === "perspective-calculated-metric-name") {
+        state.calculatedMetric.name = target.value;
+        renderCalculatedMetricTable(state.rows);
+        return;
+    }
+
+    if (target.id === "perspective-calculated-numerator") {
+        state.calculatedMetric.numerator = target.value;
+        renderCalculatedMetricTable(state.rows);
+        return;
+    }
+
+    if (target.id === "perspective-calculated-denominator") {
+        state.calculatedMetric.denominator = target.value;
+        renderCalculatedMetricTable(state.rows);
+        return;
+    }
+
+    if (target.id === "perspective-calculated-format" && CALCULATED_FORMAT_LABELS[target.value]) {
+        state.calculatedMetric.format = target.value;
+        renderCalculatedMetricTable(state.rows);
+        return;
+    }
+
+    const dimension = target.getAttribute?.("data-calculated-dimension");
+    if (!dimension) return;
+
+    const dimensions = new Set(state.calculatedMetric.dimensions);
+    if (target.checked) {
+        dimensions.add(dimension);
+    } else {
+        dimensions.delete(dimension);
+    }
+    state.calculatedMetric.dimensions = Array.from(dimensions);
+    renderCalculatedMetricTable(state.rows);
+}
+
+function handleCalculatedMetricGenerate(event) {
+    event.preventDefault();
+    ensureCalculatedMetricDefaults(state.rows);
+    if (!state.calculatedMetric.numerator || !state.calculatedMetric.denominator) {
+        showMessage("请先确认分子和分母字段。", "error");
+        return;
+    }
+
+    state.calculatedMetric.generated = true;
+    state.calculatedMetric.panelOpen = true;
+    renderCalculatedMetricControls(state.rows);
+    renderCalculatedMetricTable(state.rows);
 }
 
 function toggleFieldRoles() {
@@ -526,6 +756,7 @@ function toggleWorkbenchFocus() {
     const root = byId("perspective-bi-root");
     const button = byId("perspective-btn-focus-workbench");
     root?.classList.toggle("workspace-focus-mode", state.workbenchFocusMode);
+    document.body.classList.toggle("perspective-bi-workspace-focus", state.workbenchFocusMode);
     if (button) {
         button.textContent = state.workbenchFocusMode ? "退出放大" : "放大工作台";
         button.setAttribute("aria-pressed", String(state.workbenchFocusMode));
@@ -542,6 +773,22 @@ function bindFieldRoleControls() {
         }
         if (target?.matches?.("[data-aggregate-select]")) {
             handleAggregationChange(event);
+        }
+    });
+}
+
+function bindCalculatedMetricControls() {
+    const panel = byId("perspective-calculated-metric-panel");
+    byId("perspective-calculated-metric-toggle")?.addEventListener("click", toggleCalculatedMetricPanel);
+    byId("perspective-calculated-generate")?.addEventListener("click", handleCalculatedMetricGenerate);
+    panel?.addEventListener("input", (event) => {
+        const target = event.target;
+        if (target?.matches?.("#perspective-calculated-metric-name")) handleCalculatedMetricChange(event);
+    });
+    panel?.addEventListener("change", (event) => {
+        const target = event.target;
+        if (target?.matches?.("#perspective-calculated-numerator, #perspective-calculated-denominator, #perspective-calculated-format, [data-calculated-dimension]")) {
+            handleCalculatedMetricChange(event);
         }
     });
 }
@@ -596,11 +843,13 @@ function bindControls() {
 
 async function initApp() {
     ensurePerspectiveStyles();
+    document.body.classList.remove("perspective-bi-workspace-focus");
     const root = byId("perspective-bi-root");
     if (root?.dataset.controlsBound !== "true") {
         bindUpload();
         bindControls();
         bindFieldRoleControls();
+        bindCalculatedMetricControls();
         if (root) root.dataset.controlsBound = "true";
     }
     await loadRows(SAMPLE_ROWS, "示例数据");

@@ -27,6 +27,10 @@ const perspectiveTool = await readFile(
   new URL("../src/app/finance/perspective-bi/PerspectiveBITool.tsx", import.meta.url),
   "utf8"
 ).catch(() => "");
+const perspectivePage = await readFile(
+  new URL("../src/app/finance/perspective-bi/page.tsx", import.meta.url),
+  "utf8"
+).catch(() => "");
 const perspectiveEngine = await readFile(
   new URL("../src/app/finance/perspective-bi/perspective-bi-engine.js", import.meta.url),
   "utf8"
@@ -92,17 +96,36 @@ test("Perspective BI follows the finance workbench shell and upload controls", (
   assert.doesNotMatch(perspectiveCss, /\.perspective-bi-tool \.sidebar-backdrop/);
 });
 
-test("Perspective BI templates only ask for base business fields and derive unit metrics", () => {
+test("Perspective BI templates only ask for base business fields without automatic derived metrics", () => {
   const templateRowsMatch = perspectiveEngine.match(/const TEMPLATE_ROWS = \[([\s\S]*?)\];/);
   assert.ok(templateRowsMatch, "template rows should be declared");
   assert.doesNotMatch(templateRowsMatch[1], /单车净收入|单车边际|预算达成率/);
   assert.match(templateRowsMatch[1], /销量/);
   assert.match(templateRowsMatch[1], /净收入/);
   assert.match(templateRowsMatch[1], /边际总额/);
-  assert.match(perspectiveEngine, /function enrichDerivedMetrics\(rows\)/);
-  assert.match(perspectiveEngine, /单车净收入/);
-  assert.match(perspectiveEngine, /单车边际/);
+  assert.doesNotMatch(perspectiveEngine, /const DERIVED_METRICS/);
+  assert.doesNotMatch(perspectiveEngine, /function enrichDerivedMetrics\(rows\)/);
+  assert.doesNotMatch(perspectiveEngine, /function isDerivedMetric\(column\)/);
+  assert.match(perspectiveEngine, /const normalizedRows = normalizeRows\(rows\)/);
+  assert.doesNotMatch(perspectiveEngine, /enrichDerivedMetrics\(normalizeRows\(rows\)\)/);
   assert.doesNotMatch(perspectiveEngine, /预算达成率/);
+  assert.doesNotMatch(perspectivePage, /单车质量/);
+});
+
+test("Perspective BI lets users define weighted calculated metrics outside the Perspective dataset", () => {
+  assert.match(perspectiveTool, /id="perspective-calculated-metric-toggle"/);
+  assert.match(perspectiveTool, /id="perspective-calculated-metric-panel"/);
+  assert.match(perspectiveTool, /id="perspective-calculated-metric-name"/);
+  assert.match(perspectiveTool, /id="perspective-calculated-numerator"/);
+  assert.match(perspectiveTool, /id="perspective-calculated-denominator"/);
+  assert.match(perspectiveTool, /id="perspective-calculated-dimensions"/);
+  assert.match(perspectiveTool, /id="perspective-calculated-metric-table"/);
+  assert.match(perspectiveEngine, /function renderCalculatedMetricControls\(rows\)/);
+  assert.match(perspectiveEngine, /function calculateMetricRows\(rows\)/);
+  assert.match(perspectiveEngine, /numeratorTotal \/ denominatorTotal/);
+  assert.match(perspectiveEngine, /renderCalculatedMetricTable\(state\.rows\)/);
+  assert.match(perspectiveEngine, /const analysisRows = getAnalysisRows\(state\.rows\);[\s\S]*state\.worker\.table\(analysisRows\)/);
+  assert.doesNotMatch(perspectiveEngine, /state\.worker\.table\([^)]*calculatedMetric/);
 });
 
 test("Perspective BI lets users confirm field roles and aggregations before analysis", () => {
@@ -118,6 +141,7 @@ test("Perspective BI lets users confirm field roles and aggregations before anal
 test("Perspective BI lets users collapse field confirmation after roles are set", () => {
   assert.match(perspectiveTool, /id="perspective-field-roles-toggle"/);
   assert.match(perspectiveTool, /id="perspective-field-role-summary"/);
+  assert.match(perspectiveTool, /className="btn btn-primary important-action-btn"/);
   assert.match(perspectiveEngine, /function renderFieldRoleSummary\(rows\)/);
   assert.match(perspectiveEngine, /function toggleFieldRoles\(\)/);
   assert.match(perspectiveEngine, /fieldRolesCollapsed/);
@@ -130,15 +154,21 @@ test("Perspective BI keeps preset selection with the workbench controls", () => 
   assert.match(perspectiveTool, /className="workbench-controls"/);
   assert.match(perspectiveTool, /id="perspective-preset-select"/);
   assert.match(perspectiveTool, /id="perspective-btn-focus-workbench"/);
+  assert.match(perspectiveTool, /className="btn focus-action-btn"/);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.workbench-controls\s*\{/);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.workbench-preset\s*\{/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.important-action-btn\s*\{/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.focus-action-btn\s*\{/);
 });
 
 test("Perspective BI workbench supports a page-level focus mode", () => {
+  assert.match(perspectivePage, /id="perspective-tool-back-button"/);
   assert.match(perspectiveEngine, /function toggleWorkbenchFocus\(\)/);
   assert.match(perspectiveEngine, /workbenchFocusMode/);
   assert.match(perspectiveEngine, /workspace-focus-mode/);
+  assert.match(perspectiveEngine, /document\.body\.classList\.toggle\("perspective-bi-workspace-focus",\s*state\.workbenchFocusMode\)/);
   assert.match(perspectiveCss, /\.perspective-bi-tool\.workspace-focus-mode\s+\.(model-header|data-toolbar|field-role-panel)\s*\{/);
+  assert.match(perspectiveCss, /body\.perspective-bi-workspace-focus\s+#perspective-tool-back-button\s*\{/);
   assert.match(perspectiveCss, /\.perspective-bi-tool\.workspace-focus-mode\s+\.main-content\s*\{/);
   assert.match(perspectiveCss, /\.perspective-bi-tool\.workspace-focus-mode\s+\.perspective-panel\s*\{/);
   assert.match(perspectiveCss, /\.perspective-bi-tool\.workspace-focus-mode\s+\.viewer-frame\s*\{/);

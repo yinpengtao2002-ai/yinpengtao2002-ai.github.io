@@ -83,15 +83,71 @@ export default function PerspectiveBITool() {
                             <div className="field-role-summary" id="perspective-field-role-summary">字段待确认</div>
                             <button
                                 type="button"
-                                className="btn btn-secondary compact-btn"
+                                className="btn btn-primary important-action-btn"
                                 id="perspective-field-roles-toggle"
                                 aria-expanded="true"
                             >
-                                收起字段
+                                完成字段确认
                             </button>
                         </div>
                     </div>
                     <div id="perspective-field-roles" className="field-role-list" />
+                </section>
+
+                <section className="panel calculated-metric-panel collapsed" id="perspective-calculated-metric-panel" aria-label="计算指标">
+                    <div className="calculated-metric-header">
+                        <div>
+                            <h2>计算指标视图</h2>
+                            <p>用于单车、费率、结构占比这类需要先汇总再相除的指标，结果单独展示，不写入 Perspective 字段。</p>
+                        </div>
+                        <button
+                            type="button"
+                            className="btn btn-secondary calculated-metric-toggle"
+                            id="perspective-calculated-metric-toggle"
+                            aria-expanded="false"
+                        >
+                            添加计算指标
+                        </button>
+                    </div>
+
+                    <div className="calculated-metric-body" id="perspective-calculated-metric-body">
+                        <div className="calculated-form">
+                            <label className="field">
+                                <span>指标名称</span>
+                                <input
+                                    id="perspective-calculated-metric-name"
+                                    className="input"
+                                    type="text"
+                                    placeholder="例如：单车净收入"
+                                />
+                            </label>
+                            <label className="field">
+                                <span>分子字段</span>
+                                <select id="perspective-calculated-numerator" className="input" />
+                            </label>
+                            <label className="field">
+                                <span>分母字段</span>
+                                <select id="perspective-calculated-denominator" className="input" />
+                            </label>
+                            <label className="field">
+                                <span>展示格式</span>
+                                <select id="perspective-calculated-format" className="input">
+                                    <option value="unit">元每台</option>
+                                    <option value="number">数值</option>
+                                    <option value="percent">百分比</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div className="calculated-dimension-field">
+                            <div className="calculated-dimension-title">分组维度</div>
+                            <div id="perspective-calculated-dimensions" className="calculated-dimensions" />
+                        </div>
+                        <button type="button" className="btn btn-primary calculated-generate-btn" id="perspective-calculated-generate">
+                            生成计算指标
+                        </button>
+                    </div>
+
+                    <div id="perspective-calculated-metric-table" className="calculated-metric-table" />
                 </section>
 
                 <section className="workspace-grid featured-grid">
@@ -106,14 +162,14 @@ export default function PerspectiveBITool() {
                                     <span>当前视图</span>
                                     <select id="perspective-preset-select" className="input">
                                         <option value="revenue-by-region">收入按区域</option>
-                                        <option value="unit-quality">单车质量矩阵</option>
+                                        <option value="margin-by-region">边际按区域</option>
                                         <option value="monthly-heatmap">月份热力图</option>
                                         <option value="detail-table">明细透视表</option>
                                     </select>
                                 </label>
                                 <button
                                     type="button"
-                                    className="btn btn-secondary compact-btn"
+                                    className="btn focus-action-btn"
                                     id="perspective-btn-focus-workbench"
                                     aria-pressed="false"
                                 >

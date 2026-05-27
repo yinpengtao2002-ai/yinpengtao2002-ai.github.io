@@ -30,7 +30,8 @@ function ProjectDescription({ className = "" }: { className?: string }) {
             <h2>输出结果</h2>
             <ul>
                 <li>可交互透视表、分组图表、筛选、排序和字段拖拽配置。</li>
-                <li>预置收入、单车质量、月份热力图和明细表视图，也支持用户自由改配置。</li>
+                <li>预置收入、边际按区域、月份热力图和明细表视图，也支持用户自由改配置。</li>
+                <li>单车、费率、占比等计算指标会在独立结果表中按汇总口径生成。</li>
                 <li>上传后自动识别行数、维度列和指标列，并用当前数据刷新 BI 视图。</li>
             </ul>
         </section>
@@ -48,7 +49,9 @@ export default function PerspectiveBIPage() {
                 </div>
             </noscript>
 
-            <ToolBackButton />
+            <div id="perspective-tool-back-button">
+                <ToolBackButton />
+            </div>
             <PerspectiveBITool />
         </div>
     );
