@@ -161,6 +161,8 @@ test("zero-volume nonzero-margin rows reconcile into the unit metric movement", 
     );
 
     const accessory = rowByDim(effects, "Accessory");
+    approx(accessory.Rate_Effect, 0, "zero-volume accessory should not be labeled as rate effect");
+    approx(accessory.Auxiliary_Effect, 1, "zero-volume accessory auxiliary effect");
     approx(accessory.Total_Contribution, 1, "zero-volume accessory contribution");
 
     const totalContribution = effects.reduce((sum, row) => sum + row.Total_Contribution, 0);
@@ -170,6 +172,34 @@ test("zero-volume nonzero-margin rows reconcile into the unit metric movement", 
     approx(totalRow.Total_Contribution, curr.avgMargin - base.avgMargin, "display total ties to true unit metric movement");
     approx(totalRow.Margin_Unit_Base, 11, "base total unit metric includes zero-volume margin");
     approx(totalRow.Margin_Unit_Curr, 12, "current total unit metric includes zero-volume margin");
+});
+
+test("auxiliary margin stays separate from rate effect when volume-backed unit margin declines", () => {
+    const data = [
+        { Month: "base", Dim_A: "T19", "Sales Volume": 100, "Total Margin": -1000 },
+        { Month: "base", Dim_A: "T19", "Sales Volume": 0, "Total Margin": 5000 },
+        { Month: "curr", Dim_A: "T19", "Sales Volume": 200, "Total Margin": -2400 },
+        { Month: "curr", Dim_A: "T19", "Sales Volume": 0, "Total Margin": 11000 },
+    ];
+
+    const base = calculateGlobalMetrics(data, "base");
+    const curr = calculateGlobalMetrics(data, "curr");
+    const effects = calculateDimensionPVMEffects(
+        data,
+        "base",
+        "curr",
+        "Dim_A",
+        curr.totalVol,
+        base.totalVol,
+        base.avgMargin
+    );
+
+    const t19 = rowByDim(effects, "T19");
+    approx(t19.Margin_Unit_Base, 40, "base displayed unit metric includes auxiliary margin");
+    approx(t19.Margin_Unit_Curr, 43, "current displayed unit metric includes auxiliary margin");
+    approx(t19.Rate_Effect, -2, "rate effect follows volume-backed unit margin decline");
+    approx(t19.Auxiliary_Effect, 5, "auxiliary effect is reported separately");
+    approx(t19.Total_Contribution, curr.avgMargin - base.avgMargin, "total still reconciles");
 });
 
 test("negative-volume dimension groups reconcile instead of dropping their margin", () => {

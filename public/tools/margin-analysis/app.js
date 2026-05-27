@@ -1235,8 +1235,7 @@ function calculateDimensionPVMEffects(data, baseMonth, currMonth, groupDim, tota
             row.Rate_Effect = weightCurr * (volumeBackedUnitCurr - volumeBackedUnitBase);
         }
 
-        row.Rate_Effect += auxiliaryEffect;
-        row.Total_Contribution = row.Mix_Effect + row.Rate_Effect;
+        row.Total_Contribution = row.Mix_Effect + row.Rate_Effect + row.Auxiliary_Effect;
         return row;
     });
 }
@@ -1271,6 +1270,7 @@ function prepareDisplayData(effectsData, dimCol, totalVolBase, totalVolCurr, tot
     const sumVolCurr = data.reduce((s, r) => s + r.Vol_Curr, 0);
     const sumMix = data.reduce((s, r) => s + r.Mix_Effect, 0);
     const sumRate = data.reduce((s, r) => s + r.Rate_Effect, 0);
+    const sumAuxiliary = data.reduce((s, r) => s + (r.Auxiliary_Effect || 0), 0);
 
     // 总计行
     const totalRow = {
@@ -1281,7 +1281,8 @@ function prepareDisplayData(effectsData, dimCol, totalVolBase, totalVolCurr, tot
         Weight_Curr_Pct: data.reduce((s, r) => s + r.Weight_Curr_Pct, 0),
         Mix_Effect: sumMix,
         Rate_Effect: sumRate,
-        Total_Contribution: sumMix + sumRate
+        Auxiliary_Effect: sumAuxiliary,
+        Total_Contribution: sumMix + sumRate + sumAuxiliary
     };
 
     // 总计行的单车指标
@@ -1965,6 +1966,7 @@ function createWaterfallItemMeta(row, dimCol, dimName, unitMetricLabel, level, t
     const contribution = row.Total_Contribution || 0;
     const mix = row.Mix_Effect || 0;
     const rate = row.Rate_Effect || 0;
+    const auxiliary = row.Auxiliary_Effect || 0;
     const volBase = row.Vol_Base || 0;
     const volCurr = row.Vol_Curr || 0;
     const weightBasePct = totalVolBase > 0 ? volBase / totalVolBase * 100 : 0;
@@ -1981,6 +1983,7 @@ function createWaterfallItemMeta(row, dimCol, dimName, unitMetricLabel, level, t
         contribution,
         mix,
         rate,
+        auxiliary,
         volBase,
         volCurr,
         weightBasePct,
@@ -1996,6 +1999,7 @@ function createWaterfallOtherMeta(rows, dimCol, dimName, unitMetricLabel, totalV
     const contribution = rows.reduce((s, r) => s + (r.Total_Contribution || 0), 0);
     const mix = rows.reduce((s, r) => s + (r.Mix_Effect || 0), 0);
     const rate = rows.reduce((s, r) => s + (r.Rate_Effect || 0), 0);
+    const auxiliary = rows.reduce((s, r) => s + (r.Auxiliary_Effect || 0), 0);
     const volBase = rows.reduce((s, r) => s + (r.Vol_Base || 0), 0);
     const volCurr = rows.reduce((s, r) => s + (r.Vol_Curr || 0), 0);
     const marginBase = rows.reduce((s, r) => s + (r.Total_Margin_Base || 0), 0);
@@ -2012,6 +2016,7 @@ function createWaterfallOtherMeta(rows, dimCol, dimName, unitMetricLabel, totalV
         contribution,
         mix,
         rate,
+        auxiliary,
         rowCount: rows.length,
         volBase,
         volCurr,
@@ -2180,6 +2185,7 @@ function buildWaterfallTooltipHTML(meta, mode = 'hover') {
     const tone = meta.contribution >= 0 ? 'positive' : 'negative';
     const mixTone = meta.mix >= 0 ? 'positive' : 'negative';
     const rateTone = meta.rate >= 0 ? 'positive' : 'negative';
+    const auxiliaryTone = meta.auxiliary >= 0 ? 'positive' : 'negative';
     const weightTone = meta.weightChangePct >= 0 ? 'positive' : 'negative';
     const title = meta.type === 'other'
         ? `${escapeHTML(meta.label)}（${meta.rowCount || 0} 项）`
@@ -2208,6 +2214,10 @@ function buildWaterfallTooltipHTML(meta, mode = 'hover') {
                 <div class="waterfall-effect-card">
                     <span>费率效应</span>
                     <b class="${rateTone}">${formatSignedNumber(meta.rate)}</b>
+                </div>
+                <div class="waterfall-effect-card">
+                    <span>附属金额效应</span>
+                    <b class="${auxiliaryTone}">${formatSignedNumber(meta.auxiliary)}</b>
                 </div>
             </div>
             <div class="waterfall-tooltip-grid">
@@ -2370,9 +2380,10 @@ function buildDetailTable(displayData, dimCol, dimName, isGlobal) {
         { label: '当期占比%', type: 'number', getValue: row => row.Weight_Curr_Pct, format: formatPercent },
         { label: `基期${unitMetricLabel}`, type: 'number', getValue: row => row.Margin_Unit_Base, format: formatCurrency },
         { label: `当期${unitMetricLabel}`, type: 'number', getValue: row => row.Margin_Unit_Curr, format: formatCurrency },
-        { label: isGlobal ? '结构效应（整体）' : '结构效应', type: 'number', getValue: row => row.Mix_Effect, format: formatSignedNumber },
-        { label: isGlobal ? '费率效应（整体）' : '费率效应', type: 'number', getValue: row => row.Rate_Effect, format: formatSignedNumber },
-        { label: isGlobal ? `对整体${unitMetricLabel}贡献` : '总贡献', type: 'number', getValue: row => row.Total_Contribution, format: formatSignedNumber }
+        { label: isGlobal ? '结构效应（整体）' : '结构效应', type: 'number', effectKey: 'Mix_Effect', getValue: row => row.Mix_Effect, format: formatSignedNumber },
+        { label: isGlobal ? '费率效应（整体）' : '费率效应', type: 'number', effectKey: 'Rate_Effect', getValue: row => row.Rate_Effect, format: formatSignedNumber },
+        { label: isGlobal ? '附属金额效应（整体）' : '附属金额效应', type: 'number', effectKey: 'Auxiliary_Effect', getValue: row => row.Auxiliary_Effect || 0, format: formatSignedNumber },
+        { label: isGlobal ? `对整体${unitMetricLabel}贡献` : '总贡献', type: 'number', effectKey: 'Total_Contribution', getValue: row => row.Total_Contribution, format: formatSignedNumber }
     ];
     const rowMetas = [];
     const filterState = {
@@ -2449,13 +2460,14 @@ function buildDetailTable(displayData, dimCol, dimName, isGlobal) {
         );
 
         cells.forEach((cellValue, ci) => {
+            const column = columns[ci];
             const td = document.createElement('td');
             td.textContent = cellValue;
             // 右对齐数字列
             if (ci > 0) td.className = 'num-cell';
             // 正负色
-            if (ci >= 7) {
-                const numVal = ci === 7 ? row.Mix_Effect : ci === 8 ? row.Rate_Effect : row.Total_Contribution;
+            if (column.effectKey) {
+                const numVal = row[column.effectKey] || 0;
                 if (numVal > 0) td.classList.add('positive');
                 else if (numVal < 0) td.classList.add('negative');
             }
