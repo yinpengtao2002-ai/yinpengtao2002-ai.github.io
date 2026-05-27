@@ -50,6 +50,8 @@ const state = {
     table: null,
     rows: SAMPLE_ROWS,
     fieldRoles: {},
+    fieldRolesCollapsed: false,
+    workbenchFocusMode: false,
     preset: "revenue-by-region",
 };
 
@@ -298,6 +300,20 @@ function updateSummary(rows) {
     }
 }
 
+function renderFieldRoleSummary(rows) {
+    const panel = byId("perspective-field-role-panel");
+    const summary = byId("perspective-field-role-summary");
+    const toggle = byId("perspective-field-roles-toggle");
+    if (!panel || !summary || !toggle) return;
+
+    const { columns, metrics, dimensions } = classifyColumns(rows);
+    const ignored = columns.length - metrics.length - dimensions.length;
+    summary.textContent = `${dimensions.length} 个维度 / ${metrics.length} 个指标 / ${ignored} 个忽略`;
+    panel.classList.toggle("collapsed", state.fieldRolesCollapsed);
+    toggle.textContent = state.fieldRolesCollapsed ? "重新确认" : "收起字段";
+    toggle.setAttribute("aria-expanded", String(!state.fieldRolesCollapsed));
+}
+
 function createOption(value, label, selected = false) {
     const option = document.createElement("option");
     option.value = value;
@@ -349,6 +365,7 @@ function renderFieldRoles(rows) {
     });
 
     fieldRoles.replaceChildren(...items);
+    renderFieldRoleSummary(rows);
 }
 
 function getAnalysisRows(rows) {
@@ -390,6 +407,7 @@ async function loadRows(rows, sourceLabel = "示例数据") {
 
     state.rows = normalizedRows;
     state.fieldRoles = inferFieldRoles(normalizedRows);
+    state.fieldRolesCollapsed = false;
     await reloadViewer(sourceLabel);
 }
 
@@ -491,6 +509,30 @@ function handleAggregationChange(event) {
     void reloadViewer("聚合方式");
 }
 
+function toggleFieldRoles() {
+    state.fieldRolesCollapsed = !state.fieldRolesCollapsed;
+    renderFieldRoleSummary(state.rows);
+}
+
+function refreshWorkbenchSize() {
+    requestAnimationFrame(() => {
+        window.dispatchEvent(new Event("resize"));
+        byId("perspective-viewer")?.notifyResize?.();
+    });
+}
+
+function toggleWorkbenchFocus() {
+    state.workbenchFocusMode = !state.workbenchFocusMode;
+    const root = byId("perspective-bi-root");
+    const button = byId("perspective-btn-focus-workbench");
+    root?.classList.toggle("workspace-focus-mode", state.workbenchFocusMode);
+    if (button) {
+        button.textContent = state.workbenchFocusMode ? "退出放大" : "放大工作台";
+        button.setAttribute("aria-pressed", String(state.workbenchFocusMode));
+    }
+    refreshWorkbenchSize();
+}
+
 function bindFieldRoleControls() {
     byId("perspective-field-roles")?.addEventListener("change", (event) => {
         const target = event.target;
@@ -539,6 +581,8 @@ function bindControls() {
     byId("perspective-btn-csv-template")?.addEventListener("click", downloadCsvTemplate);
     byId("perspective-btn-xlsx-template")?.addEventListener("click", downloadXlsxTemplate);
     byId("perspective-btn-export-csv")?.addEventListener("click", () => void exportCurrentCsv());
+    byId("perspective-field-roles-toggle")?.addEventListener("click", toggleFieldRoles);
+    byId("perspective-btn-focus-workbench")?.addEventListener("click", toggleWorkbenchFocus);
     byId("perspective-btn-reset-view")?.addEventListener("click", () => {
         const viewer = byId("perspective-viewer");
         void viewer?.restore?.(buildConfig(getAnalysisRows(state.rows)));

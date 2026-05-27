@@ -115,12 +115,40 @@ test("Perspective BI lets users confirm field roles and aggregations before anal
   assert.match(perspectiveEngine, /data-aggregate-select/);
 });
 
+test("Perspective BI lets users collapse field confirmation after roles are set", () => {
+  assert.match(perspectiveTool, /id="perspective-field-roles-toggle"/);
+  assert.match(perspectiveTool, /id="perspective-field-role-summary"/);
+  assert.match(perspectiveEngine, /function renderFieldRoleSummary\(rows\)/);
+  assert.match(perspectiveEngine, /function toggleFieldRoles\(\)/);
+  assert.match(perspectiveEngine, /fieldRolesCollapsed/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.field-role-panel\.collapsed\s+\.(field-role-list|field-role-help)/s);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.field-role-summary\s*\{/);
+});
+
+test("Perspective BI keeps preset selection with the workbench controls", () => {
+  assert.doesNotMatch(perspectiveTool, /className="field toolbar-preset"/);
+  assert.match(perspectiveTool, /className="workbench-controls"/);
+  assert.match(perspectiveTool, /id="perspective-preset-select"/);
+  assert.match(perspectiveTool, /id="perspective-btn-focus-workbench"/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.workbench-controls\s*\{/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.workbench-preset\s*\{/);
+});
+
+test("Perspective BI workbench supports a page-level focus mode", () => {
+  assert.match(perspectiveEngine, /function toggleWorkbenchFocus\(\)/);
+  assert.match(perspectiveEngine, /workbenchFocusMode/);
+  assert.match(perspectiveEngine, /workspace-focus-mode/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool\.workspace-focus-mode\s+\.(model-header|data-toolbar|field-role-panel)\s*\{/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool\.workspace-focus-mode\s+\.main-content\s*\{/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool\.workspace-focus-mode\s+\.perspective-panel\s*\{/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool\.workspace-focus-mode\s+\.viewer-frame\s*\{/);
+});
+
 test("Perspective BI control rows prevent toolbar and field role overlap", () => {
   assert.match(perspectiveCss, /\.perspective-bi-tool \.data-toolbar > \*\s*\{[^}]*min-width:\s*0/s);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.toolbar-upload\s*\{[^}]*min-width:\s*0/s);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.toolbar-upload\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*0\.95fr\)\s*minmax\(0,\s*1\.05fr\)/s);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.button-grid\s*\{[^}]*min-width:\s*0/s);
-  assert.match(perspectiveCss, /\.perspective-bi-tool \.toolbar-preset\s*\{[^}]*min-width:\s*220px/s);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.field-role-list\s*\{[^}]*minmax\(min\(100%,\s*380px\),\s*1fr\)/s);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.field-role-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(108px,\s*0\.55fr\)\s*minmax\(108px,\s*0\.55fr\)/s);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.field-role-name\s*\{[^}]*overflow-wrap:\s*anywhere/s);

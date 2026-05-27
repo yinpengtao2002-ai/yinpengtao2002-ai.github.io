@@ -131,7 +131,7 @@
 
 .perspective-bi-tool .data-toolbar {
     display: grid;
-    grid-template-columns: minmax(420px, 1.22fr) minmax(220px, 0.58fr) minmax(300px, 0.9fr) minmax(170px, 0.5fr);
+    grid-template-columns: minmax(420px, 1.25fr) minmax(300px, 0.85fr) minmax(170px, 0.48fr);
     gap: 0.85rem;
     margin-bottom: 0.85rem;
     align-items: stretch;
@@ -210,6 +210,12 @@
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+.perspective-bi-tool .compact-btn {
+    min-height: 34px;
+    padding: 0.42rem 0.62rem;
+    white-space: nowrap;
+}
+
 .perspective-bi-tool .btn:hover {
     transform: translateY(-1px);
 }
@@ -234,10 +240,6 @@
     font-family: var(--font-sans);
     font-size: 0.75rem;
     font-weight: 800;
-}
-
-.perspective-bi-tool .toolbar-preset {
-    min-width: 220px;
 }
 
 .perspective-bi-tool .input,
@@ -326,6 +328,16 @@
     gap: 1rem;
 }
 
+.perspective-bi-tool .field-role-panel.collapsed .field-role-list,
+.perspective-bi-tool .field-role-panel.collapsed .field-role-help {
+    display: none;
+}
+
+.perspective-bi-tool .field-role-panel.collapsed .field-role-header {
+    margin-bottom: 0;
+    align-items: center;
+}
+
 .perspective-bi-tool .field-role-header h2 {
     color: var(--text-primary);
     font-family: var(--font-sans);
@@ -339,6 +351,25 @@
     font-family: var(--font-sans);
     font-size: 0.8rem;
     line-height: 1.45;
+}
+
+.perspective-bi-tool .field-role-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.55rem;
+}
+
+.perspective-bi-tool .field-role-summary {
+    border: 1px solid rgba(120, 140, 93, 0.22);
+    border-radius: 999px;
+    background: rgba(120, 140, 93, 0.09);
+    color: #5f7544;
+    font-family: var(--font-sans);
+    font-size: 0.74rem;
+    font-weight: 800;
+    padding: 0.38rem 0.62rem;
+    white-space: nowrap;
 }
 
 .perspective-bi-tool .field-role-list {
@@ -413,7 +444,7 @@
 
 .perspective-bi-tool .panel-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 1rem;
     border-bottom: 1px solid var(--border-light);
@@ -435,10 +466,52 @@
     line-height: 1.55;
 }
 
+.perspective-bi-tool .workbench-controls {
+    display: grid;
+    min-width: min(100%, 360px);
+    grid-template-columns: minmax(210px, 1fr) auto;
+    align-items: end;
+    gap: 0.55rem;
+}
+
+.perspective-bi-tool .workbench-preset {
+    min-width: 0;
+}
+
 .perspective-bi-tool .viewer-frame {
     height: calc(100vh - 26rem);
     min-height: 560px;
     padding: 0.85rem;
+}
+
+.perspective-bi-tool.workspace-focus-mode .model-header {
+    display: none;
+}
+
+.perspective-bi-tool.workspace-focus-mode .data-toolbar {
+    display: none;
+}
+
+.perspective-bi-tool.workspace-focus-mode .field-role-panel {
+    display: none;
+}
+
+.perspective-bi-tool.workspace-focus-mode .main-content {
+    overflow: hidden;
+    padding: 0.75rem;
+}
+
+.perspective-bi-tool.workspace-focus-mode .perspective-panel {
+    min-height: calc(100dvh - 1.5rem);
+}
+
+.perspective-bi-tool.workspace-focus-mode .viewer-frame {
+    height: calc(100dvh - 6.25rem);
+    min-height: 0;
+}
+
+.perspective-bi-tool.workspace-focus-mode perspective-viewer {
+    min-height: 0;
 }
 
 .perspective-bi-tool perspective-viewer {
@@ -532,6 +605,20 @@
         flex-direction: column;
     }
 
+    .perspective-bi-tool .field-role-actions,
+    .perspective-bi-tool .workbench-controls {
+        width: 100%;
+    }
+
+    .perspective-bi-tool .field-role-actions {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .perspective-bi-tool .workbench-controls {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
     .perspective-bi-tool .field-role-list {
         grid-template-columns: minmax(0, 1fr);
     }
@@ -553,6 +640,11 @@
 
     .perspective-bi-tool perspective-viewer {
         min-height: 620px;
+    }
+
+    .perspective-bi-tool.workspace-focus-mode .viewer-frame {
+        height: calc(100dvh - 10rem);
+        min-height: 0;
     }
 }
 

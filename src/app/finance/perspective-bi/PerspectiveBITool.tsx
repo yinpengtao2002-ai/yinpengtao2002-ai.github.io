@@ -63,16 +63,6 @@ export default function PerspectiveBITool() {
                         </div>
                     </div>
 
-                    <label className="field toolbar-preset">
-                        <span>当前视图</span>
-                        <select id="perspective-preset-select" className="input">
-                            <option value="revenue-by-region">收入按区域</option>
-                            <option value="unit-quality">单车质量矩阵</option>
-                            <option value="monthly-heatmap">月份热力图</option>
-                            <option value="detail-table">明细透视表</option>
-                        </select>
-                    </label>
-
                     <div id="perspective-data-summary" className="summary-grid" />
 
                     <div className="toolbar-actions">
@@ -83,13 +73,23 @@ export default function PerspectiveBITool() {
                     <div id="perspective-message-area" className="message-area" aria-live="polite" />
                 </section>
 
-                <section className="panel field-role-panel" aria-label="字段口径确认">
+                <section className="panel field-role-panel" id="perspective-field-role-panel" aria-label="字段口径确认">
                     <div className="field-role-header">
                         <div>
                             <h2>字段口径确认</h2>
-                            <p>系统会先判断维度和指标，你也可以手动调整后再继续拖拽分析。</p>
+                            <p className="field-role-help">系统会先判断维度和指标，你也可以手动调整后再继续拖拽分析。</p>
                         </div>
-                        <span className="panel-pill">字段类型</span>
+                        <div className="field-role-actions">
+                            <div className="field-role-summary" id="perspective-field-role-summary">字段待确认</div>
+                            <button
+                                type="button"
+                                className="btn btn-secondary compact-btn"
+                                id="perspective-field-roles-toggle"
+                                aria-expanded="true"
+                            >
+                                收起字段
+                            </button>
+                        </div>
                     </div>
                     <div id="perspective-field-roles" className="field-role-list" />
                 </section>
@@ -101,7 +101,25 @@ export default function PerspectiveBITool() {
                                 <h2>可操作 BI 工作台</h2>
                                 <p>右侧保留 Perspective 原生分析面板，负责分组、拆分、筛选、排序和图表切换。</p>
                             </div>
-                            <span className="panel-pill">Perspective</span>
+                            <div className="workbench-controls">
+                                <label className="field workbench-preset">
+                                    <span>当前视图</span>
+                                    <select id="perspective-preset-select" className="input">
+                                        <option value="revenue-by-region">收入按区域</option>
+                                        <option value="unit-quality">单车质量矩阵</option>
+                                        <option value="monthly-heatmap">月份热力图</option>
+                                        <option value="detail-table">明细透视表</option>
+                                    </select>
+                                </label>
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary compact-btn"
+                                    id="perspective-btn-focus-workbench"
+                                    aria-pressed="false"
+                                >
+                                    放大工作台
+                                </button>
+                            </div>
                         </div>
                         <div className="viewer-frame">
                             {createElement("perspective-viewer", { id: "perspective-viewer" })}
