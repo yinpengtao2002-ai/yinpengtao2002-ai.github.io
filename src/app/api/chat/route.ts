@@ -5,6 +5,47 @@ import { financeModels, getFinanceModelBySlug, type FinanceModelItem } from "@/l
 
 const CHAT_PRIMARY_TIMEOUT_MS = 18000;
 const CHAT_FALLBACK_TIMEOUT_MS = 18000;
+const DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions";
+const CHAT_FALLBACK_API_URL = "https://api.884819.xyz/v1/chat/completions";
+
+type ChatProvider = {
+  model: string;
+  apiUrl: string;
+  apiKey?: string;
+  timeoutMs: number;
+};
+
+function readEnv(value?: string) {
+  return value?.trim() || "";
+}
+
+function getChatProviders(): ChatProvider[] {
+  const deepseekApiUrl = readEnv(process.env.DEEPSEEK_API_URL) || DEEPSEEK_API_URL;
+  const fallbackApiUrl = readEnv(process.env.CHAT_API_URL) || CHAT_FALLBACK_API_URL;
+  const deepseekApiKey = readEnv(process.env.DEEPSEEK_API_KEY);
+  const fallbackApiKey = readEnv(process.env.CHAT_API_KEY);
+
+  return [
+    {
+      model: "deepseek-v4-pro",
+      apiUrl: deepseekApiUrl,
+      apiKey: deepseekApiKey,
+      timeoutMs: CHAT_PRIMARY_TIMEOUT_MS,
+    },
+    {
+      model: "gpt-5.2",
+      apiUrl: fallbackApiUrl,
+      apiKey: fallbackApiKey,
+      timeoutMs: CHAT_FALLBACK_TIMEOUT_MS,
+    },
+    {
+      model: "gpt-5.4",
+      apiUrl: fallbackApiUrl,
+      apiKey: fallbackApiKey,
+      timeoutMs: CHAT_FALLBACK_TIMEOUT_MS,
+    },
+  ];
+}
 
 function buildActiveFinanceModelPrompt(activeFinanceModel?: FinanceModelItem) {
   if (!activeFinanceModel) {
@@ -121,97 +162,93 @@ export async function POST(req: NextRequest) {
     const activeThinkingArticle =
       typeof currentThinkingArticleHref === "string" ? getThinkingArticleByHref(currentThinkingArticleHref) : undefined;
 
-    const apiKey = process.env.CHAT_API_KEY?.trim();
-    const apiUrl = process.env.CHAT_API_URL?.trim();
-    const primaryModel = (process.env.CHAT_MODEL || "gpt-5.2").trim();
-    const fallbackModel = (process.env.CHAT_MODEL_FALLBACK || "gpt-5.4").trim();
+    const chatProviders = getChatProviders();
 
-    if (!apiKey || !apiUrl) {
-      return Response.json(
-        { error: "API not configured", hasKey: !!apiKey, hasUrl: !!apiUrl },
-        { status: 503 }
-      );
-    }
-
-    const callUpstream = async (model: string, timeoutMs: number) => {
+    const callUpstream = async (provider: ChatProvider) => {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      const timeoutId = setTimeout(() => controller.abort(), provider.timeoutMs);
 
       try {
-        return await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-          "User-Agent": "Mozilla/5.0 (compatible; YinPengtaoWebsite/1.0)",
-          Accept: "application/json, text/event-stream",
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: 4096,
-          stream: true,
-          messages: [
-            { role: "system", content: buildSystemPrompt(activeFinanceModel, activeThinkingArticle) },
-            ...messages.map((m: { role: string; content: string }) => ({
-              role: m.role,
-              content: m.content,
-            })),
-          ],
-        }),
-        signal: controller.signal,
-      });
+        return await fetch(provider.apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${provider.apiKey}`,
+            "User-Agent": "Mozilla/5.0 (compatible; YinPengtaoWebsite/1.0)",
+            Accept: "application/json, text/event-stream",
+          },
+          body: JSON.stringify({
+            model: provider.model,
+            max_tokens: 4096,
+            stream: true,
+            messages: [
+              { role: "system", content: buildSystemPrompt(activeFinanceModel, activeThinkingArticle) },
+              ...messages.map((m: { role: string; content: string }) => ({
+                role: m.role,
+                content: m.content,
+              })),
+            ],
+          }),
+          signal: controller.signal,
+        });
       } finally {
         clearTimeout(timeoutId);
       }
     };
 
     let res: Response | null = null;
-    let activeModel = primaryModel;
-    let upstreamError = "";
+    let activeProvider = chatProviders[0];
+    let upstreamError = "API not configured";
+    let upstreamStatus = 503;
 
-    try {
-      res = await callUpstream(primaryModel, CHAT_PRIMARY_TIMEOUT_MS);
-    } catch (err) {
-      upstreamError = err instanceof Error ? err.message : "Upstream request failed";
-      console.warn(`Primary model ${primaryModel} request failed: ${upstreamError}`);
-    }
+    for (const provider of chatProviders) {
+      activeProvider = provider;
 
-    if ((!res || !res.ok || !res.body) && fallbackModel && fallbackModel !== primaryModel) {
-      const primaryErr = res ? await res.text().catch(() => "") : upstreamError;
-      console.warn(
-        `Primary model ${primaryModel} failed (${res?.status ?? "timeout"}): ${primaryErr.slice(0, 200)}. Trying fallback ${fallbackModel}.`
-      );
-      activeModel = fallbackModel;
+      if (!provider.apiKey || !provider.apiUrl) {
+        upstreamError = `${provider.model} API not configured`;
+        console.warn(`Skipping model ${provider.model}: API not configured`);
+        continue;
+      }
 
       try {
-        res = await callUpstream(fallbackModel, CHAT_FALLBACK_TIMEOUT_MS);
-        upstreamError = "";
+        res = await callUpstream(provider);
       } catch (err) {
         upstreamError = err instanceof Error ? err.message : "Upstream request failed";
-        console.warn(`Fallback model ${fallbackModel} request failed: ${upstreamError}`);
+        upstreamStatus = 504;
+        console.warn(`Model ${provider.model} request failed: ${upstreamError}`);
+        continue;
       }
+
+      if (res.ok && res.body) {
+        break;
+      }
+
+      upstreamStatus = res.status;
+      upstreamError = await res.text().catch(() => "");
+      console.warn(
+        `Model ${provider.model} failed (${res.status}): ${upstreamError.slice(0, 200)}`
+      );
+      res = null;
     }
 
     if (!res || !res.ok || !res.body) {
-      const errorText = res ? await res.text().catch(() => "") : upstreamError || "Upstream request timed out";
-      const status = res?.status ?? 504;
       const urlHost = (() => {
         try {
-          return new URL(apiUrl).host;
+          return new URL(activeProvider.apiUrl).host;
         } catch {
           return "invalid-url";
         }
       })();
-      console.error("Upstream API error:", status, errorText);
+      console.error("Upstream API error:", upstreamStatus, upstreamError);
       return Response.json(
         {
           error: "Upstream API error",
-          status,
-          detail: errorText.slice(0, 500),
-          model: activeModel,
+          status: upstreamStatus,
+          detail: upstreamError.slice(0, 500),
+          model: activeProvider.model,
           urlHost,
         },
-        { status }
+        { status: upstreamStatus }
       );
     }
 

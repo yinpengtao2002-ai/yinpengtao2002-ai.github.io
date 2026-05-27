@@ -162,11 +162,16 @@ test("chat route link normalization keeps existing markdown links and code untou
   assert.equal(normalizeChatInternalLinks(input), input);
 });
 
-test("chat API defaults to gpt-5.2 with gpt-5.4 fallback", () => {
-  assert.match(chatRoute, /process\.env\.CHAT_MODEL\s*\|\|\s*"gpt-5\.2"/);
-  assert.match(chatRoute, /process\.env\.CHAT_MODEL_FALLBACK\s*\|\|\s*"gpt-5\.4"/);
-  assert.match(envExample, /CHAT_MODEL=gpt-5\.2/);
-  assert.match(envExample, /CHAT_MODEL_FALLBACK=gpt-5\.4/);
+test("chat API uses a fixed three-model fallback chain", () => {
+  assert.match(chatRoute, /model:\s*"deepseek-v4-pro"/);
+  assert.match(chatRoute, /model:\s*"gpt-5\.2"/);
+  assert.match(chatRoute, /model:\s*"gpt-5\.4"/);
+  assert.match(chatRoute, /DEEPSEEK_API_URL/);
+  assert.match(chatRoute, /CHAT_FALLBACK_API_URL/);
+  assert.match(envExample, /DEEPSEEK_API_KEY=/);
+  assert.match(envExample, /DEEPSEEK_API_URL=https:\/\/api\.deepseek\.com\/chat\/completions/);
+  assert.doesNotMatch(envExample, /CHAT_MODEL=/);
+  assert.doesNotMatch(envExample, /CHAT_MODEL_FALLBACK=/);
   assert.doesNotMatch(chatRoute, /gpt-5\.4-mini/);
 });
 

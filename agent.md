@@ -108,11 +108,11 @@ Current models:
 
 ## AI Assistant Configuration
 
-- `/api/chat` expects an OpenAI-compatible endpoint through `CHAT_API_URL` and `CHAT_API_KEY`.
-- Current default models in code: primary `gpt-5.2`, fallback `gpt-5.4`.
+- `/api/chat` uses a fixed model chain in code: `deepseek-v4-pro` first, then `gpt-5.2`, then `gpt-5.4`.
+- DeepSeek uses `DEEPSEEK_API_KEY` with default endpoint `https://api.deepseek.com/chat/completions`.
+- The two GPT fallbacks use the OpenAI-compatible `CHAT_API_URL` and `CHAT_API_KEY`.
 - `.env.example` uses the 8848AI endpoint: `https://api.884819.xyz/v1/chat/completions`.
-- Vercel environment variables override code defaults.
-- Local development chat falls back to local content unless `.env.local` provides `CHAT_API_KEY` and `CHAT_API_URL`.
+- Local development chat falls back to local content unless `.env.local` provides `DEEPSEEK_API_KEY` or the GPT fallback pair `CHAT_API_KEY` / `CHAT_API_URL`.
 - On 2026-04-28, `z-ai/glm-5.1` and `z-ai/glm5` timed out through 8848AI, so do not restore them as defaults without retesting.
 - Keep fallback wording user-facing; avoid phrases like "站内索引" unless deliberately exposing implementation details.
 
