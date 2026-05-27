@@ -988,7 +988,7 @@ function addFilterChip(dim, value) {
     // 从下拉列表中移除已选项
     const dropdown = document.querySelector(`.multiselect-dropdown[data-dim="${dim}"]`);
     if (dropdown) {
-        const opt = dropdown.querySelector(`option[value="${value}"]`);
+        const opt = Array.from(dropdown.options).find(option => option.value === value);
         if (opt) opt.remove();
     }
 
@@ -1003,12 +1003,24 @@ function addFilterChipDOM(chipsDiv, dim, value) {
     chip.className = 'chip';
     chip.dataset.dim = dim;
     chip.dataset.value = value;
-    chip.innerHTML = `${value} <span class="chip-remove" title="移除">×</span>`;
 
-    chip.querySelector('.chip-remove').addEventListener('click', () => {
+    const label = document.createElement('span');
+    label.className = 'chip-label';
+    label.textContent = value;
+
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'chip-remove';
+    removeButton.title = `移除${value}`;
+    removeButton.setAttribute('aria-label', `移除${value}`);
+    removeButton.textContent = '×';
+    removeButton.addEventListener('click', (event) => {
+        event.stopPropagation();
         removeFilterChip(dim, value);
     });
 
+    chip.appendChild(label);
+    chip.appendChild(removeButton);
     chipsDiv.appendChild(chip);
 }
 
@@ -1022,16 +1034,15 @@ function removeFilterChip(dim, value) {
     }
 
     // 从 DOM 移除芯片
-    const chip = document.querySelector(`.chip[data-dim="${dim}"][data-value="${value}"]`);
+    const chip = Array.from(document.querySelectorAll(`.chip[data-dim="${dim}"]`))
+        .find(item => item.dataset.value === value);
     if (chip) chip.remove();
 
     // 将该值重新加回下拉列表
     const dropdown = document.querySelector(`.multiselect-dropdown[data-dim="${dim}"]`);
     if (dropdown) {
-        const opt = document.createElement('option');
-        opt.value = value;
-        opt.textContent = value;
-        dropdown.appendChild(opt);
+        const availableValues = getFilteredValuesForDim(dim, AppState.drillOrder.indexOf(dim));
+        rebuildFilterDropdown(dropdown, availableValues, dim);
     }
 
     // 级联更新下级筛选器
@@ -2361,7 +2372,7 @@ function buildDetailTable(displayData, dimCol, dimName, isGlobal) {
     columns.forEach((column, columnIndex) => {
         const th = document.createElement('th');
         const inner = document.createElement('div');
-        inner.className = 'detail-th-inner';
+        inner.className = 'detail-th-inner filterable';
 
         const label = document.createElement('span');
         label.className = 'detail-th-label';
@@ -2378,7 +2389,7 @@ function buildDetailTable(displayData, dimCol, dimName, isGlobal) {
         caret.setAttribute('aria-hidden', 'true');
         filterBtn.appendChild(caret);
 
-        filterBtn.addEventListener('click', (event) => {
+        const openMenu = (event) => {
             event.stopPropagation();
             openDetailColumnFilterMenu({
                 column,
@@ -2387,7 +2398,12 @@ function buildDetailTable(displayData, dimCol, dimName, isGlobal) {
                 rowMetas,
                 state: filterState
             });
+        };
+
+        filterBtn.addEventListener('click', (event) => {
+            openMenu(event);
         });
+        inner.addEventListener('click', openMenu);
 
         filterState.headerButtons[columnIndex] = filterBtn;
         inner.appendChild(label);
@@ -2536,6 +2552,14 @@ function buildDetailTextFilterControls(menu, columnIndex, rowMetas, state) {
     )).sort((a, b) => a.localeCompare(b, 'zh-CN', { numeric: true }));
     const currentFilter = state.filters.get(columnIndex);
     const selectedValues = new Set(currentFilter?.type === 'text' ? currentFilter.values : allValues);
+    const syncTextFilter = () => {
+        if (selectedValues.size === allValues.length) {
+            state.filters.delete(columnIndex);
+        } else {
+            state.filters.set(columnIndex, { type: 'text', values: Array.from(selectedValues) });
+        }
+        applyDetailTableFilters(rowMetas, state);
+    };
 
     const searchInput = document.createElement('input');
     searchInput.type = 'search';
@@ -2571,6 +2595,7 @@ function buildDetailTextFilterControls(menu, columnIndex, rowMetas, state) {
             checkbox.addEventListener('change', () => {
                 if (checkbox.checked) selectedValues.add(value);
                 else selectedValues.delete(value);
+                syncTextFilter();
             });
 
             const text = document.createElement('span');
@@ -2590,22 +2615,19 @@ function buildDetailTextFilterControls(menu, columnIndex, rowMetas, state) {
     quickActions.appendChild(createDetailFilterAction('全选', () => {
         allValues.forEach(value => selectedValues.add(value));
         renderValues();
+        syncTextFilter();
     }));
     quickActions.appendChild(createDetailFilterAction('清空', () => {
         selectedValues.clear();
         renderValues();
+        syncTextFilter();
     }));
     menu.appendChild(quickActions);
 
     appendDetailFilterFooter(menu, {
         applyLabel: '应用筛选',
         onApply: () => {
-            if (selectedValues.size === allValues.length) {
-                state.filters.delete(columnIndex);
-            } else {
-                state.filters.set(columnIndex, { type: 'text', values: Array.from(selectedValues) });
-            }
-            applyDetailTableFilters(rowMetas, state);
+            syncTextFilter();
             closeDetailColumnFilterMenu(state);
         },
         onClearColumn: () => {

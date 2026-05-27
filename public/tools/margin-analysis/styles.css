@@ -600,7 +600,7 @@ details[open] > .sidebar-summary::after {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
-    padding: 0.25rem 0.6rem;
+    padding: 0.22rem 0.28rem 0.22rem 0.62rem;
     background: linear-gradient(135deg, rgba(217, 119, 87, 0.1), rgba(106, 155, 204, 0.1));
     border: 1px solid var(--border-light);
     border-radius: 16px;
@@ -610,15 +610,36 @@ details[open] > .sidebar-summary::after {
     cursor: default;
 }
 
+.chip-label {
+    max-width: 142px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .chip-remove {
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.68);
     cursor: pointer;
     color: var(--text-secondary);
-    font-size: 0.9rem;
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    font-weight: 800;
     line-height: 1;
-    transition: color 0.15s;
+    transition: color 0.15s, background 0.15s;
 }
-.chip-remove:hover {
+
+.chip-remove:hover,
+.chip-remove:focus {
+    background: rgba(217, 119, 87, 0.12);
     color: var(--accent-orange);
+    outline: none;
 }
 
 .multiselect-dropdown {
@@ -1567,6 +1588,15 @@ details[open] > .usage-summary::after {
     justify-content: center;
     gap: 0.35rem;
     padding: 8px 10px;
+}
+
+.detail-th-inner.filterable {
+    cursor: pointer;
+}
+
+.detail-th-inner.filterable:hover .detail-filter-trigger {
+    border-color: rgba(217, 119, 87, 0.35);
+    background: rgba(217, 119, 87, 0.09);
 }
 
 .detail-th-label {

@@ -1,7 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 const marginAnalysis = await import("../public/tools/margin-analysis/app.js");
+const marginAnalysisSource = await readFile(new URL("../public/tools/margin-analysis/app.js", import.meta.url), "utf8");
+const marginAnalysisStyles = await readFile(new URL("../public/tools/margin-analysis/styles.css", import.meta.url), "utf8");
 
 const {
     calculateGlobalMetrics,
@@ -262,4 +265,21 @@ test("drilled global-impact decomposition ties back to parent bar contribution",
     const childContribution = childGlobalEffects.reduce((sum, row) => sum + row.Total_Contribution, 0);
 
     approx(childContribution, euParentContribution, "EU child decomposition should equal parent bar height");
+});
+
+test("left drill filters expose removable chips and keep dropdown options stable", () => {
+    assert.match(marginAnalysisSource, /const removeButton = document\.createElement\('button'\)/);
+    assert.match(marginAnalysisSource, /removeButton\.setAttribute\('aria-label', `移除\$\{value\}`\)/);
+    assert.match(marginAnalysisSource, /event\.stopPropagation\(\);\s*removeFilterChip\(dim, value\);/);
+    assert.match(marginAnalysisSource, /Array\.from\(dropdown\.options\)\.find\(option => option\.value === value\)/);
+    assert.match(marginAnalysisSource, /rebuildFilterDropdown\(dropdown, availableValues, dim\)/);
+    assert.match(marginAnalysisStyles, /\.chip-remove\s*\{[\s\S]*width:\s*20px[\s\S]*border-radius:\s*999px/s);
+});
+
+test("detail table header filters open from the full header and text filters apply immediately", () => {
+    assert.match(marginAnalysisSource, /inner\.className = 'detail-th-inner filterable'/);
+    assert.match(marginAnalysisSource, /inner\.addEventListener\('click', openMenu\)/);
+    assert.match(marginAnalysisSource, /const syncTextFilter = \(\) => \{[\s\S]*applyDetailTableFilters\(rowMetas, state\);[\s\S]*\};/);
+    assert.match(marginAnalysisSource, /checkbox\.addEventListener\('change', \(\) => \{[\s\S]*syncTextFilter\(\);[\s\S]*\}\);/);
+    assert.match(marginAnalysisStyles, /\.detail-th-inner\.filterable\s*\{[\s\S]*cursor:\s*pointer/s);
 });
