@@ -98,7 +98,7 @@ export default function PerspectiveBITool() {
                     <div className="calculated-metric-header">
                         <div>
                             <h2>计算指标视图</h2>
-                            <p>用于单车、费率、结构占比这类需要先汇总再相除的指标，结果单独展示，不写入 Perspective 字段。</p>
+                            <p>用于单车、费率、结构占比这类需要先汇总再相除的指标，生成后会加载到下方 BI 工作台。</p>
                         </div>
                         <button
                             type="button"
@@ -158,6 +158,13 @@ export default function PerspectiveBITool() {
                                 <p>右侧保留 Perspective 原生分析面板，负责分组、拆分、筛选、排序和图表切换。</p>
                             </div>
                             <div className="workbench-controls">
+                                <label className="field workbench-dataset">
+                                    <span>工作台数据</span>
+                                    <select id="perspective-workbench-dataset-select" className="input">
+                                        <option value="raw">原始明细数据</option>
+                                        <option value="calculated" disabled>计算指标结果</option>
+                                    </select>
+                                </label>
                                 <label className="field workbench-preset">
                                     <span>当前视图</span>
                                     <select id="perspective-preset-select" className="input">

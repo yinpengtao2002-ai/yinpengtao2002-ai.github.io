@@ -642,12 +642,13 @@
 
 .perspective-bi-tool .workbench-controls {
     display: grid;
-    min-width: min(100%, 360px);
-    grid-template-columns: minmax(210px, 1fr) auto;
+    min-width: min(100%, 560px);
+    grid-template-columns: minmax(160px, 0.75fr) minmax(210px, 1fr) auto;
     align-items: end;
     gap: 0.55rem;
 }
 
+.perspective-bi-tool .workbench-dataset,
 .perspective-bi-tool .workbench-preset {
     min-width: 0;
 }

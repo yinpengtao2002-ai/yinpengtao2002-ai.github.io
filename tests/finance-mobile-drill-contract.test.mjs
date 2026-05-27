@@ -112,7 +112,7 @@ test("Perspective BI templates only ask for base business fields without automat
   assert.doesNotMatch(perspectivePage, /单车质量/);
 });
 
-test("Perspective BI lets users define weighted calculated metrics outside the Perspective dataset", () => {
+test("Perspective BI keeps weighted calculated metrics out of the raw detail dataset", () => {
   assert.match(perspectiveTool, /id="perspective-calculated-metric-toggle"/);
   assert.match(perspectiveTool, /id="perspective-calculated-metric-panel"/);
   assert.match(perspectiveTool, /id="perspective-calculated-metric-name"/);
@@ -124,8 +124,29 @@ test("Perspective BI lets users define weighted calculated metrics outside the P
   assert.match(perspectiveEngine, /function calculateMetricRows\(rows\)/);
   assert.match(perspectiveEngine, /numeratorTotal \/ denominatorTotal/);
   assert.match(perspectiveEngine, /renderCalculatedMetricTable\(state\.rows\)/);
-  assert.match(perspectiveEngine, /const analysisRows = getAnalysisRows\(state\.rows\);[\s\S]*state\.worker\.table\(analysisRows\)/);
-  assert.doesNotMatch(perspectiveEngine, /state\.worker\.table\([^)]*calculatedMetric/);
+  assert.match(perspectiveEngine, /function getAnalysisRows\(rows\)[\s\S]*activeColumns/s);
+  assert.match(perspectiveEngine, /function buildCalculatedWorkbenchRows\(rows\)/);
+  assert.match(perspectiveEngine, /state\.worker\.table\(workbenchRows\)/);
+  assert.doesNotMatch(perspectiveEngine, /getAnalysisRows\(rows\)[\s\S]*calculatedValue/s);
+});
+
+test("Perspective BI can load calculated metric rows into the native workbench", () => {
+  assert.match(perspectiveTool, /id="perspective-workbench-dataset-select"/);
+  assert.match(perspectiveTool, /value="raw"/);
+  assert.match(perspectiveTool, /value="calculated"/);
+  assert.match(perspectiveEngine, /workbenchDataset:\s*"raw"/);
+  assert.match(perspectiveEngine, /calculatedRows:\s*\[\]/);
+  assert.match(perspectiveEngine, /function invalidateCalculatedWorkbenchRows\(\)/);
+  assert.match(perspectiveEngine, /function buildCalculatedWorkbenchRows\(rows\)/);
+  assert.match(perspectiveEngine, /function getWorkbenchRows\(\)/);
+  assert.match(perspectiveEngine, /state\.workbenchDataset = "calculated"/);
+  assert.match(perspectiveEngine, /await reloadViewer\("计算指标"\)/);
+  assert.match(perspectiveEngine, /state\.worker\.table\(workbenchRows\)/);
+  assert.match(perspectiveEngine, /function buildCalculatedConfig\(rows\)[\s\S]*group_rollup_mode:\s*"flat"/);
+  assert.match(perspectiveEngine, /function handleWorkbenchDatasetChange/);
+  assert.match(perspectiveEngine, /perspective-workbench-dataset-select/);
+  assert.match(perspectiveEngine, /const shouldReloadRawWorkbench = state\.workbenchDataset === "calculated"/);
+  assert.match(perspectiveEngine, /void reloadViewer\("原始明细"\)/);
 });
 
 test("Perspective BI lets users confirm field roles and aggregations before analysis", () => {

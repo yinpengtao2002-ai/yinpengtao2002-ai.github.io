@@ -53,6 +53,8 @@ const state = {
     fieldRoles: {},
     fieldRolesCollapsed: false,
     workbenchFocusMode: false,
+    workbenchDataset: "raw",
+    calculatedRows: [],
     preset: "revenue-by-region",
     calculatedMetric: {
         panelOpen: false,
@@ -192,6 +194,14 @@ function classifyColumns(rows) {
     return { columns, metrics, dimensions };
 }
 
+function classifyCalculatedColumns(rows) {
+    const columns = getColumns(rows);
+    const metricName = getCalculatedMetricName();
+    const metricColumns = columns.filter((column) => column === metricName || /合计$/.test(column));
+    const dimensions = columns.filter((column) => !metricColumns.includes(column));
+    return { columns, metrics: metricColumns, dimensions };
+}
+
 function pickColumn(candidates, available, fallback) {
     return candidates.find((candidate) => available.includes(candidate)) ?? fallback;
 }
@@ -201,7 +211,17 @@ function buildAggregates(rows) {
     return Object.fromEntries(metrics.map((metric) => [metric, state.fieldRoles[metric]?.aggregation ?? defaultAggregationForColumn(metric)]));
 }
 
+function buildCalculatedAggregates(rows) {
+    const { metrics } = classifyCalculatedColumns(rows);
+    const metricName = getCalculatedMetricName();
+    return Object.fromEntries(metrics.map((metric) => [metric, metric === metricName ? "avg" : "sum"]));
+}
+
 function buildConfig(rows, preset = state.preset) {
+    if (state.workbenchDataset === "calculated") {
+        return buildCalculatedConfig(rows);
+    }
+
     const { columns, metrics, dimensions } = classifyColumns(rows);
     const month = pickColumn(["月份", "年月", "期间", "Month", "month"], dimensions, dimensions[0]);
     const region = pickColumn(["大区", "区域", "地区", "Region", "region"], dimensions, dimensions[0]);
@@ -255,6 +275,24 @@ function buildConfig(rows, preset = state.preset) {
         columns: [revenue ?? margin].filter(Boolean),
         aggregates,
         sort: revenue ? [[revenue, "desc"]] : [],
+        settings: true,
+    };
+}
+
+function buildCalculatedConfig(rows) {
+    const { columns, metrics, dimensions } = classifyCalculatedColumns(rows);
+    const metricName = getCalculatedMetricName();
+    const columnsForView = [metricName, ...metrics.filter((metric) => metric !== metricName)].filter((column) => columns.includes(column));
+
+    return {
+        title: metricName,
+        plugin: "Datagrid",
+        group_by: dimensions.slice(0, 1),
+        split_by: [],
+        columns: columnsForView,
+        aggregates: buildCalculatedAggregates(rows),
+        sort: columns.includes(metricName) ? [[metricName, "desc"]] : [],
+        group_rollup_mode: "flat",
         settings: true,
     };
 }
@@ -453,6 +491,10 @@ function formatCalculatedValue(value, format) {
     return formatNumber(value);
 }
 
+function getCalculatedMetricName() {
+    return state.calculatedMetric.name.trim() || "计算指标";
+}
+
 function calculateMetricRows(rows) {
     ensureCalculatedMetricDefaults(rows);
     const { numerator, denominator, dimensions } = state.calculatedMetric;
@@ -483,6 +525,26 @@ function calculateMetricRows(rows) {
             };
         })
         .sort((a, b) => b.numeratorTotal - a.numeratorTotal);
+}
+
+function buildCalculatedWorkbenchRows(rows) {
+    const calculatedRows = calculateMetricRows(rows);
+    const { numerator, denominator, dimensions } = state.calculatedMetric;
+    const metricName = getCalculatedMetricName();
+    const numeratorColumn = `${numerator}合计`;
+    const denominatorColumn = `${denominator}合计`;
+    const dimensionColumns = dimensions.length ? dimensions : ["范围"];
+
+    return calculatedRows.map((row) => {
+        const dimensionValues = dimensions.length ? row.dimensionValues : ["全部"];
+        const dimensionEntries = Object.fromEntries(dimensionColumns.map((dimension, index) => [dimension, dimensionValues[index] || "全部"]));
+        return {
+            ...dimensionEntries,
+            [numeratorColumn]: row.numeratorTotal,
+            [denominatorColumn]: row.denominatorTotal,
+            [metricName]: row.calculatedValue === "" ? null : Number(row.calculatedValue.toFixed(6)),
+        };
+    });
 }
 
 function appendTableCell(row, text, tagName = "td") {
@@ -544,6 +606,36 @@ function getAnalysisRows(rows) {
     return rows.map((row) => Object.fromEntries(activeColumns.map((column) => [column, row[column] ?? ""])));
 }
 
+function getWorkbenchRows() {
+    if (state.workbenchDataset === "calculated" && state.calculatedRows.length) {
+        return state.calculatedRows;
+    }
+
+    return getAnalysisRows(state.rows);
+}
+
+function renderWorkbenchDatasetControl() {
+    const select = byId("perspective-workbench-dataset-select");
+    if (!select) return;
+
+    const hasCalculatedRows = state.calculatedRows.length > 0;
+    const calculatedOption = select.querySelector('option[value="calculated"]');
+    select.value = state.workbenchDataset === "calculated" && hasCalculatedRows ? "calculated" : "raw";
+    if (calculatedOption) {
+        calculatedOption.disabled = !hasCalculatedRows;
+        calculatedOption.textContent = hasCalculatedRows ? `计算指标：${getCalculatedMetricName()}` : "计算指标结果";
+    }
+}
+
+function invalidateCalculatedWorkbenchRows() {
+    const shouldReloadRawWorkbench = state.workbenchDataset === "calculated";
+    state.calculatedMetric.generated = false;
+    state.calculatedRows = [];
+    state.workbenchDataset = "raw";
+    renderWorkbenchDatasetControl();
+    if (shouldReloadRawWorkbench) void reloadViewer("原始明细");
+}
+
 async function reloadViewer(sourceLabel) {
     const viewer = byId("perspective-viewer");
     if (!viewer) return;
@@ -551,12 +643,12 @@ async function reloadViewer(sourceLabel) {
     await ensurePerspectiveRuntime();
     state.worker = state.worker ?? await perspective.worker();
 
-    const analysisRows = getAnalysisRows(state.rows);
+    const workbenchRows = getWorkbenchRows();
     const previousTable = state.table;
-    const table = await state.worker.table(analysisRows);
+    const table = await state.worker.table(workbenchRows);
     state.table = table;
     await viewer.load(table);
-    await viewer.restore(buildConfig(analysisRows));
+    await viewer.restore(buildConfig(workbenchRows));
 
     try {
         await previousTable?.delete();
@@ -568,6 +660,7 @@ async function reloadViewer(sourceLabel) {
     renderFieldRoles(state.rows);
     renderCalculatedMetricControls(state.rows);
     renderCalculatedMetricTable(state.rows);
+    renderWorkbenchDatasetControl();
     showMessage(`${sourceLabel}已载入，可以在右侧 Perspective 面板继续分析。`);
 }
 
@@ -581,6 +674,9 @@ async function loadRows(rows, sourceLabel = "示例数据") {
     state.rows = normalizedRows;
     state.fieldRoles = inferFieldRoles(normalizedRows);
     state.fieldRolesCollapsed = false;
+    state.workbenchDataset = "raw";
+    state.calculatedRows = [];
+    state.calculatedMetric.generated = false;
     await reloadViewer(sourceLabel);
 }
 
@@ -690,18 +786,23 @@ function handleCalculatedMetricChange(event) {
 
     if (target.id === "perspective-calculated-metric-name") {
         state.calculatedMetric.name = target.value;
+        if (state.calculatedMetric.generated) state.calculatedRows = buildCalculatedWorkbenchRows(state.rows);
+        renderWorkbenchDatasetControl();
+        if (state.workbenchDataset === "calculated") void reloadViewer("计算指标");
         renderCalculatedMetricTable(state.rows);
         return;
     }
 
     if (target.id === "perspective-calculated-numerator") {
         state.calculatedMetric.numerator = target.value;
+        invalidateCalculatedWorkbenchRows();
         renderCalculatedMetricTable(state.rows);
         return;
     }
 
     if (target.id === "perspective-calculated-denominator") {
         state.calculatedMetric.denominator = target.value;
+        invalidateCalculatedWorkbenchRows();
         renderCalculatedMetricTable(state.rows);
         return;
     }
@@ -722,10 +823,11 @@ function handleCalculatedMetricChange(event) {
         dimensions.delete(dimension);
     }
     state.calculatedMetric.dimensions = Array.from(dimensions);
+    invalidateCalculatedWorkbenchRows();
     renderCalculatedMetricTable(state.rows);
 }
 
-function handleCalculatedMetricGenerate(event) {
+async function handleCalculatedMetricGenerate(event) {
     event.preventDefault();
     ensureCalculatedMetricDefaults(state.rows);
     if (!state.calculatedMetric.numerator || !state.calculatedMetric.denominator) {
@@ -735,8 +837,23 @@ function handleCalculatedMetricGenerate(event) {
 
     state.calculatedMetric.generated = true;
     state.calculatedMetric.panelOpen = true;
+    state.calculatedRows = buildCalculatedWorkbenchRows(state.rows);
+    state.workbenchDataset = "calculated";
     renderCalculatedMetricControls(state.rows);
     renderCalculatedMetricTable(state.rows);
+    await reloadViewer("计算指标");
+}
+
+function handleWorkbenchDatasetChange(event) {
+    const value = event.target?.value;
+    if (value === "calculated" && !state.calculatedRows.length) {
+        state.workbenchDataset = "raw";
+        renderWorkbenchDatasetControl();
+        return;
+    }
+
+    state.workbenchDataset = value === "calculated" ? "calculated" : "raw";
+    void reloadViewer(state.workbenchDataset === "calculated" ? "计算指标" : "原始明细");
 }
 
 function toggleFieldRoles() {
@@ -832,13 +949,14 @@ function bindControls() {
     byId("perspective-btn-focus-workbench")?.addEventListener("click", toggleWorkbenchFocus);
     byId("perspective-btn-reset-view")?.addEventListener("click", () => {
         const viewer = byId("perspective-viewer");
-        void viewer?.restore?.(buildConfig(getAnalysisRows(state.rows)));
+        void viewer?.restore?.(buildConfig(getWorkbenchRows()));
     });
     byId("perspective-preset-select")?.addEventListener("change", (event) => {
         state.preset = event.target.value;
         const viewer = byId("perspective-viewer");
-        void viewer?.restore?.(buildConfig(getAnalysisRows(state.rows)));
+        void viewer?.restore?.(buildConfig(getWorkbenchRows()));
     });
+    byId("perspective-workbench-dataset-select")?.addEventListener("change", handleWorkbenchDatasetChange);
 }
 
 async function initApp() {
