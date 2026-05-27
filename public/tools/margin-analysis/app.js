@@ -1122,9 +1122,7 @@ function calculateGlobalMetrics(data, month) {
 function createPVMBucket() {
     return {
         vol: 0,
-        margin: 0,
-        volumeBackedMargin: 0,
-        auxiliaryMargin: 0
+        margin: 0
     };
 }
 
@@ -1134,24 +1132,6 @@ function addRowToPVMBucket(bucket, row) {
 
     bucket.vol += volume;
     bucket.margin += margin;
-
-    if (volume === 0 && margin !== 0) {
-        bucket.auxiliaryMargin += margin;
-    } else {
-        bucket.volumeBackedMargin += margin;
-    }
-}
-
-function calculateVolumeBackedAvgMargin(data, month, totalVol) {
-    if (totalVol <= 0) return 0;
-    const margin = data
-        .filter(row => row['Month'] === month)
-        .reduce((sum, row) => {
-            const volume = Number(row['Sales Volume']) || 0;
-            const rowMargin = Number(row['Total Margin']) || 0;
-            return volume === 0 && rowMargin !== 0 ? sum : sum + rowMargin;
-        }, 0);
-    return margin / totalVol;
 }
 
 
@@ -1167,10 +1147,9 @@ function calculateVolumeBackedAvgMargin(data, month, totalVol) {
  * @param {number} totalVolCurr - 当期全局/视图总销量（用于计算权重）
  * @param {number} totalVolBase - 基期全局/视图总销量（用于计算权重）
  * @param {number} avgMarginBase - 基期全局/视图平均单车指标
- * @param {Object} options - 可选全局口径配置
  * @returns {Array} 当前维度层级的 PVM 效应数组
  */
-function calculateDimensionPVMEffects(data, baseMonth, currMonth, groupDim, totalVolCurr, totalVolBase, avgMarginBase, options = {}) {
+function calculateDimensionPVMEffects(data, baseMonth, currMonth, groupDim, totalVolCurr, totalVolBase, avgMarginBase) {
     const baseAgg = {};
     const currAgg = {};
 
@@ -1192,12 +1171,6 @@ function calculateDimensionPVMEffects(data, baseMonth, currMonth, groupDim, tota
 
     const allKeys = new Set([...Object.keys(baseAgg), ...Object.keys(currAgg)]);
     const safeAvgMarginBase = Number.isFinite(avgMarginBase) ? avgMarginBase : 0;
-    const observedVolBase = Object.values(baseAgg).reduce((sum, item) => sum + item.vol, 0);
-    const usesCompleteBaseVolume = Math.abs(observedVolBase - totalVolBase) < 1e-9;
-    const inferredVolumeBackedAvgBase = calculateVolumeBackedAvgMargin(data, baseMonth, totalVolBase);
-    const volumeBackedAvgBase = Number.isFinite(options.avgVolumeBackedMarginBase)
-        ? options.avgVolumeBackedMarginBase
-        : (usesCompleteBaseVolume && Number.isFinite(inferredVolumeBackedAvgBase) ? inferredVolumeBackedAvgBase : safeAvgMarginBase);
 
     return [...allKeys].map(key => {
         const baseData = baseAgg[key] || createPVMBucket();
@@ -1206,12 +1179,6 @@ function calculateDimensionPVMEffects(data, baseMonth, currMonth, groupDim, tota
         const weightCurr = totalVolCurr > 0 ? currData.vol / totalVolCurr : 0;
         const marginUnitBase = baseData.vol !== 0 ? baseData.margin / baseData.vol : 0;
         const marginUnitCurr = currData.vol !== 0 ? currData.margin / currData.vol : 0;
-        const volumeBackedUnitBase = baseData.vol !== 0 ? baseData.volumeBackedMargin / baseData.vol : 0;
-        const volumeBackedUnitCurr = currData.vol !== 0 ? currData.volumeBackedMargin / currData.vol : 0;
-        // 零销量但有金额的附属项没有自身分母；按“金额/总销量”的单车贡献折入费率效应，保证分解合计等于真实单车变动。
-        const auxiliaryEffect =
-            (totalVolCurr > 0 ? currData.auxiliaryMargin / totalVolCurr : 0) -
-            (totalVolBase > 0 ? baseData.auxiliaryMargin / totalVolBase : 0);
 
         const row = {
             [groupDim]: key,
@@ -1220,22 +1187,21 @@ function calculateDimensionPVMEffects(data, baseMonth, currMonth, groupDim, tota
             Total_Margin_Base: baseData.margin,
             Total_Margin_Curr: currData.margin,
             Margin_Unit_Base: marginUnitBase,
-            Margin_Unit_Curr: marginUnitCurr,
-            Auxiliary_Effect: auxiliaryEffect
+            Margin_Unit_Curr: marginUnitCurr
         };
 
         if (baseData.vol === 0 && currData.vol !== 0) {
-            row.Mix_Effect = weightCurr * (volumeBackedUnitCurr - volumeBackedAvgBase);
+            row.Mix_Effect = weightCurr * (marginUnitCurr - safeAvgMarginBase);
             row.Rate_Effect = 0;
         } else if (currData.vol === 0 && baseData.vol !== 0) {
-            row.Mix_Effect = -weightBase * (volumeBackedUnitBase - volumeBackedAvgBase);
+            row.Mix_Effect = -weightBase * (marginUnitBase - safeAvgMarginBase);
             row.Rate_Effect = 0;
         } else {
-            row.Mix_Effect = (weightCurr - weightBase) * (volumeBackedUnitBase - volumeBackedAvgBase);
-            row.Rate_Effect = weightCurr * (volumeBackedUnitCurr - volumeBackedUnitBase);
+            row.Mix_Effect = (weightCurr - weightBase) * (marginUnitBase - safeAvgMarginBase);
+            row.Rate_Effect = weightCurr * (marginUnitCurr - marginUnitBase);
         }
 
-        row.Total_Contribution = row.Mix_Effect + row.Rate_Effect + row.Auxiliary_Effect;
+        row.Total_Contribution = row.Mix_Effect + row.Rate_Effect;
         return row;
     });
 }
@@ -1270,7 +1236,6 @@ function prepareDisplayData(effectsData, dimCol, totalVolBase, totalVolCurr, tot
     const sumVolCurr = data.reduce((s, r) => s + r.Vol_Curr, 0);
     const sumMix = data.reduce((s, r) => s + r.Mix_Effect, 0);
     const sumRate = data.reduce((s, r) => s + r.Rate_Effect, 0);
-    const sumAuxiliary = data.reduce((s, r) => s + (r.Auxiliary_Effect || 0), 0);
 
     // 总计行
     const totalRow = {
@@ -1281,8 +1246,7 @@ function prepareDisplayData(effectsData, dimCol, totalVolBase, totalVolCurr, tot
         Weight_Curr_Pct: data.reduce((s, r) => s + r.Weight_Curr_Pct, 0),
         Mix_Effect: sumMix,
         Rate_Effect: sumRate,
-        Auxiliary_Effect: sumAuxiliary,
-        Total_Contribution: sumMix + sumRate + sumAuxiliary
+        Total_Contribution: sumMix + sumRate
     };
 
     // 总计行的单车指标
@@ -1290,7 +1254,7 @@ function prepareDisplayData(effectsData, dimCol, totalVolBase, totalVolCurr, tot
         totalRow.Margin_Unit_Base = sumVolBase > 0 ? totalMarginBase / sumVolBase : 0;
         totalRow.Margin_Unit_Curr = sumVolCurr > 0 ? totalMarginCurr / sumVolCurr : 0;
     } else {
-        // 下钻“对整体影响”视角没有传入总额时，优先用行级总金额汇总，避免零销量附属金额在加权平均里被漏掉。
+        // 下钻“对整体影响”视角没有传入总额时，优先用行级总金额汇总，避免零销量金额行在加权平均里被漏掉。
         const marginBase = data.reduce((s, r) => s + (Number(r.Total_Margin_Base) || 0), 0);
         const marginCurr = data.reduce((s, r) => s + (Number(r.Total_Margin_Curr) || 0), 0);
         if (marginBase || marginCurr) {
@@ -1340,7 +1304,6 @@ function triggerUpdate() {
     // 1. 全局指标
     const globalBase = calculateGlobalMetrics(AppState.df, baseMonth);
     const globalCurr = calculateGlobalMetrics(AppState.df, currMonth);
-    const globalVolumeBackedAvgBase = calculateVolumeBackedAvgMargin(AppState.df, baseMonth, globalBase.totalVol);
     const totalDiff = globalCurr.avgMargin - globalBase.avgMargin;
 
     // 2. 更新顶部指标卡片
@@ -1386,8 +1349,7 @@ function triggerUpdate() {
         if (isDrilled) {
             globalEffects = calculateDimensionPVMEffects(
                 dfLevel, baseMonth, currMonth, dim,
-                globalCurr.totalVol, globalBase.totalVol, globalBase.avgMargin,
-                { avgVolumeBackedMarginBase: globalVolumeBackedAvgBase }
+                globalCurr.totalVol, globalBase.totalVol, globalBase.avgMargin
             );
             globalDisplayData = prepareDisplayData(
                 globalEffects, dim,
@@ -1966,7 +1928,6 @@ function createWaterfallItemMeta(row, dimCol, dimName, unitMetricLabel, level, t
     const contribution = row.Total_Contribution || 0;
     const mix = row.Mix_Effect || 0;
     const rate = row.Rate_Effect || 0;
-    const auxiliary = row.Auxiliary_Effect || 0;
     const volBase = row.Vol_Base || 0;
     const volCurr = row.Vol_Curr || 0;
     const weightBasePct = totalVolBase > 0 ? volBase / totalVolBase * 100 : 0;
@@ -1983,7 +1944,6 @@ function createWaterfallItemMeta(row, dimCol, dimName, unitMetricLabel, level, t
         contribution,
         mix,
         rate,
-        auxiliary,
         volBase,
         volCurr,
         weightBasePct,
@@ -1999,7 +1959,6 @@ function createWaterfallOtherMeta(rows, dimCol, dimName, unitMetricLabel, totalV
     const contribution = rows.reduce((s, r) => s + (r.Total_Contribution || 0), 0);
     const mix = rows.reduce((s, r) => s + (r.Mix_Effect || 0), 0);
     const rate = rows.reduce((s, r) => s + (r.Rate_Effect || 0), 0);
-    const auxiliary = rows.reduce((s, r) => s + (r.Auxiliary_Effect || 0), 0);
     const volBase = rows.reduce((s, r) => s + (r.Vol_Base || 0), 0);
     const volCurr = rows.reduce((s, r) => s + (r.Vol_Curr || 0), 0);
     const marginBase = rows.reduce((s, r) => s + (r.Total_Margin_Base || 0), 0);
@@ -2016,7 +1975,6 @@ function createWaterfallOtherMeta(rows, dimCol, dimName, unitMetricLabel, totalV
         contribution,
         mix,
         rate,
-        auxiliary,
         rowCount: rows.length,
         volBase,
         volCurr,
@@ -2185,7 +2143,6 @@ function buildWaterfallTooltipHTML(meta, mode = 'hover') {
     const tone = meta.contribution >= 0 ? 'positive' : 'negative';
     const mixTone = meta.mix >= 0 ? 'positive' : 'negative';
     const rateTone = meta.rate >= 0 ? 'positive' : 'negative';
-    const auxiliaryTone = meta.auxiliary >= 0 ? 'positive' : 'negative';
     const weightTone = meta.weightChangePct >= 0 ? 'positive' : 'negative';
     const title = meta.type === 'other'
         ? `${escapeHTML(meta.label)}（${meta.rowCount || 0} 项）`
@@ -2214,10 +2171,6 @@ function buildWaterfallTooltipHTML(meta, mode = 'hover') {
                 <div class="waterfall-effect-card">
                     <span>费率效应</span>
                     <b class="${rateTone}">${formatSignedNumber(meta.rate)}</b>
-                </div>
-                <div class="waterfall-effect-card">
-                    <span>附属金额效应</span>
-                    <b class="${auxiliaryTone}">${formatSignedNumber(meta.auxiliary)}</b>
                 </div>
             </div>
             <div class="waterfall-tooltip-grid">
@@ -2382,7 +2335,6 @@ function buildDetailTable(displayData, dimCol, dimName, isGlobal) {
         { label: `当期${unitMetricLabel}`, type: 'number', getValue: row => row.Margin_Unit_Curr, format: formatCurrency },
         { label: isGlobal ? '结构效应（整体）' : '结构效应', type: 'number', effectKey: 'Mix_Effect', getValue: row => row.Mix_Effect, format: formatSignedNumber },
         { label: isGlobal ? '费率效应（整体）' : '费率效应', type: 'number', effectKey: 'Rate_Effect', getValue: row => row.Rate_Effect, format: formatSignedNumber },
-        { label: isGlobal ? '附属金额效应（整体）' : '附属金额效应', type: 'number', effectKey: 'Auxiliary_Effect', getValue: row => row.Auxiliary_Effect || 0, format: formatSignedNumber },
         { label: isGlobal ? `对整体${unitMetricLabel}贡献` : '总贡献', type: 'number', effectKey: 'Total_Contribution', getValue: row => row.Total_Contribution, format: formatSignedNumber }
     ];
     const rowMetas = [];
