@@ -15,6 +15,11 @@ const AppState = {
         Dim_A: null, Dim_B: null, Dim_C: null,
         Dim_D: null, Dim_E: null
     },
+    excludedDims: {
+        Dim_A: null, Dim_B: null, Dim_C: null,
+        Dim_D: null, Dim_E: null
+    },
+    filterModes: {},
     customDimNames: {
         Dim_A: '大区', Dim_B: '国家', Dim_C: '车型',
         Dim_D: '燃油品类', Dim_E: '品牌'
@@ -418,6 +423,9 @@ function processLoadedData(rows, sourceName) {
     // 重置维度筛选
     AppState.selectedDims = {};
     ALL_DIMENSIONS.forEach(d => AppState.selectedDims[d] = null);
+    AppState.excludedDims = {};
+    ALL_DIMENSIONS.forEach(d => AppState.excludedDims[d] = null);
+    AppState.filterModes = {};
     AppState.attributionViewModes = {};
 
     showMessage('success', `✅ 数据已加载 (${sourceName}): ${rows.length} 行, ${AppState.months.length} 个月份`);
@@ -778,14 +786,14 @@ function getNormalizedDrillOrder(order) {
 }
 
 function getActiveDrillLevelIndex(order = AppState.drillOrder) {
-    const firstOpenIndex = order.findIndex(dim => !(AppState.selectedDims[dim] || []).length);
+    const firstOpenIndex = order.findIndex(dim => !hasDimensionFilter(dim));
     if (firstOpenIndex >= 0) return firstOpenIndex;
     return Math.max(0, order.length - 1);
 }
 
 function buildDrillTrainCar(dim, index, activeIndex, orderLength) {
     const car = document.createElement('div');
-    const hasFilter = Boolean((AppState.selectedDims[dim] || []).length);
+    const hasFilter = hasDimensionFilter(dim);
     car.className = `dimension-train-car ${hasFilter ? 'filtered' : ''} ${index === activeIndex ? 'active' : ''}`;
     car.draggable = true;
     car.dataset.dimensionIndex = String(index);
@@ -852,6 +860,8 @@ function applyDrillOrder(nextOrder) {
 
     AppState.drillOrder = normalized;
     ALL_DIMENSIONS.forEach(d => AppState.selectedDims[d] = null);
+    ALL_DIMENSIONS.forEach(d => AppState.excludedDims[d] = null);
+    AppState.filterModes = {};
     AppState.attributionViewModes = {};
     populateDrillOrder();
     populateDrillFilters();
@@ -881,10 +891,17 @@ function populateDrillFilters() {
         msContainer.className = 'multiselect-container';
         msContainer.dataset.dim = dim;
 
-        // 标签
+        // 标签 + 筛选模式
+        const header = document.createElement('div');
+        header.className = 'multiselect-header';
+
         const msLabel = document.createElement('label');
         msLabel.className = 'multiselect-label';
         msLabel.textContent = `${icon} ${dimName}`;
+
+        const modeToggle = buildFilterModeToggle(dim);
+        header.appendChild(msLabel);
+        header.appendChild(modeToggle);
 
         // 已选芯片区
         const chipsDiv = document.createElement('div');
@@ -902,24 +919,18 @@ function populateDrillFilters() {
         dropdown.addEventListener('change', () => {
             const val = dropdown.value;
             if (!val) return;
-            addFilterChip(dim, val);
+            const mode = getFilterMode(dim);
+            addFilterChip(dim, val, mode);
             dropdown.value = '';
         });
 
-        msContainer.appendChild(msLabel);
+        msContainer.appendChild(header);
         msContainer.appendChild(chipsDiv);
         msContainer.appendChild(dropdown);
         container.appendChild(msContainer);
 
         // 恢复已选值的芯片
-        const currentSelection = AppState.selectedDims[dim];
-        if (currentSelection && Array.isArray(currentSelection)) {
-            currentSelection.forEach(v => {
-                if (availableValues.includes(v)) {
-                    addFilterChipDOM(chipsDiv, dim, v);
-                }
-            });
-        }
+        renderFilterChips(chipsDiv, dim, availableValues);
     }
 
     // 如果下钻顺序只有1层或0层，显示提示
@@ -933,16 +944,7 @@ function populateDrillFilters() {
 
 function getFilteredValuesForDim(dim, levelIndex) {
     const drillOrder = AppState.drillOrder;
-    let filteredData = AppState.df;
-
-    // 按上级维度已选值逐级过滤
-    for (let prev = 0; prev < levelIndex; prev++) {
-        const prevDim = drillOrder[prev];
-        const prevSelection = AppState.selectedDims[prevDim];
-        if (prevSelection && Array.isArray(prevSelection) && prevSelection.length > 0) {
-            filteredData = filteredData.filter(row => prevSelection.includes(row[prevDim]));
-        }
-    }
+    const filteredData = applyDrillDimensionFilters(AppState.df, drillOrder, levelIndex);
 
     // 提取当前维度的唯一值
     const valueSet = new Set(filteredData.map(row => row[dim]).filter(v => v !== undefined && v !== ''));
@@ -954,14 +956,14 @@ function rebuildFilterDropdown(dropdown, availableValues, dim) {
 
     const placeholder = document.createElement('option');
     placeholder.value = '';
-    placeholder.textContent = '＋ 添加筛选...';
+    placeholder.textContent = getFilterMode(dim) === 'exclude' ? '－ 排除筛选...' : '＋ 保留筛选...';
     dropdown.appendChild(placeholder);
 
-    // 获取当前已选的值
-    const currentSelection = AppState.selectedDims[dim] || [];
+    // 获取当前已配置的值（保留/排除互斥）
+    const activeValues = getActiveDimensionFilterValues(dim);
 
     availableValues.forEach(val => {
-        if (!currentSelection.includes(val)) {
+        if (!activeValues.includes(val)) {
             const opt = document.createElement('option');
             opt.value = val;
             opt.textContent = val;
@@ -970,19 +972,79 @@ function rebuildFilterDropdown(dropdown, availableValues, dim) {
     });
 }
 
-function addFilterChip(dim, value) {
+function buildFilterModeToggle(dim) {
+    const toggle = document.createElement('div');
+    toggle.className = 'filter-mode-toggle';
+    toggle.setAttribute('role', 'group');
+    toggle.setAttribute('aria-label', '筛选模式');
+
+    [
+        ['include', '保留'],
+        ['exclude', '排除']
+    ].forEach(([mode, label]) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `filter-mode-button ${getFilterMode(dim) === mode ? 'active' : ''}`.trim();
+        button.dataset.mode = mode;
+        button.textContent = label;
+        button.addEventListener('click', () => {
+            AppState.filterModes[dim] = mode;
+            toggle.querySelectorAll('.filter-mode-button').forEach(item => {
+                item.classList.toggle('active', item.dataset.mode === mode);
+            });
+            const dropdown = document.querySelector(`.multiselect-dropdown[data-dim="${dim}"]`);
+            if (dropdown) {
+                const availableValues = getFilteredValuesForDim(dim, AppState.drillOrder.indexOf(dim));
+                rebuildFilterDropdown(dropdown, availableValues, dim);
+            }
+        });
+        toggle.appendChild(button);
+    });
+
+    return toggle;
+}
+
+function getFilterMode(dim) {
+    return AppState.filterModes[dim] === 'exclude' ? 'exclude' : 'include';
+}
+
+function normalizeDimensionFilter(values) {
+    return Array.isArray(values) ? values : [];
+}
+
+function getActiveDimensionFilterValues(dim) {
+    return [
+        ...normalizeDimensionFilter(AppState.selectedDims[dim]),
+        ...normalizeDimensionFilter(AppState.excludedDims[dim])
+    ];
+}
+
+function hasDimensionFilter(dim) {
+    return getActiveDimensionFilterValues(dim).length > 0;
+}
+
+function setDimensionFilterValue(store, dim, value, active) {
+    if (!store[dim]) store[dim] = [];
+    if (active) {
+        if (!store[dim].includes(value)) store[dim].push(value);
+    } else {
+        store[dim] = store[dim].filter(v => v !== value);
+    }
+    if (store[dim].length === 0) store[dim] = null;
+}
+
+function addFilterChip(dim, value, mode = getFilterMode(dim)) {
+    const targetStore = mode === 'exclude' ? AppState.excludedDims : AppState.selectedDims;
+    const oppositeStore = mode === 'exclude' ? AppState.selectedDims : AppState.excludedDims;
+
     // 更新 AppState
-    if (!AppState.selectedDims[dim]) {
-        AppState.selectedDims[dim] = [];
-    }
-    if (!AppState.selectedDims[dim].includes(value)) {
-        AppState.selectedDims[dim].push(value);
-    }
+    setDimensionFilterValue(oppositeStore, dim, value, false);
+    setDimensionFilterValue(targetStore, dim, value, true);
 
     // 添加芯片到 DOM
     const chipsDiv = document.querySelector(`.multiselect-chips[data-dim="${dim}"]`);
     if (chipsDiv) {
-        addFilterChipDOM(chipsDiv, dim, value);
+        addFilterChipDOM(chipsDiv, dim, value, mode);
     }
 
     // 从下拉列表中移除已选项
@@ -998,11 +1060,16 @@ function addFilterChip(dim, value) {
     triggerUpdate();
 }
 
-function addFilterChipDOM(chipsDiv, dim, value) {
+function addFilterChipDOM(chipsDiv, dim, value, mode = 'include') {
     const chip = document.createElement('span');
-    chip.className = 'chip';
+    chip.className = `chip ${mode}`;
     chip.dataset.dim = dim;
     chip.dataset.value = value;
+    chip.dataset.mode = mode;
+
+    const modeLabel = document.createElement('span');
+    modeLabel.className = 'chip-mode';
+    modeLabel.textContent = mode === 'exclude' ? '排除' : '保留';
 
     const label = document.createElement('span');
     label.className = 'chip-label';
@@ -1016,25 +1083,37 @@ function addFilterChipDOM(chipsDiv, dim, value) {
     removeButton.textContent = '×';
     removeButton.addEventListener('click', (event) => {
         event.stopPropagation();
-        removeFilterChip(dim, value);
+        removeFilterChip(dim, value, mode);
     });
 
+    chip.appendChild(modeLabel);
     chip.appendChild(label);
     chip.appendChild(removeButton);
     chipsDiv.appendChild(chip);
 }
 
-function removeFilterChip(dim, value) {
+function renderFilterChips(chipsDiv, dim, availableValues) {
+    chipsDiv.innerHTML = '';
+
+    const included = normalizeDimensionFilter(AppState.selectedDims[dim]);
+    included.forEach(v => {
+        if (availableValues.includes(v)) addFilterChipDOM(chipsDiv, dim, v, 'include');
+    });
+
+    const excluded = normalizeDimensionFilter(AppState.excludedDims[dim]);
+    excluded.forEach(v => {
+        if (availableValues.includes(v)) addFilterChipDOM(chipsDiv, dim, v, 'exclude');
+    });
+}
+
+function removeFilterChip(dim, value, mode = 'include') {
+    const targetStore = mode === 'exclude' ? AppState.excludedDims : AppState.selectedDims;
+
     // 从 AppState 移除
-    if (AppState.selectedDims[dim] && Array.isArray(AppState.selectedDims[dim])) {
-        AppState.selectedDims[dim] = AppState.selectedDims[dim].filter(v => v !== value);
-        if (AppState.selectedDims[dim].length === 0) {
-            AppState.selectedDims[dim] = null;
-        }
-    }
+    setDimensionFilterValue(targetStore, dim, value, false);
 
     // 从 DOM 移除芯片
-    const chip = Array.from(document.querySelectorAll(`.chip[data-dim="${dim}"]`))
+    const chip = Array.from(document.querySelectorAll(`.chip[data-dim="${dim}"][data-mode="${mode}"]`))
         .find(item => item.dataset.value === value);
     if (chip) chip.remove();
 
@@ -1061,21 +1140,17 @@ function refreshCascadingFilters(changedDim) {
         const availableValues = getFilteredValuesForDim(dim, i);
 
         // 清除不再有效的选择
-        if (AppState.selectedDims[dim] && Array.isArray(AppState.selectedDims[dim])) {
-            AppState.selectedDims[dim] = AppState.selectedDims[dim].filter(v => availableValues.includes(v));
-            if (AppState.selectedDims[dim].length === 0) {
-                AppState.selectedDims[dim] = null;
-            }
-        }
+        AppState.selectedDims[dim] = normalizeDimensionFilter(AppState.selectedDims[dim])
+            .filter(v => availableValues.includes(v));
+        if (AppState.selectedDims[dim].length === 0) AppState.selectedDims[dim] = null;
+        AppState.excludedDims[dim] = normalizeDimensionFilter(AppState.excludedDims[dim])
+            .filter(v => availableValues.includes(v));
+        if (AppState.excludedDims[dim].length === 0) AppState.excludedDims[dim] = null;
 
         // 重建芯片
         const chipsDiv = document.querySelector(`.multiselect-chips[data-dim="${dim}"]`);
         if (chipsDiv) {
-            chipsDiv.innerHTML = '';
-            const sel = AppState.selectedDims[dim];
-            if (sel && Array.isArray(sel)) {
-                sel.forEach(v => addFilterChipDOM(chipsDiv, dim, v));
-            }
+            renderFilterChips(chipsDiv, dim, availableValues);
         }
 
         // 重建下拉选项
@@ -1093,6 +1168,8 @@ function initResetFilter() {
     if (btn) {
         btn.addEventListener('click', () => {
             ALL_DIMENSIONS.forEach(d => AppState.selectedDims[d] = null);
+            ALL_DIMENSIONS.forEach(d => AppState.excludedDims[d] = null);
+            AppState.filterModes = {};
             AppState.attributionViewModes = {};
             populateDrillFilters();
             triggerUpdate();
@@ -1291,18 +1368,28 @@ function prepareDisplayData(effectsData, dimCol, totalVolBase, totalVolCurr, tot
  * 对应 app.py 中各 level 的 df_level 逻辑
  */
 function filterDataForLevel(level) {
-    let filtered = AppState.df;
-    const drillOrder = AppState.drillOrder;
+    return applyDrillDimensionFilters(AppState.df, AppState.drillOrder, level);
+}
+
+function applyDrillDimensionFilters(data, drillOrder, level, selectedDims = AppState.selectedDims, excludedDims = AppState.excludedDims) {
+    let filtered = data || [];
 
     for (let prevLevel = 0; prevLevel < level; prevLevel++) {
         const prevDim = drillOrder[prevLevel];
-        const prevSelection = AppState.selectedDims[prevDim];
-        if (prevSelection && Array.isArray(prevSelection) && prevSelection.length > 0) {
-            filtered = filtered.filter(row => prevSelection.includes(row[prevDim]));
-        }
+        filtered = filtered.filter(row => matchesDimensionFilter(row, prevDim, selectedDims, excludedDims));
     }
 
     return filtered;
+}
+
+function matchesDimensionFilter(row, dim, selectedDims = AppState.selectedDims, excludedDims = AppState.excludedDims) {
+    const value = row?.[dim];
+    const included = normalizeDimensionFilter(selectedDims?.[dim]);
+    const excluded = normalizeDimensionFilter(excludedDims?.[dim]);
+
+    if (included.length > 0 && !included.includes(value)) return false;
+    if (excluded.length > 0 && excluded.includes(value)) return false;
+    return true;
 }
 
 
@@ -1352,10 +1439,7 @@ function triggerUpdate() {
         // 如果是下钻状态，额外计算全球视角的贡献
         let globalEffects = null;
         let globalDisplayData = null;
-        const isDrilled = level > 0 && drillOrder.slice(0, level).some(prevDim => {
-            const sel = AppState.selectedDims[prevDim];
-            return sel && Array.isArray(sel) && sel.length > 0;
-        });
+        const isDrilled = level > 0 && drillOrder.slice(0, level).some(prevDim => hasDimensionFilter(prevDim));
 
         if (isDrilled) {
             globalEffects = calculateDimensionPVMEffects(
@@ -1373,11 +1457,18 @@ function triggerUpdate() {
         const drillInfo = [];
         for (let prev = 0; prev < level; prev++) {
             const prevDim = drillOrder[prev];
-            const prevSel = AppState.selectedDims[prevDim];
-            if (prevSel && Array.isArray(prevSel) && prevSel.length > 0) {
-                const dimName = AppState.customDimNames[prevDim] || prevDim;
-                const selText = prevSel.length <= 3 ? prevSel.join(', ') : `${prevSel.length}项`;
+            const included = normalizeDimensionFilter(AppState.selectedDims[prevDim]);
+            const excluded = normalizeDimensionFilter(AppState.excludedDims[prevDim]);
+            if (!included.length && !excluded.length) continue;
+
+            const dimName = AppState.customDimNames[prevDim] || prevDim;
+            if (included.length > 0) {
+                const selText = included.length <= 3 ? included.join(', ') : `${included.length}项`;
                 drillInfo.push(`${dimName}: ${selText}`);
+            }
+            if (excluded.length > 0) {
+                const selText = excluded.length <= 3 ? excluded.join(', ') : `${excluded.length}项`;
+                drillInfo.push(`${dimName}: 排除 ${selText}`);
             }
         }
 
@@ -2296,10 +2387,12 @@ function handleWaterfallBarClick(meta, dimCol, level) {
     }
 
     AppState.selectedDims[dimCol] = [value];
+    AppState.excludedDims[dimCol] = null;
     clearWaterfallTouchCards();
 
     for (let i = level + 1; i < AppState.drillOrder.length; i++) {
         AppState.selectedDims[AppState.drillOrder[i]] = null;
+        AppState.excludedDims[AppState.drillOrder[i]] = null;
     }
 
     const currentViewMode = AppState.attributionViewModes[level] === ATTRIBUTION_VIEW_GLOBAL
@@ -2944,6 +3037,7 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         calculateGlobalMetrics,
         calculateDimensionPVMEffects,
-        prepareDisplayData
+        prepareDisplayData,
+        applyDrillDimensionFilters
     };
 }

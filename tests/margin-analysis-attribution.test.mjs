@@ -10,6 +10,7 @@ const {
     calculateGlobalMetrics,
     calculateDimensionPVMEffects,
     prepareDisplayData,
+    applyDrillDimensionFilters,
 } = marginAnalysis.default;
 
 const EPSILON = 1e-9;
@@ -270,10 +271,34 @@ test("drilled global-impact decomposition ties back to parent bar contribution",
 test("left drill filters expose removable chips and keep dropdown options stable", () => {
     assert.match(marginAnalysisSource, /const removeButton = document\.createElement\('button'\)/);
     assert.match(marginAnalysisSource, /removeButton\.setAttribute\('aria-label', `移除\$\{value\}`\)/);
-    assert.match(marginAnalysisSource, /event\.stopPropagation\(\);\s*removeFilterChip\(dim, value\);/);
+    assert.match(marginAnalysisSource, /event\.stopPropagation\(\);\s*removeFilterChip\(dim, value, mode\);/);
     assert.match(marginAnalysisSource, /Array\.from\(dropdown\.options\)\.find\(option => option\.value === value\)/);
     assert.match(marginAnalysisSource, /rebuildFilterDropdown\(dropdown, availableValues, dim\)/);
     assert.match(marginAnalysisStyles, /\.chip-remove\s*\{[\s\S]*width:\s*20px[\s\S]*border-radius:\s*999px/s);
+});
+
+test("left drill filters can exclude one value while keeping all other values", () => {
+    assert.equal(typeof applyDrillDimensionFilters, "function");
+
+    const data = [
+        { Month: "base", Dim_A: "Germany", Dim_B: "T19", "Sales Volume": 100, "Total Margin": 1000 },
+        { Month: "base", Dim_A: "France", Dim_B: "T19", "Sales Volume": 90, "Total Margin": 900 },
+        { Month: "base", Dim_A: "Spain", Dim_B: "T19", "Sales Volume": 80, "Total Margin": 800 },
+    ];
+
+    const filtered = applyDrillDimensionFilters(
+        data,
+        ["Dim_A", "Dim_B"],
+        1,
+        { Dim_A: null },
+        { Dim_A: ["Germany"] }
+    );
+
+    assert.deepEqual(filtered.map(row => row.Dim_A), ["France", "Spain"]);
+    assert.match(marginAnalysisSource, /className = 'filter-mode-toggle'/);
+    assert.match(marginAnalysisSource, /addFilterChip\(dim, val, mode\)/);
+    assert.match(marginAnalysisSource, /AppState\.excludedDims/);
+    assert.match(marginAnalysisStyles, /\.chip\.exclude/);
 });
 
 test("detail table header filters open from the full header and text filters apply immediately", () => {

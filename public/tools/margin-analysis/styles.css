@@ -574,13 +574,55 @@ details[open] > .sidebar-summary::after {
     margin-bottom: 0.65rem;
 }
 
+.multiselect-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+}
+
 .multiselect-label {
     display: block;
     font-size: 0.82rem;
     color: var(--text-primary);
-    margin-bottom: 0.35rem;
+    margin-bottom: 0;
     font-family: var(--font-sans);
     font-weight: 500;
+    min-width: 0;
+}
+
+.filter-mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px;
+    border: 1px solid var(--border-light);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.68);
+    flex-shrink: 0;
+}
+
+.filter-mode-button {
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: 0.68rem;
+    font-weight: 750;
+    line-height: 1;
+    padding: 0.26rem 0.42rem;
+    transition: background 0.15s, color 0.15s;
+}
+
+.filter-mode-button.active {
+    background: var(--accent-blue);
+    color: #fff;
+}
+
+.filter-mode-button[data-mode="exclude"].active {
+    background: var(--accent-orange);
 }
 
 .multiselect-chips {
@@ -608,6 +650,26 @@ details[open] > .sidebar-summary::after {
     color: var(--text-primary);
     font-family: var(--font-sans);
     cursor: default;
+}
+
+.chip.exclude {
+    background: linear-gradient(135deg, rgba(217, 119, 87, 0.12), rgba(217, 119, 87, 0.04));
+    border-color: rgba(217, 119, 87, 0.24);
+}
+
+.chip-mode {
+    padding: 0.12rem 0.32rem;
+    border-radius: 999px;
+    background: rgba(106, 155, 204, 0.13);
+    color: var(--accent-blue);
+    font-size: 0.66rem;
+    font-weight: 850;
+    line-height: 1;
+}
+
+.chip.exclude .chip-mode {
+    background: rgba(217, 119, 87, 0.13);
+    color: var(--accent-orange);
 }
 
 .chip-label {
