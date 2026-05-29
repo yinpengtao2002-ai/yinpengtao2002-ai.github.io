@@ -46,6 +46,7 @@ const DIM_ICONS = {
 const TEMPLATE_HEADERS = [
     '月份', ...TEMPLATE_DIMENSION_HEADERS, '销量', '指标总额'
 ];
+const TEMPLATE_HEADER_NOTE = '可直接修改标题行，系统会按表头自动识别维度；请保留“月份、销量、指标总额”三类必要列。';
 
 
 // ==================== DOM Ready ====================
@@ -59,6 +60,7 @@ if (typeof document !== 'undefined') {
         initMonthSelectors();
         initUserSettings();
         initWaterfallDismissHandling();
+        initExcelFilterDismiss();
 
         const demoData = generateDemoData();
         processLoadedData(demoData, "示例数据");
@@ -202,7 +204,8 @@ function handleFileUpload(file) {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(firstSheet);
+                const sheetRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '', blankrows: false });
+                const rows = sheetRowsToObjects(sheetRows);
                 processLoadedData(rows, file.name);
             } catch (err) {
                 showMessage('error', `Excel 解析失败: ${err.message}`);
@@ -254,17 +257,272 @@ function downloadCsvTemplate() {
 }
 
 function downloadXlsxTemplate() {
-    if (typeof XLSX === 'undefined') {
-        showMessage('error', 'Excel 模板组件未加载，请先下载 CSV 模板');
-        return;
+    const blob = buildXlsxTemplateBlob();
+    downloadBlob(blob, 'margin-analysis-template.xlsx');
+}
+
+function buildXlsxTemplateBlob() {
+    const entries = buildXlsxTemplateEntries();
+    const zipBytes = createStoredZip(entries);
+    return new Blob([zipBytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+
+function buildXlsxTemplateEntries() {
+    return [
+        { name: '[Content_Types].xml', content: buildContentTypesXml() },
+        { name: '_rels/.rels', content: buildRootRelsXml() },
+        { name: 'xl/workbook.xml', content: buildWorkbookXml() },
+        { name: 'xl/_rels/workbook.xml.rels', content: buildWorkbookRelsXml() },
+        { name: 'xl/styles.xml', content: buildTemplateStylesXml() },
+        { name: 'xl/worksheets/sheet1.xml', content: buildTemplateWorksheetXml() }
+    ];
+}
+
+function buildContentTypesXml() {
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+    <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+    <Default Extension="xml" ContentType="application/xml"/>
+    <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+    <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+    <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`;
+}
+
+function buildRootRelsXml() {
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+    <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+}
+
+function buildWorkbookXml() {
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+    <sheets>
+        <sheet name="示例格式" sheetId="1" r:id="rId1"/>
+    </sheets>
+</workbook>`;
+}
+
+function buildWorkbookRelsXml() {
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+    <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+    <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+}
+
+function buildTemplateStylesXml() {
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+    <fonts count="2">
+        <font><sz val="11"/><color theme="1"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font>
+        <font><b/><sz val="11"/><color rgb="FF6F4E00"/><name val="Calibri"/><family val="2"/></font>
+    </fonts>
+    <fills count="3">
+        <fill><patternFill patternType="none"/></fill>
+        <fill><patternFill patternType="gray125"/></fill>
+        <fill><patternFill patternType="solid"><fgColor rgb="FFFFF7CC"/><bgColor indexed="64"/></patternFill></fill>
+    </fills>
+    <borders count="2">
+        <border><left/><right/><top/><bottom/><diagonal/></border>
+        <border>
+            <left style="thin"><color rgb="FFE8D98A"/></left>
+            <right style="thin"><color rgb="FFE8D98A"/></right>
+            <top style="thin"><color rgb="FFE8D98A"/></top>
+            <bottom style="thin"><color rgb="FFE8D98A"/></bottom>
+            <diagonal/>
+        </border>
+    </borders>
+    <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+    <cellXfs count="2">
+        <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+        <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+    </cellXfs>
+    <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+    <dxfs count="0"/>
+    <tableStyles count="0" defaultTableStyle="TableStyleMedium9" defaultPivotStyle="PivotStyleMedium4"/>
+</styleSheet>`;
+}
+
+function buildTemplateWorksheetXml() {
+    const rows = [
+        [TEMPLATE_HEADER_NOTE],
+        [],
+        TEMPLATE_HEADERS,
+        ...getTemplateRows().map(row => TEMPLATE_HEADERS.map(header => row[header] ?? ''))
+    ];
+    const lastRow = rows.length;
+    const lastCol = columnName(TEMPLATE_HEADERS.length - 1);
+    const colsXml = TEMPLATE_HEADERS
+        .map((header, index) => {
+            const width = Math.max(String(header).length + 8, 16);
+            return `<col min="${index + 1}" max="${index + 1}" width="${width}" customWidth="1"/>`;
+        })
+        .join('');
+    const rowsXml = rows.map((row, rowIndex) => {
+        const rowNumber = rowIndex + 1;
+        if (rowNumber === 2) return '<row r="2" ht="6" customHeight="1"/>';
+        const cells = row
+            .map((value, colIndex) => buildTemplateCell(value, rowNumber, colIndex, rowNumber === 1 ? 1 : 0))
+            .join('');
+        const rowAttrs = rowNumber === 1 ? ' ht="34" customHeight="1"' : '';
+        return `<row r="${rowNumber}"${rowAttrs}>${cells}</row>`;
+    }).join('');
+
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+    <dimension ref="A1:${lastCol}${lastRow}"/>
+    <sheetViews><sheetView workbookViewId="0"/></sheetViews>
+    <cols>${colsXml}</cols>
+    <sheetData>${rowsXml}</sheetData>
+    <mergeCells count="1"><mergeCell ref="A1:${lastCol}1"/></mergeCells>
+    <pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>
+</worksheet>`;
+}
+
+function buildTemplateCell(value, rowNumber, colIndex, styleId = 0) {
+    const ref = `${columnName(colIndex)}${rowNumber}`;
+    const styleAttr = styleId > 0 ? ` s="${styleId}"` : '';
+    if (typeof value === 'number' && Number.isFinite(value)) {
+        return `<c r="${ref}"${styleAttr}><v>${value}</v></c>`;
     }
+    return `<c r="${ref}"${styleAttr} t="inlineStr"><is><t>${escapeXml(value)}</t></is></c>`;
+}
 
-    const worksheet = XLSX.utils.json_to_sheet(getTemplateRows(), { header: TEMPLATE_HEADERS });
-    worksheet['!cols'] = TEMPLATE_HEADERS.map(header => ({ wch: Math.max(header.length + 2, 14) }));
+function columnName(index) {
+    let name = '';
+    let current = index + 1;
+    while (current > 0) {
+        const remainder = (current - 1) % 26;
+        name = String.fromCharCode(65 + remainder) + name;
+        current = Math.floor((current - 1) / 26);
+    }
+    return name;
+}
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, '示例格式');
-    XLSX.writeFile(workbook, 'margin-analysis-template.xlsx');
+function escapeXml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+}
+
+function createStoredZip(entries) {
+    const encoder = new TextEncoder();
+    const fileRecords = [];
+    const centralRecords = [];
+    let offset = 0;
+
+    entries.forEach((entry) => {
+        const nameBytes = encoder.encode(entry.name);
+        const contentBytes = typeof entry.content === 'string' ? encoder.encode(entry.content) : entry.content;
+        const crc = crc32(contentBytes);
+        const localHeader = buildZipLocalHeader(nameBytes, contentBytes.length, crc);
+        const centralHeader = buildZipCentralHeader(nameBytes, contentBytes.length, crc, offset);
+
+        fileRecords.push(localHeader, contentBytes);
+        centralRecords.push(centralHeader);
+        offset += localHeader.length + contentBytes.length;
+    });
+
+    const centralOffset = offset;
+    const centralSize = centralRecords.reduce((sum, record) => sum + record.length, 0);
+    const endRecord = buildZipEndRecord(entries.length, centralSize, centralOffset);
+    return concatUint8Arrays([...fileRecords, ...centralRecords, endRecord]);
+}
+
+function buildZipLocalHeader(nameBytes, contentLength, crc) {
+    const header = new Uint8Array(30 + nameBytes.length);
+    const view = new DataView(header.buffer);
+    view.setUint32(0, 0x04034b50, true);
+    view.setUint16(4, 20, true);
+    view.setUint16(6, 0x0800, true);
+    view.setUint16(8, 0, true);
+    view.setUint16(10, 0, true);
+    view.setUint16(12, 0, true);
+    view.setUint32(14, crc, true);
+    view.setUint32(18, contentLength, true);
+    view.setUint32(22, contentLength, true);
+    view.setUint16(26, nameBytes.length, true);
+    view.setUint16(28, 0, true);
+    header.set(nameBytes, 30);
+    return header;
+}
+
+function buildZipCentralHeader(nameBytes, contentLength, crc, offset) {
+    const header = new Uint8Array(46 + nameBytes.length);
+    const view = new DataView(header.buffer);
+    view.setUint32(0, 0x02014b50, true);
+    view.setUint16(4, 20, true);
+    view.setUint16(6, 20, true);
+    view.setUint16(8, 0x0800, true);
+    view.setUint16(10, 0, true);
+    view.setUint16(12, 0, true);
+    view.setUint16(14, 0, true);
+    view.setUint32(16, crc, true);
+    view.setUint32(20, contentLength, true);
+    view.setUint32(24, contentLength, true);
+    view.setUint16(28, nameBytes.length, true);
+    view.setUint16(30, 0, true);
+    view.setUint16(32, 0, true);
+    view.setUint16(34, 0, true);
+    view.setUint16(36, 0, true);
+    view.setUint32(38, 0, true);
+    view.setUint32(42, offset, true);
+    header.set(nameBytes, 46);
+    return header;
+}
+
+function buildZipEndRecord(entryCount, centralSize, centralOffset) {
+    const record = new Uint8Array(22);
+    const view = new DataView(record.buffer);
+    view.setUint32(0, 0x06054b50, true);
+    view.setUint16(4, 0, true);
+    view.setUint16(6, 0, true);
+    view.setUint16(8, entryCount, true);
+    view.setUint16(10, entryCount, true);
+    view.setUint32(12, centralSize, true);
+    view.setUint32(16, centralOffset, true);
+    view.setUint16(20, 0, true);
+    return record;
+}
+
+function concatUint8Arrays(arrays) {
+    const totalLength = arrays.reduce((sum, item) => sum + item.length, 0);
+    const merged = new Uint8Array(totalLength);
+    let offset = 0;
+    arrays.forEach((item) => {
+        merged.set(item, offset);
+        offset += item.length;
+    });
+    return merged;
+}
+
+function crc32(bytes) {
+    const table = getCrc32Table();
+    let crc = 0 ^ -1;
+    for (let index = 0; index < bytes.length; index++) {
+        crc = (crc >>> 8) ^ table[(crc ^ bytes[index]) & 0xff];
+    }
+    return (crc ^ -1) >>> 0;
+}
+
+function getCrc32Table() {
+    if (getCrc32Table.cache) return getCrc32Table.cache;
+    const table = new Uint32Array(256);
+    for (let index = 0; index < 256; index++) {
+        let current = index;
+        for (let bit = 0; bit < 8; bit++) {
+            current = current & 1 ? 0xedb88320 ^ (current >>> 1) : current >>> 1;
+        }
+        table[index] = current >>> 0;
+    }
+    getCrc32Table.cache = table;
+    return table;
 }
 
 function escapeCsvCell(value) {
@@ -292,21 +550,7 @@ function parseCSV(text) {
     const lines = text.trim().split(/\r?\n/);
     if (lines.length < 2) throw new Error('CSV 文件至少需要标题行和一行数据');
 
-    const headers = parseCSVLine(lines[0]);
-    const rows = [];
-
-    for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-        const values = parseCSVLine(line);
-        const row = {};
-        headers.forEach((h, idx) => {
-            row[h] = idx < values.length ? values[idx] : '';
-        });
-        rows.push(row);
-    }
-
-    return rows;
+    return sheetRowsToObjects(lines.map(line => parseCSVLine(line)));
 }
 
 function parseCSVLine(line) {
@@ -340,6 +584,44 @@ function parseCSVLine(line) {
     }
     result.push(current.trim());
     return result;
+}
+
+function sheetRowsToObjects(sheetRows) {
+    const rows = Array.isArray(sheetRows) ? sheetRows : [];
+    const headerIndex = findTemplateHeaderRowIndex(rows);
+    const headerRow = rows[headerIndex] || [];
+    const headers = headerRow.map(cell => String(cell ?? '').trim());
+
+    return rows.slice(headerIndex + 1)
+        .map((row) => {
+            const item = {};
+            headers.forEach((header, index) => {
+                if (!header) return;
+                item[header] = Array.isArray(row) && index < row.length ? row[index] : '';
+            });
+            return item;
+        })
+        .filter(row => Object.values(row).some(value => String(value ?? '').trim() !== ''));
+}
+
+function findTemplateHeaderRowIndex(rows) {
+    const columnMapping = buildColumnMapping();
+    const fallbackIndex = rows.findIndex(row => Array.isArray(row) && row.some(cell => String(cell ?? '').trim()));
+
+    for (let index = 0; index < rows.length; index++) {
+        const row = Array.isArray(rows[index]) ? rows[index] : [];
+        const cells = row.map(cell => String(cell ?? '').trim()).filter(Boolean);
+        if (cells.length === 0) continue;
+        if (cells.length === 1 && cells[0] === TEMPLATE_HEADER_NOTE) continue;
+
+        const mappedColumns = new Set(cells.map(cell => getMappedColumnName(cell, columnMapping)).filter(Boolean));
+        const dimCount = cells.filter(cell => !getMappedColumnName(cell, columnMapping)).length;
+        if (mappedColumns.has('Month') && mappedColumns.has('Sales Volume') && mappedColumns.has('Total Margin') && dimCount > 0) {
+            return index;
+        }
+    }
+
+    return fallbackIndex >= 0 ? fallbackIndex : 0;
 }
 
 
@@ -888,10 +1170,10 @@ function populateDrillFilters() {
 
         // 容器
         const msContainer = document.createElement('div');
-        msContainer.className = 'multiselect-container';
+        msContainer.className = 'multiselect-container excel-filter-shell';
         msContainer.dataset.dim = dim;
 
-        // 标签 + 筛选模式
+        // 标签
         const header = document.createElement('div');
         header.className = 'multiselect-header';
 
@@ -899,38 +1181,40 @@ function populateDrillFilters() {
         msLabel.className = 'multiselect-label';
         msLabel.textContent = `${icon} ${dimName}`;
 
-        const modeToggle = buildFilterModeToggle(dim);
+        const count = document.createElement('span');
+        count.className = 'excel-filter-count';
+        count.textContent = getExcelFilterSummary(dim, availableValues);
+
         header.appendChild(msLabel);
-        header.appendChild(modeToggle);
+        header.appendChild(count);
 
-        // 已选芯片区
-        const chipsDiv = document.createElement('div');
-        chipsDiv.className = 'multiselect-chips';
-        chipsDiv.dataset.dim = dim;
+        const trigger = document.createElement('button');
+        trigger.type = 'button';
+        trigger.className = 'excel-filter-trigger';
+        trigger.dataset.dim = dim;
+        trigger.setAttribute('aria-haspopup', 'menu');
+        trigger.setAttribute('aria-expanded', 'false');
+        trigger.innerHTML = `
+            <span>${escapeHTML(getExcelFilterTriggerText(dim, availableValues))}</span>
+            <span class="excel-filter-caret">⌄</span>
+        `;
 
-        // 下拉选择
-        const dropdown = document.createElement('select');
-        dropdown.className = 'multiselect-dropdown';
-        dropdown.dataset.dim = dim;
+        const menu = document.createElement('div');
+        menu.className = 'excel-filter-menu';
+        menu.dataset.dim = dim;
+        menu.hidden = true;
+        renderExcelFilterMenu(menu, dim, availableValues);
 
-        // 构建下拉选项
-        rebuildFilterDropdown(dropdown, availableValues, dim);
-
-        dropdown.addEventListener('change', () => {
-            const val = dropdown.value;
-            if (!val) return;
-            const mode = getFilterMode(dim);
-            addFilterChip(dim, val, mode);
-            dropdown.value = '';
+        trigger.addEventListener('click', (event) => {
+            event.stopPropagation();
+            toggleExcelFilterMenu(msContainer);
         });
+        menu.addEventListener('click', (event) => event.stopPropagation());
 
         msContainer.appendChild(header);
-        msContainer.appendChild(chipsDiv);
-        msContainer.appendChild(dropdown);
+        msContainer.appendChild(trigger);
+        msContainer.appendChild(menu);
         container.appendChild(msContainer);
-
-        // 恢复已选值的芯片
-        renderFilterChips(chipsDiv, dim, availableValues);
     }
 
     // 如果下钻顺序只有1层或0层，显示提示
@@ -951,63 +1235,6 @@ function getFilteredValuesForDim(dim, levelIndex) {
     return Array.from(valueSet).sort();
 }
 
-function rebuildFilterDropdown(dropdown, availableValues, dim) {
-    dropdown.innerHTML = '';
-
-    const placeholder = document.createElement('option');
-    placeholder.value = '';
-    placeholder.textContent = getFilterMode(dim) === 'exclude' ? '－ 排除筛选...' : '＋ 保留筛选...';
-    dropdown.appendChild(placeholder);
-
-    // 获取当前已配置的值（保留/排除互斥）
-    const activeValues = getActiveDimensionFilterValues(dim);
-
-    availableValues.forEach(val => {
-        if (!activeValues.includes(val)) {
-            const opt = document.createElement('option');
-            opt.value = val;
-            opt.textContent = val;
-            dropdown.appendChild(opt);
-        }
-    });
-}
-
-function buildFilterModeToggle(dim) {
-    const toggle = document.createElement('div');
-    toggle.className = 'filter-mode-toggle';
-    toggle.setAttribute('role', 'group');
-    toggle.setAttribute('aria-label', '筛选模式');
-
-    [
-        ['include', '保留'],
-        ['exclude', '排除']
-    ].forEach(([mode, label]) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = `filter-mode-button ${getFilterMode(dim) === mode ? 'active' : ''}`.trim();
-        button.dataset.mode = mode;
-        button.textContent = label;
-        button.addEventListener('click', () => {
-            AppState.filterModes[dim] = mode;
-            toggle.querySelectorAll('.filter-mode-button').forEach(item => {
-                item.classList.toggle('active', item.dataset.mode === mode);
-            });
-            const dropdown = document.querySelector(`.multiselect-dropdown[data-dim="${dim}"]`);
-            if (dropdown) {
-                const availableValues = getFilteredValuesForDim(dim, AppState.drillOrder.indexOf(dim));
-                rebuildFilterDropdown(dropdown, availableValues, dim);
-            }
-        });
-        toggle.appendChild(button);
-    });
-
-    return toggle;
-}
-
-function getFilterMode(dim) {
-    return AppState.filterModes[dim] === 'exclude' ? 'exclude' : 'include';
-}
-
 function normalizeDimensionFilter(values) {
     return Array.isArray(values) ? values : [];
 }
@@ -1023,111 +1250,180 @@ function hasDimensionFilter(dim) {
     return getActiveDimensionFilterValues(dim).length > 0;
 }
 
-function setDimensionFilterValue(store, dim, value, active) {
-    if (!store[dim]) store[dim] = [];
-    if (active) {
-        if (!store[dim].includes(value)) store[dim].push(value);
-    } else {
-        store[dim] = store[dim].filter(v => v !== value);
-    }
-    if (store[dim].length === 0) store[dim] = null;
+function getExcelSelectedValues(dim, availableValues) {
+    const availableSet = new Set(availableValues);
+    const included = normalizeDimensionFilter(AppState.selectedDims[dim]).filter(value => availableSet.has(value));
+    if (included.length > 0) return new Set(included);
+
+    const excluded = new Set(normalizeDimensionFilter(AppState.excludedDims[dim]));
+    return new Set(availableValues.filter(value => !excluded.has(value)));
 }
 
-function addFilterChip(dim, value, mode = getFilterMode(dim)) {
-    const targetStore = mode === 'exclude' ? AppState.excludedDims : AppState.selectedDims;
-    const oppositeStore = mode === 'exclude' ? AppState.selectedDims : AppState.excludedDims;
+function getExcelFilterSummary(dim, availableValues) {
+    if (!availableValues.length) return '无可选项';
+    const selectedCount = getExcelSelectedValues(dim, availableValues).size;
+    if (selectedCount === availableValues.length) return '全部';
+    if (selectedCount === 0) return '未选择';
+    return `已选 ${selectedCount}/${availableValues.length}`;
+}
 
-    // 更新 AppState
-    setDimensionFilterValue(oppositeStore, dim, value, false);
-    setDimensionFilterValue(targetStore, dim, value, true);
+function getExcelFilterTriggerText(dim, availableValues) {
+    if (!availableValues.length) return '暂无可选项';
+    const selectedCount = getExcelSelectedValues(dim, availableValues).size;
+    const hiddenCount = availableValues.length - selectedCount;
+    if (hiddenCount === 0) return '全部维度项';
+    if (selectedCount === 0) return `已隐藏全部 ${availableValues.length} 项`;
+    return `已选 ${selectedCount} 项，隐藏 ${hiddenCount} 项`;
+}
 
-    // 添加芯片到 DOM
-    const chipsDiv = document.querySelector(`.multiselect-chips[data-dim="${dim}"]`);
-    if (chipsDiv) {
-        addFilterChipDOM(chipsDiv, dim, value, mode);
-    }
+function renderExcelFilterMenu(menu, dim, availableValues) {
+    let selectedValues = getExcelSelectedValues(dim, availableValues);
+    const rowsId = `excel-filter-list-${dim}`;
+    menu.innerHTML = '';
+    menu.setAttribute('role', 'menu');
 
-    // 从下拉列表中移除已选项
-    const dropdown = document.querySelector(`.multiselect-dropdown[data-dim="${dim}"]`);
-    if (dropdown) {
-        const opt = Array.from(dropdown.options).find(option => option.value === value);
-        if (opt) opt.remove();
-    }
+    const search = document.createElement('input');
+    search.type = 'search';
+    search.className = 'excel-filter-search';
+    search.placeholder = '搜索维度项';
+    search.setAttribute('aria-label', '搜索维度项');
 
-    // 级联更新下级筛选器
+    const actions = document.createElement('div');
+    actions.className = 'excel-filter-actions';
+
+    const list = document.createElement('div');
+    list.className = 'excel-filter-list';
+    list.id = rowsId;
+
+    const footer = document.createElement('div');
+    footer.className = 'excel-filter-footer';
+
+    const summary = document.createElement('span');
+    summary.className = 'excel-filter-footer-summary';
+
+    const applyButton = document.createElement('button');
+    applyButton.type = 'button';
+    applyButton.className = 'excel-filter-apply';
+    applyButton.textContent = '应用';
+    applyButton.addEventListener('click', () => {
+        applyExcelFilterSelection(dim, availableValues, selectedValues);
+        closeExcelFilterMenus();
+    });
+
+    const renderRows = () => {
+        const keyword = search.value.trim().toLowerCase();
+        list.innerHTML = '';
+        const visibleValues = availableValues.filter(value => String(value).toLowerCase().includes(keyword));
+
+        visibleValues.forEach((value) => {
+            const option = document.createElement('button');
+            option.type = 'button';
+            option.className = 'excel-filter-option';
+            option.dataset.value = value;
+            option.setAttribute('role', 'menuitemcheckbox');
+            option.setAttribute('aria-checked', String(selectedValues.has(value)));
+            option.innerHTML = `
+                <span class="excel-filter-checkmark">${selectedValues.has(value) ? '✓' : ''}</span>
+                <span class="excel-filter-option-label">${escapeHTML(value)}</span>
+            `;
+            option.addEventListener('click', () => {
+                if (selectedValues.has(value)) {
+                    selectedValues.delete(value);
+                } else {
+                    selectedValues.add(value);
+                }
+                renderRows();
+            });
+            list.appendChild(option);
+        });
+
+        if (visibleValues.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'excel-filter-empty';
+            empty.textContent = '没有匹配项';
+            list.appendChild(empty);
+        }
+
+        summary.textContent = `${selectedValues.size}/${availableValues.length} 项已勾选`;
+    };
+
+    actions.appendChild(createExcelFilterAction('全选', () => {
+        selectedValues = new Set(availableValues);
+        renderRows();
+    }));
+    actions.appendChild(createExcelFilterAction('反选', () => {
+        selectedValues = new Set(availableValues.filter(value => !selectedValues.has(value)));
+        renderRows();
+    }));
+    actions.appendChild(createExcelFilterAction('清空', () => {
+        selectedValues = new Set();
+        renderRows();
+    }));
+
+    search.addEventListener('input', renderRows);
+
+    footer.appendChild(summary);
+    footer.appendChild(applyButton);
+    menu.appendChild(search);
+    menu.appendChild(actions);
+    menu.appendChild(list);
+    menu.appendChild(footer);
+    renderRows();
+}
+
+function createExcelFilterAction(label, onClick) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'excel-filter-action';
+    button.textContent = label;
+    button.addEventListener('click', onClick);
+    return button;
+}
+
+function applyExcelFilterSelection(dim, availableValues, selectedValues) {
+    const uncheckedValues = availableValues.filter(value => !selectedValues.has(value));
+    AppState.selectedDims[dim] = null;
+    AppState.excludedDims[dim] = uncheckedValues.length > 0 ? uncheckedValues : null;
+
     refreshCascadingFilters(dim);
-
+    populateDrillOrder();
+    populateDrillFilters();
     triggerUpdate();
 }
 
-function addFilterChipDOM(chipsDiv, dim, value, mode = 'include') {
-    const chip = document.createElement('span');
-    chip.className = `chip ${mode}`;
-    chip.dataset.dim = dim;
-    chip.dataset.value = value;
-    chip.dataset.mode = mode;
+function toggleExcelFilterMenu(container) {
+    const trigger = container.querySelector('.excel-filter-trigger');
+    const menu = container.querySelector('.excel-filter-menu');
+    if (!trigger || !menu) return;
 
-    const modeLabel = document.createElement('span');
-    modeLabel.className = 'chip-mode';
-    modeLabel.textContent = mode === 'exclude' ? '排除' : '保留';
+    const shouldOpen = menu.hidden;
+    closeExcelFilterMenus();
+    if (!shouldOpen) return;
 
-    const label = document.createElement('span');
-    label.className = 'chip-label';
-    label.textContent = value;
-
-    const removeButton = document.createElement('button');
-    removeButton.type = 'button';
-    removeButton.className = 'chip-remove';
-    removeButton.title = `移除${value}`;
-    removeButton.setAttribute('aria-label', `移除${value}`);
-    removeButton.textContent = '×';
-    removeButton.addEventListener('click', (event) => {
-        event.stopPropagation();
-        removeFilterChip(dim, value, mode);
-    });
-
-    chip.appendChild(modeLabel);
-    chip.appendChild(label);
-    chip.appendChild(removeButton);
-    chipsDiv.appendChild(chip);
+    menu.hidden = false;
+    trigger.setAttribute('aria-expanded', 'true');
+    window.setTimeout(() => menu.querySelector('.excel-filter-search')?.focus(), 0);
 }
 
-function renderFilterChips(chipsDiv, dim, availableValues) {
-    chipsDiv.innerHTML = '';
-
-    const included = normalizeDimensionFilter(AppState.selectedDims[dim]);
-    included.forEach(v => {
-        if (availableValues.includes(v)) addFilterChipDOM(chipsDiv, dim, v, 'include');
-    });
-
-    const excluded = normalizeDimensionFilter(AppState.excludedDims[dim]);
-    excluded.forEach(v => {
-        if (availableValues.includes(v)) addFilterChipDOM(chipsDiv, dim, v, 'exclude');
+function closeExcelFilterMenus() {
+    document.querySelectorAll('.excel-filter-menu:not([hidden])').forEach((menu) => {
+        menu.hidden = true;
+        const trigger = menu.closest('.excel-filter-shell')?.querySelector('.excel-filter-trigger');
+        trigger?.setAttribute('aria-expanded', 'false');
     });
 }
 
-function removeFilterChip(dim, value, mode = 'include') {
-    const targetStore = mode === 'exclude' ? AppState.excludedDims : AppState.selectedDims;
+function initExcelFilterDismiss() {
+    document.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        if (target.closest('.excel-filter-shell')) return;
+        closeExcelFilterMenus();
+    });
 
-    // 从 AppState 移除
-    setDimensionFilterValue(targetStore, dim, value, false);
-
-    // 从 DOM 移除芯片
-    const chip = Array.from(document.querySelectorAll(`.chip[data-dim="${dim}"][data-mode="${mode}"]`))
-        .find(item => item.dataset.value === value);
-    if (chip) chip.remove();
-
-    // 将该值重新加回下拉列表
-    const dropdown = document.querySelector(`.multiselect-dropdown[data-dim="${dim}"]`);
-    if (dropdown) {
-        const availableValues = getFilteredValuesForDim(dim, AppState.drillOrder.indexOf(dim));
-        rebuildFilterDropdown(dropdown, availableValues, dim);
-    }
-
-    // 级联更新下级筛选器
-    refreshCascadingFilters(dim);
-
-    triggerUpdate();
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeExcelFilterMenus();
+    });
 }
 
 function refreshCascadingFilters(changedDim) {
@@ -1146,18 +1442,6 @@ function refreshCascadingFilters(changedDim) {
         AppState.excludedDims[dim] = normalizeDimensionFilter(AppState.excludedDims[dim])
             .filter(v => availableValues.includes(v));
         if (AppState.excludedDims[dim].length === 0) AppState.excludedDims[dim] = null;
-
-        // 重建芯片
-        const chipsDiv = document.querySelector(`.multiselect-chips[data-dim="${dim}"]`);
-        if (chipsDiv) {
-            renderFilterChips(chipsDiv, dim, availableValues);
-        }
-
-        // 重建下拉选项
-        const dropdown = document.querySelector(`.multiselect-dropdown[data-dim="${dim}"]`);
-        if (dropdown) {
-            rebuildFilterDropdown(dropdown, availableValues, dim);
-        }
     }
 }
 
@@ -3040,6 +3324,12 @@ if (typeof module !== 'undefined' && module.exports) {
         prepareDisplayData,
         applyDrillDimensionFilters,
         normalizeUploadedRows,
-        TEMPLATE_HEADERS
+        sheetRowsToObjects,
+        TEMPLATE_HEADERS,
+        TEMPLATE_HEADER_NOTE,
+        buildTemplateStylesXml,
+        buildTemplateWorksheetXml,
+        buildXlsxTemplateEntries,
+        createStoredZip
     };
 }

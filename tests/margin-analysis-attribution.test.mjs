@@ -13,7 +13,13 @@ const {
     prepareDisplayData,
     applyDrillDimensionFilters,
     normalizeUploadedRows,
+    sheetRowsToObjects,
     TEMPLATE_HEADERS,
+    TEMPLATE_HEADER_NOTE,
+    buildTemplateStylesXml,
+    buildTemplateWorksheetXml,
+    buildXlsxTemplateEntries,
+    createStoredZip,
 } = marginAnalysis.default;
 
 const EPSILON = 1e-9;
@@ -271,13 +277,16 @@ test("drilled global-impact decomposition ties back to parent bar contribution",
     approx(childContribution, euParentContribution, "EU child decomposition should equal parent bar height");
 });
 
-test("left drill filters expose removable chips and keep dropdown options stable", () => {
-    assert.match(marginAnalysisSource, /const removeButton = document\.createElement\('button'\)/);
-    assert.match(marginAnalysisSource, /removeButton\.setAttribute\('aria-label', `移除\$\{value\}`\)/);
-    assert.match(marginAnalysisSource, /event\.stopPropagation\(\);\s*removeFilterChip\(dim, value, mode\);/);
-    assert.match(marginAnalysisSource, /Array\.from\(dropdown\.options\)\.find\(option => option\.value === value\)/);
-    assert.match(marginAnalysisSource, /rebuildFilterDropdown\(dropdown, availableValues, dim\)/);
-    assert.match(marginAnalysisStyles, /\.chip-remove\s*\{[\s\S]*width:\s*20px[\s\S]*border-radius:\s*999px/s);
+test("left drill filters use an Excel-style checklist menu", () => {
+    assert.match(marginAnalysisSource, /className = 'excel-filter-trigger'/);
+    assert.match(marginAnalysisSource, /className = 'excel-filter-menu'/);
+    assert.match(marginAnalysisSource, /createExcelFilterAction\('全选'/);
+    assert.match(marginAnalysisSource, /createExcelFilterAction\('反选'/);
+    assert.match(marginAnalysisSource, /applyExcelFilterSelection\(dim, availableValues, selectedValues\)/);
+    assert.doesNotMatch(marginAnalysisSource, /className = 'filter-mode-toggle'/);
+    assert.doesNotMatch(marginAnalysisHtml, /保留筛选|排除筛选/);
+    assert.match(marginAnalysisStyles, /\.excel-filter-trigger/);
+    assert.match(marginAnalysisStyles, /\.excel-filter-checkmark/);
 });
 
 test("left drill filters can exclude one value while keeping all other values", () => {
@@ -298,10 +307,32 @@ test("left drill filters can exclude one value while keeping all other values", 
     );
 
     assert.deepEqual(filtered.map(row => row.Dim_A), ["France", "Spain"]);
-    assert.match(marginAnalysisSource, /className = 'filter-mode-toggle'/);
-    assert.match(marginAnalysisSource, /addFilterChip\(dim, val, mode\)/);
     assert.match(marginAnalysisSource, /AppState\.excludedDims/);
-    assert.match(marginAnalysisStyles, /\.chip\.exclude/);
+    assert.match(marginAnalysisSource, /uncheckedValues = availableValues\.filter\(value => !selectedValues\.has\(value\)\)/);
+});
+
+test("spreadsheet template can carry a visible note above the detected header row", () => {
+    assert.match(TEMPLATE_HEADER_NOTE, /可直接修改标题行/);
+    assert.match(buildTemplateStylesXml(), /fgColor rgb="FFFFF7CC"/);
+    assert.match(buildTemplateWorksheetXml(), /<c r="A1" s="1" t="inlineStr">/);
+    assert.match(buildTemplateWorksheetXml(), /<mergeCell ref="A1:H1"\/>/);
+    const zippedTemplate = new TextDecoder().decode(createStoredZip(buildXlsxTemplateEntries()));
+    assert.match(zippedTemplate, /fgColor rgb="FFFFF7CC"/);
+    assert.match(zippedTemplate, /<c r="A1" s="1" t="inlineStr">/);
+
+    const rows = sheetRowsToObjects([
+        [TEMPLATE_HEADER_NOTE],
+        [],
+        ["月份", "大区", "国家", "销量", "指标总额"],
+        ["2025-01", "欧洲区", "德国", 100, 3000],
+    ]);
+    const normalized = normalizeUploadedRows(rows);
+
+    assert.equal(normalized.missingCols.length, 0);
+    assert.deepEqual(normalized.dimCols, ["Dim_A", "Dim_B"]);
+    assert.equal(normalized.dimNames.Dim_A, "大区");
+    assert.equal(normalized.rows[0].Month, "2025-01");
+    assert.equal(normalized.rows[0].Dim_B, "德国");
 });
 
 test("detail table header filters open from the full header and text filters apply immediately", () => {
@@ -317,6 +348,7 @@ test("upload template and sidebar use business dimension headers instead of Dim 
     assert.ok(!TEMPLATE_HEADERS.some(header => /^Dim_/i.test(header)));
     assert.doesNotMatch(marginAnalysisHtml, /维度配置|dim-config-section/);
     assert.match(marginAnalysisHtml, /<details class="sidebar-details" open>\s*<summary class="sidebar-summary">📁 数据中心<\/summary>/);
+    assert.match(marginAnalysisSource, /sheetRowsToObjects\(sheetRows\)/);
     assert.doesNotMatch(marginAnalysisHtml, /未启用维度/);
     assert.doesNotMatch(marginAnalysisHtml, /Dim_[A-E]|Sales Volume|Total Margin/);
 });
