@@ -44,9 +44,9 @@
         <div class="divider"></div>
     </section>
 
-    <!-- 数据中心 - 已加载态（折叠） -->
+    <!-- 数据中心 - 已加载态 -->
     <section id="data-center-loaded" class="sidebar-section" style="display:none;">
-        <details class="sidebar-details">
+        <details class="sidebar-details" open>
             <summary class="sidebar-summary">📁 数据中心</summary>
             <div class="details-content">
                 <div class="file-upload-area small" id="file-upload-area-loaded">
@@ -80,17 +80,6 @@
         </details>
     </section>
 
-    <!-- 维度配置 -->
-    <section id="dim-config-section" class="sidebar-section" style="display:none;">
-        <details class="sidebar-details">
-            <summary class="sidebar-summary">⚙️ 维度配置</summary>
-            <div class="details-content">
-                <p class="caption">设置各维度的显示名称（修改后自动更新）</p>
-                <div id="dim-config-inputs"></div>
-            </div>
-        </details>
-    </section>
-
     <!-- 分析期间 -->
     <section id="period-section" class="sidebar-section" style="display:none;">
         <div class="divider"></div>
@@ -109,7 +98,7 @@
     <section id="drill-order-section" class="sidebar-section" style="display:none;">
         <div class="divider"></div>
         <h2 class="sidebar-title">🔀 下钻顺序</h2>
-        <p class="caption">拖动胶囊调整路径，点选未启用维度加入</p>
+        <p class="caption">默认启用全部上传维度，可拖动排序或移除不需要的维度</p>
         <div id="drill-order-selects"></div>
     </section>
 
@@ -157,12 +146,12 @@
                     <table class="format-table">
                         <thead>
                             <tr>
-                                <th>列名</th><th>Month</th><th>Dim_A</th><th>Dim_B</th><th>Dim_C</th><th>Dim_D</th><th>Dim_E</th><th>Sales Volume</th><th>Total Margin</th>
+                                <th>列名</th><th>月份</th><th>大区</th><th>国家</th><th>车型</th><th>燃油品类</th><th>品牌</th><th>销量</th><th>指标总额</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td>说明</td><td>月份</td><td>维度A</td><td>维度B</td><td>维度C</td><td>维度D</td><td>维度E</td><td>销量</td><td><span data-total-metric-label>边际总额</span></td>
+                                <td>说明</td><td>月份</td><td>维度</td><td>维度</td><td>维度</td><td>维度</td><td>维度</td><td>销量</td><td><span data-total-metric-label>边际总额</span></td>
                             </tr>
                             <tr>
                                 <td>默认</td><td>-</td><td>大区</td><td>国家</td><td>车型</td><td>燃油品类</td><td>品牌</td><td>-</td><td>-</td>
@@ -171,7 +160,7 @@
                     </table>
                 </div>
                 <div class="tip-box">
-                    💡 <strong>提示</strong>：Dim_D 和 Dim_E 为可选列，如果数据中不包含则不会显示。上传数据后可在侧边栏修改各维度的显示名称；指标总额列兼容 Total Margin、Total Metric、边际总额、指标总额等列名。
+                    💡 <strong>提示</strong>：除月份、销量、指标总额外，其余列会按表头自动识别为分析维度。想改维度名称，直接修改模板表头即可；指标总额列兼容边际总额、净收入总额、收入总额等名称。
                 </div>
                 <h3>计算逻辑</h3>
                 <ol>

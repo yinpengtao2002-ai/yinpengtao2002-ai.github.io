@@ -4,6 +4,13 @@
  */
 
 // ==================== 全局状态 ====================
+const DEFAULT_DIMENSION_NAMES = {
+    Dim_A: '大区', Dim_B: '国家', Dim_C: '车型',
+    Dim_D: '燃油品类', Dim_E: '品牌'
+};
+const TEMPLATE_DIMENSION_HEADERS = ['大区', '国家', '车型', '燃油品类', '品牌'];
+const ALL_DIMENSIONS = Array.from({ length: 20 }, (_, index) => `Dim_${String.fromCharCode(65 + index)}`);
+
 const AppState = {
     dataLoaded: false,
     df: null,              // 原始数据数组 (Array of Objects)
@@ -20,17 +27,13 @@ const AppState = {
         Dim_D: null, Dim_E: null
     },
     filterModes: {},
-    customDimNames: {
-        Dim_A: '大区', Dim_B: '国家', Dim_C: '车型',
-        Dim_D: '燃油品类', Dim_E: '品牌'
-    },
+    customDimNames: { ...DEFAULT_DIMENSION_NAMES },
     unitMetricType: '边际',
     availableDimsInData: [],
     calculationResults: null,
     attributionViewModes: {}
 };
 
-const ALL_DIMENSIONS = ['Dim_A', 'Dim_B', 'Dim_C', 'Dim_D', 'Dim_E'];
 const PLOT_FONT_FAMILY = 'PingFang SC, Microsoft YaHei, Helvetica Neue, Arial, sans-serif';
 const ATTRIBUTION_VIEW_SELF = 'self';
 const ATTRIBUTION_VIEW_GLOBAL = 'global';
@@ -41,8 +44,7 @@ const DIM_ICONS = {
 };
 
 const TEMPLATE_HEADERS = [
-    'Month', 'Dim_A', 'Dim_B', 'Dim_C', 'Dim_D', 'Dim_E',
-    'Sales Volume', 'Total Margin'
+    '月份', ...TEMPLATE_DIMENSION_HEADERS, '销量', '指标总额'
 ];
 
 
@@ -226,10 +228,10 @@ function initTemplateDownloads() {
 
 function getTemplateRows() {
     return [
-        { Month: '2025-01', Dim_A: '亚太区', Dim_B: '中国', Dim_C: 'SUV-旗舰', Dim_D: '燃油', Dim_E: '品牌A', 'Sales Volume': 5000, 'Total Margin': 15000000 },
-        { Month: '2025-01', Dim_A: '欧洲区', Dim_B: '德国', Dim_C: 'Sedan-经典', Dim_D: '混动', Dim_E: '品牌B', 'Sales Volume': 2500, 'Total Margin': 5500000 },
-        { Month: '2025-02', Dim_A: '亚太区', Dim_B: '中国', Dim_C: 'SUV-旗舰', Dim_D: '燃油', Dim_E: '品牌A', 'Sales Volume': 6200, 'Total Margin': 19840000 },
-        { Month: '2025-02', Dim_A: '欧洲区', Dim_B: '德国', Dim_C: 'Sedan-经典', Dim_D: '混动', Dim_E: '品牌B', 'Sales Volume': 2200, 'Total Margin': 4620000 }
+        { '月份': '2025-01', '大区': '亚太区', '国家': '中国', '车型': 'SUV-旗舰', '燃油品类': '燃油', '品牌': '品牌A', '销量': 5000, '指标总额': 15000000 },
+        { '月份': '2025-01', '大区': '欧洲区', '国家': '德国', '车型': 'Sedan-经典', '燃油品类': '混动', '品牌': '品牌B', '销量': 2500, '指标总额': 5500000 },
+        { '月份': '2025-02', '大区': '亚太区', '国家': '中国', '车型': 'SUV-旗舰', '燃油品类': '燃油', '品牌': '品牌A', '销量': 6200, '指标总额': 19840000 },
+        { '月份': '2025-02', '大区': '欧洲区', '国家': '德国', '车型': 'Sedan-经典', '燃油品类': '混动', '品牌': '品牌B', '销量': 2200, '指标总额': 4620000 }
     ];
 }
 
@@ -348,33 +350,21 @@ function processLoadedData(rows, sourceName) {
         return;
     }
 
-    // 1. 标准化列名
-    const columnMapping = buildColumnMapping();
-    rows = rows.map(row => {
-        const newRow = {};
-        for (const [key, value] of Object.entries(row)) {
-            const normalizedKey = columnMapping[key.trim()] || key.trim();
-            newRow[normalizedKey] = value;
-        }
-        return newRow;
-    });
-
-    // 2. 校验必要列
-    const sampleKeys = Object.keys(rows[0]);
-    const requiredCols = ['Month', 'Sales Volume', 'Total Margin'];
-    const missingCols = requiredCols.filter(c => !sampleKeys.includes(c));
-    const dimCols = ALL_DIMENSIONS.filter(d => sampleKeys.includes(d));
+    // 1. 标准化列名：业务表头直接作为维度显示名，内部自动映射到 Dim_A / Dim_B ...
+    const normalizedInput = normalizeUploadedRows(rows);
+    rows = normalizedInput.rows;
+    const dimCols = normalizedInput.dimCols;
 
     if (dimCols.length === 0) {
-        showMessage('error', `缺少维度列: 请至少包含 Dim_A。当前列名: ${sampleKeys.join(', ')}`);
+        showMessage('error', `缺少维度列：请至少保留一个业务维度列，例如“大区”或“国家”。当前列名: ${normalizedInput.sourceHeaders.join(', ')}`);
         return;
     }
-    if (missingCols.length > 0) {
-        showMessage('error', `缺少必要列: ${missingCols.join(', ')}。当前列名: ${sampleKeys.join(', ')}`);
+    if (normalizedInput.missingCols.length > 0) {
+        showMessage('error', `缺少必要列: ${normalizedInput.missingCols.join(', ')}。当前列名: ${normalizedInput.sourceHeaders.join(', ')}`);
         return;
     }
 
-    // 3. 清理数值 & 类型转换
+    // 2. 清理数值 & 类型转换
     rows = rows.map(row => {
         row['Sales Volume'] = cleanNumeric(row['Sales Volume']);
         row['Total Margin'] = cleanNumeric(row['Total Margin']);
@@ -385,7 +375,7 @@ function processLoadedData(rows, sourceName) {
         return row;
     });
 
-    // 4. 移除完全空行 (销量和指标总额都为 0)
+    // 3. 移除完全空行 (销量和指标总额都为 0)
     rows = rows.filter(r => r['Sales Volume'] !== 0 || r['Total Margin'] !== 0);
 
     if (rows.length === 0) {
@@ -393,16 +383,17 @@ function processLoadedData(rows, sourceName) {
         return;
     }
 
-    // 5. 校验有效数据是否存在空月份，避免把未配置字段当作独立期间参与计算
+    // 4. 校验有效数据是否存在空月份，避免把未配置字段当作独立期间参与计算
     const missingMonthRows = rows.filter(r => !r['Month']);
     if (missingMonthRows.length > 0) {
         showMessage('error', `部分字段没有配置：发现 ${missingMonthRows.length} 行 Month 为空，请补充月份后重新上传。`);
         return;
     }
 
-    // 6. 存储并切换 UI
+    // 5. 存储并切换 UI
     AppState.df = rows;
     AppState.availableDimsInData = dimCols;
+    AppState.customDimNames = { ...DEFAULT_DIMENSION_NAMES, ...normalizedInput.dimNames };
 
     // 提取月份
     const monthSet = new Set(rows.map(r => r['Month']));
@@ -417,8 +408,8 @@ function processLoadedData(rows, sourceName) {
     AppState.baseMonth = AppState.months[0];
     AppState.currMonth = AppState.months[Math.min(1, AppState.months.length - 1)];
 
-    // 默认下钻顺序: 取前3个可用维度
-    AppState.drillOrder = dimCols.slice(0, 3);
+    // 默认下钻顺序：启用全部上传维度，用户可自行删除不需要的维度
+    AppState.drillOrder = [...dimCols];
 
     // 重置维度筛选
     AppState.selectedDims = {};
@@ -432,27 +423,97 @@ function processLoadedData(rows, sourceName) {
     onDataLoaded();
 }
 
+function normalizeUploadedRows(inputRows) {
+    const sourceHeaders = Object.keys(inputRows[0] || {})
+        .map(header => String(header).trim())
+        .filter(Boolean);
+    const columnMapping = buildColumnMapping();
+    const columnKeyBySource = {};
+    const dimCols = [];
+    const dimNames = {};
+
+    sourceHeaders.forEach((sourceHeader) => {
+        const mappedRequiredColumn = getMappedColumnName(sourceHeader, columnMapping);
+        if (mappedRequiredColumn) {
+            columnKeyBySource[sourceHeader] = mappedRequiredColumn;
+            return;
+        }
+
+        const legacyDim = getLegacyDimensionKey(sourceHeader);
+        const dimKey = legacyDim && !dimCols.includes(legacyDim)
+            ? legacyDim
+            : getNextDimensionKey(dimCols);
+        if (!dimKey) return;
+
+        columnKeyBySource[sourceHeader] = dimKey;
+        dimCols.push(dimKey);
+        dimNames[dimKey] = legacyDim
+            ? (DEFAULT_DIMENSION_NAMES[dimKey] || sourceHeader)
+            : sourceHeader;
+    });
+
+    const normalizedRows = inputRows.map((row) => {
+        const normalizedRow = {};
+        Object.entries(row).forEach(([key, value]) => {
+            const sourceHeader = String(key).trim();
+            const normalizedKey = columnKeyBySource[sourceHeader];
+            if (normalizedKey) normalizedRow[normalizedKey] = value;
+        });
+        return normalizedRow;
+    });
+
+    const mappedColumns = new Set(Object.values(columnKeyBySource));
+    const missingCols = ['Month', 'Sales Volume', 'Total Margin']
+        .filter(column => !mappedColumns.has(column));
+
+    return {
+        rows: normalizedRows,
+        dimCols,
+        dimNames,
+        missingCols,
+        sourceHeaders
+    };
+}
+
 function buildColumnMapping() {
     const map = {};
-    // 月份
-    ['月份', 'month', 'Month'].forEach(k => map[k] = 'Month');
-    // 维度
-    ['Dim_A', 'dim_a', 'DimA'].forEach(k => map[k] = 'Dim_A');
-    ['Dim_B', 'dim_b', 'DimB'].forEach(k => map[k] = 'Dim_B');
-    ['Dim_C', 'dim_c', 'DimC'].forEach(k => map[k] = 'Dim_C');
-    ['Dim_D', 'dim_d', 'DimD'].forEach(k => map[k] = 'Dim_D');
-    ['Dim_E', 'dim_e', 'DimE'].forEach(k => map[k] = 'Dim_E');
-    // 销量
-    ['销量', 'sales volume', 'salesvolume', 'Sales Volume', 'SalesVolume', 'sales_volume'].forEach(k => map[k] = 'Sales Volume');
-    // 指标总额（内部沿用 Total Margin 以兼容旧模板）
-    [
+    addColumnAliases(map, 'Month', ['月份', '年月', '期间', 'month', 'Month']);
+    addColumnAliases(map, 'Sales Volume', ['销量', '机器销量', '销售数量', 'sales volume', 'salesvolume', 'Sales Volume', 'SalesVolume', 'sales_volume']);
+    addColumnAliases(map, 'Total Margin', [
         '边际总额', '指标总额', '指标金额', '指标总量', '单车指标总额',
         '净收入总额', '收入总额',
         'total margin', 'totalmargin', 'Total Margin', 'TotalMargin', 'total_margin',
         'total metric', 'totalmetric', 'Total Metric', 'TotalMetric', 'total_metric',
         'metric total', 'metrictotal', 'Metric Total', 'MetricTotal', 'metric_total'
-    ].forEach(k => map[k] = 'Total Margin');
+    ]);
     return map;
+}
+
+function addColumnAliases(map, targetColumn, aliases) {
+    aliases.forEach((alias) => {
+        map[alias] = targetColumn;
+        map[normalizeHeaderAlias(alias)] = targetColumn;
+    });
+}
+
+function getMappedColumnName(sourceHeader, columnMapping) {
+    return columnMapping[sourceHeader] || columnMapping[normalizeHeaderAlias(sourceHeader)] || null;
+}
+
+function normalizeHeaderAlias(header) {
+    return String(header || '').trim().toLowerCase().replace(/[\s_-]+/g, '');
+}
+
+function getLegacyDimensionKey(sourceHeader) {
+    const normalized = String(sourceHeader || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+    const match = normalized.match(/^dim_?([a-z])$/);
+    if (!match) return null;
+    const dimKey = `Dim_${match[1].toUpperCase()}`;
+    return ALL_DIMENSIONS.includes(dimKey) ? dimKey : null;
+}
+
+function getNextDimensionKey(usedDims) {
+    return ALL_DIMENSIONS.find(dim => !usedDims.includes(dim)) || null;
 }
 
 function cleanNumeric(val) {
@@ -484,7 +545,7 @@ function initDemoButton() {
 }
 
 function generateDemoData() {
-    return [
+    const rows = [
         // 2025-01 基期数据
         // 亚太区
         { Month: '2025-01', Dim_A: '亚太区', Dim_B: '中国', Dim_C: 'SUV-旗舰', 'Sales Volume': 5000, 'Total Margin': 15000000 },
@@ -516,6 +577,15 @@ function generateDemoData() {
         { Month: '2025-02', Dim_A: '美洲区', Dim_B: '巴西', Dim_C: 'Sedan-经典', 'Sales Volume': 1000, 'Total Margin': 1400000 },
         { Month: '2025-02', Dim_A: '美洲区', Dim_B: '巴西', Dim_C: 'SUV-旗舰', 'Sales Volume': 800, 'Total Margin': 2000000 },
     ];
+
+    return rows.map(row => ({
+        '月份': row.Month,
+        '大区': row.Dim_A,
+        '国家': row.Dim_B,
+        '车型': row.Dim_C,
+        '销量': row['Sales Volume'],
+        '指标总额': row['Total Margin']
+    }));
 }
 
 
@@ -551,7 +621,6 @@ function onDataLoaded() {
     document.getElementById('data-center-loaded').style.display = 'block';
 
     // 显示侧边栏其他区块
-    document.getElementById('dim-config-section').style.display = 'block';
     document.getElementById('period-section').style.display = 'block';
     document.getElementById('drill-order-section').style.display = 'block';
     document.getElementById('drill-filter-section').style.display = 'block';
@@ -563,9 +632,6 @@ function onDataLoaded() {
 
     // 填充月份选择器
     populateMonthSelectors();
-
-    // 填充维度配置
-    populateDimConfig();
 
     // 填充下钻顺序选择器
     populateDrillOrder();
@@ -656,44 +722,6 @@ function updateMetricCopy() {
     if (AppState.baseMonth && AppState.currMonth) updateMetricLabels();
 }
 
-
-// ==================== 维度配置 ====================
-function populateDimConfig() {
-    const container = document.getElementById('dim-config-inputs');
-    container.innerHTML = '';
-
-    AppState.availableDimsInData.forEach(dim => {
-        const group = document.createElement('div');
-        group.className = 'form-group';
-
-        const label = document.createElement('label');
-        label.className = 'form-label';
-        label.textContent = dim;
-
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.className = 'form-input';
-        input.value = AppState.customDimNames[dim] || dim;
-        input.dataset.dim = dim;
-
-        input.addEventListener('change', (e) => {
-            const newName = e.target.value.trim();
-            if (newName) {
-                AppState.customDimNames[dim] = newName;
-                // 更新下钻顺序和维度筛选中的显示名称
-                populateDrillOrder();
-                populateDrillFilters();
-                triggerUpdate();
-            }
-        });
-
-        group.appendChild(label);
-        group.appendChild(input);
-        container.appendChild(group);
-    });
-}
-
-
 // ==================== 下钻顺序路径 ====================
 function populateDrillOrder() {
     const container = document.getElementById('drill-order-selects');
@@ -716,7 +744,6 @@ function populateDrillOrder() {
 
     const activeIndex = getActiveDrillLevelIndex(activeOrder);
     const activeDim = activeOrder[activeIndex] || activeOrder[0];
-    const unusedDims = availableDims.filter(dim => !activeOrder.includes(dim));
 
     const head = document.createElement('div');
     head.className = 'drill-train-head';
@@ -737,37 +764,10 @@ function populateDrillOrder() {
 
     const hint = document.createElement('p');
     hint.className = 'dimension-train-hint';
-    hint.textContent = activeOrder.length > 1 ? '调整路径会清空当前钻取并重新计算。' : '至少保留一个下钻维度。';
+    hint.textContent = activeOrder.length > 1
+        ? '拖动调整顺序，点击 × 移除维度；调整后会清空当前钻取并重新计算。'
+        : '至少保留一个下钻维度。';
     container.appendChild(hint);
-
-    const drawer = document.createElement('div');
-    drawer.className = 'drill-dimension-drawer';
-    const drawerTitle = document.createElement('span');
-    drawerTitle.className = 'drill-dimension-drawer-title';
-    drawerTitle.textContent = '未启用维度';
-    drawer.appendChild(drawerTitle);
-
-    const drawerList = document.createElement('div');
-    drawerList.className = 'drill-dimension-add-list';
-    if (unusedDims.length) {
-        unusedDims.forEach(dim => {
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'drill-dimension-add';
-            button.textContent = `${DIM_ICONS[dim] || ''} ${getDimensionLabel(dim)}`;
-            button.addEventListener('click', () => {
-                applyDrillOrder(activeOrder.concat(dim));
-            });
-            drawerList.appendChild(button);
-        });
-    } else {
-        const empty = document.createElement('span');
-        empty.className = 'drill-train-empty';
-        empty.textContent = '全部维度已启用';
-        drawerList.appendChild(empty);
-    }
-    drawer.appendChild(drawerList);
-    container.appendChild(drawer);
 }
 
 function getDimensionLabel(dim) {
@@ -3038,6 +3038,8 @@ if (typeof module !== 'undefined' && module.exports) {
         calculateGlobalMetrics,
         calculateDimensionPVMEffects,
         prepareDisplayData,
-        applyDrillDimensionFilters
+        applyDrillDimensionFilters,
+        normalizeUploadedRows,
+        TEMPLATE_HEADERS
     };
 }

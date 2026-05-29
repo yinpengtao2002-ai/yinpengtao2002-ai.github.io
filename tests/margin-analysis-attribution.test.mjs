@@ -5,12 +5,15 @@ import { readFile } from "node:fs/promises";
 const marginAnalysis = await import("../public/tools/margin-analysis/app.js");
 const marginAnalysisSource = await readFile(new URL("../public/tools/margin-analysis/app.js", import.meta.url), "utf8");
 const marginAnalysisStyles = await readFile(new URL("../public/tools/margin-analysis/styles.css", import.meta.url), "utf8");
+const marginAnalysisHtml = await readFile(new URL("../public/tools/margin-analysis/index.html", import.meta.url), "utf8");
 
 const {
     calculateGlobalMetrics,
     calculateDimensionPVMEffects,
     prepareDisplayData,
     applyDrillDimensionFilters,
+    normalizeUploadedRows,
+    TEMPLATE_HEADERS,
 } = marginAnalysis.default;
 
 const EPSILON = 1e-9;
@@ -307,4 +310,36 @@ test("detail table header filters open from the full header and text filters app
     assert.match(marginAnalysisSource, /const syncTextFilter = \(\) => \{[\s\S]*applyDetailTableFilters\(rowMetas, state\);[\s\S]*\};/);
     assert.match(marginAnalysisSource, /checkbox\.addEventListener\('change', \(\) => \{[\s\S]*syncTextFilter\(\);[\s\S]*\}\);/);
     assert.match(marginAnalysisStyles, /\.detail-th-inner\.filterable\s*\{[\s\S]*cursor:\s*pointer/s);
+});
+
+test("upload template and sidebar use business dimension headers instead of Dim labels", () => {
+    assert.deepEqual(TEMPLATE_HEADERS.slice(0, 6), ["月份", "大区", "国家", "车型", "燃油品类", "品牌"]);
+    assert.ok(!TEMPLATE_HEADERS.some(header => /^Dim_/i.test(header)));
+    assert.doesNotMatch(marginAnalysisHtml, /维度配置|dim-config-section/);
+    assert.match(marginAnalysisHtml, /<details class="sidebar-details" open>\s*<summary class="sidebar-summary">📁 数据中心<\/summary>/);
+    assert.doesNotMatch(marginAnalysisHtml, /未启用维度/);
+    assert.doesNotMatch(marginAnalysisHtml, /Dim_[A-E]|Sales Volume|Total Margin/);
+});
+
+test("business headers map into dimensions and all uploaded dimensions are enabled by default", () => {
+    assert.equal(typeof normalizeUploadedRows, "function");
+
+    const rows = [
+        { "月份": "2025-01", "大区": "欧洲区", "国家": "德国", "车型": "T19", "渠道": "直营", "销量": 100, "指标总额": 1000 },
+        { "月份": "2025-02", "大区": "欧洲区", "国家": "法国", "车型": "T19", "渠道": "经销", "销量": 120, "指标总额": 1800 },
+    ];
+
+    const normalized = normalizeUploadedRows(rows);
+    assert.deepEqual(normalized.dimCols, ["Dim_A", "Dim_B", "Dim_C", "Dim_D"]);
+    assert.deepEqual(normalized.dimNames, {
+        Dim_A: "大区",
+        Dim_B: "国家",
+        Dim_C: "车型",
+        Dim_D: "渠道",
+    });
+    assert.equal(normalized.rows[0].Month, "2025-01");
+    assert.equal(normalized.rows[0].Dim_A, "欧洲区");
+    assert.equal(normalized.rows[0].Dim_D, "直营");
+    assert.equal(normalized.rows[1]["Sales Volume"], 120);
+    assert.equal(normalized.rows[1]["Total Margin"], 1800);
 });
