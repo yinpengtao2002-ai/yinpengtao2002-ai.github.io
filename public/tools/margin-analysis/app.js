@@ -1288,20 +1288,16 @@ function renderExcelFilterMenu(menu, dim, availableValues) {
     search.placeholder = '搜索维度项';
     search.setAttribute('aria-label', '搜索维度项');
 
-    const searchTools = document.createElement('div');
-    searchTools.className = 'excel-filter-search-tools';
-    searchTools.hidden = true;
-
     const keepSearchButton = document.createElement('button');
     keepSearchButton.type = 'button';
     keepSearchButton.className = 'excel-filter-search-action';
     keepSearchButton.textContent = '仅保留搜索结果';
+    keepSearchButton.hidden = true;
     keepSearchButton.addEventListener('click', () => {
         const searchValues = resolveExcelFilterSearchValues(availableValues, search.value);
         applyExcelFilterSelection(dim, availableValues, new Set(searchValues));
         closeExcelFilterMenus();
     });
-    searchTools.appendChild(keepSearchButton);
 
     const actions = document.createElement('div');
     actions.className = 'excel-filter-actions';
@@ -1315,6 +1311,9 @@ function renderExcelFilterMenu(menu, dim, availableValues) {
 
     const summary = document.createElement('span');
     summary.className = 'excel-filter-footer-summary';
+
+    const footerActions = document.createElement('div');
+    footerActions.className = 'excel-filter-footer-actions';
 
     const applyButton = document.createElement('button');
     applyButton.type = 'button';
@@ -1331,7 +1330,7 @@ function renderExcelFilterMenu(menu, dim, availableValues) {
         list.innerHTML = '';
         const visibleValues = resolveExcelFilterSearchValues(availableValues, search.value);
         const hasKeyword = keyword.length > 0;
-        searchTools.hidden = !hasKeyword;
+        keepSearchButton.hidden = !hasKeyword;
         keepSearchButton.disabled = !hasKeyword || visibleValues.length === 0;
         applyButton.textContent = keyword ? '应用到当前勾选' : '应用';
 
@@ -1386,10 +1385,11 @@ function renderExcelFilterMenu(menu, dim, availableValues) {
 
     search.addEventListener('input', renderRows);
 
+    footerActions.appendChild(keepSearchButton);
+    footerActions.appendChild(applyButton);
     footer.appendChild(summary);
-    footer.appendChild(applyButton);
+    footer.appendChild(footerActions);
     menu.appendChild(search);
-    menu.appendChild(searchTools);
     menu.appendChild(actions);
     menu.appendChild(list);
     menu.appendChild(footer);

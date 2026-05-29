@@ -284,15 +284,19 @@ test("left drill filters use an Excel-style checklist menu", () => {
     assert.match(marginAnalysisSource, /className = 'excel-filter-menu'/);
     assert.match(marginAnalysisSource, /createExcelFilterAction\('全选'/);
     assert.match(marginAnalysisSource, /createExcelFilterAction\('反选'/);
+    assert.match(marginAnalysisSource, /footerActions\.className = 'excel-filter-footer-actions'/);
     assert.match(marginAnalysisSource, /keepSearchButton\.textContent = '仅保留搜索结果'/);
     assert.match(marginAnalysisSource, /applyButton\.textContent = keyword \? '应用到当前勾选' : '应用'/);
     assert.match(marginAnalysisSource, /applyExcelFilterSelection\(dim, availableValues, new Set\(searchValues\)\)/);
+    assert.match(marginAnalysisSource, /footerActions\.appendChild\(keepSearchButton\)[\s\S]*footerActions\.appendChild\(applyButton\)/);
+    assert.doesNotMatch(marginAnalysisSource, /excel-filter-search-tools/);
     assert.match(marginAnalysisSource, /scrollExcelFilterMenuIntoView\(menu\)/);
     assert.match(marginAnalysisSource, /sidebar\.scrollTo\(\{[\s\S]*behavior: 'smooth'/);
     assert.doesNotMatch(marginAnalysisSource, /className = 'filter-mode-toggle'/);
     assert.doesNotMatch(marginAnalysisHtml, /保留筛选|排除筛选/);
     assert.match(marginAnalysisStyles, /\.excel-filter-trigger/);
     assert.match(marginAnalysisStyles, /\.excel-filter-checkmark/);
+    assert.match(marginAnalysisStyles, /\.excel-filter-footer-actions/);
 });
 
 test("left drill filters can exclude one value while keeping all other values", () => {

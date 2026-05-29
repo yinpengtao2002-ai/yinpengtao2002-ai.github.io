@@ -687,16 +687,6 @@ details[open] > .sidebar-summary::after {
     border-color: var(--accent-orange);
 }
 
-.excel-filter-search-tools {
-    display: flex;
-    gap: 0.36rem;
-    margin: 0.42rem 0 0;
-}
-
-.excel-filter-search-tools[hidden] {
-    display: none;
-}
-
 .excel-filter-search-action {
     width: 100%;
     min-height: 30px;
@@ -819,22 +809,28 @@ details[open] > .sidebar-summary::after {
 }
 
 .excel-filter-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
     margin-top: 0.52rem;
 }
 
 .excel-filter-footer-summary {
+    display: block;
     color: var(--text-secondary);
     font-size: 0.72rem;
     min-width: 0;
+    margin-bottom: 0.42rem;
+}
+
+.excel-filter-footer-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+    gap: 0.42rem;
+    align-items: stretch;
 }
 
 .excel-filter-apply {
     min-height: 30px;
-    min-width: 64px;
+    width: 100%;
+    min-width: 0;
     border: 0;
     border-radius: 7px;
     background: var(--accent-orange);
