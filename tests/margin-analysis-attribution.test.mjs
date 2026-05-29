@@ -13,6 +13,7 @@ const {
     prepareDisplayData,
     applyDrillDimensionFilters,
     resolveExcelFilterAppliedValues,
+    resolveExcelFilterSearchValues,
     normalizeUploadedRows,
     sheetRowsToObjects,
     TEMPLATE_HEADERS,
@@ -283,8 +284,9 @@ test("left drill filters use an Excel-style checklist menu", () => {
     assert.match(marginAnalysisSource, /className = 'excel-filter-menu'/);
     assert.match(marginAnalysisSource, /createExcelFilterAction\('全选'/);
     assert.match(marginAnalysisSource, /createExcelFilterAction\('反选'/);
-    assert.match(marginAnalysisSource, /resolveExcelFilterAppliedValues\(availableValues, selectedValues, search\.value\)/);
-    assert.match(marginAnalysisSource, /将保留 \$\{visibleSelectedCount\}\/\$\{visibleValues\.length\} 个搜索结果/);
+    assert.match(marginAnalysisSource, /keepSearchButton\.textContent = '仅保留搜索结果'/);
+    assert.match(marginAnalysisSource, /applyButton\.textContent = keyword \? '应用到当前勾选' : '应用'/);
+    assert.match(marginAnalysisSource, /applyExcelFilterSelection\(dim, availableValues, new Set\(searchValues\)\)/);
     assert.match(marginAnalysisSource, /scrollExcelFilterMenuIntoView\(menu\)/);
     assert.match(marginAnalysisSource, /sidebar\.scrollTo\(\{[\s\S]*behavior: 'smooth'/);
     assert.doesNotMatch(marginAnalysisSource, /className = 'filter-mode-toggle'/);
@@ -315,22 +317,26 @@ test("left drill filters can exclude one value while keeping all other values", 
     assert.match(marginAnalysisSource, /uncheckedValues = availableValues\.filter\(value => !selectedValues\.has\(value\)\)/);
 });
 
-test("left drill filter search applies only the matching checked values", () => {
+test("left drill filter search supports keep-search and apply-current-selection modes", () => {
     assert.equal(typeof resolveExcelFilterAppliedValues, "function");
+    assert.equal(typeof resolveExcelFilterSearchValues, "function");
 
     const availableValues = ["中国", "美国", "德国", "墨西哥"];
-    const selectedValues = new Set(availableValues);
 
     assert.deepEqual(
-        resolveExcelFilterAppliedValues(availableValues, selectedValues, "美国"),
+        resolveExcelFilterSearchValues(availableValues, "美国"),
         ["美国"]
     );
     assert.deepEqual(
-        resolveExcelFilterAppliedValues(availableValues, selectedValues, "国"),
+        resolveExcelFilterSearchValues(availableValues, "国"),
         ["中国", "美国", "德国"]
     );
     assert.deepEqual(
-        resolveExcelFilterAppliedValues(availableValues, new Set(["美国", "德国"]), ""),
+        resolveExcelFilterAppliedValues(availableValues, new Set(["中国", "德国", "墨西哥"])),
+        ["中国", "德国", "墨西哥"]
+    );
+    assert.deepEqual(
+        resolveExcelFilterAppliedValues(availableValues, new Set(["美国", "德国"])),
         ["美国", "德国"]
     );
 });

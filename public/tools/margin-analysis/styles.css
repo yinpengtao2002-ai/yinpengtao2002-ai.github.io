@@ -687,6 +687,42 @@ details[open] > .sidebar-summary::after {
     border-color: var(--accent-orange);
 }
 
+.excel-filter-search-tools {
+    display: flex;
+    gap: 0.36rem;
+    margin: 0.42rem 0 0;
+}
+
+.excel-filter-search-tools[hidden] {
+    display: none;
+}
+
+.excel-filter-search-action {
+    width: 100%;
+    min-height: 30px;
+    border: 1px solid rgba(217, 119, 87, 0.35);
+    border-radius: 7px;
+    background: rgba(217, 119, 87, 0.08);
+    color: var(--accent-orange);
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 750;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.excel-filter-search-action:hover,
+.excel-filter-search-action:focus {
+    border-color: var(--accent-orange);
+    background: rgba(217, 119, 87, 0.13);
+    outline: none;
+}
+
+.excel-filter-search-action:disabled {
+    opacity: 0.48;
+    cursor: not-allowed;
+}
+
 .excel-filter-actions {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

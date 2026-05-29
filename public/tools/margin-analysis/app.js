@@ -1288,6 +1288,21 @@ function renderExcelFilterMenu(menu, dim, availableValues) {
     search.placeholder = '搜索维度项';
     search.setAttribute('aria-label', '搜索维度项');
 
+    const searchTools = document.createElement('div');
+    searchTools.className = 'excel-filter-search-tools';
+    searchTools.hidden = true;
+
+    const keepSearchButton = document.createElement('button');
+    keepSearchButton.type = 'button';
+    keepSearchButton.className = 'excel-filter-search-action';
+    keepSearchButton.textContent = '仅保留搜索结果';
+    keepSearchButton.addEventListener('click', () => {
+        const searchValues = resolveExcelFilterSearchValues(availableValues, search.value);
+        applyExcelFilterSelection(dim, availableValues, new Set(searchValues));
+        closeExcelFilterMenus();
+    });
+    searchTools.appendChild(keepSearchButton);
+
     const actions = document.createElement('div');
     actions.className = 'excel-filter-actions';
 
@@ -1306,7 +1321,7 @@ function renderExcelFilterMenu(menu, dim, availableValues) {
     applyButton.className = 'excel-filter-apply';
     applyButton.textContent = '应用';
     applyButton.addEventListener('click', () => {
-        const appliedValues = resolveExcelFilterAppliedValues(availableValues, selectedValues, search.value);
+        const appliedValues = resolveExcelFilterAppliedValues(availableValues, selectedValues);
         applyExcelFilterSelection(dim, availableValues, new Set(appliedValues));
         closeExcelFilterMenus();
     });
@@ -1314,7 +1329,11 @@ function renderExcelFilterMenu(menu, dim, availableValues) {
     const renderRows = () => {
         const keyword = search.value.trim().toLowerCase();
         list.innerHTML = '';
-        const visibleValues = availableValues.filter(value => String(value).toLowerCase().includes(keyword));
+        const visibleValues = resolveExcelFilterSearchValues(availableValues, search.value);
+        const hasKeyword = keyword.length > 0;
+        searchTools.hidden = !hasKeyword;
+        keepSearchButton.disabled = !hasKeyword || visibleValues.length === 0;
+        applyButton.textContent = keyword ? '应用到当前勾选' : '应用';
 
         visibleValues.forEach((value) => {
             const option = document.createElement('button');
@@ -1346,8 +1365,7 @@ function renderExcelFilterMenu(menu, dim, availableValues) {
         }
 
         if (keyword) {
-            const visibleSelectedCount = visibleValues.filter(value => selectedValues.has(value)).length;
-            summary.textContent = `将保留 ${visibleSelectedCount}/${visibleValues.length} 个搜索结果`;
+            summary.textContent = `搜索到 ${visibleValues.length} 项，当前勾选 ${selectedValues.size}/${availableValues.length}`;
         } else {
             summary.textContent = `${selectedValues.size}/${availableValues.length} 项已勾选`;
         }
@@ -1371,18 +1389,21 @@ function renderExcelFilterMenu(menu, dim, availableValues) {
     footer.appendChild(summary);
     footer.appendChild(applyButton);
     menu.appendChild(search);
+    menu.appendChild(searchTools);
     menu.appendChild(actions);
     menu.appendChild(list);
     menu.appendChild(footer);
     renderRows();
 }
 
-function resolveExcelFilterAppliedValues(availableValues, selectedValues, searchText = '') {
+function resolveExcelFilterSearchValues(availableValues, searchText = '') {
     const keyword = String(searchText || '').trim().toLowerCase();
-    const candidateValues = keyword
-        ? availableValues.filter(value => String(value).toLowerCase().includes(keyword))
-        : availableValues;
-    return candidateValues.filter(value => selectedValues.has(value));
+    if (!keyword) return [...availableValues];
+    return availableValues.filter(value => String(value).toLowerCase().includes(keyword));
+}
+
+function resolveExcelFilterAppliedValues(availableValues, selectedValues) {
+    return availableValues.filter(value => selectedValues.has(value));
 }
 
 function createExcelFilterAction(label, onClick) {
@@ -3368,6 +3389,7 @@ if (typeof module !== 'undefined' && module.exports) {
         prepareDisplayData,
         applyDrillDimensionFilters,
         resolveExcelFilterAppliedValues,
+        resolveExcelFilterSearchValues,
         normalizeUploadedRows,
         sheetRowsToObjects,
         TEMPLATE_HEADERS,
