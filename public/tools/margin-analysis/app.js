@@ -1402,7 +1402,37 @@ function toggleExcelFilterMenu(container) {
 
     menu.hidden = false;
     trigger.setAttribute('aria-expanded', 'true');
-    window.setTimeout(() => menu.querySelector('.excel-filter-search')?.focus(), 0);
+    scrollExcelFilterMenuIntoView(menu);
+    window.setTimeout(() => menu.querySelector('.excel-filter-search')?.focus({ preventScroll: true }), 80);
+}
+
+function scrollExcelFilterMenuIntoView(menu) {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar || !menu) return;
+
+    window.requestAnimationFrame(() => {
+        const sidebarRect = sidebar.getBoundingClientRect();
+        const menuRect = menu.getBoundingClientRect();
+        const bottomPadding = 18;
+        const topPadding = 14;
+        const bottomOverflow = menuRect.bottom - sidebarRect.bottom + bottomPadding;
+        const topOverflow = sidebarRect.top - menuRect.top + topPadding;
+
+        if (bottomOverflow > 0) {
+            sidebar.scrollTo({
+                top: sidebar.scrollTop + bottomOverflow,
+                behavior: 'smooth'
+            });
+            return;
+        }
+
+        if (topOverflow > 0) {
+            sidebar.scrollTo({
+                top: Math.max(0, sidebar.scrollTop - topOverflow),
+                behavior: 'smooth'
+            });
+        }
+    });
 }
 
 function closeExcelFilterMenus() {

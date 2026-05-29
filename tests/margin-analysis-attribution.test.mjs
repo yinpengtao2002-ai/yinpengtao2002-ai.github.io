@@ -283,6 +283,8 @@ test("left drill filters use an Excel-style checklist menu", () => {
     assert.match(marginAnalysisSource, /createExcelFilterAction\('全选'/);
     assert.match(marginAnalysisSource, /createExcelFilterAction\('反选'/);
     assert.match(marginAnalysisSource, /applyExcelFilterSelection\(dim, availableValues, selectedValues\)/);
+    assert.match(marginAnalysisSource, /scrollExcelFilterMenuIntoView\(menu\)/);
+    assert.match(marginAnalysisSource, /sidebar\.scrollTo\(\{[\s\S]*behavior: 'smooth'/);
     assert.doesNotMatch(marginAnalysisSource, /className = 'filter-mode-toggle'/);
     assert.doesNotMatch(marginAnalysisHtml, /保留筛选|排除筛选/);
     assert.match(marginAnalysisStyles, /\.excel-filter-trigger/);
@@ -349,7 +351,11 @@ test("upload template and sidebar use business dimension headers instead of Dim 
     assert.deepEqual(TEMPLATE_HEADERS.slice(0, 6), ["月份", "大区", "国家", "车型", "燃油品类", "品牌"]);
     assert.ok(!TEMPLATE_HEADERS.some(header => /^Dim_/i.test(header)));
     assert.doesNotMatch(marginAnalysisHtml, /维度配置|dim-config-section/);
+    assert.doesNotMatch(marginAnalysisHtml, /id="user-settings-section"/);
     assert.match(marginAnalysisHtml, /<details class="sidebar-details" open>\s*<summary class="sidebar-summary">📁 数据中心<\/summary>/);
+    const loadedDataCenter = marginAnalysisHtml.match(/<section id="data-center-loaded"[\s\S]*?<\/section>/);
+    assert.ok(loadedDataCenter, "Expected loaded data center section");
+    assert.match(loadedDataCenter[0], /for="input-metric-type">分析单车类型<\/label>/);
     assert.match(marginAnalysisSource, /sheetRowsToObjects\(sheetRows\)/);
     assert.match(marginAnalysisHtml, /可新增或删除维度列/);
     assert.doesNotMatch(marginAnalysisHtml, /未启用维度/);

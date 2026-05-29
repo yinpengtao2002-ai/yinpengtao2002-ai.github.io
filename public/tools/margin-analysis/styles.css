@@ -189,6 +189,16 @@ details[open] > .sidebar-summary::after {
     padding: 0.8rem 1rem;
 }
 
+.data-center-setting {
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--border-light);
+}
+
+.data-center-setting .caption {
+    margin: 0.45rem 0 0;
+}
+
 /* 文件上传区 */
 .file-upload-area {
     border: 2px dashed var(--border-light);
