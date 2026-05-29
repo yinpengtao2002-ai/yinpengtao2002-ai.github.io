@@ -313,6 +313,8 @@ test("left drill filters can exclude one value while keeping all other values", 
 
 test("spreadsheet template can carry a visible note above the detected header row", () => {
     assert.match(TEMPLATE_HEADER_NOTE, /可直接修改标题行/);
+    assert.match(TEMPLATE_HEADER_NOTE, /新增或删除维度列/);
+    assert.match(TEMPLATE_HEADER_NOTE, /插入或删除/);
     assert.match(buildTemplateStylesXml(), /fgColor rgb="FFFFF7CC"/);
     assert.match(buildTemplateWorksheetXml(), /<c r="A1" s="1" t="inlineStr">/);
     assert.match(buildTemplateWorksheetXml(), /<mergeCell ref="A1:H1"\/>/);
@@ -349,6 +351,7 @@ test("upload template and sidebar use business dimension headers instead of Dim 
     assert.doesNotMatch(marginAnalysisHtml, /维度配置|dim-config-section/);
     assert.match(marginAnalysisHtml, /<details class="sidebar-details" open>\s*<summary class="sidebar-summary">📁 数据中心<\/summary>/);
     assert.match(marginAnalysisSource, /sheetRowsToObjects\(sheetRows\)/);
+    assert.match(marginAnalysisHtml, /可新增或删除维度列/);
     assert.doesNotMatch(marginAnalysisHtml, /未启用维度/);
     assert.doesNotMatch(marginAnalysisHtml, /Dim_[A-E]|Sales Volume|Total Margin/);
 });
@@ -357,21 +360,25 @@ test("business headers map into dimensions and all uploaded dimensions are enabl
     assert.equal(typeof normalizeUploadedRows, "function");
 
     const rows = [
-        { "月份": "2025-01", "大区": "欧洲区", "国家": "德国", "车型": "T19", "渠道": "直营", "销量": 100, "指标总额": 1000 },
-        { "月份": "2025-02", "大区": "欧洲区", "国家": "法国", "车型": "T19", "渠道": "经销", "销量": 120, "指标总额": 1800 },
+        { "月份": "2025-01", "大区": "欧洲区", "国家": "德国", "车型": "T19", "燃油品类": "PHEV", "品牌": "品牌A", "渠道": "直营", "客户类型": "集团客户", "销量": 100, "指标总额": 1000 },
+        { "月份": "2025-02", "大区": "欧洲区", "国家": "法国", "车型": "T19", "燃油品类": "PHEV", "品牌": "品牌A", "渠道": "经销", "客户类型": "零售客户", "销量": 120, "指标总额": 1800 },
     ];
 
     const normalized = normalizeUploadedRows(rows);
-    assert.deepEqual(normalized.dimCols, ["Dim_A", "Dim_B", "Dim_C", "Dim_D"]);
+    assert.deepEqual(normalized.dimCols, ["Dim_A", "Dim_B", "Dim_C", "Dim_D", "Dim_E", "Dim_F", "Dim_G"]);
     assert.deepEqual(normalized.dimNames, {
         Dim_A: "大区",
         Dim_B: "国家",
         Dim_C: "车型",
-        Dim_D: "渠道",
+        Dim_D: "燃油品类",
+        Dim_E: "品牌",
+        Dim_F: "渠道",
+        Dim_G: "客户类型",
     });
     assert.equal(normalized.rows[0].Month, "2025-01");
     assert.equal(normalized.rows[0].Dim_A, "欧洲区");
-    assert.equal(normalized.rows[0].Dim_D, "直营");
+    assert.equal(normalized.rows[0].Dim_F, "直营");
+    assert.equal(normalized.rows[1].Dim_G, "零售客户");
     assert.equal(normalized.rows[1]["Sales Volume"], 120);
     assert.equal(normalized.rows[1]["Total Margin"], 1800);
 });

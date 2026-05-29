@@ -46,7 +46,7 @@ const DIM_ICONS = {
 const TEMPLATE_HEADERS = [
     '月份', ...TEMPLATE_DIMENSION_HEADERS, '销量', '指标总额'
 ];
-const TEMPLATE_HEADER_NOTE = '可直接修改标题行，系统会按表头自动识别维度；请保留“月份、销量、指标总额”三类必要列。';
+const TEMPLATE_HEADER_NOTE = '可直接修改标题行，系统会按表头自动识别维度；请保留“月份、销量、指标总额”三类必要列。可新增或删除维度列，直接插入或删除即可。';
 
 
 // ==================== DOM Ready ====================
@@ -367,7 +367,7 @@ function buildTemplateWorksheetXml() {
         const cells = row
             .map((value, colIndex) => buildTemplateCell(value, rowNumber, colIndex, rowNumber === 1 ? 1 : 0))
             .join('');
-        const rowAttrs = rowNumber === 1 ? ' ht="34" customHeight="1"' : '';
+        const rowAttrs = rowNumber === 1 ? ' ht="48" customHeight="1"' : '';
         return `<row r="${rowNumber}"${rowAttrs}>${cells}</row>`;
     }).join('');
 
