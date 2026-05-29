@@ -520,6 +520,8 @@ test("home thinking section uses a visual card and a clear index link", () => {
   assert.match(globals, /\.home-thinking-method-index\s*\{/);
   assert.match(globals, /grid-template-columns:\s*minmax\(280px,\s*0\.72fr\)\s*minmax\(0,\s*1\.28fr\)/);
   assert.match(globals, /\.home-thinking-visual-card\s*\{[^}]*min-height:\s*clamp\(390px,\s*54vh,\s*540px\)/s);
+  assert.match(cssRule(".home-thinking-visual-copy h2"), /font-family:\s*var\(--font-hero-display\)/);
+  assert.match(cssRule(".home-thinking-visual-copy h2"), /font-weight:\s*500/);
   assert.match(globals, /\.home-thinking-track-rail\s*\{/);
   assert.match(globals, /\.home-thinking-track-card\s*\{/);
   assert.match(globals, /\.home-thinking-track-card::before\s*\{/);
@@ -533,12 +535,17 @@ test("home thinking section uses a visual card and a clear index link", () => {
   assert.match(globals, /\.home-thinking-featured-meta\s*\{/);
   assert.doesNotMatch(globals, /\.home-thinking-source-pill\s*\{/);
   assert.match(cssRule(".home-thinking-section"), /align-items:\s*flex-start/);
+  assert.match(cssRule(".home-thinking-section"), /font-family:\s*var\(--font-poppins\)/);
   assert.match(globals, /\.home-section\.home-thinking-section\s*\{[^}]*padding-top:\s*clamp\(4\.6rem,\s*8vh,\s*6\.2rem\)/s);
   assert.doesNotMatch(globals, /\.home-thinking-list\s*\{/);
   assert.match(globals, /@keyframes\s+home-thinking-card-rise/);
   assert.match(cssRule(".home-thinking-reveal"), /will-change:\s*transform,\s*opacity/);
   assert.match(cssRule(".home-thinking-track-card"), /animation:\s*home-thinking-card-rise/);
   assert.match(cssRule(".home-thinking-visual-card"), /animation:\s*home-thinking-card-rise/);
+  assert.match(cssRule(".home-thinking-preview-item strong"), /font-weight:\s*650/);
+  assert.match(cssRule(".home-thinking-track-card p"), /font-weight:\s*450/);
+  assert.doesNotMatch(cssRule(".home-thinking-preview-item strong"), /font-weight:\s*800/);
+  assert.doesNotMatch(cssRule(".home-thinking-track-label"), /font-weight:\s*900/);
 });
 
 test("home thinking section keeps its visual card readable in short desktop viewports", () => {
