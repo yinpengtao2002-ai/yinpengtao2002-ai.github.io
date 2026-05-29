@@ -1306,7 +1306,8 @@ function renderExcelFilterMenu(menu, dim, availableValues) {
     applyButton.className = 'excel-filter-apply';
     applyButton.textContent = '应用';
     applyButton.addEventListener('click', () => {
-        applyExcelFilterSelection(dim, availableValues, selectedValues);
+        const appliedValues = resolveExcelFilterAppliedValues(availableValues, selectedValues, search.value);
+        applyExcelFilterSelection(dim, availableValues, new Set(appliedValues));
         closeExcelFilterMenus();
     });
 
@@ -1344,7 +1345,12 @@ function renderExcelFilterMenu(menu, dim, availableValues) {
             list.appendChild(empty);
         }
 
-        summary.textContent = `${selectedValues.size}/${availableValues.length} 项已勾选`;
+        if (keyword) {
+            const visibleSelectedCount = visibleValues.filter(value => selectedValues.has(value)).length;
+            summary.textContent = `将保留 ${visibleSelectedCount}/${visibleValues.length} 个搜索结果`;
+        } else {
+            summary.textContent = `${selectedValues.size}/${availableValues.length} 项已勾选`;
+        }
     };
 
     actions.appendChild(createExcelFilterAction('全选', () => {
@@ -1369,6 +1375,14 @@ function renderExcelFilterMenu(menu, dim, availableValues) {
     menu.appendChild(list);
     menu.appendChild(footer);
     renderRows();
+}
+
+function resolveExcelFilterAppliedValues(availableValues, selectedValues, searchText = '') {
+    const keyword = String(searchText || '').trim().toLowerCase();
+    const candidateValues = keyword
+        ? availableValues.filter(value => String(value).toLowerCase().includes(keyword))
+        : availableValues;
+    return candidateValues.filter(value => selectedValues.has(value));
 }
 
 function createExcelFilterAction(label, onClick) {
@@ -3353,6 +3367,7 @@ if (typeof module !== 'undefined' && module.exports) {
         calculateDimensionPVMEffects,
         prepareDisplayData,
         applyDrillDimensionFilters,
+        resolveExcelFilterAppliedValues,
         normalizeUploadedRows,
         sheetRowsToObjects,
         TEMPLATE_HEADERS,

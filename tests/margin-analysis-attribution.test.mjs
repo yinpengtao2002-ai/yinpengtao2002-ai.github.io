@@ -12,6 +12,7 @@ const {
     calculateDimensionPVMEffects,
     prepareDisplayData,
     applyDrillDimensionFilters,
+    resolveExcelFilterAppliedValues,
     normalizeUploadedRows,
     sheetRowsToObjects,
     TEMPLATE_HEADERS,
@@ -282,7 +283,8 @@ test("left drill filters use an Excel-style checklist menu", () => {
     assert.match(marginAnalysisSource, /className = 'excel-filter-menu'/);
     assert.match(marginAnalysisSource, /createExcelFilterAction\('全选'/);
     assert.match(marginAnalysisSource, /createExcelFilterAction\('反选'/);
-    assert.match(marginAnalysisSource, /applyExcelFilterSelection\(dim, availableValues, selectedValues\)/);
+    assert.match(marginAnalysisSource, /resolveExcelFilterAppliedValues\(availableValues, selectedValues, search\.value\)/);
+    assert.match(marginAnalysisSource, /将保留 \$\{visibleSelectedCount\}\/\$\{visibleValues\.length\} 个搜索结果/);
     assert.match(marginAnalysisSource, /scrollExcelFilterMenuIntoView\(menu\)/);
     assert.match(marginAnalysisSource, /sidebar\.scrollTo\(\{[\s\S]*behavior: 'smooth'/);
     assert.doesNotMatch(marginAnalysisSource, /className = 'filter-mode-toggle'/);
@@ -311,6 +313,26 @@ test("left drill filters can exclude one value while keeping all other values", 
     assert.deepEqual(filtered.map(row => row.Dim_A), ["France", "Spain"]);
     assert.match(marginAnalysisSource, /AppState\.excludedDims/);
     assert.match(marginAnalysisSource, /uncheckedValues = availableValues\.filter\(value => !selectedValues\.has\(value\)\)/);
+});
+
+test("left drill filter search applies only the matching checked values", () => {
+    assert.equal(typeof resolveExcelFilterAppliedValues, "function");
+
+    const availableValues = ["中国", "美国", "德国", "墨西哥"];
+    const selectedValues = new Set(availableValues);
+
+    assert.deepEqual(
+        resolveExcelFilterAppliedValues(availableValues, selectedValues, "美国"),
+        ["美国"]
+    );
+    assert.deepEqual(
+        resolveExcelFilterAppliedValues(availableValues, selectedValues, "国"),
+        ["中国", "美国", "德国"]
+    );
+    assert.deepEqual(
+        resolveExcelFilterAppliedValues(availableValues, new Set(["美国", "德国"]), ""),
+        ["美国", "德国"]
+    );
 });
 
 test("spreadsheet template can carry a visible note above the detected header row", () => {
