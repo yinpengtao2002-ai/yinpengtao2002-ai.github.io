@@ -63,12 +63,19 @@ test("home page has an explicit continue cue for below-the-fold content", () => 
   assert.match(hero, /home-hero-continue-row/);
   assert.doesNotMatch(hero, /home-secondary-action/);
   assert.match(globals, /\.home-hero-continue\s*\{[^}]*position:\s*relative/s);
+  assert.match(cssRule(".home-hero-continue {"), /background:\s*linear-gradient\(135deg/s);
+  assert.match(cssRule(".home-hero-continue {"), /backdrop-filter:\s*blur\(16px\)/);
+  assert.match(cssRule(".home-hero-continue {"), /inset 0 1px 0/s);
+  assert.match(cssRule(".home-hero-continue {"), /letter-spacing:\s*0/);
   assert.match(hero, /home-hero-continue-runner/);
   assert.match(globals, /\.home-hero-continue::before\s*\{[^}]*linear-gradient\(135deg/s);
   assert.doesNotMatch(globals, /\.home-hero-continue::before\s*\{[^}]*animation:\s*homeContinueRing/s);
   assert.match(globals, /\.home-hero-continue::before\s*\{[^}]*padding:\s*1px/s);
   assert.match(globals, /\.home-hero-continue::before\s*\{[^}]*mask-composite:\s*exclude/s);
+  assert.match(cssRule(".home-hero-continue::after"), /linear-gradient\(180deg/s);
+  assert.match(cssRule(".home-hero-continue-runner {"), /radial-gradient\(circle/s);
   assert.match(globals, /\.home-hero-continue-runner\s*\{[^}]*animation:\s*homeContinueRunner/s);
+  assert.match(cssRule(".home-hero-continue:hover svg {"), /transform:\s*translateY\(1px\)/);
   assert.match(globals, /@keyframes\s+homeContinueRunner/);
 });
 
