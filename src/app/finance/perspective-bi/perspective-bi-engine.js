@@ -43,6 +43,11 @@ const CALCULATED_FORMAT_LABELS = {
     number: "数值",
     percent: "百分比",
 };
+const CALCULATED_METRIC_TYPE_LABELS = {
+    unit: "单位/比率指标",
+    additive: "累计指标",
+};
+const calculatedFormulaOperators = new Set(["+", "-", "*", "/"]);
 
 const state = {
     initialized: false,
@@ -60,8 +65,8 @@ const state = {
         panelOpen: false,
         generated: false,
         name: "",
-        numerator: "",
-        denominator: "",
+        formula: "[净收入] / [销量]",
+        type: "unit",
         dimensions: [],
         format: "unit",
     },
@@ -214,7 +219,10 @@ function buildAggregates(rows) {
 function buildCalculatedAggregates(rows) {
     const { metrics } = classifyCalculatedColumns(rows);
     const metricName = getCalculatedMetricName();
-    return Object.fromEntries(metrics.map((metric) => [metric, metric === metricName ? "avg" : "sum"]));
+    return Object.fromEntries(metrics.map((metric) => [
+        metric,
+        metric === metricName ? (state.calculatedMetric.type === "additive" ? "sum" : "avg") : "sum",
+    ]));
 }
 
 function buildConfig(rows, preset = state.preset) {
@@ -356,7 +364,6 @@ function renderFieldRoles(rows) {
         const fieldName = document.createElement("div");
         const roleSelect = document.createElement("select");
         const aggregateSelect = document.createElement("select");
-        const note = document.createElement("span");
 
         row.className = `field-role-row role-${config.role}`;
         fieldName.className = "field-role-name";
@@ -379,10 +386,7 @@ function renderFieldRoles(rows) {
         });
         aggregateSelect.disabled = config.role !== "metric";
 
-        note.className = "field-role-note";
-        note.textContent = ROLE_LABELS[config.role];
-
-        row.append(fieldName, roleSelect, aggregateSelect, note);
+        row.append(fieldName, roleSelect, aggregateSelect);
         return row;
     });
 
@@ -403,13 +407,10 @@ function ensureCalculatedMetricDefaults(rows) {
     const dimensionColumns = getDimensionColumns(rows);
     const calculatedMetric = state.calculatedMetric;
 
-    if (!metricColumns.includes(calculatedMetric.numerator)) {
-        calculatedMetric.numerator = pickColumn(["净收入", "收入", "Revenue", "revenue"], metricColumns, metricColumns[0] ?? "");
-    }
-
-    if (!metricColumns.includes(calculatedMetric.denominator)) {
-        const fallbackDenominator = metricColumns.find((column) => column !== calculatedMetric.numerator) ?? metricColumns[0] ?? "";
-        calculatedMetric.denominator = pickColumn(["销量", "销售量", "Volume", "volume"], metricColumns, fallbackDenominator);
+    const formulaFields = getCalculatedFormulaFields(calculatedMetric.formula);
+    const formulaHasMissingFields = formulaFields.some((field) => !metricColumns.includes(field));
+    if (!calculatedMetric.formula.trim() || formulaHasMissingFields) {
+        calculatedMetric.formula = buildDefaultCalculatedFormula(metricColumns);
     }
 
     calculatedMetric.dimensions = calculatedMetric.dimensions.filter((dimension) => dimensionColumns.includes(dimension));
@@ -420,34 +421,219 @@ function ensureCalculatedMetricDefaults(rows) {
     if (!CALCULATED_FORMAT_LABELS[calculatedMetric.format]) {
         calculatedMetric.format = "unit";
     }
+
+    if (!CALCULATED_METRIC_TYPE_LABELS[calculatedMetric.type]) {
+        calculatedMetric.type = "unit";
+    }
 }
 
-function replaceSelectOptions(select, options, selectedValue, emptyLabel) {
-    if (!select) return;
-    const optionNodes = options.length
-        ? options.map((option) => createOption(option, option, option === selectedValue))
-        : [createOption("", emptyLabel, true)];
-    select.replaceChildren(...optionNodes);
-    select.disabled = options.length === 0;
+function buildDefaultCalculatedFormula(metricColumns) {
+    const numerator = pickColumn(["净收入", "收入", "Revenue", "revenue"], metricColumns, metricColumns[0] ?? "");
+    const fallbackDenominator = metricColumns.find((column) => column !== numerator) ?? metricColumns[0] ?? "";
+    const denominator = pickColumn(["销量", "销售量", "Volume", "volume"], metricColumns, fallbackDenominator);
+
+    if (numerator && denominator && numerator !== denominator) return `[${numerator}] / [${denominator}]`;
+    return numerator ? `[${numerator}]` : "";
+}
+
+function getCalculatedFormulaFields(formula) {
+    try {
+        return Array.from(new Set(tokenizeCalculatedFormula(formula).filter((token) => token.type === "field").map((token) => token.value)));
+    } catch {
+        return [];
+    }
+}
+
+function tokenizeCalculatedFormula(formula) {
+    const tokens = [];
+    let index = 0;
+    let expectValue = true;
+
+    while (index < formula.length) {
+        const char = formula[index];
+        if (/\s/.test(char)) {
+            index += 1;
+            continue;
+        }
+
+        if (char === "[") {
+            const end = formula.indexOf("]", index + 1);
+            if (end === -1) throw new Error("字段引用需要用 [字段名] 写完整。");
+            const field = formula.slice(index + 1, end).trim();
+            if (!field) throw new Error("字段引用不能为空。");
+            tokens.push({ type: "field", value: field });
+            index = end + 1;
+            expectValue = false;
+            continue;
+        }
+
+        if (/\d|\./.test(char)) {
+            const match = formula.slice(index).match(/^\d+(?:\.\d+)?|^\.\d+/);
+            if (!match) throw new Error("数字格式不正确。");
+            tokens.push({ type: "number", value: Number(match[0]) });
+            index += match[0].length;
+            expectValue = false;
+            continue;
+        }
+
+        if (char === "(") {
+            tokens.push({ type: "leftParen", value: char });
+            index += 1;
+            expectValue = true;
+            continue;
+        }
+
+        if (char === ")") {
+            tokens.push({ type: "rightParen", value: char });
+            index += 1;
+            expectValue = false;
+            continue;
+        }
+
+        if (calculatedFormulaOperators.has(char)) {
+            if (expectValue && char !== "-") throw new Error("运算符前需要有字段或数字。");
+            if (expectValue && char === "-") tokens.push({ type: "number", value: 0 });
+            tokens.push({ type: "operator", value: char });
+            index += 1;
+            expectValue = true;
+            continue;
+        }
+
+        throw new Error(`公式里有无法识别的字符：${char}`);
+    }
+
+    if (!tokens.length) throw new Error("请先填写计算公式。");
+    if (tokens.at(-1)?.type === "operator") throw new Error("公式不能以运算符结尾。");
+    return tokens;
+}
+
+function toReversePolishNotation(tokens) {
+    const precedence = { "+": 1, "-": 1, "*": 2, "/": 2 };
+    const output = [];
+    const operators = [];
+
+    tokens.forEach((token) => {
+        if (token.type === "number" || token.type === "field") {
+            output.push(token);
+            return;
+        }
+
+        if (token.type === "operator") {
+            while (operators.length) {
+                const previous = operators.at(-1);
+                if (previous.type !== "operator" || precedence[previous.value] < precedence[token.value]) break;
+                output.push(operators.pop());
+            }
+            operators.push(token);
+            return;
+        }
+
+        if (token.type === "leftParen") {
+            operators.push(token);
+            return;
+        }
+
+        if (token.type === "rightParen") {
+            while (operators.length && operators.at(-1).type !== "leftParen") {
+                output.push(operators.pop());
+            }
+            if (!operators.length) throw new Error("括号不匹配。");
+            operators.pop();
+        }
+    });
+
+    while (operators.length) {
+        const operator = operators.pop();
+        if (operator.type === "leftParen") throw new Error("括号不匹配。");
+        output.push(operator);
+    }
+
+    return output;
+}
+
+function buildCalculatedFormulaContext(rows, formulaFields) {
+    const context = Object.fromEntries(formulaFields.map((field) => [field, 0]));
+    rows.forEach((row) => {
+        formulaFields.forEach((field) => {
+            const value = row[field];
+            if (typeof value === "number" && Number.isFinite(value)) context[field] += value;
+        });
+    });
+    return context;
+}
+
+function evaluateCalculatedFormula(rpn, context) {
+    const stack = [];
+
+    rpn.forEach((token) => {
+        if (token.type === "number") {
+            stack.push(token.value);
+            return;
+        }
+
+        if (token.type === "field") {
+            stack.push(context[token.value] ?? 0);
+            return;
+        }
+
+        const right = stack.pop();
+        const left = stack.pop();
+        if (left === undefined || right === undefined) throw new Error("公式结构不完整。");
+
+        if (token.value === "+") stack.push(left + right);
+        if (token.value === "-") stack.push(left - right);
+        if (token.value === "*") stack.push(left * right);
+        if (token.value === "/") stack.push(right === 0 ? Number.NaN : left / right);
+    });
+
+    if (stack.length !== 1) throw new Error("公式结构不完整。");
+    const result = stack[0];
+    return typeof result === "number" && Number.isFinite(result) ? result : "";
+}
+
+function validateCalculatedFormula(rows) {
+    const formula = state.calculatedMetric.formula.trim();
+    const metricColumns = getMetricColumns(rows);
+    const tokens = tokenizeCalculatedFormula(formula);
+    const formulaFields = Array.from(new Set(tokens.filter((token) => token.type === "field").map((token) => token.value)));
+    if (!formulaFields.length) throw new Error("公式至少要引用一个指标字段。");
+
+    const missingFields = formulaFields.filter((field) => !metricColumns.includes(field));
+    if (missingFields.length) {
+        throw new Error(`公式里的字段不是可用指标：${missingFields.join("、")}`);
+    }
+
+    return {
+        formula,
+        formulaFields,
+        rpn: toReversePolishNotation(tokens),
+    };
 }
 
 function renderCalculatedMetricControls(rows) {
     const panel = byId("perspective-calculated-metric-panel");
     const toggle = byId("perspective-calculated-metric-toggle");
     const nameInput = byId("perspective-calculated-metric-name");
-    const numeratorSelect = byId("perspective-calculated-numerator");
-    const denominatorSelect = byId("perspective-calculated-denominator");
+    const formulaInput = byId("perspective-calculated-formula");
+    const typeSelect = byId("perspective-calculated-metric-type");
     const formatSelect = byId("perspective-calculated-format");
+    const formulaFieldsArea = byId("perspective-calculated-formula-fields");
     const dimensionArea = byId("perspective-calculated-dimensions");
     const generateButton = byId("perspective-calculated-generate");
 
-    if (!panel || !toggle || !dimensionArea) return;
+    if (!panel || !toggle || !dimensionArea || !formulaFieldsArea) return;
 
     ensureCalculatedMetricDefaults(rows);
     const calculatedMetric = state.calculatedMetric;
     const metricColumns = getMetricColumns(rows);
     const dimensionColumns = getDimensionColumns(rows);
-    const canGenerate = Boolean(calculatedMetric.numerator && calculatedMetric.denominator);
+    let canGenerate = false;
+    try {
+        validateCalculatedFormula(rows);
+        canGenerate = true;
+    } catch {
+        canGenerate = false;
+    }
 
     panel.classList.toggle("collapsed", !calculatedMetric.panelOpen);
     toggle.textContent = calculatedMetric.panelOpen ? "收起计算指标" : "添加计算指标";
@@ -456,10 +642,24 @@ function renderCalculatedMetricControls(rows) {
     if (nameInput && document.activeElement !== nameInput) {
         nameInput.value = calculatedMetric.name;
     }
-    replaceSelectOptions(numeratorSelect, metricColumns, calculatedMetric.numerator, "暂无可用指标");
-    replaceSelectOptions(denominatorSelect, metricColumns, calculatedMetric.denominator, "暂无可用指标");
+    if (formulaInput && document.activeElement !== formulaInput) {
+        formulaInput.value = calculatedMetric.formula;
+    }
+    if (typeSelect) typeSelect.value = calculatedMetric.type;
     if (formatSelect) formatSelect.value = calculatedMetric.format;
     if (generateButton) generateButton.disabled = !canGenerate;
+
+    const formulaFieldNodes = metricColumns.length
+        ? metricColumns.map((field) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "formula-field-chip";
+            button.setAttribute("data-calculated-field", field);
+            button.textContent = field;
+            return button;
+        })
+        : [document.createTextNode("未识别到可用于公式的数字指标。")];
+    formulaFieldsArea.replaceChildren(...formulaFieldNodes);
 
     const dimensionNodes = dimensionColumns.length
         ? dimensionColumns.map((dimension) => {
@@ -497,8 +697,8 @@ function getCalculatedMetricName() {
 
 function calculateMetricRows(rows) {
     ensureCalculatedMetricDefaults(rows);
-    const { numerator, denominator, dimensions } = state.calculatedMetric;
-    if (!numerator || !denominator) return [];
+    const { dimensions } = state.calculatedMetric;
+    const { formulaFields, rpn } = validateCalculatedFormula(rows);
 
     const groups = new Map();
     rows.forEach((row) => {
@@ -506,42 +706,38 @@ function calculateMetricRows(rows) {
         const key = dimensionValues.length ? dimensionValues.join("\u0001") : "__total__";
         const current = groups.get(key) ?? {
             dimensionValues,
-            numeratorTotal: 0,
-            denominatorTotal: 0,
+            rows: [],
         };
-        const numeratorValue = row[numerator];
-        const denominatorValue = row[denominator];
-        if (typeof numeratorValue === "number" && Number.isFinite(numeratorValue)) current.numeratorTotal += numeratorValue;
-        if (typeof denominatorValue === "number" && Number.isFinite(denominatorValue)) current.denominatorTotal += denominatorValue;
+        current.rows.push(row);
         groups.set(key, current);
     });
 
     return Array.from(groups.values())
         .map((group) => {
-            const { numeratorTotal, denominatorTotal } = group;
+            const fieldTotals = buildCalculatedFormulaContext(group.rows, formulaFields);
             return {
-                ...group,
-                calculatedValue: denominatorTotal === 0 ? "" : numeratorTotal / denominatorTotal,
+                dimensionValues: group.dimensionValues,
+                fieldTotals,
+                calculatedValue: evaluateCalculatedFormula(rpn, fieldTotals),
             };
         })
-        .sort((a, b) => b.numeratorTotal - a.numeratorTotal);
+        .sort((a, b) => (b.fieldTotals[formulaFields[0]] ?? 0) - (a.fieldTotals[formulaFields[0]] ?? 0));
 }
 
 function buildCalculatedWorkbenchRows(rows) {
     const calculatedRows = calculateMetricRows(rows);
-    const { numerator, denominator, dimensions } = state.calculatedMetric;
+    const { dimensions } = state.calculatedMetric;
+    const formulaFields = getCalculatedFormulaFields(state.calculatedMetric.formula);
     const metricName = getCalculatedMetricName();
-    const numeratorColumn = `${numerator}合计`;
-    const denominatorColumn = `${denominator}合计`;
     const dimensionColumns = dimensions.length ? dimensions : ["范围"];
 
     return calculatedRows.map((row) => {
         const dimensionValues = dimensions.length ? row.dimensionValues : ["全部"];
         const dimensionEntries = Object.fromEntries(dimensionColumns.map((dimension, index) => [dimension, dimensionValues[index] || "全部"]));
+        const formulaFieldEntries = Object.fromEntries(formulaFields.map((field) => [`${field}合计`, row.fieldTotals[field] ?? 0]));
         return {
             ...dimensionEntries,
-            [numeratorColumn]: row.numeratorTotal,
-            [denominatorColumn]: row.denominatorTotal,
+            ...formulaFieldEntries,
             [metricName]: row.calculatedValue === "" ? null : Number(row.calculatedValue.toFixed(6)),
         };
     });
@@ -561,13 +757,25 @@ function renderCalculatedMetricTable(rows) {
     if (!state.calculatedMetric.generated) {
         const empty = document.createElement("div");
         empty.className = "calculated-empty";
-        empty.textContent = "选择分子、分母和分组维度后，可以在这里生成加权计算结果。";
+        empty.textContent = "填写公式、选择指标分类和分组维度后，可以在这里生成计算结果。";
         host.append(empty);
         return;
     }
 
-    const calculatedRows = calculateMetricRows(rows);
-    const { name, numerator, denominator, dimensions, format } = state.calculatedMetric;
+    let calculatedRows = [];
+    let formulaFields = [];
+    try {
+        calculatedRows = calculateMetricRows(rows);
+        formulaFields = getCalculatedFormulaFields(state.calculatedMetric.formula);
+    } catch (error) {
+        const empty = document.createElement("div");
+        empty.className = "calculated-empty";
+        empty.textContent = error.message || "公式暂时无法计算。";
+        host.append(empty);
+        return;
+    }
+
+    const { name, dimensions, format, formula: formulaText, type } = state.calculatedMetric;
     const metricName = name.trim() || "计算指标";
     const formula = document.createElement("div");
     const table = document.createElement("table");
@@ -576,12 +784,11 @@ function renderCalculatedMetricTable(rows) {
     const tbody = document.createElement("tbody");
 
     formula.className = "calculated-formula";
-    formula.textContent = `${metricName}: SUM(${numerator}) / SUM(${denominator})`;
+    formula.textContent = `${metricName}: ${formulaText} · ${CALCULATED_METRIC_TYPE_LABELS[type]} · 字段先汇总后计算`;
 
     const headers = [
         ...(dimensions.length ? dimensions : ["范围"]),
-        `${numerator}合计`,
-        `${denominator}合计`,
+        ...formulaFields.map((field) => `${field}合计`),
         metricName,
     ];
     headers.forEach((header) => appendTableCell(headerRow, header, "th"));
@@ -591,8 +798,7 @@ function renderCalculatedMetricTable(rows) {
         const tableRow = document.createElement("tr");
         const dimensionValues = dimensions.length ? row.dimensionValues : ["全部"];
         dimensionValues.forEach((value) => appendTableCell(tableRow, value || "-"));
-        appendTableCell(tableRow, formatNumber(row.numeratorTotal));
-        appendTableCell(tableRow, formatNumber(row.denominatorTotal));
+        formulaFields.forEach((field) => appendTableCell(tableRow, formatNumber(row.fieldTotals[field])));
         appendTableCell(tableRow, formatCalculatedValue(row.calculatedValue, format));
         tbody.append(tableRow);
     });
@@ -730,14 +936,6 @@ function downloadXlsxTemplate() {
     XLSX.writeFile(workbook, "perspective-bi-template.xlsx");
 }
 
-async function exportCurrentCsv() {
-    const viewer = byId("perspective-viewer");
-    const view = await viewer?.getView?.();
-    if (!view) return;
-    const csv = await view.to_csv();
-    downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), "perspective-bi-current-view.csv");
-}
-
 function handleFieldRoleChange(event) {
     const select = event.target;
     const field = select?.getAttribute?.("data-role-select");
@@ -793,17 +991,17 @@ function handleCalculatedMetricChange(event) {
         return;
     }
 
-    if (target.id === "perspective-calculated-numerator") {
-        state.calculatedMetric.numerator = target.value;
+    if (target.id === "perspective-calculated-formula") {
+        state.calculatedMetric.formula = target.value;
         invalidateCalculatedWorkbenchRows();
         renderCalculatedMetricTable(state.rows);
         return;
     }
 
-    if (target.id === "perspective-calculated-denominator") {
-        state.calculatedMetric.denominator = target.value;
-        invalidateCalculatedWorkbenchRows();
+    if (target.id === "perspective-calculated-metric-type" && CALCULATED_METRIC_TYPE_LABELS[target.value]) {
+        state.calculatedMetric.type = target.value;
         renderCalculatedMetricTable(state.rows);
+        if (state.workbenchDataset === "calculated") void reloadViewer("计算指标口径");
         return;
     }
 
@@ -830,8 +1028,11 @@ function handleCalculatedMetricChange(event) {
 async function handleCalculatedMetricGenerate(event) {
     event.preventDefault();
     ensureCalculatedMetricDefaults(state.rows);
-    if (!state.calculatedMetric.numerator || !state.calculatedMetric.denominator) {
-        showMessage("请先确认分子和分母字段。", "error");
+
+    try {
+        validateCalculatedFormula(state.rows);
+    } catch (error) {
+        showMessage(error.message || "请先确认计算公式。", "error");
         return;
     }
 
@@ -894,19 +1095,50 @@ function bindFieldRoleControls() {
     });
 }
 
+function insertCalculatedFieldReference(field) {
+    if (!field) return;
+    const input = byId("perspective-calculated-formula");
+    const reference = `[${field}]`;
+    if (!input) {
+        state.calculatedMetric.formula = `${state.calculatedMetric.formula} ${reference}`.trim();
+        invalidateCalculatedWorkbenchRows();
+        renderCalculatedMetricControls(state.rows);
+        renderCalculatedMetricTable(state.rows);
+        return;
+    }
+
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? input.value.length;
+    const prefix = input.value.slice(0, start);
+    const suffix = input.value.slice(end);
+    const nextValue = `${prefix}${reference}${suffix}`;
+    input.value = nextValue;
+    input.focus();
+    input.setSelectionRange(start + reference.length, start + reference.length);
+    state.calculatedMetric.formula = nextValue;
+    invalidateCalculatedWorkbenchRows();
+    renderCalculatedMetricControls(state.rows);
+    renderCalculatedMetricTable(state.rows);
+}
+
 function bindCalculatedMetricControls() {
     const panel = byId("perspective-calculated-metric-panel");
     byId("perspective-calculated-metric-toggle")?.addEventListener("click", toggleCalculatedMetricPanel);
     byId("perspective-calculated-generate")?.addEventListener("click", handleCalculatedMetricGenerate);
     panel?.addEventListener("input", (event) => {
         const target = event.target;
-        if (target?.matches?.("#perspective-calculated-metric-name")) handleCalculatedMetricChange(event);
+        if (target?.matches?.("#perspective-calculated-metric-name, #perspective-calculated-formula")) handleCalculatedMetricChange(event);
     });
     panel?.addEventListener("change", (event) => {
         const target = event.target;
-        if (target?.matches?.("#perspective-calculated-numerator, #perspective-calculated-denominator, #perspective-calculated-format, [data-calculated-dimension]")) {
+        if (target?.matches?.("#perspective-calculated-metric-type, #perspective-calculated-format, [data-calculated-dimension]")) {
             handleCalculatedMetricChange(event);
         }
+    });
+    panel?.addEventListener("click", (event) => {
+        const button = event.target?.closest?.("[data-calculated-field]");
+        if (!button) return;
+        insertCalculatedFieldReference(button.getAttribute("data-calculated-field"));
     });
 }
 
@@ -941,10 +1173,8 @@ function bindUpload() {
 }
 
 function bindControls() {
-    byId("perspective-btn-demo")?.addEventListener("click", () => void loadRows(SAMPLE_ROWS, "示例数据"));
     byId("perspective-btn-csv-template")?.addEventListener("click", downloadCsvTemplate);
     byId("perspective-btn-xlsx-template")?.addEventListener("click", downloadXlsxTemplate);
-    byId("perspective-btn-export-csv")?.addEventListener("click", () => void exportCurrentCsv());
     byId("perspective-field-roles-toggle")?.addEventListener("click", toggleFieldRoles);
     byId("perspective-btn-focus-workbench")?.addEventListener("click", toggleWorkbenchFocus);
     byId("perspective-btn-reset-view")?.addEventListener("click", () => {

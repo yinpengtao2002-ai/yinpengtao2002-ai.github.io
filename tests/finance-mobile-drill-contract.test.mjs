@@ -78,7 +78,6 @@ test("Perspective BI follows the finance workbench shell and upload controls", (
   assert.match(perspectiveTool, /id="perspective-bi-root"/);
   assert.match(perspectiveTool, /Perspective BI 分析台/);
   assert.match(perspectiveTool, /id="perspective-file-input"/);
-  assert.match(perspectiveTool, /id="perspective-btn-demo"/);
   assert.match(perspectiveTool, /id="perspective-btn-csv-template"/);
   assert.match(perspectiveTool, /id="perspective-btn-xlsx-template"/);
   assert.match(perspectiveTool, /id="perspective-field-roles"/);
@@ -91,6 +90,9 @@ test("Perspective BI follows the finance workbench shell and upload controls", (
   assert.match(perspectiveEngine, /XLSX\.read/);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.data-toolbar\s*\{/);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.field-role-row\s*\{/);
+  assert.doesNotMatch(perspectiveTool, /id="perspective-btn-demo"/);
+  assert.doesNotMatch(perspectiveTool, /id="perspective-btn-export-csv"/);
+  assert.doesNotMatch(perspectiveEngine, /function exportCurrentCsv/);
   assert.doesNotMatch(perspectiveTool, /id="perspective-sidebar"/);
   assert.doesNotMatch(perspectiveCss, /\.perspective-bi-tool \.sidebar\s*\{/);
   assert.doesNotMatch(perspectiveCss, /\.perspective-bi-tool \.sidebar-backdrop/);
@@ -116,18 +118,34 @@ test("Perspective BI keeps weighted calculated metrics out of the raw detail dat
   assert.match(perspectiveTool, /id="perspective-calculated-metric-toggle"/);
   assert.match(perspectiveTool, /id="perspective-calculated-metric-panel"/);
   assert.match(perspectiveTool, /id="perspective-calculated-metric-name"/);
-  assert.match(perspectiveTool, /id="perspective-calculated-numerator"/);
-  assert.match(perspectiveTool, /id="perspective-calculated-denominator"/);
+  assert.match(perspectiveTool, /id="perspective-calculated-formula"/);
+  assert.match(perspectiveTool, /id="perspective-calculated-metric-type"/);
   assert.match(perspectiveTool, /id="perspective-calculated-dimensions"/);
   assert.match(perspectiveTool, /id="perspective-calculated-metric-table"/);
   assert.match(perspectiveEngine, /function renderCalculatedMetricControls\(rows\)/);
   assert.match(perspectiveEngine, /function calculateMetricRows\(rows\)/);
-  assert.match(perspectiveEngine, /numeratorTotal \/ denominatorTotal/);
+  assert.match(perspectiveEngine, /function evaluateCalculatedFormula/);
+  assert.match(perspectiveEngine, /function buildCalculatedFormulaContext/);
   assert.match(perspectiveEngine, /renderCalculatedMetricTable\(state\.rows\)/);
   assert.match(perspectiveEngine, /function getAnalysisRows\(rows\)[\s\S]*activeColumns/s);
   assert.match(perspectiveEngine, /function buildCalculatedWorkbenchRows\(rows\)/);
   assert.match(perspectiveEngine, /state\.worker\.table\(workbenchRows\)/);
   assert.doesNotMatch(perspectiveEngine, /getAnalysisRows\(rows\)[\s\S]*calculatedValue/s);
+  assert.doesNotMatch(perspectiveTool, /id="perspective-calculated-numerator"/);
+  assert.doesNotMatch(perspectiveTool, /id="perspective-calculated-denominator"/);
+});
+
+test("Perspective BI supports Excel-like calculated formulas with metric classifications", () => {
+  assert.match(perspectiveTool, /placeholder="例如：\[净收入\] \/ \[销量\]"/);
+  assert.match(perspectiveTool, /累计指标/);
+  assert.match(perspectiveTool, /单位\/比率指标/);
+  assert.match(perspectiveTool, /公式写法/);
+  assert.match(perspectiveEngine, /calculatedFormulaOperators/);
+  assert.match(perspectiveEngine, /function tokenizeCalculatedFormula/);
+  assert.match(perspectiveEngine, /function toReversePolishNotation/);
+  assert.match(perspectiveEngine, /type:\s*"unit"/);
+  assert.match(perspectiveEngine, /formula:\s*"\[净收入\] \/ \[销量\]"/);
+  assert.match(perspectiveEngine, /state\.calculatedMetric\.type === "additive" \? "sum" : "avg"/);
 });
 
 test("Perspective BI can load calculated metric rows into the native workbench", () => {
@@ -174,6 +192,8 @@ test("Perspective BI keeps preset selection with the workbench controls", () => 
   assert.doesNotMatch(perspectiveTool, /className="field toolbar-preset"/);
   assert.match(perspectiveTool, /className="workbench-controls"/);
   assert.match(perspectiveTool, /id="perspective-preset-select"/);
+  assert.match(perspectiveTool, /id="perspective-btn-reset-view"/);
+  assert.match(perspectiveTool, /恢复预设/);
   assert.match(perspectiveTool, /id="perspective-btn-focus-workbench"/);
   assert.match(perspectiveTool, /className="btn focus-action-btn"/);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.workbench-controls\s*\{/);
@@ -198,12 +218,12 @@ test("Perspective BI workbench supports a page-level focus mode", () => {
 test("Perspective BI control rows prevent toolbar and field role overlap", () => {
   assert.match(perspectiveCss, /\.perspective-bi-tool \.data-toolbar > \*\s*\{[^}]*min-width:\s*0/s);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.toolbar-upload\s*\{[^}]*min-width:\s*0/s);
-  assert.match(perspectiveCss, /\.perspective-bi-tool \.toolbar-upload\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*0\.95fr\)\s*minmax\(0,\s*1\.05fr\)/s);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.toolbar-upload\s*\{[^}]*grid-template-columns:\s*minmax\(220px,\s*0\.8fr\)\s*minmax\(180px,\s*0\.55fr\)/s);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.button-grid\s*\{[^}]*min-width:\s*0/s);
-  assert.match(perspectiveCss, /\.perspective-bi-tool \.field-role-list\s*\{[^}]*minmax\(min\(100%,\s*380px\),\s*1fr\)/s);
-  assert.match(perspectiveCss, /\.perspective-bi-tool \.field-role-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(108px,\s*0\.55fr\)\s*minmax\(108px,\s*0\.55fr\)/s);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.field-role-list\s*\{[^}]*minmax\(min\(100%,\s*260px\),\s*1fr\)/s);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.field-role-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*88px\s*88px/s);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.field-role-name\s*\{[^}]*overflow-wrap:\s*anywhere/s);
-  assert.match(perspectiveCss, /\.perspective-bi-tool \.field-role-note\s*\{[^}]*grid-column:\s*1 \/ -1/s);
+  assert.doesNotMatch(perspectiveCss, /\.perspective-bi-tool \.field-role-note\s*\{/);
 });
 
 test("Perspective BI revenue preset uses a stable aggregate table before chart tweaks", () => {

@@ -57,18 +57,12 @@ export default function PerspectiveBITool() {
                             </label>
                         </div>
                         <div className="button-grid">
-                            <button type="button" className="btn btn-secondary" id="perspective-btn-demo">示例数据</button>
                             <button type="button" className="btn btn-secondary" id="perspective-btn-csv-template">CSV 模板</button>
                             <button type="button" className="btn btn-secondary" id="perspective-btn-xlsx-template">Excel 模板</button>
                         </div>
                     </div>
 
                     <div id="perspective-data-summary" className="summary-grid" />
-
-                    <div className="toolbar-actions">
-                        <button type="button" className="btn btn-primary" id="perspective-btn-reset-view">重置视图</button>
-                        <button type="button" className="btn btn-secondary" id="perspective-btn-export-csv">导出 CSV</button>
-                    </div>
 
                     <div id="perspective-message-area" className="message-area" aria-live="polite" />
                 </section>
@@ -98,7 +92,7 @@ export default function PerspectiveBITool() {
                     <div className="calculated-metric-header">
                         <div>
                             <h2>计算指标视图</h2>
-                            <p>用于单车、费率、结构占比这类需要先汇总再相除的指标，生成后会加载到下方 BI 工作台。</p>
+                            <p>用 Excel 式公式生成单车、费率、差额等指标，生成后会加载到下方 BI 工作台。</p>
                         </div>
                         <button
                             type="button"
@@ -122,12 +116,11 @@ export default function PerspectiveBITool() {
                                 />
                             </label>
                             <label className="field">
-                                <span>分子字段</span>
-                                <select id="perspective-calculated-numerator" className="input" />
-                            </label>
-                            <label className="field">
-                                <span>分母字段</span>
-                                <select id="perspective-calculated-denominator" className="input" />
+                                <span>指标分类</span>
+                                <select id="perspective-calculated-metric-type" className="input">
+                                    <option value="unit">单位/比率指标</option>
+                                    <option value="additive">累计指标</option>
+                                </select>
                             </label>
                             <label className="field">
                                 <span>展示格式</span>
@@ -137,6 +130,22 @@ export default function PerspectiveBITool() {
                                     <option value="percent">百分比</option>
                                 </select>
                             </label>
+                            <label className="field calculated-formula-field">
+                                <span>公式</span>
+                                <input
+                                    id="perspective-calculated-formula"
+                                    className="input"
+                                    type="text"
+                                    placeholder="例如：[净收入] / [销量]"
+                                />
+                            </label>
+                        </div>
+                        <div className="calculated-formula-help">
+                            公式写法：用 [字段名] 引用指标，支持 + - * / 和括号；系统会先按下方维度汇总参与公式的字段，再计算公式。
+                        </div>
+                        <div className="calculated-dimension-field">
+                            <div className="calculated-dimension-title">可用指标</div>
+                            <div id="perspective-calculated-formula-fields" className="calculated-formula-fields" />
                         </div>
                         <div className="calculated-dimension-field">
                             <div className="calculated-dimension-title">分组维度</div>
@@ -174,6 +183,13 @@ export default function PerspectiveBITool() {
                                         <option value="detail-table">明细透视表</option>
                                     </select>
                                 </label>
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary preset-reset-btn"
+                                    id="perspective-btn-reset-view"
+                                >
+                                    恢复预设
+                                </button>
                                 <button
                                     type="button"
                                     className="btn focus-action-btn"

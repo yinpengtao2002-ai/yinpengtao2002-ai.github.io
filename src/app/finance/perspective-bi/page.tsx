@@ -25,7 +25,7 @@ function ProjectDescription({ className = "" }: { className?: string }) {
             <ul>
                 <li>支持 CSV、XLSX 和 XLS；默认读取第一张表。</li>
                 <li>页面会初步识别维度和指标，用户可以在字段口径确认区手动调整。</li>
-                <li>页面提供示例数据和模板下载，方便用户按可分析格式准备数据。</li>
+                <li>页面默认加载一份示例数据，并提供 CSV / Excel 模板下载。</li>
             </ul>
             <h2>输出结果</h2>
             <ul>
