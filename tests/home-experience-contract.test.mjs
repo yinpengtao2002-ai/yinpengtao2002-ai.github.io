@@ -67,16 +67,19 @@ test("home page has an explicit continue cue for below-the-fold content", () => 
   assert.match(cssRule(".home-hero-continue {"), /backdrop-filter:\s*blur\(16px\)/);
   assert.match(cssRule(".home-hero-continue {"), /inset 0 1px 0/s);
   assert.match(cssRule(".home-hero-continue {"), /letter-spacing:\s*0/);
-  assert.match(hero, /home-hero-continue-runner/);
-  assert.match(globals, /\.home-hero-continue::before\s*\{[^}]*linear-gradient\(135deg/s);
+  assert.match(cssRule(".home-hero-continue {"), /overflow:\s*hidden/);
+  assert.doesNotMatch(hero, /home-hero-continue-runner/);
+  assert.doesNotMatch(globals, /offset-path:\s*inset/);
+  assert.doesNotMatch(globals, /@keyframes\s+homeContinueRunner/);
+  assert.match(globals, /\.home-hero-continue::before\s*\{[^}]*animation:\s*homeContinueSheen/s);
+  assert.match(globals, /\.home-hero-continue::before\s*\{[^}]*transform:\s*translateX\(-115%\)/s);
   assert.doesNotMatch(globals, /\.home-hero-continue::before\s*\{[^}]*animation:\s*homeContinueRing/s);
-  assert.match(globals, /\.home-hero-continue::before\s*\{[^}]*padding:\s*1px/s);
-  assert.match(globals, /\.home-hero-continue::before\s*\{[^}]*mask-composite:\s*exclude/s);
+  assert.doesNotMatch(globals, /\.home-hero-continue::before\s*\{[^}]*mask-composite:\s*exclude/s);
   assert.match(cssRule(".home-hero-continue::after"), /linear-gradient\(180deg/s);
-  assert.match(cssRule(".home-hero-continue-runner {"), /radial-gradient\(circle/s);
-  assert.match(globals, /\.home-hero-continue-runner\s*\{[^}]*animation:\s*homeContinueRunner/s);
+  assert.match(cssRule(".home-hero-continue svg {"), /animation:\s*homeContinueArrow/s);
   assert.match(cssRule(".home-hero-continue:hover svg {"), /transform:\s*translateY\(1px\)/);
-  assert.match(globals, /@keyframes\s+homeContinueRunner/);
+  assert.match(globals, /@keyframes\s+homeContinueSheen/);
+  assert.match(globals, /@keyframes\s+homeContinueArrow/);
 });
 
 test("home page removes the duplicate finance section and links to the real finance page", () => {

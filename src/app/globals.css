@@ -1107,7 +1107,7 @@ h6 {
   justify-content: center;
   gap: 7px;
   min-height: 42px;
-  overflow: visible;
+  overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--accent-secondary) 24%, var(--border));
   border-radius: 999px;
   background:
@@ -1130,8 +1130,7 @@ h6 {
   transition: border-color 0.22s ease, box-shadow 0.22s ease, color 0.22s ease, transform 0.22s ease;
 }
 
-.home-hero-continue > span:not(.home-hero-continue-runner),
-.home-hero-continue svg {
+.home-hero-continue > span {
   position: relative;
   z-index: 2;
 }
@@ -1139,33 +1138,31 @@ h6 {
 .home-hero-continue::before {
   content: "";
   position: absolute;
-  inset: -4px;
-  z-index: -1;
-  padding: 1px;
+  top: 3px;
+  bottom: 3px;
+  left: 0;
+  z-index: 1;
+  width: 58%;
   border-radius: inherit;
-  background: linear-gradient(135deg, rgba(217, 119, 87, 0.64), rgba(106, 155, 204, 0.52), rgba(120, 140, 93, 0.44));
-  filter: drop-shadow(0 8px 18px rgba(217, 119, 87, 0.1));
-  opacity: 0.78;
-  transition: filter 0.22s ease, opacity 0.22s ease;
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
+  background:
+    linear-gradient(100deg, transparent 0 18%, rgba(255, 255, 255, 0.72) 42%, transparent 70%),
+    linear-gradient(100deg, transparent 0 26%, rgba(217, 119, 87, 0.2) 50%, transparent 74%);
+  opacity: 0.7;
+  pointer-events: none;
+  transform: translateX(-115%) skewX(-14deg);
+  animation: homeContinueSheen 4.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 
 .home-hero-continue::after {
   content: "";
   position: absolute;
-  inset: 1px;
-  z-index: -1;
+  inset: 0;
+  z-index: 0;
   border-radius: inherit;
   background:
     linear-gradient(180deg, rgba(255, 253, 247, 0.88), rgba(252, 247, 239, 0.7)),
-    radial-gradient(circle at 20% 0%, rgba(217, 119, 87, 0.13), transparent 38%),
+    radial-gradient(circle at 18% 0%, rgba(217, 119, 87, 0.13), transparent 40%),
+    radial-gradient(circle at 86% 100%, rgba(106, 155, 204, 0.12), transparent 44%),
     color-mix(in srgb, var(--card) 90%, transparent);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.34),
@@ -1173,28 +1170,11 @@ h6 {
 }
 
 .home-hero-continue svg {
+  position: relative;
+  z-index: 2;
   color: color-mix(in srgb, var(--accent) 78%, var(--foreground));
+  animation: homeContinueArrow 2.4s ease-in-out infinite;
   transition: transform 0.22s ease, color 0.22s ease;
-}
-
-.home-hero-continue-runner {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 3;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: radial-gradient(circle, #fff 0 22%, color-mix(in srgb, var(--accent) 84%, #fff) 23% 100%);
-  box-shadow:
-    0 0 0 3px rgba(217, 119, 87, 0.1),
-    0 0 16px rgba(217, 119, 87, 0.4),
-    0 0 26px rgba(106, 155, 204, 0.18);
-  offset-anchor: center;
-  offset-distance: 0%;
-  offset-path: inset(-5px round 999px);
-  pointer-events: none;
-  animation: homeContinueRunner 3.2s linear infinite;
 }
 
 .home-hero-continue:hover {
@@ -1209,17 +1189,31 @@ h6 {
 }
 
 .home-hero-continue:hover::before {
-  filter: drop-shadow(0 10px 22px rgba(217, 119, 87, 0.14));
-  opacity: 0.94;
+  opacity: 0.9;
 }
 
 .home-hero-continue:hover svg {
   transform: translateY(1px);
 }
 
-@keyframes homeContinueRunner {
-  to {
-    offset-distance: 100%;
+@keyframes homeContinueSheen {
+  0%,
+  28% {
+    transform: translateX(-115%) skewX(-14deg);
+  }
+  54%,
+  100% {
+    transform: translateX(190%) skewX(-14deg);
+  }
+}
+
+@keyframes homeContinueArrow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  48% {
+    transform: translateY(2px);
   }
 }
 
@@ -3311,17 +3305,12 @@ h6 {
   .home-hero-continue {
     gap: 6px;
     font-size: 11px;
-    min-height: 34px;
-    padding-inline: 12px;
+    min-height: 36px;
+    padding-inline: 13px;
   }
 
   .home-hero-continue::before {
-    inset: -3px;
-  }
-
-  .home-hero-continue-runner {
-    width: 5px;
-    height: 5px;
+    width: 62%;
   }
 
   .home-finance-header {
@@ -4276,7 +4265,7 @@ h6 {
   .home-thinking-visual-card,
   .home-thinking-track-card,
   .home-hero-continue::before,
-  .home-hero-continue-runner,
+  .home-hero-continue svg,
   .home-model-library-entry,
   .home-model-library-entry::after,
   .home-hero-stage-copy,
