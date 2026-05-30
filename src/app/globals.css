@@ -211,7 +211,7 @@ h6 {
 .home-hero-capability-trail {
   display: grid;
   align-items: center;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(164px, auto);
   gap: 10px 14px;
 }
 
@@ -249,6 +249,124 @@ h6 {
   height: 14px;
   color: color-mix(in srgb, var(--accent-secondary) 60%, var(--muted));
   flex: 0 0 auto;
+}
+
+.home-model-library-entry {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 9px;
+  min-height: 48px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--accent-secondary) 34%, var(--border));
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--card) 96%, transparent), color-mix(in srgb, var(--accent-secondary) 12%, var(--card))),
+    var(--card);
+  box-shadow: 0 12px 30px rgba(20, 20, 19, 0.055);
+  color: var(--foreground);
+  padding: 8px 12px;
+  text-decoration: none;
+  transition:
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    transform 0.22s ease;
+  animation: homeModelLibraryGlow 4.8s ease-in-out infinite;
+}
+
+.home-model-library-entry::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 10% 20%, color-mix(in srgb, var(--accent-secondary) 18%, transparent), transparent 26%),
+    radial-gradient(circle at 92% 80%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 30%);
+  opacity: 0.72;
+}
+
+.home-model-library-entry::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  bottom: 7px;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-secondary) 82%, #fff);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--accent-secondary) 58%, transparent);
+  animation: homeModelLibraryDot 4.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.home-model-library-entry span,
+.home-model-library-entry strong,
+.home-model-library-icon {
+  position: relative;
+  z-index: 1;
+}
+
+.home-model-library-entry span {
+  grid-column: 1 / -1;
+  color: color-mix(in srgb, var(--accent-secondary) 72%, var(--foreground));
+  font-size: 10.5px;
+  font-weight: 650;
+  line-height: 1.1;
+}
+
+.home-model-library-entry strong {
+  color: color-mix(in srgb, var(--foreground) 88%, var(--accent-secondary));
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.home-model-library-icon {
+  width: 15px;
+  height: 15px;
+  color: color-mix(in srgb, var(--accent) 82%, var(--foreground));
+  transition: transform 0.22s ease;
+}
+
+.home-model-library-entry:hover,
+.home-model-library-entry:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 44%, var(--accent-secondary));
+  box-shadow: 0 16px 38px rgba(20, 20, 19, 0.085);
+  transform: translateY(-1px);
+}
+
+.home-model-library-entry:hover .home-model-library-icon,
+.home-model-library-entry:focus-visible .home-model-library-icon {
+  transform: translateX(2px);
+}
+
+@keyframes homeModelLibraryGlow {
+  0%,
+  100% {
+    border-color: color-mix(in srgb, var(--accent-secondary) 34%, var(--border));
+  }
+  50% {
+    border-color: color-mix(in srgb, var(--accent) 44%, var(--accent-secondary));
+  }
+}
+
+@keyframes homeModelLibraryDot {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.8);
+  }
+  12%,
+  78% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate3d(138px, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.8);
+  }
 }
 
 .home-hero-title {
@@ -2923,6 +3041,19 @@ h6 {
     height: 8px;
   }
 
+  .home-model-library-entry {
+    min-height: 42px;
+    padding: 7px 10px;
+  }
+
+  .home-model-library-entry span {
+    font-size: 9.8px;
+  }
+
+  .home-model-library-entry strong {
+    font-size: 12px;
+  }
+
   .home-hero-kicker {
     font-size: 10px;
     margin-bottom: 7px;
@@ -4109,6 +4240,8 @@ h6 {
   .home-thinking-track-card,
   .home-hero-continue::before,
   .home-hero-continue-runner,
+  .home-model-library-entry,
+  .home-model-library-entry::after,
   .home-hero-stage-copy,
   .home-hero-stage-preview,
   .home-hero-stage-image,

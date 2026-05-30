@@ -46,7 +46,8 @@ test("home hero does not split AI workflow and thinking judgment into separate p
 
 test("home page has an explicit continue cue for below-the-fold content", () => {
   assert.match(hero, /浏览更多/);
-  assert.match(hero, /浏览全部模型/);
+  assert.match(hero, /查看完整模型库/);
+  assert.match(hero, /精选 4 个 · 共 5 个模型/);
   assert.doesNotMatch(hero, /下一屏 · 财务模型/);
   assert.match(hero, /#thinking/);
   assert.match(hero, /handleBrowseMore/);
@@ -54,8 +55,8 @@ test("home page has an explicit continue cue for below-the-fold content", () => 
   assert.match(hero, /window\.scrollTo\(\{/);
   assert.match(hero, /behavior:\s*prefersReducedMotion \? "auto" : "smooth"/);
   assert.doesNotMatch(hero, /target\.scrollIntoView/);
-  assert.match(hero, /href="\/finance" className="home-primary-action"/);
-  assert.doesNotMatch(hero, /href="#finance" className="home-primary-action"/);
+  assert.match(hero, /href="\/finance" className="home-model-library-entry"/);
+  assert.doesNotMatch(hero, /href="#finance" className="home-model-library-entry"/);
   assert.doesNotMatch(hero, /href="\/finance" className="home-hero-continue"/);
   assert.match(hero, /href="#thinking" className="home-hero-continue" onClick=\{handleBrowseMore\}/);
   assert.match(hero, /home-hero-continue/);
@@ -76,7 +77,7 @@ test("home page removes the duplicate finance section and links to the real fina
   assert.match(homePage, /<CapabilityHero \/>/);
   assert.match(homePage, /<HomeThinkingSection \/>/);
   assert.match(homePage, /<HomeContactSection \/>/);
-  assert.match(hero, /href="\/finance" className="home-primary-action"/);
+  assert.match(hero, /href="\/finance" className="home-model-library-entry"/);
   assert.doesNotMatch(hero, /document\.getElementById\("finance"\)/);
 });
 
@@ -92,7 +93,10 @@ test("home hero returns to a split Lucas plus product-stage layout", () => {
   assert.doesNotMatch(hero, /<span className="home-headline-mark">从问题进入模型<\/span>/);
   assert.match(hero, /Lucas Yin/);
   assert.match(hero, /奇瑞汽车国际财务 BP/);
-  assert.match(hero, /从经营问题到模型、判断和图表/);
+  assert.match(hero, /用模型理解业务，用工具沉淀判断/);
+  assert.match(hero, /这里收录我持续打磨的财务模型、分析方法和 AI 实践。/);
+  assert.doesNotMatch(hero, /从经营问题到模型、判断和图表/);
+  assert.doesNotMatch(hero, /我们需要的是对技术有极致热情的人/);
   assert.match(hero, /gradient-text/);
   assert.match(cssRule(".home-hero-path-row"), /flex-wrap:\s*nowrap/);
   assert.match(mobileCssRule(".home-hero-path-row"), /flex-wrap:\s*nowrap/);
@@ -101,6 +105,10 @@ test("home hero returns to a split Lucas plus product-stage layout", () => {
   assert.match(cssRule(".home-hero-path-step"), /white-space:\s*nowrap/);
   assert.match(mobileCssRule(".home-hero-path-step"), /font-size:\s*9\.5px/);
   assert.match(mobileCssRule(".home-hero-path-step"), /padding-inline:\s*5px/);
+  assert.match(cssRule(".home-model-library-entry"), /animation:\s*homeModelLibraryGlow/);
+  assert.match(cssRule(".home-model-library-entry::after"), /animation:\s*homeModelLibraryDot/);
+  assert.match(globals, /@keyframes\s+homeModelLibraryGlow/);
+  assert.match(globals, /@keyframes\s+homeModelLibraryDot/);
   assert.doesNotMatch(hero, /home-identity-panel/);
   assert.doesNotMatch(hero, /home-hero-center/);
 });
@@ -152,7 +160,9 @@ test("viewport profile and hero animation avoid mobile hydration drift", () => {
 test("home hero left side keeps identity focused without duplicated cards or buttons", () => {
   assert.match(hero, /home-hero-eyebrow/);
   assert.match(hero, /home-hero-lede/);
-  assert.match(hero, /我们需要的是对技术有极致热情的人，而不是习惯用经验找答案的人/);
+  assert.match(hero, /用模型理解业务，用工具沉淀判断/);
+  assert.match(hero, /财务模型、分析方法和 AI 实践。/);
+  assert.doesNotMatch(hero, /我们需要的是对技术有极致热情的人，而不是习惯用经验找答案的人/);
   assert.doesNotMatch(hero, /从业务问题出发，持续打磨经营分析、财务模型与 AI 工作流/);
   assert.doesNotMatch(hero, /我把真实经营分析中的预算、单车、趋势和利润问题/);
   assert.doesNotMatch(hero, /home-hero-proof-list/);
@@ -264,11 +274,13 @@ test("home hero arranges floating mini widgets around the Lucas identity", () =>
 
 test("home mobile hero keeps the finance CTA card as a compact section", () => {
   assert.match(hero, /home-hero-copy-card/);
-  assert.match(hero, /浏览全部模型/);
+  assert.match(hero, /查看完整模型库/);
+  assert.match(hero, /home-model-library-entry/);
   assert.match(hero, /HeroModelStage/);
   const mobileCopyCard = mobileCssRule(".home-hero-copy-card");
   assert.doesNotMatch(mobileCopyCard, /display:\s*none/);
   assert.match(mobileCopyCard, /display:\s*block/);
+  assert.match(mobileCssRule(".home-model-library-entry"), /min-height:\s*42px/);
 });
 
 test("home hero stages business-question controls without changing the finance section list", () => {

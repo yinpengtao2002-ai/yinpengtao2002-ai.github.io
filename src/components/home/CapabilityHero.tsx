@@ -70,10 +70,10 @@ export default function CapabilityHero() {
               <span className="gradient-text">Lucas<br />Yin</span>
             </h1>
             <p className="home-hero-slogan">
-              从经营问题到模型、判断和图表
+              用模型理解业务，用工具沉淀判断
             </p>
             <p className="home-hero-lede">
-              我们需要的是对技术有极致热情的人，而不是习惯用经验找答案的人
+              这里收录我持续打磨的财务模型、分析方法和 AI 实践。
             </p>
           </motion.div>
 
@@ -98,8 +98,10 @@ export default function CapabilityHero() {
                   <ArrowRight className="home-hero-path-arrow" />
                   <span className="home-hero-path-step">业务结论</span>
                 </div>
-                <Link href="/finance" className="home-primary-action">
-                  浏览全部模型 <ArrowRight style={{ width: 15, height: 15 }} />
+                <Link href="/finance" className="home-model-library-entry" aria-label="查看完整财务模型库">
+                  <span>精选 4 个 · 共 5 个模型</span>
+                  <strong>查看完整模型库</strong>
+                  <ArrowRight className="home-model-library-icon" />
                 </Link>
               </div>
               <HeroModelStage />
