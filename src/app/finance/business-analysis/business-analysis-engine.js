@@ -205,12 +205,7 @@
     }
 
     function defaultSelectedDimensions(dimensions) {
-        const ordered = orderedDimensions(dimensions.length ? dimensions : DEFAULT_DIMENSIONS);
-        if (ordered.length <= 6) return ordered;
-        const primary = DEFAULT_DIMENSIONS.filter((dimension) => ordered.includes(dimension));
-        const extras = ordered.filter((dimension) => !primary.includes(dimension));
-        const selected = [...primary, ...extras].slice(0, 5);
-        return selected.length ? selected : ordered.slice(0, 5);
+        return orderedDimensions(dimensions.length ? dimensions : DEFAULT_DIMENSIONS);
     }
 
     function reconcileSelectedDimensions(preferred = state.selectedDimensions) {
@@ -1092,50 +1087,6 @@
         });
     }
 
-    function renderDimensionDisplayControls() {
-        const container = byId("dimension-display-grid");
-        const summary = byId("dimension-display-summary");
-        if (!container) return;
-
-        const available = state.availableDimensions.length ? state.availableDimensions : DEFAULT_DIMENSIONS;
-        const selected = new Set(currentDimensions());
-        if (summary) summary.textContent = `${selected.size}/${available.length}`;
-
-        container.innerHTML = available.map((dimension) => {
-            const checked = selected.has(dimension);
-            return `
-                <label class="dimension-toggle ${checked ? "selected" : ""}">
-                    <input type="checkbox" data-dimension-toggle="${dimension}" ${checked ? "checked" : ""} />
-                    <span>${dimensionLabel(dimension)}</span>
-                </label>
-            `;
-        }).join("");
-
-        Array.from(container.querySelectorAll("[data-dimension-toggle]")).forEach((input) => {
-            input.addEventListener("change", () => {
-                const selectedDimensions = Array.from(container.querySelectorAll("[data-dimension-toggle]:checked"))
-                    .map((item) => item.getAttribute("data-dimension-toggle"))
-                    .filter(Boolean);
-
-                if (!selectedDimensions.length) {
-                    input.checked = true;
-                    showMessage("error", "至少保留一个展示维度。");
-                    return;
-                }
-
-                const currentOrder = currentDimensions();
-                state.selectedDimensions = [
-                    ...currentOrder.filter((dimension) => selectedDimensions.includes(dimension)),
-                    ...available.filter((dimension) => selectedDimensions.includes(dimension) && !currentOrder.includes(dimension))
-                ];
-                const dimensionSelect = byId("dimension-select");
-                const fallback = currentDimensions()[0] || "";
-                if (dimensionSelect && !currentDimensions().includes(dimensionSelect.value)) dimensionSelect.value = fallback;
-                updateAll();
-            });
-        });
-    }
-
     function selectedDimensionItems() {
         return currentDimensions()
             .map((dimension) => ({ dimension, value: byId(dimensionFilterId(dimension))?.value || "" }))
@@ -1220,7 +1171,6 @@
         if (!state.rawData.length) return;
         const controls = currentControlValues();
 
-        renderDimensionDisplayControls();
         renderDimensionTrain();
         renderDimensionFilterControls(controls);
 
@@ -2386,7 +2336,7 @@
             ["必填字段", "科目、金额。经营明细建议填写大区、国家、品牌市场、经营模式、业务单元、车型。"],
             ["维度字段", "国家和品牌市场已经拆成两个字段；用户可以少填、改名或新增维度列，但不要把科目塞进维度列。"],
             ["维度识别", "模型会把非保留字段识别为维度。保留字段包括数据口径、科目、金额、实际、预算、单位、说明。"],
-            ["展示维度", "上传维度很多时，模型默认优先展示大区、国家、品牌市场、经营模式、业务单元、车型；其它维度可在页面左侧勾选进入筛选和下钻。"],
+            ["维度展示", "模型会默认展示并纳入下钻所有可识别维度，用户只需要在页面左侧调整维度顺序。"],
             ["总额优先", "默认按总额填报：净收入、材料成本、变动制造费用、变动销售费用均直接填金额。"],
             ["单车可选", "如果用户只有单车口径，可以填发车量 + 单车净收入/单车成本，模型会换算总额；默认模板不强制展示单车字段。"],
             ["单位建议", "发车量用万辆；金额项目用亿元；可选单车项目用万元/辆。"]

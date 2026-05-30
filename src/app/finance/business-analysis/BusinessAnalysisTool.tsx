@@ -169,13 +169,6 @@ export default function BusinessAnalysisTool() {
                         </div>
                         <div id="drill-path" className="drill-path" />
                     </div>
-                    <div className="dimension-display-panel">
-                        <div className="dimension-display-title">
-                            <span>展示维度</span>
-                            <strong id="dimension-display-summary" />
-                        </div>
-                        <div id="dimension-display-grid" className="dimension-display-grid" />
-                    </div>
                     <div id="dimension-filter-grid" className="form-grid dimension-filter-grid-hidden" aria-hidden="true" />
                 </section>
 
