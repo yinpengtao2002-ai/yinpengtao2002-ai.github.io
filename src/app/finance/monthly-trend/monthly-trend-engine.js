@@ -11,11 +11,15 @@
         paper: "rgba(0,0,0,0)"
     };
 
-    const MONTH_ALIASES = ["月份", "月度", "月", "期间", "年月", "会计期间", "month", "date", "period"];
+    const LOCKED_MONTH_COLUMN = "月份";
+    const MONTH_ALIASES = [LOCKED_MONTH_COLUMN, "月度", "月", "期间", "年月", "会计期间", "month", "date", "period"];
     const YEAR_ALIASES = ["年份", "年度", "年", "year", "fiscalyear", "fy"];
-    const PREFERRED_METRICS = ["利润", "毛利", "边际", "净收入", "收入", "销量", "数量"];
+    const VOLUME_COLUMN_ALIASES = ["销量", "销售量", "发车量", "台数", "数量", "volume", "qty", "quantity", "units"];
+    const PREFERRED_METRICS = ["利润", "毛利", "边际", "净收入", "收入"];
     const NON_DIMENSION_COLUMNS = ["备注", "说明", "单位", "口径", "版本", "数据类型", "类型", "scenario"];
+    const TEMPLATE_HEADER_NOTE = "提示：月份列不许动；销量是分母口径，不要改名或删除；其他维度列和总额指标列可以改名、增删。边际率、单车净收入、单车边际不用填，模型会按总额指标 ÷ 销量自动计算。";
     const TEMPLATE_ROWS = createSampleRows().slice(0, 18);
+    const TEMPLATE_HEADERS = Object.keys(TEMPLATE_ROWS[0] || {});
 
     const state = {
         initialized: false,
@@ -105,8 +109,8 @@
             markets.forEach((market, marketIndex) => {
                 const yearLift = year >= 2026 ? market.volumeLift * currentYearVolumeCurve[monthPart - 1] : 1;
                 const priceLift = year >= 2026 ? market.priceLift * currentYearPriceCurve[monthPart - 1] : 1;
-        const marketWave = 1 + Math.sin((monthPart + marketIndex * 1.7) / 1.6) * 0.035;
-        const launchPulse = 1 + Math.cos((monthPart * (marketIndex + 2)) / 2.4) * 0.018;
+                const marketWave = 1 + Math.sin((monthPart + marketIndex * 1.7) / 1.6) * 0.035;
+                const launchPulse = 1 + Math.cos((monthPart * (marketIndex + 2)) / 2.4) * 0.018;
                 const event = sampleMarketEvent(market, year, monthPart);
                 const volume = Math.round(market.baseVolume * seasonCurve[monthPart - 1] * yearLift * marketWave * launchPulse * event.volume);
                 const revenue = Math.round((volume * market.unitRevenue * priceLift * priceCurve[monthPart - 1] * event.price) / 10000);
@@ -123,12 +127,9 @@
                     "业务单元": market.businessUnit,
                     "车型": market.model,
                     "销量": volume,
-                    "净收入": revenue,
-                    "成本": cost,
-                    "边际总额": margin,
-                    "边际率": margin / revenue,
-                    "单车净收入": Math.round((revenue * 10000) / Math.max(volume, 1)),
-                    "单车边际": Math.round((margin * 10000) / Math.max(volume, 1))
+                    "净收入总额": revenue,
+                    "成本总额": cost,
+                    "边际总额": margin
                 });
             });
         });
@@ -260,7 +261,9 @@
             if (normalizedAliases.includes(normalizeToken(header))) return false;
             return columnMatchRate(rows, header, parseYearValue) >= 0.9;
         }) || "";
-        let monthColumn = headers.find((header) => normalizedAliases.includes(normalizeToken(header))) || "";
+        let monthColumn = headers.find((header) => normalizeToken(header) === normalizeToken(LOCKED_MONTH_COLUMN))
+            || headers.find((header) => normalizedAliases.includes(normalizeToken(header)))
+            || "";
 
         if (!monthColumn) {
             monthColumn = headers.find((header) => {
@@ -275,7 +278,7 @@
             monthColumn = headers.find((header) => header !== yearColumn && normalizedAliases.includes(normalizeToken(header))) || monthColumn;
         }
 
-        const metricColumns = headers.filter((header) => {
+        const numericColumns = headers.filter((header) => {
             if (header === monthColumn) return false;
             if (header === yearColumn) return false;
             const values = rows.slice(0, 80).map((row) => row[header]).filter((value) => value !== null && value !== undefined && String(value).trim() !== "");
@@ -283,12 +286,15 @@
             const numericCount = values.filter(isNumericLike).length;
             return numericCount / values.length >= 0.62;
         });
+        const metricColumns = numericColumns.filter((header) => !isDerivedMetricColumn(header));
+        const ignoredNumericColumns = numericColumns.filter((header) => !metricColumns.includes(header));
 
         const nonDimensionSet = new Set(NON_DIMENSION_COLUMNS.map(normalizeToken));
         const dimensionColumns = headers.filter((header) => {
             if (header === monthColumn) return false;
             if (header === yearColumn) return false;
             if (metricColumns.includes(header)) return false;
+            if (ignoredNumericColumns.includes(header)) return false;
             if (nonDimensionSet.has(normalizeToken(header))) return false;
             return rows.some((row) => row[header] !== null && row[header] !== undefined && String(row[header]).trim() !== "");
         });
@@ -315,11 +321,38 @@
     }
 
     function choosePreferredMetric(metricColumns) {
+        const selectableColumns = analysisMetricColumns(metricColumns);
         for (const preferred of PREFERRED_METRICS) {
-            const match = metricColumns.find((metric) => normalizeToken(metric).includes(normalizeToken(preferred)));
+            const match = selectableColumns.find((metric) => normalizeToken(metric).includes(normalizeToken(preferred)));
             if (match) return match;
         }
-        return metricColumns[0] || "";
+        return selectableColumns[0] || volumeMetricColumn(metricColumns) || metricColumns[0] || "";
+    }
+
+    function isVolumeMetricName(metric) {
+        const normalized = normalizeToken(metric);
+        return VOLUME_COLUMN_ALIASES.some((alias) => {
+            const candidate = normalizeToken(alias);
+            return normalized === candidate || normalized.includes(candidate) || candidate.includes(normalized);
+        });
+    }
+
+    function volumeMetricColumn(columns = state.metricColumns) {
+        return safeArray(columns).find(isVolumeMetricName) || "";
+    }
+
+    function isDerivedMetricColumn(metric) {
+        if (isVolumeMetricName(metric)) return false;
+        const normalized = normalizeToken(metric);
+        if (!normalized) return false;
+        if (String(metric).includes("%")) return true;
+        if (normalized.includes("率") || normalized.includes("rate") || normalized.includes("ratio")) return true;
+        return ["单车", "单台", "单位", "平均", "均价", "单价", "perunit", "unit"].some((token) => normalized.includes(normalizeToken(token)));
+    }
+
+    function analysisMetricColumns(columns = state.metricColumns) {
+        const volumeMetric = volumeMetricColumn(columns);
+        return safeArray(columns).filter((metric) => metric !== volumeMetric);
     }
 
     function parsePeriod(value) {
@@ -427,9 +460,9 @@
     function currentRows() {
         const rows = parseRows();
         return rows.filter((row) => {
-            return Object.entries(state.filters).every(([dimension, selectedValue]) => {
-                if (!selectedValue || selectedValue === "__all__") return true;
-                return row.dimensions[dimension] === selectedValue;
+            return Object.entries(state.filters).every(([dimension, selectedValues]) => {
+                if (!Array.isArray(selectedValues)) return true;
+                return selectedValues.includes(row.dimensions[dimension] || "未分类");
             });
         });
     }
@@ -464,6 +497,19 @@
             return values.reduce((sum, value) => sum + value, 0) / values.length;
         }
         return values.reduce((sum, value) => sum + value, 0);
+    }
+
+    function aggregateMetricTotal(rows, metric) {
+        return rows
+            .map((row) => toNumber(row.raw[metric]))
+            .filter((value) => Number.isFinite(value))
+            .reduce((sum, value) => sum + value, 0);
+    }
+
+    function aggregateVolume(rows) {
+        const metric = volumeMetricColumn();
+        if (!metric) return 0;
+        return aggregateMetricTotal(rows, metric);
     }
 
     function groupRows(rows, keyFn) {
@@ -506,13 +552,6 @@
         return { ...series, valueByMonth };
     }
 
-    function findMetricColumn(candidates) {
-        const normalizedCandidates = candidates.map(normalizeToken);
-        return state.metricColumns.find((metric) => normalizedCandidates.includes(normalizeToken(metric)))
-            || state.metricColumns.find((metric) => normalizedCandidates.some((candidate) => normalizeToken(metric).includes(candidate) || candidate.includes(normalizeToken(metric))))
-            || "";
-    }
-
     function metricSeries(metric, rows = currentRows()) {
         const grouped = groupRows(rows, (row) => row.period.key);
         const months = Array.from(grouped.keys())
@@ -523,20 +562,64 @@
         return { months, values, valueByMonth: new Map(months.map((month, index) => [month.key, values[index]])) };
     }
 
-    function coreTrendMetrics() {
-        const marginMetric = findMetricColumn(["边际总额", "贡献边际", "毛利", "利润"]);
-        const volumeMetric = findMetricColumn(["销量", "发车量", "销售量", "数量", "volume"]);
-        const revenueMetric = findMetricColumn(["净收入", "收入", "营业收入", "revenue"]);
-        const unitRevenueMetric = findMetricColumn(["单车净收入", "单车收入", "单台收入", "平均单价", "单价", "asp"]);
-        const unitMarginMetric = findMetricColumn(["单车边际", "单车毛利", "单车利润", "单位边际", "unitmargin"]);
-        const metrics = [
-            volumeMetric ? { key: "volume", metric: volumeMetric, label: volumeMetric, color: COLORS.green } : null,
-            unitRevenueMetric ? { key: "unitRevenue", metric: unitRevenueMetric, label: unitRevenueMetric, color: COLORS.orange } : revenueMetric ? { key: "revenue", metric: revenueMetric, label: revenueMetric, color: COLORS.orange } : null,
-            unitMarginMetric ? { key: "unitMargin", metric: unitMarginMetric, label: unitMarginMetric, color: COLORS.blue } : marginMetric ? { key: "margin", metric: marginMetric, label: marginMetric, color: COLORS.blue } : null
-        ].filter(Boolean);
+    function unitMetricSeries(metric, rows = currentRows()) {
+        const grouped = groupRows(rows, (row) => row.period.key);
+        const months = Array.from(grouped.keys())
+            .map((key) => ({ key, label: formatMonthKey(key), sort: grouped.get(key)[0]?.period.sort || 0 }))
+            .sort((a, b) => a.sort - b.sort);
+        const values = months.map((month) => {
+            const monthRows = grouped.get(month.key) || [];
+            const volume = aggregateVolume(monthRows);
+            if (!volume) return null;
+            return aggregateMetricTotal(monthRows, metric) / volume;
+        });
+        return { months, values, valueByMonth: new Map(months.map((month, index) => [month.key, values[index]])) };
+    }
 
-        if (metrics.length) return metrics;
-        return state.selectedMetric ? [{ key: "selected", metric: state.selectedMetric, label: state.selectedMetric, color: COLORS.blue }] : [];
+    function buildTrendMetricDefinitions() {
+        const volumeMetric = volumeMetricColumn();
+        const totalMetrics = analysisMetricColumns();
+        const definitions = [];
+
+        if (volumeMetric) {
+            definitions.push({
+                key: "volume",
+                metric: volumeMetric,
+                label: "销量",
+                sourceLabel: volumeMetric,
+                color: COLORS.green,
+                mode: "total"
+            });
+        }
+
+        totalMetrics.forEach((metric, index) => {
+            definitions.push({
+                key: `unit-${normalizeToken(metric) || index}`,
+                metric,
+                label: unitMetricLabel(metric),
+                sourceLabel: metric,
+                color: palette(index + 1),
+                mode: "unit"
+            });
+        });
+
+        if (definitions.length) return definitions;
+        return state.selectedMetric ? [{
+            key: "selected",
+            metric: state.selectedMetric,
+            label: state.selectedMetric,
+            sourceLabel: state.selectedMetric,
+            color: COLORS.blue,
+            mode: "total"
+        }] : [];
+    }
+
+    function unitMetricLabel(metric) {
+        const base = String(metric || "指标")
+            .replace(/（.*?）|\(.*?\)/g, "")
+            .replace(/总额|金额|额$/g, "")
+            .trim() || String(metric || "指标");
+        return `单车${base}`;
     }
 
     function metricAxisTitle(metric) {
@@ -593,16 +676,6 @@
         }).format(normalized);
     }
 
-    function formatRate(value) {
-        if (!Number.isFinite(value)) return "-";
-        return `${value >= 0 ? "+" : ""}${formatNumber(value * 100, 1)}%`;
-    }
-
-    function formatDelta(value) {
-        if (!Number.isFinite(value)) return "-";
-        return `${value >= 0 ? "+" : ""}${displayValue(value)}`;
-    }
-
     function setSelectOptions(select, options, selectedValue) {
         if (!select) return;
         select.innerHTML = options.map((option) => {
@@ -613,8 +686,12 @@
     }
 
     function renderColumnControls() {
-        setSelectOptions(byId("monthly-month-column"), state.headers, state.monthColumn);
-        setSelectOptions(byId("monthly-metric-select"), state.metricColumns, state.selectedMetric);
+        const options = analysisMetricColumns();
+        const metricOptions = options.length ? options : state.metricColumns;
+        if (!metricOptions.includes(state.selectedMetric)) {
+            state.selectedMetric = choosePreferredMetric(state.metricColumns);
+        }
+        setSelectOptions(byId("monthly-metric-select"), metricOptions, state.selectedMetric);
         renderDimensionControls();
     }
 
@@ -639,25 +716,259 @@
 
         grid.innerHTML = dimensions.map((dimension) => {
             const values = distinctDimensionValues(dimension);
-            const current = state.filters[dimension] || "__all__";
-            const options = [`<option value="__all__"${current === "__all__" ? " selected" : ""}>全部</option>`]
-                .concat(values.map((value) => `<option value="${escapeHtml(value)}"${value === current ? " selected" : ""}>${escapeHtml(value)}</option>`))
-                .join("");
-
             return `
-                <label class="field filter-card">
-                    <span>${escapeHtml(dimension)}</span>
-                    <select class="input" data-filter-dimension="${escapeHtml(dimension)}">${options}</select>
-                </label>
+                <div class="filter-card excel-filter-shell" data-filter-dimension="${escapeHtml(dimension)}">
+                    <div class="multiselect-header">
+                        <label class="multiselect-label">${escapeHtml(dimension)}</label>
+                        <span class="excel-filter-count">${escapeHtml(getExcelFilterSummary(dimension, values))}</span>
+                    </div>
+                    <button type="button" class="excel-filter-trigger" aria-haspopup="menu" aria-expanded="false">
+                        <span>${escapeHtml(getExcelFilterTriggerText(dimension, values))}</span>
+                        <span class="excel-filter-caret">⌄</span>
+                    </button>
+                    <div class="excel-filter-menu" data-filter-dimension="${escapeHtml(dimension)}" hidden></div>
+                </div>
             `;
         }).join("");
 
-        grid.querySelectorAll("select[data-filter-dimension]").forEach((select) => {
-            select.addEventListener("change", () => {
-                const dimension = select.dataset.filterDimension;
-                state.filters[dimension] = select.value;
-                renderAll();
+        grid.querySelectorAll(".excel-filter-shell").forEach((container) => {
+            const dimension = container.dataset.filterDimension;
+            const values = distinctDimensionValues(dimension);
+            const trigger = container.querySelector(".excel-filter-trigger");
+            const menu = container.querySelector(".excel-filter-menu");
+            renderExcelFilterMenu(menu, dimension, values);
+            trigger?.addEventListener("click", (event) => {
+                event.stopPropagation();
+                toggleExcelFilterMenu(container);
             });
+            menu?.addEventListener("click", (event) => event.stopPropagation());
+        });
+    }
+
+    function getExcelSelectedValues(dimension, availableValues) {
+        const selected = state.filters[dimension];
+        const availableSet = new Set(availableValues);
+        if (!Array.isArray(selected)) return new Set(availableValues);
+        return new Set(selected.filter((value) => availableSet.has(value)));
+    }
+
+    function getExcelFilterSummary(dimension, availableValues) {
+        if (!availableValues.length) return "无可选项";
+        const selectedCount = getExcelSelectedValues(dimension, availableValues).size;
+        if (selectedCount === availableValues.length) return "全部";
+        if (selectedCount === 0) return "未选择";
+        return `已选 ${selectedCount}/${availableValues.length}`;
+    }
+
+    function getExcelFilterTriggerText(dimension, availableValues) {
+        if (!availableValues.length) return "暂无可选项";
+        const selectedCount = getExcelSelectedValues(dimension, availableValues).size;
+        const hiddenCount = availableValues.length - selectedCount;
+        if (hiddenCount === 0) return "全部维度项";
+        if (selectedCount === 0) return `已隐藏全部 ${availableValues.length} 项`;
+        return `已选 ${selectedCount} 项，隐藏 ${hiddenCount} 项`;
+    }
+
+    function renderExcelFilterMenu(menu, dimension, availableValues) {
+        if (!menu) return;
+        let selectedValues = getExcelSelectedValues(dimension, availableValues);
+        menu.innerHTML = "";
+        menu.setAttribute("role", "menu");
+
+        const search = document.createElement("input");
+        search.type = "search";
+        search.className = "excel-filter-search";
+        search.placeholder = "搜索维度项";
+        search.setAttribute("aria-label", "搜索维度项");
+
+        const keepSearchButton = document.createElement("button");
+        keepSearchButton.type = "button";
+        keepSearchButton.className = "excel-filter-search-action";
+        keepSearchButton.textContent = "仅保留搜索结果";
+        keepSearchButton.hidden = true;
+        keepSearchButton.addEventListener("click", () => {
+            const searchValues = resolveExcelFilterSearchValues(availableValues, search.value);
+            applyExcelFilterSelection(dimension, availableValues, new Set(searchValues));
+            closeExcelFilterMenus();
+        });
+
+        const actions = document.createElement("div");
+        actions.className = "excel-filter-actions";
+
+        const list = document.createElement("div");
+        list.className = "excel-filter-list";
+
+        const footer = document.createElement("div");
+        footer.className = "excel-filter-footer";
+
+        const summary = document.createElement("span");
+        summary.className = "excel-filter-footer-summary";
+
+        const footerActions = document.createElement("div");
+        footerActions.className = "excel-filter-footer-actions";
+
+        const applyButton = document.createElement("button");
+        applyButton.type = "button";
+        applyButton.className = "excel-filter-apply";
+        applyButton.textContent = "应用";
+        applyButton.addEventListener("click", () => {
+            const appliedValues = resolveExcelFilterAppliedValues(availableValues, selectedValues);
+            applyExcelFilterSelection(dimension, availableValues, new Set(appliedValues));
+            closeExcelFilterMenus();
+        });
+
+        const renderRows = () => {
+            const keyword = search.value.trim().toLowerCase();
+            const visibleValues = resolveExcelFilterSearchValues(availableValues, search.value);
+            list.innerHTML = "";
+            keepSearchButton.hidden = !keyword;
+            keepSearchButton.disabled = !keyword || visibleValues.length === 0;
+            applyButton.textContent = keyword ? "应用到当前勾选" : "应用";
+
+            visibleValues.forEach((value) => {
+                const option = document.createElement("button");
+                option.type = "button";
+                option.className = "excel-filter-option";
+                option.dataset.value = value;
+                option.setAttribute("role", "menuitemcheckbox");
+                option.setAttribute("aria-checked", String(selectedValues.has(value)));
+                option.innerHTML = `
+                    <span class="excel-filter-checkmark">${selectedValues.has(value) ? "✓" : ""}</span>
+                    <span class="excel-filter-option-label">${escapeHtml(value)}</span>
+                `;
+                option.addEventListener("click", () => {
+                    if (selectedValues.has(value)) {
+                        selectedValues.delete(value);
+                    } else {
+                        selectedValues.add(value);
+                    }
+                    renderRows();
+                });
+                list.appendChild(option);
+            });
+
+            if (!visibleValues.length) {
+                const empty = document.createElement("div");
+                empty.className = "excel-filter-empty";
+                empty.textContent = "没有匹配项";
+                list.appendChild(empty);
+            }
+
+            summary.textContent = keyword
+                ? `搜索到 ${visibleValues.length} 项，当前勾选 ${selectedValues.size}/${availableValues.length}`
+                : `${selectedValues.size}/${availableValues.length} 项已勾选`;
+        };
+
+        actions.appendChild(createExcelFilterAction("全选", () => {
+            selectedValues = new Set(availableValues);
+            renderRows();
+        }));
+        actions.appendChild(createExcelFilterAction("反选", () => {
+            selectedValues = new Set(availableValues.filter((value) => !selectedValues.has(value)));
+            renderRows();
+        }));
+        actions.appendChild(createExcelFilterAction("清空", () => {
+            selectedValues = new Set();
+            renderRows();
+        }));
+
+        search.addEventListener("input", renderRows);
+
+        footerActions.appendChild(keepSearchButton);
+        footerActions.appendChild(applyButton);
+        footer.appendChild(summary);
+        footer.appendChild(footerActions);
+        menu.appendChild(search);
+        menu.appendChild(actions);
+        menu.appendChild(list);
+        menu.appendChild(footer);
+        renderRows();
+    }
+
+    function resolveExcelFilterSearchValues(availableValues, searchText = "") {
+        const keyword = String(searchText || "").trim().toLowerCase();
+        if (!keyword) return [...availableValues];
+        return availableValues.filter((value) => String(value).toLowerCase().includes(keyword));
+    }
+
+    function resolveExcelFilterAppliedValues(availableValues, selectedValues) {
+        return availableValues.filter((value) => selectedValues.has(value));
+    }
+
+    function createExcelFilterAction(label, onClick) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "excel-filter-action";
+        button.textContent = label;
+        button.addEventListener("click", onClick);
+        return button;
+    }
+
+    function applyExcelFilterSelection(dimension, availableValues, selectedValues) {
+        const appliedValues = resolveExcelFilterAppliedValues(availableValues, selectedValues);
+        if (appliedValues.length === availableValues.length) {
+            delete state.filters[dimension];
+        } else {
+            state.filters[dimension] = appliedValues;
+        }
+        renderFilterControls();
+        renderAll();
+    }
+
+    function toggleExcelFilterMenu(container) {
+        const trigger = container.querySelector(".excel-filter-trigger");
+        const menu = container.querySelector(".excel-filter-menu");
+        if (!trigger || !menu) return;
+
+        const shouldOpen = menu.hidden;
+        closeExcelFilterMenus();
+        if (!shouldOpen) return;
+
+        menu.hidden = false;
+        trigger.setAttribute("aria-expanded", "true");
+        scrollExcelFilterMenuIntoView(menu);
+        window.setTimeout(() => menu.querySelector(".excel-filter-search")?.focus({ preventScroll: true }), 80);
+    }
+
+    function scrollExcelFilterMenuIntoView(menu) {
+        const sidebar = byId("monthly-sidebar");
+        if (!sidebar || !menu) return;
+
+        window.requestAnimationFrame(() => {
+            const sidebarRect = sidebar.getBoundingClientRect();
+            const menuRect = menu.getBoundingClientRect();
+            const bottomOverflow = menuRect.bottom - sidebarRect.bottom + 18;
+            const topOverflow = sidebarRect.top - menuRect.top + 14;
+            if (bottomOverflow > 0) {
+                sidebar.scrollTo({ top: sidebar.scrollTop + bottomOverflow, behavior: "smooth" });
+                return;
+            }
+            if (topOverflow > 0) {
+                sidebar.scrollTo({ top: Math.max(0, sidebar.scrollTop - topOverflow), behavior: "smooth" });
+            }
+        });
+    }
+
+    function closeExcelFilterMenus() {
+        document.querySelectorAll(".monthly-trend-tool .excel-filter-menu:not([hidden])").forEach((menu) => {
+            menu.hidden = true;
+            menu.closest(".excel-filter-shell")?.querySelector(".excel-filter-trigger")?.setAttribute("aria-expanded", "false");
+        });
+    }
+
+    let excelFilterDismissInitialized = false;
+
+    function initExcelFilterDismiss() {
+        if (excelFilterDismissInitialized) return;
+        excelFilterDismissInitialized = true;
+        document.addEventListener("click", (event) => {
+            const target = event.target;
+            if (!(target instanceof Element)) return;
+            if (target.closest(".monthly-trend-tool .excel-filter-shell")) return;
+            closeExcelFilterMenus();
+        });
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") closeExcelFilterMenus();
         });
     }
 
@@ -670,6 +981,16 @@
         return Array.from(values).sort((a, b) => a.localeCompare(b, "zh-CN"));
     }
 
+    function isActiveFilter(dimension) {
+        const selected = state.filters[dimension];
+        if (!Array.isArray(selected)) return false;
+        return selected.length !== distinctDimensionValues(dimension).length;
+    }
+
+    function activeFilterCount() {
+        return Object.keys(state.filters).filter(isActiveFilter).length;
+    }
+
     function drillDimensions() {
         return (state.selectedDimensions.length ? state.selectedDimensions : state.dimensionColumns).filter(Boolean);
     }
@@ -679,8 +1000,8 @@
         if (!dimensions.length) return "";
 
         const activeIndexes = dimensions
-            .map((dimension, index) => ({ dimension, index, value: state.filters[dimension] }))
-            .filter((item) => item.value && item.value !== "__all__")
+            .map((dimension, index) => ({ dimension, index }))
+            .filter((item) => isActiveFilter(item.dimension))
             .map((item) => item.index);
 
         if (!activeIndexes.length) return dimensions[0];
@@ -703,7 +1024,7 @@
         const status = byId("monthly-data-status");
         if (!status) return;
         const rows = currentRows();
-        const filters = Object.values(state.filters).filter((value) => value && value !== "__all__").length;
+        const filters = activeFilterCount();
         status.textContent = `${state.sourceName} · ${rows.length} 行${filters ? ` · ${filters} 个筛选` : ""}`;
     }
 
@@ -917,26 +1238,59 @@
         }), chartConfig());
     }
 
+    function trendRowDomains(count) {
+        if (count <= 1) return [[0.08, 1]];
+        const bottom = 0.04;
+        const top = 0.98;
+        const gap = count > 6 ? 0.018 : 0.034;
+        const rowHeight = (top - bottom - gap * (count - 1)) / count;
+        return Array.from({ length: count }, (_, index) => {
+            const rowTop = top - index * (rowHeight + gap);
+            return [rowTop - rowHeight, rowTop];
+        });
+    }
+
+    function trendSeriesForDefinition(item) {
+        return item.mode === "unit" ? unitMetricSeries(item.metric) : metricSeries(item.metric);
+    }
+
+    function trendAxisTitle(item) {
+        return item.mode === "unit" ? item.label : metricAxisTitle(item.metric);
+    }
+
+    function displayTrendValue(value, item) {
+        if (item.mode === "unit") return formatNumber(value, Math.abs(value) >= 100 ? 0 : 2);
+        return displayValue(value, item.metric);
+    }
+
+    function setTrendChartHeight(count) {
+        const node = byId("monthly-trend-chart");
+        if (!node) return;
+        node.style.height = `${Math.max(500, count * 152 + 96)}px`;
+    }
+
     function renderTrendChart() {
-        const metrics = coreTrendMetrics().slice(0, 3);
+        const metrics = buildTrendMetricDefinitions();
         const caption = byId("monthly-trend-caption");
-        if (caption) caption.textContent = metrics.length > 1 ? `${metrics.map((item) => item.label).join("、")}分段展示，每段使用独立坐标轴。` : `${state.selectedMetric || "指标"}月度走势。`;
+        const unitCount = metrics.filter((item) => item.mode === "unit").length;
+        if (caption) {
+            caption.textContent = unitCount
+                ? `销量固定展示，${unitCount} 个总额指标自动折算为单车趋势，每段使用独立坐标轴。`
+                : `${state.selectedMetric || "指标"}月度走势。`;
+        }
         if (!metrics.length) return renderEmptyChart("monthly-trend-chart", "暂无趋势数据");
 
-        const rowDomains = metrics.length === 1
-            ? [[0.08, 1]]
-            : metrics.length === 2
-                ? [[0.56, 1], [0.08, 0.48]]
-                : [[0.72, 1], [0.38, 0.66], [0.04, 0.32]];
+        setTrendChartHeight(metrics.length);
+        const rowDomains = trendRowDomains(metrics.length);
         const traces = [];
         const annotations = [];
         const axes = {};
         let monthAxisDecorations = { annotations: [], shapes: [], months: [] };
 
         metrics.forEach((item, index) => {
-            const series = metricSeries(item.metric);
+            const series = trendSeriesForDefinition(item);
             const xLabels = series.months.map((month) => month.label);
-            const y = series.values.map((value) => plotValue(value, item.metric));
+            const y = series.values.map((value) => item.mode === "unit" ? value : plotValue(value, item.metric));
             const finiteValues = y.filter(Number.isFinite);
             if (!finiteValues.length) return;
 
@@ -946,7 +1300,7 @@
             const x = monthAxis.x;
             const xAxisKey = layoutAxisKey(xRef);
             const yAxisKey = layoutAxisKey(yRef);
-            const latestIndex = y.length - 1;
+            const latestIndex = y.reduce((latest, value, valueIndex) => Number.isFinite(value) ? valueIndex : latest, -1);
             const latestX = x[latestIndex];
             const latestY = y[latestIndex];
             const min = Math.min(...finiteValues);
@@ -966,16 +1320,18 @@
                 line: { color: item.color, width: 3, shape: "spline" },
                 marker: { size: 6, color: item.color },
                 customdata: xLabels,
-                hovertemplate: `%{customdata}<br>${escapeHtml(item.label)}：%{y:,.2f}${axisUnitLabel(item.metric) ? ` ${axisUnitLabel(item.metric)}` : ""}<extra></extra>`
+                hovertemplate: item.mode === "unit"
+                    ? `%{customdata}<br>${escapeHtml(item.label)}：%{y:,.2f}<br>${escapeHtml(item.sourceLabel)} / 销量<extra></extra>`
+                    : `%{customdata}<br>${escapeHtml(item.label)}：%{y:,.2f}${axisUnitLabel(item.metric) ? ` ${axisUnitLabel(item.metric)}` : ""}<extra></extra>`
             });
 
-            if (!isCompactMonthAxis()) {
+            if (!isCompactMonthAxis() && metrics.length <= 6) {
                 annotations.push({
                     xref: xRef,
                     yref: yRef,
                     x: latestX,
                     y: latestY,
-                    text: `本期 ${displayValue(series.values[latestIndex], item.metric)}`,
+                    text: `本期 ${displayTrendValue(series.values[latestIndex], item)}`,
                     showarrow: false,
                     xanchor: "right",
                     yanchor: "bottom",
@@ -999,7 +1355,7 @@
             }
             axes[yAxisKey] = numericAxis({
                 domain: rowDomains[index],
-                title: metricAxisTitle(item.metric),
+                title: trendAxisTitle(item),
                 titlefont: { color: item.color, size: 11 },
                 tickfont: { color: item.color },
                 gridcolor: COLORS.grid,
@@ -1171,7 +1527,7 @@
             .sort((a, b) => b[1] - a[1])
             .slice(0, 5)
             .map(([key]) => key);
-        const activeFilters = Object.entries(state.filters).filter(([, value]) => value && value !== "__all__").length;
+        const activeFilters = activeFilterCount();
         if (caption) {
             const prefix = activeFilters ? "按当前筛选自动下钻，" : "";
             caption.textContent = categoryTotals.size > topCategories.length
@@ -1482,8 +1838,8 @@
         }
 
         const inferred = inferColumns(normalizedRows);
-        if (!inferred.monthColumn || !inferred.metricColumns.length) {
-            showMessage("需要至少一个月份列和一个数值指标列。", "error");
+        if (!inferred.monthColumn || !inferred.metricColumns.length || !volumeMetricColumn(inferred.metricColumns) || !analysisMetricColumns(inferred.metricColumns).length) {
+            showMessage("需要月份列、销量列和至少一个总额指标列。", "error");
             return;
         }
 
@@ -1511,7 +1867,8 @@
             const workbook = window.XLSX.read(buffer, { type: "array", cellDates: true });
             const firstSheet = workbook.SheetNames[0];
             const sheet = workbook.Sheets[firstSheet];
-            const rows = window.XLSX.utils.sheet_to_json(sheet, { defval: "", raw: false });
+            const sheetRows = window.XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: false, blankrows: false });
+            const rows = sheetRowsToObjects(sheetRows);
             loadRows(rows, file.name);
         } catch (error) {
             console.error(error);
@@ -1535,10 +1892,83 @@
     }
 
     function downloadXlsx(rows = TEMPLATE_ROWS) {
-        const worksheet = window.XLSX.utils.json_to_sheet(rows);
+        const templateRows = buildTemplateRows(rows);
+        const headers = templateHeadersFor(rows);
+        const worksheet = window.XLSX.utils.aoa_to_sheet(templateRows);
+        worksheet["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: Math.max(headers.length - 1, 0) } }];
+        worksheet["!cols"] = headers.map((header) => ({ wch: Math.max(String(header).length + 6, 14) }));
+        worksheet["!rows"] = [{ hpt: 42 }, { hpt: 6 }];
+        if (worksheet.A1) {
+            worksheet.A1.s = {
+                font: { bold: true, color: { rgb: "6F4E00" } },
+                fill: { fgColor: { rgb: "FFF7CC" } },
+                alignment: { vertical: "center", wrapText: true }
+            };
+        }
         const workbook = window.XLSX.utils.book_new();
         window.XLSX.utils.book_append_sheet(workbook, worksheet, "分月数据");
         window.XLSX.writeFile(workbook, "分月指标趋势分析模板.xlsx");
+    }
+
+    function templateHeadersFor(rows = TEMPLATE_ROWS) {
+        return Object.keys((safeArray(rows)[0]) || {}).length ? Object.keys(safeArray(rows)[0]) : TEMPLATE_HEADERS;
+    }
+
+    function buildTemplateRows(rows = TEMPLATE_ROWS) {
+        const headers = templateHeadersFor(rows);
+        return [
+            [TEMPLATE_HEADER_NOTE],
+            [],
+            headers,
+            ...safeArray(rows).map((row) => headers.map((header) => row?.[header] ?? ""))
+        ];
+    }
+
+    function sheetRowsToObjects(sheetRows) {
+        const rows = safeArray(sheetRows);
+        const headerIndex = findTemplateHeaderRowIndex(rows);
+        const headers = safeArray(rows[headerIndex]).map((cell) => String(cell ?? "").trim());
+
+        return rows.slice(headerIndex + 1)
+            .map((row) => {
+                const item = {};
+                headers.forEach((header, index) => {
+                    if (!header) return;
+                    item[header] = Array.isArray(row) && index < row.length ? row[index] : "";
+                });
+                return item;
+            })
+            .filter((row) => Object.values(row).some((value) => String(value ?? "").trim() !== ""));
+    }
+
+    function findTemplateHeaderRowIndex(rows) {
+        const fallbackIndex = safeArray(rows).findIndex((row) => {
+            const cells = rowCells(row);
+            return cells.length > 0 && !isTemplateNoteRow(cells);
+        });
+
+        for (let index = 0; index < safeArray(rows).length; index++) {
+            const cells = rowCells(rows[index]);
+            if (!cells.length || isTemplateNoteRow(cells)) continue;
+            if (cells.some(isMonthHeaderName) && cells.some(isVolumeMetricName)) return index;
+        }
+
+        return fallbackIndex >= 0 ? fallbackIndex : 0;
+    }
+
+    function rowCells(row) {
+        return safeArray(row)
+            .map((cell) => String(cell ?? "").trim())
+            .filter(Boolean);
+    }
+
+    function isTemplateNoteRow(cells) {
+        return cells.length === 1 && cells[0] === TEMPLATE_HEADER_NOTE;
+    }
+
+    function isMonthHeaderName(header) {
+        const normalized = normalizeToken(header);
+        return MONTH_ALIASES.some((alias) => normalizeToken(alias) === normalized);
     }
 
     function downloadBlob(blob, filename) {
@@ -1552,29 +1982,9 @@
         URL.revokeObjectURL(url);
     }
 
-    function exportSummary() {
-        const { months, values } = monthSeries();
-        if (!months.length) {
-            showMessage("暂无可导出的摘要。", "error");
-            return;
-        }
-        const rows = months.map((month, index) => {
-            const previous = index > 0 ? values[index - 1] : 0;
-            const delta = index > 0 ? values[index] - previous : 0;
-            const rate = index > 0 && previous !== 0 ? delta / Math.abs(previous) : 0;
-            return {
-                "月份": month.label,
-                "指标": state.selectedMetric,
-                "数值": displayValue(values[index]),
-                "环比变化": index > 0 ? formatDelta(delta) : "",
-                "环比变化率": index > 0 ? formatRate(rate) : ""
-            };
-        });
-        downloadCsv(rows, "分月指标趋势分析摘要.csv");
-    }
-
     function resetFilters() {
         state.filters = {};
+        closeExcelFilterMenus();
         renderFilterControls();
         renderAll();
         showMessage("筛选已重置。");
@@ -1622,6 +2032,8 @@
     }
 
     function bindControls() {
+        initExcelFilterDismiss();
+
         bindOnce(byId("monthly-file-input"), "change", (event) => {
             const file = event.target.files?.[0];
             void handleUpload(file);
@@ -1640,16 +2052,9 @@
             void handleUpload(event.dataTransfer?.files?.[0]);
         });
 
-        bindOnce(byId("monthly-btn-demo"), "click", () => loadRows(createSampleRows(), "示例数据"));
         bindOnce(byId("monthly-btn-csv-template"), "click", () => downloadCsv());
         bindOnce(byId("monthly-btn-xlsx-template"), "click", () => downloadXlsx());
         bindOnce(byId("monthly-btn-reset"), "click", resetFilters);
-        bindOnce(byId("monthly-btn-export"), "click", exportSummary);
-
-        bindOnce(byId("monthly-month-column"), "change", (event) => {
-            state.monthColumn = event.target.value;
-            renderAll();
-        });
         bindOnce(byId("monthly-metric-select"), "change", (event) => {
             state.selectedMetric = event.target.value;
             renderAll();

@@ -249,9 +249,30 @@ test("monthly trend uses uploaded dimensions directly as filter cards", () => {
   assert.doesNotMatch(monthlyTool, /monthly-filter-summary|monthly-dimension-picker/);
   assert.doesNotMatch(monthlyEngine, /function renderFilterSummary\(\)/);
   assert.doesNotMatch(monthlyEngine, /check-pill/);
-  assert.match(monthlyEngine, /class="field filter-card"/);
-  assert.match(monthlyCss, /\.monthly-trend-tool \.filter-card\s*\{/);
+  assert.match(monthlyEngine, /excel-filter-shell/);
+  assert.match(monthlyEngine, /function renderExcelFilterMenu\(/);
+  assert.match(monthlyCss, /\.monthly-trend-tool \.excel-filter-trigger\s*\{/);
+  assert.match(monthlyCss, /\.monthly-trend-tool \.excel-filter-footer-actions\s*\{/);
   assert.doesNotMatch(monthlyCss, /\.monthly-trend-tool \.(filter-summary|dimension-picker|check-pill)\b/);
+});
+
+test("monthly trend keeps the base table schema business-facing", () => {
+  assert.doesNotMatch(monthlyTool, /monthly-btn-demo|monthly-btn-export|monthly-month-column/);
+  assert.doesNotMatch(monthlyEngine, /monthly-btn-demo|monthly-btn-export|function exportSummary/);
+  assert.doesNotMatch(monthlyTool, /monthly-data-guide|数据底表说明|月份列不许动|销量是分母口径/);
+  assert.match(monthlyEngine, /const TEMPLATE_HEADER_NOTE\s*=/);
+  assert.match(monthlyEngine, /月份列不许动/);
+  assert.match(monthlyEngine, /销量是分母口径/);
+  assert.match(monthlyEngine, /window\.XLSX\.utils\.aoa_to_sheet/);
+  assert.match(monthlyEngine, /function findTemplateHeaderRowIndex/);
+  assert.match(monthlyEngine, /sheet_to_json\(sheet,\s*\{\s*header:\s*1/);
+  assert.match(monthlyEngine, /const LOCKED_MONTH_COLUMN\s*=\s*"月份"/);
+  assert.match(monthlyEngine, /function volumeMetricColumn\(/);
+  assert.match(monthlyEngine, /function buildTrendMetricDefinitions\(/);
+  assert.doesNotMatch(monthlyEngine, /"边际率":/);
+  assert.doesNotMatch(monthlyEngine, /"单车净收入":/);
+  assert.doesNotMatch(monthlyEngine, /"单车边际":/);
+  assert.doesNotMatch(monthlyEngine, /coreTrendMetrics\(\)\.slice\(0,\s*3\)/);
 });
 
 test("sensitivity metric cards use the refined finance dashboard card treatment", () => {

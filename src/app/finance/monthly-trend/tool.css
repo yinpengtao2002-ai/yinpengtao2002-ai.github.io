@@ -257,10 +257,6 @@
     margin-top: 0.65rem;
 }
 
-.monthly-trend-tool .button-grid .btn:first-child {
-    grid-column: span 2;
-}
-
 .monthly-trend-tool .btn {
     display: inline-flex;
     min-height: 36px;
@@ -351,6 +347,272 @@
 .monthly-trend-tool .filter-card .input {
     min-height: 34px;
     background: rgba(255, 255, 255, 0.92);
+}
+
+.monthly-trend-tool .multiselect-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.55rem;
+    margin-bottom: 0.4rem;
+    font-family: var(--font-sans);
+}
+
+.monthly-trend-tool .multiselect-label {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.monthly-trend-tool .excel-filter-shell {
+    position: relative;
+}
+
+.monthly-trend-tool .excel-filter-count {
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+}
+
+.monthly-trend-tool .excel-filter-trigger {
+    display: flex;
+    width: 100%;
+    min-height: 38px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    padding: 0.46rem 0.72rem;
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    text-align: left;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.monthly-trend-tool .excel-filter-trigger:hover,
+.monthly-trend-tool .excel-filter-trigger:focus,
+.monthly-trend-tool .excel-filter-trigger[aria-expanded="true"] {
+    border-color: var(--accent-orange);
+    box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.09);
+}
+
+.monthly-trend-tool .excel-filter-trigger span:first-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.monthly-trend-tool .excel-filter-caret {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.monthly-trend-tool .excel-filter-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    z-index: 220;
+    border: 1px solid rgba(232, 230, 220, 0.98);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 18px 40px rgba(20, 20, 19, 0.16);
+    padding: 0.58rem;
+    font-family: var(--font-sans);
+}
+
+.monthly-trend-tool .excel-filter-menu[hidden] {
+    display: none;
+}
+
+.monthly-trend-tool .excel-filter-search {
+    width: 100%;
+    min-height: 34px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 0.42rem 0.58rem;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    outline: none;
+}
+
+.monthly-trend-tool .excel-filter-search:focus {
+    border-color: var(--accent-orange);
+}
+
+.monthly-trend-tool .excel-filter-search-action {
+    width: 100%;
+    min-height: 30px;
+    cursor: pointer;
+    border: 1px solid rgba(217, 119, 87, 0.35);
+    border-radius: 7px;
+    background: rgba(217, 119, 87, 0.08);
+    color: var(--accent-orange);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 750;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.monthly-trend-tool .excel-filter-search-action:hover,
+.monthly-trend-tool .excel-filter-search-action:focus {
+    border-color: var(--accent-orange);
+    background: rgba(217, 119, 87, 0.13);
+    outline: none;
+}
+
+.monthly-trend-tool .excel-filter-search-action:disabled {
+    cursor: not-allowed;
+    opacity: 0.48;
+}
+
+.monthly-trend-tool .excel-filter-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.36rem;
+    margin: 0.48rem 0;
+}
+
+.monthly-trend-tool .excel-filter-action {
+    min-height: 28px;
+    cursor: pointer;
+    border: 1px solid var(--border-light);
+    border-radius: 7px;
+    background: #ffffff;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 650;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.monthly-trend-tool .excel-filter-action:hover,
+.monthly-trend-tool .excel-filter-action:focus {
+    border-color: var(--accent-blue);
+    background: rgba(92, 143, 186, 0.07);
+    color: var(--accent-blue);
+    outline: none;
+}
+
+.monthly-trend-tool .excel-filter-list {
+    max-height: 230px;
+    overflow-y: auto;
+    border: 1px solid rgba(232, 230, 220, 0.82);
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 0.16rem;
+}
+
+.monthly-trend-tool .excel-filter-option {
+    display: flex;
+    width: 100%;
+    min-height: 34px;
+    cursor: pointer;
+    align-items: center;
+    gap: 0.52rem;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--text-primary);
+    padding: 0.34rem 0.38rem;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    text-align: left;
+}
+
+.monthly-trend-tool .excel-filter-option:hover,
+.monthly-trend-tool .excel-filter-option:focus {
+    background: rgba(217, 119, 87, 0.07);
+    outline: none;
+}
+
+.monthly-trend-tool .excel-filter-checkmark {
+    display: inline-flex;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(176, 174, 165, 0.8);
+    border-radius: 5px;
+    background: #ffffff;
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 850;
+    line-height: 1;
+}
+
+.monthly-trend-tool .excel-filter-option[aria-checked="true"] .excel-filter-checkmark {
+    border-color: var(--accent-orange);
+    background: var(--accent-orange);
+}
+
+.monthly-trend-tool .excel-filter-option-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.monthly-trend-tool .excel-filter-empty {
+    padding: 0.72rem;
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    text-align: center;
+}
+
+.monthly-trend-tool .excel-filter-footer {
+    margin-top: 0.52rem;
+}
+
+.monthly-trend-tool .excel-filter-footer-summary {
+    display: block;
+    min-width: 0;
+    margin-bottom: 0.42rem;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+}
+
+.monthly-trend-tool .excel-filter-footer-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+    gap: 0.42rem;
+    align-items: stretch;
+}
+
+.monthly-trend-tool .excel-filter-apply {
+    width: 100%;
+    min-width: 0;
+    min-height: 30px;
+    cursor: pointer;
+    border: 0;
+    border-radius: 7px;
+    background: var(--accent-orange);
+    color: #ffffff;
+    font-family: var(--font-sans);
+    font-size: 0.74rem;
+    font-weight: 750;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.monthly-trend-tool .excel-filter-apply:hover,
+.monthly-trend-tool .excel-filter-apply:focus {
+    background: #c56646;
+    outline: none;
+    transform: translateY(-1px);
 }
 
 .monthly-trend-tool .main-content {
@@ -636,10 +898,6 @@
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .monthly-trend-tool .button-grid .btn:first-child {
-        grid-column: auto;
-    }
-
     .monthly-trend-tool .model-header h1 {
         font-size: 1.4rem;
     }
@@ -659,4 +917,5 @@
     .monthly-trend-tool .chart-heatmap {
         height: 318px;
     }
+
 }

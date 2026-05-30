@@ -95,7 +95,6 @@ export default function MonthlyTrendTool() {
                         </label>
                     </div>
                     <div className="button-grid">
-                        <button type="button" className="btn btn-secondary" id="monthly-btn-demo">示例数据</button>
                         <button type="button" className="btn btn-secondary" id="monthly-btn-csv-template">CSV 模板</button>
                         <button type="button" className="btn btn-secondary" id="monthly-btn-xlsx-template">Excel 模板</button>
                     </div>
@@ -104,10 +103,6 @@ export default function MonthlyTrendTool() {
                 <section className="sidebar-block">
                     <h2 className="sidebar-title">分析口径</h2>
                     <div className="form-grid">
-                        <label className="field">
-                            <span>月份/年月列</span>
-                            <select id="monthly-month-column" className="input" />
-                        </label>
                         <label className="field">
                             <span>关注指标</span>
                             <select id="monthly-metric-select" className="input" />
@@ -122,7 +117,6 @@ export default function MonthlyTrendTool() {
 
                 <section className="sidebar-block sidebar-actions">
                     <button type="button" className="btn btn-primary" id="monthly-btn-reset">重置筛选</button>
-                    <button type="button" className="btn btn-secondary" id="monthly-btn-export">导出摘要</button>
                 </section>
             </aside>
 
@@ -149,7 +143,7 @@ export default function MonthlyTrendTool() {
                         <div className="panel-header">
                             <div>
                                 <h2>多指标月度趋势</h2>
-                                <p id="monthly-trend-caption">销量、单车净收入和单车边际分段展示。</p>
+                                <p id="monthly-trend-caption">销量固定展示，其他总额指标自动折算为单车趋势。</p>
                             </div>
                         </div>
                         <div id="monthly-trend-chart" className="chart chart-tall" />
