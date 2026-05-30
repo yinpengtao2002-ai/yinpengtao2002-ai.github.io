@@ -28,6 +28,7 @@ const AppState = {
     },
     filterModes: {},
     customDimNames: { ...DEFAULT_DIMENSION_NAMES },
+    unitName: '车',
     unitMetricType: '边际',
     availableDimsInData: [],
     calculationResults: null,
@@ -944,50 +945,78 @@ function populateMonthSelectors() {
     baseSelect.value = AppState.baseMonth;
     currSelect.value = AppState.currMonth;
 
-    // 更新指标卡片标签中的月份
-    updateMetricLabels();
-}
-
-function updateMetricLabels() {
-    document.getElementById('metric-label-1').textContent = `📦 ${AppState.baseMonth} 全球销量`;
-    document.getElementById('metric-label-2').textContent = `📦 ${AppState.currMonth} 全球销量`;
-    const unitMetricLabel = getUnitMetricLabel();
-    document.getElementById('metric-label-3').textContent = `💎 ${AppState.baseMonth} ${unitMetricLabel}`;
-    document.getElementById('metric-label-4').textContent = `💎 ${AppState.currMonth} ${unitMetricLabel}`;
 }
 
 
 // ==================== 用户设置 ====================
 function initUserSettings() {
+    const unitInput = document.getElementById('input-unit-name');
     const metricInput = document.getElementById('input-metric-type');
-    if (!metricInput) return;
+    if (!unitInput && !metricInput) return;
 
-    metricInput.value = AppState.unitMetricType;
-    metricInput.addEventListener('change', () => {
-        const nextType = metricInput.value.trim() || '边际';
-        AppState.unitMetricType = nextType;
-        metricInput.value = nextType;
-        updateMetricCopy();
-        if (AppState.dataLoaded) triggerUpdate();
-    });
+    if (unitInput) {
+        unitInput.value = getUnitName();
+        unitInput.addEventListener('input', () => {
+            AppState.unitName = normalizeMetricSetting(unitInput.value, '车');
+            handleMetricSettingChange();
+        });
+        unitInput.addEventListener('change', () => {
+            AppState.unitName = normalizeMetricSetting(unitInput.value, '车');
+            unitInput.value = getUnitName();
+            handleMetricSettingChange();
+        });
+    }
+
+    if (metricInput) {
+        metricInput.value = getUnitMetricType();
+        metricInput.addEventListener('input', () => {
+            AppState.unitMetricType = normalizeMetricSetting(metricInput.value, '边际');
+            handleMetricSettingChange();
+        });
+        metricInput.addEventListener('change', () => {
+            AppState.unitMetricType = normalizeMetricSetting(metricInput.value, '边际');
+            metricInput.value = getUnitMetricType();
+            handleMetricSettingChange();
+        });
+    }
 
     updateMetricCopy();
 }
 
+function handleMetricSettingChange() {
+    updateMetricCopy();
+    if (AppState.dataLoaded) triggerUpdate();
+}
+
+function normalizeMetricSetting(value, fallback) {
+    return String(value == null ? '' : value).trim() || fallback;
+}
+
+function getUnitName() {
+    return normalizeMetricSetting(AppState.unitName, '车');
+}
+
 function getUnitMetricType() {
-    return (AppState.unitMetricType || '边际').trim() || '边际';
+    return normalizeMetricSetting(AppState.unitMetricType, '边际');
+}
+
+function buildUnitMetricLabel(unitName = '车', metricType = '边际') {
+    const safeMetricType = normalizeMetricSetting(metricType, '边际');
+    if (safeMetricType.startsWith('单')) return safeMetricType;
+    return `单${normalizeMetricSetting(unitName, '车')}${safeMetricType}`;
 }
 
 function getUnitMetricLabel() {
-    const metricType = getUnitMetricType();
-    return metricType.startsWith('单车') ? metricType : `单车${metricType}`;
+    return buildUnitMetricLabel(getUnitName(), getUnitMetricType());
 }
 
 function getTotalMetricLabel() {
     const unitMetricLabel = getUnitMetricLabel();
-    return unitMetricLabel.startsWith('单车')
-        ? `${unitMetricLabel.slice(2)}总额`
-        : `${unitMetricLabel}总额`;
+    const currentPrefix = `单${getUnitName()}`;
+    if (unitMetricLabel.startsWith(currentPrefix)) return `${unitMetricLabel.slice(currentPrefix.length)}总额`;
+    if (unitMetricLabel.startsWith('单车')) return `${unitMetricLabel.slice(2)}总额`;
+    if (unitMetricLabel.startsWith('单') && unitMetricLabel.length > 2) return `${unitMetricLabel.slice(2)}总额`;
+    return `${unitMetricLabel}总额`;
 }
 
 function updateMetricCopy() {
@@ -1001,7 +1030,6 @@ function updateMetricCopy() {
         el.textContent = totalMetricLabel;
     });
 
-    if (AppState.baseMonth && AppState.currMonth) updateMetricLabels();
 }
 
 // ==================== 下钻顺序路径 ====================
@@ -1534,13 +1562,11 @@ function initMonthSelectors() {
 
     baseSelect.addEventListener('change', () => {
         AppState.baseMonth = baseSelect.value;
-        updateMetricLabels();
         triggerUpdate();
     });
 
     currSelect.addEventListener('change', () => {
         AppState.currMonth = currSelect.value;
-        updateMetricLabels();
         triggerUpdate();
     });
 }
@@ -1753,10 +1779,7 @@ function triggerUpdate() {
     const globalCurr = calculateGlobalMetrics(AppState.df, currMonth);
     const totalDiff = globalCurr.avgMargin - globalBase.avgMargin;
 
-    // 2. 更新顶部指标卡片
-    updateMetricCards(globalBase, globalCurr, totalDiff);
-
-    // 3. 为每个下钻层级计算 PVM 效应
+    // 2. 为每个下钻层级计算 PVM 效应
     const levelResults = [];
 
     for (let level = 0; level < drillOrder.length; level++) {
@@ -1834,7 +1857,7 @@ function triggerUpdate() {
         });
     }
 
-    // 4. 存储计算结果，供 Task 5 渲染使用
+    // 3. 存储计算结果
     AppState.calculationResults = {
         globalBase,
         globalCurr,
@@ -1842,33 +1865,10 @@ function triggerUpdate() {
         levelResults
     };
 
-    // 5. 渲染图表和表格（Task 5/6 中实现）
+    // 4. 渲染图表和表格
     renderCharts();
 
     console.log('[triggerUpdate] 计算完成:', AppState.calculationResults);
-}
-
-
-// ==================== 更新顶部指标卡片 ====================
-function updateMetricCards(globalBase, globalCurr, totalDiff) {
-    // 基期销量
-    document.getElementById('metric-value-1').textContent = formatNumber(globalBase.totalVol);
-
-    // 当期销量
-    document.getElementById('metric-value-2').textContent = formatNumber(globalCurr.totalVol);
-    const volDelta = globalCurr.totalVol - globalBase.totalVol;
-    const deltaEl2 = document.getElementById('metric-delta-2');
-    deltaEl2.textContent = formatDelta(volDelta);
-    deltaEl2.className = 'metric-delta ' + (volDelta >= 0 ? 'positive' : 'negative');
-
-    // 基期单车指标
-    document.getElementById('metric-value-3').textContent = '¥' + formatNumber(globalBase.avgMargin);
-
-    // 当期单车指标
-    document.getElementById('metric-value-4').textContent = '¥' + formatNumber(globalCurr.avgMargin);
-    const deltaEl4 = document.getElementById('metric-delta-4');
-    deltaEl4.textContent = '¥' + formatDelta(totalDiff);
-    deltaEl4.className = 'metric-delta ' + (totalDiff >= 0 ? 'positive' : 'negative');
 }
 
 
@@ -1973,6 +1973,7 @@ function renderCharts() {
 function buildChartInteractionGuide() {
     const guide = document.createElement('div');
     guide.className = 'chart-interaction-guide';
+    const unitMetricLabel = getUnitMetricLabel();
 
     const title = document.createElement('span');
     title.className = 'chart-interaction-title';
@@ -1984,11 +1985,11 @@ function buildChartInteractionGuide() {
 
     const mobile = document.createElement('span');
     mobile.className = 'chart-interaction-item';
-    mobile.textContent = '手机端：点击柱子进入明细层，用返回键回到图表';
+    mobile.textContent = '手机端：点击柱子看明细卡片，在卡片里进入下一层';
 
     const viewSwitch = document.createElement('span');
     viewSwitch.className = 'chart-interaction-item';
-    viewSwitch.textContent = '下钻后：可切换分析自身单车变动或对整体影响';
+    viewSwitch.textContent = `下钻后：在图表标题右侧切换“自身${unitMetricLabel}变动 / 对整体影响”`;
 
     guide.appendChild(title);
     guide.appendChild(desktop);
@@ -2026,16 +2027,40 @@ function buildChartLevelHeader(dimIcon, dimName, levelResult, level, activeMode)
     const switcher = document.createElement('div');
     switcher.className = 'attribution-view-switch';
     switcher.setAttribute('aria-label', '归因分析视角');
+    const unitMetricLabel = getUnitMetricLabel();
+
+    const hint = document.createElement('div');
+    hint.className = 'attribution-view-hint';
+    hint.textContent = '可切换两个分析视角';
+    switcher.appendChild(hint);
+
+    const options = document.createElement('div');
+    options.className = 'attribution-view-options';
 
     [
-        { mode: ATTRIBUTION_VIEW_SELF, label: '分析自身单车变动' },
-        { mode: ATTRIBUTION_VIEW_GLOBAL, label: '分析对整体影响' }
-    ].forEach(({ mode, label }) => {
+        {
+            mode: ATTRIBUTION_VIEW_SELF,
+            label: `分析自身${unitMetricLabel}变动`,
+            description: '看该下钻对象从基期到当期的自身拆解'
+        },
+        {
+            mode: ATTRIBUTION_VIEW_GLOBAL,
+            label: '分析对整体影响',
+            description: '看该对象这根柱子对全局结果的贡献拆解'
+        }
+    ].forEach(({ mode, label, description }) => {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = `attribution-view-btn ${activeMode === mode ? 'active' : ''}`;
         button.dataset.viewMode = mode;
-        button.textContent = label;
+        const buttonLabel = document.createElement('span');
+        buttonLabel.className = 'attribution-view-label';
+        buttonLabel.textContent = label;
+        const buttonDescription = document.createElement('span');
+        buttonDescription.className = 'attribution-view-desc';
+        buttonDescription.textContent = description;
+        button.appendChild(buttonLabel);
+        button.appendChild(buttonDescription);
         button.setAttribute('aria-pressed', activeMode === mode ? 'true' : 'false');
         button.addEventListener('mousedown', (event) => {
             event.preventDefault();
@@ -2047,9 +2072,10 @@ function buildChartLevelHeader(dimIcon, dimName, levelResult, level, activeMode)
             AppState.attributionViewModes[level] = mode;
             updateAttributionLevelView(level);
         });
-        switcher.appendChild(button);
+        options.appendChild(button);
     });
 
+    switcher.appendChild(options);
     header.appendChild(switcher);
     return header;
 }
@@ -2061,6 +2087,8 @@ function updateAttributionLevelView(level) {
     if (!renderContext) return;
 
     const { dim, dimName, viewMode, viewConfig, colorScheme } = renderContext;
+    const section = document.querySelector(`.chart-level-section[data-level="${level}"]`);
+    const restoreScroll = preserveScrollPosition(section);
 
     document
         .querySelectorAll(`.chart-level-section[data-level="${level}"] .attribution-view-btn`)
@@ -2083,7 +2111,7 @@ function updateAttributionLevelView(level) {
 
     clearWaterfallTouchCards();
     hideWaterfallHoverTooltip();
-    renderWaterfallChart(
+    const renderPromise = renderWaterfallChart(
         `waterfall-chart-${level}`,
         viewConfig.effects,
         dim,
@@ -2094,7 +2122,33 @@ function updateAttributionLevelView(level) {
         level,
         viewConfig.chartOptions
     );
+    restoreScroll();
+    renderPromise?.then(restoreScroll, restoreScroll);
+}
 
+function preserveScrollPosition(anchorElement = null) {
+    if (typeof window === 'undefined') return () => {};
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const anchorTop = anchorElement instanceof Element
+        ? anchorElement.getBoundingClientRect().top
+        : null;
+    const restore = () => {
+        if (anchorElement instanceof Element && Number.isFinite(anchorTop)) {
+            const deltaY = anchorElement.getBoundingClientRect().top - anchorTop;
+            if (Math.abs(deltaY) > 1) {
+                window.scrollBy(0, deltaY);
+                return;
+            }
+        }
+        window.scrollTo(scrollX, scrollY);
+    };
+    return () => {
+        window.requestAnimationFrame(() => {
+            restore();
+            window.setTimeout(restore, 80);
+        });
+    };
 }
 
 function getAttributionLevelRenderContext(level) {
@@ -2367,9 +2421,10 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
     };
 
     const graphDiv = document.getElementById(containerId);
+    if (!graphDiv) return Promise.resolve();
     const plotMethod = graphDiv?.classList?.contains('js-plotly-plot') ? Plotly.react : Plotly.newPlot;
 
-    plotMethod(containerId, [trace], layout, config).then(() => {
+    return plotMethod(containerId, [trace], layout, config).then(() => {
         ensureWaterfallTouchCardContainer(level);
         attachWaterfallInteractions(containerId, dimCol, level);
     });
@@ -2467,12 +2522,21 @@ function attachWaterfallInteractions(containerId, dimCol, level) {
 
     graphDiv.__waterfallBlankClickHandler = (event) => {
         if (!isMobile()) return;
-        if (graphDiv.__waterfallSuppressBlankClickUntil && Date.now() < graphDiv.__waterfallSuppressBlankClickUntil) return;
         const target = event.target;
         if (!(target instanceof Element)) return;
         if (target.closest('.waterfalllayer .point')) return;
-        clearWaterfallTouchCards();
-        hideWaterfallHoverTooltip();
+        const fallbackMeta = getWaterfallMetaAtClientPoint(graphDiv, event.clientX, event.clientY);
+        if (fallbackMeta) {
+            graphDiv.__waterfallSuppressBlankClickUntil = Date.now() + 350;
+            event.stopPropagation?.();
+            window.requestAnimationFrame(() => handleWaterfallBarTap(fallbackMeta, dimCol, level));
+            return;
+        }
+        window.setTimeout(() => {
+            if (graphDiv.__waterfallSuppressBlankClickUntil && Date.now() < graphDiv.__waterfallSuppressBlankClickUntil) return;
+            clearWaterfallTouchCards();
+            hideWaterfallHoverTooltip();
+        }, 0);
     };
     graphDiv.addEventListener('click', graphDiv.__waterfallBlankClickHandler);
 
@@ -2510,6 +2574,29 @@ function attachWaterfallInteractions(containerId, dimCol, level) {
 
 function getWaterfallEventMeta(eventData) {
     return eventData?.points?.[0]?.customdata || null;
+}
+
+function getWaterfallMetaAtClientPoint(graphDiv, clientX, clientY) {
+    if (!graphDiv || !Number.isFinite(clientX) || !Number.isFinite(clientY)) return null;
+    const metas = graphDiv.data?.[0]?.customdata || graphDiv._fullData?.[0]?.customdata || [];
+    const points = Array.from(graphDiv.querySelectorAll('.waterfalllayer .point'));
+    const hitPadding = 6;
+    let bestMatch = null;
+
+    points.forEach((point, index) => {
+        const rect = point.getBoundingClientRect();
+        const withinX = clientX >= rect.left - hitPadding && clientX <= rect.right + hitPadding;
+        const withinY = clientY >= rect.top - hitPadding && clientY <= rect.bottom + hitPadding;
+        const meta = metas[index];
+        if (!withinX || !withinY || !meta) return;
+
+        const area = rect.width * rect.height;
+        if (!bestMatch || area < bestMatch.area) {
+            bestMatch = { area, meta };
+        }
+    });
+
+    return bestMatch?.meta || null;
 }
 
 function showWaterfallHoverTooltip(meta, eventData) {
@@ -3360,12 +3447,6 @@ function formatNumber(num) {
     return Math.round(num).toLocaleString('en-US');
 }
 
-function formatDelta(num) {
-    if (num == null || isNaN(num)) return '';
-    const sign = num >= 0 ? '+' : '';
-    return sign + Math.round(num).toLocaleString('en-US');
-}
-
 function formatCurrency(num) {
     if (num == null || isNaN(num)) return '-';
     return '¥' + Math.round(num).toLocaleString('en-US');
@@ -3394,6 +3475,7 @@ if (typeof module !== 'undefined' && module.exports) {
         sheetRowsToObjects,
         TEMPLATE_HEADERS,
         TEMPLATE_HEADER_NOTE,
+        buildUnitMetricLabel,
         buildTemplateStylesXml,
         buildTemplateWorksheetXml,
         buildXlsxTemplateEntries,

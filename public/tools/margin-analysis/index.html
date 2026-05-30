@@ -63,9 +63,17 @@
                     </div>
                 </div>
                 <div class="data-center-setting">
-                    <label class="form-label" for="input-metric-type">分析单车类型</label>
-                    <input id="input-metric-type" class="form-input" type="text" value="边际" placeholder="例如：边际、净收入、材料成本">
-                    <p class="caption">填写“边际”时，系统会识别并展示为“单车边际”。</p>
+                    <div class="data-center-setting-grid">
+                        <div class="form-group compact">
+                            <label class="form-label" for="input-unit-name">单位名称</label>
+                            <input id="input-unit-name" class="form-input" type="text" value="车" placeholder="车、台、个、只">
+                        </div>
+                        <div class="form-group compact">
+                            <label class="form-label" for="input-metric-type">指标类型</label>
+                            <input id="input-metric-type" class="form-input" type="text" value="边际" placeholder="边际、净收入、材料成本">
+                        </div>
+                    </div>
+                    <p class="caption">默认展示为“单车边际”；把单位改为“台”会展示为“单台边际”，指标改为“净收入”会展示为“单车净收入”。</p>
                 </div>
             </div>
         </details>
@@ -169,31 +177,6 @@
 
     <!-- 已加载数据后的分析区域 -->
     <div id="analysis-area" style="display:none;">
-
-        <!-- 顶部指标卡片 -->
-        <div class="metrics-row" id="metrics-row">
-            <div class="metric-card">
-                <span class="metric-label" id="metric-label-1">📦 基期全球销量</span>
-                <span class="metric-value" id="metric-value-1">-</span>
-            </div>
-            <div class="metric-card">
-                <span class="metric-label" id="metric-label-2">📦 当期全球销量</span>
-                <span class="metric-value" id="metric-value-2">-</span>
-                <span class="metric-delta" id="metric-delta-2"></span>
-            </div>
-            <div class="metric-card">
-                <span class="metric-label" id="metric-label-3">💎 基期<span data-unit-metric-label>单车边际</span></span>
-                <span class="metric-value" id="metric-value-3">-</span>
-            </div>
-            <div class="metric-card">
-                <span class="metric-label" id="metric-label-4">💎 当期<span data-unit-metric-label>单车边际</span></span>
-                <span class="metric-value" id="metric-value-4">-</span>
-                <span class="metric-delta" id="metric-delta-4"></span>
-            </div>
-        </div>
-
-        <hr class="section-divider">
-
         <!-- 动态图表区域 - 由 JS 动态生成 -->
         <div id="charts-container"></div>
     </div>
