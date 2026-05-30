@@ -1263,6 +1263,14 @@
         return displayValue(value, item.metric);
     }
 
+    function trendMetricIdentityText(item) {
+        if (item.mode === "unit") {
+            const volumeMetric = volumeMetricColumn() || "销量";
+            return `<b>${escapeHtml(item.label)}</b><br><span style="font-size:10px;color:${COLORS.muted}">${escapeHtml(item.sourceLabel)} ÷ ${escapeHtml(volumeMetric)}</span>`;
+        }
+        return `<b>${escapeHtml(item.label)}（原值）</b><br><span style="font-size:10px;color:${COLORS.muted}">原始指标</span>`;
+    }
+
     function setTrendChartHeight(count) {
         const node = byId("monthly-trend-chart");
         if (!node) return;
@@ -1275,7 +1283,7 @@
         const unitCount = metrics.filter((item) => item.mode === "unit").length;
         if (caption) {
             caption.textContent = unitCount
-                ? `销量固定展示，${unitCount} 个总额指标自动折算为单车趋势，每段使用独立坐标轴。`
+                ? `第一段是销量原值，后面 ${unitCount} 段为总额指标除以销量后的单车趋势。`
                 : `${state.selectedMetric || "指标"}月度走势。`;
         }
         if (!metrics.length) return renderEmptyChart("monthly-trend-chart", "暂无趋势数据");
@@ -1323,6 +1331,24 @@
                 hovertemplate: item.mode === "unit"
                     ? `%{customdata}<br>${escapeHtml(item.label)}：%{y:,.2f}<br>${escapeHtml(item.sourceLabel)} / 销量<extra></extra>`
                     : `%{customdata}<br>${escapeHtml(item.label)}：%{y:,.2f}${axisUnitLabel(item.metric) ? ` ${axisUnitLabel(item.metric)}` : ""}<extra></extra>`
+            });
+
+            annotations.push({
+                xref: "paper",
+                yref: "paper",
+                x: 0.01,
+                y: rowDomains[index][1],
+                text: trendMetricIdentityText(item),
+                showarrow: false,
+                align: "left",
+                xanchor: "left",
+                yanchor: "top",
+                xshift: 4,
+                yshift: -4,
+                bgcolor: "rgba(255,255,255,0.9)",
+                bordercolor: withAlpha(item.color, 0.42),
+                borderpad: 5,
+                font: { color: item.color, size: 11 }
             });
 
             if (!isCompactMonthAxis() && metrics.length <= 6) {

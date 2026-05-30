@@ -275,6 +275,15 @@ test("monthly trend keeps the base table schema business-facing", () => {
   assert.doesNotMatch(monthlyEngine, /coreTrendMetrics\(\)\.slice\(0,\s*3\)/);
 });
 
+test("monthly trend names each multi metric trend line by business meaning", () => {
+  assert.match(monthlyEngine, /function trendMetricIdentityText\(/);
+  assert.match(monthlyEngine, /第一段是销量原值/);
+  assert.match(monthlyEngine, /总额指标除以销量后的单车趋势/);
+  assert.match(monthlyEngine, /原始指标/);
+  assert.match(monthlyEngine, /sourceLabel\)} ÷ \$\{escapeHtml\(volumeMetric\)\}/);
+  assert.match(monthlyEngine, /text:\s*trendMetricIdentityText\(item\)/);
+});
+
 test("sensitivity metric cards use the refined finance dashboard card treatment", () => {
   assert.match(sensitivityEngine, /function metricComparisonMeta\(currentValue,\s*baseValue\)/);
   assert.match(sensitivityEngine, /<article class="metric-card metric-\$\{card\.tone\}">/);
