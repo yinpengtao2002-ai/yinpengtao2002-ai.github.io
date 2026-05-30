@@ -2247,10 +2247,10 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
         values = [baseMargin, ...top10.map(r => r.Total_Contribution), othersSum, 0];
         measures = ['absolute', ...Array(11).fill('relative'), 'total'];
         barMetas = [
-            createWaterfallTotalMeta('base', startLabel, baseMargin, baseMargin, currMargin, unitMetricLabel, chartOptions.startMeta),
+            createWaterfallTotalMeta('base', startLabel, baseMargin, baseMargin, currMargin, unitMetricLabel, totalVolBase, totalVolCurr, chartOptions.startMeta),
             ...top10.map(row => createWaterfallItemMeta(row, dimCol, dimName, unitMetricLabel, level, totalVolBase, totalVolCurr)),
             createWaterfallOtherMeta(otherRows, dimCol, dimName, unitMetricLabel, totalVolBase, totalVolCurr),
-            createWaterfallTotalMeta('current', endLabel, currMargin, baseMargin, currMargin, unitMetricLabel, chartOptions.endMeta)
+            createWaterfallTotalMeta('current', endLabel, currMargin, baseMargin, currMargin, unitMetricLabel, totalVolBase, totalVolCurr, chartOptions.endMeta)
         ];
     } else {
         // 先负后正排序
@@ -2260,9 +2260,9 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
         values = [baseMargin, ...sortedData.map(r => r.Total_Contribution), 0];
         measures = ['absolute', ...Array(sortedData.length).fill('relative'), 'total'];
         barMetas = [
-            createWaterfallTotalMeta('base', startLabel, baseMargin, baseMargin, currMargin, unitMetricLabel, chartOptions.startMeta),
+            createWaterfallTotalMeta('base', startLabel, baseMargin, baseMargin, currMargin, unitMetricLabel, totalVolBase, totalVolCurr, chartOptions.startMeta),
             ...sortedData.map(row => createWaterfallItemMeta(row, dimCol, dimName, unitMetricLabel, level, totalVolBase, totalVolCurr)),
-            createWaterfallTotalMeta('current', endLabel, currMargin, baseMargin, currMargin, unitMetricLabel, chartOptions.endMeta)
+            createWaterfallTotalMeta('current', endLabel, currMargin, baseMargin, currMargin, unitMetricLabel, totalVolBase, totalVolCurr, chartOptions.endMeta)
         ];
     }
 
@@ -2493,7 +2493,7 @@ function createWaterfallOtherMeta(rows, dimCol, dimName, unitMetricLabel, totalV
     };
 }
 
-function createWaterfallTotalMeta(type, label, value, baseMargin, currMargin, unitMetricLabel, options = {}) {
+function createWaterfallTotalMeta(type, label, value, baseMargin, currMargin, unitMetricLabel, totalVolBase = 0, totalVolCurr = 0, options = {}) {
     return {
         type,
         label,
@@ -2502,6 +2502,8 @@ function createWaterfallTotalMeta(type, label, value, baseMargin, currMargin, un
         currMargin,
         contribution: type === 'current' ? currMargin - baseMargin : 0,
         unitMetricLabel,
+        volBase: totalVolBase,
+        volCurr: totalVolCurr,
         displayMetricLabel: options.displayMetricLabel || unitMetricLabel,
         kicker: options.kicker || '',
         drillable: false
@@ -2670,6 +2672,8 @@ function buildWaterfallTooltipHTML(meta, mode = 'hover') {
                     <strong>¥${formatNumber(meta.value)}</strong>
                 </div>
                 <div class="waterfall-tooltip-grid">
+                    <span>基期销量</span><b>${formatNumber(meta.volBase)}</b>
+                    <span>当期销量</span><b>${formatNumber(meta.volCurr)}</b>
                     <span>较基期变动</span><b class="${delta >= 0 ? 'positive' : 'negative'}">${formatSignedNumber(delta)}</b>
                     <span>点击状态</span><b>${statusText}</b>
                 </div>
@@ -2746,7 +2750,7 @@ function buildWaterfallTouchActionHTML(meta) {
 function formatPercentPoint(num) {
     if (num == null || isNaN(num)) return '-';
     const sign = num >= 0 ? '+' : '';
-    return `${sign}${num.toFixed(1)}pct`;
+    return `${sign}${num.toFixed(1)}%`;
 }
 
 function handleWaterfallBarTap(meta, dimCol, level) {
@@ -3476,6 +3480,8 @@ if (typeof module !== 'undefined' && module.exports) {
         TEMPLATE_HEADERS,
         TEMPLATE_HEADER_NOTE,
         buildUnitMetricLabel,
+        buildWaterfallTooltipHTML,
+        formatPercentPoint,
         buildTemplateStylesXml,
         buildTemplateWorksheetXml,
         buildXlsxTemplateEntries,

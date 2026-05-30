@@ -23,6 +23,8 @@ const {
     buildXlsxTemplateEntries,
     createStoredZip,
     buildUnitMetricLabel,
+    buildWaterfallTooltipHTML,
+    formatPercentPoint,
 } = marginAnalysis.default;
 
 const EPSILON = 1e-9;
@@ -446,6 +448,31 @@ test("mobile waterfall taps keep the detail card while blank chart taps still di
     assert.match(marginAnalysisSource, /window\.requestAnimationFrame\(\(\) => handleWaterfallBarTap\(meta, dimCol, level\)\)/);
     assert.match(marginAnalysisSource, /getWaterfallMetaAtClientPoint\(graphDiv, event\.clientX, event\.clientY\)/);
     assert.match(marginAnalysisSource, /handleWaterfallBarTap\(fallbackMeta, dimCol, level\)/);
+});
+
+test("waterfall total tooltips include volume totals", () => {
+    assert.equal(typeof buildWaterfallTooltipHTML, "function");
+    const html = buildWaterfallTooltipHTML({
+        type: "current",
+        label: "本期单车边际",
+        value: 3024,
+        baseMargin: 2923,
+        currMargin: 3024,
+        unitMetricLabel: "单车边际",
+        volBase: 27300,
+        volCurr: 30500,
+    });
+
+    assert.match(html, /基期销量[\s\S]*27,300/);
+    assert.match(html, /当期销量[\s\S]*30,500/);
+    assert.match(marginAnalysisSource, /createWaterfallTotalMeta\('current'[\s\S]*totalVolBase, totalVolCurr/);
+});
+
+test("waterfall mix share change uses percent sign instead of pct", () => {
+    assert.equal(typeof formatPercentPoint, "function");
+    assert.equal(formatPercentPoint(1.8), "+1.8%");
+    assert.equal(formatPercentPoint(-1.8), "-1.8%");
+    assert.doesNotMatch(formatPercentPoint(1.8), /pct/);
 });
 
 test("business headers map into dimensions and all uploaded dimensions are enabled by default", () => {
