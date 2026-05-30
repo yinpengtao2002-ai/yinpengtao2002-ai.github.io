@@ -25,6 +25,8 @@ const {
     buildUnitMetricLabel,
     buildWaterfallTooltipHTML,
     formatPercentPoint,
+    buildDetailExportRows,
+    buildDetailClipboardText,
 } = marginAnalysis.default;
 
 const EPSILON = 1e-9;
@@ -380,6 +382,36 @@ test("detail table header filters open from the full header and text filters app
     assert.match(marginAnalysisSource, /const syncTextFilter = \(\) => \{[\s\S]*applyDetailTableFilters\(rowMetas, state\);[\s\S]*\};/);
     assert.match(marginAnalysisSource, /checkbox\.addEventListener\('change', \(\) => \{[\s\S]*syncTextFilter\(\);[\s\S]*\}\);/);
     assert.match(marginAnalysisStyles, /\.detail-th-inner\.filterable\s*\{[\s\S]*cursor:\s*pointer/s);
+});
+
+test("detail table copy uses the current filtered and sorted view", () => {
+    assert.equal(typeof buildDetailExportRows, "function");
+    assert.equal(typeof buildDetailClipboardText, "function");
+    const hiddenGermanyRow = { hidden: true };
+    const chinaRow = { hidden: false };
+    const totalRow = { hidden: false };
+    const state = {
+        columns: [{ label: "国家" }, { label: "总贡献" }],
+        rowMetas: [
+            { tr: hiddenGermanyRow, cells: ["德国", "-24"] },
+            { tr: chinaRow, cells: ["中国", "+53"] },
+            { tr: totalRow, cells: ["总计", "+101"], isTotal: true },
+        ],
+        tbody: {
+            children: [chinaRow, hiddenGermanyRow, totalRow],
+        },
+    };
+
+    assert.deepEqual(buildDetailExportRows(state), [
+        ["国家", "总贡献"],
+        ["中国", "+53"],
+        ["总计", "+101"],
+    ]);
+    assert.equal(buildDetailClipboardText(state), "国家\t总贡献\n中国\t+53\n总计\t+101");
+    assert.match(marginAnalysisSource, /copyDetailButton\.textContent = '复制当前表格'/);
+    assert.match(marginAnalysisSource, /exportDetailButton\.textContent = '导出当前表'/);
+    assert.match(marginAnalysisSource, /showDetailCopyFallback\(filterState, text\)/);
+    assert.match(marginAnalysisStyles, /\.detail-copy-fallback\s*\{/);
 });
 
 test("upload template and sidebar use business dimension headers instead of Dim labels", () => {

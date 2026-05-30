@@ -545,6 +545,12 @@ function downloadBlob(blob, filename) {
     URL.revokeObjectURL(url);
 }
 
+function escapeTsvCell(value) {
+    return String(value ?? '')
+        .replace(/\t/g, ' ')
+        .replace(/\r?\n/g, ' ');
+}
+
 
 // ==================== CSV 解析 ====================
 function parseCSV(text) {
@@ -2884,16 +2890,64 @@ function buildDetailTable(displayData, dimCol, dimName, isGlobal) {
     const rowMetas = [];
     const filterState = {
         columns,
+        dimName,
+        rowMetas,
         filters: new Map(),
         sort: null,
         headerButtons: [],
         openMenu: null,
         closeMenu: null,
-        tbody: null
+        tbody: null,
+        summaryEl: null,
+        shell: null,
+        toolbar: null,
+        copyFallbackEl: null
     };
 
     const shell = document.createElement('div');
     shell.className = 'detail-table-shell';
+    filterState.shell = shell;
+
+    const toolbar = document.createElement('div');
+    toolbar.className = 'detail-table-toolbar';
+    filterState.toolbar = toolbar;
+
+    const toolbarSummary = document.createElement('div');
+    toolbarSummary.className = 'detail-table-toolbar-summary';
+    toolbarSummary.textContent = '当前表格';
+    filterState.summaryEl = toolbarSummary;
+
+    const toolbarActions = document.createElement('div');
+    toolbarActions.className = 'detail-table-toolbar-actions';
+
+    const copyDetailButton = document.createElement('button');
+    copyDetailButton.type = 'button';
+    copyDetailButton.className = 'detail-table-action primary';
+    copyDetailButton.textContent = '复制当前表格';
+    copyDetailButton.addEventListener('click', async () => {
+        const text = buildDetailClipboardText(filterState);
+        try {
+            await copyTextToClipboard(text);
+            clearDetailCopyFallback(filterState);
+            showMessage('success', `已复制当前表格（${getVisibleDetailDataRowCount(filterState)} 行）`);
+        } catch {
+            showDetailCopyFallback(filterState, text);
+            showMessage('success', `已选中当前表格内容，可按 ${getCopyShortcutLabel()} 复制`);
+        }
+    });
+
+    const exportDetailButton = document.createElement('button');
+    exportDetailButton.type = 'button';
+    exportDetailButton.className = 'detail-table-action';
+    exportDetailButton.textContent = '导出当前表';
+    exportDetailButton.addEventListener('click', () => {
+        exportDetailTableCsv(filterState);
+    });
+
+    toolbarActions.appendChild(copyDetailButton);
+    toolbarActions.appendChild(exportDetailButton);
+    toolbar.appendChild(toolbarSummary);
+    toolbar.appendChild(toolbarActions);
 
     const table = document.createElement('table');
     table.className = 'detail-data-table';
@@ -2980,6 +3034,7 @@ function buildDetailTable(displayData, dimCol, dimName, isGlobal) {
             tr,
             isTotal,
             values,
+            cells,
             originalIndex: rowMetas.length
         });
         tbody.appendChild(tr);
@@ -2991,10 +3046,155 @@ function buildDetailTable(displayData, dimCol, dimName, isGlobal) {
     wrapper.className = 'table-wrapper detail-table-scroll';
     wrapper.appendChild(table);
 
+    shell.appendChild(toolbar);
     shell.appendChild(wrapper);
     applyDetailTableFilters(rowMetas, filterState);
 
     return shell;
+}
+
+function getCurrentDetailRowMetas(state) {
+    const rowMetas = state?.rowMetas || [];
+    const metaByRow = new Map(rowMetas.map(meta => [meta.tr, meta]));
+    const orderedRows = state?.tbody?.children ? Array.from(state.tbody.children) : [];
+    const orderedMetas = orderedRows.length
+        ? orderedRows.map(row => metaByRow.get(row)).filter(Boolean)
+        : rowMetas;
+
+    return orderedMetas.filter(meta => !meta.tr?.hidden);
+}
+
+function getVisibleDetailDataRowCount(state) {
+    return getCurrentDetailRowMetas(state).filter(meta => !meta.isTotal).length;
+}
+
+function buildDetailExportRows(state) {
+    const headers = (state?.columns || []).map(column => String(column.label ?? ''));
+    const rows = getCurrentDetailRowMetas(state).map(meta => {
+        const cells = meta.cells || [];
+        return headers.map((_, index) => String(cells[index] ?? ''));
+    });
+    return [headers, ...rows];
+}
+
+function buildDetailClipboardText(state) {
+    return buildDetailExportRows(state)
+        .map(row => row.map(escapeTsvCell).join('\t'))
+        .join('\n');
+}
+
+function buildDetailCsvText(state) {
+    return buildDetailExportRows(state)
+        .map(row => row.map(escapeCsvCell).join(','))
+        .join('\n');
+}
+
+function showDetailCopyFallback(state, text) {
+    clearDetailCopyFallback(state);
+    if (!state?.shell || !state.toolbar) return;
+
+    const fallback = document.createElement('div');
+    fallback.className = 'detail-copy-fallback';
+
+    const header = document.createElement('div');
+    header.className = 'detail-copy-fallback-header';
+
+    const title = document.createElement('span');
+    title.textContent = `当前表格内容已选中，可按 ${getCopyShortcutLabel()} 复制`;
+
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'detail-copy-fallback-close';
+    closeButton.textContent = '关闭';
+    closeButton.addEventListener('click', () => clearDetailCopyFallback(state));
+
+    header.appendChild(title);
+    header.appendChild(closeButton);
+
+    const textarea = document.createElement('textarea');
+    textarea.className = 'detail-copy-fallback-text';
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.setAttribute('aria-label', '当前表格复制内容');
+
+    fallback.appendChild(header);
+    fallback.appendChild(textarea);
+    state.toolbar.insertAdjacentElement('afterend', fallback);
+    state.copyFallbackEl = fallback;
+
+    requestAnimationFrame(() => {
+        textarea.focus({ preventScroll: true });
+        textarea.select();
+        textarea.setSelectionRange(0, textarea.value.length);
+    });
+}
+
+function clearDetailCopyFallback(state) {
+    if (state?.copyFallbackEl) {
+        state.copyFallbackEl.remove();
+        state.copyFallbackEl = null;
+    }
+}
+
+function getCopyShortcutLabel() {
+    const platform = typeof navigator !== 'undefined' ? navigator.platform || '' : '';
+    return /Mac|iPhone|iPad|iPod/i.test(platform) ? '⌘C' : 'Ctrl+C';
+}
+
+async function copyTextToClipboard(text) {
+    if (copyTextWithTextarea(text)) return;
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return;
+        } catch {
+            // The caller will show a user-facing error if both clipboard paths are blocked.
+        }
+    }
+
+    throw new Error('浏览器未允许写入剪贴板');
+}
+
+function copyTextWithTextarea(text) {
+    const activeElement = document.activeElement;
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.left = '0';
+    textarea.style.top = '0';
+    textarea.style.width = '1px';
+    textarea.style.height = '1px';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.focus({ preventScroll: true });
+    textarea.select();
+    textarea.setSelectionRange(0, textarea.value.length);
+
+    const copied = document.execCommand('copy');
+    textarea.remove();
+    if (activeElement && typeof activeElement.focus === 'function') {
+        activeElement.focus({ preventScroll: true });
+    }
+    return copied;
+}
+
+function exportDetailTableCsv(state) {
+    clearDetailCopyFallback(state);
+    const csv = buildDetailCsvText(state);
+    const safeName = sanitizeFilename(state?.dimName || 'detail-table');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    downloadBlob(blob, `margin-analysis-${safeName}-current-view.csv`);
+    showMessage('success', `已导出当前表（${getVisibleDetailDataRowCount(state)} 行）`);
+}
+
+function sanitizeFilename(value) {
+    return String(value || 'detail-table')
+        .trim()
+        .replace(/[\\/:*?"<>|]+/g, '-')
+        .replace(/\s+/g, '-')
+        .slice(0, 80) || 'detail-table';
 }
 
 function openDetailColumnFilterMenu({ column, columnIndex, button, rowMetas, state }) {
@@ -3328,6 +3528,7 @@ function positionDetailColumnFilterMenu(menu, button) {
 }
 
 function applyDetailTableFilters(rowMetas, state) {
+    clearDetailCopyFallback(state);
     const activeFilters = Array.from(state.filters.entries());
 
     rowMetas.forEach((meta) => {
@@ -3339,6 +3540,16 @@ function applyDetailTableFilters(rowMetas, state) {
 
     sortDetailRows(rowMetas, state);
     updateDetailHeaderFilterStates(state);
+    updateDetailTableToolbarState(state);
+}
+
+function updateDetailTableToolbarState(state) {
+    if (!state?.summaryEl) return;
+    const visibleCount = getVisibleDetailDataRowCount(state);
+    const filterCount = state.filters?.size || 0;
+    const sortText = state.sort ? '已排序' : '';
+    const filterText = filterCount ? `已筛选 ${filterCount} 列` : '未筛选';
+    state.summaryEl.textContent = `${visibleCount} 行 · ${filterText}${sortText ? ` · ${sortText}` : ''}`;
 }
 
 function matchesDetailFilter(value, filter) {
@@ -3482,6 +3693,8 @@ if (typeof module !== 'undefined' && module.exports) {
         buildUnitMetricLabel,
         buildWaterfallTooltipHTML,
         formatPercentPoint,
+        buildDetailExportRows,
+        buildDetailClipboardText,
         buildTemplateStylesXml,
         buildTemplateWorksheetXml,
         buildXlsxTemplateEntries,

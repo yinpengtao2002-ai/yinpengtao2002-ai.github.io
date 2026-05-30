@@ -1749,6 +1749,110 @@ details[open] > .usage-summary::after {
     position: relative;
 }
 
+.detail-table-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.55rem;
+    padding: 0.48rem 0.58rem;
+    border: 1px solid rgba(232, 230, 220, 0.82);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.72);
+    font-family: var(--font-sans);
+}
+
+.detail-table-toolbar-summary {
+    min-width: 0;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.detail-table-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex: 0 0 auto;
+}
+
+.detail-table-action {
+    min-height: 32px;
+    padding: 0 0.7rem;
+    border: 1px solid var(--border-light);
+    border-radius: 7px;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 650;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+
+.detail-table-action:hover,
+.detail-table-action:focus {
+    border-color: var(--accent-orange);
+    color: var(--accent-orange);
+    background: rgba(217, 119, 87, 0.06);
+    outline: none;
+}
+
+.detail-table-action.primary {
+    border-color: rgba(217, 119, 87, 0.42);
+    background: rgba(217, 119, 87, 0.1);
+    color: var(--accent-orange);
+}
+
+.detail-copy-fallback {
+    display: grid;
+    gap: 0.5rem;
+    margin: -0.25rem 0 0.55rem;
+    padding: 0.58rem;
+    border: 1px solid rgba(217, 119, 87, 0.3);
+    border-radius: 8px;
+    background: rgba(255, 251, 247, 0.95);
+    font-family: var(--font-sans);
+}
+
+.detail-copy-fallback-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+}
+
+.detail-copy-fallback-close {
+    min-height: 28px;
+    padding: 0 0.58rem;
+    border: 1px solid rgba(217, 119, 87, 0.28);
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.86);
+    color: var(--accent-orange);
+    font-family: var(--font-sans);
+    font-size: 0.74rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.detail-copy-fallback-text {
+    width: 100%;
+    min-height: 92px;
+    resize: vertical;
+    border: 1px solid rgba(232, 230, 220, 0.95);
+    border-radius: 7px;
+    padding: 0.52rem;
+    background: #fff;
+    color: var(--text-primary);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 0.76rem;
+    line-height: 1.5;
+}
+
 .detail-table-scroll {
     max-height: 320px;
     overflow: auto;
@@ -1767,6 +1871,7 @@ details[open] > .usage-summary::after {
     font-size: 0.85rem;
     margin: 0;
     font-family: var(--font-serif);
+    user-select: text;
 }
 
 .detail-data-table thead th {
@@ -2160,6 +2265,19 @@ details[open] > .usage-summary::after {
     .sidebar-expand {
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
+    }
+    .detail-table-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .detail-table-toolbar-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+    }
+    .detail-table-action {
+        width: 100%;
     }
     /* 页脚精简 */
     .footer {
