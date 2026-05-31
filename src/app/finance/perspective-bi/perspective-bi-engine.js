@@ -60,7 +60,6 @@ const state = {
     workbenchFocusMode: false,
     workbenchDataset: "raw",
     calculatedRows: [],
-    preset: "revenue-by-region",
     calculatedMetric: {
         panelOpen: false,
         generated: false,
@@ -225,64 +224,23 @@ function buildCalculatedAggregates(rows) {
     ]));
 }
 
-function buildConfig(rows, preset = state.preset) {
+function buildConfig(rows) {
     if (state.workbenchDataset === "calculated") {
         return buildCalculatedConfig(rows);
     }
 
-    const { columns, metrics, dimensions } = classifyColumns(rows);
-    const month = pickColumn(["月份", "年月", "期间", "Month", "month"], dimensions, dimensions[0]);
-    const region = pickColumn(["大区", "区域", "地区", "Region", "region"], dimensions, dimensions[0]);
-    const country = pickColumn(["国家", "市场", "Country", "country"], dimensions, dimensions[1] ?? dimensions[0]);
-    const model = pickColumn(["车型", "产品", "车系", "Model", "model"], dimensions, dimensions[2] ?? dimensions[0]);
-    const revenue = pickColumn(["净收入", "收入", "Revenue", "revenue"], metrics, metrics[0]);
-    const margin = pickColumn(["边际总额", "边际", "毛利", "Margin", "margin"], metrics, metrics[1] ?? metrics[0]);
+    const { columns, metrics } = classifyColumns(rows);
     const aggregates = buildAggregates(rows);
-
-    if (preset === "detail-table") {
-        return {
-            title: "明细透视表",
-            plugin: "Datagrid",
-            group_by: dimensions.slice(0, 2),
-            columns: columns.slice(0, 8),
-            aggregates,
-            settings: true,
-        };
-    }
-
-    if (preset === "margin-by-region") {
-        return {
-            title: "边际按区域",
-            plugin: "Datagrid",
-            group_by: [region, model].filter(Boolean),
-            split_by: [],
-            columns: [margin ?? revenue].filter(Boolean),
-            aggregates,
-            sort: margin ? [[margin, "desc"]] : [],
-            settings: true,
-        };
-    }
-
-    if (preset === "monthly-heatmap") {
-        return {
-            title: "月份热力图",
-            plugin: "Heatmap",
-            group_by: [month, region].filter(Boolean),
-            split_by: country ? [country] : [],
-            columns: [margin ?? revenue].filter(Boolean),
-            aggregates,
-            settings: true,
-        };
-    }
+    const visibleColumns = columns.length ? columns : metrics;
 
     return {
-        title: "收入按区域",
+        title: "BI 工作台",
         plugin: "Datagrid",
-        group_by: [region].filter(Boolean),
+        group_by: [],
         split_by: [],
-        columns: [revenue ?? margin].filter(Boolean),
+        columns: visibleColumns,
         aggregates,
-        sort: revenue ? [[revenue, "desc"]] : [],
+        sort: [],
         settings: true,
     };
 }
@@ -290,12 +248,16 @@ function buildConfig(rows, preset = state.preset) {
 function buildCalculatedConfig(rows) {
     const { columns, metrics, dimensions } = classifyCalculatedColumns(rows);
     const metricName = getCalculatedMetricName();
-    const columnsForView = [metricName, ...metrics.filter((metric) => metric !== metricName)].filter((column) => columns.includes(column));
+    const columnsForView = [
+        ...dimensions,
+        metricName,
+        ...metrics.filter((metric) => metric !== metricName),
+    ].filter((column) => columns.includes(column));
 
     return {
         title: metricName,
         plugin: "Datagrid",
-        group_by: dimensions.slice(0, 1),
+        group_by: [],
         split_by: [],
         columns: columnsForView,
         aggregates: buildCalculatedAggregates(rows),
@@ -677,18 +639,7 @@ function renderCalculatedMetricControls(rows) {
         })
         : [document.createTextNode("未识别到维度，计算结果将按全表汇总。")];
     dimensionArea.replaceChildren(...dimensionNodes);
-}
-
-function formatNumber(value) {
-    if (value === "" || value === null || value === undefined || Number.isNaN(value)) return "-";
-    return new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 4 }).format(value);
-}
-
-function formatCalculatedValue(value, format) {
-    if (value === "" || value === null || value === undefined) return "-";
-    if (format === "percent") return `${formatNumber(value * 100)}%`;
-    if (format === "unit") return `${formatNumber(value)} 元/台`;
-    return formatNumber(value);
+    renderCalculatedMetricStatus();
 }
 
 function getCalculatedMetricName() {
@@ -743,68 +694,25 @@ function buildCalculatedWorkbenchRows(rows) {
     });
 }
 
-function appendTableCell(row, text, tagName = "td") {
-    const cell = document.createElement(tagName);
-    cell.textContent = text;
-    row.append(cell);
-}
+function renderCalculatedMetricStatus(message = "", type = "info") {
+    const status = byId("perspective-calculated-metric-status");
+    if (!status) return;
 
-function renderCalculatedMetricTable(rows) {
-    const host = byId("perspective-calculated-metric-table");
-    if (!host) return;
+    status.classList.toggle("error", type === "error");
+    status.classList.toggle("success", type !== "error" && state.calculatedMetric.generated && state.calculatedRows.length > 0);
 
-    host.replaceChildren();
-    if (!state.calculatedMetric.generated) {
-        const empty = document.createElement("div");
-        empty.className = "calculated-empty";
-        empty.textContent = "填写公式、选择指标分类和分组维度后，可以在这里生成计算结果。";
-        host.append(empty);
+    if (message) {
+        status.textContent = message;
         return;
     }
 
-    let calculatedRows = [];
-    let formulaFields = [];
-    try {
-        calculatedRows = calculateMetricRows(rows);
-        formulaFields = getCalculatedFormulaFields(state.calculatedMetric.formula);
-    } catch (error) {
-        const empty = document.createElement("div");
-        empty.className = "calculated-empty";
-        empty.textContent = error.message || "公式暂时无法计算。";
-        host.append(empty);
+    if (state.calculatedMetric.generated && state.calculatedRows.length) {
+        const metricType = CALCULATED_METRIC_TYPE_LABELS[state.calculatedMetric.type] ?? "计算指标";
+        status.textContent = `已加载到下方 BI 工作台：${getCalculatedMetricName()}（${metricType}）。`;
         return;
     }
 
-    const { name, dimensions, format, formula: formulaText, type } = state.calculatedMetric;
-    const metricName = name.trim() || "计算指标";
-    const formula = document.createElement("div");
-    const table = document.createElement("table");
-    const thead = document.createElement("thead");
-    const headerRow = document.createElement("tr");
-    const tbody = document.createElement("tbody");
-
-    formula.className = "calculated-formula";
-    formula.textContent = `${metricName}: ${formulaText} · ${CALCULATED_METRIC_TYPE_LABELS[type]} · 字段先汇总后计算`;
-
-    const headers = [
-        ...(dimensions.length ? dimensions : ["范围"]),
-        ...formulaFields.map((field) => `${field}合计`),
-        metricName,
-    ];
-    headers.forEach((header) => appendTableCell(headerRow, header, "th"));
-    thead.append(headerRow);
-
-    calculatedRows.forEach((row) => {
-        const tableRow = document.createElement("tr");
-        const dimensionValues = dimensions.length ? row.dimensionValues : ["全部"];
-        dimensionValues.forEach((value) => appendTableCell(tableRow, value || "-"));
-        formulaFields.forEach((field) => appendTableCell(tableRow, formatNumber(row.fieldTotals[field])));
-        appendTableCell(tableRow, formatCalculatedValue(row.calculatedValue, format));
-        tbody.append(tableRow);
-    });
-
-    table.append(thead, tbody);
-    host.append(formula, table);
+    status.textContent = "生成后会直接切换到下方 BI 工作台，不在这里额外展示小表。";
 }
 
 function getAnalysisRows(rows) {
@@ -839,6 +747,7 @@ function invalidateCalculatedWorkbenchRows() {
     state.calculatedRows = [];
     state.workbenchDataset = "raw";
     renderWorkbenchDatasetControl();
+    renderCalculatedMetricStatus("计算指标已变更，重新生成后会加载到下方 BI 工作台。");
     if (shouldReloadRawWorkbench) void reloadViewer("原始明细");
 }
 
@@ -865,7 +774,6 @@ async function reloadViewer(sourceLabel) {
     updateSummary(state.rows);
     renderFieldRoles(state.rows);
     renderCalculatedMetricControls(state.rows);
-    renderCalculatedMetricTable(state.rows);
     renderWorkbenchDatasetControl();
     showMessage(`${sourceLabel}已载入，可以在右侧 Perspective 面板继续分析。`);
 }
@@ -975,7 +883,6 @@ function handleAggregationChange(event) {
 function toggleCalculatedMetricPanel() {
     state.calculatedMetric.panelOpen = !state.calculatedMetric.panelOpen;
     renderCalculatedMetricControls(state.rows);
-    renderCalculatedMetricTable(state.rows);
 }
 
 function handleCalculatedMetricChange(event) {
@@ -987,27 +894,26 @@ function handleCalculatedMetricChange(event) {
         if (state.calculatedMetric.generated) state.calculatedRows = buildCalculatedWorkbenchRows(state.rows);
         renderWorkbenchDatasetControl();
         if (state.workbenchDataset === "calculated") void reloadViewer("计算指标");
-        renderCalculatedMetricTable(state.rows);
+        renderCalculatedMetricStatus();
         return;
     }
 
     if (target.id === "perspective-calculated-formula") {
         state.calculatedMetric.formula = target.value;
         invalidateCalculatedWorkbenchRows();
-        renderCalculatedMetricTable(state.rows);
         return;
     }
 
     if (target.id === "perspective-calculated-metric-type" && CALCULATED_METRIC_TYPE_LABELS[target.value]) {
         state.calculatedMetric.type = target.value;
-        renderCalculatedMetricTable(state.rows);
+        renderCalculatedMetricStatus();
         if (state.workbenchDataset === "calculated") void reloadViewer("计算指标口径");
         return;
     }
 
     if (target.id === "perspective-calculated-format" && CALCULATED_FORMAT_LABELS[target.value]) {
         state.calculatedMetric.format = target.value;
-        renderCalculatedMetricTable(state.rows);
+        renderCalculatedMetricStatus();
         return;
     }
 
@@ -1022,7 +928,6 @@ function handleCalculatedMetricChange(event) {
     }
     state.calculatedMetric.dimensions = Array.from(dimensions);
     invalidateCalculatedWorkbenchRows();
-    renderCalculatedMetricTable(state.rows);
 }
 
 async function handleCalculatedMetricGenerate(event) {
@@ -1032,6 +937,7 @@ async function handleCalculatedMetricGenerate(event) {
     try {
         validateCalculatedFormula(state.rows);
     } catch (error) {
+        renderCalculatedMetricStatus(error.message || "请先确认计算公式。", "error");
         showMessage(error.message || "请先确认计算公式。", "error");
         return;
     }
@@ -1041,7 +947,6 @@ async function handleCalculatedMetricGenerate(event) {
     state.calculatedRows = buildCalculatedWorkbenchRows(state.rows);
     state.workbenchDataset = "calculated";
     renderCalculatedMetricControls(state.rows);
-    renderCalculatedMetricTable(state.rows);
     await reloadViewer("计算指标");
 }
 
@@ -1103,7 +1008,6 @@ function insertCalculatedFieldReference(field) {
         state.calculatedMetric.formula = `${state.calculatedMetric.formula} ${reference}`.trim();
         invalidateCalculatedWorkbenchRows();
         renderCalculatedMetricControls(state.rows);
-        renderCalculatedMetricTable(state.rows);
         return;
     }
 
@@ -1118,7 +1022,6 @@ function insertCalculatedFieldReference(field) {
     state.calculatedMetric.formula = nextValue;
     invalidateCalculatedWorkbenchRows();
     renderCalculatedMetricControls(state.rows);
-    renderCalculatedMetricTable(state.rows);
 }
 
 function bindCalculatedMetricControls() {
@@ -1177,15 +1080,6 @@ function bindControls() {
     byId("perspective-btn-xlsx-template")?.addEventListener("click", downloadXlsxTemplate);
     byId("perspective-field-roles-toggle")?.addEventListener("click", toggleFieldRoles);
     byId("perspective-btn-focus-workbench")?.addEventListener("click", toggleWorkbenchFocus);
-    byId("perspective-btn-reset-view")?.addEventListener("click", () => {
-        const viewer = byId("perspective-viewer");
-        void viewer?.restore?.(buildConfig(getWorkbenchRows()));
-    });
-    byId("perspective-preset-select")?.addEventListener("change", (event) => {
-        state.preset = event.target.value;
-        const viewer = byId("perspective-viewer");
-        void viewer?.restore?.(buildConfig(getWorkbenchRows()));
-    });
     byId("perspective-workbench-dataset-select")?.addEventListener("change", handleWorkbenchDatasetChange);
 }
 

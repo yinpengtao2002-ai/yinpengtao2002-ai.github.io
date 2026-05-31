@@ -121,18 +121,21 @@ test("Perspective BI keeps weighted calculated metrics out of the raw detail dat
   assert.match(perspectiveTool, /id="perspective-calculated-formula"/);
   assert.match(perspectiveTool, /id="perspective-calculated-metric-type"/);
   assert.match(perspectiveTool, /id="perspective-calculated-dimensions"/);
-  assert.match(perspectiveTool, /id="perspective-calculated-metric-table"/);
+  assert.match(perspectiveTool, /id="perspective-calculated-metric-status"/);
   assert.match(perspectiveEngine, /function renderCalculatedMetricControls\(rows\)/);
   assert.match(perspectiveEngine, /function calculateMetricRows\(rows\)/);
   assert.match(perspectiveEngine, /function evaluateCalculatedFormula/);
   assert.match(perspectiveEngine, /function buildCalculatedFormulaContext/);
-  assert.match(perspectiveEngine, /renderCalculatedMetricTable\(state\.rows\)/);
   assert.match(perspectiveEngine, /function getAnalysisRows\(rows\)[\s\S]*activeColumns/s);
   assert.match(perspectiveEngine, /function buildCalculatedWorkbenchRows\(rows\)/);
   assert.match(perspectiveEngine, /state\.worker\.table\(workbenchRows\)/);
   assert.doesNotMatch(perspectiveEngine, /getAnalysisRows\(rows\)[\s\S]*calculatedValue/s);
   assert.doesNotMatch(perspectiveTool, /id="perspective-calculated-numerator"/);
   assert.doesNotMatch(perspectiveTool, /id="perspective-calculated-denominator"/);
+  assert.doesNotMatch(perspectiveTool, /id="perspective-calculated-metric-table"/);
+  assert.doesNotMatch(perspectiveEngine, /function renderCalculatedMetricTable/);
+  assert.doesNotMatch(perspectiveEngine, /function appendTableCell/);
+  assert.doesNotMatch(perspectiveCss, /\.perspective-bi-tool \.calculated-metric-table/);
 });
 
 test("Perspective BI supports Excel-like calculated formulas with metric classifications", () => {
@@ -188,18 +191,23 @@ test("Perspective BI lets users collapse field confirmation after roles are set"
   assert.match(perspectiveCss, /\.perspective-bi-tool \.field-role-summary\s*\{/);
 });
 
-test("Perspective BI keeps preset selection with the workbench controls", () => {
+test("Perspective BI keeps external preset controls out of the native workbench", () => {
   assert.doesNotMatch(perspectiveTool, /className="field toolbar-preset"/);
   assert.match(perspectiveTool, /className="workbench-controls"/);
-  assert.match(perspectiveTool, /id="perspective-preset-select"/);
-  assert.match(perspectiveTool, /id="perspective-btn-reset-view"/);
-  assert.match(perspectiveTool, /恢复预设/);
+  assert.match(perspectiveTool, /id="perspective-workbench-dataset-select"/);
   assert.match(perspectiveTool, /id="perspective-btn-focus-workbench"/);
   assert.match(perspectiveTool, /className="btn focus-action-btn"/);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.workbench-controls\s*\{/);
-  assert.match(perspectiveCss, /\.perspective-bi-tool \.workbench-preset\s*\{/);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.important-action-btn\s*\{/);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.focus-action-btn\s*\{/);
+  assert.doesNotMatch(perspectiveTool, /id="perspective-preset-select"/);
+  assert.doesNotMatch(perspectiveTool, /id="perspective-btn-reset-view"/);
+  assert.doesNotMatch(perspectiveTool, /当前视图|收入按区域|边际按区域|月份热力图|恢复预设/);
+  assert.doesNotMatch(perspectivePage, /预置收入|收入按区域|边际按区域|月份热力图/);
+  assert.doesNotMatch(perspectiveEngine, /preset:\s*"revenue-by-region"/);
+  assert.doesNotMatch(perspectiveEngine, /perspective-preset-select/);
+  assert.doesNotMatch(perspectiveCss, /\.perspective-bi-tool \.workbench-preset\s*\{/);
+  assert.doesNotMatch(perspectiveCss, /\.perspective-bi-tool \.preset-reset-btn\s*\{/);
 });
 
 test("Perspective BI workbench supports a page-level focus mode", () => {
@@ -226,8 +234,9 @@ test("Perspective BI control rows prevent toolbar and field role overlap", () =>
   assert.doesNotMatch(perspectiveCss, /\.perspective-bi-tool \.field-role-note\s*\{/);
 });
 
-test("Perspective BI revenue preset uses a stable aggregate table before chart tweaks", () => {
-  assert.match(perspectiveEngine, /title:\s*"收入按区域"[\s\S]*plugin:\s*"Datagrid"[\s\S]*group_by:\s*\[region\]\.filter\(Boolean\)[\s\S]*split_by:\s*\[\]/s);
+test("Perspective BI opens the native workbench without external preset configuration", () => {
+  assert.match(perspectiveEngine, /function buildConfig\(rows\)[\s\S]*title:\s*"BI 工作台"[\s\S]*plugin:\s*"Datagrid"[\s\S]*group_by:\s*\[\][\s\S]*columns:\s*visibleColumns/s);
+  assert.doesNotMatch(perspectiveEngine, /title:\s*"收入按区域"|title:\s*"边际按区域"|title:\s*"月份热力图"|title:\s*"明细透视表"/);
 });
 
 test("Perspective BI keeps uploaded file and field text out of HTML injection paths", () => {

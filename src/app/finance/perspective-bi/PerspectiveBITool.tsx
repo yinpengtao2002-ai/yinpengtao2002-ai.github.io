@@ -154,9 +154,8 @@ export default function PerspectiveBITool() {
                         <button type="button" className="btn btn-primary calculated-generate-btn" id="perspective-calculated-generate">
                             生成计算指标
                         </button>
+                        <div id="perspective-calculated-metric-status" className="calculated-metric-status" aria-live="polite" />
                     </div>
-
-                    <div id="perspective-calculated-metric-table" className="calculated-metric-table" />
                 </section>
 
                 <section className="workspace-grid featured-grid">
@@ -174,22 +173,6 @@ export default function PerspectiveBITool() {
                                         <option value="calculated" disabled>计算指标结果</option>
                                     </select>
                                 </label>
-                                <label className="field workbench-preset">
-                                    <span>当前视图</span>
-                                    <select id="perspective-preset-select" className="input">
-                                        <option value="revenue-by-region">收入按区域</option>
-                                        <option value="margin-by-region">边际按区域</option>
-                                        <option value="monthly-heatmap">月份热力图</option>
-                                        <option value="detail-table">明细透视表</option>
-                                    </select>
-                                </label>
-                                <button
-                                    type="button"
-                                    className="btn btn-secondary preset-reset-btn"
-                                    id="perspective-btn-reset-view"
-                                >
-                                    恢复预设
-                                </button>
                                 <button
                                     type="button"
                                     className="btn focus-action-btn"

@@ -489,8 +489,7 @@
     margin-top: 0.85rem;
 }
 
-.perspective-bi-tool .calculated-metric-panel.collapsed .calculated-metric-body,
-.perspective-bi-tool .calculated-metric-panel.collapsed .calculated-metric-table {
+.perspective-bi-tool .calculated-metric-panel.collapsed .calculated-metric-body {
     display: none;
 }
 
@@ -580,53 +579,28 @@
     min-width: 140px;
 }
 
-.perspective-bi-tool .calculated-metric-table {
-    margin-top: 0.85rem;
-    overflow-x: auto;
-    scrollbar-color: #d9d6cb #fff;
-    scrollbar-width: thin;
-}
-
-.perspective-bi-tool .calculated-empty,
-.perspective-bi-tool .calculated-formula {
-    color: var(--text-secondary);
-    font-family: var(--font-sans);
-    font-size: 0.78rem;
-    line-height: 1.5;
-}
-
-.perspective-bi-tool .calculated-formula {
-    margin-bottom: 0.5rem;
+.perspective-bi-tool .calculated-metric-status {
+    border: 1px solid rgba(92, 143, 186, 0.22);
+    border-radius: 8px;
+    background: rgba(92, 143, 186, 0.08);
     color: #426f96;
-    font-weight: 800;
-}
-
-.perspective-bi-tool .calculated-metric-table table {
-    width: 100%;
-    min-width: 620px;
-    border-collapse: collapse;
     font-family: var(--font-sans);
     font-size: 0.78rem;
-}
-
-.perspective-bi-tool .calculated-metric-table th,
-.perspective-bi-tool .calculated-metric-table td {
-    border-bottom: 1px solid var(--border-light);
-    padding: 0.52rem 0.58rem;
-    text-align: left;
-    white-space: nowrap;
-}
-
-.perspective-bi-tool .calculated-metric-table th {
-    background: var(--bg-soft);
-    color: var(--text-secondary);
-    font-size: 0.72rem;
     font-weight: 800;
+    line-height: 1.5;
+    padding: 0.58rem 0.68rem;
 }
 
-.perspective-bi-tool .calculated-metric-table td {
-    color: var(--text-primary);
-    font-weight: 700;
+.perspective-bi-tool .calculated-metric-status.success {
+    border-color: rgba(120, 140, 93, 0.28);
+    background: rgba(120, 140, 93, 0.1);
+    color: #5f7544;
+}
+
+.perspective-bi-tool .calculated-metric-status.error {
+    border-color: rgba(182, 95, 85, 0.28);
+    background: rgba(182, 95, 85, 0.1);
+    color: var(--accent-red);
 }
 
 .perspective-bi-tool .workspace-grid {
@@ -668,20 +642,14 @@
 
 .perspective-bi-tool .workbench-controls {
     display: grid;
-    min-width: min(100%, 680px);
-    grid-template-columns: minmax(150px, 0.75fr) minmax(190px, 1fr) auto auto;
+    min-width: min(100%, 420px);
+    grid-template-columns: minmax(180px, 1fr) auto;
     align-items: end;
     gap: 0.55rem;
 }
 
-.perspective-bi-tool .workbench-dataset,
-.perspective-bi-tool .workbench-preset {
+.perspective-bi-tool .workbench-dataset {
     min-width: 0;
-}
-
-.perspective-bi-tool .preset-reset-btn {
-    min-height: 42px;
-    white-space: nowrap;
 }
 
 .perspective-bi-tool .viewer-frame {
