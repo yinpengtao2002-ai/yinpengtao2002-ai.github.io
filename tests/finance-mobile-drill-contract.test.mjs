@@ -117,21 +117,25 @@ test("Perspective BI templates only ask for base business fields without automat
 test("Perspective BI adds calculated metrics as native workbench expression fields", () => {
   assert.match(perspectiveTool, /id="perspective-calculated-metric-toggle"/);
   assert.match(perspectiveTool, /id="perspective-calculated-metric-panel"/);
+  assert.match(perspectiveTool, /id="perspective-calculated-field-count"/);
+  assert.match(perspectiveTool, /id="perspective-calculated-field-list"/);
   assert.match(perspectiveTool, /id="perspective-calculated-metric-name"/);
   assert.match(perspectiveTool, /id="perspective-calculated-formula"/);
   assert.match(perspectiveTool, /id="perspective-calculated-metric-type"/);
   assert.match(perspectiveTool, /id="perspective-calculated-metric-status"/);
-  assert.match(perspectiveTool, /id="perspective-calculated-remove"/);
   assert.match(perspectiveTool, /作为字段加入下方 Perspective 工作台/);
   assert.match(perspectiveEngine, /function renderCalculatedMetricControls\(rows\)/);
+  assert.match(perspectiveEngine, /function renderCalculatedFieldList/);
   assert.match(perspectiveEngine, /function buildCalculatedExpressions\(\)/);
   assert.match(perspectiveEngine, /function toPerspectiveExpressionFormula\(formula\)/);
-  assert.match(perspectiveEngine, /function inferCalculatedMetricAggregate\(\)/);
-  assert.match(perspectiveEngine, /function handleCalculatedMetricRemove/);
-  assert.match(perspectiveEngine, /expressions:\s*buildCalculatedExpressions\(\)/);
+  assert.match(perspectiveEngine, /function inferCalculatedMetricAggregate\(field\)/);
+  assert.match(perspectiveEngine, /function handleCalculatedFieldRemove/);
+  assert.match(perspectiveEngine, /const expressions = buildCalculatedExpressions\(\)/);
+  assert.match(perspectiveEngine, /expressions,\s*sort:/);
   assert.match(perspectiveEngine, /\["weighted mean",\s*\[denominator\]\]/);
   assert.match(perspectiveEngine, /function getAnalysisRows\(rows\)[\s\S]*activeColumns/s);
   assert.doesNotMatch(perspectiveEngine, /getAnalysisRows\(rows\)[\s\S]*calculatedValue/s);
+  assert.doesNotMatch(perspectiveEngine, /state\.calculatedMetric\.generated/);
   assert.doesNotMatch(perspectiveTool, /id="perspective-calculated-dimensions"/);
   assert.doesNotMatch(perspectiveTool, /分组维度/);
   assert.doesNotMatch(perspectiveTool, /id="perspective-calculated-numerator"/);
@@ -147,16 +151,20 @@ test("Perspective BI adds calculated metrics as native workbench expression fiel
   assert.doesNotMatch(perspectiveCss, /\.perspective-bi-tool \.dimension-chip/);
 });
 
-test("Perspective BI can remove a generated calculated metric from the same native workbench", () => {
-  assert.match(perspectiveTool, /id="perspective-calculated-remove"[\s\S]*移除计算指标/);
-  assert.match(perspectiveEngine, /const removeButton = byId\("perspective-calculated-remove"\)/);
-  assert.match(perspectiveEngine, /removeButton\.disabled = !calculatedMetric\.generated/);
-  assert.match(perspectiveEngine, /function handleCalculatedMetricRemove\(event\)[\s\S]*state\.calculatedMetric\.generated = false/);
-  assert.match(perspectiveEngine, /handleCalculatedMetricRemove\(event\)[\s\S]*await reloadViewer\("计算指标移除"\)/);
-  assert.match(perspectiveEngine, /perspective-calculated-remove"\)\?\.addEventListener\("click", handleCalculatedMetricRemove\)/);
+test("Perspective BI manages calculated fields as a deletable field list", () => {
+  assert.match(perspectiveTool, /字段管理/);
+  assert.match(perspectiveTool, /系统自动补充单车指标/);
+  assert.match(perspectiveEngine, /calculatedFields:\s*\[\]/);
+  assert.match(perspectiveEngine, /data-calculated-field-remove/);
+  assert.match(perspectiveEngine, /function handleCalculatedFieldRemove\(event\)/);
+  assert.match(perspectiveEngine, /state\.calculatedFields = state\.calculatedFields\.filter/);
+  assert.match(perspectiveEngine, /await reloadViewer\("计算字段移除"\)/);
   assert.match(perspectiveEngine, /已从下方 BI 工作台移除/);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.calculated-actions\s*\{/);
-  assert.match(perspectiveCss, /\.perspective-bi-tool \.calculated-remove-btn\s*\{/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.calculated-field-list\s*\{/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.calculated-delete-btn\s*\{/);
+  assert.doesNotMatch(perspectiveTool, /id="perspective-calculated-remove"/);
+  assert.doesNotMatch(perspectiveEngine, /handleCalculatedMetricRemove/);
 });
 
 test("Perspective BI supports Excel-like calculated formulas with metric classifications", () => {
@@ -169,7 +177,19 @@ test("Perspective BI supports Excel-like calculated formulas with metric classif
   assert.match(perspectiveEngine, /function toReversePolishNotation/);
   assert.match(perspectiveEngine, /type:\s*"unit"/);
   assert.match(perspectiveEngine, /formula:\s*"\[净收入\] \/ \[销量\]"/);
-  assert.match(perspectiveEngine, /state\.calculatedMetric\.type === "additive"[\s\S]*return "sum"/);
+  assert.match(perspectiveEngine, /field\.type === "additive"[\s\S]*return "sum"/);
+});
+
+test("Perspective BI automatically creates useful unit metrics from uploaded business data", () => {
+  assert.match(perspectiveEngine, /function buildAutoCalculatedFields\(rows\)/);
+  assert.match(perspectiveEngine, /const unitMetricBlueprints/);
+  assert.match(perspectiveEngine, /单车净收入/);
+  assert.match(perspectiveEngine, /单车边际/);
+  assert.match(perspectiveEngine, /单车成本/);
+  assert.match(perspectiveEngine, /if \(numerator === denominator\) return/);
+  assert.match(perspectiveEngine, /if \(getColumns\(rows\)\.includes\(blueprint\.name\)\) return/);
+  assert.match(perspectiveEngine, /state\.calculatedFields = buildAutoCalculatedFields\(normalizedRows\)/);
+  assert.doesNotMatch(perspectiveEngine, /单车销量/);
 });
 
 test("Perspective BI keeps one workbench and removes calculated metric dataset switching", () => {

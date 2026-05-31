@@ -91,8 +91,11 @@ export default function PerspectiveBITool() {
                 <section className="panel calculated-metric-panel collapsed" id="perspective-calculated-metric-panel" aria-label="计算指标">
                     <div className="calculated-metric-header">
                         <div>
-                            <h2>计算指标视图</h2>
-                            <p>用 Excel 式公式生成单车、费率、差额等指标，生成后会作为字段加入下方 Perspective 工作台。</p>
+                            <div className="calculated-title-line">
+                                <h2>计算字段管理</h2>
+                                <span className="calculated-field-count" id="perspective-calculated-field-count">0 个计算字段</span>
+                            </div>
+                            <p>系统自动补充单车指标；你也可以用 Excel 式公式继续新建字段，生成后会作为字段加入下方 Perspective 工作台。</p>
                         </div>
                         <button
                             type="button"
@@ -105,6 +108,14 @@ export default function PerspectiveBITool() {
                     </div>
 
                     <div className="calculated-metric-body" id="perspective-calculated-metric-body">
+                        <div className="calculated-field-manager">
+                            <div className="calculated-field-manager-head">
+                                <span>字段管理</span>
+                                <small>自动字段和手动字段都可以单独删除</small>
+                            </div>
+                            <div id="perspective-calculated-field-list" className="calculated-field-list" />
+                        </div>
+
                         <div className="calculated-form">
                             <label className="field">
                                 <span>指标名称</span>
@@ -149,10 +160,7 @@ export default function PerspectiveBITool() {
                         </div>
                         <div className="calculated-actions">
                             <button type="button" className="btn btn-primary calculated-generate-btn" id="perspective-calculated-generate">
-                                生成计算指标
-                            </button>
-                            <button type="button" className="btn btn-secondary calculated-remove-btn" id="perspective-calculated-remove" disabled>
-                                移除计算指标
+                                添加到字段池
                             </button>
                         </div>
                         <div id="perspective-calculated-metric-status" className="calculated-metric-status" aria-live="polite" />

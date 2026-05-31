@@ -465,6 +465,25 @@
     font-weight: 800;
 }
 
+.perspective-bi-tool .calculated-title-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.perspective-bi-tool .calculated-field-count {
+    border: 1px solid rgba(92, 143, 186, 0.24);
+    border-radius: 999px;
+    background: rgba(92, 143, 186, 0.08);
+    color: #426f96;
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0.28rem 0.5rem;
+    white-space: nowrap;
+}
+
 .perspective-bi-tool .calculated-metric-header p {
     max-width: 720px;
     margin-top: 0.3rem;
@@ -491,6 +510,108 @@
 
 .perspective-bi-tool .calculated-metric-panel.collapsed .calculated-metric-body {
     display: none;
+}
+
+.perspective-bi-tool .calculated-field-manager {
+    display: grid;
+    gap: 0.5rem;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-soft);
+    padding: 0.58rem;
+}
+
+.perspective-bi-tool .calculated-field-manager-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.45rem;
+    font-family: var(--font-sans);
+}
+
+.perspective-bi-tool .calculated-field-manager-head span {
+    color: var(--text-primary);
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.perspective-bi-tool .calculated-field-manager-head small {
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.perspective-bi-tool .calculated-field-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    gap: 0.45rem;
+}
+
+.perspective-bi-tool .calculated-field-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.55rem;
+    border: 1px solid rgba(92, 143, 186, 0.2);
+    border-radius: 8px;
+    background: #fff;
+    padding: 0.56rem;
+}
+
+.perspective-bi-tool .calculated-field-card.source-auto {
+    border-color: rgba(120, 140, 93, 0.24);
+    background: rgba(120, 140, 93, 0.06);
+}
+
+.perspective-bi-tool .calculated-field-main {
+    display: grid;
+    min-width: 0;
+    gap: 0.28rem;
+}
+
+.perspective-bi-tool .calculated-field-top {
+    display: flex;
+    min-width: 0;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.38rem;
+}
+
+.perspective-bi-tool .calculated-field-top strong {
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+.perspective-bi-tool .calculated-source-pill {
+    border-radius: 999px;
+    background: rgba(217, 119, 87, 0.1);
+    color: #a95438;
+    font-family: var(--font-sans);
+    font-size: 0.66rem;
+    font-weight: 800;
+    padding: 0.2rem 0.38rem;
+    white-space: nowrap;
+}
+
+.perspective-bi-tool .calculated-field-meta,
+.perspective-bi-tool .calculated-field-formula,
+.perspective-bi-tool .calculated-empty-state {
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    line-height: 1.4;
+}
+
+.perspective-bi-tool .calculated-field-formula {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .perspective-bi-tool .calculated-form {
@@ -563,11 +684,12 @@
 }
 
 .perspective-bi-tool .calculated-generate-btn,
-.perspective-bi-tool .calculated-remove-btn {
+.perspective-bi-tool .calculated-delete-btn {
     min-width: 140px;
 }
 
-.perspective-bi-tool .calculated-remove-btn {
+.perspective-bi-tool .calculated-delete-btn {
+    min-width: 70px;
     border-color: rgba(182, 95, 85, 0.24);
     background: rgba(182, 95, 85, 0.08);
     color: var(--accent-red);
@@ -799,7 +921,7 @@ body.perspective-bi-workspace-focus #perspective-tool-back-button {
 
     .perspective-bi-tool .calculated-actions,
     .perspective-bi-tool .calculated-generate-btn,
-    .perspective-bi-tool .calculated-remove-btn,
+    .perspective-bi-tool .calculated-delete-btn,
     .perspective-bi-tool .important-action-btn,
     .perspective-bi-tool .focus-action-btn {
         width: 100%;
@@ -839,6 +961,10 @@ body.perspective-bi-workspace-focus #perspective-tool-back-button {
     }
 
     .perspective-bi-tool .calculated-form {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .perspective-bi-tool .calculated-field-card {
         grid-template-columns: minmax(0, 1fr);
     }
 }
