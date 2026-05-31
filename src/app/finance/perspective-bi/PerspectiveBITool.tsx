@@ -147,9 +147,14 @@ export default function PerspectiveBITool() {
                             <div className="calculated-dimension-title">可用指标</div>
                             <div id="perspective-calculated-formula-fields" className="calculated-formula-fields" />
                         </div>
-                        <button type="button" className="btn btn-primary calculated-generate-btn" id="perspective-calculated-generate">
-                            生成计算指标
-                        </button>
+                        <div className="calculated-actions">
+                            <button type="button" className="btn btn-primary calculated-generate-btn" id="perspective-calculated-generate">
+                                生成计算指标
+                            </button>
+                            <button type="button" className="btn btn-secondary calculated-remove-btn" id="perspective-calculated-remove" disabled>
+                                移除计算指标
+                            </button>
+                        </div>
                         <div id="perspective-calculated-metric-status" className="calculated-metric-status" aria-live="polite" />
                     </div>
                 </section>

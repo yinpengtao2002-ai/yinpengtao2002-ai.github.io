@@ -546,6 +546,7 @@ function renderCalculatedMetricControls(rows) {
     const formatSelect = byId("perspective-calculated-format");
     const formulaFieldsArea = byId("perspective-calculated-formula-fields");
     const generateButton = byId("perspective-calculated-generate");
+    const removeButton = byId("perspective-calculated-remove");
 
     if (!panel || !toggle || !formulaFieldsArea) return;
 
@@ -574,6 +575,7 @@ function renderCalculatedMetricControls(rows) {
     if (typeSelect) typeSelect.value = calculatedMetric.type;
     if (formatSelect) formatSelect.value = calculatedMetric.format;
     if (generateButton) generateButton.disabled = !canGenerate;
+    if (removeButton) removeButton.disabled = !calculatedMetric.generated;
 
     const formulaFieldNodes = metricColumns.length
         ? metricColumns.map((field) => {
@@ -809,6 +811,17 @@ async function handleCalculatedMetricGenerate(event) {
     await reloadViewer("计算指标");
 }
 
+async function handleCalculatedMetricRemove(event) {
+    event.preventDefault();
+    if (!state.calculatedMetric.generated) return;
+
+    const metricName = getCalculatedMetricName();
+    state.calculatedMetric.generated = false;
+    state.calculatedMetric.panelOpen = true;
+    await reloadViewer("计算指标移除");
+    renderCalculatedMetricStatus(`已从下方 BI 工作台移除：${metricName}。`);
+}
+
 function toggleFieldRoles() {
     state.fieldRolesCollapsed = !state.fieldRolesCollapsed;
     renderFieldRoleSummary(state.rows);
@@ -875,6 +888,7 @@ function bindCalculatedMetricControls() {
     const panel = byId("perspective-calculated-metric-panel");
     byId("perspective-calculated-metric-toggle")?.addEventListener("click", toggleCalculatedMetricPanel);
     byId("perspective-calculated-generate")?.addEventListener("click", handleCalculatedMetricGenerate);
+    byId("perspective-calculated-remove")?.addEventListener("click", handleCalculatedMetricRemove);
     panel?.addEventListener("input", (event) => {
         const target = event.target;
         if (target?.matches?.("#perspective-calculated-metric-name, #perspective-calculated-formula")) handleCalculatedMetricChange(event);

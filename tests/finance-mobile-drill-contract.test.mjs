@@ -121,11 +121,13 @@ test("Perspective BI adds calculated metrics as native workbench expression fiel
   assert.match(perspectiveTool, /id="perspective-calculated-formula"/);
   assert.match(perspectiveTool, /id="perspective-calculated-metric-type"/);
   assert.match(perspectiveTool, /id="perspective-calculated-metric-status"/);
+  assert.match(perspectiveTool, /id="perspective-calculated-remove"/);
   assert.match(perspectiveTool, /作为字段加入下方 Perspective 工作台/);
   assert.match(perspectiveEngine, /function renderCalculatedMetricControls\(rows\)/);
   assert.match(perspectiveEngine, /function buildCalculatedExpressions\(\)/);
   assert.match(perspectiveEngine, /function toPerspectiveExpressionFormula\(formula\)/);
   assert.match(perspectiveEngine, /function inferCalculatedMetricAggregate\(\)/);
+  assert.match(perspectiveEngine, /function handleCalculatedMetricRemove/);
   assert.match(perspectiveEngine, /expressions:\s*buildCalculatedExpressions\(\)/);
   assert.match(perspectiveEngine, /\["weighted mean",\s*\[denominator\]\]/);
   assert.match(perspectiveEngine, /function getAnalysisRows\(rows\)[\s\S]*activeColumns/s);
@@ -143,6 +145,18 @@ test("Perspective BI adds calculated metrics as native workbench expression fiel
   assert.doesNotMatch(perspectiveCss, /\.perspective-bi-tool \.calculated-metric-table/);
   assert.doesNotMatch(perspectiveCss, /\.perspective-bi-tool \.calculated-dimensions/);
   assert.doesNotMatch(perspectiveCss, /\.perspective-bi-tool \.dimension-chip/);
+});
+
+test("Perspective BI can remove a generated calculated metric from the same native workbench", () => {
+  assert.match(perspectiveTool, /id="perspective-calculated-remove"[\s\S]*移除计算指标/);
+  assert.match(perspectiveEngine, /const removeButton = byId\("perspective-calculated-remove"\)/);
+  assert.match(perspectiveEngine, /removeButton\.disabled = !calculatedMetric\.generated/);
+  assert.match(perspectiveEngine, /function handleCalculatedMetricRemove\(event\)[\s\S]*state\.calculatedMetric\.generated = false/);
+  assert.match(perspectiveEngine, /handleCalculatedMetricRemove\(event\)[\s\S]*await reloadViewer\("计算指标移除"\)/);
+  assert.match(perspectiveEngine, /perspective-calculated-remove"\)\?\.addEventListener\("click", handleCalculatedMetricRemove\)/);
+  assert.match(perspectiveEngine, /已从下方 BI 工作台移除/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.calculated-actions\s*\{/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.calculated-remove-btn\s*\{/);
 });
 
 test("Perspective BI supports Excel-like calculated formulas with metric classifications", () => {

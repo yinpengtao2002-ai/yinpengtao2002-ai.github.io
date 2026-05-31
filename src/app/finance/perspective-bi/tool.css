@@ -555,9 +555,22 @@
     background: rgba(92, 143, 186, 0.08);
 }
 
-.perspective-bi-tool .calculated-generate-btn {
-    justify-self: start;
+.perspective-bi-tool .calculated-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.perspective-bi-tool .calculated-generate-btn,
+.perspective-bi-tool .calculated-remove-btn {
     min-width: 140px;
+}
+
+.perspective-bi-tool .calculated-remove-btn {
+    border-color: rgba(182, 95, 85, 0.24);
+    background: rgba(182, 95, 85, 0.08);
+    color: var(--accent-red);
 }
 
 .perspective-bi-tool .calculated-metric-status {
@@ -784,7 +797,9 @@ body.perspective-bi-workspace-focus #perspective-tool-back-button {
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     }
 
+    .perspective-bi-tool .calculated-actions,
     .perspective-bi-tool .calculated-generate-btn,
+    .perspective-bi-tool .calculated-remove-btn,
     .perspective-bi-tool .important-action-btn,
     .perspective-bi-tool .focus-action-btn {
         width: 100%;
