@@ -239,6 +239,7 @@ export default function HeroModelStage() {
               onFocus={() => setActiveIndex(index)}
             >
               <strong>{stage.question}</strong>
+              <span className="home-hero-stage-tab-model">{stage.title}</span>
             </Link>
           );
         })}

@@ -877,6 +877,14 @@ h6 {
   line-height: 1.28;
 }
 
+.home-hero-stage-tab-model {
+  display: block;
+  color: color-mix(in srgb, var(--foreground) 54%, var(--muted));
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
 .home-hero-stage-tab:hover,
 .home-hero-stage-tab:focus-visible,
 .home-hero-stage-tab.is-active {
@@ -3188,6 +3196,10 @@ h6 {
 
   .home-hero-stage-tab strong {
     font-size: 10.5px;
+  }
+
+  .home-hero-stage-tab-model {
+    font-size: 9.5px;
   }
 
   .home-hero-stage-dots {
