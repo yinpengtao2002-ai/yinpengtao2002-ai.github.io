@@ -54,6 +54,107 @@ const unitMetricBlueprints = [
     { name: "单车边际", numerators: ["边际总额", "边际", "贡献边际", "毛利", "Margin", "margin"] },
     { name: "单车成本", numerators: ["成本", "总成本", "变动成本", "Cost", "cost"] },
 ];
+const WORKBENCH_GUIDES = {
+    Datagrid: {
+        title: "数据表",
+        tips: [
+            ["分组", "拖入月份、大区、国家等维度，形成透视表行层级。"],
+            ["拆分", "拖入渠道、车型等维度，把同一指标横向展开。"],
+            ["字段", "拖入销量、净收入、单车指标等字段，决定表格展示内容。"],
+            ["筛选/排序", "拖入字段后收窄范围，或固定指标、维度的排列顺序。"],
+        ],
+    },
+    "Y Bar": {
+        title: "纵向柱状图",
+        tips: [
+            ["Y 轴", "拖入净收入、边际、单车指标等数值字段，决定柱子高度。"],
+            ["分组", "拖入月份、大区等维度，作为横轴分类。"],
+            ["拆分", "拖入车型、渠道等维度，把柱子拆成多个系列。"],
+            ["筛选", "拖入国家、车型等字段，只保留当前关注范围。"],
+        ],
+    },
+    "X Bar": {
+        title: "横向柱状图",
+        tips: [
+            ["X 轴", "拖入销量、收入、边际等数值字段，决定条形长度。"],
+            ["分组", "拖入国家、车型等维度，作为纵向分类。"],
+            ["拆分", "拖入渠道、大区等维度，对每个分类继续拆系列。"],
+            ["排序", "拖入核心指标后可按大小排列，适合做排名。"],
+        ],
+    },
+    "Y Line": {
+        title: "折线图",
+        tips: [
+            ["Y 轴", "拖入收入、边际、单车等指标，决定折线数值。"],
+            ["分组", "拖入月份或日期字段，形成时间序列。"],
+            ["拆分", "拖入大区、车型等维度，对比多条趋势线。"],
+            ["筛选", "限定国家、渠道或车型，避免趋势线过密。"],
+        ],
+    },
+    "X/Y Line": {
+        title: "XY 折线图",
+        tips: [
+            ["X 轴", "拖入一个连续数值或时间字段，决定横向位置。"],
+            ["Y 轴", "拖入要观察的指标，决定纵向高度。"],
+            ["拆分", "拖入维度后分系列观察关系变化。"],
+            ["筛选", "保留一个区域或车型，让关系更清楚。"],
+        ],
+    },
+    "Y Scatter": {
+        title: "Y 轴散点图",
+        tips: [
+            ["Y 轴", "拖入一个或多个数值字段，观察点位分布。"],
+            ["分组", "拖入维度后按类别铺开点位。"],
+            ["拆分", "拖入车型、渠道等维度，形成不同颜色或系列。"],
+            ["筛选", "缩小样本范围，避免点位挤在一起。"],
+        ],
+    },
+    "X/Y Scatter": {
+        title: "散点图",
+        tips: [
+            ["X 轴", "拖入销量、单车收入等数值字段，决定横向位置。"],
+            ["Y 轴", "拖入边际、利润等数值字段，决定纵向位置。"],
+            ["拆分", "拖入大区、车型等维度，比较不同系列的分布。"],
+            ["筛选", "限定样本范围后，更容易看出相关性和离群点。"],
+        ],
+    },
+    "Y Area": {
+        title: "面积图",
+        tips: [
+            ["Y 轴", "拖入收入、销量、边际等指标，决定面积高度。"],
+            ["分组", "拖入月份或期间字段，形成连续走势。"],
+            ["拆分", "拖入大区、车型等维度，观察结构贡献。"],
+            ["筛选", "减少系列数量，避免面积堆叠难读。"],
+        ],
+    },
+    Heatmap: {
+        title: "热力图",
+        tips: [
+            ["行/列", "在分组和拆分中放入两个维度，形成交叉矩阵。"],
+            ["颜色", "拖入收入、边际、单车等指标，用颜色深浅表达高低。"],
+            ["筛选", "限定月份或区域，让矩阵规模保持可读。"],
+            ["排序", "按核心指标排序，突出热区和冷区。"],
+        ],
+    },
+    Treemap: {
+        title: "矩形树图",
+        tips: [
+            ["分组", "拖入大区、国家、车型等层级维度，形成矩形分层。"],
+            ["大小", "拖入销量、收入或边际，决定矩形面积。"],
+            ["颜色", "再拖入边际率、单车指标等字段，标记质量差异。"],
+            ["筛选", "先筛出重点市场，层级会更干净。"],
+        ],
+    },
+    Sunburst: {
+        title: "旭日图",
+        tips: [
+            ["分组", "按大区、国家、车型等顺序拖入层级维度。"],
+            ["大小", "拖入销量、收入或边际，决定扇区占比。"],
+            ["拆分", "用于增加层级时要克制，层级太多会变难读。"],
+            ["筛选", "聚焦一个期间或市场后，更适合看结构。"],
+        ],
+    },
+};
 
 const state = {
     initialized: false,
@@ -235,6 +336,67 @@ function buildConfig(rows) {
         sort: [],
         settings: true,
     };
+}
+
+function getWorkbenchGuide(plugin) {
+    if (plugin && WORKBENCH_GUIDES[plugin]) return WORKBENCH_GUIDES[plugin];
+    return WORKBENCH_GUIDES.Datagrid;
+}
+
+function renderWorkbenchGuide(plugin = "Datagrid") {
+    const guide = byId("perspective-workbench-guide");
+    if (!guide) return;
+
+    const guideConfig = getWorkbenchGuide(plugin);
+    const title = document.createElement("div");
+    const titleLabel = document.createElement("span");
+    const titleName = document.createElement("strong");
+    const items = document.createElement("div");
+
+    title.className = "workbench-guide-title";
+    titleLabel.textContent = "当前图表";
+    titleName.textContent = guideConfig.title;
+    items.className = "workbench-guide-items";
+
+    const tipNodes = guideConfig.tips.map(([label, text]) => {
+        const item = document.createElement("span");
+        const itemLabel = document.createElement("b");
+        item.className = "workbench-guide-item";
+        itemLabel.textContent = label;
+        item.append(itemLabel, document.createTextNode(text));
+        return item;
+    });
+
+    title.append(titleLabel, titleName);
+    items.replaceChildren(...tipNodes);
+    guide.replaceChildren(title, items);
+}
+
+async function updateWorkbenchGuideFromViewer(event) {
+    const viewer = byId("perspective-viewer");
+    let plugin = typeof event?.detail === "string" ? event.detail : event?.detail?.plugin ?? event?.detail?.name ?? event?.detail?.config?.plugin;
+
+    if (!plugin && viewer?.save) {
+        try {
+            plugin = (await viewer.save())?.plugin;
+        } catch (error) {
+            console.warn("Perspective chart guide could not read viewer state.", error);
+        }
+    }
+
+    renderWorkbenchGuide(plugin);
+}
+
+function bindWorkbenchGuide() {
+    const viewer = byId("perspective-viewer");
+    if (!viewer || viewer.dataset.workbenchGuideBound === "true") return;
+
+    const syncGuide = (event) => {
+        void updateWorkbenchGuideFromViewer(event);
+    };
+    viewer.addEventListener("perspective-config-update", syncGuide);
+    viewer.addEventListener("perspective-plugin-update", syncGuide);
+    viewer.dataset.workbenchGuideBound = "true";
 }
 
 function updateSummary(rows) {
@@ -747,9 +909,11 @@ async function reloadViewer(sourceLabel) {
     const analysisRows = getAnalysisRows(state.rows);
     const previousTable = state.table;
     const table = await state.worker.table(analysisRows);
+    const config = buildConfig(analysisRows);
     state.table = table;
     await viewer.load(table);
-    await viewer.restore(buildConfig(analysisRows));
+    await viewer.restore(config);
+    renderWorkbenchGuide(config.plugin);
 
     try {
         await previousTable?.delete();
@@ -1071,6 +1235,8 @@ async function initApp() {
         bindCalculatedMetricControls();
         if (root) root.dataset.controlsBound = "true";
     }
+    bindWorkbenchGuide();
+    renderWorkbenchGuide("Datagrid");
     await loadRows(SAMPLE_ROWS, "示例数据");
     state.initialized = true;
 }

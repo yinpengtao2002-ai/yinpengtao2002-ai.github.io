@@ -185,6 +185,7 @@ export default function PerspectiveBITool() {
                                 </button>
                             </div>
                         </div>
+                        <div id="perspective-workbench-guide" className="workbench-guide" aria-live="polite" />
                         <div className="viewer-frame">
                             {createElement("perspective-viewer", { id: "perspective-viewer" })}
                         </div>

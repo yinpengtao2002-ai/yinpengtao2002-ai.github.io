@@ -514,11 +514,11 @@
 
 .perspective-bi-tool .calculated-field-manager {
     display: grid;
-    gap: 0.5rem;
+    gap: 0.38rem;
     border: 1px solid var(--border-light);
     border-radius: 8px;
     background: var(--bg-soft);
-    padding: 0.58rem;
+    padding: 0.44rem;
 }
 
 .perspective-bi-tool .calculated-field-manager-head {
@@ -544,19 +544,20 @@
 
 .perspective-bi-tool .calculated-field-list {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
-    gap: 0.45rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    gap: 0.32rem;
 }
 
 .perspective-bi-tool .calculated-field-card {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) 48px;
+    min-height: 38px;
     align-items: center;
-    gap: 0.55rem;
+    gap: 0.34rem;
     border: 1px solid rgba(92, 143, 186, 0.2);
     border-radius: 8px;
     background: #fff;
-    padding: 0.56rem;
+    padding: 0.36rem 0.42rem;
 }
 
 .perspective-bi-tool .calculated-field-card.source-auto {
@@ -565,25 +566,30 @@
 }
 
 .perspective-bi-tool .calculated-field-main {
-    display: grid;
+    display: flex;
     min-width: 0;
-    gap: 0.28rem;
+    align-items: center;
+    gap: 0.3rem;
 }
 
 .perspective-bi-tool .calculated-field-top {
     display: flex;
-    min-width: 0;
-    flex-wrap: wrap;
+    min-width: 92px;
+    max-width: 58%;
+    flex: 0 1 auto;
+    flex-wrap: nowrap;
     align-items: center;
-    gap: 0.38rem;
+    gap: 0.28rem;
 }
 
 .perspective-bi-tool .calculated-field-top strong {
     color: var(--text-primary);
     font-family: var(--font-sans);
-    font-size: 0.82rem;
+    font-size: 0.76rem;
     font-weight: 800;
-    overflow-wrap: anywhere;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .perspective-bi-tool .calculated-source-pill {
@@ -591,24 +597,28 @@
     background: rgba(217, 119, 87, 0.1);
     color: #a95438;
     font-family: var(--font-sans);
-    font-size: 0.66rem;
+    font-size: 0.62rem;
     font-weight: 800;
-    padding: 0.2rem 0.38rem;
+    padding: 0.14rem 0.3rem;
     white-space: nowrap;
 }
 
-.perspective-bi-tool .calculated-field-meta,
 .perspective-bi-tool .calculated-field-formula,
 .perspective-bi-tool .calculated-empty-state {
     color: var(--text-secondary);
     font-family: var(--font-sans);
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     line-height: 1.4;
+}
+
+.perspective-bi-tool .calculated-field-meta {
+    display: none;
 }
 
 .perspective-bi-tool .calculated-field-formula {
     display: block;
-    min-width: 0;
+    min-width: 48px;
+    flex: 1 1 auto;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -689,10 +699,14 @@
 }
 
 .perspective-bi-tool .calculated-delete-btn {
-    min-width: 70px;
+    min-width: 0;
+    min-height: 28px;
+    justify-self: end;
     border-color: rgba(182, 95, 85, 0.24);
     background: rgba(182, 95, 85, 0.08);
     color: var(--accent-red);
+    padding: 0.24rem 0.38rem;
+    font-size: 0.68rem;
 }
 
 .perspective-bi-tool .calculated-metric-status {
@@ -756,6 +770,65 @@
     line-height: 1.55;
 }
 
+.perspective-bi-tool .workbench-guide {
+    display: grid;
+    grid-template-columns: minmax(112px, 0.22fr) minmax(0, 1fr);
+    gap: 0.62rem;
+    align-items: start;
+    border-bottom: 1px solid var(--border-light);
+    background: rgba(250, 249, 245, 0.74);
+    padding: 0.58rem 1rem 0.64rem;
+    font-family: var(--font-sans);
+}
+
+.perspective-bi-tool .workbench-guide-title {
+    display: grid;
+    gap: 0.12rem;
+    min-width: 0;
+}
+
+.perspective-bi-tool .workbench-guide-title span {
+    color: var(--text-muted);
+    font-size: 0.66rem;
+    font-weight: 800;
+}
+
+.perspective-bi-tool .workbench-guide-title strong {
+    color: var(--text-primary);
+    font-size: 0.82rem;
+    font-weight: 800;
+    line-height: 1.25;
+}
+
+.perspective-bi-tool .workbench-guide-items {
+    display: flex;
+    min-width: 0;
+    flex-wrap: wrap;
+    gap: 0.38rem;
+}
+
+.perspective-bi-tool .workbench-guide-item {
+    display: inline-flex;
+    min-height: 26px;
+    max-width: 100%;
+    align-items: center;
+    gap: 0.26rem;
+    border: 1px solid rgba(92, 143, 186, 0.18);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.35;
+    padding: 0.24rem 0.38rem;
+}
+
+.perspective-bi-tool .workbench-guide-item b {
+    color: #426f96;
+    font-size: 0.7rem;
+    white-space: nowrap;
+}
+
 .perspective-bi-tool .workbench-controls {
     display: flex;
     min-width: auto;
@@ -800,7 +873,7 @@ body.perspective-bi-workspace-focus #perspective-tool-back-button {
 }
 
 .perspective-bi-tool.workspace-focus-mode .viewer-frame {
-    height: calc(100dvh - 6.25rem);
+    height: calc(100dvh - 9.25rem);
     min-height: 0;
 }
 
@@ -921,10 +994,15 @@ body.perspective-bi-workspace-focus #perspective-tool-back-button {
 
     .perspective-bi-tool .calculated-actions,
     .perspective-bi-tool .calculated-generate-btn,
-    .perspective-bi-tool .calculated-delete-btn,
     .perspective-bi-tool .important-action-btn,
     .perspective-bi-tool .focus-action-btn {
         width: 100%;
+    }
+
+    .perspective-bi-tool .workbench-guide {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.45rem;
+        padding: 0.55rem 0.72rem 0.6rem;
     }
 
     .perspective-bi-tool .field-role-list {
@@ -946,7 +1024,7 @@ body.perspective-bi-workspace-focus #perspective-tool-back-button {
     }
 
     .perspective-bi-tool.workspace-focus-mode .viewer-frame {
-        height: calc(100dvh - 10rem);
+        height: calc(100dvh - 11.5rem);
         min-height: 0;
     }
 }
@@ -965,6 +1043,6 @@ body.perspective-bi-workspace-focus #perspective-tool-back-button {
     }
 
     .perspective-bi-tool .calculated-field-card {
-        grid-template-columns: minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr) 44px;
     }
 }

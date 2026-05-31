@@ -167,6 +167,15 @@ test("Perspective BI manages calculated fields as a deletable field list", () =>
   assert.doesNotMatch(perspectiveEngine, /handleCalculatedMetricRemove/);
 });
 
+test("Perspective BI keeps calculated field management compact for large field sets", () => {
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.calculated-field-list\s*\{[^}]*minmax\(min\(100%,\s*220px\),\s*1fr\)/s);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.calculated-field-card\s*\{[^}]*min-height:\s*38px/s);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.calculated-field-card\s*\{[^}]*padding:\s*0\.36rem\s*0\.42rem/s);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.calculated-field-meta\s*\{[^}]*display:\s*none/s);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.calculated-delete-btn\s*\{[^}]*min-height:\s*28px/s);
+  assert.doesNotMatch(perspectiveCss, /\.perspective-bi-tool \.calculated-field-list\s*\{[^}]*260px/s);
+});
+
 test("Perspective BI supports Excel-like calculated formulas with metric classifications", () => {
   assert.match(perspectiveTool, /placeholder="例如：\[净收入\] \/ \[销量\]"/);
   assert.match(perspectiveTool, /累计指标/);
@@ -250,6 +259,24 @@ test("Perspective BI keeps external preset controls out of the native workbench"
   assert.doesNotMatch(perspectiveEngine, /perspective-preset-select/);
   assert.doesNotMatch(perspectiveCss, /\.perspective-bi-tool \.workbench-preset\s*\{/);
   assert.doesNotMatch(perspectiveCss, /\.perspective-bi-tool \.preset-reset-btn\s*\{/);
+});
+
+test("Perspective BI explains the active native chart drop zones inside the workbench", () => {
+  assert.match(perspectiveTool, /id="perspective-workbench-guide"/);
+  assert.match(perspectiveEngine, /const WORKBENCH_GUIDES = \{/);
+  assert.match(perspectiveEngine, /Datagrid:[\s\S]*数据表/s);
+  assert.match(perspectiveEngine, /"Y Bar":[\s\S]*Y 轴/s);
+  assert.match(perspectiveEngine, /Heatmap:[\s\S]*热力图/s);
+  assert.match(perspectiveEngine, /function renderWorkbenchGuide/);
+  assert.match(perspectiveEngine, /function updateWorkbenchGuideFromViewer/);
+  assert.match(perspectiveEngine, /perspective-config-update/);
+  assert.match(perspectiveEngine, /perspective-plugin-update/);
+  assert.match(perspectiveEngine, /viewer\.save\(\)/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.workbench-guide\s*\{/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.workbench-guide-item\s*\{/);
+  assert.match(perspectiveEngine, /分组/);
+  assert.match(perspectiveEngine, /拆分/);
+  assert.match(perspectiveEngine, /筛选/);
 });
 
 test("Perspective BI workbench supports a page-level focus mode", () => {
