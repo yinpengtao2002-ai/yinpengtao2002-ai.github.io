@@ -31,7 +31,7 @@ function ProjectDescription({ className = "" }: { className?: string }) {
             <ul>
                 <li>可交互透视表、分组图表、筛选、排序和字段拖拽配置。</li>
                 <li>Perspective 原生工作台会直接承接字段、分组、筛选和图表类型选择。</li>
-                <li>单车、费率、占比等计算指标会按汇总口径生成，并可加载进 BI 工作台继续分析。</li>
+                <li>单车、费率、占比等计算指标会作为字段加入 BI 工作台继续分析。</li>
                 <li>上传后自动识别行数、维度列和指标列，并用当前数据刷新 BI 视图。</li>
             </ul>
         </section>

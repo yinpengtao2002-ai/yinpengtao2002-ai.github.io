@@ -527,17 +527,6 @@
     font-weight: 800;
 }
 
-.perspective-bi-tool .calculated-dimensions {
-    display: flex;
-    min-height: 38px;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.45rem;
-    color: var(--text-secondary);
-    font-family: var(--font-sans);
-    font-size: 0.76rem;
-}
-
 .perspective-bi-tool .calculated-formula-fields {
     display: flex;
     min-height: 36px;
@@ -549,7 +538,6 @@
     font-size: 0.76rem;
 }
 
-.perspective-bi-tool .dimension-chip,
 .perspective-bi-tool .formula-field-chip {
     display: inline-flex;
     align-items: center;
@@ -562,16 +550,9 @@
     font-size: 0.76rem;
     font-weight: 800;
     padding: 0.32rem 0.5rem;
-}
-
-.perspective-bi-tool .formula-field-chip {
     cursor: pointer;
     border-color: rgba(92, 143, 186, 0.24);
     background: rgba(92, 143, 186, 0.08);
-}
-
-.perspective-bi-tool .dimension-chip input {
-    accent-color: var(--accent-green);
 }
 
 .perspective-bi-tool .calculated-generate-btn {
@@ -641,15 +622,11 @@
 }
 
 .perspective-bi-tool .workbench-controls {
-    display: grid;
-    min-width: min(100%, 420px);
-    grid-template-columns: minmax(180px, 1fr) auto;
-    align-items: end;
+    display: flex;
+    min-width: auto;
+    align-items: center;
+    justify-content: flex-end;
     gap: 0.55rem;
-}
-
-.perspective-bi-tool .workbench-dataset {
-    min-width: 0;
 }
 
 .perspective-bi-tool .viewer-frame {
@@ -800,7 +777,7 @@ body.perspective-bi-workspace-focus #perspective-tool-back-button {
     }
 
     .perspective-bi-tool .workbench-controls {
-        grid-template-columns: minmax(0, 1fr);
+        justify-content: stretch;
     }
 
     .perspective-bi-tool .calculated-form {

@@ -92,7 +92,7 @@ export default function PerspectiveBITool() {
                     <div className="calculated-metric-header">
                         <div>
                             <h2>计算指标视图</h2>
-                            <p>用 Excel 式公式生成单车、费率、差额等指标，生成后会加载到下方 BI 工作台。</p>
+                            <p>用 Excel 式公式生成单车、费率、差额等指标，生成后会作为字段加入下方 Perspective 工作台。</p>
                         </div>
                         <button
                             type="button"
@@ -141,15 +141,11 @@ export default function PerspectiveBITool() {
                             </label>
                         </div>
                         <div className="calculated-formula-help">
-                            公式写法：用 [字段名] 引用指标，支持 + - * / 和括号；系统会先按下方维度汇总参与公式的字段，再计算公式。
+                            公式写法：用 [字段名] 引用指标，支持 + - * / 和括号；单位/比率指标会优先按除法分母做加权汇总。
                         </div>
                         <div className="calculated-dimension-field">
                             <div className="calculated-dimension-title">可用指标</div>
                             <div id="perspective-calculated-formula-fields" className="calculated-formula-fields" />
-                        </div>
-                        <div className="calculated-dimension-field">
-                            <div className="calculated-dimension-title">分组维度</div>
-                            <div id="perspective-calculated-dimensions" className="calculated-dimensions" />
                         </div>
                         <button type="button" className="btn btn-primary calculated-generate-btn" id="perspective-calculated-generate">
                             生成计算指标
@@ -166,13 +162,6 @@ export default function PerspectiveBITool() {
                                 <p>右侧保留 Perspective 原生分析面板，负责分组、拆分、筛选、排序和图表切换。</p>
                             </div>
                             <div className="workbench-controls">
-                                <label className="field workbench-dataset">
-                                    <span>工作台数据</span>
-                                    <select id="perspective-workbench-dataset-select" className="input">
-                                        <option value="raw">原始明细数据</option>
-                                        <option value="calculated" disabled>计算指标结果</option>
-                                    </select>
-                                </label>
                                 <button
                                     type="button"
                                     className="btn focus-action-btn"

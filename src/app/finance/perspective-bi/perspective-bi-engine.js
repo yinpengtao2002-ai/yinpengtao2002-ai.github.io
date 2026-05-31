@@ -58,15 +58,12 @@ const state = {
     fieldRoles: {},
     fieldRolesCollapsed: false,
     workbenchFocusMode: false,
-    workbenchDataset: "raw",
-    calculatedRows: [],
     calculatedMetric: {
         panelOpen: false,
         generated: false,
         name: "",
         formula: "[净收入] / [销量]",
         type: "unit",
-        dimensions: [],
         format: "unit",
     },
 };
@@ -198,14 +195,6 @@ function classifyColumns(rows) {
     return { columns, metrics, dimensions };
 }
 
-function classifyCalculatedColumns(rows) {
-    const columns = getColumns(rows);
-    const metricName = getCalculatedMetricName();
-    const metricColumns = columns.filter((column) => column === metricName || /合计$/.test(column));
-    const dimensions = columns.filter((column) => !metricColumns.includes(column));
-    return { columns, metrics: metricColumns, dimensions };
-}
-
 function pickColumn(candidates, available, fallback) {
     return candidates.find((candidate) => available.includes(candidate)) ?? fallback;
 }
@@ -215,23 +204,18 @@ function buildAggregates(rows) {
     return Object.fromEntries(metrics.map((metric) => [metric, state.fieldRoles[metric]?.aggregation ?? defaultAggregationForColumn(metric)]));
 }
 
-function buildCalculatedAggregates(rows) {
-    const { metrics } = classifyCalculatedColumns(rows);
-    const metricName = getCalculatedMetricName();
-    return Object.fromEntries(metrics.map((metric) => [
-        metric,
-        metric === metricName ? (state.calculatedMetric.type === "additive" ? "sum" : "avg") : "sum",
-    ]));
-}
-
 function buildConfig(rows) {
-    if (state.workbenchDataset === "calculated") {
-        return buildCalculatedConfig(rows);
-    }
-
     const { columns, metrics } = classifyColumns(rows);
     const aggregates = buildAggregates(rows);
-    const visibleColumns = columns.length ? columns : metrics;
+    const expressions = buildCalculatedExpressions();
+    const expressionColumns = Object.keys(expressions);
+    expressionColumns.forEach((column) => {
+        aggregates[column] = inferCalculatedMetricAggregate();
+    });
+    const visibleColumns = columns.length ? [...columns] : [...metrics];
+    expressionColumns.forEach((column) => {
+        if (!visibleColumns.includes(column)) visibleColumns.push(column);
+    });
 
     return {
         title: "BI 工作台",
@@ -240,29 +224,8 @@ function buildConfig(rows) {
         split_by: [],
         columns: visibleColumns,
         aggregates,
+        expressions: buildCalculatedExpressions(),
         sort: [],
-        settings: true,
-    };
-}
-
-function buildCalculatedConfig(rows) {
-    const { columns, metrics, dimensions } = classifyCalculatedColumns(rows);
-    const metricName = getCalculatedMetricName();
-    const columnsForView = [
-        ...dimensions,
-        metricName,
-        ...metrics.filter((metric) => metric !== metricName),
-    ].filter((column) => columns.includes(column));
-
-    return {
-        title: metricName,
-        plugin: "Datagrid",
-        group_by: [],
-        split_by: [],
-        columns: columnsForView,
-        aggregates: buildCalculatedAggregates(rows),
-        sort: columns.includes(metricName) ? [[metricName, "desc"]] : [],
-        group_rollup_mode: "flat",
         settings: true,
     };
 }
@@ -360,24 +323,14 @@ function getMetricColumns(rows) {
     return getColumns(rows).filter((column) => state.fieldRoles[column]?.role === "metric" && isNumericColumn(rows, column));
 }
 
-function getDimensionColumns(rows) {
-    return getColumns(rows).filter((column) => state.fieldRoles[column]?.role === "dimension");
-}
-
 function ensureCalculatedMetricDefaults(rows) {
     const metricColumns = getMetricColumns(rows);
-    const dimensionColumns = getDimensionColumns(rows);
     const calculatedMetric = state.calculatedMetric;
 
     const formulaFields = getCalculatedFormulaFields(calculatedMetric.formula);
     const formulaHasMissingFields = formulaFields.some((field) => !metricColumns.includes(field));
     if (!calculatedMetric.formula.trim() || formulaHasMissingFields) {
         calculatedMetric.formula = buildDefaultCalculatedFormula(metricColumns);
-    }
-
-    calculatedMetric.dimensions = calculatedMetric.dimensions.filter((dimension) => dimensionColumns.includes(dimension));
-    if (!calculatedMetric.dimensions.length && dimensionColumns.length) {
-        calculatedMetric.dimensions = [pickColumn(["大区", "区域", "地区", "Region", "region"], dimensionColumns, dimensionColumns[0])];
     }
 
     if (!CALCULATED_FORMAT_LABELS[calculatedMetric.format]) {
@@ -513,46 +466,6 @@ function toReversePolishNotation(tokens) {
     return output;
 }
 
-function buildCalculatedFormulaContext(rows, formulaFields) {
-    const context = Object.fromEntries(formulaFields.map((field) => [field, 0]));
-    rows.forEach((row) => {
-        formulaFields.forEach((field) => {
-            const value = row[field];
-            if (typeof value === "number" && Number.isFinite(value)) context[field] += value;
-        });
-    });
-    return context;
-}
-
-function evaluateCalculatedFormula(rpn, context) {
-    const stack = [];
-
-    rpn.forEach((token) => {
-        if (token.type === "number") {
-            stack.push(token.value);
-            return;
-        }
-
-        if (token.type === "field") {
-            stack.push(context[token.value] ?? 0);
-            return;
-        }
-
-        const right = stack.pop();
-        const left = stack.pop();
-        if (left === undefined || right === undefined) throw new Error("公式结构不完整。");
-
-        if (token.value === "+") stack.push(left + right);
-        if (token.value === "-") stack.push(left - right);
-        if (token.value === "*") stack.push(left * right);
-        if (token.value === "/") stack.push(right === 0 ? Number.NaN : left / right);
-    });
-
-    if (stack.length !== 1) throw new Error("公式结构不完整。");
-    const result = stack[0];
-    return typeof result === "number" && Number.isFinite(result) ? result : "";
-}
-
 function validateCalculatedFormula(rows) {
     const formula = state.calculatedMetric.formula.trim();
     const metricColumns = getMetricColumns(rows);
@@ -572,6 +485,58 @@ function validateCalculatedFormula(rows) {
     };
 }
 
+function escapePerspectiveColumnName(column) {
+    return column.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+function toPerspectiveExpressionFormula(formula) {
+    return tokenizeCalculatedFormula(formula).map((token) => {
+        if (token.type === "field") return `"${escapePerspectiveColumnName(token.value)}"`;
+        return String(token.value);
+    }).join(" ");
+}
+
+function inferCalculatedMetricDenominator() {
+    const tokens = tokenizeCalculatedFormula(state.calculatedMetric.formula);
+    const metricColumns = getMetricColumns(state.rows);
+
+    for (let index = 0; index < tokens.length - 1; index += 1) {
+        const token = tokens[index];
+        const nextToken = tokens[index + 1];
+        if (token.type === "operator" && token.value === "/" && nextToken?.type === "field" && metricColumns.includes(nextToken.value)) {
+            return nextToken.value;
+        }
+    }
+
+    return "";
+}
+
+function inferCalculatedMetricAggregate() {
+    if (state.calculatedMetric.type === "additive") {
+        return "sum";
+    }
+
+    try {
+        const denominator = inferCalculatedMetricDenominator();
+        if (denominator) return ["weighted mean", [denominator]];
+    } catch {
+        return "avg";
+    }
+
+    return "avg";
+}
+
+function buildCalculatedExpressions() {
+    if (!state.calculatedMetric.generated) return {};
+
+    try {
+        const { formula } = validateCalculatedFormula(state.rows);
+        return { [getCalculatedMetricName()]: toPerspectiveExpressionFormula(formula) };
+    } catch {
+        return {};
+    }
+}
+
 function renderCalculatedMetricControls(rows) {
     const panel = byId("perspective-calculated-metric-panel");
     const toggle = byId("perspective-calculated-metric-toggle");
@@ -580,19 +545,18 @@ function renderCalculatedMetricControls(rows) {
     const typeSelect = byId("perspective-calculated-metric-type");
     const formatSelect = byId("perspective-calculated-format");
     const formulaFieldsArea = byId("perspective-calculated-formula-fields");
-    const dimensionArea = byId("perspective-calculated-dimensions");
     const generateButton = byId("perspective-calculated-generate");
 
-    if (!panel || !toggle || !dimensionArea || !formulaFieldsArea) return;
+    if (!panel || !toggle || !formulaFieldsArea) return;
 
     ensureCalculatedMetricDefaults(rows);
     const calculatedMetric = state.calculatedMetric;
     const metricColumns = getMetricColumns(rows);
-    const dimensionColumns = getDimensionColumns(rows);
     let canGenerate = false;
     try {
         validateCalculatedFormula(rows);
-        canGenerate = true;
+        const metricName = getCalculatedMetricName();
+        canGenerate = !getColumns(rows).includes(metricName);
     } catch {
         canGenerate = false;
     }
@@ -622,23 +586,6 @@ function renderCalculatedMetricControls(rows) {
         })
         : [document.createTextNode("未识别到可用于公式的数字指标。")];
     formulaFieldsArea.replaceChildren(...formulaFieldNodes);
-
-    const dimensionNodes = dimensionColumns.length
-        ? dimensionColumns.map((dimension) => {
-            const label = document.createElement("label");
-            const checkbox = document.createElement("input");
-            const text = document.createElement("span");
-
-            label.className = "dimension-chip";
-            checkbox.type = "checkbox";
-            checkbox.checked = calculatedMetric.dimensions.includes(dimension);
-            checkbox.setAttribute("data-calculated-dimension", dimension);
-            text.textContent = dimension;
-            label.append(checkbox, text);
-            return label;
-        })
-        : [document.createTextNode("未识别到维度，计算结果将按全表汇总。")];
-    dimensionArea.replaceChildren(...dimensionNodes);
     renderCalculatedMetricStatus();
 }
 
@@ -646,73 +593,25 @@ function getCalculatedMetricName() {
     return state.calculatedMetric.name.trim() || "计算指标";
 }
 
-function calculateMetricRows(rows) {
-    ensureCalculatedMetricDefaults(rows);
-    const { dimensions } = state.calculatedMetric;
-    const { formulaFields, rpn } = validateCalculatedFormula(rows);
-
-    const groups = new Map();
-    rows.forEach((row) => {
-        const dimensionValues = dimensions.map((dimension) => String(row[dimension] ?? ""));
-        const key = dimensionValues.length ? dimensionValues.join("\u0001") : "__total__";
-        const current = groups.get(key) ?? {
-            dimensionValues,
-            rows: [],
-        };
-        current.rows.push(row);
-        groups.set(key, current);
-    });
-
-    return Array.from(groups.values())
-        .map((group) => {
-            const fieldTotals = buildCalculatedFormulaContext(group.rows, formulaFields);
-            return {
-                dimensionValues: group.dimensionValues,
-                fieldTotals,
-                calculatedValue: evaluateCalculatedFormula(rpn, fieldTotals),
-            };
-        })
-        .sort((a, b) => (b.fieldTotals[formulaFields[0]] ?? 0) - (a.fieldTotals[formulaFields[0]] ?? 0));
-}
-
-function buildCalculatedWorkbenchRows(rows) {
-    const calculatedRows = calculateMetricRows(rows);
-    const { dimensions } = state.calculatedMetric;
-    const formulaFields = getCalculatedFormulaFields(state.calculatedMetric.formula);
-    const metricName = getCalculatedMetricName();
-    const dimensionColumns = dimensions.length ? dimensions : ["范围"];
-
-    return calculatedRows.map((row) => {
-        const dimensionValues = dimensions.length ? row.dimensionValues : ["全部"];
-        const dimensionEntries = Object.fromEntries(dimensionColumns.map((dimension, index) => [dimension, dimensionValues[index] || "全部"]));
-        const formulaFieldEntries = Object.fromEntries(formulaFields.map((field) => [`${field}合计`, row.fieldTotals[field] ?? 0]));
-        return {
-            ...dimensionEntries,
-            ...formulaFieldEntries,
-            [metricName]: row.calculatedValue === "" ? null : Number(row.calculatedValue.toFixed(6)),
-        };
-    });
-}
-
 function renderCalculatedMetricStatus(message = "", type = "info") {
     const status = byId("perspective-calculated-metric-status");
     if (!status) return;
 
     status.classList.toggle("error", type === "error");
-    status.classList.toggle("success", type !== "error" && state.calculatedMetric.generated && state.calculatedRows.length > 0);
+    status.classList.toggle("success", type !== "error" && state.calculatedMetric.generated);
 
     if (message) {
         status.textContent = message;
         return;
     }
 
-    if (state.calculatedMetric.generated && state.calculatedRows.length) {
+    if (state.calculatedMetric.generated) {
         const metricType = CALCULATED_METRIC_TYPE_LABELS[state.calculatedMetric.type] ?? "计算指标";
-        status.textContent = `已加载到下方 BI 工作台：${getCalculatedMetricName()}（${metricType}）。`;
+        status.textContent = `已加入下方 BI 工作台字段：${getCalculatedMetricName()}（${metricType}）。`;
         return;
     }
 
-    status.textContent = "生成后会直接切换到下方 BI 工作台，不在这里额外展示小表。";
+    status.textContent = "生成后会作为字段加入下方 Perspective 工作台，在右侧字段列表中拖拽使用。";
 }
 
 function getAnalysisRows(rows) {
@@ -720,35 +619,11 @@ function getAnalysisRows(rows) {
     return rows.map((row) => Object.fromEntries(activeColumns.map((column) => [column, row[column] ?? ""])));
 }
 
-function getWorkbenchRows() {
-    if (state.workbenchDataset === "calculated" && state.calculatedRows.length) {
-        return state.calculatedRows;
-    }
-
-    return getAnalysisRows(state.rows);
-}
-
-function renderWorkbenchDatasetControl() {
-    const select = byId("perspective-workbench-dataset-select");
-    if (!select) return;
-
-    const hasCalculatedRows = state.calculatedRows.length > 0;
-    const calculatedOption = select.querySelector('option[value="calculated"]');
-    select.value = state.workbenchDataset === "calculated" && hasCalculatedRows ? "calculated" : "raw";
-    if (calculatedOption) {
-        calculatedOption.disabled = !hasCalculatedRows;
-        calculatedOption.textContent = hasCalculatedRows ? `计算指标：${getCalculatedMetricName()}` : "计算指标结果";
-    }
-}
-
-function invalidateCalculatedWorkbenchRows() {
-    const shouldReloadRawWorkbench = state.workbenchDataset === "calculated";
+function invalidateCalculatedMetric() {
+    const shouldReloadWorkbench = state.calculatedMetric.generated;
     state.calculatedMetric.generated = false;
-    state.calculatedRows = [];
-    state.workbenchDataset = "raw";
-    renderWorkbenchDatasetControl();
-    renderCalculatedMetricStatus("计算指标已变更，重新生成后会加载到下方 BI 工作台。");
-    if (shouldReloadRawWorkbench) void reloadViewer("原始明细");
+    renderCalculatedMetricStatus("计算指标已变更，点击生成后会更新下方 BI 工作台字段。");
+    if (shouldReloadWorkbench) void reloadViewer("计算指标");
 }
 
 async function reloadViewer(sourceLabel) {
@@ -758,12 +633,12 @@ async function reloadViewer(sourceLabel) {
     await ensurePerspectiveRuntime();
     state.worker = state.worker ?? await perspective.worker();
 
-    const workbenchRows = getWorkbenchRows();
+    const analysisRows = getAnalysisRows(state.rows);
     const previousTable = state.table;
-    const table = await state.worker.table(workbenchRows);
+    const table = await state.worker.table(analysisRows);
     state.table = table;
     await viewer.load(table);
-    await viewer.restore(buildConfig(workbenchRows));
+    await viewer.restore(buildConfig(analysisRows));
 
     try {
         await previousTable?.delete();
@@ -774,7 +649,6 @@ async function reloadViewer(sourceLabel) {
     updateSummary(state.rows);
     renderFieldRoles(state.rows);
     renderCalculatedMetricControls(state.rows);
-    renderWorkbenchDatasetControl();
     showMessage(`${sourceLabel}已载入，可以在右侧 Perspective 面板继续分析。`);
 }
 
@@ -788,8 +662,6 @@ async function loadRows(rows, sourceLabel = "示例数据") {
     state.rows = normalizedRows;
     state.fieldRoles = inferFieldRoles(normalizedRows);
     state.fieldRolesCollapsed = false;
-    state.workbenchDataset = "raw";
-    state.calculatedRows = [];
     state.calculatedMetric.generated = false;
     await reloadViewer(sourceLabel);
 }
@@ -891,23 +763,21 @@ function handleCalculatedMetricChange(event) {
 
     if (target.id === "perspective-calculated-metric-name") {
         state.calculatedMetric.name = target.value;
-        if (state.calculatedMetric.generated) state.calculatedRows = buildCalculatedWorkbenchRows(state.rows);
-        renderWorkbenchDatasetControl();
-        if (state.workbenchDataset === "calculated") void reloadViewer("计算指标");
+        if (state.calculatedMetric.generated) void reloadViewer("计算指标");
         renderCalculatedMetricStatus();
         return;
     }
 
     if (target.id === "perspective-calculated-formula") {
         state.calculatedMetric.formula = target.value;
-        invalidateCalculatedWorkbenchRows();
+        invalidateCalculatedMetric();
         return;
     }
 
     if (target.id === "perspective-calculated-metric-type" && CALCULATED_METRIC_TYPE_LABELS[target.value]) {
         state.calculatedMetric.type = target.value;
         renderCalculatedMetricStatus();
-        if (state.workbenchDataset === "calculated") void reloadViewer("计算指标口径");
+        if (state.calculatedMetric.generated) void reloadViewer("计算指标口径");
         return;
     }
 
@@ -916,18 +786,6 @@ function handleCalculatedMetricChange(event) {
         renderCalculatedMetricStatus();
         return;
     }
-
-    const dimension = target.getAttribute?.("data-calculated-dimension");
-    if (!dimension) return;
-
-    const dimensions = new Set(state.calculatedMetric.dimensions);
-    if (target.checked) {
-        dimensions.add(dimension);
-    } else {
-        dimensions.delete(dimension);
-    }
-    state.calculatedMetric.dimensions = Array.from(dimensions);
-    invalidateCalculatedWorkbenchRows();
 }
 
 async function handleCalculatedMetricGenerate(event) {
@@ -936,6 +794,9 @@ async function handleCalculatedMetricGenerate(event) {
 
     try {
         validateCalculatedFormula(state.rows);
+        if (getColumns(state.rows).includes(getCalculatedMetricName())) {
+            throw new Error("计算指标名称不能和已有字段重复。");
+        }
     } catch (error) {
         renderCalculatedMetricStatus(error.message || "请先确认计算公式。", "error");
         showMessage(error.message || "请先确认计算公式。", "error");
@@ -944,22 +805,8 @@ async function handleCalculatedMetricGenerate(event) {
 
     state.calculatedMetric.generated = true;
     state.calculatedMetric.panelOpen = true;
-    state.calculatedRows = buildCalculatedWorkbenchRows(state.rows);
-    state.workbenchDataset = "calculated";
     renderCalculatedMetricControls(state.rows);
     await reloadViewer("计算指标");
-}
-
-function handleWorkbenchDatasetChange(event) {
-    const value = event.target?.value;
-    if (value === "calculated" && !state.calculatedRows.length) {
-        state.workbenchDataset = "raw";
-        renderWorkbenchDatasetControl();
-        return;
-    }
-
-    state.workbenchDataset = value === "calculated" ? "calculated" : "raw";
-    void reloadViewer(state.workbenchDataset === "calculated" ? "计算指标" : "原始明细");
 }
 
 function toggleFieldRoles() {
@@ -1006,7 +853,7 @@ function insertCalculatedFieldReference(field) {
     const reference = `[${field}]`;
     if (!input) {
         state.calculatedMetric.formula = `${state.calculatedMetric.formula} ${reference}`.trim();
-        invalidateCalculatedWorkbenchRows();
+        invalidateCalculatedMetric();
         renderCalculatedMetricControls(state.rows);
         return;
     }
@@ -1020,7 +867,7 @@ function insertCalculatedFieldReference(field) {
     input.focus();
     input.setSelectionRange(start + reference.length, start + reference.length);
     state.calculatedMetric.formula = nextValue;
-    invalidateCalculatedWorkbenchRows();
+    invalidateCalculatedMetric();
     renderCalculatedMetricControls(state.rows);
 }
 
@@ -1034,7 +881,7 @@ function bindCalculatedMetricControls() {
     });
     panel?.addEventListener("change", (event) => {
         const target = event.target;
-        if (target?.matches?.("#perspective-calculated-metric-type, #perspective-calculated-format, [data-calculated-dimension]")) {
+        if (target?.matches?.("#perspective-calculated-metric-type, #perspective-calculated-format")) {
             handleCalculatedMetricChange(event);
         }
     });
@@ -1080,7 +927,6 @@ function bindControls() {
     byId("perspective-btn-xlsx-template")?.addEventListener("click", downloadXlsxTemplate);
     byId("perspective-field-roles-toggle")?.addEventListener("click", toggleFieldRoles);
     byId("perspective-btn-focus-workbench")?.addEventListener("click", toggleWorkbenchFocus);
-    byId("perspective-workbench-dataset-select")?.addEventListener("change", handleWorkbenchDatasetChange);
 }
 
 async function initApp() {
