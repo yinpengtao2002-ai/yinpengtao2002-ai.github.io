@@ -17,9 +17,9 @@
     const VOLUME_COLUMN_ALIASES = ["销量", "销售量", "发车量", "台数", "数量", "volume", "qty", "quantity", "units"];
     const PREFERRED_METRICS = ["利润", "毛利", "边际", "净收入", "收入"];
     const NON_DIMENSION_COLUMNS = ["备注", "说明", "单位", "口径", "版本", "数据类型", "类型", "scenario"];
-    const TEMPLATE_HEADER_NOTE = "提示：月份列不许动；销量是分母口径，不要改名或删除；其他维度列和总额指标列可以改名、增删。边际率、单车净收入、单车边际不用填，模型会按总额指标 ÷ 销量自动计算。";
+    const TEMPLATE_HEADERS = ["月份", "大区", "国家", "车型", "燃油品类", "品牌", "销量", "净收入", "成本", "边际"];
+    const TEMPLATE_HEADER_NOTE = "可直接修改标题行；请保留“月份”和“销量”（月份列不许动，销量是分母口径）。销量列之前会按表头自动识别为维度，可新增或删除维度列；销量列之后的数值列会识别为可分析总额指标，例如净收入、成本、边际。";
     const TEMPLATE_ROWS = createSampleRows().slice(0, 18);
-    const TEMPLATE_HEADERS = Object.keys(TEMPLATE_ROWS[0] || {});
 
     const state = {
         initialized: false,
@@ -122,19 +122,25 @@
                     "月份": formatMonthKey(month),
                     "大区": market.region,
                     "国家": market.country,
-                    "品牌市场": market.brandMarket,
-                    "经营模式": market.mode,
-                    "业务单元": market.businessUnit,
                     "车型": market.model,
+                    "燃油品类": fuelCategoryForMarket(market),
+                    "品牌": market.brandMarket,
                     "销量": volume,
-                    "净收入总额": revenue,
-                    "成本总额": cost,
-                    "边际总额": margin
+                    "净收入": revenue,
+                    "成本": cost,
+                    "边际": margin
                 });
             });
         });
 
         return rows;
+    }
+
+    function fuelCategoryForMarket(market) {
+        const businessUnit = String(market?.businessUnit || "");
+        if (businessUnit.includes("纯电")) return "纯电";
+        if (businessUnit.includes("插混")) return "插混";
+        return "燃油";
     }
 
     function sampleMarketEvent(market, year, month) {
@@ -236,20 +242,6 @@
         return isPercent ? signed / 100 : signed;
     }
 
-    function isNumericLike(value) {
-        if (value === null || value === undefined || value === "") return false;
-        if (typeof value === "number") return Number.isFinite(value);
-        if (value instanceof Date) return false;
-        const raw = String(value).trim();
-        if (!raw) return false;
-        if (/^\d{4}[-/.年]\d{1,2}/.test(raw)) return false;
-        if (/^\d{6}$/.test(raw) && parsePeriod(raw)) return false;
-        const cleaned = raw
-            .replace(/[,，\s￥¥$元台辆个件万亿%()]/g, "")
-            .trim();
-        return cleaned !== "" && Number.isFinite(Number(cleaned));
-    }
-
     function inferColumns(rows) {
         const headers = Object.keys(rows.find((row) => Object.keys(row).length) || {});
         const normalizedAliases = MONTH_ALIASES.map(normalizeToken);
@@ -278,26 +270,9 @@
             monthColumn = headers.find((header) => header !== yearColumn && normalizedAliases.includes(normalizeToken(header))) || monthColumn;
         }
 
-        const numericColumns = headers.filter((header) => {
-            if (header === monthColumn) return false;
-            if (header === yearColumn) return false;
-            const values = rows.slice(0, 80).map((row) => row[header]).filter((value) => value !== null && value !== undefined && String(value).trim() !== "");
-            if (!values.length) return false;
-            const numericCount = values.filter(isNumericLike).length;
-            return numericCount / values.length >= 0.62;
-        });
-        const metricColumns = numericColumns.filter((header) => !isDerivedMetricColumn(header));
-        const ignoredNumericColumns = numericColumns.filter((header) => !metricColumns.includes(header));
-
-        const nonDimensionSet = new Set(NON_DIMENSION_COLUMNS.map(normalizeToken));
-        const dimensionColumns = headers.filter((header) => {
-            if (header === monthColumn) return false;
-            if (header === yearColumn) return false;
-            if (metricColumns.includes(header)) return false;
-            if (ignoredNumericColumns.includes(header)) return false;
-            if (nonDimensionSet.has(normalizeToken(header))) return false;
-            return rows.some((row) => row[header] !== null && row[header] !== undefined && String(row[header]).trim() !== "");
-        });
+        const schema = analyzeMonthlyUploadHeaders(headers, { monthColumn, yearColumn });
+        const metricColumns = schema.metricColumns;
+        const dimensionColumns = schema.dimensionColumns;
 
         const selectedMetric = choosePreferredMetric(metricColumns);
         const selectedDimensions = dimensionColumns.slice();
@@ -310,6 +285,44 @@
             dimensionColumns,
             selectedMetric,
             selectedDimensions
+        };
+    }
+
+    function analyzeMonthlyUploadHeaders(headers, context = {}) {
+        const sourceHeaders = safeArray(headers).map((header) => String(header || "").trim()).filter(Boolean);
+        const salesIndex = sourceHeaders.findIndex(isVolumeMetricName);
+        const monthColumn = context.monthColumn || sourceHeaders.find(isMonthHeaderName) || "";
+        const yearColumn = context.yearColumn || "";
+        const nonDimensionSet = new Set(NON_DIMENSION_COLUMNS.map(normalizeToken));
+
+        if (salesIndex < 0) {
+            return {
+                salesIndex,
+                dimensionColumns: [],
+                metricColumns: []
+            };
+        }
+
+        const dimensionColumns = sourceHeaders.filter((header, index) => {
+            const isBeforeSales = index < salesIndex;
+            if (header === monthColumn || header === yearColumn) return false;
+            if (!isBeforeSales) return false;
+            if (nonDimensionSet.has(normalizeToken(header))) return false;
+            return true;
+        });
+
+        const metricColumns = sourceHeaders.filter((header, index) => {
+            const isAfterSales = index > salesIndex;
+            if (header === monthColumn || header === yearColumn) return false;
+            if (index === salesIndex) return true;
+            if (!isAfterSales) return false;
+            return !isDerivedMetricColumn(header);
+        });
+
+        return {
+            salesIndex,
+            dimensionColumns,
+            metricColumns
         };
     }
 
@@ -1903,7 +1916,7 @@
     }
 
     function downloadCsv(rows = TEMPLATE_ROWS, filename = "分月指标趋势分析模板.csv") {
-        const headers = Object.keys(rows[0] || {});
+        const headers = templateHeadersFor(rows);
         const csv = [
             headers.join(","),
             ...rows.map((row) => headers.map((header) => csvCell(row[header])).join(","))
@@ -1937,7 +1950,9 @@
     }
 
     function templateHeadersFor(rows = TEMPLATE_ROWS) {
-        return Object.keys((safeArray(rows)[0]) || {}).length ? Object.keys(safeArray(rows)[0]) : TEMPLATE_HEADERS;
+        const rowHeaders = Object.keys(safeArray(rows)[0] || {});
+        const extraHeaders = rowHeaders.filter((header) => !TEMPLATE_HEADERS.includes(header));
+        return TEMPLATE_HEADERS.concat(extraHeaders);
     }
 
     function buildTemplateRows(rows = TEMPLATE_ROWS) {
@@ -1976,7 +1991,8 @@
         for (let index = 0; index < safeArray(rows).length; index++) {
             const cells = rowCells(rows[index]);
             if (!cells.length || isTemplateNoteRow(cells)) continue;
-            if (cells.some(isMonthHeaderName) && cells.some(isVolumeMetricName)) return index;
+            const schema = analyzeMonthlyUploadHeaders(cells, { monthColumn: cells.find(isMonthHeaderName) || "" });
+            if (cells.some(isMonthHeaderName) && schema.salesIndex >= 0 && schema.dimensionColumns.length > 0 && analysisMetricColumns(schema.metricColumns).length > 0) return index;
         }
 
         return fallbackIndex >= 0 ? fallbackIndex : 0;

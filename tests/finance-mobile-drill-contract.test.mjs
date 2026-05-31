@@ -304,6 +304,16 @@ test("monthly trend keeps the base table schema business-facing", () => {
   assert.doesNotMatch(monthlyEngine, /coreTrendMetrics\(\)\.slice\(0,\s*3\)/);
 });
 
+test("monthly trend uses the same sales-split base table logic as margin analysis", () => {
+  assert.match(monthlyEngine, /const TEMPLATE_HEADERS\s*=\s*\[\s*"月份",\s*"大区",\s*"国家",\s*"车型",\s*"燃油品类",\s*"品牌",\s*"销量",\s*"净收入",\s*"成本",\s*"边际"\s*\]/);
+  assert.match(monthlyEngine, /function analyzeMonthlyUploadHeaders\(/);
+  assert.match(monthlyEngine, /const salesIndex\s*=[\s\S]*findIndex[\s\S]*isVolumeMetricName/);
+  assert.match(monthlyEngine, /const dimensionColumns\s*=[\s\S]*index < salesIndex/);
+  assert.match(monthlyEngine, /const metricColumns\s*=[\s\S]*index > salesIndex/);
+  assert.match(monthlyEngine, /TEMPLATE_HEADER_NOTE[\s\S]*销量列之前[\s\S]*销量列之后/);
+  assert.doesNotMatch(monthlyEngine, /const TEMPLATE_HEADERS\s*=\s*Object\.keys/);
+});
+
 test("monthly trend names each multi metric trend line by business meaning", () => {
   assert.match(monthlyEngine, /function trendMetricIdentityText\(/);
   assert.match(monthlyEngine, /第一段是销量原值/);
