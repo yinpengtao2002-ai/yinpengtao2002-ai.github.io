@@ -13,7 +13,8 @@ const ALL_DIMENSIONS = Array.from({ length: 20 }, (_, index) => `Dim_${String.fr
 
 const AppState = {
     dataLoaded: false,
-    df: null,              // 原始数据数组 (Array of Objects)
+    df: null,              // 当前分析指标对应的数据数组
+    rawRows: null,         // 保留所有上传指标列的数据数组
     months: [],            // 可用月份
     baseMonth: null,
     currMonth: null,
@@ -30,6 +31,8 @@ const AppState = {
     customDimNames: { ...DEFAULT_DIMENSION_NAMES },
     unitName: '车',
     unitMetricType: '边际',
+    metricColumns: [],
+    selectedMetricKey: null,
     availableDimsInData: [],
     calculationResults: null,
     attributionViewModes: {}
@@ -45,9 +48,9 @@ const DIM_ICONS = {
 };
 
 const TEMPLATE_HEADERS = [
-    '月份', ...TEMPLATE_DIMENSION_HEADERS, '销量', '指标总额'
+    '月份', ...TEMPLATE_DIMENSION_HEADERS, '销量', '净收入', '成本', '边际'
 ];
-const TEMPLATE_HEADER_NOTE = '可直接修改标题行，系统会按表头自动识别维度；请保留“月份、销量、指标总额”三类必要列。可新增或删除维度列，直接插入或删除即可。';
+const TEMPLATE_HEADER_NOTE = '可直接修改标题行；请保留“月份”和“销量”。销量列之前会按表头自动识别为维度，可新增或删除维度列，直接插入或删除即可；销量列之后的数值列会识别为可分析指标，例如净收入、成本、边际。';
 
 
 // ==================== DOM Ready ====================
@@ -232,10 +235,10 @@ function initTemplateDownloads() {
 
 function getTemplateRows() {
     return [
-        { '月份': '2025-01', '大区': '亚太区', '国家': '中国', '车型': 'SUV-旗舰', '燃油品类': '燃油', '品牌': '品牌A', '销量': 5000, '指标总额': 15000000 },
-        { '月份': '2025-01', '大区': '欧洲区', '国家': '德国', '车型': 'Sedan-经典', '燃油品类': '混动', '品牌': '品牌B', '销量': 2500, '指标总额': 5500000 },
-        { '月份': '2025-02', '大区': '亚太区', '国家': '中国', '车型': 'SUV-旗舰', '燃油品类': '燃油', '品牌': '品牌A', '销量': 6200, '指标总额': 19840000 },
-        { '月份': '2025-02', '大区': '欧洲区', '国家': '德国', '车型': 'Sedan-经典', '燃油品类': '混动', '品牌': '品牌B', '销量': 2200, '指标总额': 4620000 }
+        { '月份': '2025-01', '大区': '亚太区', '国家': '中国', '车型': 'SUV-旗舰', '燃油品类': '燃油', '品牌': '品牌A', '销量': 5000, '净收入': 42000000, '成本': 27000000, '边际': 15000000 },
+        { '月份': '2025-01', '大区': '欧洲区', '国家': '德国', '车型': 'Sedan-经典', '燃油品类': '混动', '品牌': '品牌B', '销量': 2500, '净收入': 20500000, '成本': 15000000, '边际': 5500000 },
+        { '月份': '2025-02', '大区': '亚太区', '国家': '中国', '车型': 'SUV-旗舰', '燃油品类': '燃油', '品牌': '品牌A', '销量': 6200, '净收入': 52080000, '成本': 32240000, '边际': 19840000 },
+        { '月份': '2025-02', '大区': '欧洲区', '国家': '德国', '车型': 'Sedan-经典', '燃油品类': '混动', '品牌': '品牌B', '销量': 2200, '净收入': 17600000, '成本': 12980000, '边际': 4620000 }
     ];
 }
 
@@ -612,7 +615,6 @@ function sheetRowsToObjects(sheetRows) {
 }
 
 function findTemplateHeaderRowIndex(rows) {
-    const columnMapping = buildColumnMapping();
     const fallbackIndex = rows.findIndex(row => Array.isArray(row) && row.some(cell => String(cell ?? '').trim()));
 
     for (let index = 0; index < rows.length; index++) {
@@ -621,9 +623,8 @@ function findTemplateHeaderRowIndex(rows) {
         if (cells.length === 0) continue;
         if (cells.length === 1 && cells[0] === TEMPLATE_HEADER_NOTE) continue;
 
-        const mappedColumns = new Set(cells.map(cell => getMappedColumnName(cell, columnMapping)).filter(Boolean));
-        const dimCount = cells.filter(cell => !getMappedColumnName(cell, columnMapping)).length;
-        if (mappedColumns.has('Month') && mappedColumns.has('Sales Volume') && mappedColumns.has('Total Margin') && dimCount > 0) {
+        const schema = analyzeUploadHeaders(cells);
+        if (schema.hasMonth && schema.hasSalesVolume && schema.metricColumns.length > 0 && schema.dimCols.length > 0) {
             return index;
         }
     }
@@ -643,6 +644,7 @@ function processLoadedData(rows, sourceName) {
     const normalizedInput = normalizeUploadedRows(rows);
     rows = normalizedInput.rows;
     const dimCols = normalizedInput.dimCols;
+    const metricColumns = normalizedInput.metricColumns;
 
     if (dimCols.length === 0) {
         showMessage('error', `缺少维度列：请至少保留一个业务维度列，例如“大区”或“国家”。当前列名: ${normalizedInput.sourceHeaders.join(', ')}`);
@@ -656,7 +658,9 @@ function processLoadedData(rows, sourceName) {
     // 2. 清理数值 & 类型转换
     rows = rows.map(row => {
         row['Sales Volume'] = cleanNumeric(row['Sales Volume']);
-        row['Total Margin'] = cleanNumeric(row['Total Margin']);
+        metricColumns.forEach(metric => {
+            row[metric.key] = cleanNumeric(row[metric.key]);
+        });
         row['Month'] = cleanText(row['Month']);
         dimCols.forEach(d => {
             row[d] = cleanText(row[d]);
@@ -664,8 +668,8 @@ function processLoadedData(rows, sourceName) {
         return row;
     });
 
-    // 3. 移除完全空行 (销量和指标总额都为 0)
-    rows = rows.filter(r => r['Sales Volume'] !== 0 || r['Total Margin'] !== 0);
+    // 3. 移除完全空行 (销量和所有指标都为 0)
+    rows = rows.filter(r => r['Sales Volume'] !== 0 || metricColumns.some(metric => r[metric.key] !== 0));
 
     if (rows.length === 0) {
         showMessage('error', '数据清理后为空，请检查数据格式');
@@ -680,7 +684,11 @@ function processLoadedData(rows, sourceName) {
     }
 
     // 5. 存储并切换 UI
-    AppState.df = rows;
+    AppState.rawRows = rows;
+    AppState.metricColumns = metricColumns;
+    AppState.selectedMetricKey = resolveInitialMetricKey(metricColumns);
+    syncSelectedMetricType();
+    AppState.df = applySelectedMetricToRows(rows, AppState.selectedMetricKey);
     AppState.availableDimsInData = dimCols;
     AppState.customDimNames = { ...DEFAULT_DIMENSION_NAMES, ...normalizedInput.dimNames };
 
@@ -716,15 +724,75 @@ function normalizeUploadedRows(inputRows) {
     const sourceHeaders = Object.keys(inputRows[0] || {})
         .map(header => String(header).trim())
         .filter(Boolean);
+    const schema = analyzeUploadHeaders(sourceHeaders);
+
+    const normalizedRows = inputRows.map((row) => {
+        const normalizedRow = {};
+        sourceHeaders.forEach((sourceHeader) => {
+            const normalizedKey = schema.columnKeyBySource[sourceHeader];
+            if (normalizedKey) normalizedRow[normalizedKey] = row[sourceHeader];
+        });
+        const firstMetric = schema.metricColumns[0];
+        if (firstMetric) normalizedRow['Total Margin'] = normalizedRow[firstMetric.key];
+        return normalizedRow;
+    });
+
+    const missingCols = [];
+    if (!schema.hasMonth) missingCols.push('月份');
+    if (!schema.hasSalesVolume) missingCols.push('销量');
+    if (schema.metricColumns.length === 0) missingCols.push('指标列');
+
+    return {
+        rows: normalizedRows,
+        dimCols: schema.dimCols,
+        dimNames: schema.dimNames,
+        metricColumns: schema.metricColumns,
+        missingCols,
+        sourceHeaders
+    };
+}
+
+function analyzeUploadHeaders(sourceHeaders) {
     const columnMapping = buildColumnMapping();
     const columnKeyBySource = {};
     const dimCols = [];
     const dimNames = {};
+    const metricColumns = [];
+    const salesIndex = sourceHeaders.findIndex(sourceHeader =>
+        getMappedColumnName(sourceHeader, columnMapping) === 'Sales Volume'
+    );
+    let hasMonth = false;
+    let hasSalesVolume = false;
 
     sourceHeaders.forEach((sourceHeader) => {
-        const mappedRequiredColumn = getMappedColumnName(sourceHeader, columnMapping);
-        if (mappedRequiredColumn) {
-            columnKeyBySource[sourceHeader] = mappedRequiredColumn;
+        const mappedColumn = getMappedColumnName(sourceHeader, columnMapping);
+        if (mappedColumn === 'Month') {
+            columnKeyBySource[sourceHeader] = 'Month';
+            hasMonth = true;
+            return;
+        }
+        if (mappedColumn === 'Sales Volume') {
+            columnKeyBySource[sourceHeader] = 'Sales Volume';
+            hasSalesVolume = true;
+        }
+    });
+
+    sourceHeaders.forEach((sourceHeader, index) => {
+        if (columnKeyBySource[sourceHeader]) return;
+
+        const mappedColumn = getMappedColumnName(sourceHeader, columnMapping);
+        const isLegacyMetric = mappedColumn === 'Total Margin';
+        const isMetricAfterSales = salesIndex >= 0 && index > salesIndex;
+
+        if (isLegacyMetric || isMetricAfterSales) {
+            const metricKey = `Metric_${metricColumns.length + 1}`;
+            const metricType = deriveMetricTypeFromHeader(sourceHeader);
+            metricColumns.push({
+                key: metricKey,
+                sourceHeader,
+                metricType
+            });
+            columnKeyBySource[sourceHeader] = metricKey;
             return;
         }
 
@@ -741,27 +809,38 @@ function normalizeUploadedRows(inputRows) {
             : sourceHeader;
     });
 
-    const normalizedRows = inputRows.map((row) => {
-        const normalizedRow = {};
-        Object.entries(row).forEach(([key, value]) => {
-            const sourceHeader = String(key).trim();
-            const normalizedKey = columnKeyBySource[sourceHeader];
-            if (normalizedKey) normalizedRow[normalizedKey] = value;
-        });
-        return normalizedRow;
-    });
-
-    const mappedColumns = new Set(Object.values(columnKeyBySource));
-    const missingCols = ['Month', 'Sales Volume', 'Total Margin']
-        .filter(column => !mappedColumns.has(column));
-
     return {
-        rows: normalizedRows,
+        columnKeyBySource,
         dimCols,
         dimNames,
-        missingCols,
-        sourceHeaders
+        metricColumns,
+        hasMonth,
+        hasSalesVolume
     };
+}
+
+function deriveMetricTypeFromHeader(sourceHeader) {
+    const header = String(sourceHeader == null ? '' : sourceHeader).trim();
+    const normalized = normalizeHeaderAlias(header);
+    if (!header) return '边际';
+    if ([
+        '指标总额', '指标金额', '指标总量', '单车指标总额',
+        'totalmargin', 'totalmetric', 'metrictotal'
+    ].map(normalizeHeaderAlias).includes(normalized)) {
+        return '边际';
+    }
+    return header
+        .replace(/总额$/u, '')
+        .replace(/金额$/u, '')
+        .replace(/总量$/u, '')
+        .trim() || '边际';
+}
+
+function applySelectedMetricToRows(rows, metricKey) {
+    return (rows || []).map((row) => ({
+        ...row,
+        'Total Margin': cleanNumeric(row?.[metricKey])
+    }));
 }
 
 function buildColumnMapping() {
@@ -873,7 +952,9 @@ function generateDemoData() {
         '国家': row.Dim_B,
         '车型': row.Dim_C,
         '销量': row['Sales Volume'],
-        '指标总额': row['Total Margin']
+        '净收入': Math.round(row['Sales Volume'] * 9000),
+        '成本': Math.round(row['Sales Volume'] * 9000 - row['Total Margin']),
+        '边际': row['Total Margin']
     }));
 }
 
@@ -921,6 +1002,9 @@ function onDataLoaded() {
 
     // 填充月份选择器
     populateMonthSelectors();
+
+    // 填充分析指标选择器
+    populateMetricSelector();
 
     // 填充下钻顺序选择器
     populateDrillOrder();
@@ -974,15 +1058,12 @@ function initUserSettings() {
     }
 
     if (metricInput) {
-        metricInput.value = getUnitMetricType();
-        metricInput.addEventListener('input', () => {
-            AppState.unitMetricType = normalizeMetricSetting(metricInput.value, '边际');
-            handleMetricSettingChange();
-        });
         metricInput.addEventListener('change', () => {
-            AppState.unitMetricType = normalizeMetricSetting(metricInput.value, '边际');
-            metricInput.value = getUnitMetricType();
-            handleMetricSettingChange();
+            AppState.selectedMetricKey = metricInput.value;
+            syncSelectedMetricType();
+            refreshCurrentMetricRows();
+            updateMetricCopy();
+            if (AppState.dataLoaded) triggerUpdate();
         });
     }
 
@@ -990,8 +1071,56 @@ function initUserSettings() {
 }
 
 function handleMetricSettingChange() {
+    populateMetricSelector();
     updateMetricCopy();
     if (AppState.dataLoaded) triggerUpdate();
+}
+
+function populateMetricSelector() {
+    const metricInput = document.getElementById('input-metric-type');
+    if (!metricInput) return;
+
+    const metrics = AppState.metricColumns.length
+        ? AppState.metricColumns
+        : [{ key: 'Metric_1', metricType: getUnitMetricType(), sourceHeader: getTotalMetricLabel() }];
+
+    metricInput.innerHTML = '';
+    metrics.forEach((metric) => {
+        const option = document.createElement('option');
+        option.value = metric.key;
+        option.textContent = buildUnitMetricLabel(getUnitName(), metric.metricType);
+        metricInput.appendChild(option);
+    });
+
+    if (!metrics.some(metric => metric.key === AppState.selectedMetricKey)) {
+        AppState.selectedMetricKey = resolveInitialMetricKey(metrics);
+        syncSelectedMetricType();
+        refreshCurrentMetricRows();
+    }
+    metricInput.value = AppState.selectedMetricKey || metrics[0]?.key || '';
+}
+
+function resolveInitialMetricKey(metrics) {
+    if (!metrics || metrics.length === 0) return null;
+    const currentMetricType = normalizeMetricSetting(AppState.unitMetricType, '边际');
+    const exactMatch = metrics.find(metric => metric.metricType === currentMetricType);
+    if (exactMatch) return exactMatch.key;
+    const marginMatch = metrics.find(metric => metric.metricType === '边际');
+    return (marginMatch || metrics[0]).key;
+}
+
+function getSelectedMetricConfig() {
+    return AppState.metricColumns.find(metric => metric.key === AppState.selectedMetricKey) || null;
+}
+
+function syncSelectedMetricType() {
+    const metric = getSelectedMetricConfig();
+    if (metric) AppState.unitMetricType = normalizeMetricSetting(metric.metricType, '边际');
+}
+
+function refreshCurrentMetricRows() {
+    if (!AppState.rawRows || !AppState.selectedMetricKey) return;
+    AppState.df = applySelectedMetricToRows(AppState.rawRows, AppState.selectedMetricKey);
 }
 
 function normalizeMetricSetting(value, fallback) {
@@ -3684,6 +3813,7 @@ if (typeof module !== 'undefined' && module.exports) {
         calculateDimensionPVMEffects,
         prepareDisplayData,
         applyDrillDimensionFilters,
+        applySelectedMetricToRows,
         resolveExcelFilterAppliedValues,
         resolveExcelFilterSearchValues,
         normalizeUploadedRows,

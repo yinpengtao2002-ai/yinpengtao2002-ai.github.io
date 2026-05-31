@@ -15,6 +15,7 @@ const {
     resolveExcelFilterAppliedValues,
     resolveExcelFilterSearchValues,
     normalizeUploadedRows,
+    applySelectedMetricToRows,
     sheetRowsToObjects,
     TEMPLATE_HEADERS,
     TEMPLATE_HEADER_NOTE,
@@ -354,9 +355,10 @@ test("spreadsheet template can carry a visible note above the detected header ro
     assert.match(TEMPLATE_HEADER_NOTE, /可直接修改标题行/);
     assert.match(TEMPLATE_HEADER_NOTE, /新增或删除维度列/);
     assert.match(TEMPLATE_HEADER_NOTE, /插入或删除/);
+    assert.match(TEMPLATE_HEADER_NOTE, /销量列之后的数值列/);
     assert.match(buildTemplateStylesXml(), /fgColor rgb="FFFFF7CC"/);
     assert.match(buildTemplateWorksheetXml(), /<c r="A1" s="1" t="inlineStr">/);
-    assert.match(buildTemplateWorksheetXml(), /<mergeCell ref="A1:H1"\/>/);
+    assert.match(buildTemplateWorksheetXml(), /<mergeCell ref="A1:J1"\/>/);
     const zippedTemplate = new TextDecoder().decode(createStoredZip(buildXlsxTemplateEntries()));
     assert.match(zippedTemplate, /fgColor rgb="FFFFF7CC"/);
     assert.match(zippedTemplate, /<c r="A1" s="1" t="inlineStr">/);
@@ -374,6 +376,37 @@ test("spreadsheet template can carry a visible note above the detected header ro
     assert.equal(normalized.dimNames.Dim_A, "大区");
     assert.equal(normalized.rows[0].Month, "2025-01");
     assert.equal(normalized.rows[0].Dim_B, "德国");
+});
+
+test("uploaded sheets can expose multiple metrics after sales volume for single-vehicle analysis", () => {
+    assert.equal(typeof normalizeUploadedRows, "function");
+    assert.equal(typeof applySelectedMetricToRows, "function");
+
+    const normalized = normalizeUploadedRows([
+        { "月份": "2025-01", "大区": "欧洲区", "国家": "德国", "销量": 100, "净收入": 9000, "成本": 7000, "边际": 2000 },
+        { "月份": "2025-02", "大区": "欧洲区", "国家": "德国", "销量": 120, "净收入": 10800, "成本": 7800, "边际": 3000 },
+    ]);
+
+    assert.equal(normalized.missingCols.length, 0);
+    assert.deepEqual(normalized.dimCols, ["Dim_A", "Dim_B"]);
+    assert.deepEqual(normalized.metricColumns.map(metric => metric.metricType), ["净收入", "成本", "边际"]);
+    assert.deepEqual(normalized.metricColumns.map(metric => metric.sourceHeader), ["净收入", "成本", "边际"]);
+    assert.equal(normalized.rows[0][normalized.metricColumns[2].key], 2000);
+
+    const marginRows = applySelectedMetricToRows(normalized.rows, normalized.metricColumns[2].key);
+    assert.equal(marginRows[0]["Total Margin"], 2000);
+    assert.equal(marginRows[1]["Total Margin"], 3000);
+});
+
+test("legacy metric total column remains compatible as the default margin metric", () => {
+    const normalized = normalizeUploadedRows([
+        { "月份": "2025-01", "大区": "欧洲区", "国家": "德国", "销量": 100, "指标总额": 3000 },
+    ]);
+
+    assert.equal(normalized.missingCols.length, 0);
+    assert.deepEqual(normalized.metricColumns.map(metric => metric.metricType), ["边际"]);
+    assert.equal(normalized.rows[0][normalized.metricColumns[0].key], 3000);
+    assert.equal(normalized.rows[0]["Total Margin"], 3000);
 });
 
 test("detail table header filters open from the full header and text filters apply immediately", () => {
@@ -415,16 +448,18 @@ test("detail table copy uses the current filtered and sorted view", () => {
 });
 
 test("upload template and sidebar use business dimension headers instead of Dim labels", () => {
-    assert.deepEqual(TEMPLATE_HEADERS.slice(0, 6), ["月份", "大区", "国家", "车型", "燃油品类", "品牌"]);
+    assert.deepEqual(TEMPLATE_HEADERS, ["月份", "大区", "国家", "车型", "燃油品类", "品牌", "销量", "净收入", "成本", "边际"]);
     assert.ok(!TEMPLATE_HEADERS.some(header => /^Dim_/i.test(header)));
     assert.doesNotMatch(marginAnalysisHtml, /维度配置|dim-config-section/);
     assert.doesNotMatch(marginAnalysisHtml, /id="user-settings-section"/);
     assert.match(marginAnalysisHtml, /<details class="sidebar-details" open>\s*<summary class="sidebar-summary">📁 数据中心<\/summary>/);
     const loadedDataCenter = marginAnalysisHtml.match(/<section id="data-center-loaded"[\s\S]*?<\/section>/);
     assert.ok(loadedDataCenter, "Expected loaded data center section");
-    assert.match(loadedDataCenter[0], /for="input-metric-type">指标类型<\/label>/);
+    assert.match(loadedDataCenter[0], /for="input-metric-type">分析指标<\/label>/);
+    assert.match(loadedDataCenter[0], /<select id="input-metric-type"/);
     assert.match(marginAnalysisSource, /sheetRowsToObjects\(sheetRows\)/);
     assert.match(marginAnalysisHtml, /可新增或删除维度列/);
+    assert.match(marginAnalysisHtml, /销量列之后的数值列会识别为可分析指标/);
     assert.doesNotMatch(marginAnalysisHtml, /未启用维度/);
     assert.doesNotMatch(marginAnalysisHtml, /Dim_[A-E]|Sales Volume|Total Margin/);
 });
@@ -448,12 +483,13 @@ test("loaded data center exposes unit name and metric type settings together", (
     assert.ok(loadedDataCenter, "Expected loaded data center section");
     assert.match(loadedDataCenter[0], /for="input-unit-name">单位名称<\/label>/);
     assert.match(loadedDataCenter[0], /id="input-unit-name"[^>]*value="车"/);
-    assert.match(loadedDataCenter[0], /for="input-metric-type">指标类型<\/label>/);
-    assert.match(loadedDataCenter[0], /id="input-metric-type"[^>]*value="边际"/);
+    assert.match(loadedDataCenter[0], /for="input-metric-type">分析指标<\/label>/);
+    assert.match(loadedDataCenter[0], /<select id="input-metric-type" class="form-select"/);
     assert.match(marginAnalysisSource, /unitName:\s*'车'/);
     assert.match(marginAnalysisSource, /document\.getElementById\('input-unit-name'\)/);
     assert.match(marginAnalysisSource, /unitInput\.addEventListener\('input'/);
-    assert.match(marginAnalysisSource, /metricInput\.addEventListener\('input'/);
+    assert.match(marginAnalysisSource, /populateMetricSelector\(\)/);
+    assert.match(marginAnalysisSource, /metricInput\.addEventListener\('change'/);
 });
 
 test("analysis area no longer renders the top KPI card strip", () => {
@@ -532,4 +568,5 @@ test("business headers map into dimensions and all uploaded dimensions are enabl
     assert.equal(normalized.rows[1].Dim_G, "零售客户");
     assert.equal(normalized.rows[1]["Sales Volume"], 120);
     assert.equal(normalized.rows[1]["Total Margin"], 1800);
+    assert.deepEqual(normalized.metricColumns.map(metric => metric.metricType), ["边际"]);
 });

@@ -69,11 +69,13 @@
                             <input id="input-unit-name" class="form-input" type="text" value="车" placeholder="车、台、个、只">
                         </div>
                         <div class="form-group compact">
-                            <label class="form-label" for="input-metric-type">指标类型</label>
-                            <input id="input-metric-type" class="form-input" type="text" value="边际" placeholder="边际、净收入、材料成本">
+                            <label class="form-label" for="input-metric-type">分析指标</label>
+                            <select id="input-metric-type" class="form-select">
+                                <option value="Metric_1">单车边际</option>
+                            </select>
                         </div>
                     </div>
-                    <p class="caption">默认展示为“单车边际”；把单位改为“台”会展示为“单台边际”，指标改为“净收入”会展示为“单车净收入”。</p>
+                    <p class="caption">销量列之后的数值列会自动出现在这里；把单位改为“台”会展示为“单台净收入、单台成本、单台边际”。</p>
                 </div>
             </div>
         </details>
@@ -145,21 +147,21 @@
                     <table class="format-table">
                         <thead>
                             <tr>
-                                <th>列名</th><th>月份</th><th>大区</th><th>国家</th><th>车型</th><th>燃油品类</th><th>品牌</th><th>销量</th><th>指标总额</th>
+                                <th>列名</th><th>月份</th><th>大区</th><th>国家</th><th>车型</th><th>燃油品类</th><th>品牌</th><th>销量</th><th>净收入</th><th>成本</th><th>边际</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td>说明</td><td>月份</td><td>维度</td><td>维度</td><td>维度</td><td>维度</td><td>维度</td><td>销量</td><td><span data-total-metric-label>边际总额</span></td>
+                                <td>说明</td><td>月份</td><td>维度</td><td>维度</td><td>维度</td><td>维度</td><td>维度</td><td>销量</td><td>可选指标</td><td>可选指标</td><td>可选指标</td>
                             </tr>
                             <tr>
-                                <td>默认</td><td>-</td><td>大区</td><td>国家</td><td>车型</td><td>燃油品类</td><td>品牌</td><td>-</td><td>-</td>
+                                <td>默认</td><td>-</td><td>大区</td><td>国家</td><td>车型</td><td>燃油品类</td><td>品牌</td><td>-</td><td>单车净收入</td><td>单车成本</td><td>单车边际</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
                 <div class="tip-box">
-                    💡 <strong>提示</strong>：除月份、销量、指标总额外，其余列会按表头自动识别为分析维度。可新增或删除维度列，直接插入或删除即可；想改维度名称，直接修改模板表头即可。指标总额列兼容边际总额、净收入总额、收入总额等名称。
+                    💡 <strong>提示</strong>：销量列之前会按表头自动识别为分析维度，可新增或删除维度列；销量列之后的数值列会识别为可分析指标，例如净收入、成本、边际。旧版“指标总额”列仍可直接上传。
                 </div>
                 <h3>计算逻辑</h3>
                 <ol>
