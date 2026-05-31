@@ -1,40 +1,7 @@
 {
-  "categories": [
-    {
-      "id": "budget-review",
-      "label": "预算复盘",
-      "description": "对比实际与预算，定位销量、收入、边际和利润差异。"
-    },
-    {
-      "id": "trend-monitoring",
-      "label": "趋势监控",
-      "description": "观察连续月份走势、同比环比、结构变化和集中度。"
-    },
-    {
-      "id": "profit-structure",
-      "label": "盈利结构",
-      "description": "在任意维度下识别规模、单车质量、边际贡献和利润拖累项。"
-    },
-    {
-      "id": "profit-simulation",
-      "label": "利润模拟",
-      "description": "调整销量、收入、成本、费用和税费假设，查看利润影响。"
-    },
-    {
-      "id": "unit-attribution",
-      "label": "单车归因",
-      "description": "拆解单车指标变化中的结构效应和费率效应。"
-    },
-    {
-      "id": "bi-workbench",
-      "label": "BI 工作台",
-      "description": "上传明细数据，自由拖拽字段并快速生成透视表和图表。"
-    }
-  ],
   "models": [
     {
       "slug": "business-analysis",
-      "categoryId": "budget-review",
       "title": "预算实际对比模型",
       "summary": "对比实际与预算的销量、收入、边际和利润表现，支持按国家、车型等维度下钻。",
       "href": "/finance/business-analysis",
@@ -80,7 +47,6 @@
     },
     {
       "slug": "monthly-trend",
-      "categoryId": "trend-monitoring",
       "title": "分月指标趋势分析模型",
       "summary": "上传连续月份明细，查看销量、单车质量、环比同比、同期对比、结构占比和集中度。",
       "href": "/finance/monthly-trend",
@@ -126,7 +92,6 @@
     },
     {
       "slug": "profit-structure",
-      "categoryId": "profit-structure",
       "title": "多维盈利结构分析模型",
       "summary": "上传通用经营明细底表，按任意维度或维度组合识别规模、单车质量、边际贡献和利润拖累项。",
       "href": "/finance/profit-structure",
@@ -172,7 +137,6 @@
     },
     {
       "slug": "sensitivity-analysis",
-      "categoryId": "profit-simulation",
       "title": "利润敏感性分析",
       "summary": "调整销量、收入、成本、费用和税费假设，快速判断边际与利润对变量变化的敏感程度。",
       "href": "/finance/sensitivity-analysis",
@@ -218,7 +182,6 @@
     },
     {
       "slug": "margin-analysis",
-      "categoryId": "unit-attribution",
       "title": "单车指标变动归因模型",
       "summary": "上传两期数据，拆解单车指标变化中的结构效应和费率效应，判断变化来源。",
       "href": "/finance/margin-analysis",
@@ -264,7 +227,6 @@
     },
     {
       "slug": "perspective-bi",
-      "categoryId": "bi-workbench",
       "title": "Perspective BI 分析台",
       "summary": "上传 CSV 或 Excel 明细数据，在网页内完成字段拖拽、透视表、筛选、排序和图表分析。",
       "href": "/finance/perspective-bi",

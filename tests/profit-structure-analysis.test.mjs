@@ -21,7 +21,7 @@ test("profit structure model is registered as a multidimensional finance model",
   assert.ok(model, "profit-structure should be present in the finance model registry");
   assert.equal(model.title, "多维盈利结构分析模型");
   assert.equal(model.href, "/finance/profit-structure");
-  assert.equal(model.categoryId, "profit-structure");
+  assert.equal("categoryId" in model, false);
   assert.match(model.summary, /任意维度/);
   assert.match(model.aiGuide.purpose, /多维度/);
   assert.doesNotMatch(model.title, /车型|产品/);

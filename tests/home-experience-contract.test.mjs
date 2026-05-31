@@ -212,6 +212,9 @@ test("home hero uses an interactive model stage instead of a static question gri
   assert.match(heroModelStage, /home-hero-stage-preview/);
   assert.match(heroModelStage, /home-hero-stage-picker/);
   assert.match(heroModelStage, /home-hero-stage-tab/);
+  assert.doesNotMatch(heroModelStage, /home-hero-stage-kicker/);
+  assert.doesNotMatch(heroModelStage, /label:\s*"/);
+  assert.doesNotMatch(heroModelStage, /单车归因|预算复盘|趋势监控|利润模拟/);
   assert.match(heroModelStage, /选择一个经营问题，进入对应模型/);
   assert.match(heroModelStage, /href=\{stage\.href\}/);
   assert.match(heroModelStage, /aria-current=\{isActive \? "true" : undefined\}/);
@@ -356,6 +359,9 @@ test("homepage finance section previews models as a composed showcase", () => {
   assert.match(financeSection, /这里收录的是我自己搭建并持续打磨的财务模型和分析工具，适合从复盘、归因、趋势和情景推演开始使用。/);
   assert.doesNotMatch(financeSection, /按经营问题进入模型/);
   assert.doesNotMatch(financeSection, /四个模型对应四类常见经营问题/);
+  assert.doesNotMatch(financeSection, /financeModelCategories/);
+  assert.doesNotMatch(financeSection, /getCategoryLabel/);
+  assert.doesNotMatch(financeSection, /home-finance-category/);
   assert.match(financeSection, /home-finance-showcase/);
   assert.match(financeSection, /home-finance-stage/);
   assert.match(financeSection, /home-finance-stage-motion/);

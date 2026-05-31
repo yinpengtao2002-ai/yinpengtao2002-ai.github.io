@@ -50,7 +50,7 @@ export default function RootLayout({
         className="antialiased gradient-bg overflow-x-hidden selection:bg-[#d97757] selection:text-white"
       >
         <ClientShell />
-        <main style={{ width: "100%", minWidth: "100vw", display: "block" }}>
+        <main style={{ width: "100%", minWidth: 0, display: "block" }}>
           <PageTransition>{children}</PageTransition>
         </main>
       </body>

@@ -13,7 +13,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import FinanceModelPreview from "@/components/finance/FinanceModelPreview";
-import { financeModelCategories, financeModels } from "@/lib/finance/modelRegistry";
+import { financeModels } from "@/lib/finance/modelRegistry";
 
 const DEFAULT_MODEL_SLUG = "margin-analysis";
 const SWIPE_THRESHOLD = 46;
@@ -265,9 +265,6 @@ export default function HomeFinanceSection() {
             <Link href={activeModel.href} className="home-finance-stage">
               <div key={`finance-stage-${activeModel.slug}`} className="home-finance-stage-motion">
                 <div className="home-finance-stage-copy">
-                  <span className="home-finance-category">
-                    {getCategoryLabel(activeModel.categoryId)}
-                  </span>
                   <h3>{activeModel.title}</h3>
                   <p>{activeDetail?.focus ?? activeModel.summary}</p>
                   <div className="home-finance-detail">
@@ -327,9 +324,6 @@ export default function HomeFinanceSection() {
                     onClick={handleMobileSlideClick}
                   >
                     <div className="home-finance-mobile-copy">
-                      <span className="home-finance-category">
-                        {getCategoryLabel(model.categoryId)}
-                      </span>
                       <h3>{model.title}</h3>
                       <p>{detail?.focus ?? model.summary}</p>
                     </div>
@@ -387,7 +381,6 @@ export default function HomeFinanceSection() {
                       compact
                     />
                     <div className="home-finance-switch-copy">
-                      <span>{getCategoryLabel(model.categoryId)}</span>
                       <strong>{model.title}</strong>
                       <span className="home-finance-switch-open">
                         打开模型 <ArrowRight style={{ width: 13, height: 13 }} />
@@ -402,8 +395,4 @@ export default function HomeFinanceSection() {
       </div>
     </section>
   );
-}
-
-function getCategoryLabel(categoryId: string) {
-  return financeModelCategories.find((category) => category.id === categoryId)?.label ?? "财务模型";
 }

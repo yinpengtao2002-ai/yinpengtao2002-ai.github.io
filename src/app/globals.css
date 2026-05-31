@@ -555,21 +555,6 @@ h6 {
   animation: homeHeroStageIn 0.58s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.home-hero-stage-kicker {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  margin-bottom: 10px;
-  border: 1px solid color-mix(in srgb, var(--hero-stage-accent) 28%, var(--border));
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--card) 68%, transparent);
-  color: color-mix(in srgb, var(--hero-stage-accent) 80%, var(--foreground));
-  font-family: var(--font-poppins);
-  font-size: 11px;
-  font-weight: 800;
-  padding: 0 9px;
-}
-
 .home-hero-stage-copy h3 {
   max-width: 13em;
   color: var(--foreground);
@@ -884,12 +869,6 @@ h6 {
   transform: scaleX(0.3);
   transform-origin: left;
   transition: opacity 0.22s ease, transform 0.22s ease;
-}
-
-.home-hero-stage-tab span {
-  color: color-mix(in srgb, var(--accent-secondary) 80%, var(--foreground));
-  font-size: 10px;
-  font-weight: 800;
 }
 
 .home-hero-stage-tab strong {
@@ -1464,7 +1443,6 @@ h6 {
   padding: clamp(0.9rem, 1.65vw, 1.2rem);
 }
 
-.home-finance-category,
 .home-finance-switch-copy span {
   color: var(--accent-secondary);
   font-size: 12px;
@@ -1475,7 +1453,7 @@ h6 {
   color: var(--foreground);
   font-size: clamp(1.38rem, 2.2vw, 1.8rem);
   line-height: 1.24;
-  margin: 9px 0 7px;
+  margin: 0 0 7px;
 }
 
 .home-finance-stage p {
@@ -2836,14 +2814,13 @@ h6 {
     padding: 0.64rem 0.8rem;
   }
 
-  .home-finance-category,
   .home-finance-switch-copy span {
     font-size: 11px;
   }
 
   .home-finance-stage h3 {
     font-size: 1.1rem;
-    margin: 5px 0 3px;
+    margin: 0 0 3px;
   }
 
   .home-finance-stage p {
@@ -3150,13 +3127,6 @@ h6 {
     padding: 0.78rem 0.86rem 0.45rem;
   }
 
-  .home-hero-stage-kicker {
-    min-height: 21px;
-    margin-bottom: 6px;
-    font-size: 9.5px;
-    padding-inline: 8px;
-  }
-
   .home-hero-stage-copy h3 {
     max-width: none;
     font-size: 1.02rem;
@@ -3214,10 +3184,6 @@ h6 {
     min-height: 48px;
     gap: 2px;
     padding: 8px 9px 7px;
-  }
-
-  .home-hero-stage-tab span {
-    font-size: 9.5px;
   }
 
   .home-hero-stage-tab strong {
@@ -3760,15 +3726,6 @@ h6 {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
-.finance-model-library-grid.filtered {
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  justify-content: start;
-}
-
-.finance-model-library-grid.compact.filtered {
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-}
-
 .finance-model-card:hover {
   border-color: color-mix(in srgb, var(--accent) 36%, var(--border));
   box-shadow: 0 18px 44px rgba(20, 20, 19, 0.08);
@@ -3779,14 +3736,8 @@ h6 {
   padding: 16px;
 }
 
-.finance-model-card-category {
-  color: var(--finance-card-accent, var(--accent-secondary));
-  font-size: 12px;
-  font-weight: 800;
-}
-
 .finance-model-card-title {
-  margin: 10px 0 8px;
+  margin: 0 0 8px;
   color: var(--foreground);
   font-size: 17px;
   line-height: 1.35;
@@ -3838,8 +3789,7 @@ h6 {
 }
 
 @media (max-width: 768px) {
-  .finance-model-library-grid.compact,
-  .finance-model-library-grid.compact.filtered {
+  .finance-model-library-grid.compact {
     grid-template-columns: 1fr;
     gap: 10px;
   }
@@ -3882,13 +3832,9 @@ h6 {
     object-position: center top;
   }
 
-  .finance-model-card-category {
-    font-size: 11px;
-  }
-
   .finance-model-card-title {
     display: -webkit-box;
-    margin: 4px 0 4px;
+    margin: 0 0 4px;
     font-size: 14px;
     line-height: 1.32;
     -webkit-box-orient: vertical;

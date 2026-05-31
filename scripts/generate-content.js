@@ -122,6 +122,12 @@ function hasLegacyGeneratedExports() {
     return /export const (aiContent|essaysContent)|export function getContentBySlug/.test(source);
 }
 
+function hasRequiredGeneratedCategory() {
+    if (!fs.existsSync(tsOutputPath)) return false;
+    const source = fs.readFileSync(tsOutputPath, 'utf-8');
+    return /category:\s*string\s*\|\s*null;/.test(source);
+}
+
 function withoutGeneratedId(item) {
     const copy = { ...item };
     delete copy.id;
@@ -208,7 +214,6 @@ function getFinanceRegistryContent() {
         title: model.title,
         description: model.summary,
         date: model.date,
-        category: model.categoryId,
         href: model.href,
         content: [
             model.aiGuide.purpose,
@@ -348,7 +353,7 @@ export interface ContentItem {
     title: string;
     description: string;
     date: string;
-    category: string | null;
+    category?: string | null;
     href: string;
     content: string;
     source?: string;
@@ -366,7 +371,8 @@ export function getThinkingBySlug(slug: string): ContentItem | undefined {
     if (
         JSON.stringify(existingGeneratedContent.finance) === JSON.stringify(financeContent) &&
         JSON.stringify(existingGeneratedContent.thinking || []) === JSON.stringify(thinkingContent) &&
-        !hasLegacyGeneratedExports()
+        !hasLegacyGeneratedExports() &&
+        !hasRequiredGeneratedCategory()
     ) {
         console.log('  ✅ Content unchanged; keeping existing generated file');
         console.log('✨ Content generation complete!');

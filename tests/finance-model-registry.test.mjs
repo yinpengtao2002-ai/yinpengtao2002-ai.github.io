@@ -15,11 +15,11 @@ function assertCssRuleHas(css, selector, declarations) {
   }
 }
 
-test("finance registry contains the approved categories in order", () => {
-  assert.deepEqual(
-    registry.categories.map((category) => category.id),
-    ["budget-review", "trend-monitoring", "profit-structure", "profit-simulation", "unit-attribution", "bi-workbench"]
-  );
+test("finance registry is a direct model list without category metadata", () => {
+  assert.equal("categories" in registry, false);
+  for (const model of registry.models) {
+    assert.equal("categoryId" in model, false, `${model.slug} should not carry category metadata`);
+  }
 });
 
 test("finance registry contains the approved model routes", () => {
@@ -41,7 +41,6 @@ test("Perspective BI is registered as a user-operable finance model", () => {
 
   assert.ok(model, "perspective-bi should be present in the finance model registry");
   assert.equal(model.href, "/finance/perspective-bi");
-  assert.equal(model.categoryId, "bi-workbench");
   assert.match(model.title, /BI/);
   assert.match(model.summary, /上传/);
   assert.match(model.summary, /透视|看板|分析/);
@@ -51,11 +50,11 @@ test("Perspective BI is registered as a user-operable finance model", () => {
   assert.ok(model.aiGuide.fields.some((field) => /派生指标/.test(field.name)));
 });
 
-test("finance registry maps every model to an existing category", () => {
-  const categories = new Set(registry.categories.map((category) => category.id));
-  for (const model of registry.models) {
-    assert.ok(categories.has(model.categoryId), `${model.slug} has unknown category ${model.categoryId}`);
-  }
+test("finance registry preserves model order as the only browsing structure", () => {
+  assert.deepEqual(
+    registry.models.map((model) => model.slug),
+    ["business-analysis", "monthly-trend", "profit-structure", "sensitivity-analysis", "margin-analysis", "perspective-bi"]
+  );
 });
 
 test("finance models include chart-stacked preview assets", async () => {
@@ -115,7 +114,7 @@ test("finance model library uses a compact mobile list layout", async () => {
   const globals = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
 
   assert.match(library, /finance-model-card-link/);
-  assert.match(library, /finance-model-card-category/);
+  assert.doesNotMatch(library, /finance-model-card-category/);
   assert.match(library, /finance-model-card-title/);
   assert.match(library, /finance-model-card-summary/);
   assert.match(library, /finance-model-card-action/);
@@ -125,7 +124,7 @@ test("finance model library uses a compact mobile list layout", async () => {
   assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.finance-model-card-summary\s*\{[\s\S]*-webkit-line-clamp:\s*1/s);
 });
 
-test("finance model library keeps filtered cards aligned with the all-model grid", async () => {
+test("finance model library presents models as one focused library without category filters", async () => {
   const library = await readFile(
     new URL("../src/components/finance/FinanceModelLibrary.tsx", import.meta.url),
     "utf8"
@@ -133,10 +132,14 @@ test("finance model library keeps filtered cards aligned with the all-model grid
   const globals = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
 
   assert.match(library, /finance-model-library-grid/);
-  assert.match(library, /isFiltered/);
-  assert.match(globals, /\.finance-model-library-grid\.filtered/);
-  assert.match(globals, /\.finance-model-library-grid\.filtered\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(260px,\s*1fr\)\)/s);
-  assert.match(globals, /\.finance-model-library-grid\.compact\.filtered\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(220px,\s*1fr\)\)/s);
+  assert.doesNotMatch(library, /useState/);
+  assert.doesNotMatch(library, /activeCategory/);
+  assert.doesNotMatch(library, /financeModelCategories/);
+  assert.doesNotMatch(library, /pillStyle/);
+  assert.doesNotMatch(library, /finance-model-card-category/);
+  assert.doesNotMatch(globals, /\.finance-model-library-grid\.filtered/);
+  assert.doesNotMatch(globals, /\.finance-model-library-grid\.compact\.filtered/);
+  assert.doesNotMatch(globals, /\.finance-model-card-category/);
   assert.doesNotMatch(globals, /min\(360px,\s*100%\)/);
   assert.doesNotMatch(globals, /minmax\(240px,\s*320px\)/);
 });
@@ -155,7 +158,7 @@ test("finance index page keeps the model library high and readable", async () =>
   assert.match(page, /className="home-finance-title"/);
   assert.match(page, /finance-index-intro/);
   assert.match(page, /问题驱动的财务模型/);
-  assert.match(page, /从复盘、归因、趋势到敏感性，按真实经营问题选择模型。/);
+  assert.match(page, /这里收录的是我自己搭建并持续打磨的财务模型和分析工具，欢迎大家使用。/);
   assert.doesNotMatch(page, /目前共有 \{financeModels\.length\} 个模型/);
   assert.doesNotMatch(page, /Finance Model Library/);
   assert.doesNotMatch(page, /MODEL LIBRARY/);
@@ -172,4 +175,14 @@ test("finance index page keeps the model library high and readable", async () =>
   assert.match(globals, /\.home-finance-title\s*\{[^}]*font-family:\s*var\(--font-hero-display\)/s);
   assert.match(globals, /\.finance-index-intro\s*\{/);
   assert.match(globals, /color-mix\(in srgb,\s*var\(--foreground\)\s*62%,\s*var\(--muted\)\)/);
+});
+
+test("site shell does not force pages wider than the visible viewport", async () => {
+  const layout = await readFile(
+    new URL("../src/app/layout.tsx", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(layout, /<main/);
+  assert.doesNotMatch(layout, /minWidth:\s*"100vw"/);
 });

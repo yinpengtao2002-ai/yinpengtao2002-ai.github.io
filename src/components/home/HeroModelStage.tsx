@@ -18,7 +18,6 @@ const HERO_MODEL_STAGES = [
   {
     slug: "margin-analysis",
     question: "单车为什么变了？",
-    label: "单车归因",
     title: "单车指标变动归因模型",
     description: "把两期单车变化拆成结构效应和费率效应，先定位问题来自组合变化，还是同一维度下的单车水平变化。",
     insight: "先看总差异，再看结构和费率谁在拉动。",
@@ -32,7 +31,6 @@ const HERO_MODEL_STAGES = [
   {
     slug: "business-analysis",
     question: "预算偏在哪里？",
-    label: "预算复盘",
     title: "预算实际对比模型",
     description: "把销量、净收入、边际、固定科目和利润贡献串成一条复盘链路，适合从总差异一路下钻到经营原因。",
     insight: "预算差异不是一个数，而是一条经营链路。",
@@ -46,7 +44,6 @@ const HERO_MODEL_STAGES = [
   {
     slug: "monthly-trend",
     question: "趋势哪里异常？",
-    label: "趋势监控",
     title: "分月指标趋势分析模型",
     description: "观察连续月份的同比、环比、结构占比和集中度，帮助从趋势线、热力图和结构变化里发现异常。",
     insight: "先看趋势断点，再回到结构和维度。",
@@ -60,7 +57,6 @@ const HERO_MODEL_STAGES = [
   {
     slug: "sensitivity-analysis",
     question: "哪个变量最影响利润？",
-    label: "利润模拟",
     title: "利润敏感性分析",
     description: "围绕销量、净收入、成本、费用和税费做情景调整，快速判断利润对关键变量的敏感程度。",
     insight: "把假设变成排序，再把排序变成判断。",
@@ -154,7 +150,6 @@ export default function HeroModelStage() {
     >
       <div className="home-hero-stage-panel" aria-live="polite">
         <div className="home-hero-stage-copy" key={`stage-copy-${activeStage.slug}`}>
-          <span className="home-hero-stage-kicker">{activeStage.label}</span>
           <h3>{activeStage.title}</h3>
           <p>{activeStage.description}</p>
           <Link href={activeStage.href} className="home-hero-stage-link">
@@ -223,7 +218,7 @@ export default function HeroModelStage() {
               key={stage.slug}
               type="button"
               className={`home-hero-stage-dot${isActive ? " is-active" : ""}`}
-              aria-label={`切换到${stage.label}`}
+              aria-label={`切换到${stage.title}`}
               aria-current={isActive ? "true" : undefined}
               onClick={() => setActiveIndex(index)}
             />
@@ -243,7 +238,6 @@ export default function HeroModelStage() {
               onMouseEnter={() => setActiveIndex(index)}
               onFocus={() => setActiveIndex(index)}
             >
-              <span>{stage.label}</span>
               <strong>{stage.question}</strong>
             </Link>
           );
