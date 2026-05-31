@@ -10,6 +10,7 @@ const SiteNavigation = dynamic(() => import("@/components/layout/SiteNavigation"
 function shouldHideDecorativeExtras(pathname: string) {
     return (
         pathname.startsWith("/finance/business-analysis") ||
+        pathname.startsWith("/finance/profit-structure") ||
         pathname.startsWith("/finance/perspective-bi") ||
         pathname.startsWith("/tools/subtitle-workbench")
     );

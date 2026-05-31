@@ -47,7 +47,7 @@ test("home hero does not split AI workflow and thinking judgment into separate p
 test("home page has an explicit continue cue for below-the-fold content", () => {
   assert.match(hero, /浏览更多/);
   assert.match(hero, /查看完整模型库/);
-  assert.match(hero, /精选 4 个 · 共 5 个模型/);
+  assert.match(hero, /精选 4 个 · 共 6 个模型/);
   assert.doesNotMatch(hero, /下一屏 · 财务模型/);
   assert.match(hero, /#thinking/);
   assert.match(hero, /handleBrowseMore/);

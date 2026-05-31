@@ -1,5 +1,5 @@
 // Auto-generated content data from markdown + Notion
-// Generated at: 2026-05-26T15:47:59.766Z
+// Generated at: 2026-05-31T13:11:37.073Z
 // DO NOT EDIT MANUALLY - run 'npm run prebuild' to regenerate
 
 export interface ContentItem {
@@ -40,6 +40,17 @@ export const financeContent: ContentItem[] = [
     "id": 2
   },
   {
+    "slug": "profit-structure",
+    "title": "多维盈利结构分析模型",
+    "description": "上传通用经营明细底表，按任意维度或维度组合识别规模、单车质量、边际贡献和利润拖累项。",
+    "date": "2026-05-31",
+    "category": "profit-structure",
+    "href": "/finance/profit-structure",
+    "content": "用于多维度盈利结构诊断，把通用经营明细按用户选择的任意维度或维度组合汇总，判断哪些经营对象贡献利润、消耗规模或拖累边际。\n\n使用步骤：\n1. 打开模型后先查看自动加载的示例数据。\n2. 上传包含月份、维度、销量、净收入、成本和边际的 Excel 或 CSV。\n3. 选择当前分析维度或组合维度，再从盈利矩阵、分层贡献和明细表判断结构质量。",
+    "source": "registry",
+    "id": 3
+  },
+  {
     "slug": "sensitivity-analysis",
     "title": "利润敏感性分析",
     "description": "调整销量、收入、成本、费用和税费假设，快速判断边际与利润对变量变化的敏感程度。",
@@ -48,7 +59,7 @@ export const financeContent: ContentItem[] = [
     "href": "/finance/sensitivity-analysis",
     "content": "用于预算、滚动预测和经营复盘中的情景推演，判断利润总额对关键变量变化的敏感程度。\n\n使用步骤：\n1. 打开模型后查看默认利润示例数据。\n2. 在控制台调整销量、单车净收入、成本、费用和税费。\n3. 查看关键因素排序、目标利润分析、双变量矩阵和瀑布图。",
     "source": "registry",
-    "id": 3
+    "id": 4
   },
   {
     "slug": "margin-analysis",
@@ -59,7 +70,7 @@ export const financeContent: ContentItem[] = [
     "href": "/finance/margin-analysis",
     "content": "用于比较两期单车指标变化，拆解变化来自销量结构还是单车水平。\n\n使用步骤：\n1. 打开模型后先查看自动加载的示例数据。\n2. 上传两期包含销量、指标总额和维度的数据。\n3. 选择分析维度，查看结构效应、费率效应、瀑布图和明细表。",
     "source": "registry",
-    "id": 4
+    "id": 5
   },
   {
     "slug": "perspective-bi",
@@ -70,7 +81,7 @@ export const financeContent: ContentItem[] = [
     "href": "/finance/perspective-bi",
     "content": "用于探索式 BI 分析，把用户上传的经营明细快速变成可拖拽字段、可筛选、可排序、可切换图表的网页工作台。\n\n使用步骤：\n1. 打开模型后先查看自动加载的示例数据。\n2. 上传 CSV、XLSX 或 XLS 明细表，页面会读取第一张表。\n3. 先在字段口径确认区检查维度、指标和聚合方式，再在右侧 Perspective 面板拖动字段。",
     "source": "registry",
-    "id": 5
+    "id": 6
   }
 ];
 

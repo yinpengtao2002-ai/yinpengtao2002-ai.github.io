@@ -54,6 +54,12 @@ const modelDetails: Record<string, { focus: string; detail: string; guide: strin
     guide: "先找趋势断点，再看同比环比和结构占比，最后回到具体维度确认异常来源。",
     points: ["连续月份明细", "同比环比观察", "结构与集中度"],
   },
+  "profit-structure": {
+    focus: "任意维度下的盈利结构诊断",
+    detail: "上传通用经营明细后，按大区、国家、渠道、客户、业务单元或任意组合识别利润贡献和边际拖累项。",
+    guide: "先选当前分析维度，再看盈利矩阵和分层贡献，最后回到明细表确认拖累项的规模和单车质量。",
+    points: ["任意维度分析", "盈利分层矩阵", "拖累项识别"],
+  },
   "sensitivity-analysis": {
     focus: "利润变量变化的情景推演",
     detail: "围绕销量、净收入、成本、费用和税费做假设调整，判断利润对关键变量的敏感程度。",

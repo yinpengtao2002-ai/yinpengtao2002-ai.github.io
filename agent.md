@@ -87,6 +87,18 @@ Current models:
   - Origin: adapted from Desktop `经营分析看板v14.html` / `business_dashboard_v14.html`.
   - Purpose: budget-vs-actual model across HQ dispatch/sales volume, net revenue, variable costs, contribution margin, fixed deductions, profit additions, and profit total. Excel uploads use separate `实际` and `预算` sheets with subjects on rows and amount in one column; the UI also has a second fixed/profit-subject entry area. Operating rows carry user-defined drillable dimensions while fixed/profit contribution rows may be summary amounts. Default dimensions are 大区、国家、品牌市场、经营模式、业务单元、车型, but uploads may include more or fewer dimensions.
 
+- `profit-structure`: `/finance/profit-structure`
+  - Route: `src/app/finance/profit-structure/page.tsx`
+  - Shell: `src/app/finance/profit-structure/ProfitStructureTool.tsx`
+  - Engine: `src/app/finance/profit-structure/profit-structure-engine.js`
+  - Styles: `src/app/finance/profit-structure/tool.css`
+  - Tests: `tests/profit-structure-analysis.test.mjs`
+  - Purpose: multi-dimensional profit structure diagnosis from one operating detail table. The expected bottom-table habit is `月份` + any user-uploaded dimensions + `销量` + finance metrics such as `净收入`, `成本`, and `边际`. Do not position this model around one fixed dimension such as 车型 or 产品; all uploaded dimension columns should remain available for primary analysis, combination, filtering, and drill-down.
+
+- `perspective-bi`: `/finance/perspective-bi`
+  - Route: `src/app/finance/perspective-bi/page.tsx`
+  - Purpose: a productized Perspective BI workbench for ad hoc CSV/XLSX/XLS exploration before users enter a more opinionated finance model.
+
 ## Finance Model Conventions
 
 - Prefer the FBP chain: sales volume -> net revenue -> contribution margin -> fixed deductions -> profit total. Add non-P&L modules only when the model explicitly asks for them.

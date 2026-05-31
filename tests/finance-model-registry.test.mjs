@@ -18,14 +18,14 @@ function assertCssRuleHas(css, selector, declarations) {
 test("finance registry contains the approved categories in order", () => {
   assert.deepEqual(
     registry.categories.map((category) => category.id),
-    ["budget-review", "trend-monitoring", "profit-simulation", "unit-attribution", "bi-workbench"]
+    ["budget-review", "trend-monitoring", "profit-structure", "profit-simulation", "unit-attribution", "bi-workbench"]
   );
 });
 
 test("finance registry contains the approved model routes", () => {
   assert.deepEqual(
     registry.models.map((model) => model.slug).sort(),
-    ["business-analysis", "margin-analysis", "monthly-trend", "perspective-bi", "sensitivity-analysis"]
+    ["business-analysis", "margin-analysis", "monthly-trend", "perspective-bi", "profit-structure", "sensitivity-analysis"]
   );
   for (const model of registry.models) {
     assert.match(model.href, /^\/finance\/[a-z-]+$/);

@@ -62,6 +62,7 @@ test("site navigation uses page links instead of scroll-tracked homepage section
 
 test("site navigation hides on the Perspective BI workbench route", () => {
   assert.match(navigation, /pathname\.startsWith\("\/finance\/perspective-bi"\)/);
+  assert.match(navigation, /pathname\.startsWith\("\/finance\/profit-structure"\)/);
 });
 
 test("site keeps a single light theme without a dark-mode toggle", () => {
