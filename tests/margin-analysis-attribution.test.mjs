@@ -16,6 +16,7 @@ const {
     resolveExcelFilterSearchValues,
     normalizeUploadedRows,
     applySelectedMetricToRows,
+    generateDemoData,
     sheetRowsToObjects,
     TEMPLATE_HEADERS,
     TEMPLATE_HEADER_NOTE,
@@ -455,8 +456,9 @@ test("upload template and sidebar use business dimension headers instead of Dim 
     assert.match(marginAnalysisHtml, /<details class="sidebar-details" open>\s*<summary class="sidebar-summary">📁 数据中心<\/summary>/);
     const loadedDataCenter = marginAnalysisHtml.match(/<section id="data-center-loaded"[\s\S]*?<\/section>/);
     assert.ok(loadedDataCenter, "Expected loaded data center section");
-    assert.match(loadedDataCenter[0], /for="input-metric-type">分析指标<\/label>/);
+    assert.match(loadedDataCenter[0], /for="input-metric-type">当前分析对象<\/label>/);
     assert.match(loadedDataCenter[0], /<select id="input-metric-type"/);
+    assert.match(loadedDataCenter[0], /名称来自底表表头/);
     assert.match(marginAnalysisSource, /sheetRowsToObjects\(sheetRows\)/);
     assert.match(marginAnalysisHtml, /可新增或删除维度列/);
     assert.match(marginAnalysisHtml, /销量列之后的数值列会识别为可分析指标/);
@@ -478,18 +480,39 @@ test("unit metric naming stays single-vehicle by default and supports configurab
     assert.doesNotMatch(marginAnalysisHtml, /单均|单位指标变动分析模型/);
 });
 
-test("loaded data center exposes unit name and metric type settings together", () => {
+test("loaded data center exposes unit name and current metric selector together", () => {
     const loadedDataCenter = marginAnalysisHtml.match(/<section id="data-center-loaded"[\s\S]*?<\/section>/);
     assert.ok(loadedDataCenter, "Expected loaded data center section");
     assert.match(loadedDataCenter[0], /for="input-unit-name">单位名称<\/label>/);
     assert.match(loadedDataCenter[0], /id="input-unit-name"[^>]*value="车"/);
-    assert.match(loadedDataCenter[0], /for="input-metric-type">分析指标<\/label>/);
+    assert.match(loadedDataCenter[0], /for="input-metric-type">当前分析对象<\/label>/);
     assert.match(loadedDataCenter[0], /<select id="input-metric-type" class="form-select"/);
+    assert.doesNotMatch(loadedDataCenter[0], /指标名称|指标类型/);
     assert.match(marginAnalysisSource, /unitName:\s*'车'/);
     assert.match(marginAnalysisSource, /document\.getElementById\('input-unit-name'\)/);
     assert.match(marginAnalysisSource, /unitInput\.addEventListener\('input'/);
     assert.match(marginAnalysisSource, /populateMetricSelector\(\)/);
     assert.match(marginAnalysisSource, /metricInput\.addEventListener\('change'/);
+});
+
+test("demo data gives revenue, cost, and margin distinct unit-metric movements", () => {
+    assert.equal(typeof generateDemoData, "function");
+    const normalized = normalizeUploadedRows(generateDemoData());
+    assert.deepEqual(normalized.metricColumns.map(metric => metric.metricType), ["净收入", "成本", "边际"]);
+
+    const deltas = {};
+    normalized.metricColumns.forEach((metric) => {
+        const rows = applySelectedMetricToRows(normalized.rows, metric.key);
+        const base = calculateGlobalMetrics(rows, "2025-01").avgMargin;
+        const current = calculateGlobalMetrics(rows, "2025-02").avgMargin;
+        deltas[metric.metricType] = current - base;
+    });
+
+    assert.ok(Math.abs(deltas["净收入"]) > 100, "demo net revenue should visibly move");
+    assert.ok(Math.abs(deltas["成本"] + deltas["边际"]) > 100, "demo cost and margin should not be mirror images");
+    normalized.rows.forEach((row) => {
+        assert.equal(row.Metric_1 - row.Metric_2, row.Metric_3);
+    });
 });
 
 test("analysis area no longer renders the top KPI card strip", () => {

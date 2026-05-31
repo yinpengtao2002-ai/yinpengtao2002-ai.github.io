@@ -916,46 +916,50 @@ function generateDemoData() {
     const rows = [
         // 2025-01 基期数据
         // 亚太区
-        { Month: '2025-01', Dim_A: '亚太区', Dim_B: '中国', Dim_C: 'SUV-旗舰', 'Sales Volume': 5000, 'Total Margin': 15000000 },
-        { Month: '2025-01', Dim_A: '亚太区', Dim_B: '中国', Dim_C: 'Sedan-经典', 'Sales Volume': 3500, 'Total Margin': 7000000 },
-        { Month: '2025-01', Dim_A: '亚太区', Dim_B: '日本', Dim_C: 'SUV-旗舰', 'Sales Volume': 2000, 'Total Margin': 6400000 },
-        { Month: '2025-01', Dim_A: '亚太区', Dim_B: '日本', Dim_C: 'EV-新能源', 'Sales Volume': 1500, 'Total Margin': 5250000 },
+        { Month: '2025-01', Dim_A: '亚太区', Dim_B: '中国', Dim_C: 'SUV-旗舰', 'Sales Volume': 5000, unitRevenue: 9800, unitCost: 6800 },
+        { Month: '2025-01', Dim_A: '亚太区', Dim_B: '中国', Dim_C: 'Sedan-经典', 'Sales Volume': 3500, unitRevenue: 7600, unitCost: 5600 },
+        { Month: '2025-01', Dim_A: '亚太区', Dim_B: '日本', Dim_C: 'SUV-旗舰', 'Sales Volume': 2000, unitRevenue: 9100, unitCost: 5900 },
+        { Month: '2025-01', Dim_A: '亚太区', Dim_B: '日本', Dim_C: 'EV-新能源', 'Sales Volume': 1500, unitRevenue: 11200, unitCost: 7700 },
         // 欧洲区
-        { Month: '2025-01', Dim_A: '欧洲区', Dim_B: '德国', Dim_C: 'SUV-旗舰', 'Sales Volume': 3000, 'Total Margin': 10500000 },
-        { Month: '2025-01', Dim_A: '欧洲区', Dim_B: '德国', Dim_C: 'Sedan-经典', 'Sales Volume': 2500, 'Total Margin': 5500000 },
-        { Month: '2025-01', Dim_A: '欧洲区', Dim_B: '法国', Dim_C: 'EV-新能源', 'Sales Volume': 1800, 'Total Margin': 5940000 },
+        { Month: '2025-01', Dim_A: '欧洲区', Dim_B: '德国', Dim_C: 'SUV-旗舰', 'Sales Volume': 3000, unitRevenue: 10500, unitCost: 7000 },
+        { Month: '2025-01', Dim_A: '欧洲区', Dim_B: '德国', Dim_C: 'Sedan-经典', 'Sales Volume': 2500, unitRevenue: 8200, unitCost: 6000 },
+        { Month: '2025-01', Dim_A: '欧洲区', Dim_B: '法国', Dim_C: 'EV-新能源', 'Sales Volume': 1800, unitRevenue: 11800, unitCost: 8500 },
         // 美洲区
-        { Month: '2025-01', Dim_A: '美洲区', Dim_B: '美国', Dim_C: 'SUV-旗舰', 'Sales Volume': 4000, 'Total Margin': 14000000 },
-        { Month: '2025-01', Dim_A: '美洲区', Dim_B: '美国', Dim_C: 'Pickup-皮卡', 'Sales Volume': 2800, 'Total Margin': 8400000 },
-        { Month: '2025-01', Dim_A: '美洲区', Dim_B: '巴西', Dim_C: 'Sedan-经典', 'Sales Volume': 1200, 'Total Margin': 1800000 },
+        { Month: '2025-01', Dim_A: '美洲区', Dim_B: '美国', Dim_C: 'SUV-旗舰', 'Sales Volume': 4000, unitRevenue: 10100, unitCost: 6600 },
+        { Month: '2025-01', Dim_A: '美洲区', Dim_B: '美国', Dim_C: 'Pickup-皮卡', 'Sales Volume': 2800, unitRevenue: 10900, unitCost: 7900 },
+        { Month: '2025-01', Dim_A: '美洲区', Dim_B: '巴西', Dim_C: 'Sedan-经典', 'Sales Volume': 1200, unitRevenue: 7000, unitCost: 5500 },
 
         // 2025-02 当期数据 (包含结构变化和费率变化)
         // 亚太区 - 中国SUV增长，单车指标提升; 日本EV占比提升
-        { Month: '2025-02', Dim_A: '亚太区', Dim_B: '中国', Dim_C: 'SUV-旗舰', 'Sales Volume': 6200, 'Total Margin': 19840000 },
-        { Month: '2025-02', Dim_A: '亚太区', Dim_B: '中国', Dim_C: 'Sedan-经典', 'Sales Volume': 3200, 'Total Margin': 6080000 },
-        { Month: '2025-02', Dim_A: '亚太区', Dim_B: '日本', Dim_C: 'SUV-旗舰', 'Sales Volume': 1800, 'Total Margin': 5580000 },
-        { Month: '2025-02', Dim_A: '亚太区', Dim_B: '日本', Dim_C: 'EV-新能源', 'Sales Volume': 2200, 'Total Margin': 8140000 },
+        { Month: '2025-02', Dim_A: '亚太区', Dim_B: '中国', Dim_C: 'SUV-旗舰', 'Sales Volume': 6200, unitRevenue: 10300, unitCost: 7100 },
+        { Month: '2025-02', Dim_A: '亚太区', Dim_B: '中国', Dim_C: 'Sedan-经典', 'Sales Volume': 3200, unitRevenue: 7800, unitCost: 5900 },
+        { Month: '2025-02', Dim_A: '亚太区', Dim_B: '日本', Dim_C: 'SUV-旗舰', 'Sales Volume': 1800, unitRevenue: 9300, unitCost: 6200 },
+        { Month: '2025-02', Dim_A: '亚太区', Dim_B: '日本', Dim_C: 'EV-新能源', 'Sales Volume': 2200, unitRevenue: 11800, unitCost: 8100 },
         // 欧洲区 - 德国整体下滑，法国EV大增
-        { Month: '2025-02', Dim_A: '欧洲区', Dim_B: '德国', Dim_C: 'SUV-旗舰', 'Sales Volume': 2600, 'Total Margin': 8580000 },
-        { Month: '2025-02', Dim_A: '欧洲区', Dim_B: '德国', Dim_C: 'Sedan-经典', 'Sales Volume': 2200, 'Total Margin': 4620000 },
-        { Month: '2025-02', Dim_A: '欧洲区', Dim_B: '法国', Dim_C: 'EV-新能源', 'Sales Volume': 2800, 'Total Margin': 10080000 },
+        { Month: '2025-02', Dim_A: '欧洲区', Dim_B: '德国', Dim_C: 'SUV-旗舰', 'Sales Volume': 2600, unitRevenue: 10400, unitCost: 7100 },
+        { Month: '2025-02', Dim_A: '欧洲区', Dim_B: '德国', Dim_C: 'Sedan-经典', 'Sales Volume': 2200, unitRevenue: 8000, unitCost: 5900 },
+        { Month: '2025-02', Dim_A: '欧洲区', Dim_B: '法国', Dim_C: 'EV-新能源', 'Sales Volume': 2800, unitRevenue: 12300, unitCost: 8700 },
         // 美洲区 - 美国皮卡需求旺，巴西新增SUV
-        { Month: '2025-02', Dim_A: '美洲区', Dim_B: '美国', Dim_C: 'SUV-旗舰', 'Sales Volume': 4200, 'Total Margin': 14700000 },
-        { Month: '2025-02', Dim_A: '美洲区', Dim_B: '美国', Dim_C: 'Pickup-皮卡', 'Sales Volume': 3500, 'Total Margin': 11200000 },
-        { Month: '2025-02', Dim_A: '美洲区', Dim_B: '巴西', Dim_C: 'Sedan-经典', 'Sales Volume': 1000, 'Total Margin': 1400000 },
-        { Month: '2025-02', Dim_A: '美洲区', Dim_B: '巴西', Dim_C: 'SUV-旗舰', 'Sales Volume': 800, 'Total Margin': 2000000 },
+        { Month: '2025-02', Dim_A: '美洲区', Dim_B: '美国', Dim_C: 'SUV-旗舰', 'Sales Volume': 4200, unitRevenue: 10200, unitCost: 6700 },
+        { Month: '2025-02', Dim_A: '美洲区', Dim_B: '美国', Dim_C: 'Pickup-皮卡', 'Sales Volume': 3500, unitRevenue: 11300, unitCost: 8100 },
+        { Month: '2025-02', Dim_A: '美洲区', Dim_B: '巴西', Dim_C: 'Sedan-经典', 'Sales Volume': 1000, unitRevenue: 6800, unitCost: 5400 },
+        { Month: '2025-02', Dim_A: '美洲区', Dim_B: '巴西', Dim_C: 'SUV-旗舰', 'Sales Volume': 800, unitRevenue: 8200, unitCost: 5700 },
     ];
 
-    return rows.map(row => ({
-        '月份': row.Month,
-        '大区': row.Dim_A,
-        '国家': row.Dim_B,
-        '车型': row.Dim_C,
-        '销量': row['Sales Volume'],
-        '净收入': Math.round(row['Sales Volume'] * 9000),
-        '成本': Math.round(row['Sales Volume'] * 9000 - row['Total Margin']),
-        '边际': row['Total Margin']
-    }));
+    return rows.map(row => {
+        const netRevenue = Math.round(row['Sales Volume'] * row.unitRevenue);
+        const cost = Math.round(row['Sales Volume'] * row.unitCost);
+        return {
+            '月份': row.Month,
+            '大区': row.Dim_A,
+            '国家': row.Dim_B,
+            '车型': row.Dim_C,
+            '销量': row['Sales Volume'],
+            '净收入': netRevenue,
+            '成本': cost,
+            '边际': netRevenue - cost
+        };
+    });
 }
 
 
@@ -3814,6 +3818,7 @@ if (typeof module !== 'undefined' && module.exports) {
         prepareDisplayData,
         applyDrillDimensionFilters,
         applySelectedMetricToRows,
+        generateDemoData,
         resolveExcelFilterAppliedValues,
         resolveExcelFilterSearchValues,
         normalizeUploadedRows,
