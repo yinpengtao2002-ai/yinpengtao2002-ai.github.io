@@ -17,6 +17,7 @@ const {
     normalizeUploadedRows,
     applySelectedMetricToRows,
     generateDemoData,
+    getTemplateRows,
     sheetRowsToObjects,
     TEMPLATE_HEADERS,
     TEMPLATE_HEADER_NOTE,
@@ -357,6 +358,7 @@ test("spreadsheet template can carry a visible note above the detected header ro
     assert.match(TEMPLATE_HEADER_NOTE, /新增或删除维度列/);
     assert.match(TEMPLATE_HEADER_NOTE, /插入或删除/);
     assert.match(TEMPLATE_HEADER_NOTE, /销量列之后的数值列/);
+    assert.match(TEMPLATE_HEADER_NOTE, /扣减项建议按负数填写/);
     assert.match(buildTemplateStylesXml(), /fgColor rgb="FFFFF7CC"/);
     assert.match(buildTemplateWorksheetXml(), /<c r="A1" s="1" t="inlineStr">/);
     assert.match(buildTemplateWorksheetXml(), /<mergeCell ref="A1:J1"\/>/);
@@ -377,6 +379,14 @@ test("spreadsheet template can carry a visible note above the detected header ro
     assert.equal(normalized.dimNames.Dim_A, "大区");
     assert.equal(normalized.rows[0].Month, "2025-01");
     assert.equal(normalized.rows[0].Dim_B, "德国");
+});
+
+test("template sample rows use negative costs as financial deductions", () => {
+    assert.equal(typeof getTemplateRows, "function");
+    getTemplateRows().forEach((row) => {
+        assert.ok(row["成本"] < 0, "template cost should be negative");
+        assert.equal(row["净收入"] + row["成本"], row["边际"]);
+    });
 });
 
 test("uploaded sheets can expose multiple metrics after sales volume for single-vehicle analysis", () => {
@@ -511,7 +521,8 @@ test("demo data gives revenue, cost, and margin distinct unit-metric movements",
     assert.ok(Math.abs(deltas["净收入"]) > 100, "demo net revenue should visibly move");
     assert.ok(Math.abs(deltas["成本"] + deltas["边际"]) > 100, "demo cost and margin should not be mirror images");
     normalized.rows.forEach((row) => {
-        assert.equal(row.Metric_1 - row.Metric_2, row.Metric_3);
+        assert.ok(row.Metric_2 < 0, "demo cost should be negative");
+        assert.equal(row.Metric_1 + row.Metric_2, row.Metric_3);
     });
 });
 

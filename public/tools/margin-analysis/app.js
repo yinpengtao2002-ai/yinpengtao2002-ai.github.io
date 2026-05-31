@@ -50,7 +50,7 @@ const DIM_ICONS = {
 const TEMPLATE_HEADERS = [
     '月份', ...TEMPLATE_DIMENSION_HEADERS, '销量', '净收入', '成本', '边际'
 ];
-const TEMPLATE_HEADER_NOTE = '可直接修改标题行；请保留“月份”和“销量”。销量列之前会按表头自动识别为维度，可新增或删除维度列，直接插入或删除即可；销量列之后的数值列会识别为可分析指标，例如净收入、成本、边际。';
+const TEMPLATE_HEADER_NOTE = '可直接修改标题行；请保留“月份”和“销量”。销量列之前会按表头自动识别为维度，可新增或删除维度列，直接插入或删除即可；销量列之后的数值列会识别为可分析指标，例如净收入、成本、边际。成本等扣减项建议按负数填写。';
 
 
 // ==================== DOM Ready ====================
@@ -235,10 +235,10 @@ function initTemplateDownloads() {
 
 function getTemplateRows() {
     return [
-        { '月份': '2025-01', '大区': '亚太区', '国家': '中国', '车型': 'SUV-旗舰', '燃油品类': '燃油', '品牌': '品牌A', '销量': 5000, '净收入': 42000000, '成本': 27000000, '边际': 15000000 },
-        { '月份': '2025-01', '大区': '欧洲区', '国家': '德国', '车型': 'Sedan-经典', '燃油品类': '混动', '品牌': '品牌B', '销量': 2500, '净收入': 20500000, '成本': 15000000, '边际': 5500000 },
-        { '月份': '2025-02', '大区': '亚太区', '国家': '中国', '车型': 'SUV-旗舰', '燃油品类': '燃油', '品牌': '品牌A', '销量': 6200, '净收入': 52080000, '成本': 32240000, '边际': 19840000 },
-        { '月份': '2025-02', '大区': '欧洲区', '国家': '德国', '车型': 'Sedan-经典', '燃油品类': '混动', '品牌': '品牌B', '销量': 2200, '净收入': 17600000, '成本': 12980000, '边际': 4620000 }
+        { '月份': '2025-01', '大区': '亚太区', '国家': '中国', '车型': 'SUV-旗舰', '燃油品类': '燃油', '品牌': '品牌A', '销量': 5000, '净收入': 42000000, '成本': -27000000, '边际': 15000000 },
+        { '月份': '2025-01', '大区': '欧洲区', '国家': '德国', '车型': 'Sedan-经典', '燃油品类': '混动', '品牌': '品牌B', '销量': 2500, '净收入': 20500000, '成本': -15000000, '边际': 5500000 },
+        { '月份': '2025-02', '大区': '亚太区', '国家': '中国', '车型': 'SUV-旗舰', '燃油品类': '燃油', '品牌': '品牌A', '销量': 6200, '净收入': 52080000, '成本': -32240000, '边际': 19840000 },
+        { '月份': '2025-02', '大区': '欧洲区', '国家': '德国', '车型': 'Sedan-经典', '燃油品类': '混动', '品牌': '品牌B', '销量': 2200, '净收入': 17600000, '成本': -12980000, '边际': 4620000 }
     ];
 }
 
@@ -948,7 +948,7 @@ function generateDemoData() {
 
     return rows.map(row => {
         const netRevenue = Math.round(row['Sales Volume'] * row.unitRevenue);
-        const cost = Math.round(row['Sales Volume'] * row.unitCost);
+        const cost = -Math.round(row['Sales Volume'] * row.unitCost);
         return {
             '月份': row.Month,
             '大区': row.Dim_A,
@@ -957,7 +957,7 @@ function generateDemoData() {
             '销量': row['Sales Volume'],
             '净收入': netRevenue,
             '成本': cost,
-            '边际': netRevenue - cost
+            '边际': netRevenue + cost
         };
     });
 }
@@ -3822,6 +3822,7 @@ if (typeof module !== 'undefined' && module.exports) {
         resolveExcelFilterAppliedValues,
         resolveExcelFilterSearchValues,
         normalizeUploadedRows,
+        getTemplateRows,
         sheetRowsToObjects,
         TEMPLATE_HEADERS,
         TEMPLATE_HEADER_NOTE,
