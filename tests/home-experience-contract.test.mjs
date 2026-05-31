@@ -215,6 +215,12 @@ test("home hero uses an interactive model stage instead of a static question gri
   assert.doesNotMatch(heroModelStage, /home-hero-stage-kicker/);
   assert.match(heroModelStage, /home-hero-stage-tab-model/);
   assert.match(heroModelStage, /<strong>\{stage\.question\}<\/strong>[\s\S]*<span className="home-hero-stage-tab-model">\{stage\.title\}<\/span>/);
+  const stageTabRule = cssRule(".home-hero-stage-tab {");
+  const stageTabModelRule = cssRule(".home-hero-stage-tab-model {");
+  assert.match(stageTabRule, /align-content:\s*center/);
+  assert.match(stageTabModelRule, /font-weight:\s*600/);
+  assert.match(stageTabModelRule, /font-size:\s*10px/);
+  assert.doesNotMatch(stageTabModelRule, /font-weight:\s*800/);
   assert.doesNotMatch(heroModelStage, /label:\s*"/);
   assert.doesNotMatch(heroModelStage, /单车归因|预算复盘|趋势监控|利润模拟/);
   assert.match(heroModelStage, /选择一个经营问题，进入对应模型/);
