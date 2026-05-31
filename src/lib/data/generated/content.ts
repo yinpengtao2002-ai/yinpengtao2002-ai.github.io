@@ -1,5 +1,5 @@
 // Auto-generated content data from markdown + Notion
-// Generated at: 2026-05-31T15:01:00.787Z
+// Generated at: 2026-05-31T15:33:18.874Z
 // DO NOT EDIT MANUALLY - run 'npm run prebuild' to regenerate
 
 export interface ContentItem {
@@ -39,11 +39,11 @@ export const financeContent: ContentItem[] = [
   },
   {
     "slug": "profit-structure",
-    "title": "多维盈利结构分析模型",
-    "description": "上传通用经营明细底表，按任意维度或维度组合识别规模、单车质量、边际贡献和利润拖累项。",
+    "title": "多维度结构分析模型",
+    "description": "上传通用经营明细底表，按任意维度或维度组合分析销量、单位值和用户上传的任意指标结构。",
     "date": "2026-05-31",
     "href": "/finance/profit-structure",
-    "content": "用于多维度盈利结构诊断，把通用经营明细按用户选择的任意维度或维度组合汇总，判断哪些经营对象贡献利润、消耗规模或拖累边际。\n\n使用步骤：\n1. 打开模型后先查看自动加载的示例数据。\n2. 上传包含月份、维度、销量、净收入、成本和边际的 Excel 或 CSV。\n3. 选择当前分析维度或组合维度，再从盈利矩阵、分层贡献和明细表判断结构质量。",
+    "content": "用于多维度结构诊断，把通用经营明细按用户选择的任意维度或维度组合汇总，跟随用户上传的指标生成结构矩阵、候选图表和明细表。\n\n使用步骤：\n1. 打开模型后先查看自动加载的示例数据。\n2. 上传包含月份、维度、销量和任意指标的 Excel 或 CSV。\n3. 选择当前分析维度、组合维度和矩阵指标，再从结构矩阵、候选图表和明细表判断结构质量。",
     "source": "registry",
     "id": 3
   },

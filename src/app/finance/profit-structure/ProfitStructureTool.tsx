@@ -80,8 +80,8 @@ export default function ProfitStructureTool() {
 
                 <section className="sidebar-block">
                     <div className="sidebar-kicker">Profit Structure Lab</div>
-                    <h1 className="sidebar-heading">多维盈利结构分析模型</h1>
-                    <p className="sidebar-copy">上传通用经营明细，选择任意维度或组合，识别利润贡献、规模拉动和边际拖累项。</p>
+                    <h1 className="sidebar-heading">多维度结构分析模型</h1>
+                    <p className="sidebar-copy">上传通用经营明细，选择任意维度、任意指标，观察规模、单位值和结构分层。</p>
                     <div id="profit-structure-message-area" className="message-area" aria-live="polite" />
                 </section>
 
@@ -91,7 +91,7 @@ export default function ProfitStructureTool() {
                         <input id="profit-structure-file-input" type="file" accept=".csv,.xlsx,.xls" hidden />
                         <label htmlFor="profit-structure-file-input" className="upload-label">
                             <span className="upload-title">上传经营明细</span>
-                            <span className="upload-hint">支持 CSV、XLSX、XLS；沿用月份、维度、销量、净收入、成本、边际底表</span>
+                            <span className="upload-hint">支持 CSV、XLSX、XLS；沿用月份、维度、销量、上传指标底表</span>
                         </label>
                     </div>
                     <div className="button-grid">
@@ -111,6 +111,14 @@ export default function ProfitStructureTool() {
                         <label className="field">
                             <span>组合维度</span>
                             <select id="profit-structure-secondary-dimension" className="input" />
+                        </label>
+                        <label className="field">
+                            <span>矩阵横轴指标</span>
+                            <select id="profit-structure-primary-metric" className="input" />
+                        </label>
+                        <label className="field">
+                            <span>矩阵纵轴指标</span>
+                            <select id="profit-structure-secondary-metric" className="input" />
                         </label>
                         <label className="field">
                             <span>期间范围</span>
@@ -139,8 +147,8 @@ export default function ProfitStructureTool() {
                 <header className="model-header">
                     <div>
                         <p className="eyebrow">Financial Modeling</p>
-                        <h1>多维盈利结构分析模型</h1>
-                        <p className="model-subtitle">用同一张经营明细底表，在任意维度下看清谁贡献利润、谁消耗规模、谁拖累边际。</p>
+                        <h1>多维度结构分析模型</h1>
+                        <p className="model-subtitle">用同一张经营明细底表，在任意维度下跟随上传指标生成结构矩阵和候选图表。</p>
                     </div>
                     <div className="header-actions">
                         <div className="data-status" id="profit-structure-data-status">示例数据</div>
@@ -154,7 +162,7 @@ export default function ProfitStructureTool() {
                         <div className="panel-header">
                             <div>
                                 <h2>盈利结构矩阵</h2>
-                                <p id="profit-structure-matrix-caption">横轴为销量占比，纵轴为单车边际，气泡大小代表边际贡献。</p>
+                                <p id="profit-structure-matrix-caption">横轴和纵轴会跟随当前选择的上传指标动态切换。</p>
                             </div>
                         </div>
                         <div id="profit-structure-matrix-chart" className="chart chart-tall" />
@@ -165,18 +173,18 @@ export default function ProfitStructureTool() {
                     <article className="panel panel-large">
                         <div className="panel-header">
                             <div>
-                                <h2>分层贡献</h2>
-                                <p>按当前分析口径汇总各分层的销量、净收入和边际贡献。</p>
+                                <h2>候选图表</h2>
+                                <p id="profit-structure-chart-gallery-caption">根据上传指标生成少量候选图，先用于评审取舍。</p>
                             </div>
                         </div>
-                        <div id="profit-structure-layer-chart" className="chart" />
+                        <div id="profit-structure-chart-gallery" className="chart-gallery" />
                     </article>
 
                     <article className="panel insight-panel">
                         <div className="panel-header">
                             <div>
                                 <h2>结构提示</h2>
-                                <p>优先看利润拖累项和规模拉动但单车偏弱的对象。</p>
+                                <p>优先看低值对象、规模对象和当前主指标核心来源。</p>
                             </div>
                         </div>
                         <div id="profit-structure-insight-list" className="insight-list" />
@@ -188,7 +196,7 @@ export default function ProfitStructureTool() {
                         <div className="panel-header">
                             <div>
                                 <h2>经营对象盈利明细</h2>
-                                <p id="profit-structure-table-caption">按当前分析维度排序，展示规模、边际、单车质量和分层判断。</p>
+                                <p id="profit-structure-table-caption">按当前分析维度排序，展示销量、分层、上传指标和单位值。</p>
                             </div>
                         </div>
                         <div id="profit-structure-table-wrap" className="table-wrap" />

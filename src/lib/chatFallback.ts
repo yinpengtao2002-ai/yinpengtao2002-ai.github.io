@@ -105,7 +105,7 @@ export function getLocalFallbackResponse(
     if (includesAny(lower, ["盈利结构", "利润结构", "经营结构", "拖累项", "分层", "多维盈利", "profit structure"])) {
         const cards = financeContent.filter((item) => item.href.includes("profit-structure") || item.title.includes("盈利结构"));
         return withOfflineNotice({
-            response: "多维盈利诊断可以打开 [多维盈利结构分析模型](/finance/profit-structure)。它沿用通用经营明细底表，适合按任意维度或维度组合识别规模、单车质量、边际贡献和利润拖累项。",
+            response: "多维结构诊断可以打开 [多维度结构分析模型](/finance/profit-structure)。它沿用通用经营明细底表，适合按任意维度或维度组合分析销量、单位值和用户上传的任意指标。",
             contentCards: cards.length > 0 ? cards : undefined,
             cardType: cards.length > 0 ? "finance" : undefined,
         }, options.includeOfflineNotice);
