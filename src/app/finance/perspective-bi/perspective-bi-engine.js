@@ -316,6 +316,7 @@ const PERSPECTIVE_SHADOW_LOCALIZATION_CSS = `
 .column-selector-column[data-label="Tooltip"]::before { content: "提示" !important; }
 `;
 const perspectiveLocalizationRoots = new WeakSet();
+let workbenchGuideSyncScheduled = false;
 
 const state = {
     initialized: false,
@@ -581,9 +582,19 @@ function renderWorkbenchGuide(plugin = "Datagrid") {
     guide.replaceChildren(title, items);
 }
 
-async function updateWorkbenchGuideFromViewer(event) {
+function getActiveWorkbenchPluginFromDom(viewer = byId("perspective-viewer")) {
+    return viewer?.shadowRoot
+        ?.querySelector("#plugin_selector_container > .plugin-select-item[data-plugin]")
+        ?.getAttribute("data-plugin") ?? "";
+}
+
+function getWorkbenchPluginFromEvent(event) {
+    return typeof event?.detail === "string" ? event.detail : event?.detail?.plugin ?? event?.detail?.name ?? event?.detail?.config?.plugin ?? "";
+}
+
+async function syncWorkbenchGuideFromViewer(event) {
     const viewer = byId("perspective-viewer");
-    let plugin = typeof event?.detail === "string" ? event.detail : event?.detail?.plugin ?? event?.detail?.name ?? event?.detail?.config?.plugin;
+    let plugin = getActiveWorkbenchPluginFromDom(viewer) || getWorkbenchPluginFromEvent(event);
 
     if (!plugin && viewer?.save) {
         try {
@@ -596,15 +607,35 @@ async function updateWorkbenchGuideFromViewer(event) {
     renderWorkbenchGuide(plugin);
 }
 
+async function updateWorkbenchGuideFromViewer(event) {
+    await syncWorkbenchGuideFromViewer(event);
+}
+
+function scheduleWorkbenchGuideSync(root = byId("perspective-viewer"), event) {
+    if (!root && !byId("perspective-viewer")) return;
+    if (workbenchGuideSyncScheduled) return;
+
+    workbenchGuideSyncScheduled = true;
+    requestAnimationFrame(() => {
+        workbenchGuideSyncScheduled = false;
+        void updateWorkbenchGuideFromViewer(event);
+        setTimeout(() => {
+            void updateWorkbenchGuideFromViewer(event);
+        }, 80);
+    });
+}
+
 function bindWorkbenchGuide() {
     const viewer = byId("perspective-viewer");
     if (!viewer || viewer.dataset.workbenchGuideBound === "true") return;
 
     const syncGuide = (event) => {
-        void updateWorkbenchGuideFromViewer(event);
+        scheduleWorkbenchGuideSync(viewer, event);
     };
     viewer.addEventListener("perspective-config-update", syncGuide);
     viewer.addEventListener("perspective-plugin-update", syncGuide);
+    viewer.addEventListener("click", syncGuide, true);
+    viewer.addEventListener("keyup", syncGuide, true);
     viewer.dataset.workbenchGuideBound = "true";
 }
 
@@ -686,6 +717,7 @@ function observePerspectiveWorkbenchLocalization(root = byId("perspective-viewer
 
         const observer = new MutationObserver(() => {
             localizePerspectiveWorkbench(root);
+            scheduleWorkbenchGuideSync(root);
             observePerspectiveWorkbenchLocalization(root);
         });
         observer.observe(currentRoot, {
@@ -693,7 +725,7 @@ function observePerspectiveWorkbenchLocalization(root = byId("perspective-viewer
             subtree: true,
             characterData: true,
             attributes: true,
-            attributeFilter: ["aria-label", "title", "placeholder", "label"],
+            attributeFilter: ["aria-label", "title", "placeholder", "label", "data-plugin"],
         });
     });
 }

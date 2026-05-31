@@ -269,6 +269,14 @@ test("Perspective BI explains the active native chart drop zones inside the work
   assert.match(perspectiveEngine, /Heatmap:[\s\S]*热力图/s);
   assert.match(perspectiveEngine, /function renderWorkbenchGuide/);
   assert.match(perspectiveEngine, /function updateWorkbenchGuideFromViewer/);
+  assert.match(perspectiveEngine, /function getActiveWorkbenchPluginFromDom/);
+  assert.match(perspectiveEngine, /function syncWorkbenchGuideFromViewer/);
+  assert.match(perspectiveEngine, /function scheduleWorkbenchGuideSync/);
+  assert.match(perspectiveEngine, /MutationObserver[\s\S]*scheduleWorkbenchGuideSync\(root\)/s);
+  assert.match(perspectiveEngine, /#plugin_selector_container\s*>\s*\.plugin-select-item\[data-plugin\]/);
+  assert.match(perspectiveEngine, /viewer\.addEventListener\("click", syncGuide, true\)/);
+  assert.match(perspectiveEngine, /viewer\.addEventListener\("keyup", syncGuide, true\)/);
+  assert.match(perspectiveEngine, /attributeFilter: \[[^\]]*"data-plugin"[^\]]*\]/);
   assert.match(perspectiveEngine, /perspective-config-update/);
   assert.match(perspectiveEngine, /perspective-plugin-update/);
   assert.match(perspectiveEngine, /viewer\.save\(\)/);
