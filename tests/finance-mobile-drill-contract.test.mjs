@@ -285,6 +285,13 @@ test("monthly trend uses uploaded dimensions directly as filter cards", () => {
   assert.doesNotMatch(monthlyCss, /\.monthly-trend-tool \.(filter-summary|dimension-picker|check-pill)\b/);
 });
 
+test("monthly trend narrows filter candidates by the other active dimensions", () => {
+  assert.match(monthlyEngine, /function candidateRowsForDimension\(dimension\)\s*\{[\s\S]*Object\.entries\(state\.filters\)[\s\S]*filterDimension !== dimension/s);
+  assert.match(monthlyEngine, /function distinctDimensionValues\(dimension\)\s*\{[\s\S]*candidateRowsForDimension\(dimension\)/s);
+  assert.match(monthlyEngine, /function pruneLinkedFilters\(changedDimension\)\s*\{[\s\S]*const changedIndex[\s\S]*index <= changedIndex[\s\S]*distinctDimensionValues\(dimension\)[\s\S]*delete state\.filters\[dimension\]/s);
+  assert.match(monthlyEngine, /function applyExcelFilterSelection\(dimension,[\s\S]*pruneLinkedFilters\(dimension\)/s);
+});
+
 test("monthly trend keeps the base table schema business-facing", () => {
   assert.doesNotMatch(monthlyTool, /monthly-btn-demo|monthly-btn-export|monthly-month-column/);
   assert.doesNotMatch(monthlyEngine, /monthly-btn-demo|monthly-btn-export|function exportSummary/);

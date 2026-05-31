@@ -474,10 +474,14 @@
         const rows = parseRows();
         return rows.filter((row) => {
             return Object.entries(state.filters).every(([dimension, selectedValues]) => {
-                if (!Array.isArray(selectedValues)) return true;
-                return selectedValues.includes(row.dimensions[dimension] || "未分类");
+                return rowMatchesFilter(row, dimension, selectedValues);
             });
         });
+    }
+
+    function rowMatchesFilter(row, dimension, selectedValues) {
+        if (!Array.isArray(selectedValues)) return true;
+        return selectedValues.includes(row.dimensions[dimension] || "未分类");
     }
 
     function inferMetricMeta(metric) {
@@ -924,6 +928,7 @@
         } else {
             state.filters[dimension] = appliedValues;
         }
+        pruneLinkedFilters(dimension);
         renderFilterControls();
         renderAll();
     }
@@ -987,11 +992,40 @@
 
     function distinctDimensionValues(dimension) {
         const values = new Set();
-        parseRows().forEach((row) => {
+        candidateRowsForDimension(dimension).forEach((row) => {
             const value = row.dimensions[dimension] || "未分类";
             values.add(value);
         });
         return Array.from(values).sort((a, b) => a.localeCompare(b, "zh-CN"));
+    }
+
+    function candidateRowsForDimension(dimension) {
+        const otherFilters = Object.entries(state.filters).filter(([filterDimension]) => filterDimension !== dimension);
+        return parseRows().filter((row) => {
+            return otherFilters.every(([filterDimension, selectedValues]) => {
+                return rowMatchesFilter(row, filterDimension, selectedValues);
+            });
+        });
+    }
+
+    function pruneLinkedFilters(changedDimension) {
+        const dimensions = drillDimensions();
+        const changedIndex = dimensions.indexOf(changedDimension);
+        if (changedIndex < 0) return;
+
+        dimensions.forEach((dimension, index) => {
+            if (index <= changedIndex) return;
+            const selected = state.filters[dimension];
+            if (!Array.isArray(selected)) return;
+
+            const availableValues = distinctDimensionValues(dimension);
+            const nextSelected = selected.filter((value) => availableValues.includes(value));
+            if (!nextSelected.length || nextSelected.length === availableValues.length) {
+                delete state.filters[dimension];
+                return;
+            }
+            state.filters[dimension] = nextSelected;
+        });
     }
 
     function isActiveFilter(dimension) {
