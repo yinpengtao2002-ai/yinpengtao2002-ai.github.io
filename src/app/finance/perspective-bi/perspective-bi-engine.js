@@ -67,7 +67,7 @@ const WORKBENCH_GUIDES = {
     "Y Bar": {
         title: "纵向柱状图",
         tips: [
-            ["Y 轴", "拖入净收入、边际、单车指标等数值字段，决定柱子高度。"],
+            ["纵轴", "拖入净收入、边际、单车指标等数值字段，决定柱子高度。"],
             ["分组", "拖入月份、大区等维度，作为横轴分类。"],
             ["拆分", "拖入车型、渠道等维度，把柱子拆成多个系列。"],
             ["筛选", "拖入国家、车型等字段，只保留当前关注范围。"],
@@ -76,7 +76,7 @@ const WORKBENCH_GUIDES = {
     "X Bar": {
         title: "横向柱状图",
         tips: [
-            ["X 轴", "拖入销量、收入、边际等数值字段，决定条形长度。"],
+            ["横轴", "拖入销量、收入、边际等数值字段，决定条形长度。"],
             ["分组", "拖入国家、车型等维度，作为纵向分类。"],
             ["拆分", "拖入渠道、大区等维度，对每个分类继续拆系列。"],
             ["排序", "拖入核心指标后可按大小排列，适合做排名。"],
@@ -85,25 +85,25 @@ const WORKBENCH_GUIDES = {
     "Y Line": {
         title: "折线图",
         tips: [
-            ["Y 轴", "拖入收入、边际、单车等指标，决定折线数值。"],
+            ["纵轴", "拖入收入、边际、单车等指标，决定折线数值。"],
             ["分组", "拖入月份或日期字段，形成时间序列。"],
             ["拆分", "拖入大区、车型等维度，对比多条趋势线。"],
             ["筛选", "限定国家、渠道或车型，避免趋势线过密。"],
         ],
     },
     "X/Y Line": {
-        title: "XY 折线图",
+        title: "双轴折线图",
         tips: [
-            ["X 轴", "拖入一个连续数值或时间字段，决定横向位置。"],
-            ["Y 轴", "拖入要观察的指标，决定纵向高度。"],
+            ["横轴", "拖入一个连续数值或时间字段，决定横向位置。"],
+            ["纵轴", "拖入要观察的指标，决定纵向高度。"],
             ["拆分", "拖入维度后分系列观察关系变化。"],
             ["筛选", "保留一个区域或车型，让关系更清楚。"],
         ],
     },
     "Y Scatter": {
-        title: "Y 轴散点图",
+        title: "纵轴散点图",
         tips: [
-            ["Y 轴", "拖入一个或多个数值字段，观察点位分布。"],
+            ["纵轴", "拖入一个或多个数值字段，观察点位分布。"],
             ["分组", "拖入维度后按类别铺开点位。"],
             ["拆分", "拖入车型、渠道等维度，形成不同颜色或系列。"],
             ["筛选", "缩小样本范围，避免点位挤在一起。"],
@@ -112,8 +112,8 @@ const WORKBENCH_GUIDES = {
     "X/Y Scatter": {
         title: "散点图",
         tips: [
-            ["X 轴", "拖入销量、单车收入等数值字段，决定横向位置。"],
-            ["Y 轴", "拖入边际、利润等数值字段，决定纵向位置。"],
+            ["横轴", "拖入销量、单车收入等数值字段，决定横向位置。"],
+            ["纵轴", "拖入边际、利润等数值字段，决定纵向位置。"],
             ["拆分", "拖入大区、车型等维度，比较不同系列的分布。"],
             ["筛选", "限定样本范围后，更容易看出相关性和离群点。"],
         ],
@@ -121,7 +121,7 @@ const WORKBENCH_GUIDES = {
     "Y Area": {
         title: "面积图",
         tips: [
-            ["Y 轴", "拖入收入、销量、边际等指标，决定面积高度。"],
+            ["纵轴", "拖入收入、销量、边际等指标，决定面积高度。"],
             ["分组", "拖入月份或期间字段，形成连续走势。"],
             ["拆分", "拖入大区、车型等维度，观察结构贡献。"],
             ["筛选", "减少系列数量，避免面积堆叠难读。"],
@@ -155,6 +155,167 @@ const WORKBENCH_GUIDES = {
         ],
     },
 };
+const PERSPECTIVE_WORKBENCH_TEXT = {
+    Rollup: "折叠汇总",
+    Flat: "明细展开",
+    Total: "总计",
+    Group: "分组",
+    Columns: "字段",
+    "X Axis": "横轴",
+    "Y Axis": "纵轴",
+    Color: "颜色",
+    Size: "大小",
+    Symbol: "标记",
+    Label: "标签",
+    Tooltip: "提示",
+    Open: "开盘",
+    Close: "收盘",
+    High: "最高",
+    Low: "最低",
+    Sum: "求和",
+    sum: "求和",
+    Avg: "平均",
+    avg: "平均",
+    Count: "计数",
+    count: "计数",
+    Mean: "平均",
+    mean: "平均",
+    "Weighted Mean": "加权平均",
+    "weighted mean": "加权平均",
+    Distinct: "去重计数",
+    distinct: "去重计数",
+    Min: "最小",
+    min: "最小",
+    Max: "最大",
+    max: "最大",
+    "Read Only": "只读",
+    "Text Edit": "文本编辑",
+    "Select Row": "选择行",
+    "Select Column": "选择列",
+    "Select Region": "选择区域",
+    Style: "样式",
+    Attributes: "属性",
+    "Debug JSON": "调试配置",
+    Copy: "复制",
+    Export: "导出",
+    Reset: "重置",
+    Format: "格式",
+    Timezone: "时区",
+    Search: "搜索",
+    "New Column": "新建字段",
+    "No Results": "无匹配字段",
+};
+const PERSPECTIVE_LOCALIZATION_VARS = {
+    "--psp-label--group-by--content": "\"分组\"",
+    "--psp-label--split-by--content": "\"拆分\"",
+    "--psp-label--sort--content": "\"排序\"",
+    "--psp-label--filter--content": "\"筛选\"",
+    "--psp-label--transpose-button--content": "\"交换行列\"",
+    "--psp-label--config-button--content": "\"配置\"",
+    "--psp-label--all-columns--content": "\"全部字段\"",
+    "--psp-label--untitled--content": "\"未命名图表\"",
+    "--psp-plugin-name--datagrid--content": "\"数据表\"",
+    "--psp-plugin-name--treemap--content": "\"矩形树图\"",
+    "--psp-plugin-name--sunburst--content": "\"旭日图\"",
+    "--psp-plugin-name--heatmap--content": "\"热力图\"",
+    "--psp-plugin-name--x-bar--content": "\"横向柱状图\"",
+    "--psp-plugin-name--y-bar--content": "\"纵向柱状图\"",
+    "--psp-plugin-name--y-line--content": "\"折线图\"",
+    "--psp-plugin-name--x-y-line--content": "\"双轴折线图\"",
+    "--psp-plugin-name--x-y-scatter--content": "\"散点图\"",
+    "--psp-plugin-name--y-scatter--content": "\"纵轴散点图\"",
+    "--psp-plugin-name--y-area--content": "\"面积图\"",
+    "--psp-plugin-name--ohlc--content": "\"价格图\"",
+    "--psp-plugin-name--candlestick--content": "\"蜡烛图\"",
+    "--psp-label--column-columns--content": "\"字段\"",
+    "--psp-label--column-x-axis--content": "\"横轴\"",
+    "--psp-label--column-y-axis--content": "\"纵轴\"",
+    "--psp-label--column-color--content": "\"颜色\"",
+    "--psp-label--column-size--content": "\"大小\"",
+    "--psp-label--column-symbol--content": "\"标记\"",
+    "--psp-label--column-label--content": "\"标签\"",
+    "--psp-label--column-tooltip--content": "\"提示\"",
+    "--psp-label--add-expression-button--content": "\"新建字段\"",
+    "--psp-label--no-results--content": "\"无匹配字段\"",
+    "--psp-datagrid--column-edit-button--content": "\"编辑\"",
+    "--psp-label--copy-button--content": "\"复制\"",
+    "--psp-label--export-button--content": "\"导出\"",
+    "--psp-label--reset-button--content": "\"重置\"",
+    "--psp-label--edit-mode-read-only--content": "\"只读\"",
+    "--psp-label--edit-mode-edit--content": "\"文本编辑\"",
+    "--psp-label--edit-mode-select-row--content": "\"选择行\"",
+    "--psp-label--edit-mode-select-column--content": "\"选择列\"",
+    "--psp-label--edit-mode-select-region--content": "\"选择区域\"",
+    "--psp-label--scroll-lock-toggle--content": "\"自由滚动\"",
+    "--psp-label--scroll-lock-alt-toggle--content": "\"对齐滚动\"",
+    "--psp-label--color--content": "\"颜色\"",
+    "--psp-label--format--content": "\"格式\"",
+    "--psp-label--timezone--content": "\"时区\"",
+    "--psp-label--date-style--content": "\"日期样式\"",
+    "--psp-label--time-style--content": "\"时间样式\"",
+    "--psp-label--foreground--content": "\"前景\"",
+    "--psp-label--background--content": "\"背景\"",
+    "--psp-label--series--content": "\"系列\"",
+    "--psp-label--color-range--content": "\"颜色范围\"",
+    "--psp-label--style--content": "\"样式\"",
+    "--psp-label--minimum-integer-digits--content": "\"最少整数位\"",
+    "--psp-label--rounding-increment--content": "\"舍入步长\"",
+    "--psp-label--notation--content": "\"记数方式\"",
+    "--psp-label--use-grouping--content": "\"使用千分位\"",
+    "--psp-label--sign-display--content": "\"符号显示\"",
+    "--psp-label--max-value--content": "\"最大值\"",
+    "--psp-label--rounding-priority--content": "\"舍入优先级\"",
+    "--psp-label--rounding-mode--content": "\"舍入模式\"",
+    "--psp-label--trailing-zero-display--content": "\"尾零显示\"",
+    "--psp-label--fractional-digits--content": "\"小数位\"",
+    "--psp-label--significant-digits--content": "\"有效位\"",
+    "--psp-label--year--content": "\"年\"",
+    "--psp-label--month--content": "\"月\"",
+    "--psp-label--day--content": "\"日\"",
+    "--psp-label--weekday--content": "\"星期\"",
+    "--psp-label--hour--content": "\"小时\"",
+    "--psp-label--minute--content": "\"分钟\"",
+    "--psp-label--second--content": "\"秒\"",
+    "--psp-label--fractional-seconds--content": "\"小数秒\"",
+    "--psp-label--hours--content": "\"小时制\"",
+    "--psp-label--aggregate-depth--content": "\"聚合层级\"",
+    "--psp-label--style-tab--content": "\"样式\"",
+    "--psp-label--attributes-tab--content": "\"属性\"",
+    "--psp-label--debug-tab--content": "\"调试配置\"",
+    "--column-selector-column-columns--content": "\"字段\"",
+    "--column-selector-column-x-axis--content": "\"横轴\"",
+    "--column-selector-column-y-axis--content": "\"纵轴\"",
+    "--column-selector-column-color--content": "\"颜色\"",
+    "--column-selector-column-size--content": "\"大小\"",
+    "--column-selector-column-symbol--content": "\"标记\"",
+    "--column-selector-column-label--content": "\"标签\"",
+    "--column-selector-column-tooltip--content": "\"提示\"",
+};
+const PERSPECTIVE_LOCALIZATION_SELECTOR = [
+    "perspective-viewer",
+    "perspective-dropdown",
+    "perspective-copy-menu",
+    "perspective-export-menu",
+    "perspective-date-column-style",
+    "perspective-datetime-column-style",
+    "perspective-number-column-style",
+    "perspective-string-column-style",
+].join(",");
+const PERSPECTIVE_SHADOW_LOCALIZATION_STYLE_ID = "perspective-shadow-localization-css";
+const PERSPECTIVE_SHADOW_LOCALIZATION_CSS = `
+.group_rollup_wrapper[data-value="Rollup"]::after { content: "折叠汇总 " !important; }
+.group_rollup_wrapper[data-value="Flat"]::after { content: "明细展开 " !important; }
+.group_rollup_wrapper[data-value="Total"]::after { content: "总计 " !important; }
+.column-selector-column[data-label="Columns"]::before { content: "字段" !important; }
+.column-selector-column[data-label="X Axis"]::before { content: "横轴" !important; }
+.column-selector-column[data-label="Y Axis"]::before { content: "纵轴" !important; }
+.column-selector-column[data-label="Color"]::before { content: "颜色" !important; }
+.column-selector-column[data-label="Size"]::before { content: "大小" !important; }
+.column-selector-column[data-label="Symbol"]::before { content: "标记" !important; }
+.column-selector-column[data-label="Label"]::before { content: "标签" !important; }
+.column-selector-column[data-label="Tooltip"]::before { content: "提示" !important; }
+`;
+const perspectiveLocalizationRoots = new WeakSet();
 
 const state = {
     initialized: false,
@@ -191,6 +352,54 @@ function ensurePerspectiveStyles() {
         link.href = href;
         document.head.appendChild(link);
     });
+    ensurePerspectiveLocalizationStyle();
+}
+
+function ensurePerspectiveLocalizationStyle() {
+    if (document.getElementById("perspective-localization-css")) return;
+
+    const style = document.createElement("style");
+    const vars = Object.entries(PERSPECTIVE_LOCALIZATION_VARS)
+        .map(([name, value]) => `    ${name}: ${value};`)
+        .join("\n");
+    style.id = "perspective-localization-css";
+    style.textContent = `${PERSPECTIVE_LOCALIZATION_SELECTOR.replaceAll(",", ",\n")} {\n${vars}\n}`;
+    document.head.appendChild(style);
+}
+
+function applyPerspectiveLocalizationVariables(root = byId("perspective-viewer")) {
+    const targets = new Set();
+
+    function collect(node) {
+        if (!node) return;
+
+        if (node.host?.style) targets.add(node.host);
+        if (node.matches?.(PERSPECTIVE_LOCALIZATION_SELECTOR)) targets.add(node);
+        node.querySelectorAll?.(PERSPECTIVE_LOCALIZATION_SELECTOR).forEach((element) => targets.add(element));
+
+        if (node.shadowRoot) collect(node.shadowRoot);
+        node.querySelectorAll?.("*").forEach((element) => {
+            if (element.shadowRoot) collect(element.shadowRoot);
+        });
+    }
+
+    collect(root);
+    document.querySelectorAll?.(PERSPECTIVE_LOCALIZATION_SELECTOR).forEach(collect);
+
+    targets.forEach((element) => {
+        Object.entries(PERSPECTIVE_LOCALIZATION_VARS).forEach(([name, value]) => {
+            element.style.setProperty(name, value);
+        });
+    });
+}
+
+function ensurePerspectiveShadowLocalizationStyle(root) {
+    if (!root?.host || root.getElementById?.(PERSPECTIVE_SHADOW_LOCALIZATION_STYLE_ID)) return;
+
+    const style = document.createElement("style");
+    style.id = PERSPECTIVE_SHADOW_LOCALIZATION_STYLE_ID;
+    style.textContent = PERSPECTIVE_SHADOW_LOCALIZATION_CSS;
+    root.appendChild(style);
 }
 
 function ensurePerspectiveRuntime() {
@@ -397,6 +606,96 @@ function bindWorkbenchGuide() {
     viewer.addEventListener("perspective-config-update", syncGuide);
     viewer.addEventListener("perspective-plugin-update", syncGuide);
     viewer.dataset.workbenchGuideBound = "true";
+}
+
+function translatePerspectiveWorkbenchText(value) {
+    if (!value) return "";
+    const compact = String(value).replace(/\s+/g, " ").trim();
+    return PERSPECTIVE_WORKBENCH_TEXT[compact] ?? "";
+}
+
+function replacePerspectiveWorkbenchTextNode(node) {
+    const original = node.nodeValue ?? "";
+    const replacement = translatePerspectiveWorkbenchText(original);
+    if (!replacement) return;
+
+    const leading = original.match(/^\s*/)?.[0] ?? "";
+    const trailing = original.match(/\s*$/)?.[0] ?? "";
+    node.nodeValue = `${leading}${replacement}${trailing}`;
+}
+
+function getPerspectiveWorkbenchRoots(root) {
+    const roots = [];
+    const visited = new WeakSet();
+
+    function visit(node) {
+        if (!node || visited.has(node)) return;
+        visited.add(node);
+        roots.push(node);
+
+        if (node.shadowRoot) visit(node.shadowRoot);
+        node.querySelectorAll?.("*").forEach((element) => {
+            if (element.shadowRoot) visit(element.shadowRoot);
+        });
+    }
+
+    visit(root);
+    return roots;
+}
+
+function localizePerspectiveWorkbench(root = byId("perspective-viewer")) {
+    if (!root || typeof document === "undefined" || !document.createTreeWalker) return;
+
+    ensurePerspectiveLocalizationStyle();
+    applyPerspectiveLocalizationVariables(root);
+
+    getPerspectiveWorkbenchRoots(root).forEach((currentRoot) => {
+        ensurePerspectiveShadowLocalizationStyle(currentRoot);
+
+        const textNodes = [];
+        const textFilter = window.NodeFilter?.SHOW_TEXT ?? 4;
+        const walker = document.createTreeWalker(currentRoot, textFilter);
+        while (walker.nextNode()) textNodes.push(walker.currentNode);
+        textNodes.forEach(replacePerspectiveWorkbenchTextNode);
+
+        currentRoot.querySelectorAll?.("option,optgroup,[aria-label],[title],[placeholder],[label]").forEach((element) => {
+            if (element.tagName === "OPTION") {
+                const replacement = translatePerspectiveWorkbenchText(element.textContent);
+                if (replacement) element.textContent = replacement;
+            }
+
+            if (element.tagName === "OPTGROUP") {
+                const replacement = translatePerspectiveWorkbenchText(element.getAttribute("label"));
+                if (replacement) element.setAttribute("label", replacement);
+            }
+
+            ["aria-label", "title", "placeholder", "label"].forEach((attribute) => {
+                const replacement = translatePerspectiveWorkbenchText(element.getAttribute(attribute));
+                if (replacement) element.setAttribute(attribute, replacement);
+            });
+        });
+    });
+}
+
+function observePerspectiveWorkbenchLocalization(root = byId("perspective-viewer")) {
+    if (!root || typeof MutationObserver === "undefined") return;
+
+    getPerspectiveWorkbenchRoots(root).forEach((currentRoot) => {
+        if (perspectiveLocalizationRoots.has(currentRoot)) return;
+        perspectiveLocalizationRoots.add(currentRoot);
+
+        const observer = new MutationObserver(() => {
+            localizePerspectiveWorkbench(root);
+            observePerspectiveWorkbenchLocalization(root);
+        });
+        observer.observe(currentRoot, {
+            childList: true,
+            subtree: true,
+            characterData: true,
+            attributes: true,
+            attributeFilter: ["aria-label", "title", "placeholder", "label"],
+        });
+    });
 }
 
 function updateSummary(rows) {
@@ -911,9 +1210,19 @@ async function reloadViewer(sourceLabel) {
     const table = await state.worker.table(analysisRows);
     const config = buildConfig(analysisRows);
     state.table = table;
+    applyPerspectiveLocalizationVariables(viewer);
     await viewer.load(table);
+    applyPerspectiveLocalizationVariables(viewer);
     await viewer.restore(config);
     renderWorkbenchGuide(config.plugin);
+    applyPerspectiveLocalizationVariables(viewer);
+    observePerspectiveWorkbenchLocalization(viewer);
+    localizePerspectiveWorkbench(viewer);
+    requestAnimationFrame(() => {
+        applyPerspectiveLocalizationVariables(viewer);
+        observePerspectiveWorkbenchLocalization(viewer);
+        localizePerspectiveWorkbench(viewer);
+    });
 
     try {
         await previousTable?.delete();
@@ -1237,6 +1546,9 @@ async function initApp() {
     }
     bindWorkbenchGuide();
     renderWorkbenchGuide("Datagrid");
+    applyPerspectiveLocalizationVariables();
+    observePerspectiveWorkbenchLocalization();
+    localizePerspectiveWorkbench();
     await loadRows(SAMPLE_ROWS, "示例数据");
     state.initialized = true;
 }

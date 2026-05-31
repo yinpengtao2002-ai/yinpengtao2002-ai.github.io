@@ -265,7 +265,7 @@ test("Perspective BI explains the active native chart drop zones inside the work
   assert.match(perspectiveTool, /id="perspective-workbench-guide"/);
   assert.match(perspectiveEngine, /const WORKBENCH_GUIDES = \{/);
   assert.match(perspectiveEngine, /Datagrid:[\s\S]*数据表/s);
-  assert.match(perspectiveEngine, /"Y Bar":[\s\S]*Y 轴/s);
+  assert.match(perspectiveEngine, /"Y Bar":[\s\S]*纵轴/s);
   assert.match(perspectiveEngine, /Heatmap:[\s\S]*热力图/s);
   assert.match(perspectiveEngine, /function renderWorkbenchGuide/);
   assert.match(perspectiveEngine, /function updateWorkbenchGuideFromViewer/);
@@ -277,6 +277,33 @@ test("Perspective BI explains the active native chart drop zones inside the work
   assert.match(perspectiveEngine, /分组/);
   assert.match(perspectiveEngine, /拆分/);
   assert.match(perspectiveEngine, /筛选/);
+});
+
+test("Perspective BI localizes the native workbench UI labels to Chinese", () => {
+  assert.match(perspectiveCss, /--psp-label--column-columns--content:\s*"字段"/);
+  assert.match(perspectiveCss, /--psp-label--column-x-axis--content:\s*"横轴"/);
+  assert.match(perspectiveCss, /--psp-label--column-y-axis--content:\s*"纵轴"/);
+  assert.match(perspectiveCss, /--psp-label--column-color--content:\s*"颜色"/);
+  assert.match(perspectiveCss, /--psp-label--column-size--content:\s*"大小"/);
+  assert.match(perspectiveCss, /--psp-label--column-tooltip--content:\s*"提示"/);
+  assert.match(perspectiveCss, /--psp-plugin-name--x-y-line--content:\s*"双轴折线图"/);
+  assert.match(perspectiveCss, /--psp-plugin-name--y-scatter--content:\s*"纵轴散点图"/);
+  assert.match(perspectiveCss, /--psp-label--edit-mode-read-only--content:\s*"只读"/);
+  assert.match(perspectiveCss, /--psp-label--debug-tab--content:\s*"调试配置"/);
+  assert.match(perspectiveCss, /--column-selector-column-columns--content:\s*"字段"/);
+  assert.match(perspectiveEngine, /const PERSPECTIVE_WORKBENCH_TEXT/);
+  assert.match(perspectiveEngine, /Rollup/);
+  assert.match(perspectiveEngine, /折叠汇总/);
+  assert.match(perspectiveEngine, /PERSPECTIVE_SHADOW_LOCALIZATION_CSS[\s\S]*group_rollup_wrapper\[data-value="Rollup"\][\s\S]*折叠汇总/s);
+  assert.match(perspectiveEngine, /PERSPECTIVE_SHADOW_LOCALIZATION_CSS[\s\S]*column-selector-column\[data-label="Columns"\][\s\S]*字段/s);
+  assert.match(perspectiveEngine, /function ensurePerspectiveShadowLocalizationStyle/);
+  assert.match(perspectiveEngine, /applyPerspectiveLocalizationVariables\(viewer\)/);
+  assert.match(perspectiveEngine, /function localizePerspectiveWorkbench/);
+  assert.match(perspectiveEngine, /function observePerspectiveWorkbenchLocalization/);
+  assert.match(perspectiveEngine, /MutationObserver/);
+  assert.match(perspectiveEngine, /localizePerspectiveWorkbench\(viewer\)/);
+  assert.doesNotMatch(perspectiveCss, /--psp-plugin-name--x-y-line--content:\s*"[^"]*[XY][^"]*"/);
+  assert.doesNotMatch(perspectiveCss, /--psp-plugin-name--y-scatter--content:\s*"[^"]*Y[^"]*"/);
 });
 
 test("Perspective BI workbench supports a page-level focus mode", () => {
