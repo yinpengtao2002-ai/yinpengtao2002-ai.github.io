@@ -598,21 +598,7 @@ function buildStructureBlueprints(summary, schema = summary.schema) {
             xMetric,
             yMetric,
             title: "结构定位散点",
-            description: `X：${metricUnitLabel(xMetric, schema?.volumeColumn)} · Y：${metricUnitLabel(yMetric, schema?.volumeColumn)} · 大小：${metric}`
-        },
-        {
-            id: "path-composition",
-            kind: "path-composition",
-            metric,
-            title: "主路径结构条",
-            description: `${pathText} · 权重：${metric}`
-        },
-        {
-            id: "positive-negative-structure",
-            kind: "positive-negative-structure",
-            metric,
-            title: "正负结构拆解",
-            description: `${dimensions[0] || "第一层维度"} · 正负：${metric}`
+            description: `X：${metricUnitLabel(xMetric, schema?.volumeColumn)} · Y：${metricUnitLabel(yMetric, schema?.volumeColumn)} · 大小：${metric} · 高基数时仅显示主要组合`
         }
     ];
 }
@@ -621,9 +607,7 @@ function setStructureCaptions(summary) {
     const byIdMap = new Map(buildStructureBlueprints(summary, summary.schema).map((chart) => [chart.kind, chart]));
     const bindings = [
         ["profit-structure-flow-caption", "dimension-flow"],
-        ["profit-structure-scatter-caption", "structure-scatter"],
-        ["profit-structure-path-caption", "path-composition"],
-        ["profit-structure-positive-negative-caption", "positive-negative-structure"]
+        ["profit-structure-scatter-caption", "structure-scatter"]
     ];
     bindings.forEach(([id, kind]) => {
         const node = byId(id);
@@ -757,107 +741,17 @@ function renderFlowChart(id, summary) {
     }), chartConfig());
 }
 
-function aggregateFullPathRows(rows, dimensions, metric) {
-    const map = new Map();
-    for (const row of rows) {
-        const pathValues = dimensions.map((dimension) => getDimensionValue(row, dimension));
-        const name = pathValues.join(" / ");
-        const current = map.get(name) || { name, pathValues, value: 0, rawValue: 0, volume: 0 };
-        const raw = structureValueFromRow(row, metric);
-        current.value += structureWeight(raw);
-        current.rawValue += raw;
-        current.volume += row.volume || 0;
-        map.set(name, current);
-    }
-    return [...map.values()];
-}
-
-function renderPathComposition(id, summary) {
-    const dimensions = summary.selectedDimensions.filter(Boolean);
-    if (!summary.rows.length || typeof window === "undefined" || !window.Plotly) {
-        renderEmptyChart(id, "暂无主路径数据");
-        return;
-    }
-
-    const metric = summary.analysis.primaryMetric;
-    const compact = isCompactViewport();
-    const rows = aggregateFullPathRows(summary.rows, dimensions, metric)
-        .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name, "zh-Hans-CN"))
-        .slice(0, compact ? 8 : 12)
-        .reverse();
-
-    if (!rows.length) {
-        renderEmptyChart(id, "暂无主路径数据");
-        return;
-    }
-
-    window.Plotly.react(id, [{
-        type: "bar",
-        orientation: "h",
-        x: rows.map((item) => item.value),
-        y: rows.map((item) => compact ? compactPointLabel(item.name) : item.name),
-        marker: { color: "#5c8fba", opacity: 0.78 },
-        customdata: rows.map((item) => [item.name, formatMetricValue(item.rawValue), formatVolume(item.volume)]),
-        hovertemplate: "路径：%{customdata[0]}<br>原值：%{customdata[1]}<br>销量：%{customdata[2]}<br>权重：%{x:,.2f}<extra></extra>"
-    }], chartLayout({
-        margin: { t: 18, r: 18, b: 42, l: compact ? 110 : 190 },
-        xaxis: { title: metric },
-        yaxis: { automargin: true },
-        showlegend: false
-    }), chartConfig());
-}
-
-function aggregatePositiveNegativeRows(rows, dimension, metric) {
-    const map = new Map();
-    for (const row of rows) {
-        const value = getDimensionValue(row, dimension);
-        const current = map.get(value) || { name: value, positive: 0, negative: 0, totalWeight: 0 };
-        const raw = structureValueFromRow(row, metric);
-        if (raw >= 0) current.positive += raw;
-        else current.negative += raw;
-        current.totalWeight += structureWeight(raw);
-        map.set(value, current);
-    }
-    return [...map.values()].sort((a, b) => b.totalWeight - a.totalWeight || a.name.localeCompare(b.name, "zh-Hans-CN"));
-}
-
-function renderPositiveNegativeStructure(id, summary) {
-    if (!summary.rows.length || typeof window === "undefined" || !window.Plotly) {
-        renderEmptyChart(id, "暂无正负结构数据");
-        return;
-    }
-
-    const dimension = summary.selectedDimensions[0] || buildDimensionOptions(summary.schema)[0] || "维度";
-    const metric = summary.analysis.primaryMetric;
-    const compact = isCompactViewport();
-    const rows = aggregatePositiveNegativeRows(summary.rows, dimension, metric).slice(0, compact ? 8 : 12);
-    const xValues = rows.map((item) => item.name);
-
-    window.Plotly.react(id, [
-        {
-            type: "bar",
-            name: "正向",
-            x: xValues,
-            y: rows.map((item) => item.positive),
-            marker: { color: "#5c8f74" },
-            hovertemplate: `${escapeHtml(dimension)}：%{x}<br>正向：%{y:,.2f}<extra></extra>`
-        },
-        {
-            type: "bar",
-            name: "负向",
-            x: xValues,
-            y: rows.map((item) => item.negative),
-            marker: { color: "#c46f5a" },
-            hovertemplate: `${escapeHtml(dimension)}：%{x}<br>负向：%{y:,.2f}<extra></extra>`
-        }
-    ], chartLayout({
-        barmode: "relative",
-        margin: { t: 18, r: 18, b: compact ? 78 : 54, l: 58 },
-        xaxis: { title: dimension, tickangle: compact ? -25 : 0 },
-        yaxis: { title: metric, zeroline: true, zerolinecolor: "#8b867a" },
-        showlegend: true,
-        legend: { orientation: "h", y: -0.24, itemclick: false, itemdoubleclick: false }
-    }), chartConfig());
+function buildScatterPlotItems(summary, options = {}) {
+    const compact = options.compact ?? isCompactViewport();
+    const limit = options.limit || (compact ? 45 : 80);
+    const items = [...summary.items]
+        .sort((a, b) => Math.abs(b.primaryValue) - Math.abs(a.primaryValue) || b.volume - a.volume || a.name.localeCompare(b.name, "zh-Hans-CN"));
+    return {
+        items: items.slice(0, limit),
+        total: items.length,
+        limit,
+        hasMore: items.length > limit
+    };
 }
 
 function renderStructureScatter(id, summary) {
@@ -867,26 +761,24 @@ function renderStructureScatter(id, summary) {
     }
 
     const compact = isCompactViewport();
+    const scatterData = buildScatterPlotItems(summary, { compact });
     const colorDimension = summary.selectedDimensions[0] || "";
-    const colorKeys = summary.items.map((item) => colorDimension ? item.dimensionValues[colorDimension] || "未填写" : "当前路径");
+    const colorKeys = scatterData.items.map((item) => colorDimension ? item.dimensionValues[colorDimension] || "未填写" : "当前路径");
     const colors = buildColorMap(colorKeys);
     const groups = uniqueSorted(colorKeys);
 
     const traces = groups.map((group) => {
-        const items = summary.items.filter((item) => (colorDimension ? item.dimensionValues[colorDimension] || "未填写" : "当前路径") === group);
+        const items = scatterData.items.filter((item) => (colorDimension ? item.dimensionValues[colorDimension] || "未填写" : "当前路径") === group);
         return {
             type: "scatter",
-            mode: "markers+text",
+            mode: "markers",
             name: group,
             x: items.map((item) => item.primaryUnitValue),
             y: items.map((item) => summary.analysis.secondaryMetric ? item.secondaryUnitValue : item.primaryValue),
-            text: compact ? items.map((item) => compactPointLabel(item.name)) : items.map((item) => item.name),
-            textposition: "top center",
-            textfont: { size: compact ? 9 : 10, color: "#4f4a40" },
             marker: {
                 color: colors.get(group),
-                size: items.map((item) => Math.max(10, Math.min(44, Math.sqrt(Math.abs(item.primaryValue)) * 8))),
-                opacity: 0.78,
+                size: items.map((item) => Math.max(8, Math.min(26, Math.sqrt(Math.abs(item.primaryValue)) * 6))),
+                opacity: 0.72,
                 line: { width: 1.2, color: "#fff" }
             },
             customdata: items.map((item) => [
@@ -912,8 +804,6 @@ function renderStructureCharts(summary) {
     setStructureCaptions(summary);
     renderFlowChart("profit-structure-flow-chart", summary);
     renderStructureScatter("profit-structure-scatter-chart", summary);
-    renderPathComposition("profit-structure-path-chart", summary);
-    renderPositiveNegativeStructure("profit-structure-positive-negative-chart", summary);
 }
 
 function renderDimensionControls() {
@@ -1233,6 +1123,7 @@ if (typeof module !== "undefined" && module.exports) {
         buildSummaryCards,
         buildStructureBlueprints,
         buildSankeyData,
+        buildScatterPlotItems,
         defaultDimensionPath,
         summarizeProfitStructure,
         createSampleRows,

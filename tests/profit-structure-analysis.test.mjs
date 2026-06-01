@@ -15,6 +15,7 @@ const {
   buildSummaryCards,
   buildStructureBlueprints,
   buildSankeyData,
+  buildScatterPlotItems,
   defaultDimensionPath,
   createSampleRows,
 } = profitStructure.default;
@@ -157,12 +158,10 @@ test("summary cards and structure blueprints follow uploaded metric names and re
   assert.deepEqual(charts.map((chart) => chart.kind), [
     "dimension-flow",
     "structure-scatter",
-    "path-composition",
-    "positive-negative-structure",
   ]);
   assert.ok(charts.every((chart) => chart.title && chart.description));
   assert.ok(charts.some((chart) => /维度路径/.test(chart.title) && /GMV|服务成本|NPS/.test(chart.description)));
-  assert.doesNotMatch(combinedText, /边际率|净收入|单车边际|结构提示|候选图表|排行|热力图|明细|分层贡献|销量结构占比|交叉结构切分|维度组合气泡矩阵/);
+  assert.doesNotMatch(combinedText, /边际率|净收入|单车边际|结构提示|候选图表|排行|热力图|明细|分层贡献|销量结构占比|交叉结构切分|维度组合气泡矩阵|主路径结构条|正负结构拆解/);
 });
 
 test("sankey data collapses high-cardinality long tails instead of rendering every node", () => {
@@ -186,6 +185,30 @@ test("sankey data collapses high-cardinality long tails instead of rendering eve
   assert.ok(countryNodes.some((node) => node.value === "其他国家"));
 });
 
+test("scatter data is capped for high-cardinality dimension combinations", () => {
+  const rows = Array.from({ length: 180 }, (_, index) => ({
+    月份: "2026-01",
+    大区: `大区${index % 8}`,
+    国家: `国家${index % 60}`,
+    品牌: `品牌${index % 12}`,
+    车型: `车型${index}`,
+    销量: 10 + (index % 30),
+    净收入: 120 + index,
+    边际: 40 - (index % 19),
+  }));
+  const { rows: normalizedRows, schema } = normalizeUploadedRows(rows);
+  const summary = summarizeProfitStructure(normalizedRows, schema, {
+    dimensions: ["大区", "国家", "品牌", "车型"],
+    primaryMetric: "边际",
+    secondaryMetric: "净收入",
+  });
+  const scatter = buildScatterPlotItems(summary, { limit: 50 });
+
+  assert.ok(scatter.hasMore);
+  assert.equal(scatter.items.length, 50);
+  assert.ok(scatter.items.every((item) => item.name.includes(" / ")));
+});
+
 test("source files for the tool do not expose rejected panels or rejected chart names", async () => {
   const [tool, page, engine] = await Promise.all([
     readFile(new URL("../src/app/finance/profit-structure/ProfitStructureTool.tsx", import.meta.url), "utf8"),
@@ -197,7 +220,5 @@ test("source files for the tool do not expose rejected panels or rejected chart 
   assert.doesNotMatch(surfaceText, /结构提示|候选图表|经营对象盈利明细|边际分层贡献|销量结构占比|合计排行|单车边际排行|分月趋势|对象 x 月份热力图|明细表/);
   assert.match(surfaceText, /维度路径流向/);
   assert.match(surfaceText, /结构定位散点/);
-  assert.match(surfaceText, /主路径结构条/);
-  assert.match(surfaceText, /正负结构拆解/);
-  assert.doesNotMatch(surfaceText, /交叉结构切分|维度组合气泡矩阵/);
+  assert.doesNotMatch(surfaceText, /交叉结构切分|维度组合气泡矩阵|主路径结构条|正负结构拆解|markers\+text|textposition/);
 });
