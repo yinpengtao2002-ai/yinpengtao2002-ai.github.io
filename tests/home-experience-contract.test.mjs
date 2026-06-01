@@ -355,7 +355,7 @@ test("home viewport sections fill the current viewport after smooth scroll", () 
 test("home continue cue stays in normal layout flow", () => {
   assert.doesNotMatch(globals, /\.home-hero-continue\s*\{[^}]*position:\s*absolute/s);
   assert.match(globals, /\.home-hero-continue-row/);
-  assert.match(cssRule(".home-hero-continue-row"), /margin-top:\s*clamp\(0\.85rem,\s*2vh,\s*1\.35rem\)/);
+  assert.match(cssRule(".home-hero-continue-row"), /margin-top:\s*clamp\(2\.5rem,\s*6\.2vh,\s*5\.5rem\)/);
 });
 
 test("homepage finance section previews models as a composed showcase", () => {
