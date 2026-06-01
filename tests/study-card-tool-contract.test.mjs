@@ -18,8 +18,6 @@ test("AI study card tool is exposed as an independent tool route", async () => {
   assert.match(page, /StudyCardsTool/);
   assert.match(client, /\/api\/tools\/study-cards/);
   assert.match(client, /问答卡片/);
-  assert.match(client, /概念解释/);
-  assert.match(client, /测试题/);
   assert.match(client, /study-cards-progress/);
   assert.match(client, /progressValue/);
   assert.match(client, /基础：/);
@@ -39,11 +37,20 @@ test("AI study card results use an interactive one-card practice flow", async ()
 
   assert.match(client, /activeCardIndex/);
   assert.match(client, /answerRevealed/);
-  assert.match(client, /显示答案/);
+  assert.match(client, /SAMPLE_RESULT/);
+  assert.match(client, /loadSampleContent/);
+  assert.match(client, /轻点这里翻开答案/);
   assert.match(client, /下一张/);
   assert.match(client, /上一张/);
   assert.match(client, /重新开始/);
+  assert.match(client, /cardMotion/);
+  assert.match(client, /study-cards-deck/);
+  assert.match(client, /study-cards-answer-panel/);
   assert.match(client, /study-cards-practice-card/);
+  assert.match(styles, /\.study-cards-deck::before/);
+  assert.match(styles, /\.study-cards-deck::after/);
+  assert.match(styles, /@keyframes study-cards-card-exit-next/);
+  assert.match(styles, /@keyframes study-cards-answer-reveal/);
   assert.match(styles, /\.study-cards-practice-card/);
   assert.match(styles, /\.study-cards-card-progress/);
 
@@ -55,14 +62,16 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.doesNotMatch(client, /is-answer/);
   assert.doesNotMatch(client, /study-cards-card-grid/);
   assert.doesNotMatch(client, /study-cards-flash-card/);
+  assert.doesNotMatch(client, /study-cards-concept/);
+  assert.doesNotMatch(client, /study-cards-quiz/);
+  assert.doesNotMatch(client, /ListChecks/);
+  assert.doesNotMatch(client, /StudyQuiz/);
 });
 
 test("AI study card endpoint asks for structured learning output", async () => {
   const route = await readProjectFile("src/app/api/tools/study-cards/route.ts");
 
   assert.match(route, /cards/);
-  assert.match(route, /concept/);
-  assert.match(route, /quiz/);
   assert.match(route, /JSON/);
   assert.match(route, /CHAT_API_KEY/);
   assert.match(route, /DEEPSEEK_API_KEY/);
@@ -72,5 +81,7 @@ test("AI study card endpoint asks for structured learning output", async () => {
   assert.match(route, /API_NOT_CONFIGURED/);
   assert.match(route, /每张卡只考一个知识点/);
   assert.match(route, /back 不超过 45 个中文字符/);
+  assert.doesNotMatch(route, /测试题生成/);
+  assert.doesNotMatch(route, /StudyQuiz/);
   assert.match(route, /export async function POST/);
 });

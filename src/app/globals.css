@@ -2621,7 +2621,6 @@ h6 {
 }
 
 .study-cards-title-row svg,
-.study-cards-section-title svg,
 .study-cards-actions svg,
 .study-cards-practice-actions svg {
   width: 16px;
@@ -2842,7 +2841,7 @@ h6 {
   height: 100%;
   max-height: calc(100dvh - clamp(8.2rem, 11vw, 9.8rem));
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   overflow: auto;
   padding-right: 4px;
 }
@@ -2892,21 +2891,70 @@ h6 {
   transition: width 0.28s ease;
 }
 
+.study-cards-deck {
+  position: relative;
+  isolation: isolate;
+  padding: 12px 12px 18px;
+  perspective: 1200px;
+}
+
+.study-cards-deck::before,
+.study-cards-deck::after {
+  position: absolute;
+  content: "";
+  inset: 28px 24px 10px;
+  z-index: 0;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--card) 94%, var(--background));
+  box-shadow: 0 18px 42px rgba(20, 20, 19, 0.08);
+}
+
+.study-cards-deck::before {
+  transform: rotate(-2.4deg) translate(-4px, 8px);
+}
+
+.study-cards-deck::after {
+  transform: rotate(2deg) translate(6px, 14px);
+}
+
 .study-cards-practice-card {
   position: relative;
+  z-index: 2;
   display: flex;
-  min-height: clamp(260px, 42dvh, 390px);
+  min-height: 430px;
   flex-direction: column;
   justify-content: space-between;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--accent-secondary) 20%, var(--border));
+  border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
   border-radius: 8px;
   background:
-    linear-gradient(145deg, color-mix(in srgb, var(--accent-secondary) 7%, transparent), transparent 44%),
-    linear-gradient(0deg, color-mix(in srgb, var(--accent) 5%, transparent), transparent 56%),
+    linear-gradient(145deg, color-mix(in srgb, var(--accent-secondary) 8%, transparent), transparent 38%),
+    linear-gradient(0deg, color-mix(in srgb, var(--accent) 5%, transparent), transparent 62%),
     var(--card);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
-  padding: clamp(1rem, 2.4vw, 1.5rem);
+  box-shadow:
+    0 30px 80px rgba(20, 20, 19, 0.16),
+    0 7px 18px rgba(20, 20, 19, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  transform-origin: 52% 88%;
+  padding: 24px;
+  will-change: transform, opacity;
+}
+
+.study-cards-practice-card.is-exit-next {
+  animation: study-cards-card-exit-next 0.22s ease-in forwards;
+}
+
+.study-cards-practice-card.is-enter-next {
+  animation: study-cards-card-enter-next 0.26s cubic-bezier(0.2, 0.82, 0.2, 1) both;
+}
+
+.study-cards-practice-card.is-exit-prev {
+  animation: study-cards-card-exit-prev 0.22s ease-in forwards;
+}
+
+.study-cards-practice-card.is-enter-prev {
+  animation: study-cards-card-enter-prev 0.26s cubic-bezier(0.2, 0.82, 0.2, 1) both;
 }
 
 .study-cards-practice-kicker {
@@ -2932,43 +2980,86 @@ h6 {
 
 .study-cards-practice-card h3 {
   max-width: 760px;
-  margin: clamp(1.1rem, 4dvh, 2rem) 0;
+  margin: 28px 0 34px;
   color: var(--foreground);
-  font-size: clamp(1.55rem, 3.2vw, 2.2rem);
+  font-size: 2rem;
   line-height: 1.28;
   text-wrap: balance;
 }
 
-.study-cards-practice-answer {
-  min-height: 104px;
-  border-top: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
-  padding-top: 16px;
-}
-
-.study-cards-practice-answer.is-hidden {
+.study-cards-answer-panel {
   display: flex;
+  width: 100%;
+  min-height: 132px;
   align-items: center;
-  color: var(--muted);
+  border: 1px dashed color-mix(in srgb, var(--accent-secondary) 34%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--background) 64%, var(--card));
+  color: color-mix(in srgb, var(--foreground) 74%, var(--muted));
+  cursor: pointer;
+  font: inherit;
+  padding: 18px;
+  text-align: left;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
-.study-cards-practice-answer strong {
+.study-cards-answer-panel:hover {
+  border-color: color-mix(in srgb, var(--accent-secondary) 52%, var(--border));
+  background: color-mix(in srgb, var(--accent-secondary) 7%, var(--card));
+  box-shadow: 0 14px 34px rgba(69, 113, 157, 0.1);
+  transform: translateY(-1px);
+}
+
+.study-cards-answer-panel.is-revealed {
+  align-items: flex-start;
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--accent-tertiary) 28%, var(--border));
+  background: color-mix(in srgb, var(--accent-tertiary) 7%, var(--card));
+  cursor: default;
+}
+
+.study-cards-answer-placeholder {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: color-mix(in srgb, var(--foreground) 56%, var(--muted));
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.study-cards-answer-placeholder svg {
+  width: 16px;
+  height: 16px;
+  color: var(--accent-secondary);
+}
+
+.study-cards-answer-copy {
   display: block;
-  margin-bottom: 6px;
+  animation: study-cards-answer-reveal 0.52s ease both;
+}
+
+.study-cards-answer-copy strong {
+  display: block;
+  margin-bottom: 8px;
   color: color-mix(in srgb, var(--accent-secondary) 84%, var(--foreground));
   font-size: 12px;
   font-weight: 900;
 }
 
-.study-cards-practice-answer p {
-  margin: 0;
+.study-cards-answer-copy > span {
+  display: block;
   color: color-mix(in srgb, var(--foreground) 78%, var(--muted));
-  font-size: clamp(1rem, 1.6vw, 1.18rem);
+  font-size: 1.08rem;
   line-height: 1.65;
 }
 
-.study-cards-practice-answer small {
+.study-cards-answer-copy small {
   display: block;
-  margin-top: 8px;
+  margin-top: 10px;
   color: color-mix(in srgb, var(--foreground) 58%, var(--muted));
   font-size: 12px;
   line-height: 1.5;
@@ -2986,133 +3077,61 @@ h6 {
   color: var(--background);
 }
 
-.study-cards-section-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-  color: var(--accent-secondary);
-}
-
-.study-cards-section-title h3 {
-  margin: 0;
-  color: var(--foreground);
-  font-size: 15px;
-}
-
-.study-cards-concept {
-  border: 1px solid color-mix(in srgb, var(--accent-tertiary) 22%, var(--border));
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--accent-tertiary) 8%, var(--card));
-  padding: 14px;
-}
-
-.study-cards-concept strong {
-  display: block;
-  margin-bottom: 7px;
-  font-size: 16px;
-}
-
-.study-cards-concept p {
-  margin: 7px 0 0;
-  color: color-mix(in srgb, var(--foreground) 72%, var(--muted));
-  font-size: 13px;
-  line-height: 1.65;
-}
-
-.study-cards-concept details {
-  margin-top: 8px;
-}
-
-.study-cards-concept summary,
-.study-cards-quiz summary {
-  cursor: pointer;
-  list-style: none;
-}
-
-.study-cards-concept summary::-webkit-details-marker,
-.study-cards-quiz summary::-webkit-details-marker {
-  display: none;
-}
-
-.study-cards-concept summary {
-  color: color-mix(in srgb, var(--foreground) 72%, var(--accent-tertiary));
-  font-size: 12px;
-  font-weight: 850;
-}
-
-.study-cards-quiz-list {
-  display: grid;
-  gap: 10px;
-}
-
-.study-cards-quiz {
-  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
-  border-radius: 8px;
-  background: var(--card);
-}
-
-.study-cards-quiz summary {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  color: var(--foreground);
-  font-size: 13px;
-  font-weight: 850;
-  line-height: 1.55;
-  padding: 12px 13px;
-}
-
-.study-cards-quiz summary span {
-  display: inline-flex;
-  min-width: 28px;
-  min-height: 22px;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--accent-secondary) 11%, var(--background));
-  color: var(--accent-secondary);
-  font-size: 11px;
-  font-weight: 850;
-}
-
-.study-cards-quiz ol {
-  display: grid;
-  gap: 7px;
-  margin: 0;
-  padding: 0 13px 0;
-  list-style: none;
-}
-
-.study-cards-quiz li {
-  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--background) 58%, var(--card));
-  color: color-mix(in srgb, var(--foreground) 78%, var(--muted));
-  font-size: 13px;
-  line-height: 1.55;
-  padding: 8px 10px;
-}
-
-.study-cards-quiz p {
-  margin: 9px 13px 0;
-  color: color-mix(in srgb, var(--foreground) 70%, var(--muted));
-  font-size: 13px;
-  line-height: 1.65;
-}
-
-.study-cards-quiz p:last-child {
-  margin-bottom: 13px;
-}
-
-.study-cards-quiz p strong {
-  color: color-mix(in srgb, var(--accent-secondary) 78%, var(--foreground));
-}
-
 @keyframes study-cards-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes study-cards-card-exit-next {
+  to {
+    opacity: 0;
+    transform: translate3d(42px, 34px, 0) rotate(7deg) scale(0.96);
+  }
+}
+
+@keyframes study-cards-card-enter-next {
+  from {
+    opacity: 0;
+    transform: translate3d(36px, -20px, 0) rotate(3deg) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0) scale(1);
+  }
+}
+
+@keyframes study-cards-card-exit-prev {
+  to {
+    opacity: 0;
+    transform: translate3d(-42px, 34px, 0) rotate(-7deg) scale(0.96);
+  }
+}
+
+@keyframes study-cards-card-enter-prev {
+  from {
+    opacity: 0;
+    transform: translate3d(-36px, -20px, 0) rotate(-3deg) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0) scale(1);
+  }
+}
+
+@keyframes study-cards-answer-reveal {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
   }
 }
 
@@ -3141,7 +3160,7 @@ h6 {
   }
 
   .study-cards-practice-card {
-    min-height: 300px;
+    min-height: 390px;
   }
 }
 
@@ -3164,6 +3183,39 @@ h6 {
   .study-cards-actions,
   .study-cards-practice-actions {
     grid-template-columns: 1fr;
+  }
+
+  .study-cards-deck {
+    padding: 10px 0 14px;
+  }
+
+  .study-cards-deck::before,
+  .study-cards-deck::after {
+    inset: 22px 14px 8px;
+  }
+
+  .study-cards-practice-card {
+    min-height: 360px;
+    padding: 18px;
+  }
+
+  .study-cards-practice-card h3 {
+    margin: 24px 0 28px;
+    font-size: 1.55rem;
+  }
+
+  .study-cards-answer-panel {
+    min-height: 118px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .study-cards-practice-card,
+  .study-cards-answer-copy,
+  .study-cards-card-progress span,
+  .study-cards-progress-track span {
+    animation: none !important;
+    transition: none !important;
   }
 }
 

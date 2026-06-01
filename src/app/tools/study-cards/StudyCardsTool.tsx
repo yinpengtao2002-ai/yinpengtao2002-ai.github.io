@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -9,7 +9,6 @@ import {
   ChevronRight,
   Eye,
   Layers,
-  ListChecks,
   Loader2,
   RotateCcw,
   Sparkles,
@@ -23,29 +22,42 @@ type StudyCard = {
   note?: string;
 };
 
-type StudyQuiz = {
-  question: string;
-  options: string[];
-  answer: string;
-  explanation: string;
+type StudyCardResult = {
+  summary?: string;
+  cards: StudyCard[];
 };
 
-type StudyCardResult = {
-  summary: string;
-  concept: {
-    title: string;
-    explanation: string;
-    example: string;
-  };
-  cards: StudyCard[];
-  quiz: StudyQuiz[];
-};
+type CardMotion = "idle" | "exit-next" | "enter-next" | "exit-prev" | "enter-prev";
+type CardDirection = "next" | "prev";
 
 const SAMPLE_CONTENT = `间隔重复是一种学习方法，它的核心思想是在记忆即将遗忘之前进行复习。相比一次性反复阅读，间隔重复会把复习分散到多个时间点，让大脑在“努力回忆”的过程中重新巩固知识。
 
 主动回忆是间隔重复的关键。学习者不只是重新看答案，而是先尝试回答问题，再对照答案修正理解。这样可以暴露自己真正没有掌握的地方。
 
 Anki 这类卡片工具通常会把知识拆成正反两面：正面是问题或提示，背面是答案。好的卡片应该短小、清晰、只考一个知识点。`;
+
+const SAMPLE_RESULT: StudyCardResult = {
+  summary: "间隔重复入门",
+  cards: [
+    {
+      front: "间隔重复解决什么问题？",
+      back: "把复习分散到多个时间点，减少遗忘。",
+      note: "关键是临忘前回忆。",
+    },
+    {
+      front: "主动回忆为什么重要？",
+      back: "它能暴露没掌握的地方，并重新加固记忆。",
+    },
+    {
+      front: "好卡片应该怎样写？",
+      back: "短小、清晰，一张只考一个知识点。",
+    },
+    {
+      front: "Anki 正反面怎么用？",
+      back: "正面放问题或提示，背面放可复习答案。",
+    },
+  ],
+};
 
 const DIFFICULTY_OPTIONS = [
   "基础：解释更直白，适合第一次接触",
@@ -56,7 +68,7 @@ const DIFFICULTY_OPTIONS = [
 const PROGRESS_STEPS = [
   { threshold: 28, label: "正在梳理材料结构" },
   { threshold: 58, label: "正在生成问答卡片" },
-  { threshold: 82, label: "正在整理概念和例题" },
+  { threshold: 82, label: "正在压缩卡片答案" },
   { threshold: 100, label: "正在校验输出格式" },
 ];
 
@@ -96,6 +108,8 @@ export default function StudyCardsTool() {
   const [progressValue, setProgressValue] = useState(0);
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const [answerRevealed, setAnswerRevealed] = useState(false);
+  const [cardMotion, setCardMotion] = useState<CardMotion>("idle");
+  const transitionTimerRef = useRef<number | null>(null);
 
   const contentLength = useMemo(() => countChineseText(content), [content]);
   const canSubmit = contentLength >= 80 && !loading;
@@ -122,19 +136,64 @@ export default function StudyCardsTool() {
     return () => window.clearInterval(timer);
   }, [loading]);
 
+  useEffect(() => {
+    return () => {
+      if (transitionTimerRef.current !== null) {
+        window.clearTimeout(transitionTimerRef.current);
+      }
+    };
+  }, []);
+
+  function clearCardTimer() {
+    if (transitionTimerRef.current !== null) {
+      window.clearTimeout(transitionTimerRef.current);
+      transitionTimerRef.current = null;
+    }
+  }
+
+  function settleCardMotion(delay = 260) {
+    clearCardTimer();
+    transitionTimerRef.current = window.setTimeout(() => {
+      setCardMotion("idle");
+      transitionTimerRef.current = null;
+    }, delay);
+  }
+
   function resetPracticeDeck() {
+    clearCardTimer();
     setActiveCardIndex(0);
     setAnswerRevealed(false);
+    setCardMotion("enter-prev");
+    settleCardMotion();
+  }
+
+  function loadSampleContent() {
+    setContent(SAMPLE_CONTENT);
+    setResult(SAMPLE_RESULT);
+    setError("");
+    setProgressValue(0);
+    resetPracticeDeck();
+  }
+
+  function moveToCard(targetIndex: number, direction: CardDirection) {
+    if (!result || cardMotion !== "idle" || targetIndex < 0 || targetIndex >= totalCards) return;
+
+    clearCardTimer();
+    setAnswerRevealed(false);
+    setCardMotion(direction === "next" ? "exit-next" : "exit-prev");
+    transitionTimerRef.current = window.setTimeout(() => {
+      setActiveCardIndex(targetIndex);
+      setCardMotion(direction === "next" ? "enter-next" : "enter-prev");
+      settleCardMotion();
+    }, 220);
   }
 
   function goToPreviousCard() {
-    setActiveCardIndex((index) => Math.max(0, index - 1));
-    setAnswerRevealed(false);
+    moveToCard(activeCardIndex - 1, "prev");
   }
 
   function goToNextCard() {
-    setActiveCardIndex((index) => Math.min(totalCards - 1, index + 1));
-    setAnswerRevealed(false);
+    moveToCard(activeCardIndex + 1, "next");
   }
 
   async function generateCards() {
@@ -146,7 +205,10 @@ export default function StudyCardsTool() {
     setLoading(true);
     setProgressValue(8);
     setError("");
-    resetPracticeDeck();
+    clearCardTimer();
+    setActiveCardIndex(0);
+    setAnswerRevealed(false);
+    setCardMotion("idle");
 
     try {
       const response = await fetch("/api/tools/study-cards", {
@@ -162,7 +224,10 @@ export default function StudyCardsTool() {
 
       setProgressValue(100);
       setResult(payload);
-      resetPracticeDeck();
+      setActiveCardIndex(0);
+      setAnswerRevealed(false);
+      setCardMotion("enter-next");
+      settleCardMotion();
     } catch (err) {
       setError(err instanceof Error ? err.message : "学习卡片生成失败，请刷新页面后再试。");
     } finally {
@@ -236,7 +301,7 @@ export default function StudyCardsTool() {
                 {loading ? <Loader2 aria-hidden="true" /> : <WandSparkles aria-hidden="true" />}
                 {loading ? "生成中" : "生成学习卡片"}
               </button>
-              <button type="button" onClick={() => setContent(SAMPLE_CONTENT)}>
+              <button type="button" onClick={loadSampleContent}>
                 <BookOpen aria-hidden="true" />
                 示例内容
               </button>
@@ -246,7 +311,10 @@ export default function StudyCardsTool() {
                   setContent("");
                   setResult(null);
                   setError("");
-                  resetPracticeDeck();
+                  clearCardTimer();
+                  setActiveCardIndex(0);
+                  setAnswerRevealed(false);
+                  setCardMotion("idle");
                 }}
               >
                 <Trash2 aria-hidden="true" />
@@ -281,14 +349,14 @@ export default function StudyCardsTool() {
               <div className="study-cards-empty">
                 <Layers aria-hidden="true" />
                 <h2>把材料变成可以复习的卡片</h2>
-                <p>生成结果会包含问答卡片、核心概念解释、一个理解例子和三道测试题。</p>
+                <p>点击示例内容，右侧会出现一组可翻动的小卡片。</p>
               </div>
             ) : (
               <div className="study-cards-result">
                 <div className="study-cards-practice-top">
                   <div>
-                    <p>问答卡片</p>
-                    <h2>先想，再翻面</h2>
+                    <p>闪卡练习</p>
+                    <h2>{result.summary || "先想，再翻面"}</h2>
                   </div>
                   <span>第 {activeCardIndex + 1} / {totalCards} 张</span>
                 </div>
@@ -297,95 +365,59 @@ export default function StudyCardsTool() {
                   <span style={{ width: `${cardProgress}%` }} />
                 </div>
 
-                <article className="study-cards-practice-card" aria-label="当前问答卡片">
-                  <div className="study-cards-practice-kicker">
-                    <span>{String(activeCardIndex + 1).padStart(2, "0")}</span>
-                    <span>主动回忆</span>
-                  </div>
-                  <h3>{compactText(activeCard.front, 58)}</h3>
-                  <div
-                    className={`study-cards-practice-answer${answerRevealed ? "" : " is-hidden"}`}
-                    aria-live="polite"
+                <div className="study-cards-deck" aria-live="polite">
+                  <article
+                    key={activeCardIndex}
+                    className={`study-cards-practice-card is-${cardMotion}`}
+                    aria-label="当前问答卡片"
                   >
-                    {answerRevealed ? (
-                      <>
-                        <strong>答案</strong>
-                        <p>{compactText(activeCard.back, 86)}</p>
-                        {activeCard.note && <small>{compactText(activeCard.note, 48)}</small>}
-                      </>
-                    ) : (
-                      <p>答案已隐藏</p>
-                    )}
-                  </div>
-                </article>
+                    <div className="study-cards-practice-kicker">
+                      <span>{String(activeCardIndex + 1).padStart(2, "0")}</span>
+                      <span>主动回忆</span>
+                    </div>
+                    <h3>{compactText(activeCard.front, 58)}</h3>
+                    <button
+                      type="button"
+                      className={`study-cards-answer-panel${answerRevealed ? " is-revealed" : " is-hidden"}`}
+                      onClick={() => setAnswerRevealed(true)}
+                      aria-expanded={answerRevealed}
+                      aria-label={answerRevealed ? "答案已显示" : "显示答案"}
+                    >
+                      {answerRevealed ? (
+                        <span className="study-cards-answer-copy">
+                          <strong>答案</strong>
+                          <span>{compactText(activeCard.back, 86)}</span>
+                          {activeCard.note && <small>{compactText(activeCard.note, 48)}</small>}
+                        </span>
+                      ) : (
+                        <span className="study-cards-answer-placeholder">
+                          <Eye aria-hidden="true" />
+                          轻点这里翻开答案
+                        </span>
+                      )}
+                    </button>
+                  </article>
+                </div>
 
                 <div className="study-cards-practice-actions" aria-label="卡片练习操作">
-                  <button type="button" onClick={goToPreviousCard} disabled={isFirstCard}>
+                  <button type="button" onClick={goToPreviousCard} disabled={isFirstCard || cardMotion !== "idle"}>
                     <ChevronLeft aria-hidden="true" />
                     上一张
                   </button>
-                  {answerRevealed ? (
-                    <button
-                      type="button"
-                      className="is-primary"
-                      onClick={isLastCard ? resetPracticeDeck : goToNextCard}
-                    >
-                      {isLastCard ? <RotateCcw aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}
-                      {isLastCard ? "重新开始" : "下一张"}
-                    </button>
-                  ) : (
-                    <button type="button" className="is-primary" onClick={() => setAnswerRevealed(true)}>
-                      <Eye aria-hidden="true" />
-                      显示答案
-                    </button>
-                  )}
-                  <button type="button" onClick={resetPracticeDeck}>
+                  <button
+                    type="button"
+                    className="is-primary"
+                    onClick={isLastCard ? resetPracticeDeck : goToNextCard}
+                    disabled={cardMotion !== "idle" || (!answerRevealed && !isLastCard)}
+                  >
+                    {isLastCard ? <RotateCcw aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}
+                    {isLastCard ? "重新开始" : "下一张"}
+                  </button>
+                  <button type="button" onClick={resetPracticeDeck} disabled={cardMotion !== "idle"}>
                     <RotateCcw aria-hidden="true" />
                     重新开始
                   </button>
                 </div>
-
-                <section className="study-cards-concept" aria-label="概念解释">
-                  <div className="study-cards-section-title">
-                    <BookOpen aria-hidden="true" />
-                    <h3>概念解释</h3>
-                  </div>
-                  <strong>{result.concept.title}</strong>
-                  <p>{compactText(result.concept.explanation, 64)}</p>
-                  <details>
-                    <summary>看例子</summary>
-                    <p>{compactText(result.concept.example, 88)}</p>
-                  </details>
-                </section>
-
-                <section aria-label="测试题">
-                  <div className="study-cards-section-title">
-                    <ListChecks aria-hidden="true" />
-                    <h3>测试题</h3>
-                  </div>
-                  <div className="study-cards-quiz-list">
-                    {result.quiz.map((item, index) => (
-                      <article key={`${item.question}-${index}`} className="study-cards-quiz">
-                        <details>
-                          <summary>
-                            <span>{String(index + 1).padStart(2, "0")}</span>
-                            {compactText(item.question, 70)}
-                          </summary>
-                          <ol>
-                            {item.options.map((option) => (
-                              <li key={option}>{option}</li>
-                            ))}
-                          </ol>
-                          <p>
-                            <strong>答案：</strong>
-                            {item.answer}
-                          </p>
-                          <p>{compactText(item.explanation, 88)}</p>
-                        </details>
-                      </article>
-                    ))}
-                  </div>
-                </section>
               </div>
             )}
           </section>

@@ -19,22 +19,9 @@ type StudyCard = {
   note?: string;
 };
 
-type StudyQuiz = {
-  question: string;
-  options: string[];
-  answer: string;
-  explanation: string;
-};
-
 type StudyCardResult = {
   summary: string;
-  concept: {
-    title: string;
-    explanation: string;
-    example: string;
-  };
   cards: StudyCard[];
-  quiz: StudyQuiz[];
 };
 
 function readEnv(value?: string) {
@@ -102,7 +89,7 @@ function buildStudyCardPrompt({
 }) {
   return [
     "你是一个擅长把知识材料转成学习卡片的 AI 学习助手。",
-    "请基于用户提供的内容生成 Anki 风格问答卡、概念解释、例子和测试题。",
+    "请基于用户提供的内容生成适合逐张翻看的问答闪卡。",
     "要求：",
     `- 难度：${difficulty}`,
     `- 生成 ${cardCount} 张问答卡`,
@@ -110,12 +97,10 @@ function buildStudyCardPrompt({
     "- 问答卡 front 必须是可主动回忆的问题，不超过 28 个中文字符",
     "- back 不超过 45 个中文字符，只给可背诵答案，不写长段解释",
     "- note 不超过 28 个中文字符；没有必要就留空，不要写“易错点：”这类标签",
-    "- 概念解释要先讲核心定义，再讲为什么重要，总长度控制在 90 个中文字符以内",
-    "- 例子要贴近日常学习或工作理解，不要编造来源，控制在 70 个中文字符以内",
-    "- 测试题生成 3 道单选题，每题 4 个选项，answer 必须等于某一个选项文本，explanation 不超过 50 个中文字符",
+    "- summary 不超过 28 个中文字符，只概括这组卡片的主题",
     "- 只输出 JSON，不要输出 Markdown、解释文字或代码块",
     "JSON 结构必须是：",
-    '{"summary":"...","concept":{"title":"...","explanation":"...","example":"..."},"cards":[{"front":"...","back":"...","note":"..."}],"quiz":[{"question":"...","options":["A","B","C","D"],"answer":"...","explanation":"..."}]}',
+    '{"summary":"...","cards":[{"front":"...","back":"...","note":"..."}]}',
     "用户内容：",
     content,
   ].join("\n");
@@ -146,38 +131,13 @@ function normalizeStudyCardResult(value: unknown, cardCount: number): StudyCardR
         .slice(0, cardCount)
     : [];
 
-  const quiz = Array.isArray(raw.quiz)
-    ? raw.quiz
-        .map((item) => {
-          const quizItem = item as StudyQuiz;
-          const options = Array.isArray(quizItem.options)
-            ? quizItem.options.map((option) => normalizeText(option)).filter(Boolean).slice(0, 4)
-            : [];
-
-          return {
-            question: normalizeText(quizItem.question),
-            options,
-            answer: normalizeText(quizItem.answer),
-            explanation: normalizeText(quizItem.explanation),
-          };
-        })
-        .filter((item) => item.question && item.options.length >= 2 && item.answer)
-        .slice(0, 3)
-    : [];
-
-  if (cards.length === 0 || quiz.length === 0) {
+  if (cards.length === 0) {
     throw new Error("AI response missed required study card fields");
   }
 
   return {
     summary: normalizeText(raw.summary, "已根据输入内容生成学习卡片。"),
-    concept: {
-      title: normalizeText(raw.concept?.title, "核心概念"),
-      explanation: normalizeText(raw.concept?.explanation, "这段内容的核心概念已经整理为问答卡。"),
-      example: normalizeText(raw.concept?.example, "可以结合原文中的例子继续复习。"),
-    },
     cards,
-    quiz,
   };
 }
 
@@ -196,7 +156,7 @@ async function callProvider(provider: ChatProvider, prompt: string) {
       },
       body: JSON.stringify({
         model: provider.model,
-        max_tokens: 2600,
+        max_tokens: 1800,
         stream: false,
         response_format: { type: "json_object" },
         messages: [
