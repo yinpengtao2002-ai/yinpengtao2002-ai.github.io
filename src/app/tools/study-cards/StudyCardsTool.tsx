@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -46,9 +46,16 @@ const SAMPLE_CONTENT = `间隔重复是一种学习方法，它的核心思想�
 Anki 这类卡片工具通常会把知识拆成正反两面：正面是问题或提示，背面是答案。好的卡片应该短小、清晰、只考一个知识点。`;
 
 const DIFFICULTY_OPTIONS = [
-  "入门：解释更直白，适合第一次接触",
+  "基础：解释更直白，适合第一次接触",
   "进阶：保留关键术语，适合复习巩固",
-  "考试：更强调定义、辨析和易错点",
+  "高级：强调迁移、辨析和易错点",
+];
+
+const PROGRESS_STEPS = [
+  { threshold: 28, label: "正在梳理材料结构" },
+  { threshold: 58, label: "正在生成问答卡片" },
+  { threshold: 82, label: "正在整理概念和例题" },
+  { threshold: 100, label: "正在校验输出格式" },
 ];
 
 function cardToTsv(card: StudyCard) {
@@ -61,6 +68,22 @@ function countChineseText(text: string) {
   return text.replace(/\s/g, "").length;
 }
 
+function getProgressLabel(value: number) {
+  return PROGRESS_STEPS.find((step) => value <= step.threshold)?.label ?? PROGRESS_STEPS.at(-1)!.label;
+}
+
+function getStudyCardErrorMessage(payload: { error?: string; errorCode?: string } | null) {
+  if (payload?.errorCode === "API_NOT_CONFIGURED") {
+    return "当前本地环境没有配置 AI Key。线上页面可以直接使用；本地预览需要配置 CHAT_API_KEY 或 DEEPSEEK_API_KEY。";
+  }
+
+  if (payload?.errorCode === "AI_TIMEOUT") {
+    return "生成超时了。可以先缩短输入内容，或把卡片数调少一点再试。";
+  }
+
+  return payload?.error || "学习卡片生成失败，请刷新页面后再试。";
+}
+
 export default function StudyCardsTool() {
   const [content, setContent] = useState("");
   const [difficulty, setDifficulty] = useState(DIFFICULTY_OPTIONS[0]);
@@ -69,6 +92,7 @@ export default function StudyCardsTool() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
+  const [progressValue, setProgressValue] = useState(0);
 
   const contentLength = useMemo(() => countChineseText(content), [content]);
   const ankiTsv = useMemo(() => {
@@ -77,6 +101,23 @@ export default function StudyCardsTool() {
   }, [result]);
 
   const canSubmit = contentLength >= 80 && !loading;
+  const progressLabel = getProgressLabel(progressValue);
+
+  useEffect(() => {
+    if (!loading) return undefined;
+
+    setProgressValue(8);
+    const timer = window.setInterval(() => {
+      setProgressValue((value) => {
+        if (value < 40) return value + 5;
+        if (value < 72) return value + 3;
+        if (value < 92) return value + 1;
+        return value;
+      });
+    }, 650);
+
+    return () => window.clearInterval(timer);
+  }, [loading]);
 
   async function generateCards() {
     if (!canSubmit) {
@@ -85,6 +126,7 @@ export default function StudyCardsTool() {
     }
 
     setLoading(true);
+    setProgressValue(8);
     setError("");
     setCopied("");
 
@@ -95,14 +137,15 @@ export default function StudyCardsTool() {
         body: JSON.stringify({ content, difficulty, cardCount }),
       });
 
-      const payload = await response.json();
+      const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        throw new Error(payload?.error || "学习卡片生成失败。");
+        throw new Error(getStudyCardErrorMessage(payload));
       }
 
+      setProgressValue(100);
       setResult(payload);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "学习卡片生成失败，请稍后再试。");
+      setError(err instanceof Error ? err.message : "学习卡片生成失败，请刷新页面后再试。");
     } finally {
       setLoading(false);
     }
@@ -203,6 +246,25 @@ export default function StudyCardsTool() {
                 清空
               </button>
             </div>
+
+            {loading && (
+              <div className="study-cards-progress" aria-live="polite">
+                <div className="study-cards-progress-top">
+                  <span>{progressLabel}</span>
+                  <span>{Math.round(progressValue)}%</span>
+                </div>
+                <div
+                  className="study-cards-progress-track"
+                  role="progressbar"
+                  aria-label="学习卡片生成进度"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(progressValue)}
+                >
+                  <span style={{ width: `${progressValue}%` }} />
+                </div>
+              </div>
+            )}
 
             {error && <p className="study-cards-error">{error}</p>}
           </section>

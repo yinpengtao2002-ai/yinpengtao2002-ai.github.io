@@ -20,6 +20,12 @@ test("AI study card tool is exposed as an independent tool route", async () => {
   assert.match(client, /Anki 风格问答卡/);
   assert.match(client, /概念解释/);
   assert.match(client, /测试题/);
+  assert.match(client, /study-cards-progress/);
+  assert.match(client, /progressValue/);
+  assert.match(client, /基础：/);
+  assert.match(client, /进阶：/);
+  assert.match(client, /高级：/);
+  assert.doesNotMatch(client, /考试：/);
   assert.match(content, /slug:\s*"study-cards"/);
   assert.match(content, /href:\s*"\/tools\/study-cards"/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/study-cards/);
@@ -36,5 +42,9 @@ test("AI study card endpoint asks for structured learning output", async () => {
   assert.match(route, /JSON/);
   assert.match(route, /CHAT_API_KEY/);
   assert.match(route, /DEEPSEEK_API_KEY/);
+  assert.match(route, /response_format/);
+  assert.match(route, /60000/);
+  assert.match(route, /errorCode/);
+  assert.match(route, /API_NOT_CONFIGURED/);
   assert.match(route, /export async function POST/);
 });

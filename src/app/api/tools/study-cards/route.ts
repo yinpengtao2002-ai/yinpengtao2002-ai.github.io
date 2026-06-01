@@ -1,9 +1,10 @@
 import { NextRequest } from "next/server";
 
-const CHAT_PRIMARY_TIMEOUT_MS = 22000;
-const CHAT_FALLBACK_TIMEOUT_MS = 22000;
+const CHAT_PRIMARY_TIMEOUT_MS = 60000;
+const CHAT_FALLBACK_TIMEOUT_MS = 60000;
 const DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions";
 const CHAT_FALLBACK_API_URL = "https://api.884819.xyz/v1/chat/completions";
+const PUBLIC_STUDY_CARDS_API_URL = "https://yinpengtao.cn/api/tools/study-cards";
 
 type ChatProvider = {
   model: string;
@@ -68,6 +69,16 @@ function getChatProviders(): ChatProvider[] {
       timeoutMs: CHAT_FALLBACK_TIMEOUT_MS,
     },
   ];
+}
+
+function hasConfiguredProvider(providers: ChatProvider[]) {
+  return providers.some((provider) => Boolean(provider.apiKey && provider.apiUrl));
+}
+
+function shouldUsePublicDevProxy(req: NextRequest, providers: ChatProvider[]) {
+  const host = req.headers.get("host") || "";
+  const isLocalhost = /^(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(host);
+  return process.env.NODE_ENV === "development" && isLocalhost && !hasConfiguredProvider(providers);
 }
 
 function clampCardCount(value: unknown) {
@@ -184,6 +195,7 @@ async function callProvider(provider: ChatProvider, prompt: string) {
         model: provider.model,
         max_tokens: 2600,
         stream: false,
+        response_format: { type: "json_object" },
         messages: [
           { role: "system", content: "你只输出严格 JSON，用中文回答。" },
           { role: "user", content: prompt },
@@ -209,6 +221,34 @@ async function callProvider(provider: ChatProvider, prompt: string) {
   }
 }
 
+async function proxyToPublicStudyCardsApi(body: {
+  content: string;
+  difficulty: string;
+  cardCount: number;
+}) {
+  const response = await fetch(PUBLIC_STUDY_CARDS_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "User-Agent": "Mozilla/5.0 (compatible; YinPengtaoWebsiteLocalPreview/1.0)",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    return Response.json(
+      payload || {
+        error: "线上 AI 接口暂时不可用，请稍后再试。",
+        errorCode: "PUBLIC_PROXY_FAILED",
+      },
+      { status: response.status }
+    );
+  }
+
+  return Response.json(payload);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => null);
@@ -231,6 +271,10 @@ export async function POST(req: NextRequest) {
     }
 
     const providers = getChatProviders();
+    if (shouldUsePublicDevProxy(req, providers)) {
+      return proxyToPublicStudyCardsApi({ content, difficulty, cardCount });
+    }
+
     const prompt = buildStudyCardPrompt({ content, difficulty, cardCount });
     let lastError = "API not configured";
     let lastModel = providers[0]?.model ?? "unknown";
@@ -248,15 +292,40 @@ export async function POST(req: NextRequest) {
         const parsed = extractJsonObject(aiText);
         return Response.json(normalizeStudyCardResult(parsed, cardCount));
       } catch (error) {
-        lastError = error instanceof Error ? error.message : "AI generation failed";
+        if (error instanceof DOMException && error.name === "AbortError") {
+          lastError = "AI generation timed out";
+        } else {
+          lastError = error instanceof Error ? error.message : "AI generation failed";
+        }
       }
     }
 
+    if (!hasConfiguredProvider(providers)) {
+      return Response.json(
+        {
+          error: "当前环境没有配置 AI 接口密钥。",
+          errorCode: "API_NOT_CONFIGURED",
+          detail: lastError,
+          model: lastModel,
+        },
+        { status: 503 }
+      );
+    }
+
+    const isTimeout = lastError.toLowerCase().includes("timed out");
     return Response.json(
-      { error: "学习卡片生成失败，请稍后再试。", detail: lastError, model: lastModel },
-      { status: 503 }
+      {
+        error: isTimeout ? "生成超时了，请缩短输入内容后再试。" : "AI 生成没有成功，请再试一次。",
+        errorCode: isTimeout ? "AI_TIMEOUT" : "AI_GENERATION_FAILED",
+        detail: lastError,
+        model: lastModel,
+      },
+      { status: isTimeout ? 504 : 503 }
     );
   } catch {
-    return Response.json({ error: "学习卡片生成失败，请稍后再试。" }, { status: 500 });
+    return Response.json(
+      { error: "学习卡片生成失败，请刷新页面后再试。", errorCode: "INTERNAL_ERROR" },
+      { status: 500 }
+    );
   }
 }

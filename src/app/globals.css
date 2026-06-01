@@ -2769,6 +2769,42 @@ h6 {
   padding: 10px 12px;
 }
 
+.study-cards-progress {
+  margin-top: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent-secondary) 24%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent-secondary) 7%, var(--card));
+  padding: 11px 12px 12px;
+}
+
+.study-cards-progress-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: color-mix(in srgb, var(--foreground) 76%, var(--muted));
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.35;
+  margin-bottom: 9px;
+}
+
+.study-cards-progress-track {
+  position: relative;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border) 78%, var(--card));
+}
+
+.study-cards-progress-track span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-secondary), var(--accent-tertiary));
+  transition: width 0.45s ease;
+}
+
 .study-cards-empty {
   display: flex;
   min-height: 100%;
