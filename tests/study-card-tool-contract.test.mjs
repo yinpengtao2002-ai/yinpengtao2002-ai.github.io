@@ -17,7 +17,7 @@ test("AI study card tool is exposed as an independent tool route", async () => {
   assert.match(page, /AI 学习卡片生成器/);
   assert.match(page, /StudyCardsTool/);
   assert.match(client, /\/api\/tools\/study-cards/);
-  assert.match(client, /Anki 风格问答卡/);
+  assert.match(client, /问答卡片/);
   assert.match(client, /概念解释/);
   assert.match(client, /测试题/);
   assert.match(client, /study-cards-progress/);
@@ -33,6 +33,30 @@ test("AI study card tool is exposed as an independent tool route", async () => {
   assert.match(clientShell, /\/tools\/study-cards/);
 });
 
+test("AI study card results use an interactive one-card practice flow", async () => {
+  const client = await readProjectFile("src/app/tools/study-cards/StudyCardsTool.tsx");
+  const styles = await readProjectFile("src/app/globals.css");
+
+  assert.match(client, /activeCardIndex/);
+  assert.match(client, /answerRevealed/);
+  assert.match(client, /显示答案/);
+  assert.match(client, /下一张/);
+  assert.match(client, /上一张/);
+  assert.match(client, /重新开始/);
+  assert.match(client, /study-cards-practice-card/);
+  assert.match(styles, /\.study-cards-practice-card/);
+  assert.match(styles, /\.study-cards-card-progress/);
+
+  assert.doesNotMatch(client, /复制 Anki TSV/);
+  assert.doesNotMatch(client, /cardToTsv/);
+  assert.doesNotMatch(client, /ankiTsv/);
+  assert.doesNotMatch(client, /Clipboard/);
+  assert.doesNotMatch(client, /CheckCircle2/);
+  assert.doesNotMatch(client, /is-answer/);
+  assert.doesNotMatch(client, /study-cards-card-grid/);
+  assert.doesNotMatch(client, /study-cards-flash-card/);
+});
+
 test("AI study card endpoint asks for structured learning output", async () => {
   const route = await readProjectFile("src/app/api/tools/study-cards/route.ts");
 
@@ -46,5 +70,7 @@ test("AI study card endpoint asks for structured learning output", async () => {
   assert.match(route, /60000/);
   assert.match(route, /errorCode/);
   assert.match(route, /API_NOT_CONFIGURED/);
+  assert.match(route, /每张卡只考一个知识点/);
+  assert.match(route, /back 不超过 45 个中文字符/);
   assert.match(route, /export async function POST/);
 });

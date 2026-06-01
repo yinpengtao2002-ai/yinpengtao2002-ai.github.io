@@ -5,11 +5,13 @@ import Link from "next/link";
 import {
   ArrowLeft,
   BookOpen,
-  CheckCircle2,
-  Clipboard,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
   Layers,
   ListChecks,
   Loader2,
+  RotateCcw,
   Sparkles,
   Trash2,
   WandSparkles,
@@ -58,14 +60,14 @@ const PROGRESS_STEPS = [
   { threshold: 100, label: "正在校验输出格式" },
 ];
 
-function cardToTsv(card: StudyCard) {
-  return [card.front, card.back, card.note || ""]
-    .map((value) => value.replace(/\t/g, " ").replace(/\n+/g, " ").trim())
-    .join("\t");
-}
-
 function countChineseText(text: string) {
   return text.replace(/\s/g, "").length;
+}
+
+function compactText(text: string, maxLength: number) {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, maxLength).replace(/[，。；、：,.:\s]+$/, "")}...`;
 }
 
 function getProgressLabel(value: number) {
@@ -91,17 +93,18 @@ export default function StudyCardsTool() {
   const [result, setResult] = useState<StudyCardResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [copied, setCopied] = useState("");
   const [progressValue, setProgressValue] = useState(0);
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
+  const [answerRevealed, setAnswerRevealed] = useState(false);
 
   const contentLength = useMemo(() => countChineseText(content), [content]);
-  const ankiTsv = useMemo(() => {
-    if (!result) return "";
-    return result.cards.map(cardToTsv).join("\n");
-  }, [result]);
-
   const canSubmit = contentLength >= 80 && !loading;
   const progressLabel = getProgressLabel(progressValue);
+  const activeCard = useMemo(() => result?.cards[activeCardIndex] ?? null, [activeCardIndex, result]);
+  const totalCards = result?.cards.length ?? 0;
+  const cardProgress = totalCards > 0 ? ((activeCardIndex + 1) / totalCards) * 100 : 0;
+  const isFirstCard = activeCardIndex === 0;
+  const isLastCard = activeCardIndex >= totalCards - 1;
 
   useEffect(() => {
     if (!loading) return undefined;
@@ -119,6 +122,21 @@ export default function StudyCardsTool() {
     return () => window.clearInterval(timer);
   }, [loading]);
 
+  function resetPracticeDeck() {
+    setActiveCardIndex(0);
+    setAnswerRevealed(false);
+  }
+
+  function goToPreviousCard() {
+    setActiveCardIndex((index) => Math.max(0, index - 1));
+    setAnswerRevealed(false);
+  }
+
+  function goToNextCard() {
+    setActiveCardIndex((index) => Math.min(totalCards - 1, index + 1));
+    setAnswerRevealed(false);
+  }
+
   async function generateCards() {
     if (!canSubmit) {
       setError("请先输入至少 80 个字的学习内容。");
@@ -128,7 +146,7 @@ export default function StudyCardsTool() {
     setLoading(true);
     setProgressValue(8);
     setError("");
-    setCopied("");
+    resetPracticeDeck();
 
     try {
       const response = await fetch("/api/tools/study-cards", {
@@ -144,23 +162,11 @@ export default function StudyCardsTool() {
 
       setProgressValue(100);
       setResult(payload);
+      resetPracticeDeck();
     } catch (err) {
       setError(err instanceof Error ? err.message : "学习卡片生成失败，请刷新页面后再试。");
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function copyText(value: string, label: string) {
-    if (!value) return;
-
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(label);
-      window.setTimeout(() => setCopied(""), 1800);
-    } catch {
-      setCopied("");
-      setError("复制失败，可以手动选中内容复制。");
     }
   }
 
@@ -240,6 +246,7 @@ export default function StudyCardsTool() {
                   setContent("");
                   setResult(null);
                   setError("");
+                  resetPracticeDeck();
                 }}
               >
                 <Trash2 aria-hidden="true" />
@@ -270,22 +277,71 @@ export default function StudyCardsTool() {
           </section>
 
           <section className="study-cards-output-panel" aria-label="学习卡片结果">
-            {!result ? (
+            {!result || !activeCard ? (
               <div className="study-cards-empty">
                 <Layers aria-hidden="true" />
                 <h2>把材料变成可以复习的卡片</h2>
-                <p>生成结果会包含 Anki 风格问答卡、核心概念解释、一个理解例子和三道测试题。</p>
+                <p>生成结果会包含问答卡片、核心概念解释、一个理解例子和三道测试题。</p>
               </div>
             ) : (
               <div className="study-cards-result">
-                <div className="study-cards-result-head">
+                <div className="study-cards-practice-top">
                   <div>
-                    <p>生成结果</p>
-                    <h2>{result.summary}</h2>
+                    <p>问答卡片</p>
+                    <h2>先想，再翻面</h2>
                   </div>
-                  <button type="button" onClick={() => copyText(ankiTsv, "anki")}>
-                    {copied === "anki" ? <CheckCircle2 aria-hidden="true" /> : <Clipboard aria-hidden="true" />}
-                    {copied === "anki" ? "已复制" : "复制 Anki TSV"}
+                  <span>第 {activeCardIndex + 1} / {totalCards} 张</span>
+                </div>
+
+                <div className="study-cards-card-progress" aria-hidden="true">
+                  <span style={{ width: `${cardProgress}%` }} />
+                </div>
+
+                <article className="study-cards-practice-card" aria-label="当前问答卡片">
+                  <div className="study-cards-practice-kicker">
+                    <span>{String(activeCardIndex + 1).padStart(2, "0")}</span>
+                    <span>主动回忆</span>
+                  </div>
+                  <h3>{compactText(activeCard.front, 58)}</h3>
+                  <div
+                    className={`study-cards-practice-answer${answerRevealed ? "" : " is-hidden"}`}
+                    aria-live="polite"
+                  >
+                    {answerRevealed ? (
+                      <>
+                        <strong>答案</strong>
+                        <p>{compactText(activeCard.back, 86)}</p>
+                        {activeCard.note && <small>{compactText(activeCard.note, 48)}</small>}
+                      </>
+                    ) : (
+                      <p>答案已隐藏</p>
+                    )}
+                  </div>
+                </article>
+
+                <div className="study-cards-practice-actions" aria-label="卡片练习操作">
+                  <button type="button" onClick={goToPreviousCard} disabled={isFirstCard}>
+                    <ChevronLeft aria-hidden="true" />
+                    上一张
+                  </button>
+                  {answerRevealed ? (
+                    <button
+                      type="button"
+                      className="is-primary"
+                      onClick={isLastCard ? resetPracticeDeck : goToNextCard}
+                    >
+                      {isLastCard ? <RotateCcw aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}
+                      {isLastCard ? "重新开始" : "下一张"}
+                    </button>
+                  ) : (
+                    <button type="button" className="is-primary" onClick={() => setAnswerRevealed(true)}>
+                      <Eye aria-hidden="true" />
+                      显示答案
+                    </button>
+                  )}
+                  <button type="button" onClick={resetPracticeDeck}>
+                    <RotateCcw aria-hidden="true" />
+                    重新开始
                   </button>
                 </div>
 
@@ -295,25 +351,11 @@ export default function StudyCardsTool() {
                     <h3>概念解释</h3>
                   </div>
                   <strong>{result.concept.title}</strong>
-                  <p>{result.concept.explanation}</p>
-                  <p>{result.concept.example}</p>
-                </section>
-
-                <section aria-label="Anki 风格问答卡">
-                  <div className="study-cards-section-title">
-                    <Layers aria-hidden="true" />
-                    <h3>Anki 风格问答卡</h3>
-                  </div>
-                  <div className="study-cards-card-grid">
-                    {result.cards.map((card, index) => (
-                      <article key={`${card.front}-${index}`} className="study-cards-flash-card">
-                        <span>{String(index + 1).padStart(2, "0")}</span>
-                        <h4>{card.front}</h4>
-                        <p>{card.back}</p>
-                        {card.note && <small>{card.note}</small>}
-                      </article>
-                    ))}
-                  </div>
+                  <p>{compactText(result.concept.explanation, 64)}</p>
+                  <details>
+                    <summary>看例子</summary>
+                    <p>{compactText(result.concept.example, 88)}</p>
+                  </details>
                 </section>
 
                 <section aria-label="测试题">
@@ -324,15 +366,22 @@ export default function StudyCardsTool() {
                   <div className="study-cards-quiz-list">
                     {result.quiz.map((item, index) => (
                       <article key={`${item.question}-${index}`} className="study-cards-quiz">
-                        <h4>{index + 1}. {item.question}</h4>
-                        <ol>
-                          {item.options.map((option) => (
-                            <li key={option} className={option === item.answer ? "is-answer" : undefined}>
-                              {option}
-                            </li>
-                          ))}
-                        </ol>
-                        <p>{item.explanation}</p>
+                        <details>
+                          <summary>
+                            <span>{String(index + 1).padStart(2, "0")}</span>
+                            {compactText(item.question, 70)}
+                          </summary>
+                          <ol>
+                            {item.options.map((option) => (
+                              <li key={option}>{option}</li>
+                            ))}
+                          </ol>
+                          <p>
+                            <strong>答案：</strong>
+                            {item.answer}
+                          </p>
+                          <p>{compactText(item.explanation, 88)}</p>
+                        </details>
                       </article>
                     ))}
                   </div>
