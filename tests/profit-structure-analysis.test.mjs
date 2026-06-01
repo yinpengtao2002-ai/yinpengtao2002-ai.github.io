@@ -14,6 +14,9 @@ const {
   buildDimensionOptions,
   buildSummaryCards,
   buildStructureBlueprints,
+  buildSankeyData,
+  defaultDimensionPath,
+  createSampleRows,
 } = profitStructure.default;
 
 test("profit structure model is registered as a multidimensional finance model", () => {
@@ -34,8 +37,42 @@ test("profit structure model is registered as a multidimensional finance model",
 test("template keeps the shared month-dimension-volume-metric shape", () => {
   assert.deepEqual(
     TEMPLATE_HEADERS,
-    ["月份", "大区", "国家", "品牌市场", "经营模式", "业务单元", "车型", "燃油品类", "品牌", "销量", "净收入", "成本", "边际"]
+    ["月份", "大区", "国家", "品牌", "品牌市场", "经营模式", "业务单元", "车型", "燃油品类", "销量", "净收入", "成本", "边际"]
   );
+});
+
+test("sample data keeps countries in one region while brands cross most countries", () => {
+  const sampleRows = createSampleRows();
+  const countryRegions = new Map();
+  const countryBrands = new Map();
+  const brandCountries = new Map();
+  const modelFuels = new Map();
+
+  for (const row of sampleRows) {
+    const currentRegion = countryRegions.get(row.国家);
+    assert.ok(!currentRegion || currentRegion === row.大区, `${row.国家} should not move across regions`);
+    countryRegions.set(row.国家, row.大区);
+
+    if (!countryBrands.has(row.国家)) countryBrands.set(row.国家, new Set());
+    countryBrands.get(row.国家).add(row.品牌);
+
+    if (!brandCountries.has(row.品牌)) brandCountries.set(row.品牌, new Set());
+    brandCountries.get(row.品牌).add(row.国家);
+
+    if (!modelFuels.has(row.车型)) modelFuels.set(row.车型, new Set());
+    modelFuels.get(row.车型).add(row.燃油品类);
+  }
+
+  assert.ok(countryRegions.size >= 8, "sample should include enough countries to make the flow meaningful");
+  assert.ok([...countryBrands.values()].every((brands) => brands.size >= 3), "each country should carry several brands");
+  assert.ok([...brandCountries.values()].every((countries) => countries.size >= 6), "each brand should appear across most countries");
+  assert.ok([...modelFuels.values()].some((fuels) => fuels.size >= 2), "at least one model should map to multiple fuel categories");
+});
+
+test("default dimension path starts with the stable geography tree and then crosses into brand", () => {
+  const { schema } = normalizeUploadedRows(createSampleRows());
+
+  assert.deepEqual(defaultDimensionPath(schema), ["大区", "国家", "品牌", "车型", "燃油品类"]);
 });
 
 test("uploaded rows treat every column before volume as a selectable dimension and every column after volume as an uploaded metric", () => {
@@ -119,13 +156,34 @@ test("summary cards and structure blueprints follow uploaded metric names and re
   assert.deepEqual(cards.map((card) => card.label), ["销量", "GMV", "服务成本", "NPS"]);
   assert.deepEqual(charts.map((chart) => chart.kind), [
     "dimension-flow",
-    "cross-composition",
-    "combination-bubble",
     "structure-scatter",
+    "path-composition",
+    "positive-negative-structure",
   ]);
   assert.ok(charts.every((chart) => chart.title && chart.description));
   assert.ok(charts.some((chart) => /维度路径/.test(chart.title) && /GMV|服务成本|NPS/.test(chart.description)));
-  assert.doesNotMatch(combinedText, /边际率|净收入|单车边际|结构提示|候选图表|排行|热力图|明细|分层贡献|销量结构占比/);
+  assert.doesNotMatch(combinedText, /边际率|净收入|单车边际|结构提示|候选图表|排行|热力图|明细|分层贡献|销量结构占比|交叉结构切分|维度组合气泡矩阵/);
+});
+
+test("sankey data collapses high-cardinality long tails instead of rendering every node", () => {
+  const rows = Array.from({ length: 100 }, (_, index) => ({
+    月份: "2026-01",
+    大区: `大区${index % 10}`,
+    国家: `国家${index}`,
+    品牌: `品牌${index % 5}`,
+    销量: 10 + index,
+    GMV: 100 + index,
+  }));
+  const { rows: normalizedRows, schema } = normalizeUploadedRows(rows);
+  const summary = summarizeProfitStructure(normalizedRows, schema, {
+    dimensions: ["大区", "国家", "品牌"],
+    primaryMetric: "GMV",
+  });
+  const sankey = buildSankeyData(summary, { maxValuesPerLevel: [10, 12, 8] });
+  const countryNodes = sankey.nodes.filter((node) => node.dimension === "国家");
+
+  assert.ok(countryNodes.length <= 13, "country level should be capped plus one tail bucket");
+  assert.ok(countryNodes.some((node) => node.value === "其他国家"));
 });
 
 test("source files for the tool do not expose rejected panels or rejected chart names", async () => {
@@ -138,7 +196,8 @@ test("source files for the tool do not expose rejected panels or rejected chart 
 
   assert.doesNotMatch(surfaceText, /结构提示|候选图表|经营对象盈利明细|边际分层贡献|销量结构占比|合计排行|单车边际排行|分月趋势|对象 x 月份热力图|明细表/);
   assert.match(surfaceText, /维度路径流向/);
-  assert.match(surfaceText, /交叉结构切分/);
-  assert.match(surfaceText, /维度组合气泡矩阵/);
   assert.match(surfaceText, /结构定位散点/);
+  assert.match(surfaceText, /主路径结构条/);
+  assert.match(surfaceText, /正负结构拆解/);
+  assert.doesNotMatch(surfaceText, /交叉结构切分|维度组合气泡矩阵/);
 });

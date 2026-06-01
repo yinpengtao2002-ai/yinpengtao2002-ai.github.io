@@ -116,6 +116,14 @@ export default function ProfitStructureTool() {
                             <span>第三层维度</span>
                             <select id="profit-structure-tertiary-dimension" className="input" />
                         </label>
+                        <label className="field">
+                            <span>第四层维度</span>
+                            <select id="profit-structure-fourth-dimension" className="input" />
+                        </label>
+                        <label className="field">
+                            <span>第五层维度</span>
+                            <select id="profit-structure-fifth-dimension" className="input" />
+                        </label>
                     </div>
                 </section>
 
@@ -158,7 +166,7 @@ export default function ProfitStructureTool() {
                     <div>
                         <p className="eyebrow">Financial Modeling</p>
                         <h1>多维结构关系分析模型</h1>
-                        <p className="model-subtitle">用同一张经营明细底表，在任意维度路径下查看指标流向、交叉切分、组合分布和结构定位。</p>
+                        <p className="model-subtitle">用同一张经营明细底表，在任意维度路径下查看指标流向、结构定位、主路径和正负拆解。</p>
                     </div>
                     <div className="header-actions">
                         <div className="data-status" id="profit-structure-data-status">示例数据</div>
@@ -183,30 +191,30 @@ export default function ProfitStructureTool() {
                     <article className="panel">
                         <div className="panel-header">
                             <div>
-                                <h2>交叉结构切分</h2>
-                                <p id="profit-structure-cross-caption">两个维度之间的指标切分。</p>
-                            </div>
-                        </div>
-                        <div id="profit-structure-cross-chart" className="chart chart-compact" />
-                    </article>
-
-                    <article className="panel">
-                        <div className="panel-header">
-                            <div>
-                                <h2>维度组合气泡矩阵</h2>
-                                <p id="profit-structure-bubble-caption">两个维度组合下的指标分布。</p>
-                            </div>
-                        </div>
-                        <div id="profit-structure-bubble-chart" className="chart chart-compact" />
-                    </article>
-                    <article className="panel">
-                        <div className="panel-header">
-                            <div>
                                 <h2>结构定位散点</h2>
                                 <p id="profit-structure-scatter-caption">维度组合在两个指标上的位置。</p>
                             </div>
                         </div>
                         <div id="profit-structure-scatter-chart" className="chart chart-compact" />
+                    </article>
+
+                    <article className="panel">
+                        <div className="panel-header">
+                            <div>
+                                <h2>主路径结构条</h2>
+                                <p id="profit-structure-path-caption">当前路径下的主要结构权重。</p>
+                            </div>
+                        </div>
+                        <div id="profit-structure-path-chart" className="chart chart-compact" />
+                    </article>
+                    <article className="panel">
+                        <div className="panel-header">
+                            <div>
+                                <h2>正负结构拆解</h2>
+                                <p id="profit-structure-positive-negative-caption">第一层维度下的正负贡献。</p>
+                            </div>
+                        </div>
+                        <div id="profit-structure-positive-negative-chart" className="chart chart-compact" />
                     </article>
                 </section>
             </main>
