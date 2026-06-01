@@ -1,5 +1,5 @@
 // Auto-generated content data from markdown + Notion
-// Generated at: 2026-05-31T15:33:18.874Z
+// Generated at: 2026-06-01T16:50:37.838Z
 // DO NOT EDIT MANUALLY - run 'npm run prebuild' to regenerate
 
 export interface ContentItem {
@@ -39,11 +39,11 @@ export const financeContent: ContentItem[] = [
   },
   {
     "slug": "profit-structure",
-    "title": "多维度结构分析模型",
-    "description": "上传通用经营明细底表，按任意维度或维度组合分析销量、单位值和用户上传的任意指标结构。",
+    "title": "多维结构关系分析模型",
+    "description": "上传通用经营明细底表，按任意维度路径查看用户上传指标在多层维度之间的结构关系。",
     "date": "2026-05-31",
     "href": "/finance/profit-structure",
-    "content": "用于多维度结构诊断，把通用经营明细按用户选择的任意维度或维度组合汇总，跟随用户上传的指标生成结构矩阵、候选图表和明细表。\n\n使用步骤：\n1. 打开模型后先查看自动加载的示例数据。\n2. 上传包含月份、维度、销量和任意指标的 Excel 或 CSV。\n3. 选择当前分析维度、组合维度和矩阵指标，再从结构矩阵、候选图表和明细表判断结构质量。",
+    "content": "用于多维结构关系分析，把通用经营明细按用户选择的任意维度路径汇总，跟随用户上传的指标生成维度流向、交叉切分、组合分布和定位散点。\n\n使用步骤：\n1. 打开模型后先查看自动加载的示例数据。\n2. 上传包含月份、维度、销量和任意指标的 Excel 或 CSV。\n3. 选择第一层、第二层和第三层维度，再选择权重指标和坐标指标查看结构关系。",
     "source": "registry",
     "id": 3
   },

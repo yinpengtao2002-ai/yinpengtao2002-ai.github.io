@@ -102,10 +102,10 @@ export function getLocalFallbackResponse(
         }, options.includeOfflineNotice);
     }
 
-    if (includesAny(lower, ["盈利结构", "利润结构", "经营结构", "拖累项", "分层", "多维盈利", "profit structure"])) {
-        const cards = financeContent.filter((item) => item.href.includes("profit-structure") || item.title.includes("盈利结构"));
+    if (includesAny(lower, ["结构关系", "经营结构", "维度结构", "多维结构", "多维盈利", "profit structure"])) {
+        const cards = financeContent.filter((item) => item.href.includes("profit-structure") || item.title.includes("结构关系"));
         return withOfflineNotice({
-            response: "多维结构诊断可以打开 [多维度结构分析模型](/finance/profit-structure)。它沿用通用经营明细底表，适合按任意维度或维度组合分析销量、单位值和用户上传的任意指标。",
+            response: "多维结构关系可以打开 [多维结构关系分析模型](/finance/profit-structure)。它沿用通用经营明细底表，适合按任意维度路径查看用户上传指标在多层维度之间的关系。",
             contentCards: cards.length > 0 ? cards : undefined,
             cardType: cards.length > 0 ? "finance" : undefined,
         }, options.includeOfflineNotice);

@@ -6,43 +6,20 @@ const VOLUME_ALIASES = ["销量", "销售量", "发车量", "台数", "数量", 
 const REVENUE_ALIASES = ["净收入", "营业收入", "收入", "净收入总额", "收入总额", "revenue", "netrevenue", "sales", "gmv"];
 const PRIMARY_VALUE_ALIASES = ["边际", "边际总额", "贡献边际", "毛利", "毛利额", "利润贡献", "利润", "margin", "grossmargin", "contributionmargin", "profit"];
 
-const CLASSIFICATIONS = {
-    "high-value-core": {
-        key: "high-value-core",
-        label: "高值核心型",
-        shortLabel: "核心",
-        color: "#5c8fba",
-        description: "当前主指标和单位质量都高，是当前结构里的核心对象。"
-    },
-    "scale-driver": {
-        key: "scale-driver",
-        label: "规模拉动型",
-        shortLabel: "规模",
-        color: "#b98524",
-        description: "销量占比较高，但单位主指标低于整体，主要靠规模拉动。"
-    },
-    "high-value-niche": {
-        key: "high-value-niche",
-        label: "高值小众型",
-        shortLabel: "高值",
-        color: "#788c5d",
-        description: "规模不大，但单位主指标较高，适合继续观察放量空间。"
-    },
-    "low-value-drag": {
-        key: "low-value-drag",
-        label: "低值拖累型",
-        shortLabel: "拖累",
-        color: "#b65f55",
-        description: "当前主指标为负或单位质量明显偏弱，需要优先复盘。"
-    },
-    "watch-list": {
-        key: "watch-list",
-        label: "观察培育型",
-        shortLabel: "观察",
-        color: "#aaa79d",
-        description: "规模和当前主指标都不突出，先作为观察项管理。"
-    }
-};
+const COLOR_PALETTE = [
+    "#5c8fba",
+    "#d97757",
+    "#788c5d",
+    "#b98524",
+    "#7f75b6",
+    "#4f9f8f",
+    "#b65f55",
+    "#8e8374",
+    "#d1969b",
+    "#6f8fb7",
+    "#9a8c55",
+    "#5f7864"
+];
 
 const state = {
     initialized: false,
@@ -50,6 +27,7 @@ const state = {
     schema: null,
     selectedPrimaryDimension: "",
     selectedSecondaryDimension: "",
+    selectedTertiaryDimension: "",
     selectedPrimaryMetric: "",
     selectedSecondaryMetric: "",
     selectedMonth: "__all__",
@@ -194,8 +172,8 @@ function isRateLikeMetric(metric) {
     return /率|占比|比例|%|pct|rate|ratio|index|指数|score|评分|满意|nps/i.test(String(metric));
 }
 
-function metricUnitLabel(metric) {
-    return isRateLikeMetric(metric) ? metric : `单车${metric}`;
+function metricUnitLabel(metric, denominator = "销量") {
+    return isRateLikeMetric(metric) ? metric : `${metric} / ${denominator || "销量"}`;
 }
 
 function unitMetricValue(metric, value, volume) {
@@ -228,36 +206,18 @@ function pickSecondaryMetric(schema, primaryMetric = "", selectedMetric = "") {
 function buildAnalysisConfig(schema, options = {}) {
     const primaryMetric = pickPrimaryMetric(schema, options.primaryMetric);
     const secondaryMetric = pickSecondaryMetric(schema, primaryMetric, options.secondaryMetric);
+    const denominator = schema?.volumeColumn || "销量";
     return {
         primaryMetric,
         secondaryMetric,
         matrix: {
             xMetric: primaryMetric,
             yMetric: secondaryMetric,
-            xTitle: primaryMetric ? metricUnitLabel(primaryMetric) : "主指标",
-            yTitle: secondaryMetric ? metricUnitLabel(secondaryMetric) : `${primaryMetric || "主指标"}合计`,
+            xTitle: primaryMetric ? metricUnitLabel(primaryMetric, denominator) : "横轴指标",
+            yTitle: secondaryMetric ? metricUnitLabel(secondaryMetric, denominator) : `${primaryMetric || "指标"}合计`,
             bubbleTitle: primaryMetric || "上传指标"
         }
     };
-}
-
-function classifyProfitStructureItem(item, context = {}) {
-    const averageVolumeShare = context.averageVolumeShare || 0;
-    const averagePrimaryUnit = context.averagePrimaryUnit || 0;
-
-    if (item.primaryValue < 0 || item.primaryUnitValue < 0) {
-        return CLASSIFICATIONS["low-value-drag"];
-    }
-    if (item.primaryShare >= averageVolumeShare && item.primaryUnitValue >= averagePrimaryUnit && item.volumeShare >= averageVolumeShare * 0.6) {
-        return CLASSIFICATIONS["high-value-core"];
-    }
-    if (item.volumeShare < averageVolumeShare && item.primaryUnitValue >= averagePrimaryUnit) {
-        return CLASSIFICATIONS["high-value-niche"];
-    }
-    if (item.volumeShare >= averageVolumeShare && item.primaryUnitValue < averagePrimaryUnit) {
-        return CLASSIFICATIONS["scale-driver"];
-    }
-    return CLASSIFICATIONS["watch-list"];
 }
 
 function makeGroupName(row, dimensions) {
@@ -335,15 +295,6 @@ function summarizeProfitStructure(rows, schema, options = {}) {
             };
         })
         .sort((a, b) => b.primaryValue - a.primaryValue || b.volume - a.volume || a.name.localeCompare(b.name, "zh-Hans-CN"));
-    const context = {
-        averageVolumeShare: baseItems.length ? 1 / baseItems.length : 0,
-        averagePrimaryUnit: analysis.primaryMetric ? totals.unitMetrics[analysis.primaryMetric] || 0 : 0
-    };
-    const items = baseItems.map((item) => ({
-        ...item,
-        classification: classifyProfitStructureItem(item, context)
-    }));
-    const layerSummary = summarizeLayers(items, metricColumns);
 
     return {
         schema,
@@ -351,31 +302,9 @@ function summarizeProfitStructure(rows, schema, options = {}) {
         selectedDimensions,
         rows: activeRows,
         totals,
-        items,
-        layerSummary,
-        context,
+        items: baseItems,
         analysis
     };
-}
-
-function summarizeLayers(items, metricColumns = []) {
-    const layers = Object.values(CLASSIFICATIONS).map((classification) => ({
-        classification,
-        count: 0,
-        volume: 0,
-        metrics: emptyMetrics(metricColumns)
-    }));
-    const byKey = new Map(layers.map((layer) => [layer.classification.key, layer]));
-    for (const item of items) {
-        const layer = byKey.get(item.classification.key);
-        if (!layer) continue;
-        layer.count += 1;
-        layer.volume += item.volume;
-        for (const metric of metricColumns) {
-            layer.metrics[metric] += item.metrics[metric] || 0;
-        }
-    }
-    return layers.filter((layer) => layer.count > 0);
 }
 
 function createSampleRows() {
@@ -430,10 +359,6 @@ function formatNumber(value, digits = 2) {
         minimumFractionDigits: digits,
         maximumFractionDigits: digits
     }).format(Number.isFinite(value) ? value : 0);
-}
-
-function formatPercent(value, digits = 1) {
-    return `${formatNumber(value * 100, digits)}%`;
 }
 
 function formatMetricValue(value) {
@@ -554,386 +479,353 @@ function renderMetrics(summary) {
     `).join("");
 }
 
-function renderMatrix(summary) {
-    const caption = byId("profit-structure-matrix-caption");
-    if (caption) {
-        caption.textContent = `当前口径：${summary.selectedDimensions.join(" + ")}。横轴为${summary.analysis.matrix.xTitle}，纵轴为${summary.analysis.matrix.yTitle}，气泡大小代表「${summary.analysis.matrix.bubbleTitle}」合计值。`;
+function structureValueFromRow(row, metric) {
+    if (metric) return row.metrics[metric] || 0;
+    return row.volume || 0;
+}
+
+function structureWeight(value) {
+    return Math.abs(Number.isFinite(value) ? value : 0);
+}
+
+function getDimensionValue(row, dimension) {
+    return row.dimensionValues[dimension] || "未填写";
+}
+
+function uniqueSorted(values) {
+    return [...new Set(values)].sort((a, b) => String(a).localeCompare(String(b), "zh-Hans-CN"));
+}
+
+function buildColorMap(values) {
+    const map = new Map();
+    uniqueSorted(values).forEach((value, index) => {
+        map.set(value, COLOR_PALETTE[index % COLOR_PALETTE.length]);
+    });
+    return map;
+}
+
+function buildStructureBlueprints(summary, schema = summary.schema) {
+    const metricColumns = buildMetricOptions(schema);
+    const metric = summary.analysis.primaryMetric || metricColumns[0] || "上传指标";
+    const xMetric = summary.analysis.primaryMetric || metric;
+    const yMetric = summary.analysis.secondaryMetric || metric;
+    const dimensions = summary.selectedDimensions.length
+        ? summary.selectedDimensions
+        : buildDimensionOptions(schema).slice(0, 3);
+    const firstDimension = dimensions[0] || "维度一";
+    const secondDimension = dimensions[1] || "维度二";
+    const pathText = dimensions.length ? dimensions.join(" → ") : "维度路径";
+
+    return [
+        {
+            id: "dimension-flow",
+            kind: "dimension-flow",
+            metric,
+            title: "维度路径流向",
+            description: `${pathText} · 权重：${metric}`
+        },
+        {
+            id: "cross-composition",
+            kind: "cross-composition",
+            metric,
+            title: "交叉结构切分",
+            description: `${firstDimension} × ${secondDimension} · 权重：${metric}`
+        },
+        {
+            id: "combination-bubble",
+            kind: "combination-bubble",
+            metric,
+            title: "维度组合气泡矩阵",
+            description: `${firstDimension} × ${secondDimension} · 气泡：${metric}`
+        },
+        {
+            id: "structure-scatter",
+            kind: "structure-scatter",
+            metric,
+            xMetric,
+            yMetric,
+            title: "结构定位散点",
+            description: `X：${metricUnitLabel(xMetric, schema?.volumeColumn)} · Y：${metricUnitLabel(yMetric, schema?.volumeColumn)} · 大小：${metric}`
+        }
+    ];
+}
+
+function setStructureCaptions(summary) {
+    const byIdMap = new Map(buildStructureBlueprints(summary, summary.schema).map((chart) => [chart.kind, chart]));
+    const bindings = [
+        ["profit-structure-flow-caption", "dimension-flow"],
+        ["profit-structure-cross-caption", "cross-composition"],
+        ["profit-structure-bubble-caption", "combination-bubble"],
+        ["profit-structure-scatter-caption", "structure-scatter"]
+    ];
+    bindings.forEach(([id, kind]) => {
+        const node = byId(id);
+        const chart = byIdMap.get(kind);
+        if (node && chart) node.textContent = chart.description;
+    });
+}
+
+function renderFlowChart(id, summary) {
+    const dimensions = summary.selectedDimensions.filter(Boolean);
+    if (dimensions.length < 2) {
+        renderEmptyChart(id, "请选择至少两个维度");
+        return;
     }
+    if (!summary.rows.length || typeof window === "undefined" || !window.Plotly) {
+        renderEmptyChart(id, "暂无结构流向数据");
+        return;
+    }
+
+    const metric = summary.analysis.primaryMetric;
+    const compact = isCompactViewport();
+    const nodeIndex = new Map();
+    const nodeLabels = [];
+    const nodeColors = [];
+    const linkMap = new Map();
+    const colorValues = summary.rows.map((row) => getDimensionValue(row, dimensions[0]));
+    const colors = buildColorMap(colorValues);
+
+    function getNode(dimension, value, level) {
+        const key = `${level}::${dimension}::${value}`;
+        if (!nodeIndex.has(key)) {
+            nodeIndex.set(key, nodeLabels.length);
+            nodeLabels.push(compact ? compactPointLabel(value) : `${dimension} · ${value}`);
+            nodeColors.push(colors.get(value) || COLOR_PALETTE[level % COLOR_PALETTE.length]);
+        }
+        return nodeIndex.get(key);
+    }
+
+    for (const row of summary.rows) {
+        const raw = structureValueFromRow(row, metric);
+        const weight = structureWeight(raw);
+        if (!weight) continue;
+        for (let index = 0; index < dimensions.length - 1; index += 1) {
+            const sourceValue = getDimensionValue(row, dimensions[index]);
+            const targetValue = getDimensionValue(row, dimensions[index + 1]);
+            const source = getNode(dimensions[index], sourceValue, index);
+            const target = getNode(dimensions[index + 1], targetValue, index + 1);
+            const key = `${source}->${target}`;
+            linkMap.set(key, (linkMap.get(key) || 0) + weight);
+        }
+    }
+
+    const links = [...linkMap.entries()].map(([key, value]) => {
+        const [source, target] = key.split("->").map(Number);
+        return { source, target, value };
+    });
+
+    if (!links.length) {
+        renderEmptyChart(id, "暂无结构流向数据");
+        return;
+    }
+
+    window.Plotly.react(id, [{
+        type: "sankey",
+        arrangement: "snap",
+        node: {
+            pad: compact ? 10 : 14,
+            thickness: compact ? 12 : 16,
+            line: { color: "#ffffff", width: 1 },
+            label: nodeLabels,
+            color: nodeColors
+        },
+        link: {
+            source: links.map((link) => link.source),
+            target: links.map((link) => link.target),
+            value: links.map((link) => link.value),
+            color: "rgba(92, 143, 186, 0.24)",
+            hovertemplate: `权重：%{value:,.2f}<extra>${escapeHtml(metric)}</extra>`
+        }
+    }], chartLayout({
+        margin: { t: 12, r: 14, b: 12, l: 14 },
+        font: { size: compact ? 9 : 11, color: "#141413" }
+    }), chartConfig());
+}
+
+function aggregatePairRows(rows, dimensions, metric) {
+    const [first, second] = dimensions;
+    const map = new Map();
+    for (const row of rows) {
+        const firstValue = getDimensionValue(row, first);
+        const secondValue = getDimensionValue(row, second);
+        const key = `${firstValue}::${secondValue}`;
+        const current = map.get(key) || { firstValue, secondValue, value: 0, rawValue: 0, volume: 0 };
+        const raw = structureValueFromRow(row, metric);
+        current.value += structureWeight(raw);
+        current.rawValue += raw;
+        current.volume += row.volume || 0;
+        map.set(key, current);
+    }
+    return [...map.values()];
+}
+
+function renderCrossComposition(id, summary) {
+    const dimensions = summary.selectedDimensions.filter(Boolean).slice(0, 2);
+    if (dimensions.length < 2) {
+        renderEmptyChart(id, "请选择两个维度");
+        return;
+    }
+    if (!summary.rows.length || typeof window === "undefined" || !window.Plotly) {
+        renderEmptyChart(id, "暂无交叉结构数据");
+        return;
+    }
+
+    const metric = summary.analysis.primaryMetric;
+    const compact = isCompactViewport();
+    const pairs = aggregatePairRows(summary.rows, dimensions, metric);
+    const xValues = uniqueSorted(pairs.map((item) => item.firstValue));
+    const secondValues = uniqueSorted(pairs.map((item) => item.secondValue));
+    const colors = buildColorMap(secondValues);
+    const valueMap = new Map(pairs.map((item) => [`${item.firstValue}::${item.secondValue}`, item]));
+
+    const traces = secondValues.map((secondValue) => ({
+        type: "bar",
+        name: secondValue,
+        x: xValues,
+        y: xValues.map((firstValue) => valueMap.get(`${firstValue}::${secondValue}`)?.value || 0),
+        marker: { color: colors.get(secondValue) },
+        customdata: xValues.map((firstValue) => {
+            const item = valueMap.get(`${firstValue}::${secondValue}`);
+            return [dimensions[0], firstValue, dimensions[1], secondValue, formatMetricValue(item?.rawValue || 0)];
+        }),
+        hovertemplate: "%{customdata[0]}：%{customdata[1]}<br>%{customdata[2]}：%{customdata[3]}<br>原值：%{customdata[4]}<br>权重：%{y:,.2f}<extra></extra>"
+    }));
+
+    window.Plotly.react(id, traces, chartLayout({
+        barmode: "stack",
+        margin: { t: 18, r: 18, b: compact ? 70 : 48, l: 58 },
+        xaxis: { title: dimensions[0], tickangle: compact ? -25 : 0 },
+        yaxis: { title: metric },
+        showlegend: !compact,
+        legend: { orientation: "h", y: -0.28, itemclick: false, itemdoubleclick: false }
+    }), chartConfig());
+}
+
+function renderCombinationBubble(id, summary) {
+    const dimensions = summary.selectedDimensions.filter(Boolean).slice(0, 2);
+    if (dimensions.length < 2) {
+        renderEmptyChart(id, "请选择两个维度");
+        return;
+    }
+    if (!summary.rows.length || typeof window === "undefined" || !window.Plotly) {
+        renderEmptyChart(id, "暂无维度组合数据");
+        return;
+    }
+
+    const metric = summary.analysis.primaryMetric;
+    const compact = isCompactViewport();
+    const pairs = aggregatePairRows(summary.rows, dimensions, metric)
+        .sort((a, b) => b.value - a.value)
+        .slice(0, compact ? 48 : 120);
+    const maxValue = Math.max(...pairs.map((item) => item.value), 1);
+    const colors = buildColorMap(pairs.map((item) => item.secondValue));
+
+    window.Plotly.react(id, [{
+        type: "scatter",
+        mode: "markers",
+        x: pairs.map((item) => item.firstValue),
+        y: pairs.map((item) => item.secondValue),
+        marker: {
+            color: pairs.map((item) => colors.get(item.secondValue)),
+            size: pairs.map((item) => 10 + Math.sqrt(item.value / maxValue) * (compact ? 24 : 34)),
+            opacity: 0.74,
+            line: { color: "#fff", width: 1 }
+        },
+        customdata: pairs.map((item) => [formatMetricValue(item.rawValue), formatVolume(item.volume), formatMetricValue(item.value)]),
+        hovertemplate: `${escapeHtml(dimensions[0])}：%{x}<br>${escapeHtml(dimensions[1])}：%{y}<br>原值：%{customdata[0]}<br>销量：%{customdata[1]}<br>权重：%{customdata[2]}<extra></extra>`
+    }], chartLayout({
+        margin: { t: 18, r: 18, b: compact ? 72 : 54, l: compact ? 82 : 108 },
+        xaxis: { title: dimensions[0], tickangle: compact ? -25 : 0, type: "category" },
+        yaxis: { title: dimensions[1], type: "category", automargin: true },
+        showlegend: false
+    }), chartConfig());
+}
+
+function renderStructureScatter(id, summary) {
     if (!summary.items.length || typeof window === "undefined" || !window.Plotly) {
-        renderEmptyChart("profit-structure-matrix-chart", "暂无结构矩阵数据");
+        renderEmptyChart(id, "暂无结构定位数据");
         return;
     }
 
     const compact = isCompactViewport();
-    const traces = Object.values(CLASSIFICATIONS).map((classification) => {
-        const items = summary.items.filter((item) => item.classification.key === classification.key);
+    const colorDimension = summary.selectedDimensions[0] || "";
+    const colorKeys = summary.items.map((item) => colorDimension ? item.dimensionValues[colorDimension] || "未填写" : "当前路径");
+    const colors = buildColorMap(colorKeys);
+    const groups = uniqueSorted(colorKeys);
+
+    const traces = groups.map((group) => {
+        const items = summary.items.filter((item) => (colorDimension ? item.dimensionValues[colorDimension] || "未填写" : "当前路径") === group);
         return {
             type: "scatter",
             mode: "markers+text",
-            name: classification.label,
+            name: group,
             x: items.map((item) => item.primaryUnitValue),
             y: items.map((item) => summary.analysis.secondaryMetric ? item.secondaryUnitValue : item.primaryValue),
             text: compact ? items.map((item) => compactPointLabel(item.name)) : items.map((item) => item.name),
             textposition: "top center",
             textfont: { size: compact ? 9 : 10, color: "#4f4a40" },
             marker: {
-                color: classification.color,
-                size: items.map((item) => Math.max(12, Math.min(46, Math.sqrt(Math.abs(item.primaryValue)) * 8))),
+                color: colors.get(group),
+                size: items.map((item) => Math.max(10, Math.min(44, Math.sqrt(Math.abs(item.primaryValue)) * 8))),
                 opacity: 0.78,
                 line: { width: 1.2, color: "#fff" }
             },
             customdata: items.map((item) => [
                 item.name,
-                classification.label,
                 formatVolume(item.volume),
                 formatMetricValue(item.primaryValue),
                 formatMetricValue(item.primaryUnitValue),
                 summary.analysis.secondaryMetric ? formatMetricValue(item.secondaryUnitValue) : formatMetricValue(item.primaryValue)
             ]),
-            hovertemplate: `对象：%{customdata[0]}<br>分层：%{customdata[1]}<br>销量：%{customdata[2]}<br>${escapeHtml(summary.analysis.primaryMetric)}合计：%{customdata[3]}<br>${escapeHtml(summary.analysis.matrix.xTitle)}：%{customdata[4]}<br>${escapeHtml(summary.analysis.matrix.yTitle)}：%{customdata[5]}<extra></extra>`
+            hovertemplate: `维度组合：%{customdata[0]}<br>销量：%{customdata[1]}<br>${escapeHtml(summary.analysis.primaryMetric)}：%{customdata[2]}<br>${escapeHtml(summary.analysis.matrix.xTitle)}：%{customdata[3]}<br>${escapeHtml(summary.analysis.matrix.yTitle)}：%{customdata[4]}<extra></extra>`
         };
-    }).filter((trace) => trace.x.length);
+    });
 
-    window.Plotly.react("profit-structure-matrix-chart", traces, chartLayout({
+    window.Plotly.react(id, traces, chartLayout({
         xaxis: { title: summary.analysis.matrix.xTitle, rangemode: "tozero" },
         yaxis: { title: summary.analysis.matrix.yTitle },
         showlegend: !compact,
-        legend: { orientation: "h", y: -0.22, itemclick: false, itemdoubleclick: false }
+        legend: { orientation: "h", y: -0.24, itemclick: false, itemdoubleclick: false }
     }), chartConfig());
 }
 
-function buildChartBlueprints(summary, schema = summary.schema) {
-    const metricColumns = buildMetricOptions(schema);
-    const primary = summary.analysis.primaryMetric || metricColumns[0] || "上传指标";
-    const blueprints = [
-        {
-            id: "layer-primary",
-            kind: "metric-layer-summary",
-            metric: primary,
-            title: `${primary}分层贡献`,
-            description: `按照上方矩阵分层，把每个分层内所有对象的上传指标「${primary}」求和；柱子代表该分层对当前主指标的合计影响。`
-        },
-        {
-            id: "volume-share",
-            kind: "volume-share-pie",
-            title: "销量结构占比",
-            description: "展示当前分析对象的销量占比，用来判断规模集中在哪些维度对象上。"
-        },
-        {
-            id: `total-${normalizeToken(primary)}`,
-            kind: "metric-total-ranking",
-            metric: primary,
-            title: `${primary}合计排行`,
-            description: `按当前分析对象汇总上传指标「${primary}」，看谁对该指标的合计值影响最大。`
-        },
-        {
-            id: `unit-${normalizeToken(primary)}`,
-            kind: "metric-unit-ranking",
-            metric: primary,
-            title: `${metricUnitLabel(primary)}排行`,
-            description: `用上传指标「${primary}」除以销量形成单位值，观察规模之外的单项质量差异；如果该指标本身是比例或评分，则直接使用原值。`
-        },
-        {
-            id: `trend-${normalizeToken(primary)}`,
-            kind: "metric-monthly-trend",
-            metric: primary,
-            title: `${primary}分月趋势`,
-            description: `按月份汇总上传指标「${primary}」，判断当前筛选下是否存在趋势拐点。`
-        },
-        {
-            id: `heatmap-${normalizeToken(primary)}`,
-            kind: "metric-month-heatmap",
-            metric: primary,
-            title: `${primary}对象 x 月份热力图`,
-            description: `把当前对象放在纵轴、月份放在横轴，颜色代表上传指标「${primary}」合计值，用来寻找异常月份或异常对象。`
-        }
-    ];
-
-    return blueprints;
-}
-
-function topItems(items, metric, limit = 12) {
-    return [...items]
-        .sort((a, b) => Math.abs(b.metrics[metric] || 0) - Math.abs(a.metrics[metric] || 0))
-        .slice(0, limit)
-        .reverse();
-}
-
-function renderChartGallery(summary) {
-    const node = byId("profit-structure-chart-gallery");
-    const caption = byId("profit-structure-chart-gallery-caption");
-    if (!node) return;
-    const blueprints = buildChartBlueprints(summary, summary.schema);
-    if (caption) caption.textContent = `已生成 ${blueprints.length} 张候选图，均跟随当前维度、筛选条件和上传指标同步刷新。`;
-    node.innerHTML = blueprints.map((chart, index) => `
-        <article class="chart-card">
-            <div class="chart-card-header">
-                <span>${String(index + 1).padStart(2, "0")}</span>
-                <div>
-                    <h3>${escapeHtml(chart.title)}</h3>
-                    <p>${escapeHtml(chart.description)}</p>
-                </div>
-            </div>
-            <div id="profit-structure-chart-${index}" class="chart chart-compact"></div>
-        </article>
-    `).join("");
-    blueprints.forEach((chart, index) => renderBlueprintChart(`profit-structure-chart-${index}`, chart, summary));
-}
-
-function renderBlueprintChart(id, chart, summary) {
-    if (typeof window === "undefined" || !window.Plotly) {
-        renderEmptyChart(id, "暂无图表运行环境");
-        return;
-    }
-    const metric = chart.metric;
-    const items = metric ? topItems(summary.items, metric) : summary.items.slice(0, 10).reverse();
-    const compact = isCompactViewport();
-
-    if (chart.kind === "metric-layer-summary") {
-        const layers = summary.layerSummary;
-        window.Plotly.react(id, [{
-            type: "bar",
-            x: layers.map((layer) => layer.classification.label),
-            y: layers.map((layer) => layer.metrics[metric] || 0),
-            marker: { color: layers.map((layer) => layer.classification.color) },
-            customdata: layers.map((layer) => [`${layer.count} 项`, formatVolume(layer.volume)]),
-            hovertemplate: `分层：%{x}<br>对象数：%{customdata[0]}<br>销量：%{customdata[1]}<br>${escapeHtml(metric)}：%{y:,.2f}<extra></extra>`
-        }], chartLayout({
-            margin: { t: 18, r: 16, b: compact ? 72 : 58, l: 58 },
-            xaxis: { tickangle: compact ? -20 : 0 },
-            yaxis: { title: metric },
-            showlegend: false
-        }), chartConfig());
-        return;
-    }
-
-    if (chart.kind === "volume-share-pie" || chart.kind === "metric-share-pie") {
-        const values = chart.kind === "volume-share-pie"
-            ? summary.items.slice(0, 10).map((item) => Math.abs(item.volume))
-            : summary.items.slice(0, 10).map((item) => Math.abs(item.metrics[metric] || 0));
-        window.Plotly.react(id, [{
-            type: "pie",
-            labels: summary.items.slice(0, 10).map((item) => item.name),
-            values,
-            hole: 0.48,
-            marker: { colors: summary.items.slice(0, 10).map((item) => item.classification.color) },
-            textinfo: compact ? "none" : "label+percent",
-            hovertemplate: "%{label}<br>占比：%{percent}<br>值：%{value:,.2f}<extra></extra>"
-        }], chartLayout({
-            margin: { t: 14, r: 14, b: 14, l: 14 },
-            showlegend: compact
-        }), chartConfig());
-        return;
-    }
-
-    if (chart.kind === "volume-ranking") {
-        const ranked = [...summary.items].sort((a, b) => b.volume - a.volume).slice(0, 12).reverse();
-        window.Plotly.react(id, [{
-            type: "bar",
-            orientation: "h",
-            y: ranked.map((item) => item.name),
-            x: ranked.map((item) => item.volume),
-            marker: { color: ranked.map((item) => item.classification.color) },
-            hovertemplate: "对象：%{y}<br>销量：%{x:,.2f}<extra></extra>"
-        }], chartLayout({
-            margin: { t: 18, r: 18, b: 42, l: compact ? 78 : 116 },
-            xaxis: { title: "销量" },
-            yaxis: { automargin: true }
-        }), chartConfig());
-        return;
-    }
-
-    if (chart.kind === "metric-total-ranking" || chart.kind === "metric-unit-ranking" || chart.kind === "metric-unit-delta") {
-        const ranked = chart.kind === "metric-total-ranking"
-            ? items
-            : [...summary.items].sort((a, b) => Math.abs(b.unitMetrics[metric] || 0) - Math.abs(a.unitMetrics[metric] || 0)).slice(0, 12).reverse();
-        const values = chart.kind === "metric-total-ranking"
-            ? ranked.map((item) => item.metrics[metric] || 0)
-            : chart.kind === "metric-unit-delta"
-                ? ranked.map((item) => (item.unitMetrics[metric] || 0) - (summary.totals.unitMetrics[metric] || 0))
-                : ranked.map((item) => item.unitMetrics[metric] || 0);
-        window.Plotly.react(id, [{
-            type: "bar",
-            orientation: "h",
-            y: ranked.map((item) => item.name),
-            x: values,
-            marker: { color: values.map((value) => value < 0 ? CLASSIFICATIONS["low-value-drag"].color : "#5c8fba") },
-            hovertemplate: "对象：%{y}<br>值：%{x:,.2f}<extra></extra>"
-        }], chartLayout({
-            margin: { t: 18, r: 18, b: 42, l: compact ? 78 : 116 },
-            xaxis: { title: chart.kind === "metric-total-ranking" ? metric : metricUnitLabel(metric) },
-            yaxis: { automargin: true }
-        }), chartConfig());
-        return;
-    }
-
-    if (chart.kind === "metric-volume-scatter" || chart.kind === "matrix-axis-check") {
-        const yValues = chart.kind === "metric-volume-scatter"
-            ? summary.items.map((item) => item.metrics[metric] || 0)
-            : summary.items.map((item) => summary.analysis.secondaryMetric ? item.secondaryUnitValue : item.primaryValue);
-        const xValues = chart.kind === "metric-volume-scatter"
-            ? summary.items.map((item) => item.volume)
-            : summary.items.map((item) => item.primaryUnitValue);
-        window.Plotly.react(id, [{
-            type: "scatter",
-            mode: "markers+text",
-            x: xValues,
-            y: yValues,
-            text: summary.items.map((item) => compact ? compactPointLabel(item.name) : item.name),
-            textposition: "top center",
-            marker: {
-                color: summary.items.map((item) => item.classification.color),
-                size: summary.items.map((item) => Math.max(10, Math.min(32, Math.sqrt(Math.abs(chart.kind === "metric-volume-scatter" ? item.metrics[metric] || 0 : item.primaryValue)) * 6))),
-                opacity: 0.78,
-                line: { color: "#fff", width: 1 }
-            },
-            hovertemplate: "对象：%{text}<br>x：%{x:,.2f}<br>y：%{y:,.2f}<extra></extra>"
-        }], chartLayout({
-            margin: { t: 18, r: 18, b: 48, l: 58 },
-            xaxis: { title: chart.kind === "metric-volume-scatter" ? "销量" : summary.analysis.matrix.xTitle },
-            yaxis: { title: chart.kind === "metric-volume-scatter" ? metric : summary.analysis.matrix.yTitle },
-            showlegend: false
-        }), chartConfig());
-        return;
-    }
-
-    if (chart.kind === "metric-monthly-trend") {
-        const byMonth = new Map();
-        for (const row of summary.rows) {
-            byMonth.set(row.month, (byMonth.get(row.month) || 0) + (row.metrics[metric] || 0));
-        }
-        const months = [...byMonth.keys()].sort();
-        window.Plotly.react(id, [{
-            type: "scatter",
-            mode: "lines+markers",
-            x: months,
-            y: months.map((month) => byMonth.get(month) || 0),
-            line: { color: "#5c8fba", width: 2.5 },
-            marker: { size: 7 },
-            hovertemplate: "月份：%{x}<br>值：%{y:,.2f}<extra></extra>"
-        }], chartLayout({
-            margin: { t: 18, r: 18, b: 48, l: 58 },
-            xaxis: { title: "月份" },
-            yaxis: { title: metric }
-        }), chartConfig());
-        return;
-    }
-
-    if (chart.kind === "metric-month-heatmap") {
-        const groups = summary.items.slice(0, 8).map((item) => item.name);
-        const months = [...new Set(summary.rows.map((row) => row.month))].sort();
-        const values = groups.map((group) => months.map((month) => {
-            return summary.rows
-                .filter((row) => row.month === month && makeGroupName(row, summary.selectedDimensions) === group)
-                .reduce((sum, row) => sum + (row.metrics[metric] || 0), 0);
-        }));
-        window.Plotly.react(id, [{
-            type: "heatmap",
-            x: months,
-            y: groups,
-            z: values,
-            colorscale: [[0, "#f2dfd6"], [0.5, "#f7f4ec"], [1, "#5c8fba"]],
-            hovertemplate: "对象：%{y}<br>月份：%{x}<br>值：%{z:,.2f}<extra></extra>"
-        }], chartLayout({
-            margin: { t: 18, r: 18, b: 48, l: compact ? 78 : 116 },
-            xaxis: { title: "月份" },
-            yaxis: { automargin: true }
-        }), chartConfig());
-    }
-}
-
-function renderInsights(summary) {
-    const node = byId("profit-structure-insight-list");
-    if (!node) return;
-    const dragItems = summary.items.filter((item) => item.classification.key === "low-value-drag");
-    const scaleItems = summary.items.filter((item) => item.classification.key === "scale-driver");
-    const coreItems = summary.items.filter((item) => item.classification.key === "high-value-core");
-    const primary = summary.analysis.primaryMetric || "主指标";
-    const insights = [];
-
-    if (dragItems.length) {
-        const value = dragItems.reduce((sum, item) => sum + item.primaryValue, 0);
-        insights.push(["优先复盘低值项", `${dragItems.slice(0, 3).map((item) => item.name).join("、")} 等 ${dragItems.length} 项合计「${primary}」为 ${formatMetricValue(value)}。`]);
-    }
-    if (scaleItems.length) {
-        const volumeShare = scaleItems.reduce((sum, item) => sum + item.volumeShare, 0);
-        insights.push(["规模不等于质量", `${scaleItems.slice(0, 3).map((item) => item.name).join("、")} 销量占比合计 ${formatPercent(volumeShare)}，但单位「${primary}」低于整体。`]);
-    }
-    if (coreItems.length) {
-        const primaryShare = coreItems.reduce((sum, item) => sum + item.primaryShare, 0);
-        insights.push(["当前核心对象", `${coreItems.slice(0, 3).map((item) => item.name).join("、")} 是当前口径下的主要结构来源，「${primary}」占比 ${formatPercent(primaryShare)}。`]);
-    }
-    if (!insights.length) {
-        insights.push(["暂无明显结构信号", "当前筛选下各经营对象差异不大，可以切换维度、主指标或筛选条件继续观察。"]);
-    }
-
-    node.innerHTML = insights.map(([title, body]) => `
-        <article class="insight-card">
-            <strong>${escapeHtml(title)}</strong>
-            <p>${escapeHtml(body)}</p>
-        </article>
-    `).join("");
-}
-
-function renderTable(summary) {
-    const wrap = byId("profit-structure-table-wrap");
-    const caption = byId("profit-structure-table-caption");
-    if (!wrap) return;
-    const topItems = summary.items.slice(0, 80);
-    if (caption) caption.textContent = `按当前分析维度排序，展示销量、分层、所有上传指标及可计算的单位值。`;
-    if (!topItems.length) {
-        wrap.innerHTML = `<div class="empty-chart">暂无明细数据</div>`;
-        return;
-    }
-    const metricColumns = summary.metricColumns;
-    const unitColumns = metricColumns.filter((metric) => !isRateLikeMetric(metric));
-
-    wrap.innerHTML = `
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>经营对象</th>
-                    <th>分层</th>
-                    <th>销量</th>
-                    <th>销量占比</th>
-                    ${metricColumns.map((metric) => `<th>${escapeHtml(metric)}</th>`).join("")}
-                    ${unitColumns.map((metric) => `<th>${escapeHtml(metricUnitLabel(metric))}</th>`).join("")}
-                </tr>
-            </thead>
-            <tbody>
-                ${topItems.map((item) => `
-                    <tr>
-                        <td><strong>${escapeHtml(item.name)}</strong></td>
-                        <td><span class="layer-badge" style="--layer-color: ${item.classification.color}">${escapeHtml(item.classification.label)}</span></td>
-                        <td>${formatVolume(item.volume)}</td>
-                        <td>${formatPercent(item.volumeShare)}</td>
-                        ${metricColumns.map((metric) => `<td class="${(item.metrics[metric] || 0) < 0 ? "negative" : "positive"}">${formatMetricValue(item.metrics[metric] || 0)}</td>`).join("")}
-                        ${unitColumns.map((metric) => `<td class="${(item.unitMetrics[metric] || 0) < 0 ? "negative" : "positive"}">${formatMetricValue(item.unitMetrics[metric] || 0)}</td>`).join("")}
-                    </tr>
-                `).join("")}
-            </tbody>
-        </table>
-    `;
+function renderStructureCharts(summary) {
+    setStructureCaptions(summary);
+    renderFlowChart("profit-structure-flow-chart", summary);
+    renderCrossComposition("profit-structure-cross-chart", summary);
+    renderCombinationBubble("profit-structure-bubble-chart", summary);
+    renderStructureScatter("profit-structure-scatter-chart", summary);
 }
 
 function renderDimensionControls() {
     const dimensions = buildDimensionOptions(state.schema);
     const primary = byId("profit-structure-primary-dimension");
     const secondary = byId("profit-structure-secondary-dimension");
+    const tertiary = byId("profit-structure-tertiary-dimension");
     if (primary) {
         primary.innerHTML = dimensions.map((dimension) => `<option value="${escapeHtml(dimension)}">${escapeHtml(dimension)}</option>`).join("");
         if (!dimensions.includes(state.selectedPrimaryDimension)) state.selectedPrimaryDimension = dimensions[0] || "";
         primary.value = state.selectedPrimaryDimension;
     }
     if (secondary) {
+        const secondaryOptions = dimensions.filter((dimension) => dimension !== state.selectedPrimaryDimension);
         secondary.innerHTML = [
-            `<option value="">不组合</option>`,
-            ...dimensions
-                .filter((dimension) => dimension !== state.selectedPrimaryDimension)
-                .map((dimension) => `<option value="${escapeHtml(dimension)}">${escapeHtml(dimension)}</option>`)
+            `<option value="">不添加</option>`,
+            ...secondaryOptions.map((dimension) => `<option value="${escapeHtml(dimension)}">${escapeHtml(dimension)}</option>`)
         ].join("");
-        if (state.selectedSecondaryDimension === state.selectedPrimaryDimension) state.selectedSecondaryDimension = "";
+        if (!secondaryOptions.includes(state.selectedSecondaryDimension)) state.selectedSecondaryDimension = "";
         secondary.value = state.selectedSecondaryDimension;
+    }
+    if (tertiary) {
+        const tertiaryOptions = dimensions.filter((dimension) => {
+            return dimension !== state.selectedPrimaryDimension && dimension !== state.selectedSecondaryDimension;
+        });
+        tertiary.innerHTML = [
+            `<option value="">不添加</option>`,
+            ...tertiaryOptions.map((dimension) => `<option value="${escapeHtml(dimension)}">${escapeHtml(dimension)}</option>`)
+        ].join("");
+        if (!tertiaryOptions.includes(state.selectedTertiaryDimension)) state.selectedTertiaryDimension = "";
+        tertiary.value = state.selectedTertiaryDimension;
     }
 }
 
@@ -1010,7 +902,7 @@ function renderControls() {
 }
 
 function currentDimensions() {
-    return [state.selectedPrimaryDimension, state.selectedSecondaryDimension].filter(Boolean);
+    return [state.selectedPrimaryDimension, state.selectedSecondaryDimension, state.selectedTertiaryDimension].filter(Boolean);
 }
 
 function renderAll() {
@@ -1026,10 +918,7 @@ function renderAll() {
     const status = byId("profit-structure-data-status");
     if (status) status.textContent = `${state.currentSourceLabel} · ${summary.rows.length} 行 · ${summary.metricColumns.length} 指标`;
     renderMetrics(summary);
-    renderMatrix(summary);
-    renderInsights(summary);
-    renderChartGallery(summary);
-    renderTable(summary);
+    renderStructureCharts(summary);
 }
 
 function loadRows(inputRows, sourceLabel = "示例数据") {
@@ -1049,7 +938,8 @@ function loadRows(inputRows, sourceLabel = "示例数据") {
     state.rows = rows;
     state.schema = schema;
     state.selectedPrimaryDimension = schema.dimensions[0] || "";
-    state.selectedSecondaryDimension = "";
+    state.selectedSecondaryDimension = schema.dimensions[1] || "";
+    state.selectedTertiaryDimension = schema.dimensions[2] || "";
     state.selectedPrimaryMetric = pickPrimaryMetric(schema);
     state.selectedSecondaryMetric = pickSecondaryMetric(schema, state.selectedPrimaryMetric);
     state.selectedMonth = "__all__";
@@ -1116,7 +1006,6 @@ function downloadXlsx() {
 }
 
 function resetFilters() {
-    state.selectedSecondaryDimension = "";
     state.selectedMonth = "__all__";
     state.filters = {};
     renderAll();
@@ -1185,10 +1074,16 @@ function bindControls() {
     bindOnce(byId("profit-structure-primary-dimension"), "change", (event) => {
         state.selectedPrimaryDimension = event.target.value;
         if (state.selectedSecondaryDimension === state.selectedPrimaryDimension) state.selectedSecondaryDimension = "";
+        if (state.selectedTertiaryDimension === state.selectedPrimaryDimension) state.selectedTertiaryDimension = "";
         renderAll();
     });
     bindOnce(byId("profit-structure-secondary-dimension"), "change", (event) => {
         state.selectedSecondaryDimension = event.target.value;
+        if (state.selectedTertiaryDimension === state.selectedSecondaryDimension) state.selectedTertiaryDimension = "";
+        renderAll();
+    });
+    bindOnce(byId("profit-structure-tertiary-dimension"), "change", (event) => {
+        state.selectedTertiaryDimension = event.target.value;
         renderAll();
     });
     bindOnce(byId("profit-structure-primary-metric"), "change", (event) => {
@@ -1228,15 +1123,12 @@ if (typeof module !== "undefined" && module.exports) {
     module.exports = {
         TEMPLATE_HEADERS,
         TEMPLATE_HEADER_NOTE,
-        CLASSIFICATIONS,
         normalizeUploadedRows,
         buildDimensionOptions,
         buildMetricOptions,
         buildSummaryCards,
-        buildChartBlueprints,
-        classifyProfitStructureItem,
+        buildStructureBlueprints,
         summarizeProfitStructure,
-        summarizeLayers,
         createSampleRows,
         initApp
     };

@@ -448,6 +448,10 @@
     grid-template-columns: minmax(0, 1fr);
 }
 
+.profit-structure-tool .structure-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .profit-structure-tool .middle-grid {
     grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
 }
@@ -649,6 +653,10 @@
     }
 
     .profit-structure-tool .middle-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .profit-structure-tool .structure-grid {
         grid-template-columns: minmax(0, 1fr);
     }
 }

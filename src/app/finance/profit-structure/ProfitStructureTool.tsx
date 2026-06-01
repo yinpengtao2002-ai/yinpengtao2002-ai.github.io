@@ -79,9 +79,9 @@ export default function ProfitStructureTool() {
                 </button>
 
                 <section className="sidebar-block">
-                    <div className="sidebar-kicker">Profit Structure Lab</div>
-                    <h1 className="sidebar-heading">多维度结构分析模型</h1>
-                    <p className="sidebar-copy">上传通用经营明细，选择任意维度、任意指标，观察规模、单位值和结构分层。</p>
+                    <div className="sidebar-kicker">Structure Lab</div>
+                    <h1 className="sidebar-heading">多维结构关系分析模型</h1>
+                    <p className="sidebar-copy">上传通用经营明细，选择维度路径和指标角色，查看多层维度之间的结构关系。</p>
                     <div id="profit-structure-message-area" className="message-area" aria-live="polite" />
                 </section>
 
@@ -102,22 +102,32 @@ export default function ProfitStructureTool() {
                 </section>
 
                 <section className="sidebar-block">
-                    <h2 className="sidebar-title">分析口径</h2>
+                    <h2 className="sidebar-title">维度路径</h2>
                     <div className="form-grid">
                         <label className="field">
-                            <span>当前分析维度</span>
+                            <span>第一层维度</span>
                             <select id="profit-structure-primary-dimension" className="input" />
                         </label>
                         <label className="field">
-                            <span>组合维度</span>
+                            <span>第二层维度</span>
                             <select id="profit-structure-secondary-dimension" className="input" />
                         </label>
                         <label className="field">
-                            <span>矩阵横轴指标</span>
+                            <span>第三层维度</span>
+                            <select id="profit-structure-tertiary-dimension" className="input" />
+                        </label>
+                    </div>
+                </section>
+
+                <section className="sidebar-block">
+                    <h2 className="sidebar-title">指标角色</h2>
+                    <div className="form-grid">
+                        <label className="field">
+                            <span>权重 / 横轴指标</span>
                             <select id="profit-structure-primary-metric" className="input" />
                         </label>
                         <label className="field">
-                            <span>矩阵纵轴指标</span>
+                            <span>纵轴指标</span>
                             <select id="profit-structure-secondary-metric" className="input" />
                         </label>
                         <label className="field">
@@ -147,8 +157,8 @@ export default function ProfitStructureTool() {
                 <header className="model-header">
                     <div>
                         <p className="eyebrow">Financial Modeling</p>
-                        <h1>多维度结构分析模型</h1>
-                        <p className="model-subtitle">用同一张经营明细底表，在任意维度下跟随上传指标生成结构矩阵和候选图表。</p>
+                        <h1>多维结构关系分析模型</h1>
+                        <p className="model-subtitle">用同一张经营明细底表，在任意维度路径下查看指标流向、交叉切分、组合分布和结构定位。</p>
                     </div>
                     <div className="header-actions">
                         <div className="data-status" id="profit-structure-data-status">示例数据</div>
@@ -161,45 +171,42 @@ export default function ProfitStructureTool() {
                     <article className="panel panel-large">
                         <div className="panel-header">
                             <div>
-                                <h2>盈利结构矩阵</h2>
-                                <p id="profit-structure-matrix-caption">横轴和纵轴会跟随当前选择的上传指标动态切换。</p>
+                                <h2>维度路径流向</h2>
+                                <p id="profit-structure-flow-caption">维度路径与权重指标会跟随控制台同步。</p>
                             </div>
                         </div>
-                        <div id="profit-structure-matrix-chart" className="chart chart-tall" />
+                        <div id="profit-structure-flow-chart" className="chart chart-tall" />
                     </article>
                 </section>
 
-                <section className="workspace-grid middle-grid">
-                    <article className="panel panel-large">
+                <section className="workspace-grid structure-grid">
+                    <article className="panel">
                         <div className="panel-header">
                             <div>
-                                <h2>候选图表</h2>
-                                <p id="profit-structure-chart-gallery-caption">根据上传指标生成少量候选图，先用于评审取舍。</p>
+                                <h2>交叉结构切分</h2>
+                                <p id="profit-structure-cross-caption">两个维度之间的指标切分。</p>
                             </div>
                         </div>
-                        <div id="profit-structure-chart-gallery" className="chart-gallery" />
+                        <div id="profit-structure-cross-chart" className="chart chart-compact" />
                     </article>
 
-                    <article className="panel insight-panel">
+                    <article className="panel">
                         <div className="panel-header">
                             <div>
-                                <h2>结构提示</h2>
-                                <p>优先看低值对象、规模对象和当前主指标核心来源。</p>
+                                <h2>维度组合气泡矩阵</h2>
+                                <p id="profit-structure-bubble-caption">两个维度组合下的指标分布。</p>
                             </div>
                         </div>
-                        <div id="profit-structure-insight-list" className="insight-list" />
+                        <div id="profit-structure-bubble-chart" className="chart chart-compact" />
                     </article>
-                </section>
-
-                <section className="workspace-grid single-grid">
-                    <article className="panel table-panel">
+                    <article className="panel">
                         <div className="panel-header">
                             <div>
-                                <h2>经营对象盈利明细</h2>
-                                <p id="profit-structure-table-caption">按当前分析维度排序，展示销量、分层、上传指标和单位值。</p>
+                                <h2>结构定位散点</h2>
+                                <p id="profit-structure-scatter-caption">维度组合在两个指标上的位置。</p>
                             </div>
                         </div>
-                        <div id="profit-structure-table-wrap" className="table-wrap" />
+                        <div id="profit-structure-scatter-chart" className="chart chart-compact" />
                     </article>
                 </section>
             </main>
