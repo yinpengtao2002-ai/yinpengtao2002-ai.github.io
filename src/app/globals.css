@@ -1085,7 +1085,7 @@ h6 {
   display: flex;
   justify-content: center;
   width: 100%;
-  margin-top: 0.15rem;
+  margin-top: clamp(0.85rem, 2vh, 1.35rem);
 }
 
 .home-hero-continue {

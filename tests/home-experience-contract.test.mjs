@@ -103,7 +103,8 @@ test("home hero returns to a split Lucas plus product-stage layout", () => {
   assert.doesNotMatch(hero, /<span className="home-headline-mark">从问题进入模型<\/span>/);
   assert.match(hero, /Lucas Yin/);
   assert.match(hero, /奇瑞汽车国际财务 BP/);
-  assert.match(hero, /用模型理解业务，用工具沉淀判断/);
+  assert.match(hero, /用模型穿透业务，用工具精简判断/);
+  assert.doesNotMatch(hero, /用模型理解业务，用工具沉淀判断/);
   assert.match(hero, /这里收录我持续打磨的财务模型、分析方法和 AI 实践。/);
   assert.doesNotMatch(hero, /从经营问题到模型、判断和图表/);
   assert.doesNotMatch(hero, /我们需要的是对技术有极致热情的人/);
@@ -170,7 +171,8 @@ test("viewport profile and hero animation avoid mobile hydration drift", () => {
 test("home hero left side keeps identity focused without duplicated cards or buttons", () => {
   assert.match(hero, /home-hero-eyebrow/);
   assert.match(hero, /home-hero-lede/);
-  assert.match(hero, /用模型理解业务，用工具沉淀判断/);
+  assert.match(hero, /用模型穿透业务，用工具精简判断/);
+  assert.doesNotMatch(hero, /用模型理解业务，用工具沉淀判断/);
   assert.match(hero, /财务模型、分析方法和 AI 实践。/);
   assert.doesNotMatch(hero, /我们需要的是对技术有极致热情的人，而不是习惯用经验找答案的人/);
   assert.doesNotMatch(hero, /从业务问题出发，持续打磨经营分析、财务模型与 AI 工作流/);
@@ -353,6 +355,7 @@ test("home viewport sections fill the current viewport after smooth scroll", () 
 test("home continue cue stays in normal layout flow", () => {
   assert.doesNotMatch(globals, /\.home-hero-continue\s*\{[^}]*position:\s*absolute/s);
   assert.match(globals, /\.home-hero-continue-row/);
+  assert.match(cssRule(".home-hero-continue-row"), /margin-top:\s*clamp\(0\.85rem,\s*2vh,\s*1\.35rem\)/);
 });
 
 test("homepage finance section previews models as a composed showcase", () => {

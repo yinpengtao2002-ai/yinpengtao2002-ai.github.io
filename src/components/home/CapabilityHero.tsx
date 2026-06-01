@@ -70,7 +70,7 @@ export default function CapabilityHero() {
               <span className="gradient-text">Lucas<br />Yin</span>
             </h1>
             <p className="home-hero-slogan">
-              用模型理解业务，用工具沉淀判断
+              用模型穿透业务，用工具精简判断
             </p>
             <p className="home-hero-lede">
               这里收录我持续打磨的财务模型、分析方法和 AI 实践。
