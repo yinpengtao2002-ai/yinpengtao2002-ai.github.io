@@ -12,7 +12,20 @@ export const subtitleWorkbenchContent: ContentItem = {
   source: "hosted-tool",
 };
 
+export const studyCardsContent: ContentItem = {
+  id: 9002,
+  slug: "study-cards",
+  title: "AI 学习卡片生成器",
+  description: "把一段知识内容转换成问答卡、概念解释、例子和测试题。",
+  date: "2026-06-02",
+  category: "工具",
+  href: "/tools/study-cards",
+  content: "",
+  source: "hosted-tool",
+};
+
 export const thinkingLabContent: ContentItem[] = [
+  studyCardsContent,
   subtitleWorkbenchContent,
   ...thinkingContent,
 ];

@@ -11,7 +11,7 @@
     "lint": "eslint",
     "test:margin": "node --test tests/margin-analysis-attribution.test.mjs",
     "test:sensitivity": "node --test tests/sensitivity-analysis.test.mjs",
-    "test:site": "node --test tests/chat-article-context.test.mjs tests/chat-math-normalization.test.mjs tests/chat-route-cards.test.mjs tests/finance-mobile-drill-contract.test.mjs tests/finance-model-registry.test.mjs tests/generated-content-contract.test.mjs tests/home-experience-contract.test.mjs tests/navigation-contract.test.mjs tests/profit-structure-analysis.test.mjs tests/routing-contract.test.mjs tests/tooling-contract.test.mjs",
+    "test:site": "node --test tests/chat-article-context.test.mjs tests/chat-math-normalization.test.mjs tests/chat-route-cards.test.mjs tests/finance-mobile-drill-contract.test.mjs tests/finance-model-registry.test.mjs tests/generated-content-contract.test.mjs tests/home-experience-contract.test.mjs tests/navigation-contract.test.mjs tests/profit-structure-analysis.test.mjs tests/routing-contract.test.mjs tests/study-card-tool-contract.test.mjs tests/tooling-contract.test.mjs",
     "prepare:vendor": "node scripts/prepare-vendor-assets.mjs",
     "gen": "node scripts/generate-content.js",
     "sync:notion": "node scripts/sync-notion-content.mjs",

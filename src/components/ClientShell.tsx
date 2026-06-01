@@ -12,12 +12,16 @@ function shouldHideDecorativeExtras(pathname: string) {
         pathname.startsWith("/finance/business-analysis") ||
         pathname.startsWith("/finance/profit-structure") ||
         pathname.startsWith("/finance/perspective-bi") ||
+        pathname.startsWith("/tools/study-cards") ||
         pathname.startsWith("/tools/subtitle-workbench")
     );
 }
 
 function shouldHideAssistant(pathname: string) {
-    return pathname.startsWith("/tools/subtitle-workbench");
+    return (
+        pathname.startsWith("/tools/study-cards") ||
+        pathname.startsWith("/tools/subtitle-workbench")
+    );
 }
 
 export default function ClientShell() {

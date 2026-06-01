@@ -27,6 +27,7 @@ function shouldHideNavigation(pathname: string) {
         pathname.startsWith("/finance/monthly-trend") ||
         pathname.startsWith("/finance/profit-structure") ||
         pathname.startsWith("/finance/perspective-bi") ||
+        pathname.startsWith("/tools/study-cards") ||
         pathname.startsWith("/tools/subtitle-workbench") ||
         (pathname.startsWith("/thinking-lab/") && pathname !== "/thinking-lab/")
     );
