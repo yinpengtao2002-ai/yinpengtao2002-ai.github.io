@@ -16,6 +16,8 @@ test("AI study card tool is exposed as an independent tool route", async () => {
 
   assert.match(page, /AI 学习卡片生成器/);
   assert.match(page, /StudyCardsTool/);
+  assert.match(page, /逐张翻看的 AI 问答闪卡/);
+  assert.doesNotMatch(page, /概念解释、例子和测试题/);
   assert.match(client, /\/api\/tools\/study-cards/);
   assert.match(client, /问答卡片/);
   assert.match(client, /study-cards-progress/);
@@ -26,6 +28,8 @@ test("AI study card tool is exposed as an independent tool route", async () => {
   assert.doesNotMatch(client, /考试：/);
   assert.match(content, /slug:\s*"study-cards"/);
   assert.match(content, /href:\s*"\/tools\/study-cards"/);
+  assert.match(content, /逐张翻看的 AI 问答闪卡/);
+  assert.doesNotMatch(content, /概念解释、例子和测试题/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/study-cards/);
   assert.match(navigation, /\/tools\/study-cards/);
   assert.match(clientShell, /\/tools\/study-cards/);
