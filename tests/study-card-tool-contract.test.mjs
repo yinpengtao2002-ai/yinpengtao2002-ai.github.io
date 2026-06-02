@@ -50,7 +50,8 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.match(client, /transitionToCheckRound/);
   assert.match(client, /第一轮学习/);
   assert.match(client, /翻看检查/);
-  assert.match(client, /全部标记记住了后/);
+  assert.match(client, /已通过/);
+  assert.match(client, /不熟练会近期复现/);
   assert.match(client, /SAMPLE_RESULT/);
   assert.match(client, /loadSampleContent/);
   assert.match(client, /Harness/);
@@ -67,14 +68,14 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.match(client, /scrollIntoView/);
   assert.match(client, /getNextCardIndex/);
   assert.match(client, /getPreviousCardIndex/);
+  assert.match(client, /advanceActiveCard/);
+  assert.match(client, /左滑或点右箭头表示通过/);
   assert.match(client, /memoryStats/);
   assert.match(client, /reviewQueue/);
   assert.match(client, /rateActiveCard/);
-  assert.match(client, /scheduleRatedCard/);
-  assert.match(client, /记住了/);
   assert.match(client, /不熟练/);
-  assert.match(client, /左滑下一张/);
-  assert.match(client, /右滑上一张/);
+  assert.match(client, /答对就继续下一张/);
+  assert.match(client, /右滑回看上一张/);
   assert.match(client, /study-cards-deck/);
   assert.match(client, /study-cards-deck-shell/);
   assert.match(client, /study-cards-card-stage/);
@@ -96,6 +97,7 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.match(styles, /\.study-cards-card-stage/);
   assert.match(styles, /\.study-cards-nav-arrow/);
   assert.match(styles, /\.study-cards-memory-actions/);
+  assert.match(styles, /grid-template-columns:\s*auto minmax\(0,\s*1fr\)/);
   assert.match(styles, /--drag-x/);
   assert.match(styles, /aspect-ratio:\s*3\s*\/\s*4/);
   assert.match(styles, /min-height:\s*min\(470px,\s*calc\(100dvh - 250px\)\)/);
@@ -115,6 +117,8 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.doesNotMatch(client, /ankiTsv/);
   assert.doesNotMatch(client, /Clipboard/);
   assert.doesNotMatch(client, /CheckCircle2/);
+  assert.doesNotMatch(client, /记住了/);
+  assert.doesNotMatch(client, /is-remembered/);
   assert.doesNotMatch(client, /is-answer/);
   assert.doesNotMatch(client, /study-cards-card-grid/);
   assert.doesNotMatch(client, /study-cards-flash-card/);
@@ -140,6 +144,10 @@ test("AI study card endpoint asks for structured learning output", async () => {
   assert.match(route, /back 不超过 70 个中文字符/);
   assert.match(route, /note 是给学习者的提示/);
   assert.match(route, /答案显示前/);
+  assert.match(route, /问题必须考判断、关系、边界或因果/);
+  assert.match(route, /答案必须能脱离原文独立复述/);
+  assert.match(route, /不要把原文句子拆短后照搬/);
+  assert.match(route, /提示只能给回忆方向/);
   assert.doesNotMatch(route, /测试题生成/);
   assert.doesNotMatch(route, /StudyQuiz/);
   assert.match(route, /export async function POST/);

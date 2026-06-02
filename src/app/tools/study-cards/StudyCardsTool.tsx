@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   ArrowLeft,
   BookOpen,
-  Check,
   ChevronLeft,
   ChevronRight,
   Eye,
@@ -188,18 +187,14 @@ export default function StudyCardsTool() {
   const practiceModeLabel = practiceMode === "learn" ? "第一轮学习" : "翻看检查";
   const swipeHelp =
     practiceMode === "learn"
-      ? "第一轮先看答案；全部标记记住了后，会自动进入翻看检查"
-      : "先看提示回忆答案；卡片左滑下一张，右滑上一张";
+      ? "第一轮先看答案；左滑或点右箭头表示通过，不熟练会近期复现"
+      : "先回忆再翻答案；左滑或点右箭头表示通过，右滑回看上一张";
   const memoryPrompt =
-    practiceMode === "learn"
-      ? activeMemory?.lastRating === "shaky"
-        ? "这张还会再出现"
-        : "先看答案，再标记"
-      : activeMemory?.lastRating === "shaky"
-        ? "这张会很快再出现"
-        : activeMemory?.lastRating === "remembered"
-          ? "已后移，稍后还会复现"
-          : "回忆后标记一下掌握程度";
+    activeMemory?.lastRating === "shaky"
+      ? "这张会很快再出现"
+      : practiceMode === "learn"
+        ? "会了就左滑或点右箭头"
+        : "答对就继续下一张";
   const cardStageStyle = {
     "--drag-x": `${dragOffset}px`,
     "--drag-rotate": `${dragOffset * 0.035}deg`,
@@ -340,8 +335,7 @@ export default function StudyCardsTool() {
   }
 
   function goToNextCard() {
-    if (totalCards <= 1) return;
-    moveToCard(getNextCardIndex(), "next");
+    advanceActiveCard();
   }
 
   function scheduleRatedCard(rating: CardMemoryRating, nextMemoryStats: Record<number, CardMemoryState>) {
@@ -360,10 +354,11 @@ export default function StudyCardsTool() {
   }
 
   function scheduleLearningCard(rating: CardMemoryRating, nextMemoryStats: Record<number, CardMemoryState>) {
-    const learningQueue = buildLearningQueue(totalCards, activeCardIndex, nextMemoryStats);
-    if (rating === "remembered") return learningQueue;
+    const queueWithoutCurrent = reviewQueue.filter(
+      (index) => index !== activeCardIndex && !hasCardBeenRemembered(nextMemoryStats, index),
+    );
+    if (rating === "remembered") return queueWithoutCurrent;
 
-    const queueWithoutCurrent = learningQueue.filter((index) => index !== activeCardIndex);
     const insertAt = Math.min(1, queueWithoutCurrent.length);
     return [
       ...queueWithoutCurrent.slice(0, insertAt),
@@ -388,20 +383,61 @@ export default function StudyCardsTool() {
     }, 220);
   }
 
+  function buildNextMemoryStats(rating: CardMemoryRating) {
+    const nextTurn = reviewTurn + 1;
+    const previousMemory = memoryStats[activeCardIndex] ?? { remembered: 0, shaky: 0 };
+
+    return {
+      nextTurn,
+      nextMemoryStats: {
+        ...memoryStats,
+        [activeCardIndex]: {
+          remembered: previousMemory.remembered + (rating === "remembered" ? 1 : 0),
+          shaky: previousMemory.shaky + (rating === "shaky" ? 1 : 0),
+          lastRating: rating,
+          lastReviewedTurn: nextTurn,
+        },
+      },
+    };
+  }
+
+  function advanceActiveCard() {
+    if (!result || cardMotion !== "idle") return;
+
+    const { nextTurn, nextMemoryStats } = buildNextMemoryStats("remembered");
+    setMemoryStats(nextMemoryStats);
+    setReviewTurn(nextTurn);
+
+    if (practiceMode === "learn") {
+      if (hasCompletedLearningRound(nextMemoryStats, totalCards)) {
+        transitionToCheckRound(nextMemoryStats, nextTurn);
+        return;
+      }
+
+      const learningQueue = scheduleLearningCard("remembered", nextMemoryStats);
+      setReviewQueue(learningQueue);
+      setAnswerRevealed(true);
+
+      if (totalCards <= 1) return;
+
+      moveToCard(learningQueue[0] ?? getNextCardIndex(), "next", learningQueue.slice(1), "learn");
+      return;
+    }
+
+    const scheduledQueue = scheduleRatedCard("remembered", nextMemoryStats);
+    if (totalCards <= 1) {
+      setReviewQueue(scheduledQueue);
+      setAnswerRevealed(false);
+      return;
+    }
+
+    moveToCard(scheduledQueue[0] ?? getNextCardIndex(), "next", scheduledQueue.slice(1));
+  }
+
   function rateActiveCard(rating: CardMemoryRating) {
     if (!result || cardMotion !== "idle") return;
 
-    const nextTurn = reviewTurn + 1;
-    const previousMemory = memoryStats[activeCardIndex] ?? { remembered: 0, shaky: 0 };
-    const nextMemoryStats = {
-      ...memoryStats,
-      [activeCardIndex]: {
-        remembered: previousMemory.remembered + (rating === "remembered" ? 1 : 0),
-        shaky: previousMemory.shaky + (rating === "shaky" ? 1 : 0),
-        lastRating: rating,
-        lastReviewedTurn: nextTurn,
-      },
-    };
+    const { nextTurn, nextMemoryStats } = buildNextMemoryStats(rating);
 
     setMemoryStats(nextMemoryStats);
     setReviewTurn(nextTurn);
@@ -665,7 +701,7 @@ export default function StudyCardsTool() {
                     <h2>{result.summary || "先想，再翻面"}</h2>
                   </div>
                   <span>
-                    {practiceMode === "learn" ? `已记住 ${learnedCardCount} / ${totalCards}` : `第 ${activeCardIndex + 1} / ${totalCards} 张`}
+                    {practiceMode === "learn" ? `已通过 ${learnedCardCount} / ${totalCards}` : `第 ${activeCardIndex + 1} / ${totalCards} 张`}
                   </span>
                 </div>
 
@@ -743,15 +779,6 @@ export default function StudyCardsTool() {
                             不熟练
                           </button>
                           <small>{memoryPrompt}</small>
-                          <button
-                            type="button"
-                            className="is-remembered"
-                            onClick={() => rateActiveCard("remembered")}
-                            disabled={cardMotion !== "idle"}
-                          >
-                            <Check aria-hidden="true" />
-                            记住了
-                          </button>
                         </div>
                       </article>
                     </div>

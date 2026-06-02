@@ -3168,27 +3168,27 @@ h6 {
 
 .study-cards-memory-actions {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 9px;
   align-items: center;
 }
 
 .study-cards-memory-actions button {
   display: inline-flex;
-  min-height: 38px;
+  min-height: 32px;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 6px;
   border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
-  border-radius: 8px;
+  border-radius: 999px;
   background: color-mix(in srgb, var(--card) 90%, var(--background));
   color: color-mix(in srgb, var(--foreground) 78%, var(--muted));
   cursor: pointer;
   font: inherit;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 900;
   line-height: 1.2;
-  padding: 0 10px;
+  padding: 0 11px;
   transition:
     background 0.18s ease,
     border-color 0.18s ease,
@@ -3213,21 +3213,17 @@ h6 {
 
 .study-cards-memory-actions .is-shaky {
   border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+  background: color-mix(in srgb, var(--accent) 7%, var(--card));
   color: color-mix(in srgb, var(--accent) 84%, var(--foreground));
 }
 
-.study-cards-memory-actions .is-remembered {
-  border-color: color-mix(in srgb, var(--accent-tertiary) 28%, var(--border));
-  color: color-mix(in srgb, var(--accent-tertiary) 78%, var(--foreground));
-}
-
 .study-cards-memory-actions small {
-  min-width: 112px;
+  min-width: 0;
   color: color-mix(in srgb, var(--foreground) 48%, var(--muted));
   font-size: 11px;
   font-weight: 760;
   line-height: 1.35;
-  text-align: center;
+  text-align: left;
 }
 
 .study-cards-nav-arrow {
@@ -3436,12 +3432,10 @@ h6 {
   }
 
   .study-cards-memory-actions {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: auto minmax(0, 1fr);
   }
 
   .study-cards-memory-actions small {
-    grid-column: 1 / -1;
-    grid-row: 2;
     min-width: 0;
   }
 }
