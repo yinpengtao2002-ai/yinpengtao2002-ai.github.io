@@ -42,6 +42,15 @@ test("AI study card results use an interactive one-card practice flow", async ()
 
   assert.match(client, /activeCardIndex/);
   assert.match(client, /answerRevealed/);
+  assert.match(client, /PracticeMode/);
+  assert.match(client, /"learn" \| "check"/);
+  assert.match(client, /practiceMode/);
+  assert.match(client, /hasCompletedLearningRound/);
+  assert.match(client, /buildLearningQueue/);
+  assert.match(client, /transitionToCheckRound/);
+  assert.match(client, /第一轮学习/);
+  assert.match(client, /翻看检查/);
+  assert.match(client, /全部标记记住了后/);
   assert.match(client, /SAMPLE_RESULT/);
   assert.match(client, /loadSampleContent/);
   assert.match(client, /轻点这里翻开答案/);
@@ -76,6 +85,8 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.match(styles, /\.study-cards-deck::before/);
   assert.match(styles, /\.study-cards-deck::after/);
   assert.match(styles, /\.study-cards-deck::before[\s\S]*inset: 0/);
+  assert.match(styles, /\.study-cards-deck::before[\s\S]*linear-gradient\(90deg,\s*var\(--accent\)/);
+  assert.match(styles, /\.study-cards-deck::before[\s\S]*calc\(100% - 44px\)\s*calc\(100% - 212px\)/);
   assert.match(styles, /\.study-cards-deck::before[\s\S]*translateX\(-34%\)/);
   assert.match(styles, /\.study-cards-deck::after[\s\S]*translateX\(34%\)/);
   assert.match(styles, /\.study-cards-deck-shell/);
