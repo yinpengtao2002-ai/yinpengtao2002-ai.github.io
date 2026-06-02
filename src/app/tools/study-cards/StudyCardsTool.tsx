@@ -10,7 +10,6 @@ import {
   Eye,
   Layers,
   Loader2,
-  RotateCcw,
   Trash2,
   WandSparkles,
 } from "lucide-react";
@@ -129,8 +128,6 @@ export default function StudyCardsTool() {
   const activeCard = useMemo(() => result?.cards[activeCardIndex] ?? null, [activeCardIndex, result]);
   const totalCards = result?.cards.length ?? 0;
   const cardProgress = totalCards > 0 ? ((activeCardIndex + 1) / totalCards) * 100 : 0;
-  const isFirstCard = activeCardIndex === 0;
-  const isLastCard = activeCardIndex >= totalCards - 1;
   const cardStageStyle = {
     "--drag-x": `${dragOffset}px`,
     "--drag-rotate": `${dragOffset * 0.035}deg`,
@@ -228,17 +225,24 @@ export default function StudyCardsTool() {
     }, 220);
   }
 
+  function getNextCardIndex() {
+    if (totalCards <= 1) return activeCardIndex;
+    return (activeCardIndex + 1) % totalCards;
+  }
+
+  function getPreviousCardIndex() {
+    if (totalCards <= 1) return activeCardIndex;
+    return activeCardIndex === 0 ? totalCards - 1 : activeCardIndex - 1;
+  }
+
   function goToPreviousCard() {
-    moveToCard(activeCardIndex - 1, "prev");
+    if (totalCards <= 1) return;
+    moveToCard(getPreviousCardIndex(), "prev");
   }
 
   function goToNextCard() {
-    if (isLastCard) {
-      resetPracticeDeck();
-      return;
-    }
-
-    moveToCard(activeCardIndex + 1, "next");
+    if (totalCards <= 1) return;
+    moveToCard(getNextCardIndex(), "next");
   }
 
   function revealAnswer() {
@@ -289,7 +293,7 @@ export default function StudyCardsTool() {
       return;
     }
 
-    if (shouldGoPrev && !isFirstCard) {
+    if (shouldGoPrev) {
       goToPreviousCard();
     }
   }
@@ -465,79 +469,81 @@ export default function StudyCardsTool() {
                   <span>第 {activeCardIndex + 1} / {totalCards} 张</span>
                 </div>
 
-                <p className="study-cards-swipe-help">鼠标左滑下一张，右滑上一张</p>
+                <p className="study-cards-swipe-help">先看提示回忆答案；卡片左滑下一张，右滑上一张</p>
 
                 <div className="study-cards-card-progress" aria-hidden="true">
                   <span style={{ width: `${cardProgress}%` }} />
                 </div>
 
-                <div className="study-cards-deck" aria-live="polite">
-                  <div
-                    className={cardStageClassName}
-                    style={cardStageStyle}
-                    onPointerDown={handleCardPointerDown}
-                    onPointerMove={handleCardPointerMove}
-                    onPointerUp={handleCardPointerUp}
-                    onPointerCancel={handleCardPointerCancel}
-                  >
-                    <article
-                      key={activeCardIndex}
-                      className={`study-cards-practice-card is-${cardMotion}`}
-                      aria-label="当前问答卡片"
-                    >
-                      <div className="study-cards-question-block">
-                        <div className="study-cards-practice-kicker">
-                          <span>{String(activeCardIndex + 1).padStart(2, "0")}</span>
-                          <span>主动回忆</span>
-                        </div>
-                        <h3>{compactText(activeCard.front, 42)}</h3>
-                      </div>
-                      <button
-                        type="button"
-                        className={`study-cards-answer-panel${answerRevealed ? " is-revealed" : " is-hidden"}`}
-                        onClick={revealAnswer}
-                        aria-expanded={answerRevealed}
-                        aria-label={answerRevealed ? "答案已显示" : "显示答案"}
-                      >
-                        {answerRevealed ? (
-                          <span className="study-cards-answer-copy">
-                            <strong>参考答案</strong>
-                            <span>{compactText(activeCard.back, 110)}</span>
-                            {activeCard.note && (
-                              <small className="study-cards-answer-hint">
-                                <span>提示</span>
-                                {compactText(activeCard.note, 52)}
-                              </small>
-                            )}
-                          </span>
-                        ) : (
-                          <span className="study-cards-answer-placeholder">
-                            <Eye aria-hidden="true" />
-                            轻点这里翻开答案
-                          </span>
-                        )}
-                      </button>
-                    </article>
-                  </div>
-                </div>
-
-                <div className="study-cards-practice-actions" aria-label="卡片练习操作">
-                  <button type="button" onClick={goToPreviousCard} disabled={isFirstCard || cardMotion !== "idle"}>
-                    <ChevronLeft aria-hidden="true" />
-                    上一张
-                  </button>
+                <div className="study-cards-deck-shell">
                   <button
                     type="button"
-                    className="is-primary"
-                    onClick={isLastCard ? resetPracticeDeck : goToNextCard}
-                    disabled={cardMotion !== "idle"}
+                    className="study-cards-nav-arrow is-prev"
+                    onClick={goToPreviousCard}
+                    disabled={cardMotion !== "idle" || totalCards <= 1}
+                    aria-label="上一张卡片"
                   >
-                    {isLastCard ? <RotateCcw aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}
-                    {isLastCard ? "重新开始" : "下一张"}
+                    <ChevronLeft aria-hidden="true" />
                   </button>
-                  <button type="button" onClick={resetPracticeDeck} disabled={cardMotion !== "idle"}>
-                    <RotateCcw aria-hidden="true" />
-                    重新开始
+
+                  <div className="study-cards-deck" aria-live="polite">
+                    <div
+                      className={cardStageClassName}
+                      style={cardStageStyle}
+                      onPointerDown={handleCardPointerDown}
+                      onPointerMove={handleCardPointerMove}
+                      onPointerUp={handleCardPointerUp}
+                      onPointerCancel={handleCardPointerCancel}
+                    >
+                      <article
+                        key={activeCardIndex}
+                        className={`study-cards-practice-card is-${cardMotion}`}
+                        aria-label="当前问答卡片"
+                      >
+                        <div className="study-cards-question-block">
+                          <div className="study-cards-practice-kicker">
+                            <span>{String(activeCardIndex + 1).padStart(2, "0")}</span>
+                            <span>主动回忆</span>
+                          </div>
+                          <h3>{compactText(activeCard.front, 42)}</h3>
+                        </div>
+                        {activeCard.note && (
+                          <p className="study-cards-recall-hint">
+                            <span>提示</span>
+                            {compactText(activeCard.note, 52)}
+                          </p>
+                        )}
+                        <button
+                          type="button"
+                          className={`study-cards-answer-panel${answerRevealed ? " is-revealed" : " is-hidden"}`}
+                          onClick={revealAnswer}
+                          aria-expanded={answerRevealed}
+                          aria-label={answerRevealed ? "答案已显示" : "显示答案"}
+                        >
+                          {answerRevealed ? (
+                            <span className="study-cards-answer-copy">
+                              <strong>参考答案</strong>
+                              <span>{compactText(activeCard.back, 110)}</span>
+                            </span>
+                          ) : (
+                            <span className="study-cards-answer-placeholder">
+                              <Eye aria-hidden="true" />
+                              轻点这里翻开答案
+                            </span>
+                          )}
+                        </button>
+                      </article>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="study-cards-nav-arrow is-next"
+                    onClick={goToNextCard}
+                    disabled={cardMotion !== "idle" || totalCards <= 1}
+                    aria-label="下一张卡片"
+                  >
+                    <ChevronRight aria-hidden="true" />
                   </button>
                 </div>
               </div>
