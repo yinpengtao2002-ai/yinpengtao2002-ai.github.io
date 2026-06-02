@@ -12,6 +12,7 @@ const {
     calculateDimensionPVMEffects,
     prepareDisplayData,
     applyDrillDimensionFilters,
+    getImpactBaselineContext,
     resolveExcelFilterAppliedValues,
     resolveExcelFilterSearchValues,
     normalizeUploadedRows,
@@ -287,6 +288,42 @@ test("drilled global-impact decomposition ties back to parent bar contribution",
     approx(childContribution, euParentContribution, "EU child decomposition should equal parent bar height");
 });
 
+test("local impact baseline keeps upper filters and supports multiple selected parent values", () => {
+    assert.equal(typeof getImpactBaselineContext, "function");
+
+    const data = [
+        { Month: "base", Dim_A: "EU", Dim_B: "DE", Dim_C: "Sedan", "Sales Volume": 100, "Total Margin": 1000 },
+        { Month: "base", Dim_A: "EU", Dim_B: "DE", Dim_C: "SUV", "Sales Volume": 50, "Total Margin": 600 },
+        { Month: "base", Dim_A: "EU", Dim_B: "FR", Dim_C: "Sedan", "Sales Volume": 80, "Total Margin": 1200 },
+        { Month: "base", Dim_A: "EU", Dim_B: "FR", Dim_C: "SUV", "Sales Volume": 20, "Total Margin": 300 },
+        { Month: "base", Dim_A: "EU", Dim_B: "IT", Dim_C: "Sedan", "Sales Volume": 60, "Total Margin": 900 },
+        { Month: "base", Dim_A: "NA", Dim_B: "US", Dim_C: "Sedan", "Sales Volume": 200, "Total Margin": 3000 },
+        { Month: "curr", Dim_A: "EU", Dim_B: "DE", Dim_C: "Sedan", "Sales Volume": 110, "Total Margin": 1210 },
+        { Month: "curr", Dim_A: "EU", Dim_B: "DE", Dim_C: "SUV", "Sales Volume": 70, "Total Margin": 910 },
+        { Month: "curr", Dim_A: "EU", Dim_B: "FR", Dim_C: "Sedan", "Sales Volume": 70, "Total Margin": 980 },
+        { Month: "curr", Dim_A: "EU", Dim_B: "FR", Dim_C: "SUV", "Sales Volume": 40, "Total Margin": 680 },
+        { Month: "curr", Dim_A: "EU", Dim_B: "IT", Dim_C: "Sedan", "Sales Volume": 60, "Total Margin": 840 },
+        { Month: "curr", Dim_A: "NA", Dim_B: "US", Dim_C: "Sedan", "Sales Volume": 210, "Total Margin": 3150 },
+    ];
+    const drillOrder = ["Dim_A", "Dim_B", "Dim_C"];
+    const selectedDims = { Dim_A: ["EU"], Dim_B: ["DE", "FR"], Dim_C: ["SUV"] };
+
+    const globalContext = getImpactBaselineContext(data, drillOrder, 2, "__global__", "base", "curr", selectedDims, {});
+    assert.equal(globalContext.base.totalVol, 510);
+    assert.equal(globalContext.curr.totalVol, 560);
+    assert.equal(globalContext.targetLabel, "全局");
+
+    const regionContext = getImpactBaselineContext(data, drillOrder, 2, "Dim_A", "base", "curr", selectedDims, {});
+    assert.equal(regionContext.base.totalVol, 310);
+    assert.equal(regionContext.curr.totalVol, 350);
+    assert.equal(regionContext.targetLabel, "大区");
+
+    const countryContext = getImpactBaselineContext(data, drillOrder, 2, "Dim_B", "base", "curr", selectedDims, {});
+    assert.equal(countryContext.base.totalVol, 250);
+    assert.equal(countryContext.curr.totalVol, 290);
+    assert.equal(countryContext.targetLabel, "国家");
+});
+
 test("left drill filters use an Excel-style checklist menu", () => {
     assert.match(marginAnalysisSource, /className = 'excel-filter-trigger'/);
     assert.match(marginAnalysisSource, /className = 'excel-filter-menu'/);
@@ -305,6 +342,14 @@ test("left drill filters use an Excel-style checklist menu", () => {
     assert.match(marginAnalysisStyles, /\.excel-filter-trigger/);
     assert.match(marginAnalysisStyles, /\.excel-filter-checkmark/);
     assert.match(marginAnalysisStyles, /\.excel-filter-footer-actions/);
+});
+
+test("drill order panel exposes a global-first impact baseline selector", () => {
+    assert.match(marginAnalysisSource, /impactBaselineDim:\s*'__global__'/);
+    assert.match(marginAnalysisSource, /populateImpactBaselineSelector/);
+    assert.match(marginAnalysisSource, /影响基准/);
+    assert.match(marginAnalysisSource, /option\.textContent = '全局'/);
+    assert.match(marginAnalysisSource, /分析对\$\{impactTargetLabel\}影响/);
 });
 
 test("left drill filters can exclude one value while keeping all other values", () => {

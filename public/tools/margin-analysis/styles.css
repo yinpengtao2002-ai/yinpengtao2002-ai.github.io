@@ -521,6 +521,34 @@ details[open] > .sidebar-summary::after {
     line-height: 1.35;
 }
 
+.impact-baseline-control {
+    margin-top: 0.7rem;
+    padding-top: 0.65rem;
+    border-top: 1px dashed var(--border-light);
+}
+
+.impact-baseline-label {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.68rem;
+    font-weight: 850;
+}
+
+.impact-baseline-select {
+    min-height: 34px;
+}
+
+.impact-baseline-caption {
+    margin: 0.42rem 0 0;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
 .drill-dimension-drawer {
     margin-top: 0.75rem;
     border: 1px solid var(--border-light);

@@ -35,12 +35,14 @@ const AppState = {
     selectedMetricKey: null,
     availableDimsInData: [],
     calculationResults: null,
+    impactBaselineDim: '__global__',
     attributionViewModes: {}
 };
 
 const PLOT_FONT_FAMILY = 'PingFang SC, Microsoft YaHei, Helvetica Neue, Arial, sans-serif';
 const ATTRIBUTION_VIEW_SELF = 'self';
 const ATTRIBUTION_VIEW_GLOBAL = 'global';
+const IMPACT_BASELINE_GLOBAL = '__global__';
 
 const DIM_ICONS = {
     Dim_A: '🌍', Dim_B: '🏳️', Dim_C: '🚗',
@@ -714,6 +716,7 @@ function processLoadedData(rows, sourceName) {
     AppState.excludedDims = {};
     ALL_DIMENSIONS.forEach(d => AppState.excludedDims[d] = null);
     AppState.filterModes = {};
+    AppState.impactBaselineDim = IMPACT_BASELINE_GLOBAL;
     AppState.attributionViewModes = {};
 
     showMessage('success', `✅ 数据已加载 (${sourceName}): ${rows.length} 行, ${AppState.months.length} 个月份`);
@@ -1217,10 +1220,55 @@ function populateDrillOrder() {
         ? '拖动调整顺序，点击 × 移除维度；调整后会清空当前钻取并重新计算。'
         : '至少保留一个下钻维度。';
     container.appendChild(hint);
+
+    populateImpactBaselineSelector(container, activeOrder);
 }
 
 function getDimensionLabel(dim) {
     return AppState.customDimNames[dim] || dim;
+}
+
+function populateImpactBaselineSelector(container, activeOrder) {
+    AppState.impactBaselineDim = normalizeImpactBaselineDim(AppState.impactBaselineDim, activeOrder);
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'impact-baseline-control';
+
+    const label = document.createElement('label');
+    label.className = 'impact-baseline-label';
+    label.htmlFor = 'impact-baseline-select';
+    label.textContent = '影响基准';
+
+    const select = document.createElement('select');
+    select.id = 'impact-baseline-select';
+    select.className = 'form-select impact-baseline-select';
+
+    const option = document.createElement('option');
+    option.value = IMPACT_BASELINE_GLOBAL;
+    option.textContent = '全局';
+    select.appendChild(option);
+
+    activeOrder.forEach((dim) => {
+        const dimOption = document.createElement('option');
+        dimOption.value = dim;
+        dimOption.textContent = getDimensionLabel(dim);
+        select.appendChild(dimOption);
+    });
+
+    select.value = AppState.impactBaselineDim;
+    select.addEventListener('change', () => {
+        AppState.impactBaselineDim = normalizeImpactBaselineDim(select.value, AppState.drillOrder);
+        triggerUpdate();
+    });
+
+    const caption = document.createElement('p');
+    caption.className = 'impact-baseline-caption';
+    caption.textContent = '默认按全局计算；选择某层后，使用该层及其上方已筛选值作为局部盘子。';
+
+    wrapper.appendChild(label);
+    wrapper.appendChild(select);
+    wrapper.appendChild(caption);
+    container.appendChild(wrapper);
 }
 
 function getNormalizedDrillOrder(order) {
@@ -1232,6 +1280,11 @@ function getNormalizedDrillOrder(order) {
         normalized.push(dim);
     });
     return normalized.length ? normalized : AppState.availableDimsInData.slice(0, 1);
+}
+
+function normalizeImpactBaselineDim(value, order = AppState.drillOrder) {
+    if (value === IMPACT_BASELINE_GLOBAL) return IMPACT_BASELINE_GLOBAL;
+    return order.includes(value) ? value : IMPACT_BASELINE_GLOBAL;
 }
 
 function getActiveDrillLevelIndex(order = AppState.drillOrder) {
@@ -1308,6 +1361,7 @@ function applyDrillOrder(nextOrder) {
     if (isSame) return;
 
     AppState.drillOrder = normalized;
+    AppState.impactBaselineDim = normalizeImpactBaselineDim(AppState.impactBaselineDim, normalized);
     ALL_DIMENSIONS.forEach(d => AppState.selectedDims[d] = null);
     ALL_DIMENSIONS.forEach(d => AppState.excludedDims[d] = null);
     AppState.filterModes = {};
@@ -1896,6 +1950,25 @@ function applyDrillDimensionFilters(data, drillOrder, level, selectedDims = AppS
     return filtered;
 }
 
+function getImpactBaselineContext(data, drillOrder, level, baselineDim, baseMonth, currMonth, selectedDims = AppState.selectedDims, excludedDims = AppState.excludedDims, customDimNames = AppState.customDimNames) {
+    const normalizedBaseline = normalizeImpactBaselineDim(baselineDim, drillOrder);
+    const baselineIndex = drillOrder.indexOf(normalizedBaseline);
+    const useGlobal = normalizedBaseline === IMPACT_BASELINE_GLOBAL || baselineIndex < 0 || baselineIndex >= level;
+    const scopeData = useGlobal
+        ? (data || [])
+        : applyDrillDimensionFilters(data, drillOrder, baselineIndex + 1, selectedDims, excludedDims);
+    const labels = { ...DEFAULT_DIMENSION_NAMES, ...(customDimNames || {}) };
+    const targetLabel = useGlobal ? '全局' : (labels[normalizedBaseline] || normalizedBaseline);
+
+    return {
+        baselineDim: useGlobal ? IMPACT_BASELINE_GLOBAL : normalizedBaseline,
+        targetLabel,
+        scopeData,
+        base: calculateGlobalMetrics(scopeData, baseMonth),
+        curr: calculateGlobalMetrics(scopeData, currMonth)
+    };
+}
+
 function matchesDimensionFilter(row, dim, selectedDims = AppState.selectedDims, excludedDims = AppState.excludedDims) {
     const value = row?.[dim];
     const included = normalizeDimensionFilter(selectedDims?.[dim]);
@@ -1912,6 +1985,7 @@ function triggerUpdate() {
     if (!AppState.dataLoaded || !AppState.df) return;
 
     const { baseMonth, currMonth, drillOrder } = AppState;
+    AppState.impactBaselineDim = normalizeImpactBaselineDim(AppState.impactBaselineDim, drillOrder);
 
     // 1. 全局指标
     const globalBase = calculateGlobalMetrics(AppState.df, baseMonth);
@@ -1950,16 +2024,31 @@ function triggerUpdate() {
         // 如果是下钻状态，额外计算全球视角的贡献
         let globalEffects = null;
         let globalDisplayData = null;
+        let impactBaselineContext = null;
         const isDrilled = level > 0 && drillOrder.slice(0, level).some(prevDim => hasDimensionFilter(prevDim));
 
         if (isDrilled) {
+            impactBaselineContext = getImpactBaselineContext(
+                AppState.df,
+                drillOrder,
+                level,
+                AppState.impactBaselineDim,
+                baseMonth,
+                currMonth,
+                AppState.selectedDims,
+                AppState.excludedDims,
+                AppState.customDimNames
+            );
             globalEffects = calculateDimensionPVMEffects(
                 dfLevel, baseMonth, currMonth, dim,
-                globalCurr.totalVol, globalBase.totalVol, globalBase.avgMargin
+                impactBaselineContext.curr.totalVol,
+                impactBaselineContext.base.totalVol,
+                impactBaselineContext.base.avgMargin
             );
             globalDisplayData = prepareDisplayData(
                 globalEffects, dim,
-                globalBase.totalVol, globalCurr.totalVol,
+                impactBaselineContext.base.totalVol,
+                impactBaselineContext.curr.totalVol,
                 null, null
             );
         }
@@ -1989,6 +2078,7 @@ function triggerUpdate() {
             displayData,
             globalEffects,
             globalDisplayData,
+            impactBaselineContext,
             isDrilled,
             drillInfo,
             levelAvgMarginBase: levelBase.avgMargin,
@@ -2128,7 +2218,7 @@ function buildChartInteractionGuide() {
 
     const viewSwitch = document.createElement('span');
     viewSwitch.className = 'chart-interaction-item';
-    viewSwitch.textContent = `下钻后：在图表标题右侧切换“自身${unitMetricLabel}变动 / 对整体影响”`;
+    viewSwitch.textContent = `下钻后：在图表标题右侧切换“自身${unitMetricLabel}变动 / 对影响基准影响”`;
 
     guide.appendChild(title);
     guide.appendChild(desktop);
@@ -2167,6 +2257,7 @@ function buildChartLevelHeader(dimIcon, dimName, levelResult, level, activeMode)
     switcher.className = 'attribution-view-switch';
     switcher.setAttribute('aria-label', '归因分析视角');
     const unitMetricLabel = getUnitMetricLabel();
+    const impactTargetLabel = levelResult.impactBaselineContext?.targetLabel || '全局';
 
     const hint = document.createElement('div');
     hint.className = 'attribution-view-hint';
@@ -2184,8 +2275,8 @@ function buildChartLevelHeader(dimIcon, dimName, levelResult, level, activeMode)
         },
         {
             mode: ATTRIBUTION_VIEW_GLOBAL,
-            label: '分析对整体影响',
-            description: '看该对象这根柱子对全局结果的贡献拆解'
+            label: `分析对${impactTargetLabel}影响`,
+            description: `看该对象对${impactTargetLabel}盘子的贡献拆解`
         }
     ].forEach(({ mode, label, description }) => {
         const button = document.createElement('button');
@@ -2316,29 +2407,35 @@ function getAttributionLevelRenderContext(level) {
 function getAttributionViewConfig(levelResult, dimName, unitMetricLabel, viewMode, globalBase, globalCurr) {
     if (viewMode === ATTRIBUTION_VIEW_GLOBAL && canUseGlobalImpactView(levelResult)) {
         const impactValue = levelResult.globalEffects.reduce((sum, row) => sum + (row.Total_Contribution || 0), 0);
-        const impactMetricLabel = `对整体${unitMetricLabel}影响`;
+        const impactContext = levelResult.impactBaselineContext || {
+            targetLabel: '全局',
+            base: globalBase,
+            curr: globalCurr
+        };
+        const impactTargetLabel = impactContext.targetLabel || '全局';
+        const impactMetricLabel = `对${impactTargetLabel}${unitMetricLabel}影响`;
         return {
             effects: levelResult.globalEffects,
             displayData: levelResult.globalDisplayData,
             isGlobal: true,
-            tableLabel: '对整体影响',
-            title: `${dimName}对整体影响拆解（按当前维度）`,
+            tableLabel: `对${impactTargetLabel}影响`,
+            title: `${dimName}对${impactTargetLabel}影响拆解（按当前维度）`,
             startValue: 0,
             endValue: impactValue,
             chartOptions: {
                 startLabel: '贡献起点',
-                endLabel: '对整体影响',
+                endLabel: `对${impactTargetLabel}影响`,
                 yAxisTitle: `${impactMetricLabel} (¥)`,
-                annotationLabel: '对整体影响',
+                annotationLabel: `对${impactTargetLabel}影响`,
                 showPercent: false,
-                totalVolBase: globalBase.totalVol,
-                totalVolCurr: globalCurr.totalVol,
+                totalVolBase: impactContext.base.totalVol,
+                totalVolCurr: impactContext.curr.totalVol,
                 startMeta: {
                     kicker: '贡献起点',
                     displayMetricLabel: impactMetricLabel
                 },
                 endMeta: {
-                    kicker: '整体影响',
+                    kicker: `对${impactTargetLabel}影响`,
                     displayMetricLabel: impactMetricLabel
                 }
             }
@@ -3817,6 +3914,7 @@ if (typeof module !== 'undefined' && module.exports) {
         calculateDimensionPVMEffects,
         prepareDisplayData,
         applyDrillDimensionFilters,
+        getImpactBaselineContext,
         applySelectedMetricToRows,
         generateDemoData,
         resolveExcelFilterAppliedValues,
