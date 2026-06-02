@@ -352,6 +352,18 @@ test("drill order panel exposes a global-first impact baseline selector", () => 
     assert.match(marginAnalysisSource, /分析对\$\{impactTargetLabel\}影响/);
 });
 
+test("impact baseline changes refresh sidebar state without clearing drill filters", () => {
+    assert.match(marginAnalysisSource, /function applyImpactBaselineSelection\(value\)/);
+    assert.match(marginAnalysisSource, /select\.addEventListener\('change', \(\) => \{\s*applyImpactBaselineSelection\(select\.value\);\s*\}\);/);
+
+    const helperBody = marginAnalysisSource.match(/function applyImpactBaselineSelection\(value\) \{([\s\S]*?)\n\}/)?.[1] || "";
+    assert.match(helperBody, /AppState\.impactBaselineDim = normalizeImpactBaselineDim\(value, AppState\.drillOrder\);/);
+    assert.match(helperBody, /populateDrillOrder\(\);/);
+    assert.match(helperBody, /populateDrillFilters\(\);/);
+    assert.match(helperBody, /triggerUpdate\(\);/);
+    assert.doesNotMatch(helperBody, /selectedDims|excludedDims|drillOrder\s*=/);
+});
+
 test("left drill filters can exclude one value while keeping all other values", () => {
     assert.equal(typeof applyDrillDimensionFilters, "function");
 

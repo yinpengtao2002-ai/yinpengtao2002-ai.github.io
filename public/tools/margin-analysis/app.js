@@ -1257,8 +1257,7 @@ function populateImpactBaselineSelector(container, activeOrder) {
 
     select.value = AppState.impactBaselineDim;
     select.addEventListener('change', () => {
-        AppState.impactBaselineDim = normalizeImpactBaselineDim(select.value, AppState.drillOrder);
-        triggerUpdate();
+        applyImpactBaselineSelection(select.value);
     });
 
     const caption = document.createElement('p');
@@ -1285,6 +1284,13 @@ function getNormalizedDrillOrder(order) {
 function normalizeImpactBaselineDim(value, order = AppState.drillOrder) {
     if (value === IMPACT_BASELINE_GLOBAL) return IMPACT_BASELINE_GLOBAL;
     return order.includes(value) ? value : IMPACT_BASELINE_GLOBAL;
+}
+
+function applyImpactBaselineSelection(value) {
+    AppState.impactBaselineDim = normalizeImpactBaselineDim(value, AppState.drillOrder);
+    populateDrillOrder();
+    populateDrillFilters();
+    triggerUpdate();
 }
 
 function getActiveDrillLevelIndex(order = AppState.drillOrder) {
