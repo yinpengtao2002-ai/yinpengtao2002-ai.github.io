@@ -53,6 +53,9 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.match(client, /全部标记记住了后/);
   assert.match(client, /SAMPLE_RESULT/);
   assert.match(client, /loadSampleContent/);
+  assert.match(client, /Harness/);
+  assert.match(client, /场景契约/);
+  assert.match(client, /setDifficulty\(DIFFICULTY_OPTIONS\[2\]\)/);
   assert.match(client, /轻点这里翻开答案/);
   assert.match(client, /cardMotion/);
   assert.match(client, /dragOffset/);
