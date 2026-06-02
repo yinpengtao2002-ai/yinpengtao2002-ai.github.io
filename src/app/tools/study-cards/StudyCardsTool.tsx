@@ -5,11 +5,13 @@ import Link from "next/link";
 import {
   ArrowLeft,
   BookOpen,
+  Check,
   ChevronLeft,
   ChevronRight,
   Eye,
   Layers,
   Loader2,
+  RotateCcw,
   Trash2,
   WandSparkles,
 } from "lucide-react";
@@ -28,6 +30,13 @@ type StudyCardResult = {
 type CardMotion = "idle" | "exit-next" | "enter-next" | "exit-prev" | "enter-prev";
 type CardDirection = "next" | "prev";
 type DragIntent = "idle" | "next" | "prev";
+type CardMemoryRating = "remembered" | "shaky";
+type CardMemoryState = {
+  remembered: number;
+  shaky: number;
+  lastRating?: CardMemoryRating;
+  lastReviewedTurn?: number;
+};
 
 const DRAG_THRESHOLD = 90;
 const MAX_DRAG_OFFSET = 150;
@@ -91,6 +100,10 @@ function getProgressLabel(value: number) {
   return PROGRESS_STEPS.find((step) => value <= step.threshold)?.label ?? PROGRESS_STEPS.at(-1)!.label;
 }
 
+function buildReviewQueue(totalCards: number, startIndex: number) {
+  return Array.from({ length: Math.max(totalCards - 1, 0) }, (_, offset) => (startIndex + offset + 1) % totalCards);
+}
+
 function getStudyCardErrorMessage(payload: { error?: string; errorCode?: string } | null) {
   if (payload?.errorCode === "API_NOT_CONFIGURED") {
     return "当前本地环境没有配置 AI Key。线上页面可以直接使用；本地预览需要配置 CHAT_API_KEY 或 DEEPSEEK_API_KEY。";
@@ -116,11 +129,15 @@ export default function StudyCardsTool() {
   const [cardMotion, setCardMotion] = useState<CardMotion>("idle");
   const [dragOffset, setDragOffset] = useState(0);
   const [dragIntent, setDragIntent] = useState<DragIntent>("idle");
+  const [memoryStats, setMemoryStats] = useState<Record<number, CardMemoryState>>({});
+  const [reviewQueue, setReviewQueue] = useState<number[]>([]);
+  const [reviewTurn, setReviewTurn] = useState(0);
   const transitionTimerRef = useRef<number | null>(null);
   const pointerStartXRef = useRef<number | null>(null);
   const draggingPointerIdRef = useRef<number | null>(null);
   const dragOffsetRef = useRef(0);
   const wasDraggingRef = useRef(false);
+  const outputPanelRef = useRef<HTMLElement | null>(null);
 
   const contentLength = useMemo(() => countChineseText(content), [content]);
   const canSubmit = contentLength >= 80 && !loading;
@@ -128,6 +145,13 @@ export default function StudyCardsTool() {
   const activeCard = useMemo(() => result?.cards[activeCardIndex] ?? null, [activeCardIndex, result]);
   const totalCards = result?.cards.length ?? 0;
   const cardProgress = totalCards > 0 ? ((activeCardIndex + 1) / totalCards) * 100 : 0;
+  const activeMemory = memoryStats[activeCardIndex];
+  const memoryPrompt =
+    activeMemory?.lastRating === "shaky"
+      ? "这张会很快再出现"
+      : activeMemory?.lastRating === "remembered"
+        ? "已后移，稍后还会复现"
+        : "回忆后标记一下掌握程度";
   const cardStageStyle = {
     "--drag-x": `${dragOffset}px`,
     "--drag-rotate": `${dragOffset * 0.035}deg`,
@@ -194,11 +218,21 @@ export default function StudyCardsTool() {
     }, delay);
   }
 
-  function resetPracticeDeck() {
+  function focusCardsOnMobile() {
+    window.setTimeout(() => {
+      if (!window.matchMedia("(max-width: 900px) and (orientation: portrait)").matches) return;
+      outputPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+  }
+
+  function resetPracticeDeck(nextTotalCards = totalCards) {
     clearCardTimer();
     resetCardDrag();
     setActiveCardIndex(0);
     setAnswerRevealed(false);
+    setMemoryStats({});
+    setReviewTurn(0);
+    setReviewQueue(buildReviewQueue(nextTotalCards, 0));
     setCardMotion("enter-prev");
     settleCardMotion();
   }
@@ -208,10 +242,11 @@ export default function StudyCardsTool() {
     setResult(SAMPLE_RESULT);
     setError("");
     setProgressValue(0);
-    resetPracticeDeck();
+    resetPracticeDeck(SAMPLE_RESULT.cards.length);
+    focusCardsOnMobile();
   }
 
-  function moveToCard(targetIndex: number, direction: CardDirection) {
+  function moveToCard(targetIndex: number, direction: CardDirection, nextReviewQueue?: number[]) {
     if (!result || cardMotion !== "idle" || targetIndex < 0 || targetIndex >= totalCards) return;
 
     clearCardTimer();
@@ -220,6 +255,7 @@ export default function StudyCardsTool() {
     setCardMotion(direction === "next" ? "exit-next" : "exit-prev");
     transitionTimerRef.current = window.setTimeout(() => {
       setActiveCardIndex(targetIndex);
+      setReviewQueue(nextReviewQueue ?? buildReviewQueue(totalCards, targetIndex));
       setCardMotion(direction === "next" ? "enter-next" : "enter-prev");
       settleCardMotion();
     }, 220);
@@ -243,6 +279,49 @@ export default function StudyCardsTool() {
   function goToNextCard() {
     if (totalCards <= 1) return;
     moveToCard(getNextCardIndex(), "next");
+  }
+
+  function scheduleRatedCard(rating: CardMemoryRating, nextMemoryStats: Record<number, CardMemoryState>) {
+    const currentMemory = nextMemoryStats[activeCardIndex] ?? { remembered: 0, shaky: 0 };
+    const queueWithoutCurrent = reviewQueue.filter((index) => index !== activeCardIndex);
+    const insertAt =
+      rating === "shaky"
+        ? Math.min(1, queueWithoutCurrent.length)
+        : Math.min(2 + Math.min(currentMemory.remembered, 3), queueWithoutCurrent.length);
+
+    return [
+      ...queueWithoutCurrent.slice(0, insertAt),
+      activeCardIndex,
+      ...queueWithoutCurrent.slice(insertAt),
+    ];
+  }
+
+  function rateActiveCard(rating: CardMemoryRating) {
+    if (!result || cardMotion !== "idle") return;
+
+    const nextTurn = reviewTurn + 1;
+    const previousMemory = memoryStats[activeCardIndex] ?? { remembered: 0, shaky: 0 };
+    const nextMemoryStats = {
+      ...memoryStats,
+      [activeCardIndex]: {
+        remembered: previousMemory.remembered + (rating === "remembered" ? 1 : 0),
+        shaky: previousMemory.shaky + (rating === "shaky" ? 1 : 0),
+        lastRating: rating,
+        lastReviewedTurn: nextTurn,
+      },
+    };
+    const scheduledQueue = scheduleRatedCard(rating, nextMemoryStats);
+
+    setMemoryStats(nextMemoryStats);
+    setReviewTurn(nextTurn);
+
+    if (totalCards <= 1) {
+      setReviewQueue(scheduledQueue);
+      setAnswerRevealed(false);
+      return;
+    }
+
+    moveToCard(scheduledQueue[0] ?? getNextCardIndex(), "next", scheduledQueue.slice(1));
   }
 
   function revealAnswer() {
@@ -338,8 +417,12 @@ export default function StudyCardsTool() {
       setResult(payload);
       setActiveCardIndex(0);
       setAnswerRevealed(false);
+      setMemoryStats({});
+      setReviewTurn(0);
+      setReviewQueue(buildReviewQueue(payload.cards?.length ?? cardCount, 0));
       setCardMotion("enter-next");
       settleCardMotion();
+      focusCardsOnMobile();
     } catch (err) {
       setError(err instanceof Error ? err.message : "学习卡片生成失败，请刷新页面后再试。");
     } finally {
@@ -422,6 +505,9 @@ export default function StudyCardsTool() {
                   clearCardTimer();
                   setActiveCardIndex(0);
                   setAnswerRevealed(false);
+                  setMemoryStats({});
+                  setReviewTurn(0);
+                  setReviewQueue([]);
                   setCardMotion("idle");
                 }}
               >
@@ -452,7 +538,7 @@ export default function StudyCardsTool() {
             {error && <p className="study-cards-error">{error}</p>}
           </section>
 
-          <section className="study-cards-output-panel" aria-label="学习卡片结果">
+          <section ref={outputPanelRef} className="study-cards-output-panel" aria-label="学习卡片结果">
             {!result || !activeCard ? (
               <div className="study-cards-empty">
                 <Layers aria-hidden="true" />
@@ -532,6 +618,27 @@ export default function StudyCardsTool() {
                             </span>
                           )}
                         </button>
+                        <div className="study-cards-memory-actions" aria-label="记忆反馈">
+                          <button
+                            type="button"
+                            className="is-shaky"
+                            onClick={() => rateActiveCard("shaky")}
+                            disabled={cardMotion !== "idle"}
+                          >
+                            <RotateCcw aria-hidden="true" />
+                            不熟练
+                          </button>
+                          <small>{memoryPrompt}</small>
+                          <button
+                            type="button"
+                            className="is-remembered"
+                            onClick={() => rateActiveCard("remembered")}
+                            disabled={cardMotion !== "idle"}
+                          >
+                            <Check aria-hidden="true" />
+                            记住了
+                          </button>
+                        </div>
                       </article>
                     </div>
                   </div>
