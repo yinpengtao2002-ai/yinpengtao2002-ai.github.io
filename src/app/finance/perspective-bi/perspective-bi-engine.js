@@ -127,6 +127,24 @@ const WORKBENCH_GUIDES = {
             ["筛选", "减少系列数量，避免面积堆叠难读。"],
         ],
     },
+    OHLC: {
+        title: "价格图",
+        tips: [
+            ["分组", "拖入月份、日期或期间字段，决定每根价格线所在的位置。"],
+            ["开盘/收盘", "把期初值拖入开盘，把期末值拖入收盘，表达区间变化。"],
+            ["最高/最低", "拖入区间上限和下限字段，补全波动范围。"],
+            ["筛选", "限定市场、车型或渠道，避免多个对象混在同一组价格线上。"],
+        ],
+    },
+    Candlestick: {
+        title: "蜡烛图",
+        tips: [
+            ["分组", "拖入月份、日期或期间字段，决定每根蜡烛的横向位置。"],
+            ["开盘/收盘", "分别拖入期初值和期末值，蜡烛实体会表达区间涨跌。"],
+            ["最高/最低", "拖入区间最高值和最低值，形成上下影线。"],
+            ["筛选", "聚焦一个市场、车型或渠道后，蜡烛图才更容易读。"],
+        ],
+    },
     Heatmap: {
         title: "热力图",
         tips: [
@@ -290,6 +308,10 @@ const PERSPECTIVE_LOCALIZATION_VARS = {
     "--column-selector-column-symbol--content": "\"标记\"",
     "--column-selector-column-label--content": "\"标签\"",
     "--column-selector-column-tooltip--content": "\"提示\"",
+    "--column-selector-column-open--content": "\"开盘\"",
+    "--column-selector-column-close--content": "\"收盘\"",
+    "--column-selector-column-high--content": "\"最高\"",
+    "--column-selector-column-low--content": "\"最低\"",
 };
 const PERSPECTIVE_LOCALIZATION_SELECTOR = [
     "perspective-viewer",
@@ -314,6 +336,10 @@ const PERSPECTIVE_SHADOW_LOCALIZATION_CSS = `
 .column-selector-column[data-label="Symbol"]::before { content: "标记" !important; }
 .column-selector-column[data-label="Label"]::before { content: "标签" !important; }
 .column-selector-column[data-label="Tooltip"]::before { content: "提示" !important; }
+.column-selector-column[data-label="Open"]::before { content: "开盘" !important; }
+.column-selector-column[data-label="Close"]::before { content: "收盘" !important; }
+.column-selector-column[data-label="High"]::before { content: "最高" !important; }
+.column-selector-column[data-label="Low"]::before { content: "最低" !important; }
 `;
 const perspectiveLocalizationRoots = new WeakSet();
 let workbenchGuideSyncScheduled = false;

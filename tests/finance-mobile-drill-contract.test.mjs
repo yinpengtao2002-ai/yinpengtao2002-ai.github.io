@@ -267,6 +267,8 @@ test("Perspective BI explains the active native chart drop zones inside the work
   assert.match(perspectiveEngine, /Datagrid:[\s\S]*数据表/s);
   assert.match(perspectiveEngine, /"Y Bar":[\s\S]*纵轴/s);
   assert.match(perspectiveEngine, /Heatmap:[\s\S]*热力图/s);
+  assert.match(perspectiveEngine, /OHLC:[\s\S]*价格图[\s\S]*开盘[\s\S]*收盘[\s\S]*最高[\s\S]*最低/s);
+  assert.match(perspectiveEngine, /Candlestick:[\s\S]*蜡烛图[\s\S]*开盘[\s\S]*收盘[\s\S]*最高[\s\S]*最低/s);
   assert.match(perspectiveEngine, /function renderWorkbenchGuide/);
   assert.match(perspectiveEngine, /function updateWorkbenchGuideFromViewer/);
   assert.match(perspectiveEngine, /function getActiveWorkbenchPluginFromDom/);
@@ -277,6 +279,10 @@ test("Perspective BI explains the active native chart drop zones inside the work
   assert.match(perspectiveEngine, /viewer\.addEventListener\("click", syncGuide, true\)/);
   assert.match(perspectiveEngine, /viewer\.addEventListener\("keyup", syncGuide, true\)/);
   assert.match(perspectiveEngine, /attributeFilter: \[[^\]]*"data-plugin"[^\]]*\]/);
+  assert.match(perspectiveEngine, /\.column-selector-column\[data-label="Open"\]::before \{ content: "开盘"/);
+  assert.match(perspectiveEngine, /\.column-selector-column\[data-label="Close"\]::before \{ content: "收盘"/);
+  assert.match(perspectiveEngine, /\.column-selector-column\[data-label="High"\]::before \{ content: "最高"/);
+  assert.match(perspectiveEngine, /\.column-selector-column\[data-label="Low"\]::before \{ content: "最低"/);
   assert.match(perspectiveEngine, /perspective-config-update/);
   assert.match(perspectiveEngine, /perspective-plugin-update/);
   assert.match(perspectiveEngine, /viewer\.save\(\)/);
