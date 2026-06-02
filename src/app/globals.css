@@ -2854,6 +2854,10 @@ h6 {
   gap: 14px;
 }
 
+.study-cards-mobile-edit-button {
+  display: none;
+}
+
 .study-cards-practice-top h2 {
   margin: 0;
   font-size: clamp(1.05rem, 1.9vw, 1.34rem);
@@ -3451,6 +3455,218 @@ h6 {
 
   .study-cards-deck-shell {
     flex: 1;
+  }
+
+  .study-cards-page.is-mobile-practice {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    width: 100%;
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--accent-secondary) 7%, transparent), transparent 34%),
+      var(--background);
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-back-link,
+  .study-cards-page.is-mobile-practice .study-cards-input-panel {
+    display: none;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-shell {
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    padding:
+      max(10px, env(safe-area-inset-top))
+      10px
+      max(10px, env(safe-area-inset-bottom));
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-workspace {
+    display: block;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-output-panel {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 0;
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-result {
+    height: 100%;
+    min-height: 0;
+    gap: 9px;
+    overflow: hidden;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-practice-top {
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 10px;
+    padding: 0 2px;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-practice-top > div {
+    min-width: 0;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-practice-top p {
+    margin-bottom: 4px;
+    font-size: 10px;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-practice-top h2 {
+    font-size: 1.02rem;
+    line-height: 1.22;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-practice-top > span {
+    min-height: 28px;
+    font-size: 11px;
+    padding: 0 9px;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-mobile-edit-button {
+    display: inline-flex;
+    min-height: 28px;
+    align-items: center;
+    gap: 5px;
+    margin: 0 0 6px;
+    border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--card) 84%, transparent);
+    color: color-mix(in srgb, var(--foreground) 70%, var(--muted));
+    font: inherit;
+    font-size: 11px;
+    font-weight: 850;
+    line-height: 1;
+    padding: 0 10px 0 8px;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-mobile-edit-button svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-swipe-help {
+    flex: 0 0 auto;
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.35;
+    padding: 0 2px;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-card-progress {
+    flex: 0 0 auto;
+    height: 6px;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-deck-shell {
+    min-height: 0;
+    flex: 1 1 auto;
+    align-items: flex-start;
+    padding: clamp(18px, 4dvh, 34px) 12px 0;
+    overflow: hidden;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-deck {
+    width: min(100%, 360px);
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-deck::before,
+  .study-cards-page.is-mobile-practice .study-cards-deck::after {
+    display: block;
+    opacity: 0.34;
+    box-shadow:
+      0 14px 28px rgba(20, 20, 19, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-deck::before {
+    transform: translateX(-18%) rotate(-4deg) scale(0.94);
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-deck::after {
+    transform: translateX(18%) rotate(4deg) scale(0.94);
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-card-stage {
+    touch-action: none;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-practice-card {
+    aspect-ratio: 3 / 4;
+    min-height: 0;
+    gap: 10px;
+    padding: 16px;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-question-block {
+    min-height: 82px;
+    gap: 8px;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-practice-card h3 {
+    font-size: 1.22rem;
+    line-height: 1.3;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-recall-hint {
+    font-size: 11.5px;
+    line-height: 1.42;
+    padding: 8px 10px;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-answer-panel {
+    padding: 14px;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-answer-copy strong {
+    margin-bottom: 6px;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-answer-copy > span {
+    font-size: 0.98rem;
+    line-height: 1.64;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-memory-actions {
+    flex: 0 0 auto;
+    gap: 8px;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-memory-actions button {
+    min-height: 30px;
+    padding: 0 10px;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-memory-actions small {
+    font-size: 10.5px;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-nav-arrow {
+    width: 32px;
+    height: 32px;
+    background: color-mix(in srgb, var(--card) 82%, transparent);
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-nav-arrow.is-prev {
+    left: 0;
+  }
+
+  .study-cards-page.is-mobile-practice .study-cards-nav-arrow.is-next {
+    right: 0;
   }
 }
 

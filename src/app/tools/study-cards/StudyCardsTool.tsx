@@ -50,37 +50,37 @@ Harness 还需要区分夹具数据和真实调用。夹具数据适合稳定复
 高级 Harness 的难点在于评判器设计。简单断言只能检查格式和关键词，不能判断答案是否真正引用证据、是否遵守业务边界、是否在不确定时拒答。因此评判器通常会分成结构校验、事实核对、行为约束和人工抽检几层。它最终服务的不是“让模型看起来聪明”，而是让 AI 功能可以被持续改、持续上线、持续追责。`;
 
 const SAMPLE_RESULT: StudyCardResult = {
-  summary: "AI Harness 构建进阶",
+  summary: "AI Harness 质量评测",
   cards: [
     {
-      front: "Harness 的核心边界是什么？",
-      back: "它把场景、上下文、工具、配置、断言和日志固定成可复跑的验证支架。",
-      note: "重点不是脚本，而是可比较的运行框架。",
+      front: "何时需要 Harness 介入？",
+      back: "当提示词、模型、工具或检索策略会变动时，用同一支架比较质量变化来源。",
+      note: "先看迭代前后的差异",
     },
     {
-      front: "为什么要先定义场景契约？",
-      back: "场景契约规定真实输入、期望结构、禁止行为和容错范围，避免评测只凭感觉。",
-      note: "先锁住业务语境，再看模型表现。",
+      front: "场景契约防止哪种误判？",
+      back: "它先固定真实输入、期望结构、禁止行为和容错范围，避免凭几个回答主观打分。",
+      note: "想想评测会怎样失真",
     },
     {
-      front: "夹具数据适合保护什么？",
-      back: "夹具适合复现缺字段、证据冲突、工具超时和上下文漂移等边界回归。",
-      note: "它保护稳定性，不负责代表全部真实世界。",
+      front: "夹具与真实调用怎么分工？",
+      back: "夹具保护可复现的边界回归，真实调用暴露复杂语义和外部系统里的不稳定。",
+      note: "一个保底，一个观察",
     },
     {
-      front: "真实调用在 Harness 里负责什么？",
-      back: "真实调用用于观察复杂语义和外部系统里的不稳定表现，补足夹具覆盖不到的风险。",
-      note: "它更像产品质量抽样。",
+      front: "为何不能只看格式断言？",
+      back: "格式合格只说明输出像样，不能证明它引用证据、遵守边界或会拒答。",
+      note: "想想哪些能力没被测",
     },
     {
-      front: "高级评判器为什么要分层？",
-      back: "因为格式、事实、行为边界和人工判断关注点不同，混在一起会误判质量。",
-      note: "不要用一个总分掩盖问题来源。",
+      front: "评判器分层解决什么？",
+      back: "把结构、事实、行为约束和人工抽检拆开，才能定位质量问题来自哪一层。",
+      note: "别让总分遮住来源",
     },
     {
-      front: "Harness 最终服务什么目标？",
-      back: "它服务持续迭代、上线回归和责任追踪，而不是让模型在单次展示里显得聪明。",
-      note: "看长期可控性，不看一次性表演。",
+      front: "Harness 服务哪种目标？",
+      back: "让 AI 功能能持续迭代、上线回归和追责，而不是赢一次漂亮演示。",
+      note: "看长期上线后的控制",
     },
   ],
 };
@@ -161,6 +161,7 @@ export default function StudyCardsTool() {
   const [memoryStats, setMemoryStats] = useState<Record<number, CardMemoryState>>({});
   const [reviewQueue, setReviewQueue] = useState<number[]>([]);
   const [reviewTurn, setReviewTurn] = useState(0);
+  const [mobilePracticeActive, setMobilePracticeActive] = useState(false);
   const transitionTimerRef = useRef<number | null>(null);
   const pointerStartXRef = useRef<number | null>(null);
   const draggingPointerIdRef = useRef<number | null>(null);
@@ -207,6 +208,12 @@ export default function StudyCardsTool() {
   ]
     .filter(Boolean)
     .join(" ");
+  const pageClassName = [
+    "study-cards-page",
+    mobilePracticeActive && result ? "is-mobile-practice" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   useEffect(() => {
     if (!loading) return undefined;
@@ -230,6 +237,20 @@ export default function StudyCardsTool() {
         window.clearTimeout(transitionTimerRef.current);
       }
     };
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 760px) and (orientation: portrait)");
+    const syncMobilePracticeMode = () => {
+      if (!media.matches) {
+        setMobilePracticeActive(false);
+      }
+    };
+
+    syncMobilePracticeMode();
+    media.addEventListener("change", syncMobilePracticeMode);
+
+    return () => media.removeEventListener("change", syncMobilePracticeMode);
   }, []);
 
   function resetCardDrag() {
@@ -261,11 +282,28 @@ export default function StudyCardsTool() {
     }, delay);
   }
 
+  function isMobilePracticeViewport() {
+    return window.matchMedia("(max-width: 760px) and (orientation: portrait)").matches;
+  }
+
   function focusCardsOnMobile() {
     window.setTimeout(() => {
-      if (!window.matchMedia("(max-width: 900px) and (orientation: portrait)").matches) return;
-      outputPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (isMobilePracticeViewport()) {
+        setMobilePracticeActive(true);
+        return;
+      }
+
+      if (window.matchMedia("(max-width: 900px) and (orientation: portrait)").matches) {
+        outputPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     }, 120);
+  }
+
+  function returnToInputOnMobile() {
+    setMobilePracticeActive(false);
+    window.setTimeout(() => {
+      document.getElementById("study-card-source")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
   }
 
   function resetPracticeDeck(nextTotalCards = totalCards) {
@@ -578,7 +616,7 @@ export default function StudyCardsTool() {
   }
 
   return (
-    <main className="study-cards-page">
+    <main className={pageClassName}>
       <Link href="/thinking-lab" className="study-cards-back-link" aria-label="返回工具与思考">
         <ArrowLeft aria-hidden="true" />
         <span>返回</span>
@@ -650,6 +688,7 @@ export default function StudyCardsTool() {
                   setResult(null);
                   setError("");
                   clearCardTimer();
+                  setMobilePracticeActive(false);
                   setPracticeMode("learn");
                   setActiveCardIndex(0);
                   setAnswerRevealed(false);
@@ -697,6 +736,10 @@ export default function StudyCardsTool() {
               <div className="study-cards-result">
                 <div className="study-cards-practice-top">
                   <div>
+                    <button type="button" className="study-cards-mobile-edit-button" onClick={returnToInputOnMobile}>
+                      <ArrowLeft aria-hidden="true" />
+                      编辑内容
+                    </button>
                     <p>{practiceModeLabel}</p>
                     <h2>{result.summary || "先想，再翻面"}</h2>
                   </div>

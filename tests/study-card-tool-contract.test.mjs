@@ -56,6 +56,10 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.match(client, /loadSampleContent/);
   assert.match(client, /Harness/);
   assert.match(client, /场景契约/);
+  assert.match(client, /AI Harness 质量评测/);
+  assert.match(client, /何时需要 Harness 介入/);
+  assert.match(client, /夹具与真实调用怎么分工/);
+  assert.match(client, /为何不能只看格式断言/);
   assert.match(client, /setDifficulty\(DIFFICULTY_OPTIONS\[2\]\)/);
   assert.match(client, /轻点这里翻开答案/);
   assert.match(client, /cardMotion/);
@@ -65,6 +69,10 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.match(client, /handleCardPointerUp/);
   assert.match(client, /outputPanelRef/);
   assert.match(client, /focusCardsOnMobile/);
+  assert.match(client, /mobilePracticeActive/);
+  assert.match(client, /is-mobile-practice/);
+  assert.match(client, /returnToInputOnMobile/);
+  assert.match(client, /编辑内容/);
   assert.match(client, /scrollIntoView/);
   assert.match(client, /getNextCardIndex/);
   assert.match(client, /getPreviousCardIndex/);
@@ -104,8 +112,16 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.match(styles, /cursor: grab/);
   assert.match(styles, /\.study-cards-question-block/);
   assert.match(styles, /\.study-cards-recall-hint/);
+  assert.match(styles, /\.study-cards-mobile-edit-button/);
   assert.match(styles, /@media \(max-width: 560px\)[\s\S]*\.study-cards-deck::before[\s\S]*display: none/);
   assert.match(styles, /@media \(max-width: 760px\) and \(orientation: portrait\)/);
+  assert.match(styles, /\.study-cards-page\.is-mobile-practice[\s\S]*position: fixed/);
+  assert.match(styles, /\.study-cards-page\.is-mobile-practice[\s\S]*overflow: hidden/);
+  assert.match(styles, /\.study-cards-page\.is-mobile-practice \.study-cards-input-panel[\s\S]*display: none/);
+  assert.match(styles, /\.study-cards-page\.is-mobile-practice \.study-cards-deck-shell[\s\S]*align-items: flex-start/);
+  assert.match(styles, /\.study-cards-page\.is-mobile-practice \.study-cards-deck[\s\S]*width: min\(100%, 360px\)/);
+  assert.match(styles, /\.study-cards-page\.is-mobile-practice \.study-cards-deck::before[\s\S]*display: block/);
+  assert.match(styles, /\.study-cards-page\.is-mobile-practice \.study-cards-card-stage[\s\S]*touch-action: none/);
   assert.match(styles, /min-height:\s*calc\(100dvh - 22px\)/);
   assert.match(styles, /@keyframes study-cards-card-exit-next/);
   assert.match(styles, /@keyframes study-cards-answer-reveal/);
@@ -119,6 +135,8 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.doesNotMatch(client, /CheckCircle2/);
   assert.doesNotMatch(client, /记住了/);
   assert.doesNotMatch(client, /is-remembered/);
+  assert.doesNotMatch(client, /Harness 的核心边界是什么/);
+  assert.doesNotMatch(client, /重点不是脚本/);
   assert.doesNotMatch(client, /is-answer/);
   assert.doesNotMatch(client, /study-cards-card-grid/);
   assert.doesNotMatch(client, /study-cards-flash-card/);
@@ -126,6 +144,19 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.doesNotMatch(client, /study-cards-quiz/);
   assert.doesNotMatch(client, /ListChecks/);
   assert.doesNotMatch(client, /StudyQuiz/);
+
+  const sampleCards = Array.from(
+    client.matchAll(/front: "([^"]+)",\s+back: "([^"]+)",\s+note: "([^"]+)"/g),
+    ([, front, back, note]) => ({ front, back, note }),
+  );
+  assert.equal(sampleCards.length, 6);
+  for (const card of sampleCards) {
+    assert.ok(card.front.length <= 24, `sample front is too long: ${card.front}`);
+    assert.ok(card.back.length <= 70, `sample back is too long: ${card.back}`);
+    assert.ok(card.note.length <= 24, `sample note is too long: ${card.note}`);
+    assert.doesNotMatch(card.front, /^什么是/);
+    assert.doesNotMatch(card.front, /^什么叫/);
+  }
 });
 
 test("AI study card endpoint asks for structured learning output", async () => {
