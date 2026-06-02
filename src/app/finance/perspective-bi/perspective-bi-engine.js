@@ -4,20 +4,88 @@ import "@perspective-dev/viewer-datagrid";
 import "@perspective-dev/viewer-d3fc";
 import * as XLSX from "xlsx";
 
-const SAMPLE_ROWS = [
-    { 月份: "2026-01", 大区: "欧洲", 国家: "德国", 车型: "Alpha", 渠道: "经销", 销量: 1280, 净收入: 16840, 边际总额: 4120 },
-    { 月份: "2026-01", 大区: "欧洲", 国家: "法国", 车型: "Alpha", 渠道: "直营", 销量: 960, 净收入: 12620, 边际总额: 2980 },
-    { 月份: "2026-01", 大区: "拉美", 国家: "巴西", 车型: "Beta", 渠道: "经销", 销量: 1420, 净收入: 15650, 边际总额: 3540 },
-    { 月份: "2026-02", 大区: "欧洲", 国家: "德国", 车型: "Gamma", 渠道: "经销", 销量: 1360, 净收入: 18940, 边际总额: 4860 },
-    { 月份: "2026-02", 大区: "中东", 国家: "阿联酋", 车型: "Beta", 渠道: "直营", 销量: 820, 净收入: 10890, 边际总额: 2680 },
-    { 月份: "2026-02", 大区: "拉美", 国家: "墨西哥", 车型: "Alpha", 渠道: "经销", 销量: 1190, 净收入: 13780, 边际总额: 2910 },
-    { 月份: "2026-03", 大区: "欧洲", 国家: "西班牙", 车型: "Beta", 渠道: "直营", 销量: 1040, 净收入: 13490, 边际总额: 3310 },
-    { 月份: "2026-03", 大区: "中东", 国家: "沙特", 车型: "Gamma", 渠道: "经销", 销量: 910, 净收入: 13240, 边际总额: 3860 },
-    { 月份: "2026-03", 大区: "拉美", 国家: "巴西", 车型: "Gamma", 渠道: "经销", 销量: 1510, 净收入: 18480, 边际总额: 4380 },
-    { 月份: "2026-04", 大区: "欧洲", 国家: "法国", 车型: "Gamma", 渠道: "直营", 销量: 1120, 净收入: 16130, 边际总额: 4210 },
-    { 月份: "2026-04", 大区: "中东", 国家: "阿联酋", 车型: "Alpha", 渠道: "经销", 销量: 990, 净收入: 12120, 边际总额: 2860 },
-    { 月份: "2026-04", 大区: "拉美", 国家: "墨西哥", 车型: "Beta", 渠道: "直营", 销量: 1320, 净收入: 15690, 边际总额: 3620 },
+const SAMPLE_ROW_TARGET = 216;
+const SAMPLE_MONTHS = [
+    "2026-01",
+    "2026-02",
+    "2026-03",
+    "2026-04",
+    "2026-05",
+    "2026-06",
+    "2026-07",
+    "2026-08",
+    "2026-09",
+    "2026-10",
+    "2026-11",
+    "2026-12",
 ];
+const SAMPLE_MARKETS = [
+    { 大区: "欧洲", countries: ["德国", "法国", "西班牙"] },
+    { 大区: "拉美", countries: ["巴西", "墨西哥", "智利"] },
+    { 大区: "中东", countries: ["阿联酋", "沙特", "科威特"] },
+    { 大区: "东盟", countries: ["泰国", "马来西亚", "印尼"] },
+    { 大区: "非洲", countries: ["南非", "埃及", "摩洛哥"] },
+    { 大区: "独联体", countries: ["哈萨克斯坦", "乌兹别克斯坦", "格鲁吉亚"] },
+];
+const SAMPLE_MODELS = ["Alpha", "Beta", "Gamma", "Delta"];
+const SAMPLE_CHANNELS = ["经销", "直营", "集团客户"];
+
+function buildSampleRows() {
+    const rows = [];
+    const modelScale = [1.06, 0.92, 1.18, 0.98];
+    const channelScale = [1.04, 0.94, 1.16];
+    const businessUnits = ["燃油车", "新能源", "混动"];
+
+    SAMPLE_MONTHS.forEach((month, monthIndex) => {
+        SAMPLE_MARKETS.forEach((market, marketIndex) => {
+            for (let modelSlot = 0; modelSlot < 3; modelSlot += 1) {
+                const modelIndex = (monthIndex + marketIndex + modelSlot) % SAMPLE_MODELS.length;
+                const channelIndex = (monthIndex + modelSlot) % SAMPLE_CHANNELS.length;
+                const country = market.countries[(monthIndex + modelSlot) % market.countries.length];
+                const seasonLift = Math.sin((monthIndex + 1) / 12 * Math.PI * 2) * 46;
+                const marketLift = 1 + marketIndex * 0.055;
+                const baseVolume = 520 + monthIndex * 28 + marketIndex * 54 + modelIndex * 36 + modelSlot * 31;
+                const salesVolume = Math.round((baseVolume + seasonLift) * marketLift * modelScale[modelIndex] * channelScale[channelIndex]);
+                const orders = Math.round(salesVolume * (1.07 + modelSlot * 0.035) + 24 + marketIndex * 9);
+                const unitRevenue = 11.6 + modelIndex * 0.78 + marketIndex * 0.32 + monthIndex * 0.09 + channelIndex * 0.38;
+                const netRevenue = Math.round(salesVolume * unitRevenue);
+                const costRatio = 0.64 + ((marketIndex + modelIndex) % 5) * 0.024;
+                const cost = Math.round(netRevenue * costRatio);
+                const margin = netRevenue - cost;
+                const marketingExpense = Math.round(netRevenue * (0.032 + channelIndex * 0.007 + marketIndex * 0.002));
+                const collectedRevenue = Math.round(netRevenue * (0.86 + ((monthIndex + modelSlot) % 6) * 0.022));
+                const openingInventory = Math.round(salesVolume * (1.32 + (marketIndex % 3) * 0.08) + modelIndex * 42);
+                const endingInventory = Math.max(0, Math.round(openingInventory + orders - salesVolume));
+                const highestInventory = Math.max(openingInventory, endingInventory) + Math.round(salesVolume * (0.18 + modelSlot * 0.025));
+                const lowestInventory = Math.max(0, Math.min(openingInventory, endingInventory) - Math.round(salesVolume * (0.12 + channelIndex * 0.02)));
+
+                rows.push({
+                    月份: month,
+                    大区: market.大区,
+                    国家: country,
+                    业务单元: businessUnits[(marketIndex + modelIndex) % businessUnits.length],
+                    车型: SAMPLE_MODELS[modelIndex],
+                    渠道: SAMPLE_CHANNELS[channelIndex],
+                    销量: salesVolume,
+                    订单量: orders,
+                    净收入: netRevenue,
+                    成本: cost,
+                    边际总额: margin,
+                    市场费用: marketingExpense,
+                    回款金额: collectedRevenue,
+                    期初库存: openingInventory,
+                    期末库存: endingInventory,
+                    最高库存: highestInventory,
+                    最低库存: lowestInventory,
+                });
+            }
+        });
+    });
+
+    return rows.slice(0, SAMPLE_ROW_TARGET);
+}
+
+const SAMPLE_ROWS = buildSampleRows();
 
 const TEMPLATE_ROWS = [
     { 月份: "2026-01", 大区: "欧洲", 国家: "德国", 车型: "Alpha", 渠道: "经销", 销量: 1000, 净收入: 12000, 边际总额: 3200 },
