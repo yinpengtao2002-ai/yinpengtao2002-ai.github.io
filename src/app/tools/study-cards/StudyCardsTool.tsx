@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -11,7 +11,6 @@ import {
   Layers,
   Loader2,
   RotateCcw,
-  Sparkles,
   Trash2,
   WandSparkles,
 } from "lucide-react";
@@ -29,6 +28,10 @@ type StudyCardResult = {
 
 type CardMotion = "idle" | "exit-next" | "enter-next" | "exit-prev" | "enter-prev";
 type CardDirection = "next" | "prev";
+type DragIntent = "idle" | "next" | "prev";
+
+const DRAG_THRESHOLD = 90;
+const MAX_DRAG_OFFSET = 150;
 
 const SAMPLE_CONTENT = `间隔重复是一种学习方法，它的核心思想是在记忆即将遗忘之前进行复习。相比一次性反复阅读，间隔重复会把复习分散到多个时间点，让大脑在“努力回忆”的过程中重新巩固知识。
 
@@ -41,20 +44,23 @@ const SAMPLE_RESULT: StudyCardResult = {
   cards: [
     {
       front: "间隔重复解决什么问题？",
-      back: "把复习分散到多个时间点，减少遗忘。",
-      note: "关键是临忘前回忆。",
+      back: "它把复习分散到多个时间点，让大脑在快遗忘时重新提取并加固记忆。",
+      note: "想想为什么复习要分散。",
     },
     {
       front: "主动回忆为什么重要？",
-      back: "它能暴露没掌握的地方，并重新加固记忆。",
+      back: "因为先尝试回答会暴露薄弱点，再看答案修正，比直接阅读更能巩固理解。",
+      note: "先答再看，不是反过来。",
     },
     {
       front: "好卡片应该怎样写？",
-      back: "短小、清晰，一张只考一个知识点。",
+      back: "一张卡只考一个知识点，问题短、答案清楚，复习时能立刻判断自己是否掌握。",
+      note: "避免把多个概念塞一起。",
     },
     {
       front: "Anki 正反面怎么用？",
-      back: "正面放问题或提示，背面放可复习答案。",
+      back: "正面放问题或提示，背面放可复述的答案，让学习者先回忆再验证。",
+      note: "正面负责提问，背面负责校对。",
     },
   ],
 };
@@ -109,7 +115,13 @@ export default function StudyCardsTool() {
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const [answerRevealed, setAnswerRevealed] = useState(false);
   const [cardMotion, setCardMotion] = useState<CardMotion>("idle");
+  const [dragOffset, setDragOffset] = useState(0);
+  const [dragIntent, setDragIntent] = useState<DragIntent>("idle");
   const transitionTimerRef = useRef<number | null>(null);
+  const pointerStartXRef = useRef<number | null>(null);
+  const draggingPointerIdRef = useRef<number | null>(null);
+  const dragOffsetRef = useRef(0);
+  const wasDraggingRef = useRef(false);
 
   const contentLength = useMemo(() => countChineseText(content), [content]);
   const canSubmit = contentLength >= 80 && !loading;
@@ -119,6 +131,18 @@ export default function StudyCardsTool() {
   const cardProgress = totalCards > 0 ? ((activeCardIndex + 1) / totalCards) * 100 : 0;
   const isFirstCard = activeCardIndex === 0;
   const isLastCard = activeCardIndex >= totalCards - 1;
+  const cardStageStyle = {
+    "--drag-x": `${dragOffset}px`,
+    "--drag-rotate": `${dragOffset * 0.035}deg`,
+  } as CSSProperties;
+  const cardStageClassName = [
+    "study-cards-card-stage",
+    dragOffset !== 0 ? "is-dragging" : "",
+    dragIntent === "next" ? "is-drag-next" : "",
+    dragIntent === "prev" ? "is-drag-prev" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   useEffect(() => {
     if (!loading) return undefined;
@@ -144,6 +168,20 @@ export default function StudyCardsTool() {
     };
   }, []);
 
+  function resetCardDrag() {
+    pointerStartXRef.current = null;
+    draggingPointerIdRef.current = null;
+    dragOffsetRef.current = 0;
+    setDragOffset(0);
+    setDragIntent("idle");
+  }
+
+  function clearDragClickGuard() {
+    window.setTimeout(() => {
+      wasDraggingRef.current = false;
+    }, 120);
+  }
+
   function clearCardTimer() {
     if (transitionTimerRef.current !== null) {
       window.clearTimeout(transitionTimerRef.current);
@@ -161,6 +199,7 @@ export default function StudyCardsTool() {
 
   function resetPracticeDeck() {
     clearCardTimer();
+    resetCardDrag();
     setActiveCardIndex(0);
     setAnswerRevealed(false);
     setCardMotion("enter-prev");
@@ -179,6 +218,7 @@ export default function StudyCardsTool() {
     if (!result || cardMotion !== "idle" || targetIndex < 0 || targetIndex >= totalCards) return;
 
     clearCardTimer();
+    resetCardDrag();
     setAnswerRevealed(false);
     setCardMotion(direction === "next" ? "exit-next" : "exit-prev");
     transitionTimerRef.current = window.setTimeout(() => {
@@ -193,7 +233,74 @@ export default function StudyCardsTool() {
   }
 
   function goToNextCard() {
+    if (isLastCard) {
+      resetPracticeDeck();
+      return;
+    }
+
     moveToCard(activeCardIndex + 1, "next");
+  }
+
+  function revealAnswer() {
+    if (wasDraggingRef.current) return;
+    setAnswerRevealed(true);
+  }
+
+  function handleCardPointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (!result || cardMotion !== "idle") return;
+
+    pointerStartXRef.current = event.clientX;
+    draggingPointerIdRef.current = event.pointerId;
+    wasDraggingRef.current = false;
+  }
+
+  function handleCardPointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (pointerStartXRef.current === null || draggingPointerIdRef.current !== event.pointerId) return;
+
+    const rawOffset = event.clientX - pointerStartXRef.current;
+    const offset = Math.sign(rawOffset) * Math.min(Math.abs(rawOffset), MAX_DRAG_OFFSET);
+    dragOffsetRef.current = offset;
+    setDragOffset(offset);
+    setDragIntent(offset < -36 ? "next" : offset > 36 ? "prev" : "idle");
+
+    if (Math.abs(rawOffset) > 6) {
+      wasDraggingRef.current = true;
+      if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }
+    }
+  }
+
+  function handleCardPointerUp(event: PointerEvent<HTMLDivElement>) {
+    if (draggingPointerIdRef.current !== event.pointerId) return;
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    const finalOffset = dragOffsetRef.current;
+    const shouldGoNext = finalOffset <= -DRAG_THRESHOLD;
+    const shouldGoPrev = finalOffset >= DRAG_THRESHOLD;
+    resetCardDrag();
+    clearDragClickGuard();
+
+    if (shouldGoNext) {
+      goToNextCard();
+      return;
+    }
+
+    if (shouldGoPrev && !isFirstCard) {
+      goToPreviousCard();
+    }
+  }
+
+  function handleCardPointerCancel(event: PointerEvent<HTMLDivElement>) {
+    if (draggingPointerIdRef.current === event.pointerId && event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    resetCardDrag();
+    clearDragClickGuard();
   }
 
   async function generateCards() {
@@ -206,6 +313,7 @@ export default function StudyCardsTool() {
     setProgressValue(8);
     setError("");
     clearCardTimer();
+    resetCardDrag();
     setActiveCardIndex(0);
     setAnswerRevealed(false);
     setCardMotion("idle");
@@ -250,10 +358,6 @@ export default function StudyCardsTool() {
                 <p>AI Study Cards</p>
                 <h1>AI 学习卡片生成器</h1>
               </div>
-              <span>
-                <Sparkles aria-hidden="true" />
-                独立工具
-              </span>
             </div>
 
             <label className="study-cards-textarea-label" htmlFor="study-card-source">
@@ -361,42 +465,60 @@ export default function StudyCardsTool() {
                   <span>第 {activeCardIndex + 1} / {totalCards} 张</span>
                 </div>
 
+                <p className="study-cards-swipe-help">鼠标左滑下一张，右滑上一张</p>
+
                 <div className="study-cards-card-progress" aria-hidden="true">
                   <span style={{ width: `${cardProgress}%` }} />
                 </div>
 
                 <div className="study-cards-deck" aria-live="polite">
-                  <article
-                    key={activeCardIndex}
-                    className={`study-cards-practice-card is-${cardMotion}`}
-                    aria-label="当前问答卡片"
+                  <div
+                    className={cardStageClassName}
+                    style={cardStageStyle}
+                    onPointerDown={handleCardPointerDown}
+                    onPointerMove={handleCardPointerMove}
+                    onPointerUp={handleCardPointerUp}
+                    onPointerCancel={handleCardPointerCancel}
                   >
-                    <div className="study-cards-practice-kicker">
-                      <span>{String(activeCardIndex + 1).padStart(2, "0")}</span>
-                      <span>主动回忆</span>
-                    </div>
-                    <h3>{compactText(activeCard.front, 58)}</h3>
-                    <button
-                      type="button"
-                      className={`study-cards-answer-panel${answerRevealed ? " is-revealed" : " is-hidden"}`}
-                      onClick={() => setAnswerRevealed(true)}
-                      aria-expanded={answerRevealed}
-                      aria-label={answerRevealed ? "答案已显示" : "显示答案"}
+                    <article
+                      key={activeCardIndex}
+                      className={`study-cards-practice-card is-${cardMotion}`}
+                      aria-label="当前问答卡片"
                     >
-                      {answerRevealed ? (
-                        <span className="study-cards-answer-copy">
-                          <strong>答案</strong>
-                          <span>{compactText(activeCard.back, 86)}</span>
-                          {activeCard.note && <small>{compactText(activeCard.note, 48)}</small>}
-                        </span>
-                      ) : (
-                        <span className="study-cards-answer-placeholder">
-                          <Eye aria-hidden="true" />
-                          轻点这里翻开答案
-                        </span>
-                      )}
-                    </button>
-                  </article>
+                      <div className="study-cards-question-block">
+                        <div className="study-cards-practice-kicker">
+                          <span>{String(activeCardIndex + 1).padStart(2, "0")}</span>
+                          <span>主动回忆</span>
+                        </div>
+                        <h3>{compactText(activeCard.front, 42)}</h3>
+                      </div>
+                      <button
+                        type="button"
+                        className={`study-cards-answer-panel${answerRevealed ? " is-revealed" : " is-hidden"}`}
+                        onClick={revealAnswer}
+                        aria-expanded={answerRevealed}
+                        aria-label={answerRevealed ? "答案已显示" : "显示答案"}
+                      >
+                        {answerRevealed ? (
+                          <span className="study-cards-answer-copy">
+                            <strong>参考答案</strong>
+                            <span>{compactText(activeCard.back, 110)}</span>
+                            {activeCard.note && (
+                              <small className="study-cards-answer-hint">
+                                <span>提示</span>
+                                {compactText(activeCard.note, 52)}
+                              </small>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="study-cards-answer-placeholder">
+                            <Eye aria-hidden="true" />
+                            轻点这里翻开答案
+                          </span>
+                        )}
+                      </button>
+                    </article>
+                  </div>
                 </div>
 
                 <div className="study-cards-practice-actions" aria-label="卡片练习操作">
@@ -408,7 +530,7 @@ export default function StudyCardsTool() {
                     type="button"
                     className="is-primary"
                     onClick={isLastCard ? resetPracticeDeck : goToNextCard}
-                    disabled={cardMotion !== "idle" || (!answerRevealed && !isLastCard)}
+                    disabled={cardMotion !== "idle"}
                   >
                     {isLastCard ? <RotateCcw aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}
                     {isLastCard ? "重新开始" : "下一张"}

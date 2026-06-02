@@ -2605,22 +2605,6 @@ h6 {
   line-height: 1.08;
 }
 
-.study-cards-title-row > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 28px;
-  white-space: nowrap;
-  border: 1px solid color-mix(in srgb, var(--accent-tertiary) 22%, var(--border));
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--accent-tertiary) 10%, var(--card));
-  color: color-mix(in srgb, var(--foreground) 76%, var(--accent-tertiary));
-  font-size: 12px;
-  font-weight: 800;
-  padding: 0 10px;
-}
-
-.study-cards-title-row svg,
 .study-cards-actions svg,
 .study-cards-practice-actions svg {
   width: 16px;
@@ -2841,7 +2825,7 @@ h6 {
   height: 100%;
   max-height: calc(100dvh - clamp(8.2rem, 11vw, 9.8rem));
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   overflow: auto;
   padding-right: 4px;
 }
@@ -2857,6 +2841,14 @@ h6 {
   margin: 0;
   font-size: clamp(1.05rem, 1.9vw, 1.34rem);
   line-height: 1.28;
+}
+
+.study-cards-swipe-help {
+  margin: -2px 0 0;
+  color: color-mix(in srgb, var(--foreground) 48%, var(--muted));
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.5;
 }
 
 .study-cards-practice-top > span {
@@ -2894,20 +2886,25 @@ h6 {
 .study-cards-deck {
   position: relative;
   isolation: isolate;
-  padding: 12px 12px 18px;
+  padding: 16px 18px 24px;
   perspective: 1200px;
+  user-select: none;
 }
 
 .study-cards-deck::before,
 .study-cards-deck::after {
   position: absolute;
   content: "";
-  inset: 28px 24px 10px;
+  inset: 34px 32px 12px;
   z-index: 0;
   border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--card) 94%, var(--background));
-  box-shadow: 0 18px 42px rgba(20, 20, 19, 0.08);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--card) 96%, white), color-mix(in srgb, var(--background) 64%, var(--card))),
+    var(--card);
+  box-shadow:
+    0 18px 44px rgba(20, 20, 19, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
 
 .study-cards-deck::before {
@@ -2918,27 +2915,61 @@ h6 {
   transform: rotate(2deg) translate(6px, 14px);
 }
 
-.study-cards-practice-card {
+.study-cards-card-stage {
   position: relative;
   z-index: 2;
+  cursor: grab;
+  touch-action: pan-y;
+  transform: translate3d(var(--drag-x, 0), 0, 0) rotate(var(--drag-rotate, 0deg));
+  transition:
+    transform 0.22s cubic-bezier(0.2, 0.82, 0.2, 1),
+    filter 0.22s ease;
+  will-change: transform;
+}
+
+.study-cards-card-stage.is-dragging {
+  cursor: grabbing;
+  transition: none;
+}
+
+.study-cards-card-stage.is-drag-next {
+  filter: drop-shadow(16px 20px 24px rgba(20, 20, 19, 0.12));
+}
+
+.study-cards-card-stage.is-drag-prev {
+  filter: drop-shadow(-16px 20px 24px rgba(20, 20, 19, 0.12));
+}
+
+.study-cards-practice-card {
+  position: relative;
   display: flex;
-  min-height: 430px;
+  min-height: 500px;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 18px;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+  border: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
   border-radius: 8px;
   background:
-    linear-gradient(145deg, color-mix(in srgb, var(--accent-secondary) 8%, transparent), transparent 38%),
-    linear-gradient(0deg, color-mix(in srgb, var(--accent) 5%, transparent), transparent 62%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.74), transparent 34%),
+    linear-gradient(145deg, color-mix(in srgb, var(--accent-secondary) 7%, transparent), transparent 42%),
+    linear-gradient(0deg, color-mix(in srgb, var(--accent) 4%, transparent), transparent 58%),
     var(--card);
   box-shadow:
-    0 30px 80px rgba(20, 20, 19, 0.16),
-    0 7px 18px rgba(20, 20, 19, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+    0 34px 86px rgba(20, 20, 19, 0.18),
+    0 8px 22px rgba(20, 20, 19, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
   transform-origin: 52% 88%;
-  padding: 24px;
+  padding: 24px 26px 26px;
   will-change: transform, opacity;
+}
+
+.study-cards-practice-card::before {
+  position: absolute;
+  content: "";
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-secondary), var(--accent-tertiary));
+  opacity: 0.55;
 }
 
 .study-cards-practice-card.is-exit-next {
@@ -2978,27 +3009,38 @@ h6 {
   color: var(--accent);
 }
 
+.study-cards-question-block {
+  display: flex;
+  min-height: 128px;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 18px;
+}
+
 .study-cards-practice-card h3 {
-  max-width: 760px;
-  margin: 28px 0 34px;
+  max-width: 680px;
+  margin: 0;
   color: var(--foreground);
-  font-size: 2rem;
-  line-height: 1.28;
+  font-size: clamp(1.35rem, 2.2vw, 1.72rem);
+  line-height: 1.34;
   text-wrap: balance;
 }
 
 .study-cards-answer-panel {
   display: flex;
   width: 100%;
-  min-height: 132px;
+  min-height: 260px;
+  flex: 1;
   align-items: center;
-  border: 1px dashed color-mix(in srgb, var(--accent-secondary) 34%, var(--border));
+  border: 1px solid color-mix(in srgb, var(--accent-secondary) 24%, var(--border));
   border-radius: 8px;
-  background: color-mix(in srgb, var(--background) 64%, var(--card));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--background) 70%, var(--card)), color-mix(in srgb, var(--card) 94%, white)),
+    var(--card);
   color: color-mix(in srgb, var(--foreground) 74%, var(--muted));
   cursor: pointer;
   font: inherit;
-  padding: 18px;
+  padding: 24px;
   text-align: left;
   transition:
     background 0.2s ease,
@@ -3009,8 +3051,12 @@ h6 {
 
 .study-cards-answer-panel:hover {
   border-color: color-mix(in srgb, var(--accent-secondary) 52%, var(--border));
-  background: color-mix(in srgb, var(--accent-secondary) 7%, var(--card));
-  box-shadow: 0 14px 34px rgba(69, 113, 157, 0.1);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent-secondary) 7%, var(--card)), color-mix(in srgb, var(--card) 94%, white)),
+    var(--card);
+  box-shadow:
+    0 16px 36px rgba(69, 113, 157, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
   transform: translateY(-1px);
 }
 
@@ -3018,7 +3064,9 @@ h6 {
   align-items: flex-start;
   border-style: solid;
   border-color: color-mix(in srgb, var(--accent-tertiary) 28%, var(--border));
-  background: color-mix(in srgb, var(--accent-tertiary) 7%, var(--card));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent-tertiary) 8%, var(--card)), color-mix(in srgb, var(--background) 64%, var(--card))),
+    var(--card);
   cursor: default;
 }
 
@@ -3038,7 +3086,10 @@ h6 {
 }
 
 .study-cards-answer-copy {
-  display: block;
+  display: flex;
+  width: 100%;
+  min-height: 100%;
+  flex-direction: column;
   animation: study-cards-answer-reveal 0.52s ease both;
 }
 
@@ -3053,16 +3104,26 @@ h6 {
 .study-cards-answer-copy > span {
   display: block;
   color: color-mix(in srgb, var(--foreground) 78%, var(--muted));
-  font-size: 1.08rem;
-  line-height: 1.65;
+  font-size: clamp(1.02rem, 1.55vw, 1.16rem);
+  line-height: 1.78;
 }
 
 .study-cards-answer-copy small {
-  display: block;
-  margin-top: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 18px;
   color: color-mix(in srgb, var(--foreground) 58%, var(--muted));
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: 12.5px;
+  font-weight: 760;
+  line-height: 1.55;
+}
+
+.study-cards-answer-hint span {
+  flex: 0 0 auto;
+  color: color-mix(in srgb, var(--accent) 82%, var(--foreground));
+  font-weight: 900;
 }
 
 .study-cards-practice-actions {
@@ -3160,7 +3221,7 @@ h6 {
   }
 
   .study-cards-practice-card {
-    min-height: 390px;
+    min-height: 460px;
   }
 }
 
@@ -3174,7 +3235,6 @@ h6 {
     flex-direction: column;
   }
 
-  .study-cards-title-row > span,
   .study-cards-practice-top > span {
     width: 100%;
   }
@@ -3195,21 +3255,26 @@ h6 {
   }
 
   .study-cards-practice-card {
-    min-height: 360px;
+    min-height: 430px;
     padding: 18px;
   }
 
+  .study-cards-question-block {
+    min-height: 112px;
+  }
+
   .study-cards-practice-card h3 {
-    margin: 24px 0 28px;
-    font-size: 1.55rem;
+    font-size: 1.32rem;
   }
 
   .study-cards-answer-panel {
-    min-height: 118px;
+    min-height: 230px;
+    padding: 18px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .study-cards-card-stage,
   .study-cards-practice-card,
   .study-cards-answer-copy,
   .study-cards-card-progress span,
