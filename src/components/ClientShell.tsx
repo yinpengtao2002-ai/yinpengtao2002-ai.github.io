@@ -19,7 +19,6 @@ function shouldHideDecorativeExtras(pathname: string) {
 
 function shouldHideAssistant(pathname: string) {
     return (
-        pathname.startsWith("/tools/study-cards") ||
         pathname.startsWith("/tools/subtitle-workbench")
     );
 }

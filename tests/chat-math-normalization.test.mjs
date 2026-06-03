@@ -144,6 +144,18 @@ test("finance detail pages keep the AI assistant available", () => {
   assert.match(clientShell, /hideDecorativeExtras/);
 });
 
+test("tool pages do not remove the global AI assistant from mobile visitors", () => {
+  const assistantHideBlock = clientShell.match(/function shouldHideAssistant[\s\S]*?\n}/)?.[0] ?? "";
+
+  assert.match(clientShell, /<ChatWidget \/>/);
+  assert.doesNotMatch(assistantHideBlock, /\/tools\/study-cards/);
+});
+
+test("mobile chat launcher clearly identifies Lucas AI", () => {
+  assert.match(chatWidget, /aria-label="打开 Lucas AI 助手"/);
+  assert.match(chatWidget, /chat-floating-ai-badge/);
+});
+
 test("chat renderer turns bare internal routes into clickable markdown links", () => {
   const input = "财务模型库（/finance）和工具与思考（/thinking-lab）都可以看，也可以直接进 /finance/business-analysis。";
 

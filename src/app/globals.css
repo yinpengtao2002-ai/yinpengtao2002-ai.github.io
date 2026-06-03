@@ -5256,6 +5256,13 @@ h6 {
   border-radius: 16px;
 }
 
+.chat-floating-ai-badge {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
 .chat-markdown .katex {
   font-size: 1em;
 }

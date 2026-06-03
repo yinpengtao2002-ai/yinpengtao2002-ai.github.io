@@ -737,11 +737,12 @@ export default function ChatWidget() {
                         exit={{ scale: 0, opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         onClick={handleOpen}
+                        aria-label="打开 Lucas AI 助手"
                         style={{
                             position: "fixed",
                             bottom: isMobileLike ? 16 : 24,
                             right: isMobileLike ? 16 : 24,
-                            width: isMobileLike ? 48 : undefined,
+                            width: isMobileLike ? 62 : undefined,
                             height: 48,
                             borderRadius: 24,
                             border: "none",
@@ -751,8 +752,8 @@ export default function ChatWidget() {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            gap: 8,
-                            padding: isMobileLike ? 0 : "0 18px 0 14px",
+                            gap: isMobileLike ? 5 : 8,
+                            padding: isMobileLike ? "0 11px" : "0 18px 0 14px",
                             boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
                             zIndex: 9999,
                             fontSize: 14,
@@ -761,7 +762,8 @@ export default function ChatWidget() {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                     >
-                        <MessageCircle style={{ width: 20, height: 20 }} />
+                        <MessageCircle style={{ width: isMobileLike ? 17 : 20, height: isMobileLike ? 17 : 20 }} />
+                        {isMobileLike && <span className="chat-floating-ai-badge">AI</span>}
                         {!isMobileLike && <span>AI 助手</span>}
                     </motion.button>
                 )}
