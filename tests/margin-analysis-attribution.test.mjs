@@ -365,6 +365,9 @@ test("drill order panel exposes the impact baseline as a path anchor", () => {
     assert.match(marginAnalysisStyles, /\.impact-baseline-grip/);
     assert.match(marginAnalysisStyles, /\.dimension-train-car\.global-baseline/);
     assert.match(marginAnalysisStyles, /\.baseline-tail-visible/);
+    assert.match(marginAnalysisStyles, /\.impact-baseline-handle::before/);
+    assert.match(marginAnalysisStyles, /min-width:\s*46px/);
+    assert.doesNotMatch(marginAnalysisStyles, /writing-mode:\s*vertical-rl/);
 });
 
 test("impact baseline changes refresh sidebar state without clearing drill filters", () => {
@@ -623,6 +626,21 @@ test("demo data gives revenue, cost, and margin distinct unit-metric movements",
         assert.ok(row.Metric_2 < 0, "demo cost should be negative");
         assert.equal(row.Metric_1 + row.Metric_2, row.Metric_3);
     });
+});
+
+test("demo data provides a richer drill path for first-time exploration", () => {
+    const demoRows = generateDemoData();
+    const normalized = normalizeUploadedRows(demoRows);
+
+    assert.ok(demoRows.length >= 40, "demo data should include enough rows to make filters and drilldown meaningful");
+    assert.deepEqual(normalized.dimCols, ["Dim_A", "Dim_B", "Dim_C", "Dim_D", "Dim_E"]);
+
+    const uniqueCount = (field) => new Set(demoRows.map(row => row[field])).size;
+    assert.ok(uniqueCount("大区") >= 4, "demo should span multiple regions");
+    assert.ok(uniqueCount("国家") >= 10, "demo should span many countries");
+    assert.ok(uniqueCount("车型") >= 5, "demo should span several model families");
+    assert.ok(uniqueCount("燃油品类") >= 3, "demo should include fuel or energy categories");
+    assert.ok(uniqueCount("品牌") >= 3, "demo should include brand-level drilldown");
 });
 
 test("analysis area no longer renders the top KPI card strip", () => {

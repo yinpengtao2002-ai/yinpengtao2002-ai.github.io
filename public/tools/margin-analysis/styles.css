@@ -484,7 +484,7 @@ details[open] > .sidebar-summary::after {
 }
 
 .dimension-train-car.baseline-active {
-    padding-left: 2.45rem;
+    padding-left: 4rem;
     border-color: rgba(120, 140, 93, 0.58);
     box-shadow: 0 0 0 3px rgba(120, 140, 93, 0.12);
 }
@@ -528,31 +528,41 @@ details[open] > .sidebar-summary::after {
 
 .impact-baseline-handle {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    top: 0;
+    left: 0.42rem;
+    top: 50%;
     z-index: 2;
     display: inline-flex;
-    width: 28px;
-    min-height: 100%;
+    min-width: 46px;
+    height: 24px;
     cursor: grab;
     align-items: center;
     justify-content: center;
-    gap: 3px;
-    flex-direction: column;
-    border: 0;
-    border-right: 1px solid rgba(255, 255, 255, 0.34);
-    border-radius: 7px 0 0 7px;
-    background: linear-gradient(180deg, #7f955f, var(--accent-green));
-    box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.26), 4px 0 12px rgba(120, 140, 93, 0.16);
-    color: #fff;
+    gap: 4px;
+    border: 1px solid rgba(120, 140, 93, 0.26);
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(248, 251, 244, 0.98), rgba(232, 240, 222, 0.98));
+    box-shadow: 0 5px 14px rgba(120, 140, 93, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    color: #5f7448;
     font-family: var(--font-sans);
-    padding: 0.24rem 0;
+    padding: 0 0.38rem 0 0.46rem;
+    transform: translateY(-50%);
+}
+
+.impact-baseline-handle::before {
+    position: absolute;
+    bottom: -8px;
+    left: -0.42rem;
+    top: -8px;
+    width: 5px;
+    content: "";
+    border-radius: 999px;
+    background: linear-gradient(180deg, #98aa77, var(--accent-green));
+    box-shadow: 0 4px 12px rgba(120, 140, 93, 0.24);
 }
 
 .impact-baseline-handle::after {
     position: absolute;
-    left: 100%;
+    left: calc(100% + 4px);
     top: 50%;
     width: 0;
     height: 2px;
@@ -566,6 +576,9 @@ details[open] > .sidebar-summary::after {
 
 .impact-baseline-handle.dragging {
     cursor: grabbing;
+    border-color: rgba(120, 140, 93, 0.46);
+    background: linear-gradient(180deg, #f5faee, #dfebd3);
+    box-shadow: 0 8px 20px rgba(120, 140, 93, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
 
 .baseline-tail-visible .impact-baseline-handle.dragging::after {
@@ -573,26 +586,36 @@ details[open] > .sidebar-summary::after {
     opacity: 1;
 }
 
-.impact-baseline-handle-label {
-    color: #fff;
-    font-size: 0.58rem;
+.dimension-train-car.baseline-active .impact-baseline-handle-label {
+    display: inline-flex;
+    min-width: 0;
+    height: auto;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0;
+    background: transparent;
+    color: #5f7448;
+    font-size: 0.62rem;
     font-weight: 900;
     line-height: 1;
-    text-orientation: mixed;
-    writing-mode: vertical-rl;
 }
 
-.impact-baseline-grip {
-    display: grid;
+.dimension-train-car.baseline-active .impact-baseline-grip {
+    display: inline-flex;
+    min-width: 0;
+    height: auto;
+    align-items: center;
     gap: 2px;
+    border-radius: 0;
+    background: transparent;
 }
 
 .impact-baseline-grip i {
     display: block;
-    width: 9px;
-    height: 1.5px;
+    width: 2.5px;
+    height: 2.5px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.82);
+    background: rgba(95, 116, 72, 0.62);
 }
 
 .dimension-train-remove {

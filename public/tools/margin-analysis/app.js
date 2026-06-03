@@ -916,53 +916,50 @@ function initDemoButton() {
 }
 
 function generateDemoData() {
-    const rows = [
-        // 2025-01 基期数据
-        // 亚太区
-        { Month: '2025-01', Dim_A: '亚太区', Dim_B: '中国', Dim_C: 'SUV-旗舰', 'Sales Volume': 5000, unitRevenue: 9800, unitCost: 6800 },
-        { Month: '2025-01', Dim_A: '亚太区', Dim_B: '中国', Dim_C: 'Sedan-经典', 'Sales Volume': 3500, unitRevenue: 7600, unitCost: 5600 },
-        { Month: '2025-01', Dim_A: '亚太区', Dim_B: '日本', Dim_C: 'SUV-旗舰', 'Sales Volume': 2000, unitRevenue: 9100, unitCost: 5900 },
-        { Month: '2025-01', Dim_A: '亚太区', Dim_B: '日本', Dim_C: 'EV-新能源', 'Sales Volume': 1500, unitRevenue: 11200, unitCost: 7700 },
-        // 欧洲区
-        { Month: '2025-01', Dim_A: '欧洲区', Dim_B: '德国', Dim_C: 'SUV-旗舰', 'Sales Volume': 3000, unitRevenue: 10500, unitCost: 7000 },
-        { Month: '2025-01', Dim_A: '欧洲区', Dim_B: '德国', Dim_C: 'Sedan-经典', 'Sales Volume': 2500, unitRevenue: 8200, unitCost: 6000 },
-        { Month: '2025-01', Dim_A: '欧洲区', Dim_B: '法国', Dim_C: 'EV-新能源', 'Sales Volume': 1800, unitRevenue: 11800, unitCost: 8500 },
-        // 美洲区
-        { Month: '2025-01', Dim_A: '美洲区', Dim_B: '美国', Dim_C: 'SUV-旗舰', 'Sales Volume': 4000, unitRevenue: 10100, unitCost: 6600 },
-        { Month: '2025-01', Dim_A: '美洲区', Dim_B: '美国', Dim_C: 'Pickup-皮卡', 'Sales Volume': 2800, unitRevenue: 10900, unitCost: 7900 },
-        { Month: '2025-01', Dim_A: '美洲区', Dim_B: '巴西', Dim_C: 'Sedan-经典', 'Sales Volume': 1200, unitRevenue: 7000, unitCost: 5500 },
-
-        // 2025-02 当期数据 (包含结构变化和费率变化)
-        // 亚太区 - 中国SUV增长，单车指标提升; 日本EV占比提升
-        { Month: '2025-02', Dim_A: '亚太区', Dim_B: '中国', Dim_C: 'SUV-旗舰', 'Sales Volume': 6200, unitRevenue: 10300, unitCost: 7100 },
-        { Month: '2025-02', Dim_A: '亚太区', Dim_B: '中国', Dim_C: 'Sedan-经典', 'Sales Volume': 3200, unitRevenue: 7800, unitCost: 5900 },
-        { Month: '2025-02', Dim_A: '亚太区', Dim_B: '日本', Dim_C: 'SUV-旗舰', 'Sales Volume': 1800, unitRevenue: 9300, unitCost: 6200 },
-        { Month: '2025-02', Dim_A: '亚太区', Dim_B: '日本', Dim_C: 'EV-新能源', 'Sales Volume': 2200, unitRevenue: 11800, unitCost: 8100 },
-        // 欧洲区 - 德国整体下滑，法国EV大增
-        { Month: '2025-02', Dim_A: '欧洲区', Dim_B: '德国', Dim_C: 'SUV-旗舰', 'Sales Volume': 2600, unitRevenue: 10400, unitCost: 7100 },
-        { Month: '2025-02', Dim_A: '欧洲区', Dim_B: '德国', Dim_C: 'Sedan-经典', 'Sales Volume': 2200, unitRevenue: 8000, unitCost: 5900 },
-        { Month: '2025-02', Dim_A: '欧洲区', Dim_B: '法国', Dim_C: 'EV-新能源', 'Sales Volume': 2800, unitRevenue: 12300, unitCost: 8700 },
-        // 美洲区 - 美国皮卡需求旺，巴西新增SUV
-        { Month: '2025-02', Dim_A: '美洲区', Dim_B: '美国', Dim_C: 'SUV-旗舰', 'Sales Volume': 4200, unitRevenue: 10200, unitCost: 6700 },
-        { Month: '2025-02', Dim_A: '美洲区', Dim_B: '美国', Dim_C: 'Pickup-皮卡', 'Sales Volume': 3500, unitRevenue: 11300, unitCost: 8100 },
-        { Month: '2025-02', Dim_A: '美洲区', Dim_B: '巴西', Dim_C: 'Sedan-经典', 'Sales Volume': 1000, unitRevenue: 6800, unitCost: 5400 },
-        { Month: '2025-02', Dim_A: '美洲区', Dim_B: '巴西', Dim_C: 'SUV-旗舰', 'Sales Volume': 800, unitRevenue: 8200, unitCost: 5700 },
+    const portfolio = [
+        { region: '亚太区', country: '中国', model: 'SUV-旗舰', energy: '燃油', brand: '核心品牌', baseVolume: 5000, baseRevenue: 9800, baseCost: 6800, currVolume: 6200, currRevenue: 10300, currCost: 7100 },
+        { region: '亚太区', country: '中国', model: 'Sedan-经典', energy: '混动', brand: '核心品牌', baseVolume: 3500, baseRevenue: 7600, baseCost: 5600, currVolume: 3000, currRevenue: 7800, currCost: 5900 },
+        { region: '亚太区', country: '中国', model: 'EV-新能源', energy: '纯电', brand: '新能源品牌', baseVolume: 1600, baseRevenue: 11200, baseCost: 7600, currVolume: 2600, currRevenue: 11800, currCost: 8100 },
+        { region: '亚太区', country: '日本', model: 'SUV-旗舰', energy: '混动', brand: '高端品牌', baseVolume: 2000, baseRevenue: 9100, baseCost: 5900, currVolume: 1800, currRevenue: 9300, currCost: 6200 },
+        { region: '亚太区', country: '日本', model: 'EV-新能源', energy: '纯电', brand: '新能源品牌', baseVolume: 1500, baseRevenue: 11200, baseCost: 7700, currVolume: 2200, currRevenue: 11800, currCost: 8050 },
+        { region: '亚太区', country: '泰国', model: 'MPV-家用', energy: '燃油', brand: '核心品牌', baseVolume: 900, baseRevenue: 7200, baseCost: 5200, currVolume: 1400, currRevenue: 7600, currCost: 5500 },
+        { region: '亚太区', country: '印度', model: 'Mini-EV', energy: '纯电', brand: '新能源品牌', baseVolume: 700, baseRevenue: 6100, baseCost: 4600, currVolume: 1250, currRevenue: 6400, currCost: 4800 },
+        { region: '欧洲区', country: '德国', model: 'SUV-旗舰', energy: '燃油', brand: '高端品牌', baseVolume: 3000, baseRevenue: 10500, baseCost: 7000, currVolume: 2600, currRevenue: 10400, currCost: 7100 },
+        { region: '欧洲区', country: '德国', model: 'Sedan-经典', energy: '混动', brand: '核心品牌', baseVolume: 2500, baseRevenue: 8200, baseCost: 6000, currVolume: 2100, currRevenue: 8000, currCost: 5900 },
+        { region: '欧洲区', country: '法国', model: 'EV-新能源', energy: '纯电', brand: '新能源品牌', baseVolume: 1800, baseRevenue: 11800, baseCost: 8500, currVolume: 2800, currRevenue: 12300, currCost: 8700 },
+        { region: '欧洲区', country: '西班牙', model: 'SUV-旗舰', energy: '混动', brand: '核心品牌', baseVolume: 1100, baseRevenue: 9300, baseCost: 6500, currVolume: 1700, currRevenue: 9000, currCost: 6700 },
+        { region: '欧洲区', country: '意大利', model: 'MPV-家用', energy: '燃油', brand: '商用品牌', baseVolume: 600, baseRevenue: 7800, baseCost: 5600, currVolume: 900, currRevenue: 8100, currCost: 5850 },
+        { region: '欧洲区', country: '英国', model: 'EV-新能源', energy: '纯电', brand: '高端品牌', baseVolume: 850, baseRevenue: 12400, baseCost: 8900, currVolume: 1250, currRevenue: 12800, currCost: 9200 },
+        { region: '美洲区', country: '美国', model: 'SUV-旗舰', energy: '燃油', brand: '高端品牌', baseVolume: 4000, baseRevenue: 10100, baseCost: 6600, currVolume: 4200, currRevenue: 10200, currCost: 6700 },
+        { region: '美洲区', country: '美国', model: 'Pickup-皮卡', energy: '燃油', brand: '商用品牌', baseVolume: 2800, baseRevenue: 10900, baseCost: 7900, currVolume: 3500, currRevenue: 11300, currCost: 8100 },
+        { region: '美洲区', country: '墨西哥', model: 'Sedan-经典', energy: '燃油', brand: '核心品牌', baseVolume: 700, baseRevenue: 6900, baseCost: 5100, currVolume: 1250, currRevenue: 7100, currCost: 5200 },
+        { region: '美洲区', country: '巴西', model: 'Sedan-经典', energy: '混动', brand: '核心品牌', baseVolume: 1200, baseRevenue: 7000, baseCost: 5500, currVolume: 1000, currRevenue: 6800, currCost: 5400 },
+        { region: '美洲区', country: '巴西', model: 'SUV-旗舰', energy: '燃油', brand: '核心品牌', baseVolume: 800, baseRevenue: 8200, baseCost: 5700, currVolume: 1500, currRevenue: 8500, currCost: 5900 },
+        { region: '中东非区', country: '沙特', model: 'SUV-旗舰', energy: '燃油', brand: '高端品牌', baseVolume: 900, baseRevenue: 11200, baseCost: 7600, currVolume: 1450, currRevenue: 11600, currCost: 7950 },
+        { region: '中东非区', country: '阿联酋', model: 'EV-新能源', energy: '纯电', brand: '新能源品牌', baseVolume: 600, baseRevenue: 12100, baseCost: 8400, currVolume: 1050, currRevenue: 12600, currCost: 8700 },
+        { region: '中东非区', country: '南非', model: 'Sedan-经典', energy: '燃油', brand: '核心品牌', baseVolume: 700, baseRevenue: 6600, baseCost: 5000, currVolume: 1100, currRevenue: 6900, currCost: 5200 },
+        { region: '中东非区', country: '埃及', model: 'Mini-EV', energy: '纯电', brand: '新能源品牌', baseVolume: 500, baseRevenue: 5800, baseCost: 4300, currVolume: 800, currRevenue: 6100, currCost: 4500 },
     ];
 
-    return rows.map(row => {
-        const netRevenue = Math.round(row['Sales Volume'] * row.unitRevenue);
-        const cost = -Math.round(row['Sales Volume'] * row.unitCost);
+    return portfolio.flatMap(item => ([
+        { month: '2025-01', volume: item.baseVolume, unitRevenue: item.baseRevenue, unitCost: item.baseCost },
+        { month: '2025-02', volume: item.currVolume, unitRevenue: item.currRevenue, unitCost: item.currCost }
+    ]).map(period => {
+        const netRevenue = Math.round(period.volume * period.unitRevenue);
+        const cost = -Math.round(period.volume * period.unitCost);
         return {
-            '月份': row.Month,
-            '大区': row.Dim_A,
-            '国家': row.Dim_B,
-            '车型': row.Dim_C,
-            '销量': row['Sales Volume'],
+            '月份': period.month,
+            '大区': item.region,
+            '国家': item.country,
+            '车型': item.model,
+            '燃油品类': item.energy,
+            '品牌': item.brand,
+            '销量': period.volume,
             '净收入': netRevenue,
             '成本': cost,
             '边际': netRevenue + cost
         };
-    });
+    }));
 }
 
 
