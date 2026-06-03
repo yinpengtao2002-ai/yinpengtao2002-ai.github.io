@@ -1209,6 +1209,7 @@ function populateDrillOrder() {
     train.className = 'dimension-train margin-dimension-train';
     train.setAttribute('aria-label', '下钻维度路径');
 
+    train.appendChild(buildImpactBaselineTarget(IMPACT_BASELINE_GLOBAL, '全局', { isGlobal: true }));
     activeOrder.forEach((dim, index) => {
         train.appendChild(buildDrillTrainCar(dim, index, activeIndex, activeOrder.length));
     });
@@ -1217,57 +1218,13 @@ function populateDrillOrder() {
     const hint = document.createElement('p');
     hint.className = 'dimension-train-hint';
     hint.textContent = activeOrder.length > 1
-        ? '拖动调整顺序，点击 × 移除维度；调整后会清空当前钻取并重新计算。'
+        ? '拖动维度调整顺序；拖动绿色基准标记切换影响基准。'
         : '至少保留一个下钻维度。';
     container.appendChild(hint);
-
-    populateImpactBaselineSelector(container, activeOrder);
 }
 
 function getDimensionLabel(dim) {
     return AppState.customDimNames[dim] || dim;
-}
-
-function populateImpactBaselineSelector(container, activeOrder) {
-    AppState.impactBaselineDim = normalizeImpactBaselineDim(AppState.impactBaselineDim, activeOrder);
-
-    const wrapper = document.createElement('div');
-    wrapper.className = 'impact-baseline-control';
-
-    const label = document.createElement('label');
-    label.className = 'impact-baseline-label';
-    label.htmlFor = 'impact-baseline-select';
-    label.textContent = '影响基准';
-
-    const select = document.createElement('select');
-    select.id = 'impact-baseline-select';
-    select.className = 'form-select impact-baseline-select';
-
-    const option = document.createElement('option');
-    option.value = IMPACT_BASELINE_GLOBAL;
-    option.textContent = '全局';
-    select.appendChild(option);
-
-    activeOrder.forEach((dim) => {
-        const dimOption = document.createElement('option');
-        dimOption.value = dim;
-        dimOption.textContent = getDimensionLabel(dim);
-        select.appendChild(dimOption);
-    });
-
-    select.value = AppState.impactBaselineDim;
-    select.addEventListener('change', () => {
-        applyImpactBaselineSelection(select.value);
-    });
-
-    const caption = document.createElement('p');
-    caption.className = 'impact-baseline-caption';
-    caption.textContent = '默认按全局计算；选择某层后，使用该层及其上方已筛选值作为局部盘子。';
-
-    wrapper.appendChild(label);
-    wrapper.appendChild(select);
-    wrapper.appendChild(caption);
-    container.appendChild(wrapper);
 }
 
 function getNormalizedDrillOrder(order) {
@@ -1293,6 +1250,86 @@ function applyImpactBaselineSelection(value) {
     triggerUpdate();
 }
 
+function buildImpactBaselineTarget(targetDim, label, options = {}) {
+    const isBaseline = AppState.impactBaselineDim === targetDim;
+    const target = document.createElement('div');
+    target.className = 'dimension-train-car global-baseline baseline-target';
+    if (isBaseline) target.classList.add('baseline-active');
+    target.dataset.baselineTarget = targetDim;
+    target.setAttribute('role', 'button');
+    target.setAttribute('tabindex', '0');
+    target.setAttribute('aria-label', `设为影响基准：${label}`);
+    target.innerHTML = `
+        <span>${isBaseline ? '基准' : '全局'}</span>
+        <strong>${options.isGlobal ? '全局' : escapeHTML(label)}</strong>
+        <em>不可拖动</em>
+    `;
+    if (isBaseline) target.insertBefore(buildImpactBaselineAnchor(), target.firstChild);
+    attachImpactBaselineDropHandlers(target, targetDim);
+    target.addEventListener('click', () => {
+        if (isMobile()) applyImpactBaselineSelection(targetDim);
+    });
+    target.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        applyImpactBaselineSelection(targetDim);
+    });
+    return target;
+}
+
+function buildImpactBaselineAnchor() {
+    const baselineAnchor = document.createElement('button');
+    baselineAnchor.type = 'button';
+    baselineAnchor.className = 'impact-baseline-anchor';
+    baselineAnchor.draggable = true;
+    baselineAnchor.textContent = '';
+    baselineAnchor.title = '拖动切换影响基准';
+    baselineAnchor.setAttribute('aria-label', '拖动切换影响基准');
+    baselineAnchor.addEventListener('click', (event) => event.stopPropagation());
+    baselineAnchor.addEventListener('dragstart', (event) => {
+        event.stopPropagation();
+        baselineAnchor.classList.add('dragging');
+        document.body.classList.add('baseline-tail-visible');
+        event.dataTransfer?.setData('application/x-margin-impact-baseline', '1');
+        event.dataTransfer?.setData('text/plain', 'impact-baseline');
+        if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+    });
+    baselineAnchor.addEventListener('dragend', () => {
+        baselineAnchor.classList.remove('dragging');
+        document.body.classList.remove('baseline-tail-visible');
+        clearImpactBaselineDropTargets();
+    });
+    return baselineAnchor;
+}
+
+function isImpactBaselineDrag(event) {
+    return Array.from(event.dataTransfer?.types || []).includes('application/x-margin-impact-baseline');
+}
+
+function attachImpactBaselineDropHandlers(target, targetDim) {
+    target.addEventListener('dragover', (event) => {
+        if (!isImpactBaselineDrag(event)) return;
+        event.preventDefault();
+        target.classList.add('baseline-drop-target');
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    });
+    target.addEventListener('dragleave', () => {
+        target.classList.remove('baseline-drop-target');
+    });
+    target.addEventListener('drop', (event) => {
+        if (!isImpactBaselineDrag(event)) return;
+        event.preventDefault();
+        clearImpactBaselineDropTargets();
+        applyImpactBaselineSelection(targetDim);
+    });
+}
+
+function clearImpactBaselineDropTargets() {
+    document.querySelectorAll('.baseline-drop-target').forEach((target) => {
+        target.classList.remove('baseline-drop-target');
+    });
+}
+
 function getActiveDrillLevelIndex(order = AppState.drillOrder) {
     const firstOpenIndex = order.findIndex(dim => !hasDimensionFilter(dim));
     if (firstOpenIndex >= 0) return firstOpenIndex;
@@ -1302,16 +1339,20 @@ function getActiveDrillLevelIndex(order = AppState.drillOrder) {
 function buildDrillTrainCar(dim, index, activeIndex, orderLength) {
     const car = document.createElement('div');
     const hasFilter = hasDimensionFilter(dim);
-    car.className = `dimension-train-car ${hasFilter ? 'filtered' : ''} ${index === activeIndex ? 'active' : ''}`;
+    const isBaseline = AppState.impactBaselineDim === dim;
+    car.className = `dimension-train-car baseline-target ${hasFilter ? 'filtered' : ''} ${index === activeIndex ? 'active' : ''} ${isBaseline ? 'baseline-active' : ''}`;
     car.draggable = true;
     car.dataset.dimensionIndex = String(index);
     car.dataset.dimension = dim;
+    car.dataset.baselineTarget = dim;
     car.title = '拖动调整顺序';
     car.innerHTML = `
         <span>${hasFilter ? '已选' : index === activeIndex ? '当前' : index + 1}</span>
         <strong>${escapeHTML(DIM_ICONS[dim] || '')} ${escapeHTML(getDimensionLabel(dim))}</strong>
         <button type="button" class="dimension-train-remove" ${orderLength <= 1 ? 'disabled' : ''} aria-label="移除${escapeHTML(getDimensionLabel(dim))}">×</button>
     `;
+    if (isBaseline) car.insertBefore(buildImpactBaselineAnchor(), car.firstChild);
+    attachImpactBaselineDropHandlers(car, dim);
 
     const removeButton = car.querySelector('.dimension-train-remove');
     removeButton?.addEventListener('click', (event) => {
@@ -1332,6 +1373,7 @@ function buildDrillTrainCar(dim, index, activeIndex, orderLength) {
     });
 
     car.addEventListener('dragover', (event) => {
+        if (isImpactBaselineDrag(event)) return;
         event.preventDefault();
         car.classList.add('drop-target');
         if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
@@ -1342,10 +1384,16 @@ function buildDrillTrainCar(dim, index, activeIndex, orderLength) {
     });
 
     car.addEventListener('drop', (event) => {
+        if (isImpactBaselineDrag(event)) return;
         event.preventDefault();
         car.classList.remove('drop-target');
         const fromIndex = Number(event.dataTransfer?.getData('text/plain'));
         moveDrillDimensionInOrder(fromIndex, index);
+    });
+
+    car.addEventListener('click', (event) => {
+        if (event.target.closest('.dimension-train-remove')) return;
+        if (isMobile()) applyImpactBaselineSelection(dim);
     });
 
     return car;
@@ -2531,36 +2579,12 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
     };
     const colors = schemes[colorScheme] || schemes.claude;
 
-    // 计算 Y 轴范围
-    const minMargin = Math.min(baseMargin, currMargin);
-    const maxMargin = Math.max(baseMargin, currMargin);
-    const delta = Math.abs(currMargin - baseMargin);
-
-    let cumulative = baseMargin;
-    let minCumulative = baseMargin;
-    let maxCumulative = baseMargin;
-    for (let i = 1; i < values.length - 1; i++) {
-        cumulative += values[i];
-        minCumulative = Math.min(minCumulative, cumulative);
-        maxCumulative = Math.max(maxCumulative, cumulative);
-    }
-
-    const dataRange = maxCumulative - minCumulative;
-    const padding = Math.max(delta * 1.5, dataRange * 0.3, 100);
-
-    let yRangeMin = Math.min(minMargin, minCumulative) - padding;
-    let yRangeMax = Math.max(maxMargin, maxCumulative) + padding * 1.5;
-
-    if (minMargin > 0 && minCumulative > 0) {
-        if (!(Math.min(minMargin, minCumulative) > Math.max(maxMargin, maxCumulative) * 0.3)) {
-            yRangeMin = Math.max(0, yRangeMin);
-        }
-    }
+    const [yRangeMin, yRangeMax] = buildWaterfallAxisRange(baseMargin, currMargin, values);
 
     // 文本标签
     const textLabels = values.map((v, i) => {
-        if (i === 0) return `¥${formatNumber(baseMargin)}`;
-        if (i === values.length - 1) return `¥${formatNumber(currMargin)}`;
+        if (i === 0) return `¥${formatMetricNumber(baseMargin)}`;
+        if (i === values.length - 1) return `¥${formatMetricNumber(currMargin)}`;
         return formatSignedNumber(v);
     });
 
@@ -2613,7 +2637,7 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
             title: { text: chartOptions.yAxisTitle || `${unitMetricLabel} (¥)`, font: { size: 13, color: '#b0aea5' } },
             gridcolor: 'rgba(232, 230, 220, 0.5)',
             tickfont: { size: 11, color: '#b0aea5' },
-            tickformat: ',.0f',
+            tickformat: getMetricTickFormat(yRangeMin, yRangeMax),
             linecolor: '#e8e6dc',
             showline: true,
             range: [yRangeMin, yRangeMax],
@@ -2911,7 +2935,7 @@ function buildWaterfallTooltipHTML(meta, mode = 'hover') {
                 <div class="waterfall-tooltip-title">${escapeHTML(meta.label)}</div>
                 <div class="waterfall-tooltip-main">
                     <span>${escapeHTML(displayMetricLabel)}</span>
-                    <strong>¥${formatNumber(meta.value)}</strong>
+                    <strong>¥${formatMetricNumber(meta.value)}</strong>
                 </div>
                 <div class="waterfall-tooltip-grid">
                     <span>基期销量</span><b>${formatNumber(meta.volBase)}</b>
@@ -2961,8 +2985,8 @@ function buildWaterfallTooltipHTML(meta, mode = 'hover') {
                 <span>基期销量</span><b>${formatNumber(meta.volBase)} (${formatPercent(meta.weightBasePct)})</b>
                 <span>当期销量</span><b>${formatNumber(meta.volCurr)} (${formatPercent(meta.weightCurrPct)})</b>
                 <span>销量占比变化</span><b class="${weightTone}">${formatPercentPoint(meta.weightChangePct)}</b>
-                <span>基期${escapeHTML(meta.unitMetricLabel)}</span><b>¥${formatNumber(meta.unitBase)}</b>
-                <span>当期${escapeHTML(meta.unitMetricLabel)}</span><b>¥${formatNumber(meta.unitCurr)}</b>
+                <span>基期${escapeHTML(meta.unitMetricLabel)}</span><b>¥${formatMetricNumber(meta.unitBase)}</b>
+                <span>当期${escapeHTML(meta.unitMetricLabel)}</span><b>¥${formatMetricNumber(meta.unitCurr)}</b>
             </div>
             <div class="waterfall-tooltip-hint">${clickHint}</div>
             ${mode === 'touch' ? buildWaterfallTouchActionHTML(meta) : ''}
@@ -3891,6 +3915,82 @@ function getDetailFilterLabel(value) {
     return text || '(空白)';
 }
 
+function buildWaterfallAxisRange(baseMargin = 0, currMargin = 0, values = []) {
+    const safeBase = Number.isFinite(Number(baseMargin)) ? Number(baseMargin) : 0;
+    const safeCurr = Number.isFinite(Number(currMargin)) ? Number(currMargin) : 0;
+    const numericValues = values.map(value => Number.isFinite(Number(value)) ? Number(value) : 0);
+
+    let cumulative = safeBase;
+    let minCumulative = safeBase;
+    let maxCumulative = safeBase;
+    for (let i = 1; i < numericValues.length - 1; i++) {
+        cumulative += numericValues[i];
+        minCumulative = Math.min(minCumulative, cumulative);
+        maxCumulative = Math.max(maxCumulative, cumulative);
+    }
+
+    const coreMin = Math.min(safeBase, safeCurr, minCumulative);
+    const coreMax = Math.max(safeBase, safeCurr, maxCumulative);
+    const dataRange = coreMax - coreMin;
+    const delta = Math.abs(safeCurr - safeBase);
+    const maxAbsCore = Math.max(
+        Math.abs(safeBase),
+        Math.abs(safeCurr),
+        Math.abs(minCumulative),
+        Math.abs(maxCumulative),
+        ...numericValues.map(value => Math.abs(value)),
+        0
+    );
+    const maxAbsRelative = Math.max(
+        ...numericValues.slice(1, -1).map(value => Math.abs(value)),
+        delta,
+        dataRange,
+        0
+    );
+    const padding = Math.max(
+        delta * 1.2,
+        dataRange * 0.35,
+        maxAbsRelative * 0.8,
+        maxAbsCore > 0 ? maxAbsCore * 0.06 : 0,
+        0.02
+    );
+
+    let yRangeMin = coreMin - padding;
+    let yRangeMax = coreMax + padding * 1.35;
+
+    if (coreMin > 0 && coreMax > 0 && !(coreMin > coreMax * 0.3)) {
+        yRangeMin = Math.max(0, yRangeMin);
+    }
+
+    const minVisualSpan = Math.max(
+        maxAbsRelative * 3,
+        delta * 3,
+        dataRange * 2.2,
+        maxAbsCore > 0 ? maxAbsCore * 0.18 : 0,
+        0.08
+    );
+    const currentSpan = yRangeMax - yRangeMin;
+    if (currentSpan < minVisualSpan) {
+        const center = (yRangeMin + yRangeMax) / 2;
+        yRangeMin = center - minVisualSpan / 2;
+        yRangeMax = center + minVisualSpan / 2;
+        if (coreMin >= 0 && yRangeMin < 0 && coreMax > 0) {
+            yRangeMax += Math.abs(yRangeMin);
+            yRangeMin = 0;
+        }
+    }
+
+    return [yRangeMin, yRangeMax];
+}
+
+function getMetricTickFormat(minValue = 0, maxValue = 0) {
+    const maxAbs = Math.max(Math.abs(Number(minValue) || 0), Math.abs(Number(maxValue) || 0));
+    if (maxAbs >= 100) return ',.0f';
+    if (maxAbs >= 10) return ',.1f';
+    if (maxAbs >= 1) return ',.2f';
+    return ',.3f';
+}
+
 
 // ==================== 数值格式化工具 ====================
 function formatNumber(num) {
@@ -3898,9 +3998,26 @@ function formatNumber(num) {
     return Math.round(num).toLocaleString('en-US');
 }
 
+function getMetricPrecision(num) {
+    const abs = Math.abs(Number(num) || 0);
+    if (abs >= 100) return 0;
+    if (abs >= 10) return 1;
+    if (abs >= 1) return 2;
+    return 3;
+}
+
+function formatMetricNumber(num) {
+    if (num == null || isNaN(num)) return '-';
+    const value = Math.abs(Number(num)) < 1e-12 ? 0 : Number(num);
+    return value.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: getMetricPrecision(value)
+    });
+}
+
 function formatCurrency(num) {
     if (num == null || isNaN(num)) return '-';
-    return '¥' + Math.round(num).toLocaleString('en-US');
+    return '¥' + formatMetricNumber(num);
 }
 
 function formatPercent(num) {
@@ -3910,8 +4027,14 @@ function formatPercent(num) {
 
 function formatSignedNumber(num) {
     if (num == null || isNaN(num)) return '-';
-    const sign = num >= 0 ? '+' : '';
-    return sign + Math.round(num).toLocaleString('en-US');
+    return formatSignedMetricNumber(num);
+}
+
+function formatSignedMetricNumber(num) {
+    if (num == null || isNaN(num)) return '-';
+    const value = Math.abs(Number(num)) < 1e-12 ? 0 : Number(num);
+    const sign = value >= 0 ? '+' : '';
+    return sign + formatMetricNumber(value);
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -3933,6 +4056,10 @@ if (typeof module !== 'undefined' && module.exports) {
         buildUnitMetricLabel,
         buildWaterfallTooltipHTML,
         formatPercentPoint,
+        formatMetricNumber,
+        formatSignedMetricNumber,
+        buildWaterfallAxisRange,
+        getMetricTickFormat,
         buildDetailExportRows,
         buildDetailClipboardText,
         buildTemplateStylesXml,

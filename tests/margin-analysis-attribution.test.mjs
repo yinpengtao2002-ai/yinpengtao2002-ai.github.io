@@ -29,6 +29,10 @@ const {
     buildUnitMetricLabel,
     buildWaterfallTooltipHTML,
     formatPercentPoint,
+    formatMetricNumber,
+    formatSignedMetricNumber,
+    buildWaterfallAxisRange,
+    getMetricTickFormat,
     buildDetailExportRows,
     buildDetailClipboardText,
 } = marginAnalysis.default;
@@ -344,17 +348,23 @@ test("left drill filters use an Excel-style checklist menu", () => {
     assert.match(marginAnalysisStyles, /\.excel-filter-footer-actions/);
 });
 
-test("drill order panel exposes a global-first impact baseline selector", () => {
+test("drill order panel exposes the impact baseline as a path anchor", () => {
     assert.match(marginAnalysisSource, /impactBaselineDim:\s*'__global__'/);
-    assert.match(marginAnalysisSource, /populateImpactBaselineSelector/);
+    assert.match(marginAnalysisSource, /buildImpactBaselineTarget\(IMPACT_BASELINE_GLOBAL/);
+    assert.match(marginAnalysisSource, /buildImpactBaselineAnchor/);
+    assert.match(marginAnalysisSource, /baselineAnchor\.draggable = true/);
+    assert.match(marginAnalysisSource, /className = 'dimension-train-car global-baseline/);
     assert.match(marginAnalysisSource, /影响基准/);
-    assert.match(marginAnalysisSource, /option\.textContent = '全局'/);
     assert.match(marginAnalysisSource, /分析对\$\{impactTargetLabel\}影响/);
+    assert.doesNotMatch(marginAnalysisSource, /impact-baseline-select/);
+    assert.match(marginAnalysisStyles, /\.impact-baseline-anchor/);
+    assert.match(marginAnalysisStyles, /\.dimension-train-car\.global-baseline/);
+    assert.match(marginAnalysisStyles, /\.baseline-tail-visible/);
 });
 
 test("impact baseline changes refresh sidebar state without clearing drill filters", () => {
     assert.match(marginAnalysisSource, /function applyImpactBaselineSelection\(value\)/);
-    assert.match(marginAnalysisSource, /select\.addEventListener\('change', \(\) => \{\s*applyImpactBaselineSelection\(select\.value\);\s*\}\);/);
+    assert.match(marginAnalysisSource, /applyImpactBaselineSelection\(targetDim\)/);
 
     const helperBody = marginAnalysisSource.match(/function applyImpactBaselineSelection\(value\) \{([\s\S]*?)\n\}/)?.[1] || "";
     assert.match(helperBody, /AppState\.impactBaselineDim = normalizeImpactBaselineDim\(value, AppState\.drillOrder\);/);
@@ -362,6 +372,33 @@ test("impact baseline changes refresh sidebar state without clearing drill filte
     assert.match(helperBody, /populateDrillFilters\(\);/);
     assert.match(helperBody, /triggerUpdate\(\);/);
     assert.doesNotMatch(helperBody, /selectedDims|excludedDims|drillOrder\s*=/);
+});
+
+test("adaptive metric formatter preserves small unit values", () => {
+    assert.equal(typeof formatMetricNumber, "function");
+    assert.equal(typeof formatSignedMetricNumber, "function");
+    assert.equal(formatMetricNumber(2923.2), "2,923");
+    assert.equal(formatMetricNumber(23.4), "23.4");
+    assert.equal(formatMetricNumber(2.18), "2.18");
+    assert.equal(formatMetricNumber(0.236), "0.236");
+    assert.equal(formatSignedMetricNumber(0.24), "+0.24");
+    assert.equal(formatSignedMetricNumber(-0.236), "-0.236");
+});
+
+test("waterfall axis range adapts to small unit metrics", () => {
+    assert.equal(typeof buildWaterfallAxisRange, "function");
+    assert.equal(typeof getMetricTickFormat, "function");
+
+    const smallRange = buildWaterfallAxisRange(2, 2.2, [2, 0.1, 0.1, 0]);
+    assert.ok(smallRange[0] > 0, `expected small positive range to stay focused, got ${smallRange}`);
+    assert.ok(smallRange[1] - smallRange[0] < 2, `expected small range to avoid fixed 100 padding, got ${smallRange}`);
+    assert.equal(getMetricTickFormat(smallRange[0], smallRange[1]), ",.2f");
+
+    const tinyRange = buildWaterfallAxisRange(0, 0.24, [0, 0.12, 0.12, 0]);
+    assert.ok(tinyRange[1] - tinyRange[0] < 1, `expected tiny impact range to remain readable, got ${tinyRange}`);
+    assert.equal(getMetricTickFormat(tinyRange[0], tinyRange[1]), ",.3f");
+    assert.doesNotMatch(marginAnalysisSource, /Math\.max\(delta \* 1\.5, dataRange \* 0\.3, 100\)/);
+    assert.match(marginAnalysisSource, /tickformat: getMetricTickFormat\(yRangeMin, yRangeMax\)/);
 });
 
 test("left drill filters can exclude one value while keeping all other values", () => {
