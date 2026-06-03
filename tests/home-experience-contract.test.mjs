@@ -358,6 +358,14 @@ test("home continue cue stays in normal layout flow", () => {
   assert.match(cssRule(".home-hero-continue-row"), /margin-top:\s*clamp\(2\.5rem,\s*6\.2vh,\s*5\.5rem\)/);
 });
 
+test("mobile hero continue cue is lifted above initial browser chrome", () => {
+  const mobileContinueRow = mobileCssRule(".home-hero-continue-row");
+
+  assert.match(mobileContinueRow, /margin-top:\s*clamp\(0\.7rem,\s*2\.2svh,\s*1\.05rem\)/);
+  assert.match(mobileContinueRow, /padding-bottom:\s*max\(0\.4rem,\s*env\(safe-area-inset-bottom,\s*0px\)\)/);
+  assert.match(mobileContinueRow, /transform:\s*translateY\(-4\.25rem\)/);
+});
+
 test("homepage finance section previews models as a composed showcase", () => {
   assert.match(financeSection, /home-finance-title-card/);
   assert.match(financeSection, /<h2 className="home-finance-title">\s*问题驱动的模型库\s*<\/h2>/);

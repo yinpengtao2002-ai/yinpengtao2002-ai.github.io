@@ -489,7 +489,7 @@ export default function ChatWidget() {
     }, [currentFinanceModel, currentThinkingArticleCard, initialized]);
 
     useEffect(() => {
-        if (!isOpen || !isMobileLike || typeof window === "undefined") return;
+        if (!isMobileLike || typeof window === "undefined") return;
 
         const viewport = window.visualViewport;
         if (!viewport) return;
@@ -509,7 +509,7 @@ export default function ChatWidget() {
             viewport.removeEventListener("resize", updateViewport);
             viewport.removeEventListener("scroll", updateViewport);
         };
-    }, [isMobileLike, isOpen]);
+    }, [isMobileLike]);
 
     const callChatAPI = async (allMessages: Message[], assistantMsgId: string): Promise<boolean> => {
         let fullText = "";
@@ -657,6 +657,30 @@ export default function ChatWidget() {
     const inputFontSize = isMobileLike ? 16 : 14;
     const inputLineHeight = isMobileLike ? "26px" : "24px";
     const introState = messages.length === 1 && messages[0]?.id === "greeting" && !isProcessing;
+    const mobileLauncherHeight = 48;
+    const mobileBrowserChromeGap = 88;
+    const mobileLauncherGap = mobileBrowserChromeGap;
+    const mobileLauncherStyle = isMobileLike
+        ? viewportHeight !== null
+            ? {
+                top: Math.max(12, viewportOffsetTop + viewportHeight - mobileLauncherHeight - mobileLauncherGap),
+                right: 16,
+                bottom: "auto" as const,
+                width: 62,
+                height: mobileLauncherHeight,
+            }
+            : {
+                right: 16,
+                bottom: "calc(env(safe-area-inset-bottom, 0px) + 88px)",
+                width: 62,
+                height: mobileLauncherHeight,
+            }
+        : {
+            right: 24,
+            bottom: 24,
+            width: undefined,
+            height: 48,
+        };
     const panelStyle = isMobileLike
         ? mobileFullscreenMode
             ? {
@@ -681,7 +705,7 @@ export default function ChatWidget() {
             : {
                 left: mobileHorizontalInset,
                 right: mobileHorizontalInset,
-                bottom: "calc(env(safe-area-inset-bottom, 0px) + 14px)",
+                bottom: `calc(env(safe-area-inset-bottom, 0px) + ${mobileBrowserChromeGap}px)`,
                 top: "auto" as const,
                 width: "auto" as const,
                 height: mobileSheetHeight ? `${mobileSheetHeight}px` : "60dvh",
@@ -740,10 +764,7 @@ export default function ChatWidget() {
                         aria-label="打开 Lucas AI 助手"
                         style={{
                             position: "fixed",
-                            bottom: isMobileLike ? 16 : 24,
-                            right: isMobileLike ? 16 : 24,
-                            width: isMobileLike ? 62 : undefined,
-                            height: 48,
+                            ...mobileLauncherStyle,
                             borderRadius: 24,
                             border: "none",
                             background: "var(--accent)",

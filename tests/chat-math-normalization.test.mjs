@@ -156,6 +156,15 @@ test("mobile chat launcher clearly identifies Lucas AI", () => {
   assert.match(chatWidget, /chat-floating-ai-badge/);
 });
 
+test("mobile chat launcher tracks the real visible viewport before it is opened", () => {
+  assert.doesNotMatch(chatWidget, /if \(!isOpen \|\| !isMobileLike/);
+  assert.match(chatWidget, /const mobileLauncherStyle/);
+  assert.match(chatWidget, /const mobileBrowserChromeGap = 88/);
+  assert.match(chatWidget, /viewportOffsetTop \+ viewportHeight - mobileLauncherHeight - mobileLauncherGap/);
+  assert.match(chatWidget, /bottom:\s*`calc\(env\(safe-area-inset-bottom, 0px\) \+ \$\{mobileBrowserChromeGap\}px\)`/);
+  assert.match(chatWidget, /\.\.\.mobileLauncherStyle/);
+});
+
 test("chat renderer turns bare internal routes into clickable markdown links", () => {
   const input = "财务模型库（/finance）和工具与思考（/thinking-lab）都可以看，也可以直接进 /finance/business-analysis。";
 
