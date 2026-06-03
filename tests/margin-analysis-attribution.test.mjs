@@ -353,11 +353,16 @@ test("drill order panel exposes the impact baseline as a path anchor", () => {
     assert.match(marginAnalysisSource, /buildImpactBaselineTarget\(IMPACT_BASELINE_GLOBAL/);
     assert.match(marginAnalysisSource, /buildImpactBaselineAnchor/);
     assert.match(marginAnalysisSource, /baselineAnchor\.draggable = true/);
+    assert.match(marginAnalysisSource, /baselineAnchor\.className = 'impact-baseline-handle'/);
+    assert.match(marginAnalysisSource, /baselineAnchor\.innerHTML = `[\s\S]*impact-baseline-handle-label[\s\S]*基准[\s\S]*impact-baseline-grip/);
     assert.match(marginAnalysisSource, /className = 'dimension-train-car global-baseline/);
+    assert.match(marginAnalysisSource, /拖动左侧绿色“基准”条/);
     assert.match(marginAnalysisSource, /影响基准/);
     assert.match(marginAnalysisSource, /分析对\$\{impactTargetLabel\}影响/);
     assert.doesNotMatch(marginAnalysisSource, /impact-baseline-select/);
-    assert.match(marginAnalysisStyles, /\.impact-baseline-anchor/);
+    assert.doesNotMatch(marginAnalysisStyles, /\.impact-baseline-anchor/);
+    assert.match(marginAnalysisStyles, /\.impact-baseline-handle/);
+    assert.match(marginAnalysisStyles, /\.impact-baseline-grip/);
     assert.match(marginAnalysisStyles, /\.dimension-train-car\.global-baseline/);
     assert.match(marginAnalysisStyles, /\.baseline-tail-visible/);
 });

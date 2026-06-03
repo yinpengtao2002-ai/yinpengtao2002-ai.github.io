@@ -1218,7 +1218,7 @@ function populateDrillOrder() {
     const hint = document.createElement('p');
     hint.className = 'dimension-train-hint';
     hint.textContent = activeOrder.length > 1
-        ? '拖动维度调整顺序；拖动绿色基准标记切换影响基准。'
+        ? '电脑端拖动左侧绿色“基准”条，可切换影响基准；拖动维度卡片，可调整下钻顺序。手机端点击路径卡片可设为基准。'
         : '至少保留一个下钻维度。';
     container.appendChild(hint);
 }
@@ -1260,9 +1260,9 @@ function buildImpactBaselineTarget(targetDim, label, options = {}) {
     target.setAttribute('tabindex', '0');
     target.setAttribute('aria-label', `设为影响基准：${label}`);
     target.innerHTML = `
-        <span>${isBaseline ? '基准' : '全局'}</span>
+        <span>${options.isGlobal ? '全局' : '基准'}</span>
         <strong>${options.isGlobal ? '全局' : escapeHTML(label)}</strong>
-        <em>不可拖动</em>
+        <em>固定</em>
     `;
     if (isBaseline) target.insertBefore(buildImpactBaselineAnchor(), target.firstChild);
     attachImpactBaselineDropHandlers(target, targetDim);
@@ -1280,11 +1280,14 @@ function buildImpactBaselineTarget(targetDim, label, options = {}) {
 function buildImpactBaselineAnchor() {
     const baselineAnchor = document.createElement('button');
     baselineAnchor.type = 'button';
-    baselineAnchor.className = 'impact-baseline-anchor';
+    baselineAnchor.className = 'impact-baseline-handle';
     baselineAnchor.draggable = true;
-    baselineAnchor.textContent = '';
-    baselineAnchor.title = '拖动切换影响基准';
-    baselineAnchor.setAttribute('aria-label', '拖动切换影响基准');
+    baselineAnchor.innerHTML = `
+        <span class="impact-baseline-handle-label">基准</span>
+        <span class="impact-baseline-grip" aria-hidden="true"><i></i><i></i><i></i></span>
+    `;
+    baselineAnchor.title = '拖动左侧绿色基准条切换影响基准';
+    baselineAnchor.setAttribute('aria-label', '拖动左侧绿色基准条切换影响基准');
     baselineAnchor.addEventListener('click', (event) => event.stopPropagation());
     baselineAnchor.addEventListener('dragstart', (event) => {
         event.stopPropagation();

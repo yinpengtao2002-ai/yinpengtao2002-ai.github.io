@@ -484,7 +484,7 @@ details[open] > .sidebar-summary::after {
 }
 
 .dimension-train-car.baseline-active {
-    padding-left: 2.1rem;
+    padding-left: 2.45rem;
     border-color: rgba(120, 140, 93, 0.58);
     box-shadow: 0 0 0 3px rgba(120, 140, 93, 0.12);
 }
@@ -526,25 +526,33 @@ details[open] > .sidebar-summary::after {
     transform: translateY(-1px);
 }
 
-.impact-baseline-anchor {
+.impact-baseline-handle {
     position: absolute;
-    left: 0.45rem;
-    top: 50%;
+    bottom: 0;
+    left: 0;
+    top: 0;
     z-index: 2;
     display: inline-flex;
-    width: 16px;
-    height: 16px;
+    width: 28px;
+    min-height: 100%;
     cursor: grab;
-    transform: translateY(-50%);
-    border: 2px solid #fff;
-    border-radius: 999px;
-    background: var(--accent-green);
-    box-shadow: 0 4px 12px rgba(120, 140, 93, 0.34);
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    flex-direction: column;
+    border: 0;
+    border-right: 1px solid rgba(255, 255, 255, 0.34);
+    border-radius: 7px 0 0 7px;
+    background: linear-gradient(180deg, #7f955f, var(--accent-green));
+    box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.26), 4px 0 12px rgba(120, 140, 93, 0.16);
+    color: #fff;
+    font-family: var(--font-sans);
+    padding: 0.24rem 0;
 }
 
-.impact-baseline-anchor::after {
+.impact-baseline-handle::after {
     position: absolute;
-    left: 15px;
+    left: 100%;
     top: 50%;
     width: 0;
     height: 2px;
@@ -556,13 +564,35 @@ details[open] > .sidebar-summary::after {
     transition: width 0.18s ease, opacity 0.18s ease;
 }
 
-.impact-baseline-anchor.dragging {
+.impact-baseline-handle.dragging {
     cursor: grabbing;
 }
 
-.baseline-tail-visible .impact-baseline-anchor.dragging::after {
+.baseline-tail-visible .impact-baseline-handle.dragging::after {
     width: 52px;
     opacity: 1;
+}
+
+.impact-baseline-handle-label {
+    color: #fff;
+    font-size: 0.58rem;
+    font-weight: 900;
+    line-height: 1;
+    text-orientation: mixed;
+    writing-mode: vertical-rl;
+}
+
+.impact-baseline-grip {
+    display: grid;
+    gap: 2px;
+}
+
+.impact-baseline-grip i {
+    display: block;
+    width: 9px;
+    height: 1.5px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82);
 }
 
 .dimension-train-remove {
