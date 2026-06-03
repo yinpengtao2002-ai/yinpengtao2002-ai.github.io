@@ -4472,9 +4472,8 @@ h6 {
   }
 
   .home-hero-continue-row {
-    margin-top: clamp(0.7rem, 2.2svh, 1.05rem);
-    padding-bottom: max(0.4rem, env(safe-area-inset-bottom, 0px));
-    transform: translateY(-4.25rem);
+    margin-top: clamp(0.8rem, 2.4svh, 1.2rem);
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
   }
 
   .home-hero-continue::before {

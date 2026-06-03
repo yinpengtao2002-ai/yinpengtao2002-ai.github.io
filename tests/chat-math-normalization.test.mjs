@@ -156,13 +156,14 @@ test("mobile chat launcher clearly identifies Lucas AI", () => {
   assert.match(chatWidget, /chat-floating-ai-badge/);
 });
 
-test("mobile chat launcher tracks the real visible viewport before it is opened", () => {
+test("mobile chat launcher avoids reserving a large bottom blank before it is opened", () => {
   assert.doesNotMatch(chatWidget, /if \(!isOpen \|\| !isMobileLike/);
   assert.match(chatWidget, /const mobileLauncherStyle/);
-  assert.match(chatWidget, /const mobileBrowserChromeGap = 88/);
-  assert.match(chatWidget, /viewportOffsetTop \+ viewportHeight - mobileLauncherHeight - mobileLauncherGap/);
-  assert.match(chatWidget, /bottom:\s*`calc\(env\(safe-area-inset-bottom, 0px\) \+ \$\{mobileBrowserChromeGap\}px\)`/);
+  assert.doesNotMatch(chatWidget, /const mobileBrowserChromeGap = 88/);
+  assert.doesNotMatch(chatWidget, /viewportOffsetTop \+ viewportHeight - mobileLauncherHeight - mobileLauncherGap/);
+  assert.match(chatWidget, /bottom:\s*"calc\(env\(safe-area-inset-bottom, 0px\) \+ 18px\)"/);
   assert.match(chatWidget, /\.\.\.mobileLauncherStyle/);
+  assert.doesNotMatch(chatWidget, /bottom:\s*`calc\(env\(safe-area-inset-bottom, 0px\) \+ \$\{mobileBrowserChromeGap\}px\)`/);
 });
 
 test("chat renderer turns bare internal routes into clickable markdown links", () => {

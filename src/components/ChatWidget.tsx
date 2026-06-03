@@ -658,23 +658,13 @@ export default function ChatWidget() {
     const inputLineHeight = isMobileLike ? "26px" : "24px";
     const introState = messages.length === 1 && messages[0]?.id === "greeting" && !isProcessing;
     const mobileLauncherHeight = 48;
-    const mobileBrowserChromeGap = 88;
-    const mobileLauncherGap = mobileBrowserChromeGap;
     const mobileLauncherStyle = isMobileLike
-        ? viewportHeight !== null
-            ? {
-                top: Math.max(12, viewportOffsetTop + viewportHeight - mobileLauncherHeight - mobileLauncherGap),
-                right: 16,
-                bottom: "auto" as const,
-                width: 62,
-                height: mobileLauncherHeight,
-            }
-            : {
-                right: 16,
-                bottom: "calc(env(safe-area-inset-bottom, 0px) + 88px)",
-                width: 62,
-                height: mobileLauncherHeight,
-            }
+        ? {
+            right: 16,
+            bottom: "calc(env(safe-area-inset-bottom, 0px) + 18px)",
+            width: 62,
+            height: mobileLauncherHeight,
+        }
         : {
             right: 24,
             bottom: 24,
@@ -705,7 +695,7 @@ export default function ChatWidget() {
             : {
                 left: mobileHorizontalInset,
                 right: mobileHorizontalInset,
-                bottom: `calc(env(safe-area-inset-bottom, 0px) + ${mobileBrowserChromeGap}px)`,
+                bottom: "calc(env(safe-area-inset-bottom, 0px) + 14px)",
                 top: "auto" as const,
                 width: "auto" as const,
                 height: mobileSheetHeight ? `${mobileSheetHeight}px` : "60dvh",
