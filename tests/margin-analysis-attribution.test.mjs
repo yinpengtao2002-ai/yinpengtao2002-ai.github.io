@@ -786,6 +786,18 @@ test("loaded data center exposes attribution method choice and mode two uses the
     assert.match(triggerUpdateBody, /AppState\.attributionMethod/);
 });
 
+test("analysis footer explains the difference between attribution modes in a collapsible section", () => {
+    assert.match(marginAnalysisHtml, /<details id="attribution-mode-guide" class="usage-details" style="display:none;">/);
+    assert.match(marginAnalysisHtml, /<summary class="usage-summary">.*模式一与模式二区别.*<\/summary>/);
+    assert.match(marginAnalysisHtml, /模式一：逐层独立归因/);
+    assert.match(marginAnalysisHtml, /模式二：最细粒度向上归因/);
+    assert.match(marginAnalysisHtml, /更稳、更钝/);
+    assert.match(marginAnalysisHtml, /更准、更敏感/);
+    assert.match(marginAnalysisHtml, /柱子总贡献通常保持一致/);
+    assert.match(marginAnalysisHtml, /最细颗粒越稳定/);
+    assert.match(marginAnalysisSource, /document\.getElementById\('attribution-mode-guide'\)/);
+});
+
 test("demo data gives revenue, cost, and margin distinct unit-metric movements", () => {
     assert.equal(typeof generateDemoData, "function");
     const normalized = normalizeUploadedRows(generateDemoData());

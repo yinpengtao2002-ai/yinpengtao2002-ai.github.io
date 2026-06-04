@@ -235,6 +235,51 @@
         </div>
     </details>
 
+    <details id="attribution-mode-guide" class="usage-details" style="display:none;">
+        <summary class="usage-summary">🧭 模式一与模式二区别</summary>
+        <div class="usage-content">
+            <p class="assumption-note">
+                两种模式使用同一张瀑布图和同一张明细表，区别在于结构效应和费率效应从哪一层开始拆。瀑布图柱子展示的是总贡献，因此切换模式后，柱子总贡献通常保持一致；真正变化的是悬停卡片和明细表里的结构效应、费率效应拆分。
+            </p>
+            <div class="table-wrapper">
+                <table class="assumption-table">
+                    <thead>
+                        <tr>
+                            <th style="width:18%;">对比项</th>
+                            <th style="width:41%;">模式一：逐层独立归因</th>
+                            <th style="width:41%;">模式二：最细粒度向上归因</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="product-type">计算起点</td>
+                            <td>每一层都按当前展示维度重新汇总销量和<span data-total-metric-label>边际总额</span>，再计算结构效应和费率效应。</td>
+                            <td>先按当前下钻路径的最细维度组合计算结构效应和费率效应，再汇总到大区、国家、车型等上层维度。</td>
+                        </tr>
+                        <tr>
+                            <td class="product-type">适合场景</td>
+                            <td>底层数据颗粒不够稳定、SKU 口径变化较多、只想从经营汇总层面快速定位问题时更合适。</td>
+                            <td>底层 SKU 足够细、两期颗粒稳定、维度映射一致时更合适，能保留底层组合真实变化。</td>
+                        </tr>
+                        <tr>
+                            <td class="product-type">结果特征</td>
+                            <td>更稳、更钝。它会在当前层级聚合后解释变化，底层 SKU 的迁移和缺失会被上层汇总部分抹平。</td>
+                            <td>更准、更敏感。它会把底层新增、退出、结构迁移直接带到上层，数据口径不稳时解释风险也更高。</td>
+                        </tr>
+                        <tr>
+                            <td class="product-type">如何阅读</td>
+                            <td>适合回答“这个大区、国家、车型自身的<span data-unit-metric-label>单车边际</span>为什么变了”。</td>
+                            <td>适合回答“最细 SKU 的变化汇总后，怎样驱动上层维度的<span data-unit-metric-label>单车边际</span>变化”。</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="assumption-note">
+                💡 <strong>阅读建议：</strong>如果数据质量高，优先看模式二；如果底层 SKU 有大量只在一期出现、命名变更或维度映射不稳定，可以用模式一作为经营汇总口径交叉验证。最细颗粒越稳定，模式二越适合作为主要判断依据。
+            </p>
+        </div>
+    </details>
+
     <div class="footer">
         <span class="footer-brand">Unit Metric Attribution Lab</span>
         <br>

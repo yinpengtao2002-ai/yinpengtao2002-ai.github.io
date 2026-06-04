@@ -2341,6 +2341,8 @@ function renderCharts() {
     // 显示 PVM 假设说明
     const pvmAssumptions = document.getElementById('pvm-assumptions');
     if (pvmAssumptions) pvmAssumptions.style.display = '';
+    const attributionModeGuide = document.getElementById('attribution-mode-guide');
+    if (attributionModeGuide) attributionModeGuide.style.display = '';
 
     container.appendChild(buildChartInteractionGuide());
 
