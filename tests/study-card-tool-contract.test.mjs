@@ -34,6 +34,7 @@ test("AI study card tool is exposed as an independent tool route", async () => {
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/study-cards/);
   assert.match(navigation, /\/tools\/study-cards/);
   assert.match(clientShell, /\/tools\/study-cards/);
+  assert.doesNotMatch(clientShell.match(/function shouldHideAssistant[\s\S]*?\n}/)?.[0] ?? "", /study-cards/);
 });
 
 test("AI study card results use an interactive one-card practice flow", async () => {
@@ -42,6 +43,7 @@ test("AI study card results use an interactive one-card practice flow", async ()
 
   assert.match(client, /activeCardIndex/);
   assert.match(client, /answerRevealed/);
+  assert.match(client, /has-result/);
   assert.match(client, /PracticeMode/);
   assert.match(client, /"learn" \| "check"/);
   assert.match(client, /practiceMode/);
@@ -61,6 +63,9 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.match(client, /夹具与真实调用怎么分工/);
   assert.match(client, /为何不能只看格式断言/);
   assert.match(client, /setDifficulty\(DIFFICULTY_OPTIONS\[2\]\)/);
+  assert.match(client, /study-cards-empty-preview/);
+  assert.match(client, /试试看这种卡片/);
+  assert.match(client, /先判断，再翻面/);
   assert.match(client, /轻点这里翻开答案/);
   assert.match(client, /cardMotion/);
   assert.match(client, /dragOffset/);
@@ -105,6 +110,11 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.match(styles, /\.study-cards-card-stage/);
   assert.match(styles, /\.study-cards-nav-arrow/);
   assert.match(styles, /\.study-cards-memory-actions/);
+  assert.match(styles, /\.study-cards-page\.has-result \.study-cards-workspace/);
+  assert.match(styles, /\.study-cards-page\.has-result \.study-cards-textarea/);
+  assert.match(styles, /\.study-cards-empty-preview/);
+  assert.match(styles, /\.study-cards-empty-card/);
+  assert.match(styles, /\.study-cards-empty-answer/);
   assert.match(styles, /grid-template-columns:\s*auto minmax\(0,\s*1fr\)/);
   assert.match(styles, /--drag-x/);
   assert.match(styles, /aspect-ratio:\s*3\s*\/\s*4/);
@@ -112,7 +122,9 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.match(styles, /cursor: grab/);
   assert.match(styles, /\.study-cards-question-block/);
   assert.match(styles, /\.study-cards-recall-hint/);
+  assert.match(styles, /\.study-cards-answer-panel\.is-hidden/);
   assert.match(styles, /\.study-cards-mobile-edit-button/);
+  assert.match(styles, /@media \(max-width: 560px\)[\s\S]*\.study-cards-empty/);
   assert.match(styles, /@media \(max-width: 560px\)[\s\S]*\.study-cards-deck::before[\s\S]*display: none/);
   assert.match(styles, /@media \(max-width: 760px\) and \(orientation: portrait\)/);
   assert.match(styles, /\.study-cards-page\.is-mobile-practice[\s\S]*position: fixed/);

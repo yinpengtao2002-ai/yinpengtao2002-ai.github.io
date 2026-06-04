@@ -2560,6 +2560,7 @@ h6 {
   grid-template-columns: minmax(330px, 0.84fr) minmax(0, 1.16fr);
   gap: 16px;
   align-items: stretch;
+  transition: grid-template-columns 0.28s ease;
 }
 
 .study-cards-input-panel,
@@ -2603,6 +2604,43 @@ h6 {
   margin: 0;
   font-size: clamp(1.65rem, 3vw, 2.35rem);
   line-height: 1.08;
+}
+
+.study-cards-inline-preview {
+  display: none;
+  margin: -2px 0 14px;
+  border: 1px solid color-mix(in srgb, var(--accent-secondary) 20%, var(--border));
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 9%, transparent), transparent 78%),
+    color-mix(in srgb, var(--card) 86%, var(--background));
+  color: color-mix(in srgb, var(--foreground) 72%, var(--muted));
+  padding: 12px 13px;
+}
+
+.study-cards-inline-preview span {
+  display: block;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.study-cards-inline-preview strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--foreground);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.study-cards-inline-preview small {
+  display: block;
+  margin-top: 5px;
+  color: color-mix(in srgb, var(--foreground) 52%, var(--muted));
+  font-size: 11px;
+  font-weight: 780;
 }
 
 .study-cards-actions svg {
@@ -2786,27 +2824,39 @@ h6 {
 }
 
 .study-cards-empty {
-  display: flex;
+  display: grid;
   min-height: 100%;
-  flex-direction: column;
+  grid-template-columns: minmax(0, 0.92fr) minmax(210px, 0.78fr);
   align-items: center;
+  gap: clamp(18px, 3vw, 30px);
   justify-content: center;
   color: var(--muted);
-  text-align: center;
+  text-align: left;
   padding: 28px;
 }
 
-.study-cards-empty svg {
+.study-cards-empty-copy svg {
   width: 42px;
   height: 42px;
   margin-bottom: 16px;
   color: var(--accent-secondary);
 }
 
+.study-cards-empty-copy > span {
+  display: block;
+  margin-bottom: 9px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
 .study-cards-empty h2 {
   margin: 0 0 8px;
   color: var(--foreground);
-  font-size: clamp(1.35rem, 3vw, 2rem);
+  font-size: clamp(1.3rem, 2.5vw, 1.85rem);
+  line-height: 1.2;
 }
 
 .study-cards-empty p {
@@ -2816,9 +2866,120 @@ h6 {
   line-height: 1.8;
 }
 
+.study-cards-empty-preview {
+  position: relative;
+  width: min(100%, 240px);
+  justify-self: center;
+}
+
+.study-cards-empty-preview::before,
+.study-cards-empty-preview::after {
+  position: absolute;
+  content: "";
+  inset: 0;
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--card) 88%, var(--background));
+  box-shadow: 0 14px 34px rgba(20, 20, 19, 0.08);
+}
+
+.study-cards-empty-preview::before {
+  transform: translate(-10%, 7%) rotate(-6deg);
+}
+
+.study-cards-empty-preview::after {
+  transform: translate(9%, 5%) rotate(5deg);
+}
+
+.study-cards-empty-card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  aspect-ratio: 3 / 4;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, var(--accent), var(--accent-secondary), var(--accent-tertiary)) top / 100% 4px no-repeat,
+    linear-gradient(145deg, color-mix(in srgb, var(--accent-secondary) 8%, transparent), transparent 44%),
+    var(--card);
+  box-shadow:
+    0 24px 58px rgba(20, 20, 19, 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  padding: 18px;
+}
+
+.study-cards-empty-card > span {
+  display: inline-flex;
+  width: 34px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 11%, var(--background));
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.study-cards-empty-card strong {
+  color: var(--foreground);
+  font-size: 1.18rem;
+  line-height: 1.34;
+}
+
+.study-cards-empty-card p {
+  margin: 0;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 7%, var(--card));
+  color: color-mix(in srgb, var(--foreground) 60%, var(--muted));
+  font-size: 11px;
+  font-weight: 780;
+  line-height: 1.45;
+  padding: 9px 10px;
+}
+
+.study-cards-empty-answer {
+  display: grid;
+  min-height: 82px;
+  place-items: center;
+  margin-top: auto;
+  border: 1px dashed color-mix(in srgb, var(--accent-secondary) 30%, var(--border));
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--accent-secondary) 12%, transparent), transparent 58%),
+    color-mix(in srgb, var(--background) 62%, var(--card));
+  color: color-mix(in srgb, var(--foreground) 55%, var(--muted));
+  font-size: 13px;
+  font-weight: 900;
+}
+
 @media (min-width: 901px) {
   .study-cards-page {
     overflow: hidden;
+  }
+
+  .study-cards-page.has-result .study-cards-workspace {
+    grid-template-columns: minmax(280px, 0.58fr) minmax(0, 1.42fr);
+  }
+
+  .study-cards-page.has-result .study-cards-textarea {
+    min-height: clamp(170px, 27dvh, 250px);
+  }
+
+  .study-cards-page.has-result .study-cards-input-panel {
+    box-shadow: 0 14px 34px rgba(20, 20, 19, 0.06);
+  }
+
+  .study-cards-page.has-result .study-cards-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .study-cards-page.has-result .study-cards-actions .study-cards-primary {
+    grid-column: 1 / -1;
   }
 
   .study-cards-shell {
@@ -3089,11 +3250,14 @@ h6 {
 }
 
 .study-cards-answer-panel {
+  position: relative;
   display: flex;
   width: 100%;
   min-height: 0;
   flex: 1 1 auto;
   align-items: center;
+  justify-content: center;
+  overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--accent-secondary) 24%, var(--border));
   border-radius: 8px;
   background:
@@ -3111,6 +3275,25 @@ h6 {
     transform 0.2s ease;
 }
 
+.study-cards-answer-panel.is-hidden {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--accent-secondary) 34%, var(--border));
+  background:
+    radial-gradient(circle at 50% 16%, color-mix(in srgb, var(--accent-secondary) 13%, transparent), transparent 54%),
+    linear-gradient(180deg, color-mix(in srgb, var(--background) 78%, var(--card)), color-mix(in srgb, var(--card) 96%, white)),
+    var(--card);
+}
+
+.study-cards-answer-panel.is-hidden::before {
+  position: absolute;
+  content: "";
+  inset: 16px;
+  border: 1px solid color-mix(in srgb, var(--accent-secondary) 12%, transparent);
+  border-radius: 6px;
+  opacity: 0.76;
+  pointer-events: none;
+}
+
 .study-cards-answer-panel:hover {
   border-color: color-mix(in srgb, var(--accent-secondary) 52%, var(--border));
   background:
@@ -3124,27 +3307,51 @@ h6 {
 
 .study-cards-answer-panel.is-revealed {
   align-items: flex-start;
+  justify-content: flex-start;
   border-style: solid;
   border-color: color-mix(in srgb, var(--accent-tertiary) 28%, var(--border));
   background:
+    linear-gradient(color-mix(in srgb, var(--accent-tertiary) 9%, transparent) 1px, transparent 1px) 0 0 / 100% 36px,
     linear-gradient(180deg, color-mix(in srgb, var(--accent-tertiary) 8%, var(--card)), color-mix(in srgb, var(--background) 64%, var(--card))),
     var(--card);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
   cursor: default;
 }
 
 .study-cards-answer-placeholder {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  gap: 6px;
   color: color-mix(in srgb, var(--foreground) 56%, var(--muted));
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 850;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.study-cards-answer-placeholder-icon {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-secondary) 11%, var(--card));
+  color: var(--accent-secondary);
+}
+
+.study-cards-answer-placeholder small {
+  color: color-mix(in srgb, var(--foreground) 44%, var(--muted));
+  font-size: 11px;
+  font-weight: 820;
 }
 
 .study-cards-answer-placeholder svg {
   width: 16px;
   height: 16px;
-  color: var(--accent-secondary);
 }
 
 .study-cards-answer-copy {
@@ -3354,8 +3561,16 @@ h6 {
     min-height: auto;
   }
 
+  .study-cards-inline-preview {
+    display: block;
+  }
+
   .study-cards-textarea {
     min-height: 280px;
+  }
+
+  .study-cards-empty {
+    min-height: 430px;
   }
 
   .study-cards-result {
@@ -3379,6 +3594,41 @@ h6 {
 
   .study-cards-title-row {
     flex-direction: column;
+  }
+
+  .study-cards-inline-preview {
+    margin-top: -4px;
+  }
+
+  .study-cards-textarea {
+    min-height: 220px;
+  }
+
+  .study-cards-empty {
+    grid-template-columns: 1fr;
+    min-height: 460px;
+    gap: 22px;
+    padding: 22px 18px;
+    text-align: center;
+  }
+
+  .study-cards-empty-copy svg {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 12px;
+  }
+
+  .study-cards-empty p {
+    margin-inline: auto;
+  }
+
+  .study-cards-empty-preview {
+    width: min(100%, 220px);
+  }
+
+  .study-cards-empty-card {
+    text-align: left;
+    padding: 16px;
   }
 
   .study-cards-practice-top > span {
@@ -3576,7 +3826,7 @@ h6 {
     min-height: 0;
     flex: 1 1 auto;
     align-items: flex-start;
-    padding: clamp(18px, 4dvh, 34px) 12px 0;
+    padding: clamp(12px, 2dvh, 20px) 4px 0;
     overflow: hidden;
   }
 
@@ -3606,7 +3856,7 @@ h6 {
   }
 
   .study-cards-page.is-mobile-practice .study-cards-practice-card {
-    aspect-ratio: 3 / 4;
+    aspect-ratio: 2 / 3;
     min-height: 0;
     gap: 10px;
     padding: 16px;

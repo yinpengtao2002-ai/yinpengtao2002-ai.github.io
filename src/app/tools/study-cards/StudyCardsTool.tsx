@@ -210,6 +210,7 @@ export default function StudyCardsTool() {
     .join(" ");
   const pageClassName = [
     "study-cards-page",
+    result ? "has-result" : "",
     mobilePracticeActive && result ? "is-mobile-practice" : "",
   ]
     .filter(Boolean)
@@ -632,6 +633,14 @@ export default function StudyCardsTool() {
               </div>
             </div>
 
+            {!result && (
+              <div className="study-cards-inline-preview" aria-hidden="true">
+                <span>试试看这种卡片</span>
+                <strong>场景契约先固定什么？</strong>
+                <small>先判断，再翻面</small>
+              </div>
+            )}
+
             <label className="study-cards-textarea-label" htmlFor="study-card-source">
               输入知识内容
             </label>
@@ -728,9 +737,22 @@ export default function StudyCardsTool() {
           <section ref={outputPanelRef} className="study-cards-output-panel" aria-label="学习卡片结果">
             {!result || !activeCard ? (
               <div className="study-cards-empty">
-                <Layers aria-hidden="true" />
-                <h2>把材料变成可以复习的卡片</h2>
-                <p>点击示例内容，右侧会出现一组可翻动的小卡片。</p>
+                <div className="study-cards-empty-copy">
+                  <Layers aria-hidden="true" />
+                  <span>试试看这种卡片</span>
+                  <h2>把材料变成可以翻看的闪卡</h2>
+                  <p>点击示例内容，先看一遍带答案的卡片，再进入回忆检查。</p>
+                </div>
+                <div className="study-cards-empty-preview" aria-hidden="true">
+                  <div className="study-cards-empty-card">
+                    <span>01</span>
+                    <strong>场景契约先固定什么？</strong>
+                    <p>提示 · 想想评测前要说清哪些边界</p>
+                    <div className="study-cards-empty-answer">
+                      先判断，再翻面
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="study-cards-result">
@@ -801,13 +823,16 @@ export default function StudyCardsTool() {
                         >
                           {answerRevealed ? (
                             <span className="study-cards-answer-copy">
-                              <strong>参考答案</strong>
+                              <strong>背面答案</strong>
                               <span>{compactText(activeCard.back, 110)}</span>
                             </span>
                           ) : (
                             <span className="study-cards-answer-placeholder">
-                              <Eye aria-hidden="true" />
-                              轻点这里翻开答案
+                              <span className="study-cards-answer-placeholder-icon">
+                                <Eye aria-hidden="true" />
+                              </span>
+                              <span>先在心里回答</span>
+                              <small>轻点这里翻开答案</small>
                             </span>
                           )}
                         </button>
