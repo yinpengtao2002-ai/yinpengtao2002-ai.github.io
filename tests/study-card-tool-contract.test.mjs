@@ -58,10 +58,12 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.match(client, /loadSampleContent/);
   assert.match(client, /青少年心理健康危机日益凸显/);
   assert.match(client, /彭凯平/);
-  assert.match(client, /生命教育与青少年危机/);
-  assert.match(client, /生命教育为何走向焦点/);
-  assert.match(client, /彭凯平团队发现哪“四无”/);
-  assert.match(client, /生命教育最终使命是什么/);
+  assert.match(client, /生命教育为何迫切/);
+  assert.match(client, /危机已不只是普通压力/);
+  assert.match(client, /AI 介入为什么会让生命教育更迫切/);
+  assert.match(client, /“高分冰山高楼”指向哪种教育缺口/);
+  assert.match(client, /“四无”共同暴露了什么断裂/);
+  assert.match(client, /最终使命怎样回应前文追问/);
   assert.match(client, /setDifficulty\(DIFFICULTY_OPTIONS\[2\]\)/);
   assert.match(client, /study-cards-empty-preview/);
   assert.match(client, /试试看这种卡片/);
@@ -179,6 +181,10 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.doesNotMatch(client, /切模型后怎么判断质量变化来源/);
   assert.doesNotMatch(client, /场景契约/);
   assert.doesNotMatch(client, /工具超时/);
+  assert.doesNotMatch(client, /专委会何时何地成立/);
+  assert.doesNotMatch(client, /彭凯平团队发现哪“四无”/);
+  assert.doesNotMatch(client, /生命教育最终使命是什么/);
+  assert.doesNotMatch(client, /生命教育不是哪种定位/);
 
   const sampleCards = Array.from(
     client.matchAll(/front: "([^"]+)",\s+back: "([^"]+)",\s+note: "([^"]+)"/g),
