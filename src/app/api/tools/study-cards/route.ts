@@ -78,6 +78,42 @@ function normalizeText(value: unknown, fallback = "") {
   return typeof value === "string" ? value.trim() : fallback;
 }
 
+const QUESTION_TYPE_GUIDE = [
+  "出题框架：每张卡先选一种题型，再写 front；不要把材料标题直接改成问句。",
+  "- 适用条件：考什么时候该用某个概念、方法或判断，例如“何时需要 X 介入？”",
+  "- 区分边界：考两个概念、步骤或工具的分工，例如“X 和 Y 怎么分工？”",
+  "- 因果机制：考为什么会发生、为什么不能跳过，例如“为什么不能只看 X？”",
+  "- 迁移判断：给一个相似场景，考学习者先判断该看哪条原则，例如“遇到 Y 先检查什么？”",
+  "- 反例纠错：考常见误用会漏掉什么，例如“只做 X 会错过什么？”",
+  "- 顺序依赖：考前后步骤和必要前提，例如“做 X 前必须先确定什么？”",
+  "- 同一题型不要连续出现超过 2 张；整组卡片要覆盖概念、边界、因果和迁移。",
+];
+
+const BAD_QUESTION_PATTERNS = [
+  "坏问题：什么是 X？X 的核心是什么？X 有哪些特点？本文讲了什么？",
+  "不要问“核心是什么”“主要内容是什么”“有哪些方面”“如何理解 X”这类摘要题。",
+  "不要让 front 和 back 共享大段相同短语；front 要逼学习者先作判断。",
+];
+
+const ANSWER_QUALITY_RULES = [
+  "答案写法：先判断，再解释依据；不要只给名词解释。",
+  "好的 back 应该像一句可复述的结论：判断 + 关键依据 / 差异 / 后果。",
+  "note 只能给回忆方向，像“先看边界”“想想误判来源”，不能提前说出答案关键词。",
+  "生成前先自检：如果 front 只是定义题、摘要题、照搬标题或答案已被 note 泄露，必须重写。",
+];
+
+function getDifficultyQuestionGuidance(difficulty: string) {
+  if (difficulty.includes("高级")) {
+    return "高级难度：多出迁移判断、反例纠错、边界取舍题；少出直接定义题。";
+  }
+
+  if (difficulty.includes("进阶")) {
+    return "进阶难度：以区分边界、因果机制、适用条件为主，保留必要术语。";
+  }
+
+  return "基础难度：问题仍要考判断，但场景更直白；答案用更明确的因果或步骤表达。";
+}
+
 function buildStudyCardPrompt({
   content,
   difficulty,
@@ -94,8 +130,12 @@ function buildStudyCardPrompt({
     "- 先提取材料里的关键概念、概念之间的关系、使用边界、因果链和易混点",
     "- 优先生成能检查理解的问题，避免“什么是 X”这类只考定义的浅问题",
     "- 不要把原文句子拆短后照搬；必须重新组织成适合主动回忆的问答",
+    ...QUESTION_TYPE_GUIDE,
+    ...BAD_QUESTION_PATTERNS,
+    ...ANSWER_QUALITY_RULES,
     "要求：",
     `- 难度：${difficulty}`,
+    `- ${getDifficultyQuestionGuidance(difficulty)}`,
     `- 生成 ${cardCount} 张问答卡`,
     "- 每张卡只考一个知识点，不要把多个概念塞进一张卡",
     "- front 必须是简短问题，适合抛给学习者主动回忆，不超过 24 个中文字符",
