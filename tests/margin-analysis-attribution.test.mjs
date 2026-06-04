@@ -644,6 +644,28 @@ test("loaded data center exposes unit name and current metric selector together"
     assert.match(marginAnalysisSource, /metricInput\.addEventListener\('change'/);
 });
 
+test("loaded data center reserves attribution method choice without changing the current calculation engine", () => {
+    const loadedDataCenter = marginAnalysisHtml.match(/<section id="data-center-loaded"[\s\S]*?<\/section>/);
+    assert.ok(loadedDataCenter, "Expected loaded data center section");
+    assert.match(loadedDataCenter[0], /for="input-attribution-method">归因口径<\/label>/);
+    assert.match(loadedDataCenter[0], /<select id="input-attribution-method" class="form-select"/);
+    assert.match(loadedDataCenter[0], /模式一：逐层独立归因/);
+    assert.match(loadedDataCenter[0], /模式二：最细粒度向上归因（试用）/);
+    assert.match(loadedDataCenter[0], /id="attribution-method-note"/);
+
+    assert.match(marginAnalysisSource, /attributionMethod:\s*'layered'/);
+    assert.match(marginAnalysisSource, /const ATTRIBUTION_METHOD_LAYERED = 'layered'/);
+    assert.match(marginAnalysisSource, /const ATTRIBUTION_METHOD_BOTTOM_UP = 'bottom-up'/);
+    assert.match(marginAnalysisSource, /document\.getElementById\('input-attribution-method'\)/);
+    assert.match(marginAnalysisSource, /methodInput\.addEventListener\('change'/);
+    assert.match(marginAnalysisSource, /updateAttributionMethodNote\(\)/);
+    assert.match(marginAnalysisSource, /当前图表仍按逐层独立口径计算/);
+
+    const triggerUpdateBody = marginAnalysisSource.match(/function triggerUpdate\(\) \{[\s\S]*?\n\/\/ ==================== 渲染图表和表格/)?.[0] || "";
+    assert.match(triggerUpdateBody, /calculateDimensionPVMEffects\(/);
+    assert.doesNotMatch(triggerUpdateBody, /calculateBottomUp|bottomUp|ATTRIBUTION_METHOD_BOTTOM_UP/);
+});
+
 test("demo data gives revenue, cost, and margin distinct unit-metric movements", () => {
     assert.equal(typeof generateDemoData, "function");
     const normalized = normalizeUploadedRows(generateDemoData());

@@ -74,7 +74,15 @@
                                 <option value="Metric_1">单车边际</option>
                             </select>
                         </div>
+                        <div class="form-group compact attribution-method-field">
+                            <label class="form-label" for="input-attribution-method">归因口径</label>
+                            <select id="input-attribution-method" class="form-select">
+                                <option value="layered" selected>模式一：逐层独立归因</option>
+                                <option value="bottom-up">模式二：最细粒度向上归因（试用）</option>
+                            </select>
+                        </div>
                     </div>
+                    <p id="attribution-method-note" class="caption attribution-method-note">当前使用模式一：逐层独立归因；每一层按该层维度重新计算。</p>
                     <p class="caption">这里只切换当前图表口径，名称来自底表表头；把单位改为“台”会展示为“单台净收入、单台成本、单台边际”。</p>
                 </div>
             </div>

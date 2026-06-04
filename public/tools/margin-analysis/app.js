@@ -10,6 +10,8 @@ const DEFAULT_DIMENSION_NAMES = {
 };
 const TEMPLATE_DIMENSION_HEADERS = ['大区', '国家', '车型', '燃油品类', '品牌'];
 const ALL_DIMENSIONS = Array.from({ length: 20 }, (_, index) => `Dim_${String.fromCharCode(65 + index)}`);
+const ATTRIBUTION_METHOD_LAYERED = 'layered';
+const ATTRIBUTION_METHOD_BOTTOM_UP = 'bottom-up';
 
 const AppState = {
     dataLoaded: false,
@@ -36,6 +38,7 @@ const AppState = {
     availableDimsInData: [],
     calculationResults: null,
     impactBaselineDim: '__global__',
+    attributionMethod: 'layered',
     attributionViewModes: {}
 };
 
@@ -1016,6 +1019,8 @@ function onDataLoaded() {
     // 填充维度筛选器
     populateDrillFilters();
 
+    updateAttributionMethodNote();
+
     // 触发初始计算
     triggerUpdate();
 }
@@ -1046,7 +1051,8 @@ function populateMonthSelectors() {
 function initUserSettings() {
     const unitInput = document.getElementById('input-unit-name');
     const metricInput = document.getElementById('input-metric-type');
-    if (!unitInput && !metricInput) return;
+    const methodInput = document.getElementById('input-attribution-method');
+    if (!unitInput && !metricInput && !methodInput) return;
 
     if (unitInput) {
         unitInput.value = getUnitName();
@@ -1071,7 +1077,17 @@ function initUserSettings() {
         });
     }
 
+    if (methodInput) {
+        methodInput.value = normalizeAttributionMethod(AppState.attributionMethod);
+        methodInput.addEventListener('change', () => {
+            AppState.attributionMethod = normalizeAttributionMethod(methodInput.value);
+            methodInput.value = AppState.attributionMethod;
+            updateAttributionMethodNote();
+        });
+    }
+
     updateMetricCopy();
+    updateAttributionMethodNote();
 }
 
 function handleMetricSettingChange() {
@@ -1143,6 +1159,29 @@ function buildUnitMetricLabel(unitName = '车', metricType = '边际') {
     const safeMetricType = normalizeMetricSetting(metricType, '边际');
     if (safeMetricType.startsWith('单')) return safeMetricType;
     return `单${normalizeMetricSetting(unitName, '车')}${safeMetricType}`;
+}
+
+function normalizeAttributionMethod(value) {
+    return value === ATTRIBUTION_METHOD_BOTTOM_UP ? ATTRIBUTION_METHOD_BOTTOM_UP : ATTRIBUTION_METHOD_LAYERED;
+}
+
+function getAttributionMethodNote(method = AppState.attributionMethod) {
+    if (normalizeAttributionMethod(method) === ATTRIBUTION_METHOD_BOTTOM_UP) {
+        return '试用入口：模式二用于最细粒度稳定时，从底层组合向上汇总归因。当前图表仍按逐层独立口径计算。';
+    }
+    return '当前使用模式一：逐层独立归因；每一层按该层维度重新计算。';
+}
+
+function updateAttributionMethodNote() {
+    const methodInput = document.getElementById('input-attribution-method');
+    const note = document.getElementById('attribution-method-note');
+    AppState.attributionMethod = normalizeAttributionMethod(AppState.attributionMethod);
+
+    if (methodInput) methodInput.value = AppState.attributionMethod;
+    if (note) {
+        note.textContent = getAttributionMethodNote(AppState.attributionMethod);
+        note.dataset.method = AppState.attributionMethod;
+    }
 }
 
 function getUnitMetricLabel() {
