@@ -791,10 +791,16 @@ test("analysis footer explains the difference between attribution modes in a col
     assert.match(marginAnalysisHtml, /<summary class="usage-summary">.*模式一与模式二区别.*<\/summary>/);
     assert.match(marginAnalysisHtml, /模式一：逐层独立归因/);
     assert.match(marginAnalysisHtml, /模式二：最细粒度向上归因/);
-    assert.match(marginAnalysisHtml, /更稳、更钝/);
-    assert.match(marginAnalysisHtml, /更准、更敏感/);
+    assert.match(marginAnalysisHtml, /当前层视角/);
+    assert.match(marginAnalysisHtml, /底层 SKU 视角/);
+    assert.match(marginAnalysisHtml, /当前维度看不见的底层结构变化/);
+    assert.match(marginAnalysisHtml, /多数情况下会表现为费率效应/);
+    assert.match(marginAnalysisHtml, /每到一层，就在这一层重新做一次归因/);
+    assert.match(marginAnalysisHtml, /固定在最细颗粒做一次归因，再把答案往上卷/);
     assert.match(marginAnalysisHtml, /柱子总贡献通常保持一致/);
     assert.match(marginAnalysisHtml, /最细颗粒越稳定/);
+    assert.doesNotMatch(marginAnalysisHtml, /结果特征/);
+    assert.doesNotMatch(marginAnalysisHtml, /如何阅读/);
     assert.match(marginAnalysisSource, /document\.getElementById\('attribution-mode-guide'\)/);
 });
 
