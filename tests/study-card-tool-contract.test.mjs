@@ -59,9 +59,10 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.match(client, /Harness/);
   assert.match(client, /场景契约/);
   assert.match(client, /AI Harness 质量评测/);
-  assert.match(client, /何时需要 Harness 介入/);
-  assert.match(client, /夹具与真实调用怎么分工/);
-  assert.match(client, /为何不能只看格式断言/);
+  assert.match(client, /改模型时先看什么/);
+  assert.match(client, /场景契约漏掉会怎样/);
+  assert.match(client, /只验格式会漏什么/);
+  assert.match(client, /演示很稳还缺什么/);
   assert.match(client, /setDifficulty\(DIFFICULTY_OPTIONS\[2\]\)/);
   assert.match(client, /study-cards-empty-preview/);
   assert.match(client, /试试看这种卡片/);
@@ -147,6 +148,11 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.doesNotMatch(client, /CheckCircle2/);
   assert.doesNotMatch(client, /记住了/);
   assert.doesNotMatch(client, /is-remembered/);
+  assert.doesNotMatch(client, /何时需要 Harness 介入/);
+  assert.doesNotMatch(client, /夹具与真实调用怎么分工/);
+  assert.doesNotMatch(client, /为何不能只看格式断言/);
+  assert.doesNotMatch(client, /评判器分层解决什么/);
+  assert.doesNotMatch(client, /Harness 服务哪种目标/);
   assert.doesNotMatch(client, /Harness 的核心边界是什么/);
   assert.doesNotMatch(client, /重点不是脚本/);
   assert.doesNotMatch(client, /is-answer/);
