@@ -1083,6 +1083,7 @@ function initUserSettings() {
             AppState.attributionMethod = normalizeAttributionMethod(methodInput.value);
             methodInput.value = AppState.attributionMethod;
             updateAttributionMethodNote();
+            if (AppState.dataLoaded) triggerUpdate();
         });
     }
 
@@ -1167,7 +1168,7 @@ function normalizeAttributionMethod(value) {
 
 function getAttributionMethodNote(method = AppState.attributionMethod) {
     if (normalizeAttributionMethod(method) === ATTRIBUTION_METHOD_BOTTOM_UP) {
-        return '试用入口：模式二用于最细粒度稳定时，从底层组合向上汇总归因。当前图表仍按逐层独立口径计算。';
+        return '当前使用模式二：先按最细维度组合计算，再汇总到各层图表；最细颗粒越稳定，结果越适合解读。';
     }
     return '当前使用模式一：逐层独立归因；每一层按该层维度重新计算。';
 }
@@ -1954,6 +1955,139 @@ function calculateDimensionPVMEffects(data, baseMonth, currMonth, groupDim, tota
     });
 }
 
+function normalizeBottomUpLeafDims(groupDim, leafDims) {
+    const dims = Array.isArray(leafDims) ? leafDims.filter(Boolean) : [];
+    const withGroupDim = dims.includes(groupDim) ? dims : [groupDim, ...dims];
+    return [...new Set(withGroupDim)];
+}
+
+function getBottomUpLeafKey(row, leafDims) {
+    return JSON.stringify(leafDims.map(dim => String(row?.[dim] ?? '')));
+}
+
+function createBottomUpLeafBucket(groupValue) {
+    return {
+        groupValue,
+        base: createPVMBucket(),
+        curr: createPVMBucket()
+    };
+}
+
+function createBottomUpDisplayBucket(groupDim, groupValue) {
+    return {
+        [groupDim]: groupValue,
+        Vol_Base: 0,
+        Vol_Curr: 0,
+        Total_Margin_Base: 0,
+        Total_Margin_Curr: 0,
+        Margin_Unit_Base: 0,
+        Margin_Unit_Curr: 0,
+        Mix_Effect: 0,
+        Rate_Effect: 0,
+        Total_Contribution: 0
+    };
+}
+
+function calculateLeafPVMRow(leaf, groupDim, totalVolCurr, totalVolBase, avgMarginBase) {
+    const baseData = leaf.base || createPVMBucket();
+    const currData = leaf.curr || createPVMBucket();
+    const weightBase = totalVolBase > 0 ? baseData.vol / totalVolBase : 0;
+    const weightCurr = totalVolCurr > 0 ? currData.vol / totalVolCurr : 0;
+    const marginUnitBase = baseData.vol !== 0 ? baseData.margin / baseData.vol : 0;
+    const marginUnitCurr = currData.vol !== 0 ? currData.margin / currData.vol : 0;
+    const safeAvgMarginBase = Number.isFinite(avgMarginBase) ? avgMarginBase : 0;
+
+    const row = {
+        [groupDim]: leaf.groupValue,
+        Vol_Base: baseData.vol,
+        Vol_Curr: currData.vol,
+        Total_Margin_Base: baseData.margin,
+        Total_Margin_Curr: currData.margin,
+        Margin_Unit_Base: marginUnitBase,
+        Margin_Unit_Curr: marginUnitCurr
+    };
+
+    if (baseData.vol === 0 && currData.vol !== 0) {
+        row.Mix_Effect = weightCurr * (marginUnitCurr - safeAvgMarginBase);
+        row.Rate_Effect = 0;
+    } else if (currData.vol === 0 && baseData.vol !== 0) {
+        row.Mix_Effect = -weightBase * (marginUnitBase - safeAvgMarginBase);
+        row.Rate_Effect = 0;
+    } else {
+        row.Mix_Effect = (weightCurr - weightBase) * (marginUnitBase - safeAvgMarginBase);
+        row.Rate_Effect = weightCurr * (marginUnitCurr - marginUnitBase);
+    }
+
+    row.Total_Contribution = row.Mix_Effect + row.Rate_Effect;
+    return row;
+}
+
+function addLeafPVMRowToDisplayBucket(bucket, leafRow) {
+    bucket.Vol_Base += leafRow.Vol_Base || 0;
+    bucket.Vol_Curr += leafRow.Vol_Curr || 0;
+    bucket.Total_Margin_Base += leafRow.Total_Margin_Base || 0;
+    bucket.Total_Margin_Curr += leafRow.Total_Margin_Curr || 0;
+    bucket.Mix_Effect += leafRow.Mix_Effect || 0;
+    bucket.Rate_Effect += leafRow.Rate_Effect || 0;
+    bucket.Total_Contribution += leafRow.Total_Contribution || 0;
+}
+
+function finalizeBottomUpDisplayBucket(bucket) {
+    bucket.Margin_Unit_Base = bucket.Vol_Base !== 0 ? bucket.Total_Margin_Base / bucket.Vol_Base : 0;
+    bucket.Margin_Unit_Curr = bucket.Vol_Curr !== 0 ? bucket.Total_Margin_Curr / bucket.Vol_Curr : 0;
+    return bucket;
+}
+
+// ==================== 最细颗粒向上 PVM 效应计算 ====================
+function calculateBottomUpPVMEffects(data, baseMonth, currMonth, groupDim, leafDims, totalVolCurr, totalVolBase, avgMarginBase) {
+    const normalizedLeafDims = normalizeBottomUpLeafDims(groupDim, leafDims);
+    const leafAgg = {};
+
+    (data || []).forEach(row => {
+        if (row['Month'] !== baseMonth && row['Month'] !== currMonth) return;
+        const key = getBottomUpLeafKey(row, normalizedLeafDims);
+        const groupValue = row[groupDim] || '';
+        if (!leafAgg[key]) leafAgg[key] = createBottomUpLeafBucket(groupValue);
+        if (row['Month'] === baseMonth) addRowToPVMBucket(leafAgg[key].base, row);
+        if (row['Month'] === currMonth) addRowToPVMBucket(leafAgg[key].curr, row);
+    });
+
+    const displayAgg = {};
+    Object.values(leafAgg).forEach(leaf => {
+        const leafRow = calculateLeafPVMRow(leaf, groupDim, totalVolCurr, totalVolBase, avgMarginBase);
+        const groupValue = leafRow[groupDim] || '';
+        if (!displayAgg[groupValue]) displayAgg[groupValue] = createBottomUpDisplayBucket(groupDim, groupValue);
+        addLeafPVMRowToDisplayBucket(displayAgg[groupValue], leafRow);
+    });
+
+    return Object.values(displayAgg).map(finalizeBottomUpDisplayBucket);
+}
+
+function calculateAttributionEffects(data, baseMonth, currMonth, groupDim, totalVolCurr, totalVolBase, avgMarginBase, attributionMethod = ATTRIBUTION_METHOD_LAYERED, leafDims = [groupDim]) {
+    if (normalizeAttributionMethod(attributionMethod) === ATTRIBUTION_METHOD_BOTTOM_UP) {
+        return calculateBottomUpPVMEffects(
+            data,
+            baseMonth,
+            currMonth,
+            groupDim,
+            leafDims,
+            totalVolCurr,
+            totalVolBase,
+            avgMarginBase
+        );
+    }
+
+    return calculateDimensionPVMEffects(
+        data,
+        baseMonth,
+        currMonth,
+        groupDim,
+        totalVolCurr,
+        totalVolBase,
+        avgMarginBase
+    );
+}
+
 
 // ==================== 准备展示数据（添加占比和总计行） ====================
 /**
@@ -2101,9 +2235,10 @@ function triggerUpdate() {
         const levelCurr = calculateGlobalMetrics(dfLevel, currMonth);
 
         // 基于当前视图范围权重计算 PVM 效应
-        const effects = calculateDimensionPVMEffects(
+        const effects = calculateAttributionEffects(
             dfLevel, baseMonth, currMonth, dim,
-            levelCurr.totalVol, levelBase.totalVol, levelBase.avgMargin
+            levelCurr.totalVol, levelBase.totalVol, levelBase.avgMargin,
+            AppState.attributionMethod, drillOrder
         );
 
         // 准备展示数据
@@ -2131,11 +2266,12 @@ function triggerUpdate() {
                 AppState.excludedDims,
                 AppState.customDimNames
             );
-            globalEffects = calculateDimensionPVMEffects(
+            globalEffects = calculateAttributionEffects(
                 dfLevel, baseMonth, currMonth, dim,
                 impactBaselineContext.curr.totalVol,
                 impactBaselineContext.base.totalVol,
-                impactBaselineContext.base.avgMargin
+                impactBaselineContext.base.avgMargin,
+                AppState.attributionMethod, drillOrder
             );
             globalDisplayData = prepareDisplayData(
                 globalEffects, dim,
@@ -4079,6 +4215,8 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         calculateGlobalMetrics,
         calculateDimensionPVMEffects,
+        calculateBottomUpPVMEffects,
+        calculateAttributionEffects,
         prepareDisplayData,
         applyDrillDimensionFilters,
         getImpactBaselineContext,

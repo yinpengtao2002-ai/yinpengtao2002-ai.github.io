@@ -10,6 +10,7 @@ const marginAnalysisHtml = await readFile(new URL("../public/tools/margin-analys
 const {
     calculateGlobalMetrics,
     calculateDimensionPVMEffects,
+    calculateBottomUpPVMEffects,
     prepareDisplayData,
     applyDrillDimensionFilters,
     getImpactBaselineContext,
@@ -49,6 +50,12 @@ function approx(actual, expected, message) {
 function rowByDim(rows, value) {
     const row = rows.find((item) => item.Dim_A === value);
     assert.ok(row, `Expected row for Dim_A=${value}`);
+    return row;
+}
+
+function rowByValue(rows, dim, value) {
+    const row = rows.find((item) => item[dim] === value);
+    assert.ok(row, `Expected row for ${dim}=${value}`);
     return row;
 }
 
@@ -252,6 +259,118 @@ test("negative-volume dimension groups reconcile instead of dropping their margi
 
     const totalContribution = effects.reduce((sum, row) => sum + row.Total_Contribution, 0);
     approx(totalContribution, curr.avgMargin - base.avgMargin, "sum ties to true unit metric movement with negative volume");
+});
+
+test("bottom-up attribution calculates leaf mix and rate before rolling up to the visible dimension", () => {
+    assert.equal(typeof calculateBottomUpPVMEffects, "function");
+    const data = [
+        { Month: "base", Dim_A: "EU", Dim_B: "T19", "Sales Volume": 100, "Total Margin": 1000 },
+        { Month: "base", Dim_A: "EU", Dim_B: "T1E", "Sales Volume": 100, "Total Margin": 3000 },
+        { Month: "curr", Dim_A: "EU", Dim_B: "T19", "Sales Volume": 50, "Total Margin": 500 },
+        { Month: "curr", Dim_A: "EU", Dim_B: "T1E", "Sales Volume": 150, "Total Margin": 4500 },
+    ];
+
+    const base = calculateGlobalMetrics(data, "base");
+    const curr = calculateGlobalMetrics(data, "curr");
+    const layeredEffects = calculateDimensionPVMEffects(
+        data,
+        "base",
+        "curr",
+        "Dim_A",
+        curr.totalVol,
+        base.totalVol,
+        base.avgMargin
+    );
+    const bottomUpEffects = calculateBottomUpPVMEffects(
+        data,
+        "base",
+        "curr",
+        "Dim_A",
+        ["Dim_A", "Dim_B"],
+        curr.totalVol,
+        base.totalVol,
+        base.avgMargin
+    );
+
+    const layeredEu = rowByDim(layeredEffects, "EU");
+    approx(layeredEu.Mix_Effect, 0, "layered region mix effect");
+    approx(layeredEu.Rate_Effect, 5, "layered region rate effect");
+
+    const bottomUpEu = rowByDim(bottomUpEffects, "EU");
+    approx(bottomUpEu.Mix_Effect, 5, "bottom-up rolls leaf structure into parent mix");
+    approx(bottomUpEu.Rate_Effect, 0, "bottom-up preserves leaf rate split");
+    approx(bottomUpEu.Total_Contribution, layeredEu.Total_Contribution, "bottom-up parent contribution still reconciles");
+});
+
+test("bottom-up attribution aggregates zero-volume amount rows into the same finest-grain key before rate calculation", () => {
+    const data = [
+        { Month: "base", Dim_A: "EU", Dim_B: "T19", "Sales Volume": 100, "Total Margin": 1000 },
+        { Month: "base", Dim_A: "EU", Dim_B: "T19", "Sales Volume": 0, "Total Margin": 500 },
+        { Month: "curr", Dim_A: "EU", Dim_B: "T19", "Sales Volume": 100, "Total Margin": 1200 },
+        { Month: "curr", Dim_A: "EU", Dim_B: "T19", "Sales Volume": 0, "Total Margin": 800 },
+    ];
+
+    const base = calculateGlobalMetrics(data, "base");
+    const curr = calculateGlobalMetrics(data, "curr");
+    const effects = calculateBottomUpPVMEffects(
+        data,
+        "base",
+        "curr",
+        "Dim_A",
+        ["Dim_A", "Dim_B"],
+        curr.totalVol,
+        base.totalVol,
+        base.avgMargin
+    );
+
+    const eu = rowByDim(effects, "EU");
+    approx(eu.Margin_Unit_Base, 15, "base leaf unit metric includes zero-volume amount");
+    approx(eu.Margin_Unit_Curr, 20, "current leaf unit metric includes zero-volume amount");
+    approx(eu.Mix_Effect, 0, "same leaf has no structure movement");
+    approx(eu.Rate_Effect, 5, "zero-volume amount flows through leaf rate effect");
+    approx(eu.Total_Contribution, curr.avgMargin - base.avgMargin, "bottom-up zero-volume total reconciles");
+});
+
+test("bottom-up drilled global impact ties child rows back to the parent leaf rollup", () => {
+    const data = [
+        { Month: "base", Dim_A: "EU", Dim_B: "DE", Dim_C: "T19", "Sales Volume": 100, "Total Margin": 1000 },
+        { Month: "base", Dim_A: "EU", Dim_B: "FR", Dim_C: "T1E", "Sales Volume": 100, "Total Margin": 3000 },
+        { Month: "base", Dim_A: "NA", Dim_B: "US", Dim_C: "T19", "Sales Volume": 200, "Total Margin": 4000 },
+        { Month: "curr", Dim_A: "EU", Dim_B: "DE", Dim_C: "T19", "Sales Volume": 50, "Total Margin": 500 },
+        { Month: "curr", Dim_A: "EU", Dim_B: "FR", Dim_C: "T1E", "Sales Volume": 150, "Total Margin": 4500 },
+        { Month: "curr", Dim_A: "NA", Dim_B: "US", Dim_C: "T19", "Sales Volume": 200, "Total Margin": 4000 },
+    ];
+
+    const base = calculateGlobalMetrics(data, "base");
+    const curr = calculateGlobalMetrics(data, "curr");
+    const leafDims = ["Dim_A", "Dim_B", "Dim_C"];
+    const parentEffects = calculateBottomUpPVMEffects(
+        data,
+        "base",
+        "curr",
+        "Dim_A",
+        leafDims,
+        curr.totalVol,
+        base.totalVol,
+        base.avgMargin
+    );
+    const euParentContribution = rowByDim(parentEffects, "EU").Total_Contribution;
+    const euRows = data.filter(row => row.Dim_A === "EU");
+    const childEffects = calculateBottomUpPVMEffects(
+        euRows,
+        "base",
+        "curr",
+        "Dim_B",
+        leafDims,
+        curr.totalVol,
+        base.totalVol,
+        base.avgMargin
+    );
+    const childContribution = childEffects.reduce((sum, row) => sum + row.Total_Contribution, 0);
+
+    approx(childContribution, euParentContribution, "bottom-up child global impact should equal parent bar contribution");
+    approx(rowByValue(childEffects, "Dim_B", "DE").Total_Contribution, 1.25, "DE lower-margin volume reduction contribution");
+    approx(rowByValue(childEffects, "Dim_B", "FR").Total_Contribution, 1.25, "FR higher-margin volume increase contribution");
 });
 
 test("drilled global-impact decomposition ties back to parent bar contribution", () => {
@@ -644,7 +763,7 @@ test("loaded data center exposes unit name and current metric selector together"
     assert.match(marginAnalysisSource, /metricInput\.addEventListener\('change'/);
 });
 
-test("loaded data center reserves attribution method choice without changing the current calculation engine", () => {
+test("loaded data center exposes attribution method choice and mode two uses the bottom-up engine", () => {
     const loadedDataCenter = marginAnalysisHtml.match(/<section id="data-center-loaded"[\s\S]*?<\/section>/);
     assert.ok(loadedDataCenter, "Expected loaded data center section");
     assert.match(loadedDataCenter[0], /for="input-attribution-method">归因口径<\/label>/);
@@ -659,11 +778,11 @@ test("loaded data center reserves attribution method choice without changing the
     assert.match(marginAnalysisSource, /document\.getElementById\('input-attribution-method'\)/);
     assert.match(marginAnalysisSource, /methodInput\.addEventListener\('change'/);
     assert.match(marginAnalysisSource, /updateAttributionMethodNote\(\)/);
-    assert.match(marginAnalysisSource, /当前图表仍按逐层独立口径计算/);
+    assert.match(marginAnalysisSource, /先按最细维度组合计算，再汇总到各层图表/);
 
     const triggerUpdateBody = marginAnalysisSource.match(/function triggerUpdate\(\) \{[\s\S]*?\n\/\/ ==================== 渲染图表和表格/)?.[0] || "";
-    assert.match(triggerUpdateBody, /calculateDimensionPVMEffects\(/);
-    assert.doesNotMatch(triggerUpdateBody, /calculateBottomUp|bottomUp|ATTRIBUTION_METHOD_BOTTOM_UP/);
+    assert.match(triggerUpdateBody, /calculateAttributionEffects\(/);
+    assert.match(triggerUpdateBody, /AppState\.attributionMethod/);
 });
 
 test("demo data gives revenue, cost, and margin distinct unit-metric movements", () => {
