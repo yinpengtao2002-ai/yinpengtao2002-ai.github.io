@@ -103,6 +103,12 @@ const ANSWER_QUALITY_RULES = [
   "生成前先自检：如果 front 只是定义题、摘要题、照搬标题或答案已被 note 泄露，必须重写。",
 ];
 
+const QUESTION_DEPTH_RULES = [
+  "深度递进：难度提升不是把题干写长，而是从事实回忆逐步走向关系判断、因果推理、矛盾张力和材料结构。",
+  "优先挖掘材料里的因果链、矛盾张力、隐含前提、关键转折和作者判断依据；不要停留在表层事实清单。",
+  "每组卡片至少包含几张需要解释“为什么”“如何影响”“体现什么关系”的问题；只有材料确实只有事实点时，才生成事实回忆题。",
+];
+
 const SOURCE_GROUNDING_RULES = [
   "忠于原文：问题和答案只能基于用户内容，不得引入原文没有出现的人名、数据、概念、案例、结论或外部背景。",
   "每个 back 都必须能在用户内容里找到依据，可以重组表达，但不能替材料补充事实或价值判断。",
@@ -112,14 +118,14 @@ const SOURCE_GROUNDING_RULES = [
 
 function getDifficultyQuestionGuidance(difficulty: string) {
   if (difficulty.includes("高级")) {
-    return "高级难度：多出迁移判断、反例纠错、边界取舍题；少出直接定义题。";
+    return "高级难度：优先挖掘深层结构、隐含前提、价值冲突、论证转折和作者判断依据；问题要逼学习者解释材料为什么成立，而不是只复述材料说了什么。";
   }
 
   if (difficulty.includes("进阶")) {
-    return "进阶难度：以区分边界、因果机制、适用条件为主，保留必要术语。";
+    return "进阶难度：追问材料中的关系、张力、原因、后果和边界；保留必要术语，让学习者说出关键判断背后的依据。";
   }
 
-  return "基础难度：问题仍要考判断，但场景更直白；答案用更明确的因果或步骤表达。";
+  return "基础难度：抓住材料里的关键事实、明确因果和核心关系；问题可以直白，但不能低到只问标题或名词。";
 }
 
 function buildStudyCardPrompt({
@@ -141,6 +147,7 @@ function buildStudyCardPrompt({
     ...QUESTION_TYPE_GUIDE,
     ...BAD_QUESTION_PATTERNS,
     ...ANSWER_QUALITY_RULES,
+    ...QUESTION_DEPTH_RULES,
     ...SOURCE_GROUNDING_RULES,
     "要求：",
     `- 难度：${difficulty}`,

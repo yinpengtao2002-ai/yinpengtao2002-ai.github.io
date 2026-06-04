@@ -207,6 +207,9 @@ test("AI study card endpoint asks for structured learning output", async () => {
   assert.match(route, /API_NOT_CONFIGURED/);
   assert.match(route, /每张卡只考一个知识点/);
   assert.match(route, /信息密度优先/);
+  assert.match(route, /深度递进/);
+  assert.match(route, /优先挖掘材料里的因果链、矛盾张力、隐含前提、关键转折和作者判断依据/);
+  assert.match(route, /不要停留在表层事实清单/);
   assert.match(route, /忠于原文/);
   assert.match(route, /不得引入原文没有出现的人名、数据、概念、案例、结论或外部背景/);
   assert.match(route, /每个 back 都必须能在用户内容里找到依据/);
@@ -236,8 +239,11 @@ test("AI study card endpoint asks for structured learning output", async () => {
   assert.match(route, /先判断，再解释依据/);
   assert.match(route, /生成前先自检/);
   assert.match(route, /基础难度/);
+  assert.match(route, /基础难度：抓住材料里的关键事实、明确因果和核心关系/);
   assert.match(route, /进阶难度/);
+  assert.match(route, /进阶难度：追问材料中的关系、张力、原因、后果和边界/);
   assert.match(route, /高级难度/);
+  assert.match(route, /高级难度：优先挖掘深层结构/);
   assert.doesNotMatch(route, /front 必须是简短问题/);
   assert.doesNotMatch(route, /back 不超过 70 个中文字符/);
   assert.doesNotMatch(route, /不超过 24 个中文字符/);
