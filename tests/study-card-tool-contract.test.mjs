@@ -84,6 +84,10 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.match(client, /getPreviousCardIndex/);
   assert.match(client, /advanceActiveCard/);
   assert.match(client, /左滑或点右箭头表示通过/);
+  assert.match(client, /type CardTextDensity = "normal" \| "dense" \| "compact"/);
+  assert.match(client, /getCardTextDensity/);
+  assert.match(client, /activeCardDensity/);
+  assert.match(client, /is-density-\$\{activeCardDensity\}/);
   assert.match(client, /memoryStats/);
   assert.match(client, /reviewQueue/);
   assert.match(client, /rateActiveCard/);
@@ -128,6 +132,12 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.match(styles, /\.study-cards-question-block/);
   assert.match(styles, /\.study-cards-recall-hint/);
   assert.match(styles, /\.study-cards-answer-panel\.is-hidden/);
+  assert.match(styles, /--study-card-question-size/);
+  assert.match(styles, /--study-card-answer-size/);
+  assert.match(styles, /\.study-cards-practice-card\.is-density-dense/);
+  assert.match(styles, /\.study-cards-practice-card\.is-density-compact/);
+  assert.match(styles, /\.study-cards-answer-panel\.is-revealed[\s\S]*overflow-y:\s*auto/);
+  assert.match(styles, /-webkit-line-clamp:\s*var\(--study-card-question-lines\)/);
   assert.match(styles, /\.study-cards-mobile-edit-button/);
   assert.match(styles, /@media \(max-width: 560px\)[\s\S]*\.study-cards-empty/);
   assert.match(styles, /@media \(max-width: 560px\)[\s\S]*\.study-cards-deck::before[\s\S]*display: none/);

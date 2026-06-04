@@ -31,6 +31,7 @@ type CardDirection = "next" | "prev";
 type DragIntent = "idle" | "next" | "prev";
 type PracticeMode = "learn" | "check";
 type CardMemoryRating = "remembered" | "shaky";
+type CardTextDensity = "normal" | "dense" | "compact";
 type CardMemoryState = {
   remembered: number;
   shaky: number;
@@ -108,6 +109,24 @@ function compactText(text: string, maxLength: number) {
   return `${normalized.slice(0, maxLength).replace(/[，。；、：,.:\s]+$/, "")}...`;
 }
 
+function getCardTextDensity(card: StudyCard | null): CardTextDensity {
+  if (!card) return "normal";
+
+  const frontLength = compactText(card.front, 72).length;
+  const noteLength = compactText(card.note ?? "", 96).length;
+  const backLength = compactText(card.back, 240).length;
+
+  if (frontLength > 42 || noteLength > 62 || backLength > 180) {
+    return "compact";
+  }
+
+  if (frontLength > 28 || noteLength > 38 || backLength > 132) {
+    return "dense";
+  }
+
+  return "normal";
+}
+
 function getProgressLabel(value: number) {
   return PROGRESS_STEPS.find((step) => value <= step.threshold)?.label ?? PROGRESS_STEPS.at(-1)!.label;
 }
@@ -173,6 +192,7 @@ export default function StudyCardsTool() {
   const canSubmit = contentLength >= 80 && !loading;
   const progressLabel = getProgressLabel(progressValue);
   const activeCard = useMemo(() => result?.cards[activeCardIndex] ?? null, [activeCardIndex, result]);
+  const activeCardDensity = useMemo(() => getCardTextDensity(activeCard), [activeCard]);
   const totalCards = result?.cards.length ?? 0;
   const learnedCardCount = useMemo(() => {
     if (!totalCards) return 0;
@@ -798,7 +818,7 @@ export default function StudyCardsTool() {
                     >
                       <article
                         key={activeCardIndex}
-                        className={`study-cards-practice-card is-${cardMotion}`}
+                        className={`study-cards-practice-card is-${cardMotion} is-density-${activeCardDensity}`}
                         aria-label="当前问答卡片"
                       >
                         <div className="study-cards-question-block">
