@@ -53,34 +53,34 @@ const SAMPLE_RESULT: StudyCardResult = {
   summary: "AI Harness 质量评测",
   cards: [
     {
-      front: "改模型时先看什么？",
-      back: "先用同一 Harness 复跑场景，确认变化来自模型、提示词还是工具策略。",
-      note: "定位变化来源",
+      front: "切模型后怎么判断质量变化来源？",
+      back: "先把同一组 Harness 场景复跑，锁住输入、工具和评判口径；再只替换模型做对比，才能判断变化是模型能力、提示词约束还是检索/工具链造成的。",
+      note: "先问变量是否被锁住",
     },
     {
-      front: "场景契约漏掉会怎样？",
-      back: "评测会退化成看几个回答的主观判断，无法稳定比较迭代质量。",
-      note: "想想评分依据",
+      front: "没有场景契约，为什么评测会失真？",
+      back: "因为输入样本、期望结构、禁止行为和容错范围都没固定，评测就会变成挑几条顺眼回答。它无法说明系统在真实边界下是否稳定。",
+      note: "想想标准是否可复跑",
     },
     {
-      front: "夹具适合守哪类问题？",
-      back: "它适合守缺字段、冲突证据、工具超时等可复现边界，防止回归悄悄出现。",
-      note: "先看可复现性",
+      front: "夹具数据最适合覆盖什么边界？",
+      back: "夹具适合覆盖可复现的坏情况，如缺字段、冲突证据、工具超时、上下文漂移。它的作用是把回归风险钉住，而不是代表全部真实使用。",
+      note: "先找能稳定重现的风险",
     },
     {
-      front: "真实调用暴露什么风险？",
-      back: "它更容易暴露复杂语义、外部系统和多轮上下文里的不稳定表现。",
-      note: "看线上不确定性",
+      front: "真实调用比夹具多暴露哪层风险？",
+      back: "真实调用会暴露复杂语义、外部系统状态和多轮交互里的波动，尤其是检索结果变化、工具延迟和用户追问带来的不稳定。",
+      note: "看静态样例覆盖不到的变化",
     },
     {
-      front: "只验格式会漏什么？",
-      back: "会漏掉证据引用、业务边界和不确定时拒答这些真正决定可信度的能力。",
-      note: "想想合格假象",
+      front: "只验格式为什么不等于可信？",
+      back: "格式正确只说明答案长得像标准输出，不能证明证据引用、业务边界和不确定时拒答都合格。可信度要看事实、约束和行为一起过关。",
+      note: "区分像样和可信",
     },
     {
-      front: "演示很稳还缺什么？",
-      back: "还缺可复跑、可比较、可追责的上线回归机制，否则只是一场漂亮演示。",
-      note: "看长期控制",
+      front: "稳定演示离上线还差什么？",
+      back: "还差可复跑、可比较、可追责的回归机制。演示证明某次样例表现不错，上线需要证明后续改动不会悄悄伤害关键场景。",
+      note: "看改动后能否守住质量",
     },
   ],
 };
@@ -94,7 +94,7 @@ const DIFFICULTY_OPTIONS = [
 const PROGRESS_STEPS = [
   { threshold: 28, label: "正在梳理材料结构" },
   { threshold: 58, label: "正在生成问答卡片" },
-  { threshold: 82, label: "正在压缩卡片答案" },
+  { threshold: 82, label: "正在打磨卡片答案" },
   { threshold: 100, label: "正在校验输出格式" },
 ];
 
@@ -806,12 +806,12 @@ export default function StudyCardsTool() {
                             <span>{String(activeCardIndex + 1).padStart(2, "0")}</span>
                             <span>{practiceModeLabel}</span>
                           </div>
-                          <h3>{compactText(activeCard.front, 42)}</h3>
+                          <h3>{compactText(activeCard.front, 72)}</h3>
                         </div>
                         {activeCard.note && (
                           <p className="study-cards-recall-hint">
                             <span>提示</span>
-                            {compactText(activeCard.note, 52)}
+                            {compactText(activeCard.note, 96)}
                           </p>
                         )}
                         <button
@@ -824,7 +824,7 @@ export default function StudyCardsTool() {
                           {answerRevealed ? (
                             <span className="study-cards-answer-copy">
                               <strong>背面答案</strong>
-                              <span>{compactText(activeCard.back, 110)}</span>
+                              <span>{compactText(activeCard.back, 240)}</span>
                             </span>
                           ) : (
                             <span className="study-cards-answer-placeholder">

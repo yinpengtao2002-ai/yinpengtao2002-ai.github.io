@@ -59,10 +59,10 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.match(client, /Harness/);
   assert.match(client, /场景契约/);
   assert.match(client, /AI Harness 质量评测/);
-  assert.match(client, /改模型时先看什么/);
-  assert.match(client, /场景契约漏掉会怎样/);
-  assert.match(client, /只验格式会漏什么/);
-  assert.match(client, /演示很稳还缺什么/);
+  assert.match(client, /切模型后怎么判断质量变化来源/);
+  assert.match(client, /没有场景契约，为什么评测会失真/);
+  assert.match(client, /只验格式为什么不等于可信/);
+  assert.match(client, /稳定演示离上线还差什么/);
   assert.match(client, /setDifficulty\(DIFFICULTY_OPTIONS\[2\]\)/);
   assert.match(client, /study-cards-empty-preview/);
   assert.match(client, /试试看这种卡片/);
@@ -99,6 +99,10 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.match(client, /study-cards-memory-actions/);
   assert.match(client, /study-cards-answer-panel/);
   assert.match(client, /study-cards-practice-card/);
+  assert.match(client, /compactText\(activeCard\.front,\s*72\)/);
+  assert.match(client, /compactText\(activeCard\.note,\s*96\)/);
+  assert.match(client, /compactText\(activeCard\.back,\s*240\)/);
+  assert.match(client, /正在打磨卡片答案/);
   assert.doesNotMatch(client, /study-cards-practice-actions/);
   assert.match(styles, /\.study-cards-deck::before/);
   assert.match(styles, /\.study-cards-deck::after/);
@@ -169,9 +173,9 @@ test("AI study card results use an interactive one-card practice flow", async ()
   );
   assert.equal(sampleCards.length, 6);
   for (const card of sampleCards) {
-    assert.ok(card.front.length <= 24, `sample front is too long: ${card.front}`);
-    assert.ok(card.back.length <= 70, `sample back is too long: ${card.back}`);
-    assert.ok(card.note.length <= 24, `sample note is too long: ${card.note}`);
+    assert.ok(card.front.length <= 56, `sample front is too long: ${card.front}`);
+    assert.ok(card.back.length <= 220, `sample back is too long: ${card.back}`);
+    assert.ok(card.note.length <= 48, `sample note is too long: ${card.note}`);
     assert.doesNotMatch(card.front, /^什么是/);
     assert.doesNotMatch(card.front, /^什么叫/);
   }
@@ -189,9 +193,15 @@ test("AI study card endpoint asks for structured learning output", async () => {
   assert.match(route, /errorCode/);
   assert.match(route, /API_NOT_CONFIGURED/);
   assert.match(route, /每张卡只考一个知识点/);
-  assert.match(route, /front 必须是简短问题/);
-  assert.match(route, /back 不超过 70 个中文字符/);
+  assert.match(route, /信息密度优先/);
+  assert.match(route, /front 可以是一句具体问题/);
+  assert.match(route, /建议 12 到 56 个中文字符/);
+  assert.match(route, /必要时可以稍长/);
+  assert.match(route, /back 通常写 1 到 3 句/);
+  assert.match(route, /建议 100 到 220 个中文字符/);
+  assert.match(route, /不要因为字数范围删掉关键限定/);
   assert.match(route, /note 是给学习者的提示/);
+  assert.match(route, /通常 12 到 48 个中文字符/);
   assert.match(route, /答案显示前/);
   assert.match(route, /问题必须考判断、关系、边界或因果/);
   assert.match(route, /答案必须能脱离原文独立复述/);
@@ -210,6 +220,12 @@ test("AI study card endpoint asks for structured learning output", async () => {
   assert.match(route, /基础难度/);
   assert.match(route, /进阶难度/);
   assert.match(route, /高级难度/);
+  assert.doesNotMatch(route, /front 必须是简短问题/);
+  assert.doesNotMatch(route, /back 不超过 70 个中文字符/);
+  assert.doesNotMatch(route, /不超过 24 个中文字符/);
+  assert.doesNotMatch(route, /不超过 42 个中文字符/);
+  assert.doesNotMatch(route, /不超过 36 个中文字符/);
+  assert.doesNotMatch(route, /建议 80 到 150 个中文字符/);
   assert.doesNotMatch(route, /测试题生成/);
   assert.doesNotMatch(route, /StudyQuiz/);
   assert.match(route, /export async function POST/);
