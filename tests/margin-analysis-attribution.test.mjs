@@ -769,7 +769,8 @@ test("loaded data center exposes attribution method choice and mode two uses the
     assert.match(loadedDataCenter[0], /for="input-attribution-method">归因口径<\/label>/);
     assert.match(loadedDataCenter[0], /<select id="input-attribution-method" class="form-select"/);
     assert.match(loadedDataCenter[0], /模式一：逐层独立归因/);
-    assert.match(loadedDataCenter[0], /模式二：最细粒度向上归因（试用）/);
+    assert.match(loadedDataCenter[0], /模式二：最细粒度向上归因/);
+    assert.doesNotMatch(loadedDataCenter[0], /试用/);
     assert.match(loadedDataCenter[0], /id="attribution-method-note"/);
 
     assert.match(marginAnalysisSource, /attributionMethod:\s*'layered'/);
