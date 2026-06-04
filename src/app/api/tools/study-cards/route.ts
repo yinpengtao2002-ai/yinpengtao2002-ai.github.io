@@ -103,6 +103,13 @@ const ANSWER_QUALITY_RULES = [
   "生成前先自检：如果 front 只是定义题、摘要题、照搬标题或答案已被 note 泄露，必须重写。",
 ];
 
+const SOURCE_GROUNDING_RULES = [
+  "忠于原文：问题和答案只能基于用户内容，不得引入原文没有出现的人名、数据、概念、案例、结论或外部背景。",
+  "每个 back 都必须能在用户内容里找到依据，可以重组表达，但不能替材料补充事实或价值判断。",
+  "不要根据常识、新闻背景或你自己的知识补充任何内容；材料没有写就不要写。",
+  "材料没有依据的判断不要生成卡片；宁可少覆盖一个角度，也不要编造更顺滑的解释。",
+];
+
 function getDifficultyQuestionGuidance(difficulty: string) {
   if (difficulty.includes("高级")) {
     return "高级难度：多出迁移判断、反例纠错、边界取舍题；少出直接定义题。";
@@ -134,6 +141,7 @@ function buildStudyCardPrompt({
     ...QUESTION_TYPE_GUIDE,
     ...BAD_QUESTION_PATTERNS,
     ...ANSWER_QUALITY_RULES,
+    ...SOURCE_GROUNDING_RULES,
     "要求：",
     `- 难度：${difficulty}`,
     `- ${getDifficultyQuestionGuidance(difficulty)}`,

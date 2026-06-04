@@ -56,13 +56,12 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.match(client, /不熟练会近期复现/);
   assert.match(client, /SAMPLE_RESULT/);
   assert.match(client, /loadSampleContent/);
-  assert.match(client, /Harness/);
-  assert.match(client, /场景契约/);
-  assert.match(client, /AI Harness 质量评测/);
-  assert.match(client, /切模型后怎么判断质量变化来源/);
-  assert.match(client, /没有场景契约，为什么评测会失真/);
-  assert.match(client, /只验格式为什么不等于可信/);
-  assert.match(client, /稳定演示离上线还差什么/);
+  assert.match(client, /青少年心理健康危机日益凸显/);
+  assert.match(client, /彭凯平/);
+  assert.match(client, /生命教育与青少年危机/);
+  assert.match(client, /生命教育为何走向焦点/);
+  assert.match(client, /彭凯平团队发现哪“四无”/);
+  assert.match(client, /生命教育最终使命是什么/);
   assert.match(client, /setDifficulty\(DIFFICULTY_OPTIONS\[2\]\)/);
   assert.match(client, /study-cards-empty-preview/);
   assert.match(client, /试试看这种卡片/);
@@ -176,6 +175,10 @@ test("AI study card results use an interactive one-card practice flow", async ()
   assert.doesNotMatch(client, /study-cards-quiz/);
   assert.doesNotMatch(client, /ListChecks/);
   assert.doesNotMatch(client, /StudyQuiz/);
+  assert.doesNotMatch(client, /AI Harness 质量评测/);
+  assert.doesNotMatch(client, /切模型后怎么判断质量变化来源/);
+  assert.doesNotMatch(client, /场景契约/);
+  assert.doesNotMatch(client, /工具超时/);
 
   const sampleCards = Array.from(
     client.matchAll(/front: "([^"]+)",\s+back: "([^"]+)",\s+note: "([^"]+)"/g),
@@ -204,6 +207,11 @@ test("AI study card endpoint asks for structured learning output", async () => {
   assert.match(route, /API_NOT_CONFIGURED/);
   assert.match(route, /每张卡只考一个知识点/);
   assert.match(route, /信息密度优先/);
+  assert.match(route, /忠于原文/);
+  assert.match(route, /不得引入原文没有出现的人名、数据、概念、案例、结论或外部背景/);
+  assert.match(route, /每个 back 都必须能在用户内容里找到依据/);
+  assert.match(route, /材料没有依据的判断不要生成卡片/);
+  assert.match(route, /不要根据常识/);
   assert.match(route, /front 可以是一句具体问题/);
   assert.match(route, /建议 12 到 56 个中文字符/);
   assert.match(route, /必要时可以稍长/);
