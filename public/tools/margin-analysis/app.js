@@ -1281,7 +1281,6 @@ function buildImpactBaselineAnchor() {
     baselineAnchor.draggable = true;
     baselineAnchor.innerHTML = `
         <span class="impact-baseline-handle-label">基准</span>
-        <span class="impact-baseline-grip" aria-hidden="true"><i></i><i></i><i></i></span>
     `;
     baselineAnchor.title = '拖动左侧绿色基准条切换影响基准';
     baselineAnchor.setAttribute('aria-label', '拖动左侧绿色基准条切换影响基准');

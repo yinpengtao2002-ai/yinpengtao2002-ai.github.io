@@ -328,6 +328,39 @@ test("local impact baseline keeps upper filters and supports multiple selected p
     assert.equal(countryContext.targetLabel, "国家");
 });
 
+test("impact baseline at model level uses the intersection of all filters up to that baseline", () => {
+    const data = [
+        { Month: "base", Dim_A: "EU", Dim_B: "IT", Dim_C: "T19C", Dim_D: "ICE", Dim_E: "Brand A", "Sales Volume": 100, "Total Margin": 1000 },
+        { Month: "base", Dim_A: "EU", Dim_B: "IT", Dim_C: "T1E", Dim_D: "EV", Dim_E: "Brand A", "Sales Volume": 40, "Total Margin": 600 },
+        { Month: "base", Dim_A: "EU", Dim_B: "IT", Dim_C: "Other", Dim_D: "ICE", Dim_E: "Brand B", "Sales Volume": 900, "Total Margin": 9000 },
+        { Month: "base", Dim_A: "EU", Dim_B: "DE", Dim_C: "T19C", Dim_D: "ICE", Dim_E: "Brand A", "Sales Volume": 700, "Total Margin": 7000 },
+        { Month: "base", Dim_A: "NA", Dim_B: "IT", Dim_C: "T19C", Dim_D: "ICE", Dim_E: "Brand A", "Sales Volume": 500, "Total Margin": 5000 },
+        { Month: "curr", Dim_A: "EU", Dim_B: "IT", Dim_C: "T19C", Dim_D: "ICE", Dim_E: "Brand A", "Sales Volume": 120, "Total Margin": 1440 },
+        { Month: "curr", Dim_A: "EU", Dim_B: "IT", Dim_C: "T1E", Dim_D: "EV", Dim_E: "Brand A", "Sales Volume": 60, "Total Margin": 840 },
+        { Month: "curr", Dim_A: "EU", Dim_B: "IT", Dim_C: "Other", Dim_D: "ICE", Dim_E: "Brand B", "Sales Volume": 950, "Total Margin": 9500 },
+        { Month: "curr", Dim_A: "EU", Dim_B: "DE", Dim_C: "T19C", Dim_D: "ICE", Dim_E: "Brand A", "Sales Volume": 800, "Total Margin": 8800 },
+        { Month: "curr", Dim_A: "NA", Dim_B: "IT", Dim_C: "T19C", Dim_D: "ICE", Dim_E: "Brand A", "Sales Volume": 550, "Total Margin": 6050 },
+    ];
+    const drillOrder = ["Dim_A", "Dim_B", "Dim_C", "Dim_D", "Dim_E"];
+    const selectedDims = {
+        Dim_A: ["EU"],
+        Dim_B: ["IT"],
+        Dim_C: ["T19C", "T1E"],
+    };
+
+    const modelContext = getImpactBaselineContext(data, drillOrder, 4, "Dim_C", "base", "curr", selectedDims, {});
+
+    assert.equal(modelContext.targetLabel, "车型");
+    assert.equal(modelContext.base.totalVol, 140);
+    assert.equal(modelContext.curr.totalVol, 180);
+    assert.deepEqual(modelContext.scopeData.map(row => `${row.Month}-${row.Dim_A}-${row.Dim_B}-${row.Dim_C}`), [
+        "base-EU-IT-T19C",
+        "base-EU-IT-T1E",
+        "curr-EU-IT-T19C",
+        "curr-EU-IT-T1E",
+    ]);
+});
+
 test("left drill filters use an Excel-style checklist menu", () => {
     assert.match(marginAnalysisSource, /className = 'excel-filter-trigger'/);
     assert.match(marginAnalysisSource, /className = 'excel-filter-menu'/);
@@ -354,7 +387,8 @@ test("drill order panel exposes the impact baseline as a path anchor", () => {
     assert.match(marginAnalysisSource, /buildImpactBaselineAnchor/);
     assert.match(marginAnalysisSource, /baselineAnchor\.draggable = true/);
     assert.match(marginAnalysisSource, /baselineAnchor\.className = 'impact-baseline-handle'/);
-    assert.match(marginAnalysisSource, /baselineAnchor\.innerHTML = `[\s\S]*impact-baseline-handle-label[\s\S]*基准[\s\S]*impact-baseline-grip/);
+    assert.match(marginAnalysisSource, /baselineAnchor\.innerHTML = `[\s\S]*impact-baseline-handle-label[\s\S]*基准/);
+    assert.doesNotMatch(marginAnalysisSource, /impact-baseline-grip/);
     assert.match(marginAnalysisSource, /className = 'dimension-train-car global-baseline/);
     assert.match(marginAnalysisSource, /拖动左侧绿色“基准”条/);
     assert.match(marginAnalysisSource, /影响基准/);
@@ -362,11 +396,14 @@ test("drill order panel exposes the impact baseline as a path anchor", () => {
     assert.doesNotMatch(marginAnalysisSource, /impact-baseline-select/);
     assert.doesNotMatch(marginAnalysisStyles, /\.impact-baseline-anchor/);
     assert.match(marginAnalysisStyles, /\.impact-baseline-handle/);
-    assert.match(marginAnalysisStyles, /\.impact-baseline-grip/);
+    assert.doesNotMatch(marginAnalysisStyles, /\.impact-baseline-grip/);
     assert.match(marginAnalysisStyles, /\.dimension-train-car\.global-baseline/);
     assert.match(marginAnalysisStyles, /\.baseline-tail-visible/);
-    assert.match(marginAnalysisStyles, /\.impact-baseline-handle::before/);
-    assert.match(marginAnalysisStyles, /min-width:\s*46px/);
+    assert.match(marginAnalysisStyles, /width:\s*38px/);
+    assert.match(marginAnalysisStyles, /height:\s*22px/);
+    assert.match(marginAnalysisStyles, /background:\s*#6f8457/);
+    assert.match(marginAnalysisStyles, /color:\s*#fff/);
+    assert.doesNotMatch(marginAnalysisStyles, /\.impact-baseline-handle::before/);
     assert.doesNotMatch(marginAnalysisStyles, /writing-mode:\s*vertical-rl/);
 });
 
