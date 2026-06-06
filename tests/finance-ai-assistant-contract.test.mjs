@@ -239,3 +239,28 @@ test("finance AI assistant API rejects malformed nested schema and state without
   assert.equal(response.status, 400);
   assert.equal(payload.errorCode, "invalid_schema");
 });
+
+test("finance AI assistant page is an independent chat workbench", async () => {
+  const page = await readProjectFile("src/app/tools/finance-ai-assistant/page.tsx");
+  const client = await readProjectFile("src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
+
+  assert.match(page, /财务分析 AI 助手/);
+  assert.match(page, /FinanceAIAssistantTool/);
+  assert.match(client, /\/api\/tools\/finance-ai-assistant/);
+  assert.match(client, /type ChatMessage/);
+  assert.match(client, /chartCards/);
+  assert.match(client, /PlotlyChart/);
+  assert.match(client, /数据仅保留在当前页面会话中，刷新后清空/);
+  assert.match(client, /已识别/);
+  assert.match(client, /inferFinanceSchema/);
+  assert.match(client, /buildMetricSnapshot/);
+  assert.match(client, /buildTrendSeries/);
+  assert.match(client, /buildBarRank/);
+  assert.match(client, /buildWaterfallBridge/);
+  assert.match(client, /validateFinanceActionPlan/);
+  assert.match(client, /buildChartSpec/);
+  assert.match(client, /useEffect/);
+  assert.doesNotMatch(client, /localStorage/);
+  assert.doesNotMatch(client, /sessionStorage/);
+  assert.doesNotMatch(client, /IndexedDB/);
+});
