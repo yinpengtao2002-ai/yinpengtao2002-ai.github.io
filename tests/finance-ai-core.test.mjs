@@ -85,3 +85,31 @@ test("finance AI schema maps margin total aliases to unit margin metrics", () =>
     assert.equal(unitMargin?.numeratorColumn, column);
   }
 });
+
+test("finance AI schema excludes after-sales numeric code and metadata fields from total metrics", () => {
+  const schema = inferFinanceSchema([
+    {
+      "月份": "2025-03",
+      "国家": "巴西",
+      "销量": 100,
+      "经销商编码": 1001,
+      "国家代码": 76,
+      "客户ID": 30001,
+      "SKU编码": 9001001,
+      "版本": 1,
+      "净收入": 9000,
+      "成本": -7000,
+    },
+  ]);
+
+  assert.deepEqual(schema.totalMetrics.map((metric) => metric.column), ["净收入", "成本"]);
+});
+
+test("finance AI schema prefers specific unit metric numerator aliases over generic matches", () => {
+  const schema = inferFinanceSchema([
+    { "月份": "2025-03", "国家": "巴西", "销量": 100, "收入": 8800, "净收入": 9000 },
+  ]);
+
+  const unitRevenue = schema.unitMetrics.find((metric) => metric.name === "单车净收入");
+  assert.equal(unitRevenue?.numeratorColumn, "净收入");
+});

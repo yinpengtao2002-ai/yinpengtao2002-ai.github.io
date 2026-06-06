@@ -41,6 +41,31 @@ const NON_DIMENSION_COLUMNS = new Set([
   "scenario",
 ].map(normalizeHeaderName));
 
+const IDENTIFIER_DIMENSION_PREFIXES = [
+  "客户",
+  "经销商",
+  "国家",
+  "渠道",
+  "车型",
+  "产品",
+  "用户",
+  "账户",
+  "门店",
+  "供应商",
+  "customer",
+  "dealer",
+  "country",
+  "channel",
+  "model",
+  "product",
+  "user",
+  "account",
+  "store",
+  "vendor",
+  "client",
+  "sku",
+].map(normalizeHeaderName);
+
 const RATE_LIKE_PATTERNS = [
   "率",
   "占比",
@@ -58,9 +83,9 @@ const RATE_LIKE_PATTERNS = [
 ];
 
 const UNIT_METRIC_BLUEPRINTS = [
-  { name: "单车净收入", numeratorAliases: ["净收入", "收入", "营业收入", "netrevenue", "revenue"] },
+  { name: "单车净收入", numeratorAliases: ["净收入", "netrevenue", "营业收入", "收入", "revenue"] },
   { name: "单车成本", numeratorAliases: ["成本", "cost"] },
-  { name: "单车边际", numeratorAliases: ["边际", "毛利", "边际总额", "贡献边际", "贡献毛利", "margin"] },
+  { name: "单车边际", numeratorAliases: ["边际总额", "贡献边际", "贡献毛利", "边际", "毛利", "margin"] },
   { name: "单车利润", numeratorAliases: ["利润", "profit"] },
 ];
 
@@ -132,6 +157,29 @@ function isNonDimensionColumn(column: string): boolean {
   return NON_DIMENSION_COLUMNS.has(normalizeHeaderName(column));
 }
 
+function isIdentifierLikeColumn(column: string): boolean {
+  const normalizedColumn = normalizeHeaderName(column);
+
+  if (
+    normalizedColumn.includes("编码") ||
+    normalizedColumn.includes("代码") ||
+    normalizedColumn.includes("编号") ||
+    normalizedColumn.includes("sku")
+  ) {
+    return true;
+  }
+
+  if (normalizedColumn === "id") {
+    return true;
+  }
+
+  return IDENTIFIER_DIMENSION_PREFIXES.some((prefix) => normalizedColumn === `${prefix}id`);
+}
+
+function isExcludedTotalMetricColumn(column: string): boolean {
+  return isNonDimensionColumn(column) || isIdentifierLikeColumn(column);
+}
+
 function isNumericColumn(rows: FinanceRow[], column: string): boolean {
   const values = rows.map((row) => row[column]).filter((value) => !isEmptyValue(value));
 
@@ -147,15 +195,41 @@ function normalizeMetricName(value: string): string {
   return normalizeHeaderName(value).replace(/金额|额|合计|总额|total/g, "");
 }
 
-function matchesMetricAlias(column: string, alias: string): boolean {
+function getMetricAliasMatchRank(column: string, alias: string): number {
+  const normalizedRawColumn = normalizeHeaderName(column);
+  const normalizedRawAlias = normalizeHeaderName(alias);
   const normalizedColumn = normalizeMetricName(column);
   const normalizedAlias = normalizeMetricName(alias);
 
-  return (
-    normalizedColumn === normalizedAlias ||
-    column.includes(alias) ||
-    normalizedColumn.includes(normalizedAlias)
-  );
+  if (normalizedRawColumn === normalizedRawAlias) {
+    return 3;
+  }
+
+  if (normalizedColumn === normalizedAlias) {
+    return 2;
+  }
+
+  if (column.includes(alias) || normalizedRawColumn.includes(normalizedRawAlias) || normalizedColumn.includes(normalizedAlias)) {
+    return 1;
+  }
+
+  return 0;
+}
+
+function findMetricForAliases(
+  totalMetrics: FinanceTotalMetric[],
+  aliases: string[],
+): FinanceTotalMetric | undefined {
+  for (const alias of aliases) {
+    for (const rank of [3, 2, 1]) {
+      const metric = totalMetrics.find((candidate) => getMetricAliasMatchRank(candidate.column, alias) === rank);
+      if (metric) {
+        return metric;
+      }
+    }
+  }
+
+  return undefined;
 }
 
 function buildUnitMetrics(
@@ -167,9 +241,7 @@ function buildUnitMetrics(
   }
 
   return UNIT_METRIC_BLUEPRINTS.flatMap((blueprint) => {
-    const metric = totalMetrics.find((candidate) =>
-      blueprint.numeratorAliases.some((alias) => matchesMetricAlias(candidate.column, alias)),
-    );
+    const metric = findMetricForAliases(totalMetrics, blueprint.numeratorAliases);
 
     if (!metric) {
       return [];
@@ -303,6 +375,7 @@ export function inferFinanceSchema(rows: FinanceRow[]): FinanceSchema {
 
   const totalMetrics = metricCandidateColumns
     .filter((column) => column !== monthColumn && column !== salesColumn)
+    .filter((column) => !isExcludedTotalMetricColumn(column))
     .filter((column) => isNumericColumn(rows, column))
     .filter((column) => !isRateLikeColumn(column))
     .map((column) => ({
