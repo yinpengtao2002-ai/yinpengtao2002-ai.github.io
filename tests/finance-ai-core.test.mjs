@@ -11,6 +11,8 @@ import {
   buildTrendSeries,
   buildWaterfallBridge,
 } from "../src/lib/finance-ai/metrics.ts";
+import { validateFinanceActionPlan } from "../src/lib/finance-ai/actions.ts";
+import { buildChartSpec } from "../src/lib/finance-ai/charts.ts";
 
 const rows = [
   { "月份": "2025-03", "大区": "拉美", "国家": "巴西", "车型": "T1D", "销量": 100, "净收入": 9000, "成本": -7000, "边际": 2000 },
@@ -320,4 +322,110 @@ test("invalid filter array elements are ignored without becoming string filters"
 
   assert.deepEqual(snapshot.filters, { "国家": ["巴西"] });
   assert.equal(snapshot.value, 3500);
+});
+
+test("action validator accepts recognized modules and enforces module limit", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const valid = validateFinanceActionPlan(schema, {
+    modules: [
+      { type: "metric_snapshot", metric: "单车边际", period: "2026-03", filters: { "国家": ["巴西"] }, comparisons: ["mom", "yoy"] },
+      { type: "trend_chart", metric: "单车边际", filters: { "国家": ["巴西"] }, highlightPeriod: "2026-03" },
+    ],
+  });
+
+  assert.equal(valid.ok, true);
+  assert.equal(valid.errors.length, 0);
+  assert.equal(valid.modules.length, 2);
+  assert.deepEqual(valid.modules.map((module) => module.type), ["metric_snapshot", "trend_chart"]);
+
+  const invalid = validateFinanceActionPlan(schema, {
+    modules: [
+      { type: "bar_rank", metric: "不存在指标", dimension: "国家", period: "2026-03" },
+      { type: "trend_chart", metric: "边际" },
+      { type: "trend_chart", metric: "净收入" },
+      { type: "trend_chart", metric: "成本" },
+    ],
+  });
+
+  assert.equal(invalid.ok, false);
+  assert.equal(invalid.modules.length, 3);
+  assert.match(invalid.errors.join("\n"), /最多生成 3 个模块/);
+  assert.match(invalid.errors.join("\n"), /指标不存在：不存在指标/);
+});
+
+test("action validator rejects unsupported actions and invalid dimensions filters and periods", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const invalid = validateFinanceActionPlan(schema, {
+    modules: [
+      { type: "pie_chart", metric: "边际", period: "2026-03" },
+      { type: "bar_rank", metric: "边际", dimension: "不存在维度", period: "2027-01", filters: { "不存在筛选": ["x"] } },
+      { type: "waterfall_bridge", metric: "边际", dimension: "国家", fromPeriod: "2026-02", toPeriod: "2027-02", filters: { "国家": ["巴西"] } },
+    ],
+  });
+
+  assert.equal(invalid.ok, false);
+  assert.deepEqual(invalid.modules.map((module) => module.type), ["bar_rank", "waterfall_bridge"]);
+  assert.match(invalid.errors.join("\n"), /存在不支持的分析动作/);
+  assert.match(invalid.errors.join("\n"), /维度不存在：不存在维度/);
+  assert.match(invalid.errors.join("\n"), /筛选字段不存在：不存在筛选/);
+  assert.match(invalid.errors.join("\n"), /期间不存在：2027-01/);
+  assert.match(invalid.errors.join("\n"), /期间不存在：2027-02/);
+});
+
+test("action validator rejects unit-metric waterfall plans before metric execution", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const invalid = validateFinanceActionPlan(schema, {
+    modules: [
+      { type: "waterfall_bridge", metric: "单车边际", dimension: "国家", fromPeriod: "2026-02", toPeriod: "2026-03" },
+    ],
+  });
+
+  assert.equal(invalid.ok, false);
+  assert.match(invalid.errors.join("\n"), /瀑布桥暂只支持可加总指标/);
+});
+
+test("chart specs are compact and identify supported chart types", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const trend = buildTrendSeries(metricRows, schema, { metric: "单车边际", filters: { "国家": ["巴西"] }, highlightPeriod: "2026-03" });
+  const spec = buildChartSpec({ type: "trend_chart", title: "巴西单车边际趋势", result: trend });
+
+  assert.equal(spec.kind, "trend_chart");
+  assert.equal(spec.title, "巴西单车边际趋势");
+  assert.equal(spec.data.length >= 1, true);
+  assert.equal(spec.layout.paper_bgcolor, "rgba(0,0,0,0)");
+  assert.equal(spec.layout.plot_bgcolor, "rgba(0,0,0,0)");
+  assert.equal(spec.config.displayModeBar, false);
+  assert.equal(typeof spec.note, "string");
+});
+
+test("bar rank chart spec uses horizontal bars without a separate numeric table", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const rank = buildBarRank(metricRows, schema, {
+    metric: "边际",
+    dimension: "国家",
+    period: "2026-03",
+  });
+  const spec = buildChartSpec({ type: "bar_rank", title: "国家边际排名", result: rank });
+
+  assert.equal(spec.kind, "bar_rank");
+  assert.equal(spec.data[0].type, "bar");
+  assert.equal(spec.data[0].orientation, "h");
+  assert.equal("table" in spec, false);
+  assert.equal(spec.config.displayModeBar, false);
+});
+
+test("waterfall chart spec uses Plotly waterfall for total-metric bridge results", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const bridge = buildWaterfallBridge(metricRows, schema, {
+    metric: "边际",
+    dimension: "国家",
+    fromPeriod: "2026-02",
+    toPeriod: "2026-03",
+  });
+  const spec = buildChartSpec({ type: "waterfall_bridge", title: "边际变化拆解", result: bridge });
+
+  assert.equal(spec.kind, "waterfall_bridge");
+  assert.equal(spec.data[0].type, "waterfall");
+  assert.deepEqual(spec.data[0].measure, ["absolute", "relative", "relative", "total"]);
+  assert.equal(spec.config.displayModeBar, false);
 });

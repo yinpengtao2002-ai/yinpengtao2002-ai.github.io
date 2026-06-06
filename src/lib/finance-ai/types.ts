@@ -154,3 +154,28 @@ export type WaterfallBridgeResult = {
   items: WaterfallBridgeItem[];
   filters: FinanceFilter;
 };
+
+export type FinanceActionModule =
+  | ({ type: "metric_snapshot"; chart?: { type: "trend_chart"; highlightPeriod?: string } } & MetricSnapshotRequest)
+  | ({ type: "trend_chart" } & TrendRequest)
+  | ({ type: "bar_rank" } & BarRankRequest)
+  | ({ type: "waterfall_bridge" } & WaterfallBridgeRequest);
+
+export type FinanceActionPlan = {
+  modules: FinanceActionModule[];
+};
+
+export type FinanceActionValidationResult =
+  | { ok: true; modules: FinanceActionModule[]; errors: [] }
+  | { ok: false; modules: FinanceActionModule[]; errors: string[] };
+
+export type FinanceChartKind = "trend_chart" | "bar_rank" | "waterfall_bridge";
+
+export type FinanceChartSpec = {
+  kind: FinanceChartKind;
+  title: string;
+  data: Array<Record<string, unknown>>;
+  layout: Record<string, unknown>;
+  config: Record<string, unknown>;
+  note: string;
+};
