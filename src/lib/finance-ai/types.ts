@@ -49,3 +49,102 @@ export type FinanceSchema = {
 export type FinanceRow = Record<string, unknown>;
 
 export type FinanceFilter = Record<string, string[]>;
+
+export type FinanceComparisonKind = "mom" | "yoy";
+
+export type MetricSnapshotRequest = {
+  metric: string;
+  period: string;
+  filters?: FinanceFilter;
+  comparisons?: FinanceComparisonKind[];
+};
+
+export type MetricValueBase = {
+  period: string;
+  value: number | null;
+  totalValue: number;
+  salesValue: number;
+  rowCount: number;
+  isComputable: boolean;
+};
+
+export type MetricComparison = MetricValueBase & {
+  changeValue: number | null;
+  changeRate: number | null;
+};
+
+export type MetricSnapshotResult = {
+  metric: string;
+  filters: FinanceFilter;
+  base: MetricValueBase;
+  value: number | null;
+  mom?: MetricComparison;
+  yoy?: MetricComparison;
+};
+
+export type TrendRequest = {
+  metric: string;
+  filters?: FinanceFilter;
+  highlightPeriod?: string;
+};
+
+export type TrendPoint = MetricValueBase & {
+  periodLabel: string;
+};
+
+export type TrendResult = {
+  metric: string;
+  filters: FinanceFilter;
+  points: TrendPoint[];
+  highlightPeriod?: string;
+};
+
+export type BarRankRequest = {
+  metric: string;
+  dimension: string;
+  period?: string;
+  filters?: FinanceFilter;
+  comparison?: "mom";
+  sort?: "value_desc" | "value_asc" | "change_desc" | "change_asc";
+  limit?: number;
+};
+
+export type BarRankItem = {
+  label: string;
+  value: number | null;
+  rowCount: number;
+};
+
+export type BarRankResult = {
+  metric: string;
+  dimension: string;
+  items: BarRankItem[];
+  filters: FinanceFilter;
+  period?: string;
+};
+
+export type WaterfallBridgeRequest = {
+  metric: string;
+  dimension: string;
+  fromPeriod: string;
+  toPeriod: string;
+  filters?: FinanceFilter;
+  limit?: number;
+};
+
+export type WaterfallBridgeItem = {
+  label: string;
+  value: number;
+};
+
+export type WaterfallBridgeResult = {
+  metric: string;
+  dimension: string;
+  fromPeriod: string;
+  toPeriod: string;
+  startValue: number;
+  endValue: number;
+  changeValue: number;
+  items: WaterfallBridgeItem[];
+  filters: FinanceFilter;
+};

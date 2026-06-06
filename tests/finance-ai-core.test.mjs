@@ -5,10 +5,24 @@ import {
   normalizePeriodValue,
   toFinanceNumber,
 } from "../src/lib/finance-ai/schema.ts";
+import {
+  buildBarRank,
+  buildMetricSnapshot,
+  buildTrendSeries,
+  buildWaterfallBridge,
+} from "../src/lib/finance-ai/metrics.ts";
 
 const rows = [
   { "月份": "2025-03", "大区": "拉美", "国家": "巴西", "车型": "T1D", "销量": 100, "净收入": 9000, "成本": -7000, "边际": 2000 },
   { "月份": "2025-04", "大区": "拉美", "国家": "巴西", "车型": "T1D", "销量": 110, "净收入": 9900, "成本": -7600, "边际": 2300 },
+];
+
+const metricRows = [
+  { "月份": "2025-03", "大区": "拉美", "国家": "巴西", "车型": "T1D", "销量": 100, "净收入": 9000, "成本": -7000, "边际": 3000 },
+  { "月份": "2025-03", "大区": "拉美", "国家": "巴西", "车型": "T1D", "销量": 0, "净收入": 0, "成本": 0, "边际": 500 },
+  { "月份": "2026-02", "大区": "拉美", "国家": "巴西", "车型": "T1D", "销量": 120, "净收入": 10800, "成本": -8400, "边际": 2400 },
+  { "月份": "2026-03", "大区": "拉美", "国家": "巴西", "车型": "T1D", "销量": 100, "净收入": 10000, "成本": -7600, "边际": 3500 },
+  { "月份": "2026-03", "大区": "拉美", "国家": "墨西哥", "车型": "T1E", "销量": 80, "净收入": 7200, "成本": -6100, "边际": 1100 },
 ];
 
 test("finance AI schema infers month, sales, dimensions, total metrics, and unit metrics", () => {
@@ -112,4 +126,60 @@ test("finance AI schema prefers specific unit metric numerator aliases over gene
 
   const unitRevenue = schema.unitMetrics.find((metric) => metric.name === "单车净收入");
   assert.equal(unitRevenue?.numeratorColumn, "净收入");
+});
+
+test("metric snapshot computes unit metrics after aggregating zero-volume amount rows", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const snapshot = buildMetricSnapshot(metricRows, schema, {
+    metric: "单车边际",
+    period: "2026-03",
+    filters: { "国家": ["巴西"] },
+    comparisons: ["mom", "yoy"],
+  });
+
+  assert.equal(snapshot.value, 35);
+  assert.equal(snapshot.base.totalValue, 3500);
+  assert.equal(snapshot.base.salesValue, 100);
+  assert.equal(snapshot.base.rowCount, 1);
+  assert.equal(snapshot.mom?.value, 20);
+  assert.equal(snapshot.yoy?.value, 35);
+  assert.equal(snapshot.yoy?.changeRate, 0);
+});
+
+test("trend series computes monthly unit values by sum metric over sum sales", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const trend = buildTrendSeries(metricRows, schema, { metric: "单车边际", filters: { "国家": ["巴西"] } });
+
+  assert.deepEqual(trend.points.map((point) => point.period), ["2025-03", "2026-02", "2026-03"]);
+  assert.deepEqual(trend.points.map((point) => point.value), [35, 20, 35]);
+});
+
+test("bar rank can rank dimensions by period contribution", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const rank = buildBarRank(metricRows, schema, {
+    metric: "边际",
+    dimension: "国家",
+    period: "2026-03",
+    sort: "value_desc",
+    limit: 10,
+  });
+
+  assert.deepEqual(rank.items.map((item) => item.label), ["巴西", "墨西哥"]);
+  assert.deepEqual(rank.items.map((item) => item.value), [3500, 1100]);
+});
+
+test("waterfall bridge groups top dimensions and ties to period movement", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const bridge = buildWaterfallBridge(metricRows, schema, {
+    metric: "边际",
+    dimension: "国家",
+    fromPeriod: "2026-02",
+    toPeriod: "2026-03",
+    limit: 5,
+  });
+
+  assert.equal(bridge.startValue, 2400);
+  assert.equal(bridge.endValue, 4600);
+  assert.equal(bridge.changeValue, 2200);
+  assert.deepEqual(bridge.items.map((item) => [item.label, item.value]), [["巴西", 1100], ["墨西哥", 1100]]);
 });
