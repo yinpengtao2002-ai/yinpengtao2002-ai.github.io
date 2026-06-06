@@ -31,6 +31,16 @@ const SALES_ALIASES = [
   "units",
 ];
 
+const NON_DIMENSION_COLUMNS = new Set([
+  "版本",
+  "单位",
+  "备注",
+  "口径",
+  "数据类型",
+  "类型",
+  "scenario",
+].map(normalizeHeaderName));
+
 const RATE_LIKE_PATTERNS = [
   "率",
   "占比",
@@ -50,8 +60,16 @@ const RATE_LIKE_PATTERNS = [
 const UNIT_METRIC_BLUEPRINTS = [
   { name: "单车净收入", numeratorAliases: ["净收入", "收入", "营业收入", "netrevenue", "revenue"] },
   { name: "单车成本", numeratorAliases: ["成本", "cost"] },
-  { name: "单车边际", numeratorAliases: ["边际", "贡献毛利", "margin"] },
+  { name: "单车边际", numeratorAliases: ["边际", "毛利", "边际总额", "贡献边际", "贡献毛利", "margin"] },
   { name: "单车利润", numeratorAliases: ["利润", "profit"] },
+];
+
+const UNIT_SCALE_PATTERNS = [
+  { pattern: /百万元/i, multiplier: 1_000_000 },
+  { pattern: /千万元/i, multiplier: 10_000_000 },
+  { pattern: /亿元|亿/i, multiplier: 100_000_000 },
+  { pattern: /万元|万/i, multiplier: 10_000 },
+  { pattern: /千元/i, multiplier: 1_000 },
 ];
 
 const ISSUE_MESSAGES: Record<FinanceSchemaIssue["code"], string> = {
@@ -85,8 +103,21 @@ function getHeaders(rows: FinanceRow[]): string[] {
 }
 
 function findAliasColumn(headers: string[], aliases: string[]): string {
-  const normalizedAliases = new Set(aliases.map(normalizeHeaderName));
-  return headers.find((header) => normalizedAliases.has(normalizeHeaderName(header))) ?? "";
+  const normalizedAliases = aliases.map(normalizeHeaderName);
+  const exactMatch = headers.find((header) => normalizedAliases.includes(normalizeHeaderName(header)));
+
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  return headers.find((header) => {
+    const normalizedHeader = normalizeHeaderName(header);
+    return normalizedAliases.some((alias) => (
+      alias.length >= 2 &&
+      normalizedHeader.length >= 2 &&
+      (normalizedHeader.includes(alias) || alias.includes(normalizedHeader))
+    ));
+  }) ?? "";
 }
 
 function isRateLikeColumn(column: string): boolean {
@@ -95,6 +126,10 @@ function isRateLikeColumn(column: string): boolean {
     const normalizedPattern = normalizeHeaderName(pattern);
     return column.includes(pattern) || normalizedColumn.includes(normalizedPattern);
   });
+}
+
+function isNonDimensionColumn(column: string): boolean {
+  return NON_DIMENSION_COLUMNS.has(normalizeHeaderName(column));
 }
 
 function isNumericColumn(rows: FinanceRow[], column: string): boolean {
@@ -174,6 +209,8 @@ export function normalizePeriodValue(value: unknown): FinancePeriod | null {
   const text = String(value).trim();
   const match =
     text.match(/^(\d{4})-(\d{1,2})$/) ??
+    text.match(/^(\d{4})[/.](\d{1,2})$/) ??
+    text.match(/^(\d{4})-(\d{1,2})-\d{1,2}$/) ??
     text.match(/^(\d{4})年\s*(\d{1,2})月$/) ??
     text.match(/^(\d{4})(\d{2})$/);
 
@@ -221,10 +258,11 @@ export function toFinanceNumber(value: unknown): number | null {
   }
 
   const isPercent = /[%％]/.test(text);
+  const multiplier = UNIT_SCALE_PATTERNS.find((unit) => unit.pattern.test(text))?.multiplier ?? 1;
   const cleaned = text
     .replace(/[,\uFF0C\s]/g, "")
     .replace(/[¥￥$€£]/g, "")
-    .replace(/人民币|百万元|千万元|万元|亿元|千元|美元|欧元|港币|日元|元|台|辆|件|个|套|pcs?|units?|rmb|cny|usd|eur|hkd|jpy/gi, "")
+    .replace(/人民币|百万元|千万元|万元|亿元|千元|美元|欧元|港币|日元|亿|万|元|台|辆|件|个|套|pcs?|units?|rmb|cny|usd|eur|hkd|jpy/gi, "")
     .replace(/[%％]/g, "");
 
   if (!/^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(cleaned)) {
@@ -241,7 +279,9 @@ export function toFinanceNumber(value: unknown): number | null {
     numericValue = -Math.abs(numericValue);
   }
 
-  return isPercent ? numericValue / 100 : numericValue;
+  const scaledValue = numericValue * multiplier;
+
+  return isPercent ? scaledValue / 100 : scaledValue;
 }
 
 export function inferFinanceSchema(rows: FinanceRow[]): FinanceSchema {
@@ -257,7 +297,7 @@ export function inferFinanceSchema(rows: FinanceRow[]): FinanceSchema {
     ? headers.slice(0, salesIndex).filter((header) =>
       header !== monthColumn &&
       header !== salesColumn &&
-      !isNumericColumn(rows, header),
+      !isNonDimensionColumn(header),
     )
     : [];
 
