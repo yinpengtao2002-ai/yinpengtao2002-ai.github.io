@@ -18,6 +18,8 @@ const ACTION_TYPES = new Set([
 ]);
 
 const PERIOD_FIELDS = ["period", "fromPeriod", "toPeriod", "highlightPeriod"] as const;
+const BAR_RANK_SORTS = new Set(["value_desc", "value_asc", "change_desc", "change_asc"]);
+const MAX_CHART_ITEMS = 10;
 
 type ActionType = FinanceActionModule["type"];
 type MutableModule = Record<string, unknown> & { type: ActionType; metric: string };
@@ -155,6 +157,8 @@ export function validateFinanceActionPlan(
 
   modules.forEach((module) => {
     const metric = validateMetric(schema, module, errors);
+    validateRequiredFields(module, errors);
+    validateActionOptions(module, errors);
     validateFilters(schema, module, errors);
     validatePeriods(schema, module, errors);
 
@@ -184,6 +188,86 @@ function validateMetric(
   }
 
   return metric;
+}
+
+function validateRequiredFields(module: FinanceActionModule, errors: string[]) {
+  const record = module as Record<string, unknown>;
+
+  if (module.type === "metric_snapshot" && !hasStringValue(record.period)) {
+    errors.push("指标快照需要指定期间。");
+  }
+
+  if (module.type === "waterfall_bridge") {
+    if (!hasStringValue(record.fromPeriod)) {
+      errors.push("瀑布桥需要指定开始期间。");
+    }
+
+    if (!hasStringValue(record.toPeriod)) {
+      errors.push("瀑布桥需要指定结束期间。");
+    }
+  }
+}
+
+function validateActionOptions(module: FinanceActionModule, errors: string[]) {
+  if (module.type === "bar_rank") {
+    validateBarRankOptions(module, errors);
+  }
+
+  if (module.type === "bar_rank" || module.type === "waterfall_bridge") {
+    validateLimit(module, errors, module.type === "bar_rank" ? "排名数量" : "瀑布桥维度项");
+  }
+}
+
+function validateBarRankOptions(module: FinanceActionModule, errors: string[]) {
+  const record = module as Record<string, unknown>;
+
+  if (typeof record.comparison === "string" && record.comparison !== "mom") {
+    errors.push("排名对比只支持环比。");
+    delete record.comparison;
+  }
+
+  if (typeof record.sort === "string" && !BAR_RANK_SORTS.has(record.sort)) {
+    errors.push(`排序方式不支持：${record.sort}`);
+    delete record.sort;
+  }
+
+  const sort = typeof record.sort === "string" ? record.sort : "";
+  const comparison = typeof record.comparison === "string" ? record.comparison : "";
+
+  if (sort.startsWith("change") && (comparison !== "mom" || !hasStringValue(record.period))) {
+    errors.push("变化排序需要同时指定环比对比和期间。");
+  }
+
+  if (comparison === "mom" && !hasStringValue(record.period)) {
+    errors.push("排名环比需要指定期间。");
+  }
+}
+
+function validateLimit(module: FinanceActionModule, errors: string[], label: string) {
+  const record = module as Record<string, unknown>;
+
+  if (typeof record.limit !== "number") {
+    return;
+  }
+
+  if (record.limit <= 0) {
+    errors.push(`${label}需要大于 0。`);
+    delete record.limit;
+    return;
+  }
+
+  const normalizedLimit = Math.floor(record.limit);
+  if (normalizedLimit > MAX_CHART_ITEMS) {
+    errors.push(`${label}最多 ${MAX_CHART_ITEMS} 项。`);
+    record.limit = MAX_CHART_ITEMS;
+    return;
+  }
+
+  record.limit = normalizedLimit;
+}
+
+function hasStringValue(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 function validateDimension(schema: FinanceSchema, dimension: unknown, errors: string[]) {

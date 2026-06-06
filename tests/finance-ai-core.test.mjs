@@ -384,6 +384,53 @@ test("action validator rejects unit-metric waterfall plans before metric executi
   assert.match(invalid.errors.join("\n"), /瀑布桥暂只支持可加总指标/);
 });
 
+test("action validator rejects modules with missing required period fields", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const invalid = validateFinanceActionPlan(schema, {
+    modules: [
+      { type: "metric_snapshot", metric: "边际" },
+      { type: "waterfall_bridge", metric: "边际", dimension: "国家" },
+    ],
+  });
+
+  assert.equal(invalid.ok, false);
+  assert.match(invalid.errors.join("\n"), /指标快照需要指定期间/);
+  assert.match(invalid.errors.join("\n"), /瀑布桥需要指定开始期间/);
+  assert.match(invalid.errors.join("\n"), /瀑布桥需要指定结束期间/);
+});
+
+test("action validator rejects invalid rank options and caps oversized limits", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const invalid = validateFinanceActionPlan(schema, {
+    modules: [
+      {
+        type: "bar_rank",
+        metric: "边际",
+        dimension: "国家",
+        period: "2026-03",
+        comparison: "yoy",
+        sort: "not_sort",
+        limit: 999,
+      },
+      {
+        type: "bar_rank",
+        metric: "边际",
+        dimension: "国家",
+        sort: "change_desc",
+      },
+    ],
+  });
+
+  assert.equal(invalid.ok, false);
+  assert.equal(invalid.modules[0].limit, 10);
+  assert.equal("comparison" in invalid.modules[0], false);
+  assert.equal("sort" in invalid.modules[0], false);
+  assert.match(invalid.errors.join("\n"), /排名对比只支持环比/);
+  assert.match(invalid.errors.join("\n"), /排序方式不支持/);
+  assert.match(invalid.errors.join("\n"), /排名数量最多 10 项/);
+  assert.match(invalid.errors.join("\n"), /变化排序需要同时指定环比对比和期间/);
+});
+
 test("chart specs are compact and identify supported chart types", () => {
   const schema = inferFinanceSchema(metricRows);
   const trend = buildTrendSeries(metricRows, schema, { metric: "单车边际", filters: { "国家": ["巴西"] }, highlightPeriod: "2026-03" });
