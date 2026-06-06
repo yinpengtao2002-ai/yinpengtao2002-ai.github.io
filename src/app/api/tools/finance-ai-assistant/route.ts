@@ -104,6 +104,28 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
+function isMetricList(value: unknown, kind: "total" | "unit") {
+  return Array.isArray(value) && value.every((item) => {
+    const metric = asRecord(item);
+    if (metric.kind !== kind || typeof metric.name !== "string") {
+      return false;
+    }
+
+    return kind === "total"
+      ? typeof metric.column === "string"
+      : typeof metric.numeratorColumn === "string" && typeof metric.denominatorColumn === "string";
+  });
+}
+
+function isPeriodList(value: unknown) {
+  return Array.isArray(value) && value.every((item) => {
+    const period = asRecord(item);
+    return typeof period.key === "string" &&
+      typeof period.label === "string" &&
+      typeof period.sort === "number";
+  });
+}
+
 function isFinanceSchema(value: unknown): value is FinanceSchema {
   const record = asRecord(value);
   const profile = asRecord(record.profile);
@@ -112,12 +134,56 @@ function isFinanceSchema(value: unknown): value is FinanceSchema {
     typeof record.salesColumn === "string" &&
     isStringArray(record.headers) &&
     isStringArray(record.dimensionColumns) &&
-    Array.isArray(record.totalMetrics) &&
-    Array.isArray(record.unitMetrics) &&
+    isMetricList(record.totalMetrics, "total") &&
+    isMetricList(record.unitMetrics, "unit") &&
     Array.isArray(record.excludedMetricColumns) &&
     Array.isArray(record.requiredIssues) &&
     typeof profile.rowCount === "number" &&
-    Array.isArray(profile.periods);
+    isPeriodList(profile.periods);
+}
+
+function normalizeFilterState(value: unknown): Record<string, string[]> {
+  return Object.fromEntries(
+    Object.entries(asRecord(value)).flatMap(([field, values]) => {
+      if (!Array.isArray(values)) {
+        return [];
+      }
+
+      const normalizedValues = values
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+      return normalizedValues.length > 0 ? [[field, normalizedValues]] : [];
+    }),
+  );
+}
+
+function normalizeChatState(value: unknown): FinanceAIChatState {
+  const state = asRecord(value);
+  const recentQuestions = Array.isArray(state.recentQuestions)
+    ? state.recentQuestions
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => item.trim())
+        .filter(Boolean)
+    : [];
+  const chartHistory = Array.isArray(state.chartHistory)
+    ? state.chartHistory.flatMap((item) => {
+        const chart = asRecord(item);
+        return typeof chart.type === "string" && typeof chart.title === "string"
+          ? [{ type: chart.type.trim(), title: chart.title.trim() }]
+          : [];
+      })
+    : [];
+
+  return {
+    ...(recentQuestions.length > 0 ? { recentQuestions } : {}),
+    ...(typeof state.currentMetric === "string" && state.currentMetric.trim()
+      ? { currentMetric: state.currentMetric.trim() }
+      : {}),
+    currentFilters: normalizeFilterState(state.currentFilters),
+    ...(chartHistory.length > 0 ? { chartHistory } : {}),
+  };
 }
 
 function getUpstreamStatus(error: unknown) {
@@ -265,7 +331,7 @@ export async function POST(req: Request) {
 
     const planningContext = buildFinanceAIPlanningContext(
       schema,
-      (body.state ?? {}) as FinanceAIChatState,
+      normalizeChatState(body.state),
     );
     const providerResult = await callFirstConfiguredProvider(
       [

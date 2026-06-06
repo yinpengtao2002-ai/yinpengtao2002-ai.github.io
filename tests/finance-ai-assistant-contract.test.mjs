@@ -215,3 +215,27 @@ test("finance AI assistant API rejects malformed schemas before planning context
   assert.equal(response.status, 400);
   assert.equal(payload.errorCode, "invalid_schema");
 });
+
+test("finance AI assistant API rejects malformed nested schema and state without crashing", async () => {
+  const malformedSchema = {
+    ...makeSchema(),
+    totalMetrics: [null],
+    profile: {
+      ...makeSchema().profile,
+      periods: [null],
+    },
+  };
+  const response = await POST(makeRequest({
+    mode: "plan",
+    question: "巴西 3 月边际怎么看？",
+    schema: malformedSchema,
+    state: {
+      recentQuestions: [1],
+      chartHistory: [null],
+    },
+  }));
+  const payload = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.equal(payload.errorCode, "invalid_schema");
+});
