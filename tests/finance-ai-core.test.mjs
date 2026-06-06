@@ -309,3 +309,15 @@ test("non-array filter values are ignored instead of crashing metric requests", 
   assert.deepEqual(snapshot.filters, {});
   assert.equal(snapshot.value, 4600);
 });
+
+test("invalid filter array elements are ignored without becoming string filters", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const snapshot = buildMetricSnapshot(metricRows, schema, {
+    metric: "边际",
+    period: "2026-03",
+    filters: { "国家": [{}, "巴西", null] },
+  });
+
+  assert.deepEqual(snapshot.filters, { "国家": ["巴西"] });
+  assert.equal(snapshot.value, 3500);
+});

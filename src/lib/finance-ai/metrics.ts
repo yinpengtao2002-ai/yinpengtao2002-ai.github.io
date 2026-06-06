@@ -1,4 +1,4 @@
-// @ts-ignore - Node's test runner imports this TypeScript module by extension.
+// @ts-expect-error - Node's test runner imports this TypeScript module by extension.
 import { normalizePeriodValue, toFinanceNumber } from "./schema.ts";
 import type {
   BarRankRequest,
@@ -235,10 +235,27 @@ function cloneFilters(filters: FinanceFilter | undefined): FinanceFilter {
 
   return Object.fromEntries(
     Object.entries(filters as Record<string, unknown>)
-      .flatMap(([column, values]) => (
-        Array.isArray(values) ? [[column, values.map(normalizeDimensionValue)]] : []
-      )),
+      .flatMap(([column, values]) => {
+        if (!Array.isArray(values)) {
+          return [];
+        }
+
+        const normalizedValues = values.flatMap(normalizeFilterValue);
+        return normalizedValues.length > 0 ? [[column, normalizedValues]] : [];
+      }),
   );
+}
+
+function normalizeFilterValue(value: unknown): string[] {
+  if (
+    typeof value !== "string" &&
+    typeof value !== "number" &&
+    typeof value !== "boolean"
+  ) {
+    return [];
+  }
+
+  return [normalizeDimensionValue(value)];
 }
 
 function compileFilters(filters: FinanceFilter): CompiledFilter[] {
