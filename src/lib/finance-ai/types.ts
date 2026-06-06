@@ -65,6 +65,8 @@ export type MetricValueBase = {
   totalValue: number;
   salesValue: number;
   rowCount: number;
+  blankValueCount: number;
+  invalidValueCount: number;
   isComputable: boolean;
 };
 
@@ -112,7 +114,10 @@ export type BarRankRequest = {
 export type BarRankItem = {
   label: string;
   value: number | null;
+  changeValue: number | null;
   rowCount: number;
+  blankValueCount: number;
+  invalidValueCount: number;
 };
 
 export type BarRankResult = {
@@ -121,6 +126,7 @@ export type BarRankResult = {
   items: BarRankItem[];
   filters: FinanceFilter;
   period?: string;
+  comparison?: "mom";
 };
 
 export type WaterfallBridgeRequest = {

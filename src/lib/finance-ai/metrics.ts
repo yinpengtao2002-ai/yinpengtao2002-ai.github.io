@@ -18,6 +18,7 @@ import type {
 } from "./types.ts";
 
 const UNCATEGORIZED_LABEL = "未分类";
+const OTHER_LABEL = "其他";
 const DEFAULT_LIMIT = 10;
 
 type CompiledFilter = {
@@ -29,13 +30,23 @@ type Accumulator = {
   totalValue: number;
   salesValue: number;
   rowCount: number;
+  blankValueCount: number;
+  invalidValueCount: number;
   order: number;
+};
+
+type NumericRead = {
+  value: number;
+  blankValueCount: number;
+  invalidValueCount: number;
 };
 
 type RankedItem = {
   label: string;
   value: number | null;
   rowCount: number;
+  blankValueCount: number;
+  invalidValueCount: number;
   changeValue: number | null;
   order: number;
 };
@@ -119,16 +130,26 @@ export function buildBarRank(
   const previousGroups = request.comparison === "mom" && period
     ? aggregateByDimension(rows, schema, metric, request.dimension, shiftPeriodKey(period, -1), compiledFilters)
     : new Map<string, Accumulator>();
-  const items = Array.from(groups.entries()).map(([label, accumulator]) => {
-    const value = getMetricValue(metric, accumulator);
-    const previousValue = getMetricValue(metric, previousGroups.get(label) ?? makeAccumulator(accumulator.order));
+  const labels = request.comparison === "mom" && period
+    ? mergeGroupLabels(groups, previousGroups)
+    : Array.from(groups.keys());
+  const items = labels.map((label) => {
+    const accumulator = groups.get(label);
+    const previousAccumulator = previousGroups.get(label);
+    const value = getRankValue(metric, accumulator);
+    const comparisonValue = getComparisonValue(metric, accumulator);
+    const previousValue = getComparisonValue(metric, previousAccumulator);
 
     return {
       label,
       value,
-      rowCount: accumulator.rowCount,
-      changeValue: value !== null && previousValue !== null ? value - previousValue : null,
-      order: accumulator.order,
+      rowCount: accumulator?.rowCount ?? 0,
+      blankValueCount: accumulator?.blankValueCount ?? 0,
+      invalidValueCount: accumulator?.invalidValueCount ?? 0,
+      changeValue: request.comparison === "mom" && period && comparisonValue !== null && previousValue !== null
+        ? comparisonValue - previousValue
+        : null,
+      order: accumulator?.order ?? groups.size + (previousAccumulator?.order ?? 0),
     };
   });
 
@@ -137,9 +158,17 @@ export function buildBarRank(
     dimension: request.dimension,
     items: sortRankedItems(items, request.sort ?? "value_desc")
       .slice(0, getLimit(request.limit))
-      .map(({ label, value, rowCount }) => ({ label, value, rowCount })),
+      .map(({ label, value, changeValue, rowCount, blankValueCount, invalidValueCount }) => ({
+        label,
+        value,
+        changeValue,
+        rowCount,
+        blankValueCount,
+        invalidValueCount,
+      })),
     filters,
     ...(period ? { period } : {}),
+    ...(request.comparison ? { comparison: request.comparison } : {}),
   };
 }
 
@@ -149,6 +178,10 @@ export function buildWaterfallBridge(
   request: WaterfallBridgeRequest,
 ): WaterfallBridgeResult {
   const metric = requireMetric(schema, request.metric);
+  if (metric.kind !== "total") {
+    throw new Error(`Waterfall bridge only supports total metrics in v1: ${request.metric}`);
+  }
+
   const filters = cloneFilters(request.filters);
   const compiledFilters = compileFilters(filters);
   const fromPeriod = normalizePeriodKey(request.fromPeriod);
@@ -170,6 +203,7 @@ export function buildWaterfallBridge(
       };
     })
     .filter((item) => item.value !== 0);
+  const limitedItems = limitBridgeItems(sortBridgeItems(items), endValue - startValue, getLimit(request.limit));
 
   return {
     metric: request.metric,
@@ -179,9 +213,7 @@ export function buildWaterfallBridge(
     startValue,
     endValue,
     changeValue: endValue - startValue,
-    items: sortBridgeItems(items)
-      .slice(0, getLimit(request.limit))
-      .map(({ label, value }) => ({ label, value })),
+    items: limitedItems.map(({ label, value }) => ({ label, value })),
     filters,
   };
 }
@@ -197,18 +229,28 @@ function requireMetric(schema: FinanceSchema, metricName: string): FinanceMetric
 }
 
 function cloneFilters(filters: FinanceFilter | undefined): FinanceFilter {
+  if (!filters || typeof filters !== "object") {
+    return {};
+  }
+
   return Object.fromEntries(
-    Object.entries(filters ?? {}).map(([column, values]) => [column, [...values]]),
+    Object.entries(filters as Record<string, unknown>)
+      .flatMap(([column, values]) => (
+        Array.isArray(values) ? [[column, values.map(normalizeDimensionValue)]] : []
+      )),
   );
 }
 
 function compileFilters(filters: FinanceFilter): CompiledFilter[] {
-  return Object.entries(filters)
-    .filter(([, values]) => values.length > 0)
-    .map(([column, values]) => ({
-      column,
-      values: new Set(values.map(normalizeDimensionValue)),
-    }));
+  return Object.entries(filters as Record<string, unknown>)
+    .flatMap(([column, values]) => (
+      Array.isArray(values) && values.length > 0
+        ? [{
+          column,
+          values: new Set(values.map(normalizeDimensionValue)),
+        }]
+        : []
+    ));
 }
 
 function normalizeDimensionValue(value: unknown): string {
@@ -261,6 +303,8 @@ function aggregateMetric(
     totalValue: accumulator.totalValue,
     salesValue: accumulator.salesValue,
     rowCount: accumulator.rowCount,
+    blankValueCount: accumulator.blankValueCount,
+    invalidValueCount: accumulator.invalidValueCount,
     isComputable: isComputable(metric, accumulator),
   };
 }
@@ -298,18 +342,53 @@ function makeAccumulator(order: number): Accumulator {
     totalValue: 0,
     salesValue: 0,
     rowCount: 0,
+    blankValueCount: 0,
+    invalidValueCount: 0,
     order,
   };
 }
 
 function addRow(accumulator: Accumulator, row: FinanceRow, schema: FinanceSchema, metric: FinanceMetric): void {
-  accumulator.totalValue += getFinanceNumber(row[metric.kind === "unit" ? metric.numeratorColumn : metric.column]);
-  accumulator.salesValue += getFinanceNumber(row[metric.kind === "unit" ? metric.denominatorColumn : schema.salesColumn]);
+  const totalValue = readFinanceNumber(row[metric.kind === "unit" ? metric.numeratorColumn : metric.column]);
+  const salesValue = readFinanceNumber(row[metric.kind === "unit" ? metric.denominatorColumn : schema.salesColumn]);
+
+  accumulator.totalValue += totalValue.value;
+  accumulator.salesValue += salesValue.value;
+  accumulator.blankValueCount += totalValue.blankValueCount + salesValue.blankValueCount;
+  accumulator.invalidValueCount += totalValue.invalidValueCount + salesValue.invalidValueCount;
   accumulator.rowCount += 1;
 }
 
-function getFinanceNumber(value: unknown): number {
-  return toFinanceNumber(value) ?? 0;
+function readFinanceNumber(value: unknown): NumericRead {
+  const numericValue = toFinanceNumber(value);
+
+  if (numericValue !== null) {
+    return {
+      value: numericValue,
+      blankValueCount: 0,
+      invalidValueCount: 0,
+    };
+  }
+
+  if (isBlankNumericValue(value)) {
+    return {
+      value: 0,
+      blankValueCount: 1,
+      invalidValueCount: 0,
+    };
+  }
+
+  return {
+    value: 0,
+    blankValueCount: 0,
+    invalidValueCount: 1,
+  };
+}
+
+function isBlankNumericValue(value: unknown): boolean {
+  return value === null ||
+    value === undefined ||
+    (typeof value === "string" && (value.trim() === "" || /^[-—–]$/.test(value.trim())));
 }
 
 function matchesPeriod(row: FinanceRow, schema: FinanceSchema, period: string): boolean {
@@ -321,6 +400,10 @@ function matchesFilters(row: FinanceRow, filters: CompiledFilter[]): boolean {
 }
 
 function getMetricValue(metric: FinanceMetric, accumulator: Accumulator): number | null {
+  if (accumulator.rowCount === 0) {
+    return null;
+  }
+
   if (metric.kind === "unit") {
     return accumulator.salesValue === 0 ? null : accumulator.totalValue / accumulator.salesValue;
   }
@@ -329,7 +412,27 @@ function getMetricValue(metric: FinanceMetric, accumulator: Accumulator): number
 }
 
 function isComputable(metric: FinanceMetric, accumulator: Accumulator): boolean {
+  if (accumulator.rowCount === 0) {
+    return false;
+  }
+
   return metric.kind === "unit" ? accumulator.salesValue !== 0 : true;
+}
+
+function getRankValue(metric: FinanceMetric, accumulator: Accumulator | undefined): number | null {
+  if (accumulator) {
+    return getMetricValue(metric, accumulator);
+  }
+
+  return metric.kind === "total" ? 0 : null;
+}
+
+function getComparisonValue(metric: FinanceMetric, accumulator: Accumulator | undefined): number | null {
+  if (accumulator) {
+    return getMetricValue(metric, accumulator);
+  }
+
+  return metric.kind === "total" ? 0 : null;
 }
 
 function buildComparison(base: MetricValueBase, comparison: MetricValueBase): MetricComparison {
@@ -392,6 +495,29 @@ function sortBridgeItems(items: BridgeItem[]): BridgeItem[] {
     Math.abs(b.value) - Math.abs(a.value) ||
     a.order - b.order
   ));
+}
+
+function limitBridgeItems(items: BridgeItem[], changeValue: number, limit: number): BridgeItem[] {
+  if (items.length <= limit) {
+    return items;
+  }
+
+  const visibleItems = items.slice(0, limit);
+  const visibleValue = visibleItems.reduce((sum, item) => sum + item.value, 0);
+  const residualValue = changeValue - visibleValue;
+
+  if (residualValue === 0) {
+    return visibleItems;
+  }
+
+  return [
+    ...visibleItems,
+    {
+      label: OTHER_LABEL,
+      value: residualValue,
+      order: items.length,
+    },
+  ];
 }
 
 function getLimit(limit: number | undefined): number {

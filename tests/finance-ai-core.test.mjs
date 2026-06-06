@@ -183,3 +183,129 @@ test("waterfall bridge groups top dimensions and ties to period movement", () =>
   assert.equal(bridge.changeValue, 2200);
   assert.deepEqual(bridge.items.map((item) => [item.label, item.value]), [["巴西", 1100], ["墨西哥", 1100]]);
 });
+
+test("waterfall bridge rejects unit metrics because v1 only supports additive totals", () => {
+  const schema = inferFinanceSchema(metricRows);
+
+  assert.throws(
+    () => buildWaterfallBridge(metricRows, schema, {
+      metric: "单车边际",
+      dimension: "国家",
+      fromPeriod: "2026-02",
+      toPeriod: "2026-03",
+    }),
+    /Waterfall bridge only supports total metrics/,
+  );
+});
+
+test("metric snapshot treats missing periods as not computable instead of zero comparisons", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const missingTotal = buildMetricSnapshot(metricRows, schema, {
+    metric: "边际",
+    period: "2024-03",
+    filters: { "国家": ["巴西"] },
+  });
+  const missingUnit = buildMetricSnapshot(metricRows, schema, {
+    metric: "单车边际",
+    period: "2024-03",
+    filters: { "国家": ["巴西"] },
+  });
+  const snapshot = buildMetricSnapshot(metricRows, schema, {
+    metric: "边际",
+    period: "2025-03",
+    filters: { "国家": ["巴西"] },
+    comparisons: ["mom", "yoy"],
+  });
+
+  assert.equal(missingTotal.value, null);
+  assert.equal(missingTotal.base.isComputable, false);
+  assert.equal(missingTotal.base.rowCount, 0);
+  assert.equal(missingTotal.base.totalValue, 0);
+  assert.equal(missingTotal.base.salesValue, 0);
+  assert.equal(missingUnit.value, null);
+  assert.equal(missingUnit.base.isComputable, false);
+  assert.equal(snapshot.value, 3500);
+  assert.equal(snapshot.mom?.value, null);
+  assert.equal(snapshot.mom?.isComputable, false);
+  assert.equal(snapshot.mom?.changeValue, null);
+  assert.equal(snapshot.mom?.changeRate, null);
+  assert.equal(snapshot.yoy?.value, null);
+  assert.equal(snapshot.yoy?.isComputable, false);
+  assert.equal(snapshot.yoy?.changeValue, null);
+  assert.equal(snapshot.yoy?.changeRate, null);
+});
+
+test("waterfall bridge appends an other residual item when limit omits contributors", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const bridge = buildWaterfallBridge(metricRows, schema, {
+    metric: "边际",
+    dimension: "国家",
+    fromPeriod: "2026-02",
+    toPeriod: "2026-03",
+    limit: 1,
+  });
+  const itemSum = bridge.items.reduce((sum, item) => sum + item.value, 0);
+
+  assert.equal(bridge.changeValue, 2200);
+  assert.deepEqual(bridge.items.map((item) => [item.label, item.value]), [["巴西", 1100], ["其他", 1100]]);
+  assert.equal(itemSum, bridge.changeValue);
+});
+
+test("bar rank comparison includes previous-only groups and exposes change values", () => {
+  const rankRows = [
+    { "月份": "2026-02", "国家": "巴西", "销量": 10, "边际": 200 },
+    { "月份": "2026-02", "国家": "智利", "销量": 10, "边际": 500 },
+    { "月份": "2026-03", "国家": "巴西", "销量": 10, "边际": 350 },
+    { "月份": "2026-03", "国家": "墨西哥", "销量": 10, "边际": 100 },
+  ];
+  const schema = inferFinanceSchema(rankRows);
+  const rank = buildBarRank(rankRows, schema, {
+    metric: "边际",
+    dimension: "国家",
+    period: "2026-03",
+    comparison: "mom",
+    sort: "change_asc",
+    limit: 10,
+  });
+
+  assert.deepEqual(rank.items.map((item) => item.label), ["智利", "墨西哥", "巴西"]);
+  assert.deepEqual(rank.items.map((item) => item.value), [0, 100, 350]);
+  assert.deepEqual(rank.items.map((item) => item.changeValue), [-500, 100, 150]);
+  assert.deepEqual(rank.items.map((item) => item.rowCount), [0, 1, 1]);
+});
+
+test("metric aggregation counts malformed numeric values without dropping valid rows", () => {
+  const malformedRows = [
+    { "月份": "2026-03", "国家": "巴西", "销量": 100, "边际": 3000 },
+    { "月份": "2026-03", "国家": "巴西", "销量": 50, "边际": "bad-value" },
+    { "月份": "2026-03", "国家": "巴西", "销量": "", "边际": 500 },
+    { "月份": "2026-03", "国家": "巴西", "销量": 20, "边际": null },
+    { "月份": "2026-03", "国家": "巴西", "销量": 10, "边际": 100 },
+    { "月份": "2026-03", "国家": "巴西", "销量": 10, "边际": 200 },
+  ];
+  const schema = inferFinanceSchema(malformedRows);
+  const snapshot = buildMetricSnapshot(malformedRows, schema, {
+    metric: "边际",
+    period: "2026-03",
+    filters: { "国家": ["巴西"] },
+  });
+
+  assert.equal(snapshot.value, 3800);
+  assert.equal(snapshot.base.totalValue, 3800);
+  assert.equal(snapshot.base.salesValue, 190);
+  assert.equal(snapshot.base.rowCount, 6);
+  assert.equal(snapshot.base.blankValueCount, 2);
+  assert.equal(snapshot.base.invalidValueCount, 1);
+});
+
+test("non-array filter values are ignored instead of crashing metric requests", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const snapshot = buildMetricSnapshot(metricRows, schema, {
+    metric: "边际",
+    period: "2026-03",
+    filters: { "国家": 76 },
+  });
+
+  assert.deepEqual(snapshot.filters, {});
+  assert.equal(snapshot.value, 4600);
+});
