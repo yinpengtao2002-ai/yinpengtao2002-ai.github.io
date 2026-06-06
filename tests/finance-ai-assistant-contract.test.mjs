@@ -260,7 +260,18 @@ test("finance AI assistant page is an independent chat workbench", async () => {
   assert.match(client, /validateFinanceActionPlan/);
   assert.match(client, /buildChartSpec/);
   assert.match(client, /useEffect/);
+  assert.match(client, /newDatasetMessages/);
   assert.doesNotMatch(client, /localStorage/);
   assert.doesNotMatch(client, /sessionStorage/);
   assert.doesNotMatch(client, /IndexedDB/);
+});
+
+test("finance AI assistant chat styles size embedded chart cards", async () => {
+  const styles = await readProjectFile("src/app/globals.css");
+
+  assert.match(styles, /\.finance-ai-page/);
+  assert.match(styles, /\.finance-ai-chat/);
+  assert.match(styles, /\.finance-ai-message\.is-assistant/);
+  assert.match(styles, /\.finance-ai-chart-card/);
+  assert.match(styles, /\.finance-ai-chart-host\s*\{[\s\S]*min-height:\s*320px/s);
 });

@@ -260,11 +260,7 @@ export default function FinanceAIAssistantTool() {
     try {
       const parsedRows = await parseFile(file);
       const nextSchema = inferFinanceSchema(parsedRows);
-      setRows(parsedRows);
-      setSchema(nextSchema);
-      setFileName(file.name);
-      setMessages((current) => [
-        ...current,
+      const newDatasetMessages: ChatMessage[] = [
         {
           id: `assistant-upload-${Date.now()}`,
           role: "assistant",
@@ -273,7 +269,11 @@ export default function FinanceAIAssistantTool() {
             : `${file.name} 已上传。${summarizeSchema(nextSchema)}。现在可以直接提问。`,
           meta: "数据仅保留在当前页面会话中，刷新后清空。",
         },
-      ]);
+      ];
+      setRows(parsedRows);
+      setSchema(nextSchema);
+      setFileName(file.name);
+      setMessages(newDatasetMessages);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "文件读取失败，请换一个 CSV/XLS/XLSX 文件。");
     } finally {
