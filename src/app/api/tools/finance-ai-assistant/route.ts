@@ -1,10 +1,9 @@
-import { NextRequest } from "next/server";
-import {
-  buildFinanceAIExplanationPrompt,
-  buildFinanceAIPlanningContext,
-  type FinanceAIChatState,
-} from "@/lib/finance-ai/context";
-import type { FinanceActionPlan, FinanceSchema } from "@/lib/finance-ai/types";
+// @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
+import { buildFinanceAIExplanationPrompt, buildFinanceAIPlanningContext } from "../../../../lib/finance-ai/context.ts";
+import type { FinanceAIChatState } from "../../../../lib/finance-ai/context.ts";
+// @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
+import { validateFinanceActionPlan } from "../../../../lib/finance-ai/actions.ts";
+import type { FinanceActionPlan, FinanceSchema } from "../../../../lib/finance-ai/types.ts";
 
 const API_ROUTE_PATH = "/api/tools/finance-ai-assistant";
 const PLANNING_BOUNDARY = "AI 不负责计算数字";
@@ -93,6 +92,32 @@ function normalizePlan(value: unknown): FinanceActionPlan {
   }
 
   return { ...record, modules } as FinanceActionPlan;
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function isFinanceSchema(value: unknown): value is FinanceSchema {
+  const record = asRecord(value);
+  const profile = asRecord(record.profile);
+
+  return typeof record.monthColumn === "string" &&
+    typeof record.salesColumn === "string" &&
+    isStringArray(record.headers) &&
+    isStringArray(record.dimensionColumns) &&
+    Array.isArray(record.totalMetrics) &&
+    Array.isArray(record.unitMetrics) &&
+    Array.isArray(record.excludedMetricColumns) &&
+    Array.isArray(record.requiredIssues) &&
+    typeof profile.rowCount === "number" &&
+    Array.isArray(profile.periods);
 }
 
 function getUpstreamStatus(error: unknown) {
@@ -211,7 +236,7 @@ function errorResponse(
   );
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   let body: Record<string, unknown>;
 
   try {
@@ -226,8 +251,12 @@ export async function POST(req: NextRequest) {
     const schema = body.schema as FinanceSchema | undefined;
     const question = typeof body.question === "string" ? body.question.trim() : "";
 
-    if (!schema || typeof schema !== "object") {
+    if (!schema) {
       return errorResponse(400, "missing_schema", "Plan mode requires a finance schema.");
+    }
+
+    if (!isFinanceSchema(schema)) {
+      return errorResponse(400, "invalid_schema", "Plan mode requires a valid finance schema.");
     }
 
     if (!question) {
@@ -259,7 +288,18 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      return Response.json(normalizePlan(extractJsonObject(providerResult.content)));
+      const plan = normalizePlan(extractJsonObject(providerResult.content));
+      const validated = validateFinanceActionPlan(schema, plan);
+
+      if (!validated.ok) {
+        return errorResponse(502, "provider_invalid_plan", "AI plan failed validation.", {
+          provider: providerResult.provider,
+          errors: validated.errors,
+          modules: validated.modules,
+        });
+      }
+
+      return Response.json({ modules: validated.modules });
     } catch (error) {
       return errorResponse(
         502,

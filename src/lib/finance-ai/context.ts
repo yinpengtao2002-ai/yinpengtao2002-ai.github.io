@@ -15,6 +15,13 @@ type ExplanationPromptInput = {
 const MAX_LIST_ITEMS = 24;
 const MAX_RECENT_QUESTIONS = 4;
 const MAX_CHART_HISTORY = 4;
+const MAX_FILTER_FIELDS = 12;
+const MAX_FILTER_VALUES = 8;
+const MAX_SUMMARY_ARRAY_ITEMS = 12;
+const MAX_SUMMARY_OBJECT_KEYS = 18;
+const MAX_SUMMARY_DEPTH = 4;
+const MAX_STRING_CHARS = 240;
+const MAX_SUMMARY_JSON_CHARS = 6000;
 
 function compactList(values: string[], emptyLabel = "无") {
   const normalized = values.map((value) => value.trim()).filter(Boolean);
@@ -28,8 +35,102 @@ function compactList(values: string[], emptyLabel = "无") {
   return hiddenCount > 0 ? `${visible} / 另有 ${hiddenCount} 项` : visible;
 }
 
-function safeJson(value: unknown) {
-  return JSON.stringify(value ?? {});
+function truncateText(value: string, maxLength = MAX_STRING_CHARS) {
+  const normalized = value.trim();
+  return normalized.length > maxLength ? `${normalized.slice(0, maxLength)}...` : normalized;
+}
+
+function compactFilters(filters: Record<string, string[]> | undefined) {
+  const entries = Object.entries(filters ?? {})
+    .filter(([, values]) => Array.isArray(values) && values.length > 0);
+  const visibleEntries = entries.slice(0, MAX_FILTER_FIELDS).map(([field, values]) => {
+    const visibleValues = values
+      .map((value) => String(value).trim())
+      .filter(Boolean)
+      .slice(0, MAX_FILTER_VALUES);
+    const hiddenValueCount = values.length - MAX_FILTER_VALUES;
+    return [
+      field,
+      hiddenValueCount > 0 ? [...visibleValues, `另有 ${hiddenValueCount} 项`] : visibleValues,
+    ];
+  });
+  const hiddenFieldCount = entries.length - MAX_FILTER_FIELDS;
+
+  return {
+    ...Object.fromEntries(visibleEntries),
+    ...(hiddenFieldCount > 0 ? { "__omitted": `另有 ${hiddenFieldCount} 个筛选字段` } : {}),
+  };
+}
+
+function isRawRowsKey(key: string) {
+  return /^(rawRows|rows|records|dataRows|sourceRows|uploadedRows|rawData)$/i.test(key);
+}
+
+function looksLikeLargeRecordArray(value: unknown[]) {
+  return value.length > 20 &&
+    value.slice(0, 5).every((item) => (
+      item !== null &&
+      typeof item === "object" &&
+      !Array.isArray(item) &&
+      Object.keys(item).length >= 4
+    ));
+}
+
+function sanitizePromptValue(value: unknown, key = "", depth = 0): unknown {
+  if (typeof value === "string") {
+    return truncateText(value);
+  }
+
+  if (
+    value === null ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    if (isRawRowsKey(key) || looksLikeLargeRecordArray(value)) {
+      return `已省略完整明细数组（${value.length} 行）`;
+    }
+
+    const visibleItems = value
+      .slice(0, MAX_SUMMARY_ARRAY_ITEMS)
+      .map((item) => sanitizePromptValue(item, key, depth + 1));
+    const hiddenCount = value.length - MAX_SUMMARY_ARRAY_ITEMS;
+    return hiddenCount > 0
+      ? [...visibleItems, { "__omitted": `另有 ${hiddenCount} 项已省略` }]
+      : visibleItems;
+  }
+
+  if (typeof value !== "object" || value === undefined) {
+    return null;
+  }
+
+  if (depth >= MAX_SUMMARY_DEPTH) {
+    return "[已省略嵌套内容]";
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>);
+  const sanitizedEntries = entries
+    .slice(0, MAX_SUMMARY_OBJECT_KEYS)
+    .map(([entryKey, entryValue]) => [
+      entryKey,
+      sanitizePromptValue(entryValue, entryKey, depth + 1),
+    ]);
+  const hiddenKeyCount = entries.length - MAX_SUMMARY_OBJECT_KEYS;
+
+  return {
+    ...Object.fromEntries(sanitizedEntries),
+    ...(hiddenKeyCount > 0 ? { "__omitted": `另有 ${hiddenKeyCount} 个字段已省略` } : {}),
+  };
+}
+
+function safeBoundedJson(value: unknown) {
+  const json = JSON.stringify(sanitizePromptValue(value ?? {}));
+  return json.length > MAX_SUMMARY_JSON_CHARS
+    ? `${json.slice(0, MAX_SUMMARY_JSON_CHARS)}...（已截断）`
+    : json;
 }
 
 export function buildFinanceAIPlanningContext(
@@ -61,7 +162,7 @@ export function buildFinanceAIPlanningContext(
     `可用期间：${compactList(schema.profile.periods.map((period) => period.key))}`,
     `最近问题：${compactList(recentQuestions)}`,
     `当前指标：${state.currentMetric || "无"}`,
-    `当前筛选：${safeJson(state.currentFilters)}`,
+    `当前筛选：${JSON.stringify(compactFilters(state.currentFilters))}`,
     `最近图表：${compactList(chartHistory)}`,
     "输出规则：",
     "- 只输出 JSON，不输出 Markdown。",
@@ -83,6 +184,6 @@ export function buildFinanceAIExplanationPrompt(input: ExplanationPromptInput) {
     "回复应像聊天消息，先给结论，再补一句口径。",
     `用户问题：${input.userQuestion.trim() || "无"}`,
     "计算结果：",
-    JSON.stringify(input.computedSummary ?? {}),
+    safeBoundedJson(input.computedSummary ?? {}),
   ].join("\n");
 }
