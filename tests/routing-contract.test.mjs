@@ -53,3 +53,19 @@ test("subtitle workbench is embedded as a seamless hosted tool", () => {
   assert.doesNotMatch(thinkingClient, /thinking-tool-entry/);
   assert.match(clientShell, /\/tools\/subtitle-workbench/);
 });
+
+test("thinking lab separates usable tools from reading content", () => {
+  assert.match(thinkingClient, /thinking-tools-section/);
+  assert.match(thinkingClient, /thinking-content-section/);
+  assert.match(thinkingClient, /toolItems/);
+  assert.match(thinkingClient, /contentItems/);
+  assert.match(thinkingClient, /打开工具/);
+  assert.match(thinkingClient, /阅读/);
+  assert.match(thinkingClient, /thinking-tool-card/);
+  assert.match(thinkingClient, /thinking-article-row/);
+  assert.doesNotMatch(thinkingClient, /style=\{\{/);
+  assert.match(globals, /\.thinking-tools-section\s*\{/);
+  assert.match(globals, /\.thinking-tool-card\s*\{/);
+  assert.match(globals, /\.thinking-content-section\s*\{/);
+  assert.match(globals, /\.thinking-article-row\s*\{/);
+});

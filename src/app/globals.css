@@ -1952,6 +1952,112 @@ h6 {
   margin-bottom: 0;
 }
 
+.finance-model-library {
+  width: 100%;
+  font-family: var(--font-poppins);
+}
+
+.finance-model-directory {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--card) 86%, transparent);
+  box-shadow: 0 18px 46px rgba(33, 29, 22, 0.06);
+}
+
+.finance-model-directory-head,
+.finance-model-row {
+  display: grid;
+  grid-template-columns: 136px 1fr 1.05fr 1.35fr auto;
+  align-items: stretch;
+}
+
+.finance-model-directory-head {
+  min-height: 42px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+  background: color-mix(in srgb, var(--background) 72%, var(--border));
+}
+
+.finance-model-directory-head span,
+.finance-model-preview-cell,
+.finance-model-name-cell,
+.finance-model-scenario,
+.finance-model-problem,
+.finance-model-action-cell {
+  padding: 15px 16px;
+  border-right: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+
+.finance-model-directory-head span:last-child,
+.finance-model-action-cell {
+  border-right: 0;
+}
+
+.finance-model-row-motion {
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+
+.finance-model-row {
+  min-height: 118px;
+  background: color-mix(in srgb, var(--card) 78%, transparent);
+  text-decoration: none;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.finance-model-row:hover {
+  background: #fffaf4;
+}
+
+.finance-model-preview-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--background) 58%, var(--card));
+}
+
+.finance-model-preview-cell .finance-model-preview.compact {
+  width: 104px;
+  aspect-ratio: 1.35;
+  border: 1px solid color-mix(in srgb, var(--foreground) 8%, var(--border));
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(33, 29, 22, 0.08);
+}
+
+.finance-model-name-cell,
+.finance-model-scenario,
+.finance-model-problem,
+.finance-model-action-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.finance-model-kicker {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 780;
+}
+
+.finance-model-scenario p,
+.finance-model-problem p {
+  margin: 0;
+  color: color-mix(in srgb, var(--foreground) 54%, var(--muted));
+  font-size: 13px;
+  line-height: 1.68;
+}
+
+.finance-model-mobile-label {
+  display: none;
+}
+
+.finance-model-action-cell {
+  align-items: center;
+}
+
 .home-thinking-section {
   position: relative;
   align-items: flex-start;
@@ -2413,10 +2519,325 @@ h6 {
   padding: clamp(5rem, 10vh, 7rem) 1.5rem clamp(1.8rem, 4vh, 2.5rem);
 }
 
+.thinking-index-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  color: var(--foreground);
+  background:
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--foreground) 3%, transparent) 0 1px, transparent 1px 64px),
+    linear-gradient(180deg, color-mix(in srgb, var(--card) 84%, var(--background)), var(--background) 48%);
+  font-family: var(--font-poppins);
+}
+
+.thinking-index-eyebrow {
+  margin: 0 0 14px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.thinking-index-title {
+  margin: 0 0 16px;
+  color: var(--foreground);
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.thinking-index-intro {
+  max-width: 620px;
+  margin: 0;
+  color: color-mix(in srgb, var(--foreground) 58%, var(--muted));
+  font-size: 15px;
+  line-height: 1.8;
+}
+
 .thinking-index-list {
   max-width: 1040px;
   margin: 0 auto;
   padding: 0 1.5rem clamp(3rem, 7vh, 5rem);
+}
+
+.thinking-tools-section {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.thinking-content-section {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.thinking-content-section {
+  padding-bottom: clamp(3rem, 7vh, 5rem);
+}
+
+.thinking-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 30px 0 12px;
+}
+
+.thinking-section-head h2 {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.thinking-section-head p {
+  margin: 6px 0 0;
+  color: color-mix(in srgb, var(--foreground) 54%, var(--muted));
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.thinking-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.thinking-tool-card {
+  display: block;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+  border-radius: 17px;
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  box-shadow: 0 18px 46px rgba(33, 29, 22, 0.06);
+  text-decoration: none;
+  transition:
+    background 0.18s ease,
+    transform 0.18s ease;
+}
+
+.thinking-tool-card:hover {
+  background: #fffaf4;
+  transform: translateY(-2px);
+}
+
+.thinking-tool-top {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  gap: 13px;
+  align-items: start;
+  padding: 18px;
+  border-bottom: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+
+.thinking-tool-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 13px;
+  color: #fff;
+  font-weight: 900;
+  background: var(--accent-secondary);
+}
+
+.thinking-tool-grid article:nth-child(2) .thinking-tool-icon {
+  background: var(--accent-tertiary);
+}
+
+.thinking-tool-name {
+  display: block;
+  margin: 0 0 6px;
+  color: var(--foreground);
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.thinking-tool-desc {
+  display: block;
+  color: color-mix(in srgb, var(--foreground) 52%, var(--muted));
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.thinking-tool-action,
+.thinking-article-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.thinking-tool-detail {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.thinking-tool-detail div {
+  padding: 14px 18px;
+  border-right: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+
+.thinking-tool-detail div:last-child {
+  border-right: 0;
+}
+
+.thinking-tool-detail span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+}
+
+.thinking-tool-detail p {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 13px;
+  line-height: 1.58;
+}
+
+.thinking-content-shell {
+  display: grid;
+  grid-template-columns: 226px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.thinking-filters,
+.thinking-article-list {
+  border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--card) 84%, transparent);
+  box-shadow: 0 18px 46px rgba(33, 29, 22, 0.06);
+}
+
+.thinking-filters {
+  position: sticky;
+  top: 18px;
+  padding: 14px;
+}
+
+.thinking-filter-title {
+  margin: 2px 0 12px;
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+}
+
+.thinking-filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 38px;
+  margin-bottom: 7px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 0 11px;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  background: color-mix(in srgb, var(--background) 78%, var(--card));
+  cursor: pointer;
+}
+
+.thinking-filter.active {
+  color: var(--foreground);
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
+  background: #fff6ef;
+}
+
+.thinking-filter span:last-child {
+  color: color-mix(in srgb, var(--muted) 72%, white);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.thinking-mobile-filters {
+  display: none;
+}
+
+.thinking-article-list {
+  overflow: hidden;
+}
+
+.thinking-article-head,
+.thinking-article-row {
+  display: grid;
+  grid-template-columns: 1fr 132px 92px;
+  align-items: stretch;
+}
+
+.thinking-article-head {
+  min-height: 42px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+  background: color-mix(in srgb, var(--background) 72%, var(--border));
+}
+
+.thinking-article-head span,
+.thinking-article-main,
+.thinking-article-type,
+.thinking-article-action {
+  padding: 15px 16px;
+  border-right: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+
+.thinking-article-head span:last-child,
+.thinking-article-action {
+  border-right: 0;
+}
+
+.thinking-article-row {
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
+  background: color-mix(in srgb, var(--card) 78%, transparent);
+  text-decoration: none;
+}
+
+.thinking-article-row:hover {
+  background: #fffaf4;
+}
+
+.thinking-article-main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.thinking-article-title {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.thinking-article-desc {
+  color: color-mix(in srgb, var(--foreground) 52%, var(--muted));
+  font-size: 13px;
+  line-height: 1.58;
+}
+
+.thinking-article-type {
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 780;
+}
+
+.thinking-article-action {
+  justify-content: center;
 }
 
 .subtitle-workbench-page {
@@ -5289,6 +5710,18 @@ h6 {
   font-weight: 800;
 }
 
+.finance-model-card-action svg,
+.thinking-tool-action svg,
+.thinking-article-action svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.finance-model-card-link.finance-model-row {
+  display: grid;
+}
+
 .finance-model-preview {
   position: relative;
   width: 100%;
@@ -5315,6 +5748,80 @@ h6 {
 }
 
 @media (max-width: 768px) {
+  .finance-model-directory {
+    display: grid;
+    gap: 10px;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .finance-model-directory-head {
+    display: none;
+  }
+
+  .finance-model-row-motion {
+    border-top: 0;
+  }
+
+  .finance-model-card-link.finance-model-row,
+  .finance-model-row {
+    display: block;
+    overflow: hidden;
+    min-height: 0;
+    border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--card) 88%, transparent);
+    box-shadow: 0 12px 30px rgba(33, 29, 22, 0.05);
+  }
+
+  .finance-model-preview-cell {
+    padding: 0;
+    border-right: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
+  }
+
+  .finance-model-preview-cell .finance-model-preview.compact {
+    width: 100%;
+    height: 92px;
+    aspect-ratio: auto;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .finance-model-name-cell,
+  .finance-model-scenario,
+  .finance-model-problem,
+  .finance-model-action-cell {
+    display: block;
+    padding: 12px 14px;
+    border-right: 0;
+  }
+
+  .finance-model-scenario,
+  .finance-model-problem,
+  .finance-model-action-cell {
+    border-top: 1px solid color-mix(in srgb, var(--foreground) 7%, transparent);
+  }
+
+  .finance-model-mobile-label {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+  }
+
+  .finance-model-scenario p,
+  .finance-model-problem p {
+    font-size: 12.5px;
+    line-height: 1.58;
+  }
+
   .finance-model-library-grid.compact {
     grid-template-columns: 1fr;
     gap: 10px;
@@ -5380,6 +5887,117 @@ h6 {
 
   .finance-model-card-action {
     font-size: 11.5px;
+  }
+
+  .thinking-index-hero {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  .thinking-tools-section,
+  .thinking-content-section {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  .thinking-tool-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .thinking-tool-top {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 11px;
+    padding: 15px;
+  }
+
+  .thinking-tool-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+
+  .thinking-tool-action {
+    grid-column: 2;
+    width: fit-content;
+    margin-top: 2px;
+  }
+
+  .thinking-tool-detail {
+    grid-template-columns: 1fr;
+  }
+
+  .thinking-tool-detail div {
+    padding: 13px 15px;
+    border-right: 0;
+  }
+
+  .thinking-tool-detail div + div {
+    border-top: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
+  }
+
+  .thinking-content-shell {
+    display: block;
+  }
+
+  .thinking-filters {
+    display: none;
+  }
+
+  .thinking-mobile-filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .thinking-mobile-filters .thinking-filter {
+    flex: 0 0 auto;
+    width: auto;
+    gap: 14px;
+    margin-bottom: 0;
+  }
+
+  .thinking-article-list {
+    display: grid;
+    gap: 10px;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .thinking-article-head {
+    display: none;
+  }
+
+  .thinking-article-row {
+    display: block;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--card) 88%, transparent);
+    box-shadow: 0 12px 30px rgba(33, 29, 22, 0.05);
+  }
+
+  .thinking-article-main,
+  .thinking-article-type,
+  .thinking-article-action {
+    display: block;
+    padding: 12px 14px;
+    border-right: 0;
+  }
+
+  .thinking-article-type,
+  .thinking-article-action {
+    border-top: 1px solid color-mix(in srgb, var(--foreground) 7%, transparent);
+  }
+
+  .thinking-article-action {
+    display: inline-flex;
+    justify-content: flex-start;
   }
 }
 

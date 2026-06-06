@@ -628,17 +628,25 @@ test("home thinking mobile stacks category cards vertically", () => {
   assert.doesNotMatch(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-thinking-track-card\s*\{[\s\S]*scroll-snap-align/s);
 });
 
-test("thinking lab keeps the original index layout with source-backed fixed categories", () => {
-  assert.match(thinkingLab, /THINKING_CATEGORY_ORDER = \["全部", "工具", "AI创作", "思考记录"\]/);
+test("thinking lab separates tools from source-backed reading categories", () => {
+  assert.match(thinkingLab, /THINKING_CATEGORY_ORDER = \["全部", "AI创作", "思考记录"\]/);
   assert.match(thinkingLab, /useSearchParams/);
   assert.match(thinkingLab, /searchParams\.get\("category"\)/);
   assert.match(thinkingLab, /decodeURIComponent/);
   assert.match(thinkingLab, /function getDisplayCategory/);
   assert.match(thinkingLab, /item\.source === "hosted-tool"/);
+  assert.match(thinkingLab, /toolItems/);
+  assert.match(thinkingLab, /contentItems/);
   assert.match(thinkingLab, /item\.legacyCategory === "ai"/);
   assert.match(thinkingLab, /item\.legacyCategory === "finance"/);
   assert.match(thinkingLab, /setActiveCategory/);
-  assert.match(thinkingLab, /thinking-index-list/);
+  assert.match(thinkingLab, /thinking-tools-section/);
+  assert.match(thinkingLab, /thinking-content-section/);
+  assert.match(thinkingLab, /thinking-tool-card/);
+  assert.match(thinkingLab, /thinking-article-row/);
+  assert.match(thinkingLab, /打开工具/);
+  assert.match(thinkingLab, /阅读/);
+  assert.doesNotMatch(thinkingLab, /thinking-index-list/);
   assert.doesNotMatch(thinkingLab, /new Set\(articles\.map\(getCategory\)\)/);
   assert.doesNotMatch(thinkingLab, /category \|\| "思考记录"/);
   assert.match(thinkingLabContent, /category:\s*"工具"/);

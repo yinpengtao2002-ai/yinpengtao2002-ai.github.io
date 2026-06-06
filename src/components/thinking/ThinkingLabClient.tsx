@@ -1,17 +1,26 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { CSSProperties } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import type { ContentItem } from "@/lib/data/generated/content";
 
-const UI_FONT =
-  'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
+const THINKING_CATEGORY_ORDER = ["全部", "AI创作", "思考记录"];
 
-const THINKING_CATEGORY_ORDER = ["全部", "工具", "AI创作", "思考记录"];
+const TOOL_DETAILS: Record<string, { icon: string; fit: string; solves: string }> = {
+  "study-cards": {
+    icon: "卡",
+    fit: "阅读材料消化、复习、知识点自测。",
+    solves: "把长材料拆成可以练习和回忆的问题。",
+  },
+  "subtitle-workbench": {
+    icon: "字",
+    fit: "视频资料整理、内容复盘、字幕初稿。",
+    solves: "把音视频内容变成可检索、可编辑的文本材料。",
+  },
+};
 
 function getDisplayCategory(item: ContentItem) {
   if (item.source === "hosted-tool") {
@@ -42,15 +51,17 @@ function normalizeRequestedCategory(value: string | null, categories: string[]) 
 
 export default function ThinkingLabClient({ articles }: { articles: ContentItem[] }) {
   const searchParams = useSearchParams();
+  const toolItems = useMemo(() => articles.filter((item) => item.source === "hosted-tool"), [articles]);
+  const contentItems = useMemo(() => articles.filter((item) => item.source !== "hosted-tool"), [articles]);
   const categories = useMemo(() => {
     return THINKING_CATEGORY_ORDER.filter((category) => {
       if (category === "全部") {
         return true;
       }
 
-      return articles.some((item) => getDisplayCategory(item) === category);
+      return contentItems.some((item) => getDisplayCategory(item) === category);
     });
-  }, [articles]);
+  }, [contentItems]);
   const requestedCategory = useMemo(() => {
     return normalizeRequestedCategory(searchParams.get("category"), categories);
   }, [categories, searchParams]);
@@ -59,87 +70,148 @@ export default function ThinkingLabClient({ articles }: { articles: ContentItem[
     setActiveCategory(requestedCategory);
   }, [requestedCategory]);
   const visibleArticles = activeCategory === "全部"
-    ? articles
-    : articles.filter((item) => getDisplayCategory(item) === activeCategory);
+    ? contentItems
+    : contentItems.filter((item) => getDisplayCategory(item) === activeCategory);
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--background)", color: "var(--foreground)", fontFamily: UI_FONT }}>
-      <section
-        className="thinking-index-hero"
-        style={{ maxWidth: 1040, margin: "0 auto", padding: "5.5rem 1.5rem 1.6rem" }}
-      >
-        <p style={{ color: "var(--accent)", letterSpacing: "0.18em", textTransform: "uppercase", fontSize: 12, fontWeight: 700, marginBottom: 14 }}>
+    <div className="thinking-index-page">
+      <section className="thinking-index-hero">
+        <p className="thinking-index-eyebrow">
           Tools & Thinking
         </p>
-        <h1 style={{ fontSize: "clamp(2rem, 5vw, 3.5rem)", lineHeight: 1.1, letterSpacing: 0, marginBottom: 16 }}>
+        <h1 className="thinking-index-title">
           工具与思考
         </h1>
-        <p style={{ maxWidth: 620, color: "var(--muted)", lineHeight: 1.8, fontSize: 15 }}>
+        <p className="thinking-index-intro">
           这里放我在经营分析、工具实践、市场观察里的思考样本。重点不是经历罗列，而是判断如何形成。
         </p>
       </section>
 
-      <section
-        className="thinking-index-list"
-        style={{ maxWidth: 1040, margin: "0 auto", padding: "0 1.5rem 2rem" }}
-      >
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
+      <section className="thinking-tools-section" aria-labelledby="thinking-tools-title">
+        <div className="thinking-section-head">
+          <div>
+            <h2 id="thinking-tools-title">可直接打开的工具</h2>
+            <p>这些是可以直接使用的小工具，适合把资料处理和学习复盘变成可操作流程。</p>
+          </div>
+        </div>
+
+        <div className="thinking-tool-grid">
+          {toolItems.map((tool, index) => {
+            const detail = TOOL_DETAILS[tool.slug] ?? {
+              icon: "工",
+              fit: "轻量工具使用、资料处理、工作流辅助。",
+              solves: tool.description,
+            };
+
+            return (
+              <motion.article
+                key={tool.slug}
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.28, delay: index * 0.04 }}
+              >
+                <Link href={tool.href} className="thinking-tool-card">
+                  <div className="thinking-tool-top">
+                    <span className="thinking-tool-icon" aria-hidden="true">
+                      {detail.icon}
+                    </span>
+                    <span>
+                      <strong className="thinking-tool-name">{tool.title}</strong>
+                      <span className="thinking-tool-desc">{tool.description}</span>
+                    </span>
+                    <span className="thinking-tool-action">
+                      打开工具 <ArrowRight />
+                    </span>
+                  </div>
+                  <div className="thinking-tool-detail">
+                    <div>
+                      <span>适合</span>
+                      <p>{detail.fit}</p>
+                    </div>
+                    <div>
+                      <span>解决</span>
+                      <p>{detail.solves}</p>
+                    </div>
+                  </div>
+                </Link>
+              </motion.article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="thinking-content-section" aria-labelledby="thinking-content-title">
+        <div className="thinking-section-head">
+          <div>
+            <h2 id="thinking-content-title">思考内容</h2>
+            <p>保留一些观察和复盘，偏向方法、判断和过程。</p>
+          </div>
+        </div>
+
+        <div className="thinking-mobile-filters" aria-label="内容分类">
           {categories.map((category) => (
             <button
               key={category}
               type="button"
               onClick={() => setActiveCategory(category)}
-              style={pillStyle(activeCategory === category)}
+              className={`thinking-filter${activeCategory === category ? " active" : ""}`}
             >
-              {category}
+              <span>{category}</span>
+              <span>{categoryCount(category, contentItems)}</span>
             </button>
           ))}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14 }}>
-          {visibleArticles.map((article, index) => (
-            <motion.article
-              key={article.slug}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.28, delay: index * 0.04 }}
-            >
-              <Link href={article.href} style={{ display: "block", height: "100%", textDecoration: "none" }}>
-                <div style={{ height: "100%", border: "1px solid var(--border)", borderRadius: 8, background: "var(--card)", padding: 18 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
-                    <span style={{ color: "var(--accent)", fontSize: 12, fontWeight: 700 }}>{getDisplayCategory(article)}</span>
-                    <span style={{ color: "var(--muted)", fontSize: 12 }}>{article.date}</span>
-                  </div>
-                  <h2 style={{ fontSize: 18, lineHeight: 1.35, color: "var(--foreground)", marginBottom: 10 }}>
-                    {article.title}
-                  </h2>
-                  <p style={{ color: "var(--muted)", fontSize: 13, lineHeight: 1.7, marginBottom: 16 }}>
-                    {article.description}
-                  </p>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--foreground)", fontSize: 13, fontWeight: 700 }}>
-                    阅读 <ArrowRight style={{ width: 14, height: 14 }} />
+        <div className="thinking-content-shell">
+          <aside className="thinking-filters" aria-label="内容分类">
+            <h2 className="thinking-filter-title">内容分类</h2>
+            {categories.map((category) => (
+              <button
+                key={category}
+                type="button"
+                onClick={() => setActiveCategory(category)}
+                className={`thinking-filter${activeCategory === category ? " active" : ""}`}
+              >
+                <span>{category}</span>
+                <span>{categoryCount(category, contentItems)}</span>
+              </button>
+            ))}
+          </aside>
+
+          <div className="thinking-article-list">
+            <div className="thinking-article-head" aria-hidden="true">
+              <span>内容</span>
+              <span>类型</span>
+              <span>入口</span>
+            </div>
+
+            {visibleArticles.map((article, index) => (
+              <motion.article
+                key={article.slug}
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.24, delay: index * 0.035 }}
+              >
+                <Link href={article.href} className="thinking-article-row">
+                  <span className="thinking-article-main">
+                    <strong className="thinking-article-title">{article.title}</strong>
+                    <span className="thinking-article-desc">{article.description}</span>
                   </span>
-                </div>
-              </Link>
-            </motion.article>
-          ))}
+                  <span className="thinking-article-type">{getDisplayCategory(article)}</span>
+                  <span className="thinking-article-action">
+                    阅读 <ArrowRight />
+                  </span>
+                </Link>
+              </motion.article>
+            ))}
+          </div>
         </div>
       </section>
     </div>
   );
 }
 
-function pillStyle(active: boolean): CSSProperties {
-  return {
-    minHeight: 36,
-    padding: "0 14px",
-    borderRadius: 999,
-    border: "1px solid var(--border)",
-    background: active ? "var(--foreground)" : "var(--card)",
-    color: active ? "var(--background)" : "var(--foreground)",
-    fontWeight: 700,
-    fontSize: 13,
-    cursor: "pointer",
-    fontFamily: "inherit",
-  };
+function categoryCount(category: string, items: ContentItem[]) {
+  if (category === "全部") return items.length;
+  return items.filter((item) => getDisplayCategory(item) === category).length;
 }
