@@ -275,3 +275,22 @@ test("finance AI assistant chat styles size embedded chart cards", async () => {
   assert.match(styles, /\.finance-ai-chart-card/);
   assert.match(styles, /\.finance-ai-chart-host\s*\{[\s\S]*min-height:\s*320px/s);
 });
+
+test("finance AI assistant is styled and isolated from global assistant", async () => {
+  const styles = await readProjectFile("src/app/globals.css");
+  const shell = await readProjectFile("src/components/ClientShell.tsx");
+  const sitemap = await readProjectFile("src/app/sitemap.ts");
+  const content = await readProjectFile("src/lib/data/thinkingLabContent.ts");
+
+  assert.match(styles, /\.finance-ai-page/);
+  assert.match(styles, /\.finance-ai-chat/);
+  assert.match(styles, /\.finance-ai-message\.is-assistant/);
+  assert.match(styles, /\.finance-ai-chart-card/);
+  assert.match(styles, /\.finance-ai-chart-host/);
+  assert.match(styles, /@media \(max-width: 760px\)/);
+  assert.match(shell, /\/tools\/finance-ai-assistant/);
+  assert.match(shell.match(/function shouldHideAssistant[\s\S]*?\n}/)?.[0] ?? "", /finance-ai-assistant/);
+  assert.match(sitemap, /\$\{BASE_URL\}\/tools\/finance-ai-assistant/);
+  assert.match(content, /finance-ai-assistant/);
+  assert.match(content, /财务分析 AI 助手/);
+});
