@@ -369,6 +369,58 @@ test("finance AI assistant plan mode aligns explicit rank directions before retu
   }));
 });
 
+test("finance AI assistant plan mode repairs unit-metric waterfall plans before validation", async () => {
+  const schema = {
+    headers: ["Month", "Country", "Model", "Sales Volume", "Total Margin"],
+    monthColumn: "Month",
+    salesColumn: "Sales Volume",
+    dimensionColumns: ["Country", "Model"],
+    totalMetrics: [
+      { kind: "total", name: "Sales Volume", column: "Sales Volume" },
+      { kind: "total", name: "Total Margin", column: "Total Margin" },
+    ],
+    unitMetrics: [{ kind: "unit", name: "单车边际", numeratorColumn: "Total Margin", denominatorColumn: "Sales Volume" }],
+    excludedMetricColumns: [],
+    requiredIssues: [],
+    profile: {
+      rowCount: 5341,
+      periods: [
+        { key: "M03", label: "3月", sort: 3 },
+        { key: "M04", label: "4月", sort: 4 },
+      ],
+      dimensionValueCounts: { Country: 20, Model: 12 },
+    },
+  };
+
+  await withMockedProvider(async () => {
+    const response = await POST(makeRequest({
+      mode: "plan",
+      question: "泰国单车边际多少呀？然后它环比的一个成绩如何？主要是哪些车型影响的?",
+      schema,
+    }));
+    const payload = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.modules[0].type, "bar_rank");
+    assert.equal(payload.modules[0].metric, "单车边际");
+    assert.equal(payload.modules[0].dimension, "Model");
+    assert.equal(payload.modules[0].period, "M04");
+    assert.equal(payload.modules[0].comparison, "mom");
+  }, JSON.stringify({
+    modules: [
+      {
+        type: "waterfall_bridge",
+        metric: "单车边际",
+        dimension: "Model",
+        fromPeriod: "M03",
+        toPeriod: "M04",
+        filters: { Country: ["泰国"] },
+        limit: 5,
+      },
+    ],
+  }));
+});
+
 test("finance AI assistant analyze mode sends workbook rows and normalizes direct charts", async () => {
   await withMockedProvider(async (calls) => {
     const response = await POST(makeRequest({

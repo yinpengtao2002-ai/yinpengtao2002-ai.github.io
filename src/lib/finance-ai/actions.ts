@@ -3,6 +3,7 @@ import { normalizePeriodValue } from "./schema.ts";
 // @ts-expect-error - Node's test runner imports this TypeScript module by extension.
 import { findMetric } from "./metrics.ts";
 import type {
+  FinanceActionPlan,
   FinanceActionModule,
   FinanceActionValidationResult,
   FinanceFilter,
@@ -176,6 +177,53 @@ export function validateFinanceActionPlan(
   return errors.length
     ? { ok: false, modules, errors }
     : { ok: true, modules, errors: [] };
+}
+
+export function normalizeFinanceActionPlanForQuestion(
+  schema: FinanceSchema,
+  plan: FinanceActionPlan,
+  userQuestion: string,
+): FinanceActionPlan {
+  return {
+    modules: alignFinanceActionPlanWithQuestion(
+      schema,
+      plan.modules.map((module) => normalizeUnitWaterfallModule(schema, module, userQuestion)),
+      userQuestion,
+    ),
+  };
+}
+
+function normalizeUnitWaterfallModule(
+  schema: FinanceSchema,
+  module: FinanceActionModule,
+  userQuestion: string,
+): FinanceActionModule {
+  if (module.type !== "waterfall_bridge") {
+    return module;
+  }
+
+  const metric = findMetric(schema, module.metric);
+  if (metric?.kind !== "unit") {
+    return module;
+  }
+
+  return {
+    type: "bar_rank",
+    metric: module.metric,
+    dimension: module.dimension,
+    period: module.toPeriod,
+    filters: module.filters,
+    comparison: "mom",
+    sort: getChangeSortForQuestion(userQuestion),
+    limit: module.limit,
+  };
+}
+
+function getChangeSortForQuestion(userQuestion: string): "change_asc" | "change_desc" {
+  const normalizedQuestion = normalizeIntentText(userQuestion);
+  return ["下降", "下滑", "减少", "拖累", "负面", "降低", "变差"].some((token) => normalizedQuestion.includes(token))
+    ? "change_asc"
+    : "change_desc";
 }
 
 export function alignFinanceActionPlanWithQuestion(

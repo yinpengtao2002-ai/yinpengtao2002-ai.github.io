@@ -2,7 +2,7 @@
 import { buildFinanceAIDirectAnalyzePrompt, buildFinanceAIDataRequestPrompt, buildFinanceAIExplanationPrompt, buildFinanceAIPlanningContext, buildFinanceAISelectedRowsAnalyzePrompt } from "../../../../lib/finance-ai/context.ts";
 import type { FinanceAIChatState } from "../../../../lib/finance-ai/context.ts";
 // @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
-import { alignFinanceActionPlanWithQuestion, validateFinanceActionPlan } from "../../../../lib/finance-ai/actions.ts";
+import { normalizeFinanceActionPlanForQuestion, validateFinanceActionPlan } from "../../../../lib/finance-ai/actions.ts";
 // @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
 import { FINANCE_AI_ACCESS_HEADER, isFinanceAIAccessConfigured, verifyFinanceAIAccessToken } from "../../../../lib/finance-ai/access.ts";
 // @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
@@ -778,7 +778,11 @@ export async function POST(req: Request) {
     }
 
     try {
-      const plan = normalizePlan(extractJsonObject(providerResult.content));
+      const plan = normalizeFinanceActionPlanForQuestion(
+        schema,
+        normalizePlan(extractJsonObject(providerResult.content)),
+        question,
+      );
       const validated = validateFinanceActionPlan(schema, plan);
 
       if (!validated.ok) {
@@ -789,7 +793,7 @@ export async function POST(req: Request) {
         });
       }
 
-      return Response.json({ modules: alignFinanceActionPlanWithQuestion(schema, validated.modules, question) });
+      return Response.json({ modules: validated.modules });
     } catch (error) {
       return errorResponse(
         502,

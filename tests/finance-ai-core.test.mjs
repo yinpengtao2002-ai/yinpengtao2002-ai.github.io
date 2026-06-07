@@ -11,7 +11,11 @@ import {
   buildTrendSeries,
   buildWaterfallBridge,
 } from "../src/lib/finance-ai/metrics.ts";
-import { alignFinanceActionPlanWithQuestion, validateFinanceActionPlan } from "../src/lib/finance-ai/actions.ts";
+import {
+  alignFinanceActionPlanWithQuestion,
+  normalizeFinanceActionPlanForQuestion,
+  validateFinanceActionPlan,
+} from "../src/lib/finance-ai/actions.ts";
 import { buildChartSpec, buildDirectChartSpec } from "../src/lib/finance-ai/charts.ts";
 
 const rows = [
@@ -517,6 +521,36 @@ test("action plan alignment corrects explicit lowest and top rank directions per
   assert.equal(aligned[0].sort, "value_desc");
   assert.equal(aligned[1].type, "bar_rank");
   assert.equal(aligned[1].sort, "value_asc");
+});
+
+test("action plan normalization converts unit-metric waterfall requests into comparable dimension ranks", () => {
+  const schema = inferFinanceSchema([
+    { "Month": "3月", "Country": "泰国", "Model": "T1D", "Sales Volume": 100, "Total Margin": 3000 },
+    { "Month": "4月", "Country": "泰国", "Model": "T1D", "Sales Volume": 120, "Total Margin": 3900 },
+  ]);
+  const normalized = normalizeFinanceActionPlanForQuestion(schema, {
+    modules: [
+      {
+        type: "waterfall_bridge",
+        metric: "单车边际",
+        dimension: "Model",
+        fromPeriod: "M03",
+        toPeriod: "M04",
+        filters: { Country: ["泰国"] },
+        limit: 5,
+      },
+    ],
+  }, "泰国单车边际多少呀？然后它环比的一个成绩如何？主要是哪些车型影响的?");
+  const validated = validateFinanceActionPlan(schema, normalized);
+
+  assert.equal(normalized.modules[0].type, "bar_rank");
+  assert.equal(normalized.modules[0].metric, "单车边际");
+  assert.equal(normalized.modules[0].dimension, "Model");
+  assert.equal(normalized.modules[0].period, "M04");
+  assert.equal(normalized.modules[0].comparison, "mom");
+  assert.equal(normalized.modules[0].sort, "change_desc");
+  assert.deepEqual(normalized.modules[0].filters, { Country: ["泰国"] });
+  assert.equal(validated.ok, true);
 });
 
 test("chart specs are compact and identify supported chart types", () => {
