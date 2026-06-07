@@ -791,7 +791,7 @@ test("finance AI assistant API can run a tiny provider diagnostic without workbo
 
     assert.equal(response.status, 200);
     assert.equal(payload.ok, true);
-    assert.equal(payload.provider, "gpt-5.5");
+    assert.equal(payload.provider, "deepseek-v4-pro");
     assert.equal(payload.contentLength, 2);
     assert.match(providerBody, /ping/);
     assert.doesNotMatch(providerBody, /workbook/);

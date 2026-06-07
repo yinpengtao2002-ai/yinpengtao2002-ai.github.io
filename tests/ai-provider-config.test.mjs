@@ -18,7 +18,7 @@ async function readProjectFileIfExists(path) {
   }
 }
 
-test("AI endpoints share GPT primary and DeepSeek fallback provider config", async () => {
+test("AI endpoints share DeepSeek primary and GPT fallback provider config", async () => {
   const sharedConfig = await readProjectFileIfExists("src/lib/ai/providers.ts");
   const siteChatRoute = await readProjectFile("src/app/api/chat/route.ts");
   const financeAIRoute = await readProjectFile("src/app/api/tools/finance-ai-assistant/route.ts");
@@ -46,7 +46,7 @@ test("AI endpoints share GPT primary and DeepSeek fallback provider config", asy
   assert.match(envExample, /DEEPSEEK_API_URL=https:\/\/api\.deepseek\.com\/chat\/completions/);
 });
 
-test("AI provider config orders GPT primary before DeepSeek fallback", async () => {
+test("AI provider config orders DeepSeek before GPT fallback", async () => {
   const originalEnv = {
     AI_PRIMARY_API_KEY: process.env.AI_PRIMARY_API_KEY,
     AI_PRIMARY_API_URL: process.env.AI_PRIMARY_API_URL,
@@ -66,12 +66,12 @@ test("AI provider config orders GPT primary before DeepSeek fallback", async () 
     const providers = getChatProviders(18000);
 
     assert.equal(providers.length, 2);
-    assert.equal(providers[0].model, "gpt-5.5");
-    assert.equal(providers[0].apiUrl, "https://api.dstopology.com/v1/chat/completions");
-    assert.equal(providers[0].apiKey, "test-primary-key");
-    assert.equal(providers[1].model, "deepseek-v4-pro");
-    assert.equal(providers[1].apiUrl, "https://api.deepseek.com/chat/completions");
-    assert.equal(providers[1].apiKey, "test-deepseek-key");
+    assert.equal(providers[0].model, "deepseek-v4-pro");
+    assert.equal(providers[0].apiUrl, "https://api.deepseek.com/chat/completions");
+    assert.equal(providers[0].apiKey, "test-deepseek-key");
+    assert.equal(providers[1].model, "gpt-5.5");
+    assert.equal(providers[1].apiUrl, "https://api.dstopology.com/v1/chat/completions");
+    assert.equal(providers[1].apiKey, "test-primary-key");
   } finally {
     Object.entries(originalEnv).forEach(([key, value]) => {
       if (typeof value === "undefined") {
@@ -83,7 +83,7 @@ test("AI provider config orders GPT primary before DeepSeek fallback", async () 
   }
 });
 
-test("AI provider config can use the primary NewAPI key for DeepSeek fallback", async () => {
+test("AI provider config does not reuse the primary NewAPI key for DeepSeek", async () => {
   const originalEnv = {
     AI_PRIMARY_API_KEY: process.env.AI_PRIMARY_API_KEY,
     AI_PRIMARY_API_URL: process.env.AI_PRIMARY_API_URL,
@@ -102,10 +102,10 @@ test("AI provider config can use the primary NewAPI key for DeepSeek fallback", 
     const { getChatProviders } = await import("../src/lib/ai/providers.ts");
     const providers = getChatProviders(18000);
 
-    assert.equal(providers[0].model, "gpt-5.5");
-    assert.equal(providers[0].apiKey, "test-newapi-key");
-    assert.equal(providers[0].apiUrl, "https://api.dstopology.com/v1/chat/completions");
-    assert.equal(providers[1].model, "deepseek-v4-pro");
+    assert.equal(providers[0].model, "deepseek-v4-pro");
+    assert.equal(providers[0].apiKey, "");
+    assert.equal(providers[0].apiUrl, "https://api.deepseek.com/chat/completions");
+    assert.equal(providers[1].model, "gpt-5.5");
     assert.equal(providers[1].apiKey, "test-newapi-key");
     assert.equal(providers[1].apiUrl, "https://api.dstopology.com/v1/chat/completions");
   } finally {

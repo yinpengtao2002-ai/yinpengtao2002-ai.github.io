@@ -34,21 +34,19 @@ export function getChatProviders(timeoutMs: number): ChatProvider[] {
   const primaryModel = readEnv(process.env.AI_PRIMARY_MODEL) || AI_PRIMARY_MODEL;
 
   const deepseekApiKey = readEnv(process.env.DEEPSEEK_API_KEY);
-  const deepseekApiUrl = deepseekApiKey
-    ? readEnv(process.env.DEEPSEEK_API_URL) || DEEPSEEK_API_URL
-    : primaryApiUrl;
+  const deepseekApiUrl = readEnv(process.env.DEEPSEEK_API_URL) || DEEPSEEK_API_URL;
 
   return [
+    {
+      model: DEEPSEEK_MODEL,
+      apiUrl: deepseekApiUrl,
+      apiKey: deepseekApiKey,
+      timeoutMs,
+    },
     {
       model: primaryModel,
       apiUrl: primaryApiUrl,
       apiKey: primaryApiKey,
-      timeoutMs,
-    },
-    {
-      model: DEEPSEEK_MODEL,
-      apiUrl: deepseekApiUrl,
-      apiKey: deepseekApiKey || primaryApiKey,
       timeoutMs,
     },
   ];
