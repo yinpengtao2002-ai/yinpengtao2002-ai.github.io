@@ -168,6 +168,8 @@ export type WaterfallBridgeRequest = {
 export type WaterfallBridgeItem = {
   label: string;
   value: number;
+  mixEffect?: number;
+  rateEffect?: number;
 };
 
 export type WaterfallBridgeResult = {
@@ -178,6 +180,7 @@ export type WaterfallBridgeResult = {
   startValue: number;
   endValue: number;
   changeValue: number;
+  basis?: "total_metric" | "unit_metric_mix_rate";
   items: WaterfallBridgeItem[];
   filters: FinanceFilter;
 };
@@ -196,7 +199,17 @@ export type FinanceActionValidationResult =
   | { ok: true; modules: FinanceActionModule[]; errors: [] }
   | { ok: false; modules: FinanceActionModule[]; errors: string[] };
 
-export type FinanceChartKind = "trend_chart" | "bar_rank" | "waterfall_bridge";
+export type FinanceChartKind =
+  | "metric_card"
+  | "trend_chart"
+  | "bar_rank"
+  | "waterfall_bridge"
+  | "grouped_bar"
+  | "stacked_bar"
+  | "percent_stacked_bar"
+  | "heatmap"
+  | "scatter_bubble"
+  | "detail_table";
 
 export type FinanceChartSpec = {
   kind: FinanceChartKind;

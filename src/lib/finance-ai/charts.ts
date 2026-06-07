@@ -288,6 +288,14 @@ function buildDirectBarRankChartSpec(input: FinanceAIDirectBarRankChart): Financ
 
 function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): FinanceChartSpec {
   const itemValues = result.items.map((item) => item.value);
+  const isUnitMetricBridge = result.basis === "unit_metric_mix_rate";
+  const customdata = isUnitMetricBridge
+    ? [
+        [null, null],
+        ...result.items.map((item) => [item.mixEffect ?? 0, item.rateEffect ?? 0]),
+        [null, null],
+      ]
+    : undefined;
 
   return {
     kind: "waterfall_bridge",
@@ -305,11 +313,14 @@ function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): 
       ],
       textposition: "outside",
       cliponaxis: false,
+      ...(customdata ? { customdata } : {}),
       connector: { line: { color: COLORS.grid, width: 1 } },
       increasing: { marker: { color: COLORS.green } },
       decreasing: { marker: { color: COLORS.red } },
       totals: { marker: { color: COLORS.blue } },
-      hovertemplate: "%{x}<br>%{y:,.2f}<extra></extra>",
+      hovertemplate: isUnitMetricBridge
+        ? "%{x}<br>数值 %{y:,.2f}<br>结构效应 %{customdata[0]:,.2f}<br>费率效应 %{customdata[1]:,.2f}<extra></extra>"
+        : "%{x}<br>%{y:,.2f}<extra></extra>",
     }],
     layout: {
       ...baseLayout,
@@ -325,7 +336,9 @@ function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): 
       },
     },
     config: baseConfig,
-    note: "瀑布桥仅用于可加总指标，按维度拆解两个期间的变化贡献。",
+    note: isUnitMetricBridge
+      ? "单车指标瀑布桥按结构效应和费率效应拆解两个期间的单车变化。"
+      : "瀑布桥按维度拆解可加总指标在两个期间之间的变化贡献。",
   };
 }
 

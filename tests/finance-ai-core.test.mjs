@@ -17,6 +17,7 @@ import {
   validateFinanceActionPlan,
 } from "../src/lib/finance-ai/actions.ts";
 import { buildChartSpec, buildDirectChartSpec } from "../src/lib/finance-ai/charts.ts";
+import { buildFinanceAIChartDemoSpecs } from "../src/lib/finance-ai/chart-demo.ts";
 
 const rows = [
   { "月份": "2025-03", "大区": "拉美", "国家": "巴西", "车型": "T1D", "销量": 100, "净收入": 9000, "成本": -7000, "边际": 2000 },
@@ -30,6 +31,13 @@ const metricRows = [
   { "月份": "2026-03", "大区": "拉美", "国家": "巴西", "车型": "T1D", "销量": 100, "净收入": 10000, "成本": -7600, "边际": 3500 },
   { "月份": "2026-03", "大区": "拉美", "国家": "墨西哥", "车型": "T1E", "销量": 80, "净收入": 7200, "成本": -6100, "边际": 1100 },
 ];
+
+function approx(actual, expected, message) {
+  assert.ok(
+    Math.abs(actual - expected) < 1e-9,
+    `${message}: expected ${expected}, received ${actual}`,
+  );
+}
 
 test("finance AI schema infers month, sales, dimensions, total metrics, and unit metrics", () => {
   const schema = inferFinanceSchema(rows);
@@ -244,18 +252,25 @@ test("waterfall bridge groups top dimensions and ties to period movement", () =>
   assert.deepEqual(bridge.items.map((item) => [item.label, item.value]), [["巴西", 1100], ["墨西哥", 1100]]);
 });
 
-test("waterfall bridge rejects unit metrics because v1 only supports additive totals", () => {
+test("waterfall bridge supports unit metrics through mix and rate attribution", () => {
   const schema = inferFinanceSchema(metricRows);
+  const bridge = buildWaterfallBridge(metricRows, schema, {
+    metric: "单车边际",
+    dimension: "国家",
+    fromPeriod: "2026-02",
+    toPeriod: "2026-03",
+  });
 
-  assert.throws(
-    () => buildWaterfallBridge(metricRows, schema, {
-      metric: "单车边际",
-      dimension: "国家",
-      fromPeriod: "2026-02",
-      toPeriod: "2026-03",
-    }),
-    /Waterfall bridge only supports total metrics/,
+  assert.equal(bridge.basis, "unit_metric_mix_rate");
+  assert.equal(bridge.startValue, 20);
+  assert.equal(bridge.endValue, 4600 / 180);
+  approx(bridge.changeValue, 4600 / 180 - 20, "unit bridge change ties to total movement");
+  approx(
+    bridge.items.reduce((sum, item) => sum + item.value, 0),
+    bridge.changeValue,
+    "unit bridge item sum reconciles",
   );
+  assert.equal(bridge.items.some((item) => typeof item.mixEffect === "number" && typeof item.rateEffect === "number"), true);
 });
 
 test("metric snapshot treats missing periods as not computable instead of zero comparisons", () => {
@@ -432,16 +447,15 @@ test("action validator rejects unsupported actions and invalid dimensions filter
   assert.match(invalid.errors.join("\n"), /期间不存在：2027-02/);
 });
 
-test("action validator rejects unit-metric waterfall plans before metric execution", () => {
+test("action validator accepts unit-metric waterfall plans for mix-rate attribution", () => {
   const schema = inferFinanceSchema(metricRows);
-  const invalid = validateFinanceActionPlan(schema, {
+  const valid = validateFinanceActionPlan(schema, {
     modules: [
       { type: "waterfall_bridge", metric: "单车边际", dimension: "国家", fromPeriod: "2026-02", toPeriod: "2026-03" },
     ],
   });
 
-  assert.equal(invalid.ok, false);
-  assert.match(invalid.errors.join("\n"), /瀑布桥暂只支持可加总指标/);
+  assert.equal(valid.ok, true);
 });
 
 test("action validator rejects modules with missing required period fields", () => {
@@ -523,7 +537,7 @@ test("action plan alignment corrects explicit lowest and top rank directions per
   assert.equal(aligned[1].sort, "value_asc");
 });
 
-test("action plan normalization converts unit-metric waterfall requests into comparable dimension ranks", () => {
+test("action plan normalization keeps unit-metric waterfall requests for attribution bridges", () => {
   const schema = inferFinanceSchema([
     { "Month": "3月", "Country": "泰国", "Model": "T1D", "Sales Volume": 100, "Total Margin": 3000 },
     { "Month": "4月", "Country": "泰国", "Model": "T1D", "Sales Volume": 120, "Total Margin": 3900 },
@@ -543,12 +557,11 @@ test("action plan normalization converts unit-metric waterfall requests into com
   }, "泰国单车边际多少呀？然后它环比的一个成绩如何？主要是哪些车型影响的?");
   const validated = validateFinanceActionPlan(schema, normalized);
 
-  assert.equal(normalized.modules[0].type, "bar_rank");
+  assert.equal(normalized.modules[0].type, "waterfall_bridge");
   assert.equal(normalized.modules[0].metric, "单车边际");
   assert.equal(normalized.modules[0].dimension, "Model");
-  assert.equal(normalized.modules[0].period, "M04");
-  assert.equal(normalized.modules[0].comparison, "mom");
-  assert.equal(normalized.modules[0].sort, "change_desc");
+  assert.equal(normalized.modules[0].fromPeriod, "M03");
+  assert.equal(normalized.modules[0].toPeriod, "M04");
   assert.deepEqual(normalized.modules[0].filters, { Country: ["泰国"] });
   assert.equal(validated.ok, true);
 });
@@ -614,6 +627,48 @@ test("waterfall chart spec uses Plotly waterfall for total-metric bridge results
   assert.equal(Array.isArray(spec.layout.yaxis.range), true);
   assert.equal(spec.layout.yaxis.fixedrange, true);
   assert.equal(spec.config.displayModeBar, false);
+});
+
+test("waterfall chart spec labels unit-metric bridges as mix and rate attribution", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const bridge = buildWaterfallBridge(metricRows, schema, {
+    metric: "单车边际",
+    dimension: "国家",
+    fromPeriod: "2026-02",
+    toPeriod: "2026-03",
+  });
+  const spec = buildChartSpec({ type: "waterfall_bridge", title: "单车边际变化拆解", result: bridge });
+
+  assert.equal(spec.kind, "waterfall_bridge");
+  assert.equal(spec.data[0].type, "waterfall");
+  assert.match(spec.note, /结构效应/);
+  assert.match(spec.note, /费率效应/);
+  assert.doesNotMatch(spec.note, /仅用于可加总指标/);
+  assert.ok(Array.isArray(spec.data[0].customdata));
+  assert.match(spec.data[0].hovertemplate, /结构效应/);
+});
+
+test("finance AI chart demo specs cover every supported chart style", () => {
+  const specs = buildFinanceAIChartDemoSpecs();
+  const kinds = new Set(specs.map((spec) => spec.kind));
+
+  assert.equal(specs.length, 11);
+  assert.deepEqual([...kinds].sort(), [
+    "bar_rank",
+    "detail_table",
+    "grouped_bar",
+    "heatmap",
+    "metric_card",
+    "percent_stacked_bar",
+    "scatter_bubble",
+    "stacked_bar",
+    "trend_chart",
+    "waterfall_bridge",
+  ]);
+  assert.equal(specs.filter((spec) => spec.kind === "waterfall_bridge").length, 2);
+  assert.equal(specs.every((spec) => spec.config.displayModeBar === false), true);
+  assert.equal(specs.every((spec) => spec.data.length > 0), true);
+  assert.equal(specs.every((spec) => typeof spec.note === "string" && spec.note.length > 0), true);
 });
 
 test("direct AI chart payloads render through the supported chart specs", () => {

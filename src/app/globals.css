@@ -466,31 +466,186 @@ body {
   line-height: 1.6;
 }
 
-.finance-ai-chart-card {
+.finance-ai-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
   margin-top: 14px;
+}
+
+.finance-ai-chart-card {
   border: 1px solid color-mix(in srgb, var(--border) 88%, var(--accent));
-  border-radius: 14px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.78);
-  padding: 14px;
+  padding: 12px;
   box-shadow: 0 14px 34px rgba(20, 20, 19, 0.055);
 }
 
-.finance-ai-chart-card h2 {
-  margin: 0 0 10px;
+.finance-ai-chart-grid .finance-ai-chart-card:only-child {
+  max-width: min(620px, 100%);
+}
+
+.finance-ai-chart-card-header,
+.finance-ai-chart-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.finance-ai-chart-card h2,
+.finance-ai-chart-modal-header h2 {
+  min-width: 0;
+  margin: 0;
   color: var(--foreground);
-  font-size: 1rem;
+  font-size: 0.92rem;
   letter-spacing: 0;
+  line-height: 1.35;
 }
 
 .finance-ai-chart-host {
   width: 100%;
-  min-height: 320px;
+  min-height: 220px;
+}
+
+.finance-ai-chart-host.is-expanded {
+  min-height: min(62vh, 620px);
+}
+
+.finance-ai-chart-zoom {
+  width: 30px;
+  height: 30px;
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  background: rgba(255, 255, 255, 0.78);
+  color: color-mix(in srgb, var(--foreground) 72%, var(--muted));
+  cursor: pointer;
+}
+
+.finance-ai-chart-zoom svg {
+  width: 15px;
+  height: 15px;
 }
 
 .finance-ai-chart-card p {
+  margin-top: 8px;
+  color: color-mix(in srgb, var(--foreground) 56%, var(--muted));
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.finance-ai-chart-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  background: rgba(20, 20, 19, 0.28);
+  padding: 28px;
+}
+
+.finance-ai-chart-modal-panel {
+  width: min(1120px, 100%);
+  max-height: min(820px, calc(100dvh - 56px));
+  overflow: auto;
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  border-radius: 14px;
+  background: #fffaf2;
+  box-shadow: 0 24px 70px rgba(20, 20, 19, 0.18);
+  padding: 18px;
+}
+
+.finance-ai-chart-modal-panel p {
+  margin-top: 12px;
+  color: color-mix(in srgb, var(--foreground) 58%, var(--muted));
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.finance-ai-demo-page {
+  min-height: 100vh;
+  background: #f7f5ef;
+  color: var(--foreground);
+  font-family: var(--font-poppins);
+}
+
+.finance-ai-demo-shell {
+  width: min(1180px, calc(100% - 36px));
+  margin: 0 auto;
+  padding: 96px 0 54px;
+}
+
+.finance-ai-demo-header {
+  max-width: 720px;
+  margin-bottom: 22px;
+}
+
+.finance-ai-demo-header h1 {
+  margin: 0;
+  color: var(--foreground);
+  font-size: clamp(1.7rem, 3vw, 2.7rem);
+  letter-spacing: 0;
+  line-height: 1.08;
+}
+
+.finance-ai-demo-header p:last-child {
+  margin-top: 12px;
+  color: color-mix(in srgb, var(--foreground) 58%, var(--muted));
+  font-size: 0.96rem;
+  line-height: 1.65;
+}
+
+.finance-ai-demo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.finance-ai-demo-card {
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 16px 36px rgba(20, 20, 19, 0.055);
+  padding: 14px;
+}
+
+.finance-ai-demo-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.finance-ai-demo-card-header span {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.finance-ai-demo-card h2 {
+  margin: 3px 0 0;
+  color: var(--foreground);
+  font-size: 0.98rem;
+  letter-spacing: 0;
+  line-height: 1.35;
+}
+
+.finance-ai-demo-chart-host {
+  width: 100%;
+  min-height: 280px;
+}
+
+.finance-ai-demo-card p {
   margin-top: 10px;
   color: color-mix(in srgb, var(--foreground) 56%, var(--muted));
-  font-size: 0.9rem;
+  font-size: 0.86rem;
+  line-height: 1.58;
 }
 
 .finance-ai-composer-dock {
@@ -624,8 +779,34 @@ body {
     width: calc(100% - 38px);
   }
 
+  .finance-ai-chart-grid {
+    grid-template-columns: 1fr;
+  }
+
   .finance-ai-chart-host {
-    min-height: 280px;
+    min-height: 240px;
+  }
+
+  .finance-ai-chart-modal {
+    padding: 12px;
+  }
+
+  .finance-ai-chart-modal-panel {
+    max-height: calc(100dvh - 24px);
+    padding: 12px;
+  }
+
+  .finance-ai-demo-shell {
+    width: calc(100% - 24px);
+    padding: 78px 0 34px;
+  }
+
+  .finance-ai-demo-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-ai-demo-chart-host {
+    min-height: 260px;
   }
 
   .finance-ai-composer {

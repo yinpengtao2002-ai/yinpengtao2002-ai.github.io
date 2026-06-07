@@ -58,6 +58,8 @@ type ResultRankItem = Omit<RankedItem, "order">;
 type BridgeItem = {
   label: string;
   value: number;
+  mixEffect?: number;
+  rateEffect?: number;
   order: number;
 };
 
@@ -191,8 +193,8 @@ export function buildWaterfallBridge(
   request: WaterfallBridgeRequest,
 ): WaterfallBridgeResult {
   const metric = requireMetric(schema, request.metric);
-  if (metric.kind !== "total") {
-    throw new Error(`Waterfall bridge only supports total metrics in v1: ${request.metric}`);
+  if (metric.kind === "unit") {
+    return buildUnitMetricWaterfallBridge(rows, schema, metric, request);
   }
 
   const filters = cloneFilters(request.filters);
@@ -226,9 +228,105 @@ export function buildWaterfallBridge(
     startValue,
     endValue,
     changeValue: endValue - startValue,
+    basis: "total_metric",
     items: limitedItems.map(({ label, value }) => ({ label, value })),
     filters,
   };
+}
+
+function buildUnitMetricWaterfallBridge(
+  rows: FinanceRow[],
+  schema: FinanceSchema,
+  metric: FinanceMetric,
+  request: WaterfallBridgeRequest,
+): WaterfallBridgeResult {
+  const filters = cloneFilters(request.filters);
+  const compiledFilters = compileFilters(filters);
+  const fromPeriod = normalizePeriodKey(request.fromPeriod);
+  const toPeriod = normalizePeriodKey(request.toPeriod);
+  const base = aggregateMetric(rows, schema, metric, fromPeriod, compiledFilters);
+  const current = aggregateMetric(rows, schema, metric, toPeriod, compiledFilters);
+  const startValue = valueOrZero(base.value);
+  const endValue = valueOrZero(current.value);
+  const fromGroups = aggregateByDimension(rows, schema, metric, request.dimension, fromPeriod, compiledFilters);
+  const toGroups = aggregateByDimension(rows, schema, metric, request.dimension, toPeriod, compiledFilters);
+  const labels = mergeGroupLabels(toGroups, fromGroups);
+  const items = labels
+    .map((label) => {
+      const baseAccumulator = fromGroups.get(label);
+      const currentAccumulator = toGroups.get(label);
+      const baseUnit = baseAccumulator ? getMetricValue(metric, baseAccumulator) : null;
+      const currentUnit = currentAccumulator ? getMetricValue(metric, currentAccumulator) : null;
+      const baseShare = base.salesValue !== 0 ? (baseAccumulator?.salesValue ?? 0) / base.salesValue : 0;
+      const currentShare = current.salesValue !== 0 ? (currentAccumulator?.salesValue ?? 0) / current.salesValue : 0;
+      const { mixEffect, rateEffect } = calculateUnitMetricEffects({
+        baseUnit,
+        currentUnit,
+        baseShare,
+        currentShare,
+        baseAverage: startValue,
+      });
+
+      return {
+        label,
+        value: mixEffect + rateEffect,
+        mixEffect,
+        rateEffect,
+        order: currentAccumulator?.order ?? baseAccumulator?.order ?? 0,
+      };
+    })
+    .filter((item) => item.value !== 0 || item.mixEffect !== 0 || item.rateEffect !== 0);
+  const limitedItems = limitBridgeItems(sortBridgeItems(items), endValue - startValue, getLimit(request.limit));
+
+  return {
+    metric: request.metric,
+    dimension: request.dimension,
+    fromPeriod,
+    toPeriod,
+    startValue,
+    endValue,
+    changeValue: endValue - startValue,
+    basis: "unit_metric_mix_rate",
+    items: limitedItems.map(({ label, value, mixEffect, rateEffect }) => ({ label, value, mixEffect, rateEffect })),
+    filters,
+  };
+}
+
+function calculateUnitMetricEffects({
+  baseUnit,
+  currentUnit,
+  baseShare,
+  currentShare,
+  baseAverage,
+}: {
+  baseUnit: number | null;
+  currentUnit: number | null;
+  baseShare: number;
+  currentShare: number;
+  baseAverage: number;
+}) {
+  if (baseUnit !== null && currentUnit !== null) {
+    return {
+      mixEffect: (currentShare - baseShare) * (baseUnit - baseAverage),
+      rateEffect: currentShare * (currentUnit - baseUnit),
+    };
+  }
+
+  if (currentUnit !== null) {
+    return {
+      mixEffect: currentShare * (currentUnit - baseAverage),
+      rateEffect: 0,
+    };
+  }
+
+  if (baseUnit !== null) {
+    return {
+      mixEffect: -baseShare * (baseUnit - baseAverage),
+      rateEffect: 0,
+    };
+  }
+
+  return { mixEffect: 0, rateEffect: 0 };
 }
 
 function requireMetric(schema: FinanceSchema, metricName: string): FinanceMetric {
@@ -610,11 +708,25 @@ function limitBridgeItems(items: BridgeItem[], changeValue: number, limit: numbe
     return visibleItems;
   }
 
+  const hasUnitEffects = items.some((item) => (
+    typeof item.mixEffect === "number" || typeof item.rateEffect === "number"
+  ));
+  const residualMixEffect = hasUnitEffects
+    ? items.reduce((sum, item) => sum + (item.mixEffect ?? 0), 0) -
+      visibleItems.reduce((sum, item) => sum + (item.mixEffect ?? 0), 0)
+    : undefined;
+  const residualRateEffect = hasUnitEffects
+    ? items.reduce((sum, item) => sum + (item.rateEffect ?? 0), 0) -
+      visibleItems.reduce((sum, item) => sum + (item.rateEffect ?? 0), 0)
+    : undefined;
+
   return [
     ...visibleItems,
     {
       label: OTHER_LABEL,
       value: residualValue,
+      ...(residualMixEffect !== undefined ? { mixEffect: residualMixEffect } : {}),
+      ...(residualRateEffect !== undefined ? { rateEffect: residualRateEffect } : {}),
       order: items.length,
     },
   ];

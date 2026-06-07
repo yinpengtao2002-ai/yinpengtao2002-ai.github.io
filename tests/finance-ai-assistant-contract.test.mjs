@@ -369,7 +369,7 @@ test("finance AI assistant plan mode aligns explicit rank directions before retu
   }));
 });
 
-test("finance AI assistant plan mode repairs unit-metric waterfall plans before validation", async () => {
+test("finance AI assistant plan mode accepts unit-metric waterfall plans", async () => {
   const schema = {
     headers: ["Month", "Country", "Model", "Sales Volume", "Total Margin"],
     monthColumn: "Month",
@@ -401,11 +401,11 @@ test("finance AI assistant plan mode repairs unit-metric waterfall plans before 
     const payload = await response.json();
 
     assert.equal(response.status, 200);
-    assert.equal(payload.modules[0].type, "bar_rank");
+    assert.equal(payload.modules[0].type, "waterfall_bridge");
     assert.equal(payload.modules[0].metric, "单车边际");
     assert.equal(payload.modules[0].dimension, "Model");
-    assert.equal(payload.modules[0].period, "M04");
-    assert.equal(payload.modules[0].comparison, "mom");
+    assert.equal(payload.modules[0].fromPeriod, "M03");
+    assert.equal(payload.modules[0].toPeriod, "M04");
   }, JSON.stringify({
     modules: [
       {
@@ -854,14 +854,38 @@ test("finance AI assistant page is an independent chat workbench", async () => {
 
 test("finance AI assistant chat styles size embedded chart cards", async () => {
   const styles = await readProjectFile("src/app/globals.css");
+  const client = await readProjectFile("src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
 
   assert.match(styles, /\.finance-ai-page/);
   assert.match(styles, /\.finance-ai-chat/);
   assert.match(styles, /\.finance-ai-message\.is-assistant/);
+  assert.match(styles, /\.finance-ai-chart-grid/);
+  assert.match(styles, /\.finance-ai-chart-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
   assert.match(styles, /\.finance-ai-chart-card/);
-  assert.match(styles, /\.finance-ai-chart-host\s*\{[\s\S]*min-height:\s*320px/s);
+  assert.match(styles, /\.finance-ai-chart-host\s*\{[\s\S]*min-height:\s*220px/s);
+  assert.match(styles, /\.finance-ai-chart-zoom/);
+  assert.match(styles, /\.finance-ai-chart-modal/);
+  assert.match(client, /Maximize2/);
+  assert.match(client, /expandedChart/);
   assert.match(styles, /\.finance-ai-markdown/);
   assert.match(styles, /\.finance-ai-markdown\s+\.katex-display/);
+});
+
+test("finance AI chart demo page renders all demo chart styles", async () => {
+  const page = await readProjectFile("src/app/finance/finance-ai-assistant/chart-demo/page.tsx");
+  const client = await readProjectFile("src/app/finance/finance-ai-assistant/chart-demo/FinanceAIChartDemo.tsx");
+  const demoSpecs = await readProjectFile("src/lib/finance-ai/chart-demo.ts");
+  const styles = await readProjectFile("src/app/globals.css");
+
+  assert.match(page, /FinanceAIChartDemo/);
+  assert.match(client, /buildFinanceAIChartDemoSpecs/);
+  assert.match(client, /plotly\.js-dist-min/);
+  assert.match(client, /finance-ai-demo-grid/);
+  assert.match(demoSpecs, /percent_stacked_bar/);
+  assert.match(demoSpecs, /scatter_bubble/);
+  assert.match(demoSpecs, /detail_table/);
+  assert.match(styles, /\.finance-ai-demo-page/);
+  assert.match(styles, /\.finance-ai-demo-grid/);
 });
 
 test("finance AI assistant is styled and isolated from global assistant", async () => {

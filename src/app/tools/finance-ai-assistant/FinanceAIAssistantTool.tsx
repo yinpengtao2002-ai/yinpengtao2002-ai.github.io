@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUp, Download, FileSpreadsheet, KeyRound, Loader2, RotateCcw, Trash2, UploadCloud } from "lucide-react";
+import { ArrowUp, Download, FileSpreadsheet, KeyRound, Loader2, Maximize2, RotateCcw, Trash2, UploadCloud, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -329,7 +329,7 @@ function FinanceAIMessageContent({ text }: { text: string }) {
   );
 }
 
-function PlotlyChart({ spec }: { spec: FinanceChartSpec }) {
+function PlotlyChart({ spec, className = "finance-ai-chart-host" }: { spec: FinanceChartSpec; className?: string }) {
   const nodeRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -360,7 +360,7 @@ function PlotlyChart({ spec }: { spec: FinanceChartSpec }) {
     };
   }, [spec]);
 
-  return <div ref={nodeRef} className="finance-ai-chart-host" aria-label={spec.title} />;
+  return <div ref={nodeRef} className={className} aria-label={spec.title} />;
 }
 
 export default function FinanceAIAssistantTool() {
@@ -382,6 +382,7 @@ export default function FinanceAIAssistantTool() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [fileName, setFileName] = useState("");
+  const [expandedChart, setExpandedChart] = useState<ChartCard | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   const dataSummary = useMemo(() => summarizeSchema(schema), [schema]);
@@ -661,13 +662,28 @@ export default function FinanceAIAssistantTool() {
               ) : null}
               <div className="finance-ai-message-bubble">
                 <FinanceAIMessageContent text={message.text} />
-                {message.chartCards?.map((card) => (
-                  <div className="finance-ai-chart-card" key={card.id}>
-                    <h2>{card.title}</h2>
-                    <PlotlyChart spec={card.spec} />
-                    <p>{card.note}</p>
+                {message.chartCards?.length ? (
+                  <div className="finance-ai-chart-grid">
+                    {message.chartCards.map((card) => (
+                      <div className="finance-ai-chart-card" key={card.id}>
+                        <div className="finance-ai-chart-card-header">
+                          <h2>{card.title}</h2>
+                          <button
+                            type="button"
+                            className="finance-ai-chart-zoom"
+                            onClick={() => setExpandedChart(card)}
+                            aria-label={`放大查看${card.title}`}
+                            title="放大查看"
+                          >
+                            <Maximize2 aria-hidden="true" />
+                          </button>
+                        </div>
+                        <PlotlyChart spec={card.spec} />
+                        <p>{card.note}</p>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : null}
                 {message.meta ? <small>{message.meta}</small> : null}
               </div>
             </article>
@@ -713,6 +729,32 @@ export default function FinanceAIAssistantTool() {
           </>
         )}
       </section>
+      {expandedChart ? (
+        <div
+          className="finance-ai-chart-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label={expandedChart.title}
+          onClick={() => setExpandedChart(null)}
+        >
+          <div className="finance-ai-chart-modal-panel" onClick={(event) => event.stopPropagation()}>
+            <div className="finance-ai-chart-modal-header">
+              <h2>{expandedChart.title}</h2>
+              <button
+                type="button"
+                className="finance-ai-chart-zoom"
+                onClick={() => setExpandedChart(null)}
+                aria-label="关闭放大图表"
+                title="关闭"
+              >
+                <X aria-hidden="true" />
+              </button>
+            </div>
+            <PlotlyChart spec={expandedChart.spec} className="finance-ai-chart-host is-expanded" />
+            <p>{expandedChart.note}</p>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

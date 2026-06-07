@@ -159,7 +159,7 @@ export function validateFinanceActionPlan(
   }
 
   modules.forEach((module) => {
-    const metric = validateMetric(schema, module, errors);
+    validateMetric(schema, module, errors);
     validateRequiredFields(module, errors);
     validateActionOptions(module, errors);
     validateFilters(schema, module, errors);
@@ -169,9 +169,6 @@ export function validateFinanceActionPlan(
       validateDimension(schema, module.dimension, errors);
     }
 
-    if (module.type === "waterfall_bridge" && metric?.kind === "unit") {
-      errors.push(`瀑布桥暂只支持可加总指标：${module.metric}`);
-    }
   });
 
   return errors.length
@@ -187,43 +184,10 @@ export function normalizeFinanceActionPlanForQuestion(
   return {
     modules: alignFinanceActionPlanWithQuestion(
       schema,
-      plan.modules.map((module) => normalizeUnitWaterfallModule(schema, module, userQuestion)),
+      plan.modules,
       userQuestion,
     ),
   };
-}
-
-function normalizeUnitWaterfallModule(
-  schema: FinanceSchema,
-  module: FinanceActionModule,
-  userQuestion: string,
-): FinanceActionModule {
-  if (module.type !== "waterfall_bridge") {
-    return module;
-  }
-
-  const metric = findMetric(schema, module.metric);
-  if (metric?.kind !== "unit") {
-    return module;
-  }
-
-  return {
-    type: "bar_rank",
-    metric: module.metric,
-    dimension: module.dimension,
-    period: module.toPeriod,
-    filters: module.filters,
-    comparison: "mom",
-    sort: getChangeSortForQuestion(userQuestion),
-    limit: module.limit,
-  };
-}
-
-function getChangeSortForQuestion(userQuestion: string): "change_asc" | "change_desc" {
-  const normalizedQuestion = normalizeIntentText(userQuestion);
-  return ["下降", "下滑", "减少", "拖累", "负面", "降低", "变差"].some((token) => normalizedQuestion.includes(token))
-    ? "change_asc"
-    : "change_desc";
 }
 
 export function alignFinanceActionPlanWithQuestion(
