@@ -2820,7 +2820,7 @@ h6 {
 .thinking-index-hero {
   max-width: 1040px;
   margin: 0 auto;
-  padding: clamp(5rem, 10vh, 7rem) 1.5rem clamp(1.8rem, 4vh, 2.5rem);
+  padding: clamp(5rem, 10vh, 6.2rem) 1.5rem clamp(1.7rem, 4vh, 2.4rem);
 }
 
 .thinking-index-page {
@@ -2843,19 +2843,11 @@ h6 {
 }
 
 .thinking-index-title {
-  margin: 0 0 16px;
+  margin: 0;
   color: var(--foreground);
-  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-size: clamp(1.95rem, 4.6vw, 3.15rem);
   line-height: 1.1;
   letter-spacing: 0;
-}
-
-.thinking-index-intro {
-  max-width: 620px;
-  margin: 0;
-  color: color-mix(in srgb, var(--foreground) 58%, var(--muted));
-  font-size: 15px;
-  line-height: 1.8;
 }
 
 .thinking-index-list {
@@ -2882,10 +2874,10 @@ h6 {
 
 .thinking-section-head {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin: 30px 0 12px;
+  margin: 24px 0 12px;
 }
 
 .thinking-section-head h2 {
@@ -2895,13 +2887,6 @@ h6 {
   line-height: 1.35;
 }
 
-.thinking-section-head p {
-  margin: 6px 0 0;
-  color: color-mix(in srgb, var(--foreground) 54%, var(--muted));
-  font-size: 13px;
-  line-height: 1.6;
-}
-
 .thinking-tool-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2909,31 +2894,31 @@ h6 {
 }
 
 .thinking-tool-card {
-  display: block;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
   height: 100%;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
-  border-radius: 17px;
+  border-radius: 8px;
   background: color-mix(in srgb, var(--card) 88%, transparent);
-  box-shadow: 0 18px 46px rgba(33, 29, 22, 0.06);
+  box-shadow: 0 16px 38px rgba(33, 29, 22, 0.055);
+  min-height: 104px;
+  padding: 18px;
   text-decoration: none;
   transition:
     background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
     transform 0.18s ease;
 }
 
 .thinking-tool-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
   background: #fffaf4;
+  box-shadow: 0 18px 42px rgba(33, 29, 22, 0.075);
   transform: translateY(-2px);
-}
-
-.thinking-tool-top {
-  display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) auto;
-  gap: 13px;
-  align-items: start;
-  padding: 18px;
-  border-bottom: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
 }
 
 .thinking-tool-icon {
@@ -2941,14 +2926,22 @@ h6 {
   width: 46px;
   height: 46px;
   place-items: center;
-  border-radius: 13px;
+  border-radius: 8px;
   color: #fff;
-  font-weight: 900;
   background: var(--accent-secondary);
+}
+
+.thinking-tool-icon svg {
+  width: 22px;
+  height: 22px;
 }
 
 .thinking-tool-grid article:nth-child(2) .thinking-tool-icon {
   background: var(--accent-tertiary);
+}
+
+.thinking-tool-copy {
+  min-width: 0;
 }
 
 .thinking-tool-name {
@@ -2960,10 +2953,13 @@ h6 {
 }
 
 .thinking-tool-desc {
-  display: block;
+  display: -webkit-box;
   color: color-mix(in srgb, var(--foreground) 52%, var(--muted));
   font-size: 13px;
   line-height: 1.65;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .thinking-tool-action,
@@ -2975,36 +2971,6 @@ h6 {
   font-size: 13px;
   font-weight: 850;
   white-space: nowrap;
-}
-
-.thinking-tool-detail {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-}
-
-.thinking-tool-detail div {
-  padding: 14px 18px;
-  border-right: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
-}
-
-.thinking-tool-detail div:last-child {
-  border-right: 0;
-}
-
-.thinking-tool-detail span {
-  display: block;
-  margin-bottom: 6px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 850;
-  letter-spacing: 0.08em;
-}
-
-.thinking-tool-detail p {
-  margin: 0;
-  color: var(--foreground);
-  font-size: 13px;
-  line-height: 1.58;
 }
 
 .thinking-content-shell {
@@ -6130,35 +6096,28 @@ h6 {
     gap: 10px;
   }
 
-  .thinking-tool-top {
+  .thinking-tool-card {
     grid-template-columns: 42px minmax(0, 1fr);
     gap: 11px;
+    min-height: 96px;
     padding: 15px;
   }
 
   .thinking-tool-icon {
     width: 42px;
     height: 42px;
-    border-radius: 12px;
+    border-radius: 8px;
+  }
+
+  .thinking-tool-icon svg {
+    width: 20px;
+    height: 20px;
   }
 
   .thinking-tool-action {
     grid-column: 2;
     width: fit-content;
     margin-top: 2px;
-  }
-
-  .thinking-tool-detail {
-    grid-template-columns: 1fr;
-  }
-
-  .thinking-tool-detail div {
-    padding: 13px 15px;
-    border-right: 0;
-  }
-
-  .thinking-tool-detail div + div {
-    border-top: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
   }
 
   .thinking-content-shell {

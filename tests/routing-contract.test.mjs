@@ -69,3 +69,21 @@ test("thinking lab separates usable tools from reading content", () => {
   assert.match(globals, /\.thinking-content-section\s*\{/);
   assert.match(globals, /\.thinking-article-row\s*\{/);
 });
+
+test("thinking lab keeps the header compact and removes explanatory subtitles from the tool hub", () => {
+  assert.match(thinkingClient, /className="thinking-index-title"/);
+  assert.doesNotMatch(thinkingClient, /thinking-index-intro/);
+  assert.doesNotMatch(thinkingClient, /这些是可以直接使用的小工具/);
+  assert.doesNotMatch(thinkingClient, /保留一些观察和复盘/);
+  assert.doesNotMatch(thinkingClient, /TOOL_DETAILS/);
+  assert.doesNotMatch(thinkingClient, /thinking-tool-detail/);
+  assert.doesNotMatch(thinkingClient, />适合</);
+  assert.doesNotMatch(thinkingClient, />解决</);
+  assert.match(
+    globals,
+    /\.thinking-index-title\s*\{[^}]*font-size:\s*clamp\(1\.95rem,\s*4\.6vw,\s*3\.15rem\)/s
+  );
+  assert.doesNotMatch(globals, /\.thinking-index-intro\s*\{/);
+  assert.doesNotMatch(globals, /\.thinking-section-head p\s*\{/);
+  assert.doesNotMatch(globals, /\.thinking-tool-detail\s*\{/);
+});
