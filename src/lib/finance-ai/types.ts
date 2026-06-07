@@ -252,3 +252,21 @@ export type FinanceAIDirectAnalysis = {
   assumptions: string[];
   charts: FinanceAIDirectChart[];
 };
+
+export type FinanceAIDataRequest = {
+  sheetName?: string;
+  columns: string[];
+  filters?: Record<string, string[]>;
+  rowLimit?: number;
+  reason?: string;
+};
+
+export type FinanceAIDataSelection = {
+  request: FinanceAIDataRequest;
+  sheetName: string;
+  headers: string[];
+  rows: FinanceRow[];
+  rowCount: number;
+  totalMatchedRowCount: number;
+  omittedRowCount: number;
+};

@@ -11,7 +11,6 @@ import {
   buildTrendSeries,
   buildWaterfallBridge,
 } from "../src/lib/finance-ai/metrics.ts";
-import { buildLocalFinanceAnalysis } from "../src/lib/finance-ai/local-analysis.ts";
 import { validateFinanceActionPlan } from "../src/lib/finance-ai/actions.ts";
 import { buildChartSpec, buildDirectChartSpec } from "../src/lib/finance-ai/charts.ts";
 
@@ -331,42 +330,6 @@ test("bar rank comparison includes previous-only groups and exposes change value
   assert.deepEqual(rank.items.map((item) => item.valueShare), [0, 2 / 9, 7 / 9]);
   assert.deepEqual(rank.items.map((item) => item.changeShare), [-10 / -5, 2 / -5, 3 / -5]);
   assert.deepEqual(rank.items.map((item) => item.rowCount), [0, 1, 1]);
-});
-
-test("local finance analysis answers sales MoM top country questions without provider calls", () => {
-  const rankRows = [
-    { "Month": "3月", "Dim_A": "欧洲大区", "Dim_B": "西班牙", "Dim_C": "T1", "Sales Volume": 100 },
-    { "Month": "4月", "Dim_A": "欧洲大区", "Dim_B": "西班牙", "Dim_C": "T1", "Sales Volume": 80 },
-    { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1", "Sales Volume": 90 },
-    { "Month": "4月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1", "Sales Volume": 140 },
-    { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "墨西哥", "Dim_C": "T2", "Sales Volume": 70 },
-    { "Month": "4月", "Dim_A": "拉美大区", "Dim_B": "墨西哥", "Dim_C": "T2", "Sales Volume": 60 },
-  ];
-  const schema = inferFinanceSchema(rankRows);
-  const analysis = buildLocalFinanceAnalysis(
-    "4月份的销量环比3月如何？哪些是Top 5国家？",
-    rankRows,
-    schema,
-  );
-
-  assert.ok(analysis);
-  assert.match(analysis.answer, /4月/);
-  assert.match(analysis.answer, /环比/);
-  assert.match(analysis.answer, /Top 3/);
-  assert.deepEqual(analysis.assumptions, ["本地按完整上传底稿确定性聚合：Sales Volume 按 Month 汇总，国家按 Dim_B 识别。"]);
-  assert.equal(analysis.charts.length, 1);
-  assert.equal(analysis.charts[0].type, "bar_rank");
-  assert.equal(analysis.charts[0].title, "4月国家Sales Volume Top 3");
-  assert.deepEqual(analysis.charts[0].items.map((item) => item.label), ["巴西", "西班牙", "墨西哥"]);
-  assert.deepEqual(analysis.charts[0].items.map((item) => item.value), [140, 80, 60]);
-  assert.deepEqual(analysis.charts[0].items.map((item) => item.changeValue), [50, -20, -10]);
-});
-
-test("local finance analysis declines unsupported questions so provider fallback remains available", () => {
-  const schema = inferFinanceSchema(metricRows);
-  const analysis = buildLocalFinanceAnalysis("请解释这张表背后的战略问题", metricRows, schema);
-
-  assert.equal(analysis, null);
 });
 
 test("metric aggregation counts malformed numeric values without dropping valid rows", () => {

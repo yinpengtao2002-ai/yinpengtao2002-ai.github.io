@@ -9,11 +9,13 @@ import rehypeKatex from "rehype-katex";
 import * as XLSX from "xlsx";
 import "katex/dist/katex.min.css";
 import { buildDirectChartSpec } from "@/lib/finance-ai/charts";
-import { buildLocalFinanceAnalysis } from "@/lib/finance-ai/local-analysis";
+import { applyFinanceAIDataRequest } from "@/lib/finance-ai/data-selection";
 import { inferFinanceSchema } from "@/lib/finance-ai/schema";
 import { normalizeChatMathMarkdown } from "@/lib/markdown/normalizeChatMathMarkdown";
 import { normalizeMarkdownStrongEmphasis } from "@/lib/markdown/normalizeStrongEmphasis";
 import type {
+  FinanceAIDataRequest,
+  FinanceAIDataSelection,
   FinanceAIDirectChart,
   FinanceChartSpec,
   FinanceRawWorkbook,
@@ -43,6 +45,7 @@ type APIResponse = {
   message?: string;
   assumptions?: string[];
   charts?: FinanceAIDirectChart[];
+  dataRequest?: FinanceAIDataRequest;
   error?: string;
   errorCode?: string;
   errors?: string[];
@@ -148,10 +151,6 @@ function buildChartCard(id: string, chart: FinanceAIDirectChart): ChartCard {
     spec,
     note: spec.note,
   };
-}
-
-function getWorkbookRows(workbook: FinanceRawWorkbook | null): FinanceRow[] {
-  return workbook?.sheets.flatMap((sheet) => sheet.rows) ?? [];
 }
 
 function getAPIErrorMessage(payload: APIResponse, fallback: string) {
@@ -365,7 +364,7 @@ export default function FinanceAIAssistantTool() {
     }
   }
 
-  async function callAI(body: Record<string, unknown>): Promise<APIResponse> {
+  async function callAI(mode: "data_request" | "analyze_selection", body: Record<string, unknown>): Promise<APIResponse> {
     if (!accessToken) {
       throw new Error("请先输入正确的内测密钥。");
     }
@@ -376,7 +375,7 @@ export default function FinanceAIAssistantTool() {
         "Content-Type": "application/json",
         [FINANCE_AI_ACCESS_HEADER]: accessToken,
       },
-      body: JSON.stringify({ mode: "analyze", ...body }),
+      body: JSON.stringify({ mode, ...body }),
     });
     const payload = await response.json().catch(() => ({})) as APIResponse;
 
@@ -405,33 +404,43 @@ export default function FinanceAIAssistantTool() {
     setMessages((current) => [...current, { id: `user-${Date.now()}`, role: "user", text: question }]);
 
     try {
-      const localAnalysis = buildLocalFinanceAnalysis(question, getWorkbookRows(workbook), schema);
-      const analysis = localAnalysis ?? await callAI({
+      const chatState = {
+        recentQuestions: messages
+          .filter((message) => message.role === "user")
+          .slice(-4)
+          .map((message) => message.text),
+        chartHistory: messages.flatMap((message) => (
+          message.chartCards?.map((card) => ({ type: card.spec.kind, title: card.title })) ?? []
+        )).slice(-6),
+      };
+      const dataPlan = await callAI("data_request", {
         question,
         workbook,
-        state: {
-          recentQuestions: messages
-            .filter((message) => message.role === "user")
-            .slice(-4)
-            .map((message) => message.text),
-          chartHistory: messages.flatMap((message) => (
-            message.chartCards?.map((card) => ({ type: card.spec.kind, title: card.title })) ?? []
-          )).slice(-6),
-        },
+        state: chatState,
+      });
+      if (!dataPlan.dataRequest) {
+        throw new Error("AI 这次没有返回可读取的数据范围，请直接重试一次。");
+      }
+
+      const selection: FinanceAIDataSelection = applyFinanceAIDataRequest(workbook, dataPlan.dataRequest);
+      const analysis = await callAI("analyze_selection", {
+        question,
+        workbook,
+        selection,
+        state: chatState,
       });
       const chartCards = (analysis.charts ?? [])
         .map((chart, index) => buildChartCard(`chart-${Date.now()}-${index}`, chart));
       const assumptionText = analysis.assumptions?.length
         ? `口径：${analysis.assumptions.join("；")}`
         : "口径：AI 直接读取当前上传底稿并按图表协议返回结果。";
-      const messageText = "answer" in analysis ? analysis.answer : analysis.message;
 
       setMessages((current) => [
         ...current,
         {
           id: `assistant-${Date.now()}`,
           role: "assistant",
-          text: messageText || "我已经根据当前底稿生成分析结果。",
+          text: analysis.message || "我已经根据 AI 请求的原始明细生成分析结果。",
           chartCards,
           meta: assumptionText,
         },

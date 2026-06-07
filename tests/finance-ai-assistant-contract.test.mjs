@@ -3,9 +3,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import {
   buildFinanceAIDirectAnalyzePrompt,
+  buildFinanceAIDataRequestPrompt,
+  buildFinanceAISelectedRowsAnalyzePrompt,
   buildFinanceAIExplanationPrompt,
   buildFinanceAIPlanningContext,
 } from "../src/lib/finance-ai/context.ts";
+import { applyFinanceAIDataRequest } from "../src/lib/finance-ai/data-selection.ts";
 import { POST } from "../src/app/api/tools/finance-ai-assistant/route.ts";
 import { POST as POSTAccess } from "../src/app/api/tools/finance-ai-assistant/access/route.ts";
 import { createFinanceAIAccessToken } from "../src/lib/finance-ai/access.ts";
@@ -370,6 +373,159 @@ test("finance AI assistant analyze mode sends workbook rows and normalizes direc
   }));
 });
 
+test("finance AI data request prompt sends catalog instead of full workbook rows", () => {
+  const prompt = buildFinanceAIDataRequestPrompt({
+    userQuestion: "4月份的销量环比3月如何？哪些是Top 5国家？",
+    workbook: {
+      fileName: "source.xlsx",
+      totalRowCount: 4,
+      sheets: [
+        {
+          name: "明细",
+          headers: ["Month", "Dim_B", "Sales Volume"],
+          rowCount: 4,
+          rows: [
+            { "Month": "3月", "Dim_B": "巴西", "Sales Volume": 100 },
+            { "Month": "4月", "Dim_B": "巴西", "Sales Volume": 120 },
+            { "Month": "3月", "Dim_B": "西班牙", "Sales Volume": 90 },
+            { "Month": "4月", "Dim_B": "secret-outside-sample", "Sales Volume": 10 },
+          ],
+        },
+      ],
+    },
+  });
+
+  assert.match(prompt, /数据目录/);
+  assert.match(prompt, /filters/);
+  assert.match(prompt, /columns/);
+  assert.match(prompt, /Month/);
+  assert.match(prompt, /Dim_B/);
+  assert.doesNotMatch(prompt, /secret-outside-sample/);
+  assert.doesNotMatch(prompt, /\["4月","secret-outside-sample",10\]/);
+});
+
+test("finance AI selected rows prompt sends only AI-requested raw rows", () => {
+  const workbook = {
+    fileName: "source.xlsx",
+    totalRowCount: 4,
+    sheets: [
+      {
+        name: "明细",
+        headers: ["Month", "Dim_A", "Dim_B", "Sales Volume", "Total Margin"],
+        rowCount: 4,
+        rows: [
+          { "Month": "3月", "Dim_A": "欧洲", "Dim_B": "西班牙", "Sales Volume": 100, "Total Margin": 10 },
+          { "Month": "4月", "Dim_A": "欧洲", "Dim_B": "西班牙", "Sales Volume": 80, "Total Margin": 12 },
+          { "Month": "3月", "Dim_A": "拉美", "Dim_B": "巴西", "Sales Volume": 90, "Total Margin": 9 },
+          { "Month": "4月", "Dim_A": "拉美", "Dim_B": "巴西", "Sales Volume": 140, "Total Margin": 15 },
+        ],
+      },
+    ],
+  };
+  const selection = applyFinanceAIDataRequest(workbook, {
+    sheetName: "明细",
+    columns: ["Month", "Dim_B", "Sales Volume"],
+    filters: { Month: ["3月", "4月"] },
+    rowLimit: 10,
+  });
+  const prompt = buildFinanceAISelectedRowsAnalyzePrompt({
+    userQuestion: "4月份的销量环比3月如何？哪些是Top 5国家？",
+    workbook,
+    selection,
+  });
+
+  assert.equal(selection.rows.length, 4);
+  assert.deepEqual(selection.headers, ["Month", "Dim_B", "Sales Volume"]);
+  assert.match(prompt, /AI 请求的数据切片/);
+  assert.match(prompt, /\["4月","巴西",140\]/);
+  assert.doesNotMatch(prompt, /Total Margin/);
+  assert.doesNotMatch(prompt, /欧洲/);
+});
+
+test("finance AI assistant API lets AI request raw data slices before final analysis", async () => {
+  await withMockedProvider(async (calls) => {
+    const dataRequestResponse = await POST(makeRequest({
+      mode: "data_request",
+      question: "4月份的销量环比3月如何？哪些是Top 5国家？",
+      workbook: {
+        fileName: "source.xlsx",
+        totalRowCount: 2,
+        sheets: [
+          {
+            name: "明细",
+            headers: ["Month", "Dim_B", "Sales Volume"],
+            rowCount: 2,
+            rows: [
+              { "Month": "3月", "Dim_B": "巴西", "Sales Volume": 100 },
+              { "Month": "4月", "Dim_B": "巴西", "Sales Volume": 120 },
+            ],
+          },
+        ],
+      },
+    }));
+    const dataRequestPayload = await dataRequestResponse.json();
+
+    assert.equal(dataRequestResponse.status, 200);
+    assert.deepEqual(dataRequestPayload.dataRequest.columns, ["Month", "Dim_B", "Sales Volume"]);
+    assert.equal(calls[0].response_format, undefined);
+
+    const analyzeResponse = await POST(makeRequest({
+      mode: "analyze_selection",
+      question: "4月份的销量环比3月如何？哪些是Top 5国家？",
+      workbook: {
+        fileName: "source.xlsx",
+        totalRowCount: 2,
+        sheets: [
+          {
+            name: "明细",
+            headers: ["Month", "Dim_B", "Sales Volume"],
+            rowCount: 2,
+            rows: [
+              { "Month": "3月", "Dim_B": "巴西", "Sales Volume": 100 },
+              { "Month": "4月", "Dim_B": "巴西", "Sales Volume": 120 },
+            ],
+          },
+        ],
+      },
+      selection: {
+        request: dataRequestPayload.dataRequest,
+        sheetName: "明细",
+        headers: ["Month", "Dim_B", "Sales Volume"],
+        rowCount: 2,
+        totalMatchedRowCount: 2,
+        omittedRowCount: 0,
+        rows: [
+          { "Month": "3月", "Dim_B": "巴西", "Sales Volume": 100 },
+          { "Month": "4月", "Dim_B": "巴西", "Sales Volume": 120 },
+        ],
+      },
+    }));
+    const analyzePayload = await analyzeResponse.json();
+
+    assert.equal(analyzeResponse.status, 200);
+    assert.equal(analyzePayload.message, "4月销量环比增长 20%。");
+    assert.equal(calls.length, 2);
+    assert.match(JSON.stringify(calls[1]), /AI 请求的数据切片/);
+  }, (calls) => calls.length === 1
+    ? JSON.stringify({
+      columns: ["Month", "Dim_B", "Sales Volume"],
+      filters: { Month: ["3月", "4月"] },
+      rowLimit: 10000,
+      reason: "需要比较两个月份并按国家排名。",
+    })
+    : JSON.stringify({
+      answer: "4月销量环比增长 20%。",
+      assumptions: ["AI 基于请求切片中的原始明细行计算。"],
+      charts: [
+        {
+          type: "bar_rank",
+          title: "4月国家销量Top 1",
+          items: [{ label: "巴西", value: 120, changeValue: 20 }],
+        },
+      ],
+    }));
+});
+
 test("finance AI assistant analyze mode avoids provider JSON mode for raw workbook prompts", async () => {
   await withMockedProvider(async (calls) => {
     const response = await POST(makeRequest({
@@ -538,12 +694,13 @@ test("finance AI assistant page is an independent chat workbench", async () => {
   assert.match(client, /inferFinanceSchema/);
   assert.match(client, /FinanceRawWorkbook/);
   assert.match(client, /buildDirectChartSpec/);
-  assert.match(client, /buildLocalFinanceAnalysis/);
-  assert.match(client, /getWorkbookRows/);
-  assert.match(client, /mode:\s*"analyze"/);
+  assert.match(client, /applyFinanceAIDataRequest/);
+  assert.match(client, /callAI\("data_request"/);
+  assert.match(client, /callAI\("analyze_selection"/);
   assert.match(client, /workbook/);
   assert.match(client, /provider_timeout/);
   assert.match(client, /DeepSeek 分析超时/);
+  assert.doesNotMatch(client, /buildLocalFinanceAnalysis/);
   assert.doesNotMatch(client, /buildMetricSnapshot/);
   assert.doesNotMatch(client, /buildTrendSeries/);
   assert.doesNotMatch(client, /buildBarRank/);

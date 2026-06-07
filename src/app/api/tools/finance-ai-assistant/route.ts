@@ -1,5 +1,5 @@
 // @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
-import { buildFinanceAIDirectAnalyzePrompt, buildFinanceAIExplanationPrompt, buildFinanceAIPlanningContext } from "../../../../lib/finance-ai/context.ts";
+import { buildFinanceAIDirectAnalyzePrompt, buildFinanceAIDataRequestPrompt, buildFinanceAIExplanationPrompt, buildFinanceAIPlanningContext, buildFinanceAISelectedRowsAnalyzePrompt } from "../../../../lib/finance-ai/context.ts";
 import type { FinanceAIChatState } from "../../../../lib/finance-ai/context.ts";
 // @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
 import { validateFinanceActionPlan } from "../../../../lib/finance-ai/actions.ts";
@@ -12,6 +12,8 @@ import type {
   FinanceAIDirectTrendChart,
   FinanceAIDirectWaterfallChart,
   FinanceActionPlan,
+  FinanceAIDataRequest,
+  FinanceAIDataSelection,
   FinanceRawWorkbook,
   FinanceSchema,
 } from "../../../../lib/finance-ai/types.ts";
@@ -353,6 +355,63 @@ function normalizeDirectAnalysis(value: unknown): FinanceAIDirectAnalysis {
   return { answer, assumptions, charts };
 }
 
+function normalizeDataRequest(value: unknown): FinanceAIDataRequest {
+  const record = asRecord(value);
+  const columns = Array.isArray(record.columns)
+    ? record.columns
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .slice(0, 40)
+    : [];
+  const filters = Object.fromEntries(
+    Object.entries(asRecord(record.filters)).flatMap(([field, values]) => {
+      if (!Array.isArray(values)) {
+        return [];
+      }
+
+      const normalizedValues = values
+        .filter((item): item is string | number | boolean => (
+          typeof item === "string" ||
+          typeof item === "number" ||
+          typeof item === "boolean"
+        ))
+        .map((item) => String(item).trim())
+        .filter(Boolean)
+        .slice(0, 40);
+
+      return field.trim() && normalizedValues.length > 0 ? [[field.trim(), normalizedValues]] : [];
+    }),
+  );
+  const rowLimit = finiteNumber(record.rowLimit);
+
+  if (columns.length === 0) {
+    throw new Error("AI data request missed required columns");
+  }
+
+  return {
+    ...(typeof record.sheetName === "string" && record.sheetName.trim() ? { sheetName: record.sheetName.trim() } : {}),
+    columns,
+    ...(Object.keys(filters).length > 0 ? { filters } : {}),
+    rowLimit: rowLimit !== null ? Math.min(Math.max(Math.floor(rowLimit), 1), 20000) : 10000,
+    ...(typeof record.reason === "string" && record.reason.trim() ? { reason: record.reason.trim() } : {}),
+  };
+}
+
+function isDataSelection(value: unknown): value is FinanceAIDataSelection {
+  const record = asRecord(value);
+  const request = asRecord(record.request);
+
+  return typeof record.sheetName === "string" &&
+    isStringArray(record.headers) &&
+    Array.isArray(record.rows) &&
+    record.rows.every(isRowRecord) &&
+    typeof record.rowCount === "number" &&
+    typeof record.totalMatchedRowCount === "number" &&
+    typeof record.omittedRowCount === "number" &&
+    isStringArray(request.columns);
+}
+
 function getUpstreamStatus(error: unknown) {
   if (error instanceof DOMException && error.name === "AbortError") {
     return 504;
@@ -520,6 +579,109 @@ export async function POST(req: Request) {
   }
 
   const mode = String(body.mode || "");
+
+  if (mode === "data_request") {
+    const question = typeof body.question === "string" ? body.question.trim() : "";
+    const workbook = body.workbook;
+
+    if (!question) {
+      return errorResponse(400, "missing_question", "Data request mode requires a question.");
+    }
+
+    if (!isRawWorkbook(workbook)) {
+      return errorResponse(400, "invalid_workbook", "Data request mode requires a valid uploaded workbook.");
+    }
+
+    const prompt = buildFinanceAIDataRequestPrompt({
+      userQuestion: question,
+      workbook,
+      state: normalizeChatState(body.state),
+    });
+    const providerResult = await callFirstConfiguredProvider(
+      [
+        {
+          role: "system",
+          content: "你是 Lucas 网站里的财务分析 AI 助手。你先决定要读取哪些上传底稿原始明细行，只返回严格 JSON 取数请求。",
+        },
+        { role: "user", content: prompt },
+      ],
+      { jsonMode: true, responseFormat: false },
+    );
+
+    if (!providerResult.ok) {
+      return errorResponse(providerResult.status, providerResult.errorCode, providerResult.error, {
+        attempts: providerResult.attempts,
+      });
+    }
+
+    try {
+      return Response.json({ dataRequest: normalizeDataRequest(extractJsonObject(providerResult.content)) });
+    } catch (error) {
+      return errorResponse(
+        502,
+        "provider_invalid_json",
+        error instanceof Error ? error.message : "AI response was not valid JSON.",
+        { provider: providerResult.provider },
+      );
+    }
+  }
+
+  if (mode === "analyze_selection") {
+    const question = typeof body.question === "string" ? body.question.trim() : "";
+    const workbook = body.workbook;
+    const selection = body.selection;
+
+    if (!question) {
+      return errorResponse(400, "missing_question", "Analyze selection mode requires a question.");
+    }
+
+    if (!isRawWorkbook(workbook)) {
+      return errorResponse(400, "invalid_workbook", "Analyze selection mode requires a valid uploaded workbook.");
+    }
+
+    if (!isDataSelection(selection)) {
+      return errorResponse(400, "invalid_selection", "Analyze selection mode requires selected raw rows.");
+    }
+
+    const prompt = buildFinanceAISelectedRowsAnalyzePrompt({
+      userQuestion: question,
+      workbook,
+      selection,
+      state: normalizeChatState(body.state),
+    });
+    const providerResult = await callFirstConfiguredProvider(
+      [
+        {
+          role: "system",
+          content: "你是 Lucas 网站里的财务分析 AI 助手。你基于用户上传底稿的原始明细切片完成计算和图表，只返回严格 JSON。",
+        },
+        { role: "user", content: prompt },
+      ],
+      { jsonMode: true, responseFormat: false },
+    );
+
+    if (!providerResult.ok) {
+      return errorResponse(providerResult.status, providerResult.errorCode, providerResult.error, {
+        attempts: providerResult.attempts,
+      });
+    }
+
+    try {
+      const analysis = normalizeDirectAnalysis(extractJsonObject(providerResult.content));
+      return Response.json({
+        message: analysis.answer,
+        assumptions: analysis.assumptions,
+        charts: analysis.charts,
+      });
+    } catch (error) {
+      return errorResponse(
+        502,
+        "provider_invalid_json",
+        error instanceof Error ? error.message : "AI response was not valid JSON.",
+        { provider: providerResult.provider },
+      );
+    }
+  }
 
   if (mode === "analyze") {
     const question = typeof body.question === "string" ? body.question.trim() : "";

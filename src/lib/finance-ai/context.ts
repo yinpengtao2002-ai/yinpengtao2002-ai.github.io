@@ -1,4 +1,4 @@
-import type { FinanceRawWorkbook, FinanceSchema } from "./types";
+import type { FinanceAIDataSelection, FinanceRawWorkbook, FinanceSchema } from "./types";
 
 export type FinanceAIChatState = {
   recentQuestions?: string[];
@@ -18,6 +18,19 @@ type DirectAnalyzePromptInput = {
   state?: FinanceAIChatState;
 };
 
+type DataRequestPromptInput = {
+  userQuestion: string;
+  workbook: FinanceRawWorkbook;
+  state?: FinanceAIChatState;
+};
+
+type SelectedRowsAnalyzePromptInput = {
+  userQuestion: string;
+  workbook: FinanceRawWorkbook;
+  selection: FinanceAIDataSelection;
+  state?: FinanceAIChatState;
+};
+
 const MAX_LIST_ITEMS = 24;
 const MAX_RECENT_QUESTIONS = 4;
 const MAX_CHART_HISTORY = 4;
@@ -29,6 +42,8 @@ const MAX_SUMMARY_DEPTH = 8;
 const MAX_STRING_CHARS = 240;
 const MAX_SUMMARY_JSON_CHARS = 16000;
 const MAX_WORKBOOK_CELL_CHARS = 180;
+const MAX_CATALOG_SAMPLE_ROWS = 3;
+const MAX_CATALOG_VALUE_SAMPLES = 16;
 const OMIT_PROMPT_VALUE = Symbol("omit-prompt-value");
 
 function compactList(values: string[], emptyLabel = "无") {
@@ -188,6 +203,61 @@ function safeWorkbookJson(workbook: FinanceRawWorkbook) {
   });
 }
 
+function uniqueSamples(values: unknown[]) {
+  const seen = new Set<string>();
+  const samples: string[] = [];
+
+  for (const value of values) {
+    const text = String(normalizeWorkbookCell(value) ?? "").trim();
+    if (!text || seen.has(text)) {
+      continue;
+    }
+
+    seen.add(text);
+    samples.push(text);
+    if (samples.length >= MAX_CATALOG_VALUE_SAMPLES) {
+      break;
+    }
+  }
+
+  return samples;
+}
+
+function buildWorkbookCatalog(workbook: FinanceRawWorkbook) {
+  return JSON.stringify({
+    fileName: workbook.fileName,
+    totalRowCount: workbook.totalRowCount,
+    sheets: workbook.sheets.map((sheet) => ({
+      name: sheet.name,
+      headers: sheet.headers,
+      rowCount: sheet.rowCount,
+      sampleRows: sheet.rows.slice(0, MAX_CATALOG_SAMPLE_ROWS).map((row) => (
+        sheet.headers.map((header) => normalizeWorkbookCell(row[header]))
+      )),
+      valueSamples: Object.fromEntries(sheet.headers.map((header) => [
+        header,
+        uniqueSamples(sheet.rows.slice(0, MAX_CATALOG_SAMPLE_ROWS).map((row) => row[header])),
+      ])),
+    })),
+  });
+}
+
+function safeSelectionJson(selection: FinanceAIDataSelection) {
+  return JSON.stringify({
+    format: "selected_raw_rows_v1",
+    note: "Rows are raw uploaded detail rows selected by the AI data request. Each row is an array in headers order. The client did not aggregate, rank, or calculate metrics.",
+    request: selection.request,
+    sheetName: selection.sheetName,
+    headers: selection.headers,
+    rowCount: selection.rowCount,
+    totalMatchedRowCount: selection.totalMatchedRowCount,
+    omittedRowCount: selection.omittedRowCount,
+    rows: selection.rows.map((row) => (
+      selection.headers.map((header) => normalizeWorkbookCell(row[header]))
+    )),
+  });
+}
+
 export function buildFinanceAIPlanningContext(
   schema: FinanceSchema,
   state: FinanceAIChatState = {},
@@ -260,6 +330,63 @@ export function buildFinanceAIDirectAnalyzePrompt(input: DirectAnalyzePromptInpu
     `用户问题：${input.userQuestion.trim() || "无"}`,
     "上传底稿：",
     safeWorkbookJson(input.workbook),
+  ].join("\n");
+}
+
+export function buildFinanceAIDataRequestPrompt(input: DataRequestPromptInput) {
+  const recentQuestions = (input.state?.recentQuestions ?? [])
+    .slice(-MAX_RECENT_QUESTIONS)
+    .map((question) => question.trim())
+    .filter(Boolean);
+
+  return [
+    "你是财务分析 AI 助手。你现在不是回答问题，而是先决定需要读取哪些上传底稿原始明细行。",
+    "客户端只能按你的请求筛选原始行和列；客户端不会汇总、排名、计算环比或生成任何分析结论。",
+    "请根据用户问题和数据目录，返回一个 JSON 取数请求。优先选择最少必要列、必要期间和必要维度，避免要求整张表。",
+    "如果用户问环比、同比、Top、排名、变化来源，要包含当前期和对比期所需原始行。",
+    "返回结构必须是：",
+    '{"sheetName":"可选工作表名","columns":["需要的原始列"],"filters":{"列名":["原始值"]},"rowLimit":10000,"reason":"为什么需要这些原始行"}',
+    "规则：",
+    "- 只输出 JSON，不输出 Markdown。",
+    "- columns 必须来自数据目录的 headers。",
+    "- filters 的字段必须来自 headers，值必须尽量使用 valueSamples 或 sampleRows 里出现的原始值。",
+    "- 不确定 sheetName 时可省略；不确定筛选值时可以省略 filters，但不要编造字段。",
+    "- rowLimit 默认 10000，除非用户问题明显只需要更少行。",
+    `最近问题：${compactList(recentQuestions)}`,
+    `用户问题：${input.userQuestion.trim() || "无"}`,
+    "数据目录：",
+    buildWorkbookCatalog(input.workbook),
+  ].join("\n");
+}
+
+export function buildFinanceAISelectedRowsAnalyzePrompt(input: SelectedRowsAnalyzePromptInput) {
+  const recentQuestions = (input.state?.recentQuestions ?? [])
+    .slice(-MAX_RECENT_QUESTIONS)
+    .map((question) => question.trim())
+    .filter(Boolean);
+  const chartHistory = (input.state?.chartHistory ?? [])
+    .slice(-MAX_CHART_HISTORY)
+    .map((chart) => `${chart.type}:${chart.title}`)
+    .filter(Boolean);
+
+  return [
+    "你是财务分析 AI 助手。你需要基于客户端按你的取数请求返回的原始明细行，完成计算、分析和图表数据生成。",
+    "客户端没有做汇总、排名、环比或指标计算；下面的数据切片仍是上传底稿的原始明细行。",
+    "只输出严格 JSON，不要输出 Markdown 代码块，不要在 JSON 外写任何文字。",
+    "返回结构必须是：",
+    '{"answer":"给用户看的中文分析结论，可包含 Markdown 加粗","assumptions":["字段、口径或计算假设"],"charts":[]}',
+    "charts 最多 3 个，只允许以下三种类型：",
+    "1. trend: {type,title,xLabel,yLabel,points:[{label,value}],note}",
+    "2. bar_rank: {type,title,xLabel,yLabel,items:[{label,value,share,changeValue,detail}],note}",
+    "3. waterfall: {type,title,startLabel,startValue,endLabel,endValue,items:[{label,value}],note}",
+    "图表规则：value/startValue/endValue/changeValue/share 必须是数字，不要写成带逗号或单位的字符串；share 使用 0 到 1 的小数。",
+    "如果 omittedRowCount 大于 0，必须在 assumptions 里说明本次只收到部分匹配明细，不能把结果说成全量。",
+    `最近问题：${compactList(recentQuestions)}`,
+    `最近图表：${compactList(chartHistory)}`,
+    `用户问题：${input.userQuestion.trim() || "无"}`,
+    `底稿文件：${input.workbook.fileName}，总行数：${input.workbook.totalRowCount}`,
+    "AI 请求的数据切片：",
+    safeSelectionJson(input.selection),
   ].join("\n");
 }
 
