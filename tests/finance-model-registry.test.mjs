@@ -43,7 +43,7 @@ test("finance AI assistant is registered as a finance model with its own assista
   assert.equal(model.href, "/finance/finance-ai-assistant");
   assert.equal(model.title, "财务分析 AI 助手");
   assert.match(model.summary, /聊天|图表|经营明细/);
-  assert.equal(model.previewImage, "/images/product-stage/finance-ai-assistant-preview.png");
+  assert.equal(model.previewImage, "/images/product-stage/finance-ai-assistant-preview.webp");
   assert.match(model.previewAlt, /卡通 AI 助手/);
   assert.match(model.aiGuide.purpose, /上传经营明细/);
   assert.ok(model.aiGuide.steps.some((step) => /上传/.test(step)));
@@ -68,7 +68,7 @@ test("Perspective BI is registered as a user-operable finance model", () => {
 test("finance registry preserves model order as the only browsing structure", () => {
   assert.deepEqual(
     registry.models.map((model) => model.slug),
-    ["business-analysis", "monthly-trend", "profit-structure", "sensitivity-analysis", "margin-analysis", "perspective-bi", "finance-ai-assistant"]
+    ["business-analysis", "margin-analysis", "finance-ai-assistant", "monthly-trend", "profit-structure", "sensitivity-analysis", "perspective-bi"]
   );
 });
 
@@ -78,7 +78,7 @@ test("finance models include chart-stacked preview assets", async () => {
   for (const model of registry.models) {
     assert.match(
       model.previewImage,
-      /^\/images\/product-stage\/[a-z-]+\.png$/,
+      /^\/images\/product-stage\/[a-z-]+\.webp$/,
       `${model.slug} needs a product-stage preview image`
     );
     assert.equal(typeof model.previewAlt, "string", `${model.slug} needs preview alt text`);
