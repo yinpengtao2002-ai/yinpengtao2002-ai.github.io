@@ -6,6 +6,10 @@ import {
   buildFinanceAIPlanningContext,
 } from "../src/lib/finance-ai/context.ts";
 import { POST } from "../src/app/api/tools/finance-ai-assistant/route.ts";
+import { POST as POSTAccess } from "../src/app/api/tools/finance-ai-assistant/access/route.ts";
+import { createFinanceAIAccessToken } from "../src/lib/finance-ai/access.ts";
+
+process.env.FINANCE_AI_ACCESS_KEY = "test-finance-ai-access-key";
 
 async function readProjectFile(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
@@ -32,10 +36,13 @@ function makeSchema() {
   };
 }
 
-function makeRequest(body) {
+function makeRequest(body, token = createFinanceAIAccessToken()) {
   return new Request("https://yinpengtao.cn/api/tools/finance-ai-assistant", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { "X-Finance-AI-Access": token } : {}),
+    },
     body: JSON.stringify(body),
   });
 }
@@ -183,6 +190,36 @@ test("finance AI assistant API validates provider action plans before returning 
   }));
 });
 
+test("finance AI assistant requires an internal access token", async () => {
+  const lockedResponse = await POST(makeRequest({
+    mode: "plan",
+    question: "巴西 3 月边际怎么看？",
+    schema: makeSchema(),
+  }, ""));
+  const lockedPayload = await lockedResponse.json();
+
+  assert.equal(lockedResponse.status, 401);
+  assert.equal(lockedPayload.errorCode, "access_denied");
+
+  const accessResponse = await POSTAccess(makeRequest({
+    key: "test-finance-ai-access-key",
+  }));
+  const accessPayload = await accessResponse.json();
+
+  assert.equal(accessResponse.status, 200);
+  assert.equal(typeof accessPayload.token, "string");
+  assert.equal(accessPayload.token.length > 20, true);
+  assert.equal(typeof accessPayload.expiresAt, "string");
+
+  const rejectedResponse = await POSTAccess(makeRequest({
+    key: "wrong-key",
+  }));
+  const rejectedPayload = await rejectedResponse.json();
+
+  assert.equal(rejectedResponse.status, 401);
+  assert.equal(rejectedPayload.errorCode, "access_denied");
+});
+
 test("finance AI assistant API strips raw-row-like summaries before explain provider calls", async () => {
   await withMockedProvider(async (calls) => {
     const response = await POST(makeRequest({
@@ -300,13 +337,18 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   const styles = await readProjectFile("src/app/globals.css");
 
   assert.match(client, /finance-ai-avatar/);
+  assert.match(client, /finance-ai-access-gate/);
   assert.match(client, /finance-ai-upload-chip/);
+  assert.match(client, /downloadSampleTemplate/);
   assert.match(client, /finance-ai-empty-state/);
+  assert.match(client, /X-Finance-AI-Access/);
   assert.doesNotMatch(client, /next\/image/);
-  assert.doesNotMatch(client, /finance-ai-assistant-preview\.png/);
-  assert.match(styles, /\.finance-ai-page\s*\{[\s\S]*background:\s*color-mix\(in srgb,\s*var\(--background\)/s);
+  assert.match(client, /finance-ai-assistant-preview\.png/);
+  assert.match(styles, /\.finance-ai-page\s*\{[\s\S]*background:\s*#f7f5ef/s);
+  assert.match(styles, /\.finance-ai-access-gate/);
   assert.match(styles, /\.finance-ai-assistant-panel/);
-  assert.match(styles, /\.finance-ai-message-avatar/);
+  assert.match(styles, /\.finance-ai-avatar-mini/);
+  assert.match(styles, /\.finance-ai-thinking/);
   assert.match(styles, /\.finance-ai-message\.is-user\s+\.finance-ai-message-bubble/);
-  assert.match(styles, /\.finance-ai-composer\s*\{[\s\S]*border-radius:\s*24px/s);
+  assert.match(styles, /\.finance-ai-composer\s*\{[\s\S]*border-radius:\s*26px/s);
 });

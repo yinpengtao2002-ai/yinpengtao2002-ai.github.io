@@ -33,7 +33,7 @@ test("finance AI schema infers month, sales, dimensions, total metrics, and unit
   assert.equal(schema.monthColumn, "月份");
   assert.equal(schema.salesColumn, "销量");
   assert.deepEqual(schema.dimensionColumns, ["大区", "国家", "车型"]);
-  assert.deepEqual(schema.totalMetrics.map((metric) => metric.column), ["净收入", "成本", "边际"]);
+  assert.deepEqual(schema.totalMetrics.map((metric) => metric.column), ["销量", "净收入", "成本", "边际"]);
   assert.deepEqual(schema.unitMetrics.map((metric) => metric.name), ["单车净收入", "单车成本", "单车边际"]);
   assert.equal(schema.requiredIssues.length, 0);
   assert.equal(schema.profile.rowCount, 2);
@@ -45,7 +45,7 @@ test("finance AI schema treats rate-like columns as non-default metrics", () => 
     { "月份": "2025年3月", "国家": "巴西", "销量": 100, "边际": 2000, "边际率": 0.22 },
   ]);
 
-  assert.deepEqual(schema.totalMetrics.map((metric) => metric.column), ["边际"]);
+  assert.deepEqual(schema.totalMetrics.map((metric) => metric.column), ["销量", "边际"]);
   assert.deepEqual(schema.excludedMetricColumns, ["边际率"]);
 });
 
@@ -84,6 +84,28 @@ test("normalizePeriodValue supports separated and date-like month formats", () =
   assert.deepEqual(normalizePeriodValue("2025-03-01"), { key: "2025-03", label: "2025年3月", sort: 24303 });
 });
 
+test("finance AI schema supports yearless month labels from margin templates", () => {
+  const templateRows = [
+    { "Month": "4月", "Dim_A": "非洲大区", "Dim_B": "摩洛哥", "Sales Volume": 2, "Total Margin": 426871.6248 },
+    { "Month": "3月", "Dim_A": "非洲大区", "Dim_B": "摩洛哥", "Sales Volume": 3, "Total Margin": 300000 },
+  ];
+  const schema = inferFinanceSchema(templateRows);
+
+  assert.equal(schema.monthColumn, "Month");
+  assert.equal(schema.salesColumn, "Sales Volume");
+  assert.deepEqual(schema.profile.periods.map((period) => period.key), ["M03", "M04"]);
+  assert.deepEqual(schema.profile.periods.map((period) => period.label), ["3月", "4月"]);
+  assert.deepEqual(schema.totalMetrics.map((metric) => metric.name), ["Sales Volume", "Total Margin"]);
+
+  const snapshot = buildMetricSnapshot(templateRows, schema, {
+    metric: "Sales Volume",
+    period: "4月",
+    comparisons: ["mom"],
+  });
+  assert.equal(snapshot.value, 2);
+  assert.equal(snapshot.mom?.value, 3);
+});
+
 test("toFinanceNumber preserves unit scale, parentheses negatives, and percentages", () => {
   assert.equal(toFinanceNumber("1.2亿元"), 120000000);
   assert.equal(toFinanceNumber("3万元"), 30000);
@@ -118,7 +140,7 @@ test("finance AI schema excludes after-sales numeric code and metadata fields fr
     },
   ]);
 
-  assert.deepEqual(schema.totalMetrics.map((metric) => metric.column), ["净收入", "成本"]);
+  assert.deepEqual(schema.totalMetrics.map((metric) => metric.column), ["销量", "净收入", "成本"]);
 });
 
 test("finance AI schema prefers specific unit metric numerator aliases over generic matches", () => {

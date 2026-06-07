@@ -35,6 +35,12 @@ function compactList(values: string[], emptyLabel = "无") {
   return hiddenCount > 0 ? `${visible} / 另有 ${hiddenCount} 项` : visible;
 }
 
+function formatPeriods(schema: FinanceSchema) {
+  return compactList(schema.profile.periods.map((period) => (
+    period.key === period.label ? period.key : `${period.key}（${period.label}）`
+  )));
+}
+
 function truncateText(value: string, maxLength = MAX_STRING_CHARS) {
   const normalized = value.trim();
   return normalized.length > maxLength ? `${normalized.slice(0, maxLength)}...` : normalized;
@@ -159,7 +165,7 @@ export function buildFinanceAIPlanningContext(
     `维度字段：${compactList(schema.dimensionColumns)}`,
     `总额指标：${compactList(schema.totalMetrics.map((metric) => metric.name))}`,
     `单车指标：${compactList(schema.unitMetrics.map((metric) => metric.name))}`,
-    `可用期间：${compactList(schema.profile.periods.map((period) => period.key))}`,
+    `可用期间：${formatPeriods(schema)}`,
     `最近问题：${compactList(recentQuestions)}`,
     `当前指标：${state.currentMetric || "无"}`,
     `当前筛选：${JSON.stringify(compactFilters(state.currentFilters))}`,
@@ -169,7 +175,7 @@ export function buildFinanceAIPlanningContext(
     "- modules 数组必须有 1 到 3 项。",
     "- metric 只能使用总额指标或单车指标里的名称。",
     "- dimension 只能使用维度字段里的名称。",
-    "- period/fromPeriod/toPeriod/highlightPeriod 只能使用可用期间里的 key。",
+    "- period/fromPeriod/toPeriod/highlightPeriod 只能使用可用期间里的 key，例如 M04 或 2026-03，不要自造年份。",
     "- filters 只能使用维度字段和值数组。",
     "JSON 结构示例：",
     '{"modules":[{"type":"metric_snapshot","metric":"单车边际","period":"2026-03","filters":{"国家":["巴西"]},"comparisons":["mom","yoy"]}]}',

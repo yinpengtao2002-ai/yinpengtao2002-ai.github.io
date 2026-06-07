@@ -283,11 +283,27 @@ export function normalizePeriodValue(value: unknown): FinancePeriod | null {
     text.match(/^(\d{4})-(\d{1,2})$/) ??
     text.match(/^(\d{4})[/.](\d{1,2})$/) ??
     text.match(/^(\d{4})-(\d{1,2})-\d{1,2}$/) ??
+    text.match(/^(\d{4})\s*[mM]\s*(\d{1,2})$/) ??
+    text.match(/^(\d{4})年?\s*-?\s*(\d{1,2})月$/) ??
     text.match(/^(\d{4})年\s*(\d{1,2})月$/) ??
     text.match(/^(\d{4})(\d{2})$/);
 
   if (!match) {
-    return null;
+    const yearlessMatch = text.match(/^(\d{1,2})\s*月$/) ?? text.match(/^[mM]\s*(\d{1,2})$/);
+    if (!yearlessMatch) {
+      return null;
+    }
+
+    const month = Number(yearlessMatch[1]);
+    if (!Number.isInteger(month) || month < 1 || month > 12) {
+      return null;
+    }
+
+    return {
+      key: `M${String(month).padStart(2, "0")}`,
+      label: `${month}月`,
+      sort: month,
+    };
   }
 
   const year = Number(match[1]);
@@ -373,7 +389,7 @@ export function inferFinanceSchema(rows: FinanceRow[]): FinanceSchema {
     )
     : [];
 
-  const totalMetrics = metricCandidateColumns
+  const additiveMetrics = metricCandidateColumns
     .filter((column) => column !== monthColumn && column !== salesColumn)
     .filter((column) => !isExcludedTotalMetricColumn(column))
     .filter((column) => isNumericColumn(rows, column))
@@ -383,17 +399,14 @@ export function inferFinanceSchema(rows: FinanceRow[]): FinanceSchema {
       name: column,
       column,
     }));
+  const totalMetrics = [
+    ...(salesColumn ? [{ kind: "total" as const, name: salesColumn, column: salesColumn }] : []),
+    ...additiveMetrics,
+  ];
 
   const excludedMetricColumns = metricCandidateColumns
     .filter((column) => column !== monthColumn && column !== salesColumn)
     .filter((column) => isNumericColumn(rows, column) && isRateLikeColumn(column));
-
-  const unitMetrics = buildUnitMetrics(totalMetrics, salesColumn);
-  const requiredIssues = [
-    !monthColumn ? makeIssue("missing_month") : null,
-    !salesColumn ? makeIssue("missing_sales") : null,
-    totalMetrics.length === 0 ? makeIssue("missing_metric") : null,
-  ].filter((issue): issue is FinanceSchemaIssue => issue !== null);
 
   const periodsByKey = new Map<string, FinancePeriod>();
   if (monthColumn) {
@@ -404,6 +417,13 @@ export function inferFinanceSchema(rows: FinanceRow[]): FinanceSchema {
       }
     }
   }
+  const periods = Array.from(periodsByKey.values()).sort((a, b) => a.sort - b.sort);
+  const unitMetrics = buildUnitMetrics(totalMetrics, salesColumn);
+  const requiredIssues = [
+    !monthColumn || periods.length === 0 ? makeIssue("missing_month") : null,
+    !salesColumn ? makeIssue("missing_sales") : null,
+    totalMetrics.length === 0 ? makeIssue("missing_metric") : null,
+  ].filter((issue): issue is FinanceSchemaIssue => issue !== null);
 
   const dimensionValueCounts = Object.fromEntries(
     dimensionColumns.map((column) => {
@@ -430,7 +450,7 @@ export function inferFinanceSchema(rows: FinanceRow[]): FinanceSchema {
     requiredIssues,
     profile: {
       rowCount: rows.length,
-      periods: Array.from(periodsByKey.values()).sort((a, b) => a.sort - b.sort),
+      periods,
       dimensionValueCounts,
     },
   };

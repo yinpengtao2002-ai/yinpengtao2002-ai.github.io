@@ -290,6 +290,14 @@ function shiftPeriodKey(periodKey: string, monthOffset: number): string {
     return periodKey;
   }
 
+  const yearlessMatch = period.key.match(/^M(\d{2})$/);
+  if (yearlessMatch) {
+    const shiftedMonth = Number(yearlessMatch[1]) + monthOffset;
+    return shiftedMonth >= 1 && shiftedMonth <= 12
+      ? `M${String(shiftedMonth).padStart(2, "0")}`
+      : `MISSING_${period.key}_${monthOffset}`;
+  }
+
   const shiftedSort = period.sort + monthOffset;
   const year = Math.floor((shiftedSort - 1) / 12);
   const month = ((shiftedSort - 1) % 12) + 1;
