@@ -211,8 +211,11 @@ export type FinanceChartKind =
   | "scatter_bubble"
   | "detail_table";
 
+export type FinanceChartSize = "small" | "medium" | "large";
+
 export type FinanceChartSpec = {
   kind: FinanceChartKind;
+  size: FinanceChartSize;
   title: string;
   data: Array<Record<string, unknown>>;
   layout: Record<string, unknown>;

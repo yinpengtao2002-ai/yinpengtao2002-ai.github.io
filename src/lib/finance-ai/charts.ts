@@ -27,6 +27,7 @@ const COLORS = {
 };
 
 const SERIES_COLORS = [COLORS.blue, COLORS.green, COLORS.yellow, COLORS.orange, COLORS.red];
+const MAX_WATERFALL_VISIBLE_ITEMS = 10;
 
 const baseLayout = {
   paper_bgcolor: "rgba(0,0,0,0)",
@@ -131,6 +132,46 @@ function formatShare(value: number | null | undefined) {
   return `${(value * 100).toFixed(1)}%`;
 }
 
+function getChineseUnitScale(value: number | null | undefined) {
+  const absolute = Math.abs(value ?? 0);
+
+  if (absolute >= 1_000_000_000_000) {
+    return { divisor: 1_000_000_000_000, suffix: "万亿", digits: 2 };
+  }
+
+  if (absolute >= 100_000_000) {
+    return { divisor: 100_000_000, suffix: "亿", digits: 2 };
+  }
+
+  if (absolute >= 10_000) {
+    return { divisor: 10_000, suffix: "万", digits: 2 };
+  }
+
+  return { divisor: 1, suffix: "", digits: 2 };
+}
+
+function scaledChineseUnit(value: number, scale = getChineseUnitScale(value)) {
+  return value / scale.divisor;
+}
+
+function normalizeWaterfallItems<T extends { label: string; value: number }>(items: T[]): T[] {
+  const sorted = [...items].sort((left, right) => Math.abs(right.value) - Math.abs(left.value));
+  const visible = sorted.slice(0, MAX_WATERFALL_VISIBLE_ITEMS);
+  const hidden = sorted.slice(MAX_WATERFALL_VISIBLE_ITEMS);
+  const otherValue = hidden.reduce((sum, item) => sum + item.value, 0);
+  const withOther = hidden.length > 0 && Math.abs(otherValue) > 1e-9
+    ? [...visible, { label: "其他", value: otherValue } as T]
+    : visible;
+  const negatives = withOther
+    .filter((item) => item.value < 0)
+    .sort((left, right) => Math.abs(right.value) - Math.abs(left.value));
+  const positives = withOther
+    .filter((item) => item.value >= 0)
+    .sort((left, right) => Math.abs(right.value) - Math.abs(left.value));
+
+  return [...negatives, ...positives];
+}
+
 function paddedRange(values: Array<number | null | undefined>) {
   const finiteValues = values.filter((value): value is number => (
     typeof value === "number" && Number.isFinite(value)
@@ -165,19 +206,28 @@ function buildMetricCardChartSpec(title: string, result: MetricSnapshotResult): 
   const deltaValue = result.mom?.changeValue ?? null;
   const deltaRate = result.mom?.changeRate ?? null;
   const value = result.value ?? 0;
+  const scale = getChineseUnitScale(value);
+  const scaledValue = scaledChineseUnit(value, scale);
+  const scaledDeltaValue = deltaValue !== null ? scaledChineseUnit(deltaValue, scale) : null;
 
   return {
     kind: "metric_card",
+    size: "small",
     title,
     data: [{
       type: "indicator",
       mode: "number+delta",
-      value,
-      number: { font: { color: COLORS.text, size: 30 } },
+      value: scaledValue,
+      number: {
+        font: { color: COLORS.text, size: 30 },
+        suffix: scale.suffix,
+        valueformat: `,.${scale.digits}f`,
+      },
       delta: {
-        reference: deltaValue !== null ? value - deltaValue : undefined,
+        reference: scaledDeltaValue !== null ? scaledValue - scaledDeltaValue : undefined,
         relative: false,
-        valueformat: ",.2f",
+        valueformat: `,.${scale.digits}f`,
+        suffix: scale.suffix,
         increasing: { color: COLORS.green },
         decreasing: { color: COLORS.red },
       },
@@ -197,24 +247,37 @@ function buildMetricCardChartSpec(title: string, result: MetricSnapshotResult): 
 }
 
 function buildDirectMetricCardChartSpec(input: FinanceAIDirectMetricCardChart): FinanceChartSpec {
-  const reference = input.deltaValue !== null && input.deltaValue !== undefined
-    ? input.value - input.deltaValue
+  const scale = getChineseUnitScale(input.value);
+  const scaledValue = scaledChineseUnit(input.value, scale);
+  const scaledDeltaValue = input.deltaValue !== null && input.deltaValue !== undefined
+    ? scaledChineseUnit(input.deltaValue, scale)
+    : null;
+  const reference = scaledDeltaValue !== null
+    ? scaledValue - scaledDeltaValue
     : input.deltaRate !== null && input.deltaRate !== undefined && input.deltaRate !== -1
-      ? input.value / (1 + input.deltaRate)
+      ? scaledValue / (1 + input.deltaRate)
       : undefined;
 
   return {
     kind: "metric_card",
+    size: "small",
     title: input.title,
     data: [{
       type: "indicator",
       mode: "number+delta",
-      value: input.value,
-      number: { font: { color: COLORS.text, size: 30 } },
+      value: scaledValue,
+      number: {
+        font: { color: COLORS.text, size: 30 },
+        suffix: scale.suffix,
+        valueformat: `,.${scale.digits}f`,
+      },
       delta: {
         reference,
-        relative: input.deltaRate !== null && input.deltaRate !== undefined,
-        valueformat: input.deltaRate !== null && input.deltaRate !== undefined ? ".1%" : ",.2f",
+        relative: scaledDeltaValue === null && input.deltaRate !== null && input.deltaRate !== undefined,
+        valueformat: scaledDeltaValue === null && input.deltaRate !== null && input.deltaRate !== undefined
+          ? ".1%"
+          : `,.${scale.digits}f`,
+        suffix: scaledDeltaValue === null && input.deltaRate !== null && input.deltaRate !== undefined ? "" : scale.suffix,
         increasing: { color: COLORS.green },
         decreasing: { color: COLORS.red },
       },
@@ -235,6 +298,7 @@ function buildTrendChartSpec(title: string, result: TrendResult): FinanceChartSp
 
   return {
     kind: "trend_chart",
+    size: "large",
     title,
     data: [{
       type: "scatter",
@@ -277,6 +341,7 @@ function buildDirectTrendChartSpec(input: FinanceAIDirectTrendChart): FinanceCha
 
   return {
     kind: "trend_chart",
+    size: "large",
     title: input.title,
     data: [{
       type: "scatter",
@@ -317,6 +382,7 @@ function buildBarRankChartSpec(title: string, result: BarRankResult): FinanceCha
 
   return {
     kind: "bar_rank",
+    size: "medium",
     title,
     data: [{
       type: "bar",
@@ -356,6 +422,7 @@ function buildDirectBarRankChartSpec(input: FinanceAIDirectBarRankChart): Financ
 
   return {
     kind: "bar_rank",
+    size: "medium",
     title: input.title,
     data: [{
       type: "bar",
@@ -394,24 +461,26 @@ function buildDirectBarRankChartSpec(input: FinanceAIDirectBarRankChart): Financ
 }
 
 function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): FinanceChartSpec {
-  const itemValues = result.items.map((item) => item.value);
+  const items = normalizeWaterfallItems(result.items);
+  const itemValues = items.map((item) => item.value);
   const isUnitMetricBridge = result.basis === "unit_metric_mix_rate";
   const customdata = isUnitMetricBridge
     ? [
         [null, null],
-        ...result.items.map((item) => [item.mixEffect ?? 0, item.rateEffect ?? 0]),
+        ...items.map((item) => [item.mixEffect ?? 0, item.rateEffect ?? 0]),
         [null, null],
       ]
     : undefined;
 
   return {
     kind: "waterfall_bridge",
+    size: "large",
     title,
     data: [{
       type: "waterfall",
       orientation: "v",
-      measure: ["absolute", ...result.items.map(() => "relative"), "total"],
-      x: [result.fromPeriod, ...result.items.map((item) => item.label), result.toPeriod],
+      measure: ["absolute", ...items.map(() => "relative"), "total"],
+      x: [result.fromPeriod, ...items.map((item) => item.label), result.toPeriod],
       y: [result.startValue, ...itemValues, result.endValue],
       text: [
         formatNumber(result.startValue),
@@ -450,16 +519,18 @@ function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): 
 }
 
 function buildDirectWaterfallChartSpec(input: FinanceAIDirectWaterfallChart): FinanceChartSpec {
-  const itemValues = input.items.map((item) => item.value);
+  const items = normalizeWaterfallItems(input.items);
+  const itemValues = items.map((item) => item.value);
 
   return {
     kind: "waterfall_bridge",
+    size: "large",
     title: input.title,
     data: [{
       type: "waterfall",
       orientation: "v",
-      measure: ["absolute", ...input.items.map(() => "relative"), "total"],
-      x: [input.startLabel, ...input.items.map((item) => item.label), input.endLabel],
+      measure: ["absolute", ...items.map(() => "relative"), "total"],
+      x: [input.startLabel, ...items.map((item) => item.label), input.endLabel],
       y: [input.startValue, ...itemValues, input.endValue],
       text: [
         formatNumber(input.startValue),
@@ -506,6 +577,7 @@ function buildDirectSeriesChartSpec(input: FinanceAIDirectSeriesChart): FinanceC
 
   return {
     kind,
+    size: "medium",
     title: input.title,
     data: input.series.map((series, index) => {
       const valueByLabel = new Map(series.items.map((item) => [item.label, item.value]));
@@ -545,6 +617,7 @@ function buildDirectSeriesChartSpec(input: FinanceAIDirectSeriesChart): FinanceC
 function buildDirectHeatmapChartSpec(input: FinanceAIDirectHeatmapChart): FinanceChartSpec {
   return {
     kind: "heatmap",
+    size: "large",
     title: input.title,
     data: [{
       type: "heatmap",
@@ -571,6 +644,7 @@ function buildDirectHeatmapChartSpec(input: FinanceAIDirectHeatmapChart): Financ
 function buildDirectScatterBubbleChartSpec(input: FinanceAIDirectScatterBubbleChart): FinanceChartSpec {
   return {
     kind: "scatter_bubble",
+    size: "large",
     title: input.title,
     data: [{
       type: "scatter",
@@ -604,6 +678,7 @@ function buildDirectDetailTableChartSpec(input: FinanceAIDirectDetailTableChart)
 
   return {
     kind: "detail_table",
+    size: "large",
     title: input.title,
     data: [{
       type: "table",

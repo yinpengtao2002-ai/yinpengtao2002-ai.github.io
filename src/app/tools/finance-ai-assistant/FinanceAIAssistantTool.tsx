@@ -667,7 +667,7 @@ export default function FinanceAIAssistantTool() {
                 {message.chartCards?.length ? (
                   <div className="finance-ai-chart-grid">
                     {message.chartCards.map((card) => (
-                      <div className={`finance-ai-chart-card is-${card.spec.kind}`} key={card.id}>
+                      <div className={`finance-ai-chart-card is-${card.spec.kind} is-${card.spec.size}`} key={card.id}>
                         <div className="finance-ai-chart-card-header">
                           <h2>{card.title}</h2>
                           <button

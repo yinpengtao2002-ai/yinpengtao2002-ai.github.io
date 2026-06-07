@@ -76,7 +76,7 @@ export default function FinanceAIChartDemo() {
 
       <section className="finance-ai-demo-grid" aria-label="财务分析 AI 助手图表 Demo">
         {specs.map((spec, index) => (
-          <article className="finance-ai-demo-card" key={`${spec.kind}-${spec.title}-${index}`}>
+          <article className={`finance-ai-demo-card is-${spec.kind} is-${spec.size}`} key={`${spec.kind}-${spec.title}-${index}`}>
             <div className="finance-ai-demo-card-header">
               <div>
                 <span>{KIND_LABELS[spec.kind]}</span>

@@ -28,9 +28,23 @@ const baseConfig = {
   responsive: true,
 };
 
+const SIZE_BY_KIND: Record<FinanceChartSpec["kind"], FinanceChartSpec["size"]> = {
+  metric_card: "small",
+  trend_chart: "large",
+  bar_rank: "medium",
+  waterfall_bridge: "large",
+  grouped_bar: "medium",
+  stacked_bar: "medium",
+  percent_stacked_bar: "medium",
+  heatmap: "large",
+  scatter_bubble: "large",
+  detail_table: "large",
+};
+
 function spec(kind: FinanceChartSpec["kind"], title: string, data: FinanceChartSpec["data"], layout: Record<string, unknown>, note: string): FinanceChartSpec {
   return {
     kind,
+    size: SIZE_BY_KIND[kind],
     title,
     data,
     layout: { ...baseLayout, ...layout },

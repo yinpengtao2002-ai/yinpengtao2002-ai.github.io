@@ -326,6 +326,35 @@ test("waterfall bridge appends an other residual item when limit omits contribut
   assert.equal(itemSum, bridge.changeValue);
 });
 
+test("waterfall chart sorts visible bridge items by sign and absolute contribution", () => {
+  const spec = buildDirectChartSpec({
+    type: "waterfall",
+    title: "单车边际变化桥",
+    startLabel: "3月",
+    startValue: 100,
+    endLabel: "4月",
+    endValue: 85,
+    items: [
+      { label: "A", value: 2 },
+      { label: "B", value: -12 },
+      { label: "C", value: 9 },
+      { label: "D", value: -4 },
+      { label: "E", value: 7 },
+      { label: "F", value: -3 },
+      { label: "G", value: 6 },
+      { label: "H", value: -2 },
+      { label: "I", value: 5 },
+      { label: "J", value: -1 },
+      { label: "K", value: 4 },
+      { label: "L", value: -8 },
+    ],
+  });
+
+  assert.equal(spec.size, "large");
+  assert.deepEqual(spec.data[0].x, ["3月", "B", "L", "D", "F", "其他", "C", "E", "G", "I", "K", "A", "4月"]);
+  assert.deepEqual(spec.data[0].y, [100, -12, -8, -4, -3, -3, 9, 7, 6, 5, 4, 2, 85]);
+});
+
 test("bar rank comparison includes previous-only groups and exposes change values", () => {
   const rankRows = [
     { "月份": "2026-02", "国家": "巴西", "销量": 10, "边际": 200 },
@@ -572,6 +601,7 @@ test("chart specs are compact and identify supported chart types", () => {
   const spec = buildChartSpec({ type: "trend_chart", title: "巴西单车边际趋势", result: trend });
 
   assert.equal(spec.kind, "trend_chart");
+  assert.equal(spec.size, "large");
   assert.equal(spec.title, "巴西单车边际趋势");
   assert.equal(spec.data.length >= 1, true);
   assert.equal(spec.layout.paper_bgcolor, "rgba(0,0,0,0)");
@@ -598,10 +628,29 @@ test("metric snapshot chart spec renders as a compact KPI card", () => {
   const spec = buildChartSpec({ type: "metric_snapshot", title: "2026-03 巴西单车边际", result: snapshot });
 
   assert.equal(spec.kind, "metric_card");
+  assert.equal(spec.size, "small");
   assert.equal(spec.data[0].type, "indicator");
   assert.equal(spec.data[0].value, 35);
+  assert.equal(spec.data[0].number.suffix, "");
+  assert.equal(spec.data[0].delta.suffix, "");
   assert.equal(spec.layout.height, 150);
   assert.equal(spec.config.displayModeBar, false);
+});
+
+test("metric card chart uses Chinese units for value and absolute delta", () => {
+  const spec = buildDirectChartSpec({
+    type: "metric_card",
+    title: "M04 边际总额",
+    value: 13999900000,
+    subtitle: "环比 +17.8%",
+    deltaValue: 2112040548.34,
+  });
+
+  assert.equal(spec.size, "small");
+  assert.equal(spec.data[0].value, 139.999);
+  assert.equal(spec.data[0].number.suffix, "亿");
+  assert.equal(spec.data[0].delta.reference, 118.8785945166);
+  assert.equal(spec.data[0].delta.suffix, "亿");
 });
 
 test("bar rank chart spec uses horizontal bars without a separate numeric table", () => {
@@ -614,6 +663,7 @@ test("bar rank chart spec uses horizontal bars without a separate numeric table"
   const spec = buildChartSpec({ type: "bar_rank", title: "国家边际排名", result: rank });
 
   assert.equal(spec.kind, "bar_rank");
+  assert.equal(spec.size, "medium");
   assert.equal(spec.data[0].type, "bar");
   assert.equal(spec.data[0].orientation, "h");
   assert.ok(Array.isArray(spec.data[0].text));
@@ -636,6 +686,7 @@ test("waterfall chart spec uses Plotly waterfall for total-metric bridge results
   const spec = buildChartSpec({ type: "waterfall_bridge", title: "边际变化拆解", result: bridge });
 
   assert.equal(spec.kind, "waterfall_bridge");
+  assert.equal(spec.size, "large");
   assert.equal(spec.data[0].type, "waterfall");
   assert.deepEqual(spec.data[0].measure, ["absolute", "relative", "relative", "total"]);
   assert.deepEqual(spec.data[0].text, ["2,400", "+1,100", "+1,100", "4,600"]);
@@ -657,6 +708,7 @@ test("waterfall chart spec labels unit-metric bridges as mix and rate attributio
   const spec = buildChartSpec({ type: "waterfall_bridge", title: "单车边际变化拆解", result: bridge });
 
   assert.equal(spec.kind, "waterfall_bridge");
+  assert.equal(spec.size, "large");
   assert.equal(spec.data[0].type, "waterfall");
   assert.match(spec.note, /结构效应/);
   assert.match(spec.note, /费率效应/);
@@ -727,7 +779,7 @@ test("direct AI chart payloads render through the supported chart specs", () => 
   assert.equal(rankSpec.layout.xaxis.fixedrange, true);
   assert.equal(waterfallSpec.kind, "waterfall_bridge");
   assert.deepEqual(waterfallSpec.data[0].measure, ["absolute", "relative", "relative", "total"]);
-  assert.deepEqual(waterfallSpec.data[0].text, ["4,800", "+900", "-150", "5,550"]);
+  assert.deepEqual(waterfallSpec.data[0].text, ["4,800", "-150", "+900", "5,550"]);
   assert.equal(waterfallSpec.config.displayModeBar, false);
 });
 
@@ -776,14 +828,20 @@ test("direct AI chart payloads support the approved expanded chart set", () => {
   });
 
   assert.equal(metricSpec.kind, "metric_card");
+  assert.equal(metricSpec.size, "small");
   assert.equal(groupedSpec.kind, "grouped_bar");
+  assert.equal(groupedSpec.size, "medium");
   assert.equal(groupedSpec.layout.barmode, "group");
   assert.equal(stackedSpec.kind, "percent_stacked_bar");
+  assert.equal(stackedSpec.size, "medium");
   assert.equal(stackedSpec.layout.barmode, "stack");
   assert.equal(heatmapSpec.kind, "heatmap");
+  assert.equal(heatmapSpec.size, "large");
   assert.equal(heatmapSpec.data[0].type, "heatmap");
   assert.equal(bubbleSpec.kind, "scatter_bubble");
+  assert.equal(bubbleSpec.size, "large");
   assert.equal(bubbleSpec.data[0].mode, "markers+text");
   assert.equal(tableSpec.kind, "detail_table");
+  assert.equal(tableSpec.size, "large");
   assert.equal(tableSpec.data[0].type, "table");
 });
