@@ -35,6 +35,13 @@ const ALL_MEMBER_TOKENS = ["所有", "全部", "全量", "完整", "每个", "�
 const LOW_CHANGE_RANK_TOKENS = ["下降最多", "减少最多", "下滑最多", "降幅最大", "负贡献", "拖累", "下降", "减少"];
 const HIGH_CHANGE_RANK_TOKENS = ["增长最多", "上涨最多", "增加最多", "增幅最大", "正贡献", "拉动", "增长", "上涨", "增加"];
 const DETAIL_TABLE_TOKENS = ["完整明细", "明细表", "全部列出", "全量列出", "完整列出", "剩下也列出"];
+const PRIMARY_DIMENSION_MODULE_TYPES = new Set<ActionType>([
+  "bar_rank",
+  "waterfall_bridge",
+  "grouped_bar",
+  "scatter_bubble",
+  "detail_table",
+]);
 
 type ActionType = FinanceActionModule["type"];
 type MutableModule = Record<string, unknown> & { type: ActionType; metric?: string };
@@ -241,6 +248,8 @@ export function alignFinanceActionPlanWithQuestion(
   userQuestion: string,
 ): FinanceActionModule[] {
   return modules.map((module) => {
+    module = alignPrimaryDimensionWithQuestion(schema, module, userQuestion);
+
     if (module.type === "grouped_bar") {
       const changeRankSort = getChangeRankSortIntent(userQuestion);
       if (changeRankSort) {
@@ -293,6 +302,31 @@ export function alignFinanceActionPlanWithQuestion(
   });
 }
 
+function alignPrimaryDimensionWithQuestion(
+  schema: FinanceSchema,
+  module: FinanceActionModule,
+  userQuestion: string,
+): FinanceActionModule {
+  if (!PRIMARY_DIMENSION_MODULE_TYPES.has(module.type)) {
+    return module;
+  }
+
+  const record = module as Record<string, unknown>;
+  if (typeof record.dimension === "string" && schema.dimensionColumns.includes(record.dimension)) {
+    return module;
+  }
+
+  const dimension = getDimensionIntent(schema, userQuestion);
+  if (!dimension) {
+    return module;
+  }
+
+  return {
+    ...module,
+    dimension,
+  } as FinanceActionModule;
+}
+
 function getChangeRankSortIntent(question: string): "change_asc" | "change_desc" | null {
   const normalizedQuestion = normalizeIntentText(question);
   const asksForRanking = /排名|排行|哪些|哪[个些]|最多|最大|top|前\d+|前五|前十|倒数|lowest|highest/i.test(question) ||
@@ -319,6 +353,14 @@ function hasDetailTableIntent(question: string) {
   return DETAIL_TABLE_TOKENS
     .map(normalizeIntentText)
     .some((token) => normalizedQuestion.includes(token));
+}
+
+function getDimensionIntent(schema: FinanceSchema, question: string) {
+  const normalizedQuestion = normalizeIntentText(question);
+
+  return schema.dimensionColumns.find((dimension) => (
+    normalizedQuestion.includes(normalizeIntentText(dimension))
+  ));
 }
 
 function alignGroupedBarLimitWithQuestion(

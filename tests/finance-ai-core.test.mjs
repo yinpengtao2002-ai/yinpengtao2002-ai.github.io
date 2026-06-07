@@ -742,6 +742,39 @@ test("detail table plans expand compact full-detail requests to the dimension me
   assert.equal(normalized.modules[0].limit, 25);
 });
 
+test("action plan normalization fills missing primary dimensions from the question", () => {
+  const detailRows = Array.from({ length: 25 }, (_, index) => ({
+    "月份": "2026-03",
+    "国家": `国家${index + 1}`,
+    "销量": 1,
+    "边际": 1000 + index,
+  }));
+  const schema = inferFinanceSchema(detailRows);
+  const normalized = normalizeFinanceActionPlanForQuestion(schema, {
+    modules: [
+      {
+        type: "bar_rank",
+        metric: "边际",
+        period: "2026-03",
+        sort: "change_asc",
+        comparison: "mom",
+        limit: 10,
+      },
+      {
+        type: "detail_table",
+        metrics: ["边际"],
+        period: "2026-03",
+      },
+    ],
+  }, "3月边际环比下降最多的国家有哪些？请用横向排名柱状图，并把完整明细表列出来。");
+  const validated = validateFinanceActionPlan(schema, normalized);
+
+  assert.equal(normalized.modules[0].dimension, "国家");
+  assert.equal(normalized.modules[1].dimension, "国家");
+  assert.equal(normalized.modules[1].limit, 25);
+  assert.equal(validated.ok, true);
+});
+
 test("action plan alignment corrects explicit lowest and top rank directions per metric", () => {
   const rows = [
     { "Month": "3月", "Country": "巴西", "Sales Volume": 100, "Total Margin": 3000 },
