@@ -8,20 +8,27 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import * as XLSX from "xlsx";
 import "katex/dist/katex.min.css";
-import { buildDirectChartSpec } from "@/lib/finance-ai/charts";
-import { applyFinanceAIDataRequest } from "@/lib/finance-ai/data-selection";
+import { buildChartSpec } from "@/lib/finance-ai/charts";
+import {
+  buildBarRank,
+  buildMetricSnapshot,
+  buildTrendSeries,
+  buildWaterfallBridge,
+} from "@/lib/finance-ai/metrics";
 import { inferFinanceSchema } from "@/lib/finance-ai/schema";
 import { normalizeChatMathMarkdown } from "@/lib/markdown/normalizeChatMathMarkdown";
 import { normalizeMarkdownStrongEmphasis } from "@/lib/markdown/normalizeStrongEmphasis";
 import type {
-  FinanceAIDataRequest,
-  FinanceAIDataSelection,
-  FinanceAIDirectChart,
+  BarRankResult,
+  FinanceActionModule,
   FinanceChartSpec,
   FinanceRawWorkbook,
   FinanceRawWorkbookSheet,
   FinanceRow,
   FinanceSchema,
+  MetricSnapshotResult,
+  TrendResult,
+  WaterfallBridgeResult,
 } from "@/lib/finance-ai/types";
 
 type ChatRole = "user" | "assistant";
@@ -44,12 +51,17 @@ type ChatMessage = {
 type APIResponse = {
   message?: string;
   assumptions?: string[];
-  charts?: FinanceAIDirectChart[];
-  dataRequest?: FinanceAIDataRequest;
+  modules?: FinanceActionModule[];
   error?: string;
   errorCode?: string;
   errors?: string[];
 };
+
+type ComputedModule =
+  | { type: "metric_snapshot"; title: string; request: FinanceActionModule; result: MetricSnapshotResult }
+  | { type: "trend_chart"; title: string; request: FinanceActionModule; result: TrendResult }
+  | { type: "bar_rank"; title: string; request: FinanceActionModule; result: BarRankResult }
+  | { type: "waterfall_bridge"; title: string; request: FinanceActionModule; result: WaterfallBridgeResult };
 
 type PlotlyModule = {
   default: {
@@ -143,13 +155,92 @@ function getDefaultQuestion(schema: FinanceSchema | null) {
   return `${period} ${dimension}表现怎么看？${metric}环比同比如何？`;
 }
 
-function buildChartCard(id: string, chart: FinanceAIDirectChart): ChartCard {
-  const spec = buildDirectChartSpec(chart);
+function getRowsForSchema(workbook: FinanceRawWorkbook, schema: FinanceSchema): FinanceRow[] {
+  return workbook.sheets.find((sheet) => (
+    sheet.headers.includes(schema.monthColumn) &&
+    sheet.headers.includes(schema.salesColumn)
+  ))?.rows ?? workbook.sheets[0]?.rows ?? [];
+}
+
+function getModuleTitle(module: FinanceActionModule) {
+  if (module.type === "metric_snapshot") {
+    return `${module.period} ${module.metric}`;
+  }
+
+  if (module.type === "trend_chart") {
+    return `${module.metric}趋势`;
+  }
+
+  if (module.type === "bar_rank") {
+    return `${module.period ? `${module.period} ` : ""}${module.dimension}${module.metric}排名`;
+  }
+
+  return `${module.fromPeriod} 至 ${module.toPeriod} ${module.metric}变化桥`;
+}
+
+function executeFinancePlan(
+  rows: FinanceRow[],
+  schema: FinanceSchema,
+  modules: FinanceActionModule[],
+): { computedModules: ComputedModule[]; chartCards: ChartCard[] } {
+  const computedModules: ComputedModule[] = [];
+  const chartCards: ChartCard[] = [];
+
+  modules.forEach((module, index) => {
+    const title = getModuleTitle(module);
+
+    if (module.type === "metric_snapshot") {
+      const result = buildMetricSnapshot(rows, schema, module);
+      computedModules.push({ type: "metric_snapshot", title, request: module, result });
+
+      if (module.chart?.type === "trend_chart") {
+        const trendResult = buildTrendSeries(rows, schema, {
+          metric: module.metric,
+          filters: module.filters,
+          highlightPeriod: module.chart.highlightPeriod ?? module.period,
+        });
+        const spec = buildChartSpec({ type: "trend_chart", title: `${module.metric}趋势`, result: trendResult });
+        chartCards.push({ id: `chart-${Date.now()}-${index}-snapshot-trend`, title: spec.title, spec, note: spec.note });
+      }
+      return;
+    }
+
+    if (module.type === "trend_chart") {
+      const result = buildTrendSeries(rows, schema, module);
+      const spec = buildChartSpec({ type: "trend_chart", title, result });
+      computedModules.push({ type: "trend_chart", title, request: module, result });
+      chartCards.push({ id: `chart-${Date.now()}-${index}`, title, spec, note: spec.note });
+      return;
+    }
+
+    if (module.type === "bar_rank") {
+      const result = buildBarRank(rows, schema, module);
+      const spec = buildChartSpec({ type: "bar_rank", title, result });
+      computedModules.push({ type: "bar_rank", title, request: module, result });
+      chartCards.push({ id: `chart-${Date.now()}-${index}`, title, spec, note: spec.note });
+      return;
+    }
+
+    const result = buildWaterfallBridge(rows, schema, module);
+    const spec = buildChartSpec({ type: "waterfall_bridge", title, result });
+    computedModules.push({ type: "waterfall_bridge", title, request: module, result });
+    chartCards.push({ id: `chart-${Date.now()}-${index}`, title, spec, note: spec.note });
+  });
+
+  return { computedModules, chartCards };
+}
+
+function buildComputedSummary(question: string, schema: FinanceSchema, computedModules: ComputedModule[]) {
   return {
-    id,
-    title: chart.title,
-    spec,
-    note: spec.note,
+    question,
+    schema: {
+      rowCount: schema.profile.rowCount,
+      periods: schema.profile.periods,
+      dimensions: schema.dimensionColumns,
+      totalMetrics: schema.totalMetrics,
+      unitMetrics: schema.unitMetrics,
+    },
+    modules: computedModules,
   };
 }
 
@@ -364,7 +455,7 @@ export default function FinanceAIAssistantTool() {
     }
   }
 
-  async function callAI(mode: "data_request" | "analyze_selection", body: Record<string, unknown>): Promise<APIResponse> {
+  async function callAI(mode: "plan" | "explain", body: Record<string, unknown>): Promise<APIResponse> {
     if (!accessToken) {
       throw new Error("请先输入正确的内测密钥。");
     }
@@ -413,34 +504,34 @@ export default function FinanceAIAssistantTool() {
           message.chartCards?.map((card) => ({ type: card.spec.kind, title: card.title })) ?? []
         )).slice(-6),
       };
-      const dataPlan = await callAI("data_request", {
-        question,
-        workbook,
-        state: chatState,
-      });
-      if (!dataPlan.dataRequest) {
-        throw new Error("AI 这次没有返回可读取的数据范围，请直接重试一次。");
+      if (!schema) {
+        throw new Error("当前底稿还没有识别出可分析字段，请检查示例格式后重新上传。");
       }
 
-      const selection: FinanceAIDataSelection = applyFinanceAIDataRequest(workbook, dataPlan.dataRequest);
-      const analysis = await callAI("analyze_selection", {
+      const plan = await callAI("plan", {
         question,
-        workbook,
-        selection,
+        schema,
         state: chatState,
       });
-      const chartCards = (analysis.charts ?? [])
-        .map((chart, index) => buildChartCard(`chart-${Date.now()}-${index}`, chart));
+      if (!plan.modules?.length) {
+        throw new Error("AI 这次没有返回可执行的分析计划，请直接重试一次。");
+      }
+
+      const { computedModules, chartCards } = executeFinancePlan(getRowsForSchema(workbook, schema), schema, plan.modules);
+      const analysis = await callAI("explain", {
+        question,
+        computedSummary: buildComputedSummary(question, schema, computedModules),
+      });
       const assumptionText = analysis.assumptions?.length
         ? `口径：${analysis.assumptions.join("；")}`
-        : "口径：AI 直接读取当前上传底稿并按图表协议返回结果。";
+        : "口径：AI 生成分析计划，前端按计划聚合当前上传底稿，再由 AI 解读计算结果。";
 
       setMessages((current) => [
         ...current,
         {
           id: `assistant-${Date.now()}`,
           role: "assistant",
-          text: analysis.message || "我已经根据 AI 请求的原始明细生成分析结果。",
+          text: analysis.message || "我已经按 AI 计划计算并生成图表。",
           chartCards,
           meta: assumptionText,
         },

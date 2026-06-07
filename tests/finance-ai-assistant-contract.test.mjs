@@ -637,6 +637,24 @@ test("finance AI assistant API strips raw-row-like summaries before explain prov
   }, "解释完成");
 });
 
+test("finance AI assistant API can run a tiny provider diagnostic without workbook data", async () => {
+  await withMockedProvider(async (calls) => {
+    const response = await POST(makeRequest({
+      mode: "diagnose",
+    }));
+    const payload = await response.json();
+    const providerBody = JSON.stringify(calls[0]);
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.provider, "deepseek-v4-pro");
+    assert.equal(payload.contentLength, 2);
+    assert.match(providerBody, /ping/);
+    assert.doesNotMatch(providerBody, /workbook/);
+    assert.doesNotMatch(providerBody, /底稿/);
+  }, "OK");
+});
+
 test("finance AI assistant API rejects malformed schemas before planning context build", async () => {
   const response = await POST(makeRequest({
     mode: "plan",
@@ -693,21 +711,20 @@ test("finance AI assistant page is an independent chat workbench", async () => {
   assert.match(client, /已识别/);
   assert.match(client, /inferFinanceSchema/);
   assert.match(client, /FinanceRawWorkbook/);
-  assert.match(client, /buildDirectChartSpec/);
-  assert.match(client, /applyFinanceAIDataRequest/);
-  assert.match(client, /callAI\("data_request"/);
-  assert.match(client, /callAI\("analyze_selection"/);
+  assert.match(client, /buildChartSpec/);
+  assert.match(client, /buildMetricSnapshot/);
+  assert.match(client, /buildTrendSeries/);
+  assert.match(client, /buildBarRank/);
+  assert.match(client, /buildWaterfallBridge/);
+  assert.match(client, /callAI\("plan"/);
+  assert.match(client, /callAI\("explain"/);
   assert.match(client, /workbook/);
   assert.match(client, /provider_timeout/);
   assert.match(client, /DeepSeek 分析超时/);
   assert.doesNotMatch(client, /buildLocalFinanceAnalysis/);
-  assert.doesNotMatch(client, /buildMetricSnapshot/);
-  assert.doesNotMatch(client, /buildTrendSeries/);
-  assert.doesNotMatch(client, /buildBarRank/);
-  assert.doesNotMatch(client, /buildWaterfallBridge/);
-  assert.doesNotMatch(client, /validateFinanceActionPlan/);
-  assert.doesNotMatch(client, /callAI\("plan"/);
-  assert.doesNotMatch(client, /callAI\("explain"/);
+  assert.doesNotMatch(client, /applyFinanceAIDataRequest/);
+  assert.doesNotMatch(client, /callAI\("data_request"/);
+  assert.doesNotMatch(client, /callAI\("analyze_selection"/);
   assert.match(client, /useEffect/);
   assert.match(client, /newDatasetMessages/);
   assert.doesNotMatch(client, /localStorage/);
@@ -759,7 +776,8 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.doesNotMatch(client, /next\/image/);
   assert.match(client, /finance-ai-assistant-preview\.(png|webp)/);
   assert.match(client, /finance-ai-composer-dock/);
-  assert.match(client, /analysis\.charts/);
+  assert.match(client, /computedModules/);
+  assert.match(client, /chartCards/);
   assert.doesNotMatch(client, /<p>\{message\.text\}<\/p>/);
   assert.match(styles, /\.finance-ai-page\s*\{[\s\S]*background:\s*#f7f5ef/s);
   assert.match(styles, /\.finance-ai-access-gate/);

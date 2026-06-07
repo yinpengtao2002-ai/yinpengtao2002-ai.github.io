@@ -580,6 +580,31 @@ export async function POST(req: Request) {
 
   const mode = String(body.mode || "");
 
+  if (mode === "diagnose") {
+    const providerResult = await callFirstConfiguredProvider(
+      [
+        {
+          role: "system",
+          content: "You are a connection diagnostic endpoint. Reply with exactly OK.",
+        },
+        { role: "user", content: "ping" },
+      ],
+      { jsonMode: false },
+    );
+
+    if (!providerResult.ok) {
+      return errorResponse(providerResult.status, providerResult.errorCode, providerResult.error, {
+        attempts: providerResult.attempts,
+      });
+    }
+
+    return Response.json({
+      ok: true,
+      provider: providerResult.provider,
+      contentLength: providerResult.content.trim().length,
+    });
+  }
+
   if (mode === "data_request") {
     const question = typeof body.question === "string" ? body.question.trim() : "";
     const workbook = body.workbook;
