@@ -22,13 +22,11 @@ import type {
   BarRankResult,
   FinanceActionModule,
   FinanceChartSpec,
+  FinanceFilter,
   FinanceRawWorkbook,
   FinanceRawWorkbookSheet,
   FinanceRow,
   FinanceSchema,
-  MetricSnapshotResult,
-  TrendResult,
-  WaterfallBridgeResult,
 } from "@/lib/finance-ai/types";
 
 type ChatRole = "user" | "assistant";
@@ -57,11 +55,12 @@ type APIResponse = {
   errors?: string[];
 };
 
-type ComputedModule =
-  | { type: "metric_snapshot"; title: string; request: FinanceActionModule; result: MetricSnapshotResult }
-  | { type: "trend_chart"; title: string; request: FinanceActionModule; result: TrendResult }
-  | { type: "bar_rank"; title: string; request: FinanceActionModule; result: BarRankResult }
-  | { type: "waterfall_bridge"; title: string; request: FinanceActionModule; result: WaterfallBridgeResult };
+type ComputedModule = {
+  type: FinanceActionModule["type"];
+  title: string;
+  request: FinanceActionModule;
+  result: unknown;
+};
 
 type PlotlyModule = {
   default: {
@@ -175,7 +174,31 @@ function getModuleTitle(module: FinanceActionModule) {
     return `${module.period ? `${module.period} ` : ""}${module.dimension}${module.metric}排名`;
   }
 
-  return `${module.fromPeriod} 至 ${module.toPeriod} ${module.metric}变化桥`;
+  if (module.type === "waterfall_bridge") {
+    return `${module.fromPeriod} 至 ${module.toPeriod} ${module.metric}变化桥`;
+  }
+
+  if (module.type === "grouped_bar") {
+    return `${module.period} ${module.dimension}${module.metric}环比对比`;
+  }
+
+  if (module.type === "stacked_bar") {
+    return `${module.period} ${module.dimension}×${module.seriesDimension}${module.metric}结构`;
+  }
+
+  if (module.type === "percent_stacked_bar") {
+    return `${module.period} ${module.dimension}×${module.seriesDimension}${module.metric}占比`;
+  }
+
+  if (module.type === "heatmap") {
+    return `${module.period} ${module.yDimension}×${module.xDimension}${module.metric}热力图`;
+  }
+
+  if (module.type === "scatter_bubble") {
+    return `${module.period} ${module.dimension}${module.yMetric}经营定位`;
+  }
+
+  return `${module.period} ${module.dimension}明细表`;
 }
 
 function isMoneyTableContext(context: string) {
@@ -266,6 +289,249 @@ function buildBarRankComparisonChart(title: string, result: BarRankResult): Fina
   });
 }
 
+function clampChartLimit(limit: number | undefined, fallback = 10, max = 10) {
+  if (!limit || !Number.isFinite(limit) || limit <= 0) {
+    return fallback;
+  }
+
+  return Math.min(Math.floor(limit), max);
+}
+
+function mergeFilters(base: FinanceFilter | undefined, extra: FinanceFilter): FinanceFilter {
+  return {
+    ...(base ?? {}),
+    ...extra,
+  };
+}
+
+function getMetricValue(
+  rows: FinanceRow[],
+  schema: FinanceSchema,
+  metric: string,
+  period: string,
+  filters?: FinanceFilter,
+) {
+  return buildMetricSnapshot(rows, schema, { metric, period, filters }).value ?? 0;
+}
+
+function getRankLabels(
+  rows: FinanceRow[],
+  schema: FinanceSchema,
+  metric: string,
+  dimension: string,
+  period: string,
+  filters: FinanceFilter | undefined,
+  limit: number,
+) {
+  return buildBarRank(rows, schema, {
+    metric,
+    dimension,
+    period,
+    filters,
+    sort: "value_desc",
+    limit,
+  }).items.map((item) => item.label);
+}
+
+function buildGroupedPlanChart(rows: FinanceRow[], schema: FinanceSchema, module: FinanceActionModule, title: string) {
+  if (module.type !== "grouped_bar") {
+    return null;
+  }
+
+  const result = buildBarRank(rows, schema, {
+    metric: module.metric,
+    dimension: module.dimension,
+    period: module.period,
+    filters: module.filters,
+    comparison: "mom",
+    sort: "value_desc",
+    limit: module.limit,
+  });
+
+  return {
+    result,
+    spec: buildBarRankComparisonChart(title, result) ?? buildChartSpec({ type: "bar_rank", title, result }),
+  };
+}
+
+function buildStackedPlanChart(rows: FinanceRow[], schema: FinanceSchema, module: FinanceActionModule, title: string): FinanceChartSpec | null {
+  if (module.type !== "stacked_bar" && module.type !== "percent_stacked_bar") {
+    return null;
+  }
+
+  const labels = getRankLabels(
+    rows,
+    schema,
+    module.metric,
+    module.dimension,
+    module.period,
+    module.filters,
+    clampChartLimit(module.limit, 8, 10),
+  );
+  const seriesLabels = getRankLabels(
+    rows,
+    schema,
+    module.metric,
+    module.seriesDimension,
+    module.period,
+    module.filters,
+    clampChartLimit(module.seriesLimit, 5, 6),
+  );
+  const rawMatrix = seriesLabels.map((seriesLabel) => ({
+    name: seriesLabel,
+    items: labels.map((label) => ({
+      label,
+      value: getMetricValue(rows, schema, module.metric, module.period, mergeFilters(module.filters, {
+        [module.dimension]: [label],
+        [module.seriesDimension]: [seriesLabel],
+      })),
+    })),
+  }));
+
+  const series = module.type === "percent_stacked_bar"
+    ? rawMatrix.map((series) => ({
+        ...series,
+        items: series.items.map((item, itemIndex) => {
+          const total = rawMatrix.reduce((sum, currentSeries) => sum + currentSeries.items[itemIndex].value, 0);
+          return { ...item, value: total === 0 ? 0 : item.value / total };
+        }),
+      }))
+    : rawMatrix;
+
+  return buildDirectChartSpec({
+    type: module.type,
+    title,
+    xLabel: module.dimension,
+    yLabel: module.metric,
+    series,
+    note: module.type === "percent_stacked_bar"
+      ? "按主维度和系列维度计算结构占比，适合比较构成差异。"
+      : "按主维度和系列维度堆叠展示绝对结构。",
+  });
+}
+
+function buildHeatmapPlanChart(rows: FinanceRow[], schema: FinanceSchema, module: FinanceActionModule, title: string): FinanceChartSpec | null {
+  if (module.type !== "heatmap") {
+    return null;
+  }
+
+  const limit = clampChartLimit(module.limit, 8, 10);
+  const xLabels = getRankLabels(rows, schema, module.metric, module.xDimension, module.period, module.filters, limit);
+  const yLabels = getRankLabels(rows, schema, module.metric, module.yDimension, module.period, module.filters, limit);
+  const values = yLabels.map((yLabel) => (
+    xLabels.map((xLabel) => getMetricValue(rows, schema, module.metric, module.period, mergeFilters(module.filters, {
+      [module.xDimension]: [xLabel],
+      [module.yDimension]: [yLabel],
+    })))
+  ));
+
+  return buildDirectChartSpec({
+    type: "heatmap",
+    title,
+    xLabels,
+    yLabels,
+    values,
+    note: "按两个维度交叉计算指标，用颜色定位高低表现。",
+  });
+}
+
+function buildScatterPlanChart(rows: FinanceRow[], schema: FinanceSchema, module: FinanceActionModule, title: string): FinanceChartSpec | null {
+  if (module.type !== "scatter_bubble") {
+    return null;
+  }
+
+  const labels = getRankLabels(
+    rows,
+    schema,
+    module.xMetric,
+    module.dimension,
+    module.period,
+    module.filters,
+    clampChartLimit(module.limit, 12, 15),
+  );
+  const items = labels.map((label) => {
+    const filters = mergeFilters(module.filters, { [module.dimension]: [label] });
+    return {
+      label,
+      x: getMetricValue(rows, schema, module.xMetric, module.period, filters),
+      y: getMetricValue(rows, schema, module.yMetric, module.period, filters),
+      size: module.sizeMetric ? getMetricValue(rows, schema, module.sizeMetric, module.period, filters) : undefined,
+    };
+  });
+
+  return buildDirectChartSpec({
+    type: "scatter_bubble",
+    title,
+    xLabel: module.xMetric,
+    yLabel: module.yMetric,
+    items,
+    note: "每个点代表一个维度成员，用横轴、纵轴和气泡大小同时观察规模与质量。",
+  });
+}
+
+function buildDetailTablePlanChart(rows: FinanceRow[], schema: FinanceSchema, module: FinanceActionModule, title: string): FinanceChartSpec | null {
+  if (module.type !== "detail_table") {
+    return null;
+  }
+
+  const primaryMetric = module.metrics[0] ?? schema.totalMetrics[0]?.name ?? schema.unitMetrics[0]?.name;
+  const labels = getRankLabels(
+    rows,
+    schema,
+    primaryMetric,
+    module.dimension,
+    module.period,
+    module.filters,
+    clampChartLimit(module.limit, 20, 120),
+  );
+  const columns = [module.dimension, ...module.metrics];
+  const rowsData = labels.map((label) => {
+    const filters = mergeFilters(module.filters, { [module.dimension]: [label] });
+    return [
+      label,
+      ...module.metrics.map((metric) => getMetricValue(rows, schema, metric, module.period, filters)),
+    ];
+  });
+
+  if (module.comparison === "mom" && primaryMetric) {
+    const currentPeriodSort = schema.profile.periods.find((item) => item.key === module.period)?.sort ?? 0;
+    const previousPeriod = schema.profile.periods
+      .filter((period) => period.sort < currentPeriodSort)
+      .at(-1);
+
+    columns.push(`${primaryMetric}环比变化`);
+    rowsData.forEach((row, index) => {
+      const label = labels[index];
+      const currentFilters = mergeFilters(module.filters, { [module.dimension]: [label] });
+      const current = getMetricValue(rows, schema, primaryMetric, module.period, currentFilters);
+      const previous = previousPeriod ? getMetricValue(rows, schema, primaryMetric, previousPeriod.key, currentFilters) : 0;
+      row.push(current - previous);
+    });
+  }
+
+  return buildDirectChartSpec({
+    type: "detail_table",
+    title,
+    columns,
+    rows: rowsData,
+    note: "按用户要求列出可核对的维度明细。",
+  });
+}
+
+function buildExpandedPlanChart(rows: FinanceRow[], schema: FinanceSchema, module: FinanceActionModule, title: string): { result: unknown; spec: FinanceChartSpec } | null {
+  const grouped = buildGroupedPlanChart(rows, schema, module, title);
+  if (grouped) {
+    return grouped;
+  }
+
+  const spec = buildStackedPlanChart(rows, schema, module, title) ??
+    buildHeatmapPlanChart(rows, schema, module, title) ??
+    buildScatterPlanChart(rows, schema, module, title) ??
+    buildDetailTablePlanChart(rows, schema, module, title);
+
+  return spec ? { result: spec.data, spec } : null;
+}
+
 function getRequestedRankLimit(question: string) {
   const match = question.match(/(?:top|bottom|前|后|倒数)\s*(\d{1,3})/i);
   const limit = match ? Number(match[1]) : null;
@@ -327,10 +593,19 @@ function executeFinancePlan(
       return;
     }
 
-    const result = buildWaterfallBridge(rows, schema, module);
-    const spec = buildChartSpec({ type: "waterfall_bridge", title, result });
-    computedModules.push({ type: "waterfall_bridge", title, request: module, result });
-    chartCards.push({ id: `chart-${Date.now()}-${index}`, title, spec, note: spec.note });
+    if (module.type === "waterfall_bridge") {
+      const result = buildWaterfallBridge(rows, schema, module);
+      const spec = buildChartSpec({ type: "waterfall_bridge", title, result });
+      computedModules.push({ type: "waterfall_bridge", title, request: module, result });
+      chartCards.push({ id: `chart-${Date.now()}-${index}`, title, spec, note: spec.note });
+      return;
+    }
+
+    const expanded = buildExpandedPlanChart(rows, schema, module, title);
+    if (expanded) {
+      computedModules.push({ type: module.type, title, request: module, result: expanded.result });
+      chartCards.push({ id: `chart-${Date.now()}-${index}`, title, spec: expanded.spec, note: expanded.spec.note });
+    }
   });
 
   return { computedModules, chartCards };
@@ -358,16 +633,17 @@ function buildComputedSummary(question: string, schema: FinanceSchema, computedM
         return module;
       }
 
-      const allRankItems = module.result.allItems ?? module.result.items;
+      const result = module.result as BarRankResult;
+      const allRankItems = result.allItems ?? result.items;
       const answerLimit = requestedRankLimit ?? allRankItems.length;
 
       return {
         ...module,
         answerGuidance: {
           requestedRankLimit,
-          chartVisibleItemCount: module.result.visibleItemCount,
-          totalItemCount: module.result.totalItemCount,
-          hasCompleteDetailTable: Boolean(module.result.allItems?.length),
+          chartVisibleItemCount: result.visibleItemCount,
+          totalItemCount: result.totalItemCount,
+          hasCompleteDetailTable: Boolean(result.allItems?.length),
           answerItemCount: Math.min(answerLimit, allRankItems.length),
           instruction: "用 answerItems 回答用户要的排名；visibleItemCount 只解释图表展示，不要说结果只返回了可见 Top N。",
         },

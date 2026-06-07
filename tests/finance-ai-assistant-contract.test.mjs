@@ -139,6 +139,12 @@ test("finance AI assistant API exposes planning and explanation responsibilities
   assert.match(context, /metric_snapshot/);
   assert.match(context, /trend_chart/);
   assert.match(context, /bar_rank/);
+  assert.match(context, /grouped_bar/);
+  assert.match(context, /stacked_bar/);
+  assert.match(context, /percent_stacked_bar/);
+  assert.match(context, /heatmap/);
+  assert.match(context, /scatter_bubble/);
+  assert.match(context, /detail_table/);
   assert.match(context, /完整明细表/);
   assert.match(context, /超过 10 的 limit/);
   assert.match(context, /waterfall_bridge/);

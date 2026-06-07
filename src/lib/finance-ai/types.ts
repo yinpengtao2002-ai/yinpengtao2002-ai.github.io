@@ -191,7 +191,12 @@ export type FinanceActionModule =
   | ({ type: "metric_snapshot"; chart?: { type: "metric_card" | "trend_chart"; highlightPeriod?: string } } & MetricSnapshotRequest)
   | ({ type: "trend_chart" } & TrendRequest)
   | ({ type: "bar_rank" } & BarRankRequest)
-  | ({ type: "waterfall_bridge" } & WaterfallBridgeRequest);
+  | ({ type: "waterfall_bridge" } & WaterfallBridgeRequest)
+  | ({ type: "grouped_bar"; comparison?: "mom" } & Pick<BarRankRequest, "metric" | "dimension" | "period" | "filters" | "limit">)
+  | ({ type: "stacked_bar" | "percent_stacked_bar"; metric: string; dimension: string; seriesDimension: string; period: string; filters?: FinanceFilter; limit?: number; seriesLimit?: number })
+  | ({ type: "heatmap"; metric: string; xDimension: string; yDimension: string; period: string; filters?: FinanceFilter; limit?: number })
+  | ({ type: "scatter_bubble"; xMetric: string; yMetric: string; sizeMetric?: string; dimension: string; period: string; filters?: FinanceFilter; limit?: number })
+  | ({ type: "detail_table"; metrics: string[]; dimension: string; period: string; comparison?: "mom"; filters?: FinanceFilter; limit?: number });
 
 export type FinanceActionPlan = {
   modules: FinanceActionModule[];

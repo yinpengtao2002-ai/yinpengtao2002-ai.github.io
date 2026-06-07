@@ -626,6 +626,29 @@ test("action validator accepts all-rank requests by capping chart items and addi
   assert.equal(valid.modules[0].detailTable, true);
 });
 
+test("action validator accepts expanded chart plan modules for deterministic frontend calculation", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const valid = validateFinanceActionPlan(schema, {
+    modules: [
+      { type: "grouped_bar", metric: "边际", dimension: "国家", period: "2026-03", comparison: "mom", limit: 10 },
+      { type: "heatmap", metric: "单车边际", xDimension: "车型", yDimension: "国家", period: "2026-03", limit: 8 },
+      { type: "scatter_bubble", xMetric: "销量", yMetric: "单车边际", sizeMetric: "边际", dimension: "国家", period: "2026-03", limit: 12 },
+    ],
+  });
+  const validStructure = validateFinanceActionPlan(schema, {
+    modules: [
+      { type: "stacked_bar", metric: "销量", dimension: "国家", seriesDimension: "车型", period: "2026-03", limit: 8, seriesLimit: 4 },
+      { type: "percent_stacked_bar", metric: "销量", dimension: "国家", seriesDimension: "车型", period: "2026-03", limit: 8, seriesLimit: 4 },
+      { type: "detail_table", metrics: ["销量", "边际", "单车边际"], dimension: "国家", period: "2026-03", comparison: "mom", limit: 20 },
+    ],
+  });
+
+  assert.equal(valid.ok, true);
+  assert.deepEqual(valid.modules.map((module) => module.type), ["grouped_bar", "heatmap", "scatter_bubble"]);
+  assert.equal(validStructure.ok, true);
+  assert.deepEqual(validStructure.modules.map((module) => module.type), ["stacked_bar", "percent_stacked_bar", "detail_table"]);
+});
+
 test("action plan alignment corrects explicit lowest and top rank directions per metric", () => {
   const rows = [
     { "Month": "3月", "Country": "巴西", "Sales Volume": 100, "Total Margin": 3000 },

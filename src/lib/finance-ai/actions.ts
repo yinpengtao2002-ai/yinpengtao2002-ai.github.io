@@ -16,6 +16,12 @@ const ACTION_TYPES = new Set([
   "trend_chart",
   "bar_rank",
   "waterfall_bridge",
+  "grouped_bar",
+  "stacked_bar",
+  "percent_stacked_bar",
+  "heatmap",
+  "scatter_bubble",
+  "detail_table",
 ]);
 
 const PERIOD_FIELDS = ["period", "fromPeriod", "toPeriod", "highlightPeriod"] as const;
@@ -25,7 +31,7 @@ const LOW_RANK_TOKENS = ["最低", "最少", "倒数", "bottom", "后五", "后5
 const HIGH_RANK_TOKENS = ["最高", "最多", "top", "前五", "前5", "高的5", "高5"];
 
 type ActionType = FinanceActionModule["type"];
-type MutableModule = Record<string, unknown> & { type: ActionType; metric: string };
+type MutableModule = Record<string, unknown> & { type: ActionType; metric?: string };
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -56,14 +62,37 @@ function normalizeModule(value: unknown): FinanceActionModule | null {
   copyOptionalString(record, actionModule, "toPeriod");
   copyOptionalString(record, actionModule, "highlightPeriod");
   copyOptionalString(record, actionModule, "dimension");
+  copyOptionalString(record, actionModule, "seriesDimension");
+  copyOptionalString(record, actionModule, "xDimension");
+  copyOptionalString(record, actionModule, "yDimension");
+  copyOptionalString(record, actionModule, "xMetric");
+  copyOptionalString(record, actionModule, "yMetric");
+  copyOptionalString(record, actionModule, "sizeMetric");
   copyOptionalString(record, actionModule, "sort");
   copyOptionalString(record, actionModule, "comparison");
   copyOptionalNumber(record, actionModule, "limit");
+  copyOptionalNumber(record, actionModule, "seriesLimit");
+  copyMetrics(record, actionModule);
   copyFilters(record, actionModule);
   copyComparisons(record, actionModule);
   copyChart(record, actionModule);
 
   return actionModule as FinanceActionModule;
+}
+
+function copyMetrics(source: Record<string, unknown>, target: MutableModule) {
+  if (!Array.isArray(source.metrics)) {
+    return;
+  }
+
+  const metrics = source.metrics
+    .filter((metric): metric is string => typeof metric === "string")
+    .map((metric) => metric.trim())
+    .filter(Boolean);
+
+  if (metrics.length) {
+    target.metrics = metrics.slice(0, 6);
+  }
 }
 
 function copyOptionalString(source: Record<string, unknown>, target: MutableModule, field: string) {
@@ -165,8 +194,18 @@ export function validateFinanceActionPlan(
     validateFilters(schema, module, errors);
     validatePeriods(schema, module, errors);
 
-    if (module.type === "bar_rank" || module.type === "waterfall_bridge") {
-      validateDimension(schema, module.dimension, errors);
+    if (module.type === "bar_rank" || module.type === "waterfall_bridge" || module.type === "grouped_bar" || module.type === "scatter_bubble" || module.type === "detail_table") {
+      validateDimension(schema, module.dimension, errors, "维度字段");
+    }
+
+    if (module.type === "stacked_bar" || module.type === "percent_stacked_bar") {
+      validateDimension(schema, module.dimension, errors, "主维度字段");
+      validateDimension(schema, module.seriesDimension, errors, "系列维度字段");
+    }
+
+    if (module.type === "heatmap") {
+      validateDimension(schema, module.xDimension, errors, "横轴维度字段");
+      validateDimension(schema, module.yDimension, errors, "纵轴维度字段");
     }
 
   });
@@ -282,6 +321,25 @@ function validateMetric(
   module: FinanceActionModule,
   errors: string[],
 ): FinanceMetric | undefined {
+  if (module.type === "scatter_bubble") {
+    validateMetricName(schema, module.xMetric, errors, "横轴指标");
+    validateMetricName(schema, module.yMetric, errors, "纵轴指标");
+    if (module.sizeMetric) {
+      validateMetricName(schema, module.sizeMetric, errors, "气泡大小指标");
+    }
+    return undefined;
+  }
+
+  if (module.type === "detail_table") {
+    if (!module.metrics.length) {
+      errors.push("明细表需要至少 1 个指标。");
+      return undefined;
+    }
+
+    module.metrics.forEach((metricName) => validateMetricName(schema, metricName, errors, "明细指标"));
+    return undefined;
+  }
+
   const metric = findMetric(schema, module.metric);
 
   if (!metric) {
@@ -291,11 +349,29 @@ function validateMetric(
   return metric;
 }
 
+function validateMetricName(schema: FinanceSchema, metricName: string | undefined, errors: string[], label: string) {
+  if (!metricName || !findMetric(schema, metricName)) {
+    errors.push(`${label}不存在：${metricName || "未填写"}`);
+  }
+}
+
 function validateRequiredFields(module: FinanceActionModule, errors: string[]) {
   const record = module as Record<string, unknown>;
 
   if (module.type === "metric_snapshot" && !hasStringValue(record.period)) {
     errors.push("指标快照需要指定期间。");
+  }
+
+  if (
+    (module.type === "grouped_bar" ||
+      module.type === "stacked_bar" ||
+      module.type === "percent_stacked_bar" ||
+      module.type === "heatmap" ||
+      module.type === "scatter_bubble" ||
+      module.type === "detail_table") &&
+    !hasStringValue(record.period)
+  ) {
+    errors.push("图表需要指定期间。");
   }
 
   if (module.type === "waterfall_bridge") {
@@ -314,8 +390,43 @@ function validateActionOptions(module: FinanceActionModule, errors: string[]) {
     validateBarRankOptions(module, errors);
   }
 
+  if (module.type === "grouped_bar") {
+    const record = module as Record<string, unknown>;
+    if (typeof record.comparison === "string" && record.comparison !== "mom") {
+      errors.push("分组柱状图对比只支持环比。");
+      delete record.comparison;
+    }
+  }
+
   if (module.type === "bar_rank" || module.type === "waterfall_bridge") {
-    validateLimit(module, errors, module.type === "bar_rank" ? "排名数量" : "瀑布桥维度项");
+    validateLimit(
+      module,
+      errors,
+      module.type === "bar_rank"
+        ? "排名数量"
+        : "瀑布桥维度项",
+    );
+  }
+
+  if (
+    module.type === "grouped_bar" ||
+    module.type === "stacked_bar" ||
+    module.type === "percent_stacked_bar" ||
+    module.type === "heatmap"
+  ) {
+    normalizeChartLimit(module, MAX_CHART_ITEMS);
+  }
+
+  if (module.type === "scatter_bubble") {
+    normalizeChartLimit(module, 15);
+  }
+
+  if (module.type === "detail_table") {
+    normalizeChartLimit(module, 120);
+  }
+
+  if (module.type === "stacked_bar" || module.type === "percent_stacked_bar") {
+    validateSeriesLimit(module, errors);
   }
 }
 
@@ -371,13 +482,44 @@ function validateLimit(module: FinanceActionModule, errors: string[], label: str
   record.limit = normalizedLimit;
 }
 
+function normalizeChartLimit(module: FinanceActionModule, max: number) {
+  const record = module as Record<string, unknown>;
+
+  if (typeof record.limit !== "number") {
+    return;
+  }
+
+  if (record.limit <= 0) {
+    delete record.limit;
+    return;
+  }
+
+  record.limit = Math.min(Math.floor(record.limit), max);
+}
+
 function hasStringValue(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-function validateDimension(schema: FinanceSchema, dimension: unknown, errors: string[]) {
+function validateSeriesLimit(module: FinanceActionModule, errors: string[]) {
+  const record = module as Record<string, unknown>;
+
+  if (typeof record.seriesLimit !== "number") {
+    return;
+  }
+
+  if (record.seriesLimit <= 0) {
+    errors.push("系列数量需要大于 0。");
+    delete record.seriesLimit;
+    return;
+  }
+
+  record.seriesLimit = Math.min(Math.floor(record.seriesLimit), 6);
+}
+
+function validateDimension(schema: FinanceSchema, dimension: unknown, errors: string[], label: string) {
   if (typeof dimension !== "string" || !dimension.trim()) {
-    errors.push("排名或瀑布桥需要维度字段。");
+    errors.push(`需要${label}。`);
     return;
   }
 
