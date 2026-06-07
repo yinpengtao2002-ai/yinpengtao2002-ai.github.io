@@ -919,6 +919,15 @@ test("finance AI assistant chat styles size embedded chart cards", async () => {
   assert.match(styles, /\.finance-ai-markdown\s+\.katex-display/);
 });
 
+test("finance AI assistant rank detail tables keep numeric cells for shared unit scaling", async () => {
+  const client = await readProjectFile("src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
+
+  assert.doesNotMatch(client, /formatTableNumber\(item\.value/);
+  assert.doesNotMatch(client, /formatTableNumber\(item\.changeValue/);
+  assert.match(client, /item\.value,/);
+  assert.match(client, /item\.changeValue,/);
+});
+
 test("finance AI chart demo page renders all demo chart styles", async () => {
   const page = await readProjectFile("src/app/finance/finance-ai-assistant/chart-demo/page.tsx");
   const client = await readProjectFile("src/app/finance/finance-ai-assistant/chart-demo/FinanceAIChartDemo.tsx");

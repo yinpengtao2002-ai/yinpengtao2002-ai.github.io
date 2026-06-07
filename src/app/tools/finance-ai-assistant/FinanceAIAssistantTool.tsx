@@ -201,47 +201,6 @@ function getModuleTitle(module: FinanceActionModule) {
   return `${module.period} ${module.dimension}明细表`;
 }
 
-function isMoneyTableContext(context: string) {
-  return /收入|边际|成本|利润|金额|总额|费用|税|毛利|净利|贡献|扣减|价格|售价|单价/.test(context);
-}
-
-function formatTableNumber(value: number | null | undefined, context = "", signed = false) {
-  if (value === null || value === undefined || !Number.isFinite(value)) {
-    return "-";
-  }
-
-  if (!isMoneyTableContext(context)) {
-    const prefix = signed && value > 0 ? "+" : "";
-    return `${prefix}${value.toLocaleString("zh-CN", { maximumFractionDigits: 2 })}`;
-  }
-
-  const absolute = Math.abs(value);
-  const sign = signed ? (value > 0 ? "+" : value < 0 ? "-" : "") : value < 0 ? "-" : "";
-  const units = [
-    { threshold: 1_000_000_000_000, divisor: 1_000_000_000_000, suffix: "万亿元" },
-    { threshold: 100_000_000, divisor: 100_000_000, suffix: "亿元" },
-    { threshold: 10_000, divisor: 10_000, suffix: "万元" },
-  ];
-  const unit = units.find((item) => absolute >= item.threshold);
-
-  if (!unit) {
-    return `${sign}${absolute.toLocaleString("zh-CN", { maximumFractionDigits: 0 })}元`;
-  }
-
-  return `${sign}${(absolute / unit.divisor).toLocaleString("zh-CN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}${unit.suffix}`;
-}
-
-function formatTableShare(value: number | null | undefined) {
-  if (value === null || value === undefined || !Number.isFinite(value)) {
-    return "-";
-  }
-
-  return `${(value * 100).toFixed(1)}%`;
-}
-
 function buildBarRankDetailTable(title: string, result: BarRankResult): FinanceChartSpec | null {
   if (!result.allItems?.length || result.allItems.length <= result.visibleItemCount) {
     return null;
@@ -254,9 +213,9 @@ function buildBarRankDetailTable(title: string, result: BarRankResult): FinanceC
     rows: result.allItems.map((item, index) => [
       index + 1,
       item.label,
-      formatTableNumber(item.value, result.metric),
-      formatTableShare(item.valueShare),
-      formatTableNumber(item.changeValue, `${result.metric}环比变化`, true),
+      item.value,
+      item.valueShare,
+      item.changeValue,
     ]),
     note: "按用户要求列出完整维度明细；图表仅保留可读的前 10 项。",
   });
