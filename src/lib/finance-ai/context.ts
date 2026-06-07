@@ -17,11 +17,11 @@ const MAX_RECENT_QUESTIONS = 4;
 const MAX_CHART_HISTORY = 4;
 const MAX_FILTER_FIELDS = 12;
 const MAX_FILTER_VALUES = 8;
-const MAX_SUMMARY_ARRAY_ITEMS = 12;
-const MAX_SUMMARY_OBJECT_KEYS = 18;
-const MAX_SUMMARY_DEPTH = 4;
+const MAX_SUMMARY_ARRAY_ITEMS = 24;
+const MAX_SUMMARY_OBJECT_KEYS = 28;
+const MAX_SUMMARY_DEPTH = 8;
 const MAX_STRING_CHARS = 240;
-const MAX_SUMMARY_JSON_CHARS = 6000;
+const MAX_SUMMARY_JSON_CHARS = 16000;
 const OMIT_PROMPT_VALUE = Symbol("omit-prompt-value");
 
 function compactList(values: string[], emptyLabel = "无") {
@@ -65,7 +65,7 @@ function compactFilters(filters: Record<string, string[]> | undefined) {
 
   return {
     ...Object.fromEntries(visibleEntries),
-    ...(hiddenFieldCount > 0 ? { "__omitted": `另有 ${hiddenFieldCount} 个筛选字段` } : {}),
+    ...(hiddenFieldCount > 0 ? { "__moreFilterFields": hiddenFieldCount } : {}),
   };
 }
 
@@ -109,7 +109,7 @@ function sanitizePromptValue(value: unknown, key = "", depth = 0): unknown | typ
       });
     const hiddenCount = value.length - MAX_SUMMARY_ARRAY_ITEMS;
     return hiddenCount > 0
-      ? [...visibleItems, { "__truncated": `另有 ${hiddenCount} 项未展开` }]
+      ? [...visibleItems, { "__moreItems": hiddenCount }]
       : visibleItems;
   }
 
@@ -118,7 +118,7 @@ function sanitizePromptValue(value: unknown, key = "", depth = 0): unknown | typ
   }
 
   if (depth >= MAX_SUMMARY_DEPTH) {
-    return "[嵌套内容未展开]";
+    return null;
   }
 
   const entries = Object.entries(value as Record<string, unknown>);
@@ -132,7 +132,7 @@ function sanitizePromptValue(value: unknown, key = "", depth = 0): unknown | typ
 
   return {
     ...Object.fromEntries(sanitizedEntries),
-    ...(hiddenKeyCount > 0 ? { "__truncated": `另有 ${hiddenKeyCount} 个字段未展开` } : {}),
+    ...(hiddenKeyCount > 0 ? { "__moreFields": hiddenKeyCount } : {}),
   };
 }
 
@@ -140,7 +140,7 @@ function safeBoundedJson(value: unknown) {
   const sanitizedValue = sanitizePromptValue(value ?? {});
   const json = JSON.stringify(sanitizedValue === OMIT_PROMPT_VALUE ? {} : sanitizedValue);
   return json.length > MAX_SUMMARY_JSON_CHARS
-    ? `${json.slice(0, MAX_SUMMARY_JSON_CHARS)}...（已截断）`
+    ? json.slice(0, MAX_SUMMARY_JSON_CHARS)
     : json;
 }
 
@@ -194,7 +194,7 @@ export function buildFinanceAIExplanationPrompt(input: ExplanationPromptInput) {
     "你是财务分析 AI 助手。请基于前端已经计算好的结果，用中文给出简短解释。",
     "不要重新计算数字，不要编造字段，不要引入计算结果之外的数据。",
     "计算结果是前端确定性计算后的聚合结果，聚合结果足够回答本轮问题。",
-    "不要说数据被省略、看不到明细、无法分析或无法出图；如果图表信息存在，就按聊天里已展示的图表解释。",
+    "排名、占比、变化贡献等明细如果出现在计算结果里，就必须直接使用这些结果回答，不要说看不到明细、无法分析或无法出图。",
     "如果结果里出现不可计算、缺少上月或缺少年同期，需要直接说明。",
     "回复应像聊天消息，先给结论，再补一句口径。可以用 Markdown 加粗关键数字，必要时可用 LaTeX 公式。",
     `用户问题：${input.userQuestion.trim() || "无"}`,

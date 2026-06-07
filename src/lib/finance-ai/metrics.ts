@@ -44,10 +44,12 @@ type NumericRead = {
 type RankedItem = {
   label: string;
   value: number | null;
+  valueShare: number | null;
   rowCount: number;
   blankValueCount: number;
   invalidValueCount: number;
   changeValue: number | null;
+  changeShare: number | null;
   order: number;
 };
 
@@ -133,21 +135,33 @@ export function buildBarRank(
   const labels = request.comparison === "mom" && period
     ? mergeGroupLabels(groups, previousGroups)
     : Array.from(groups.keys());
+  const valueShareBase = getShareBase(metric, groups);
+  const previousShareBase = getShareBase(metric, previousGroups);
+  const changeShareBase = request.comparison === "mom" && period
+    ? valueShareBase - previousShareBase
+    : null;
   const items = labels.map((label) => {
     const accumulator = groups.get(label);
     const previousAccumulator = previousGroups.get(label);
     const value = getRankValue(metric, accumulator);
     const comparisonValue = getComparisonValue(metric, accumulator);
     const previousValue = getComparisonValue(metric, previousAccumulator);
+    const changeValue = request.comparison === "mom" && period && comparisonValue !== null && previousValue !== null
+      ? comparisonValue - previousValue
+      : null;
 
     return {
       label,
       value,
+      valueShare: metric.kind === "total" && value !== null && valueShareBase !== 0
+        ? value / valueShareBase
+        : null,
       rowCount: accumulator?.rowCount ?? 0,
       blankValueCount: accumulator?.blankValueCount ?? 0,
       invalidValueCount: accumulator?.invalidValueCount ?? 0,
-      changeValue: request.comparison === "mom" && period && comparisonValue !== null && previousValue !== null
-        ? comparisonValue - previousValue
+      changeValue,
+      changeShare: metric.kind === "total" && changeValue !== null && changeShareBase !== null && changeShareBase !== 0
+        ? changeValue / changeShareBase
         : null,
       order: accumulator?.order ?? groups.size + (previousAccumulator?.order ?? 0),
     };
@@ -158,10 +172,12 @@ export function buildBarRank(
     dimension: request.dimension,
     items: sortRankedItems(items, request.sort ?? "value_desc")
       .slice(0, getLimit(request.limit))
-      .map(({ label, value, changeValue, rowCount, blankValueCount, invalidValueCount }) => ({
+      .map(({ label, value, valueShare, changeValue, changeShare, rowCount, blankValueCount, invalidValueCount }) => ({
         label,
         value,
+        valueShare,
         changeValue,
+        changeShare,
         rowCount,
         blankValueCount,
         invalidValueCount,
@@ -458,6 +474,16 @@ function getComparisonValue(metric: FinanceMetric, accumulator: Accumulator | un
   }
 
   return metric.kind === "total" ? 0 : null;
+}
+
+function getShareBase(metric: FinanceMetric, groups: Map<string, Accumulator>): number {
+  if (metric.kind !== "total") {
+    return 0;
+  }
+
+  return Array.from(groups.values()).reduce((sum, accumulator) => (
+    sum + valueOrZero(getMetricValue(metric, accumulator))
+  ), 0);
 }
 
 function buildComparison(base: MetricValueBase, comparison: MetricValueBase): MetricComparison {

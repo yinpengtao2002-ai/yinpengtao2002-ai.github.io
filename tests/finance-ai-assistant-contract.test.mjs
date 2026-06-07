@@ -170,9 +170,57 @@ test("finance AI context bounds filters and computed summaries before provider c
   assert.doesNotMatch(planningPrompt, /筛选值39-39/);
   assert.equal(explanationPrompt.length < 8000, true);
   assert.match(explanationPrompt, /聚合结果足够回答/);
-  assert.match(explanationPrompt, /不要说数据被省略/);
+  assert.match(explanationPrompt, /排名、占比、变化贡献/);
+  assert.match(explanationPrompt, /不要说看不到明细/);
   assert.doesNotMatch(explanationPrompt, /已省略完整明细数组/);
+  assert.doesNotMatch(explanationPrompt, /未展开/);
+  assert.doesNotMatch(explanationPrompt, /截断/);
   assert.doesNotMatch(explanationPrompt, /raw-secret-79/);
+});
+
+test("finance AI explanation prompt keeps ranked contribution details visible", () => {
+  const explanationPrompt = buildFinanceAIExplanationPrompt({
+    userQuestion: "4 月和 3 月环比情况，哪些国家占主要比例？",
+    computedSummary: {
+      modules: [
+        {
+          type: "bar_rank",
+          metric: "Sales Volume",
+          dimension: "Dim_A",
+          period: "M04",
+          comparison: "mom",
+          items: [
+            {
+              label: "巴西",
+              value: 143047,
+              valueShare: 0.62,
+              changeValue: 22547,
+              changeShare: 0.48,
+              rowCount: 38,
+            },
+            {
+              label: "墨西哥",
+              value: 65000,
+              valueShare: 0.28,
+              changeValue: 12000,
+              changeShare: 0.26,
+              rowCount: 19,
+            },
+          ],
+        },
+      ],
+    },
+  });
+
+  assert.match(explanationPrompt, /巴西/);
+  assert.match(explanationPrompt, /143047/);
+  assert.match(explanationPrompt, /0\.62/);
+  assert.match(explanationPrompt, /22547/);
+  assert.match(explanationPrompt, /0\.48/);
+  assert.match(explanationPrompt, /墨西哥/);
+  assert.doesNotMatch(explanationPrompt, /未展开/);
+  assert.doesNotMatch(explanationPrompt, /截断/);
+  assert.doesNotMatch(explanationPrompt, /__truncated/);
 });
 
 test("finance AI assistant API validates provider action plans before returning them", async () => {
@@ -238,8 +286,11 @@ test("finance AI assistant API strips raw-row-like summaries before explain prov
     assert.equal(response.status, 200);
     assert.equal(payload.message, "解释完成");
     assert.match(providerBody, /聚合结果足够回答/);
-    assert.match(providerBody, /不要说数据被省略/);
+    assert.match(providerBody, /排名、占比、变化贡献/);
+    assert.match(providerBody, /不要说看不到明细/);
     assert.doesNotMatch(providerBody, /已省略完整明细数组/);
+    assert.doesNotMatch(providerBody, /未展开/);
+    assert.doesNotMatch(providerBody, /截断/);
     assert.doesNotMatch(providerBody, /raw-secret-79/);
     assert.doesNotMatch(providerBody, /raw-secret-0/);
   }, "解释完成");
@@ -355,7 +406,7 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(client, /finance-ai-empty-state/);
   assert.match(client, /X-Finance-AI-Access/);
   assert.doesNotMatch(client, /next\/image/);
-  assert.match(client, /finance-ai-assistant-preview\.png/);
+  assert.match(client, /finance-ai-assistant-preview\.(png|webp)/);
   assert.match(client, /charts:\s*chartCards\.map/);
   assert.doesNotMatch(client, /<p>\{message\.text\}<\/p>/);
   assert.match(styles, /\.finance-ai-page\s*\{[\s\S]*background:\s*#f7f5ef/s);

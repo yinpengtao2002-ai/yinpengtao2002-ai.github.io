@@ -295,6 +295,8 @@ test("bar rank comparison includes previous-only groups and exposes change value
   assert.deepEqual(rank.items.map((item) => item.label), ["智利", "墨西哥", "巴西"]);
   assert.deepEqual(rank.items.map((item) => item.value), [0, 100, 350]);
   assert.deepEqual(rank.items.map((item) => item.changeValue), [-500, 100, 150]);
+  assert.deepEqual(rank.items.map((item) => item.valueShare), [0, 2 / 9, 7 / 9]);
+  assert.deepEqual(rank.items.map((item) => item.changeShare), [-10 / -5, 2 / -5, 3 / -5]);
   assert.deepEqual(rank.items.map((item) => item.rowCount), [0, 1, 1]);
 });
 
@@ -463,6 +465,13 @@ test("chart specs are compact and identify supported chart types", () => {
   assert.equal(spec.data.length >= 1, true);
   assert.equal(spec.layout.paper_bgcolor, "rgba(0,0,0,0)");
   assert.equal(spec.layout.plot_bgcolor, "rgba(0,0,0,0)");
+  assert.equal(spec.data[0].mode, "lines+markers+text");
+  assert.deepEqual(spec.data[0].text, ["35.00", "20.00", "35.00"]);
+  assert.equal(spec.data[0].textposition, "top center");
+  assert.equal(spec.data[0].cliponaxis, false);
+  assert.equal(Array.isArray(spec.layout.yaxis.range), true);
+  assert.notEqual(spec.layout.yaxis.range[0], 0);
+  assert.equal(spec.layout.yaxis.fixedrange, true);
   assert.equal(spec.config.displayModeBar, false);
   assert.equal(typeof spec.note, "string");
 });
@@ -479,6 +488,11 @@ test("bar rank chart spec uses horizontal bars without a separate numeric table"
   assert.equal(spec.kind, "bar_rank");
   assert.equal(spec.data[0].type, "bar");
   assert.equal(spec.data[0].orientation, "h");
+  assert.ok(Array.isArray(spec.data[0].text));
+  assert.match(spec.data[0].text.at(-1), /76\.1%/);
+  assert.equal(spec.data[0].textposition, "outside");
+  assert.equal(spec.data[0].cliponaxis, false);
+  assert.equal(spec.layout.xaxis.fixedrange, true);
   assert.equal("table" in spec, false);
   assert.equal(spec.config.displayModeBar, false);
 });
@@ -496,5 +510,10 @@ test("waterfall chart spec uses Plotly waterfall for total-metric bridge results
   assert.equal(spec.kind, "waterfall_bridge");
   assert.equal(spec.data[0].type, "waterfall");
   assert.deepEqual(spec.data[0].measure, ["absolute", "relative", "relative", "total"]);
+  assert.deepEqual(spec.data[0].text, ["2,400", "+1,100", "+1,100", "4,600"]);
+  assert.equal(spec.data[0].textposition, "outside");
+  assert.equal(spec.data[0].cliponaxis, false);
+  assert.equal(Array.isArray(spec.layout.yaxis.range), true);
+  assert.equal(spec.layout.yaxis.fixedrange, true);
   assert.equal(spec.config.displayModeBar, false);
 });

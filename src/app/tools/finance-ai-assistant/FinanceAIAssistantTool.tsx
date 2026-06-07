@@ -137,6 +137,10 @@ function getDefaultQuestion(schema: FinanceSchema | null) {
   return `${period} ${dimension}表现怎么看？${metric}环比同比如何？`;
 }
 
+function getChartTitle(parts: string[]) {
+  return parts.map((part) => part.trim()).filter(Boolean).join(" · ");
+}
+
 function computeModule(rows: FinanceRow[], schema: FinanceSchema, module: FinanceActionModule): ComputedModule {
   switch (module.type) {
     case "metric_snapshot": {
@@ -152,7 +156,7 @@ function computeModule(rows: FinanceRow[], schema: FinanceSchema, module: Financ
       return {
         computed,
         chart: trend
-          ? { type: "trend_chart", title: `${module.metric}趋势`, result: trend }
+          ? { type: "trend_chart", title: getChartTitle([module.metric, "趋势"]), result: trend }
           : null,
       };
     }
@@ -161,7 +165,7 @@ function computeModule(rows: FinanceRow[], schema: FinanceSchema, module: Financ
       const result = buildTrendSeries(rows, schema, module);
       return {
         computed: result,
-        chart: { type: "trend_chart", title: `${module.metric}趋势`, result },
+        chart: { type: "trend_chart", title: getChartTitle([module.metric, "趋势"]), result },
       };
     }
 
@@ -169,7 +173,7 @@ function computeModule(rows: FinanceRow[], schema: FinanceSchema, module: Financ
       const result = buildBarRank(rows, schema, module);
       return {
         computed: result,
-        chart: { type: "bar_rank", title: `${module.dimension}${module.metric}排名`, result },
+        chart: { type: "bar_rank", title: getChartTitle([module.dimension, module.metric, "排名"]), result },
       };
     }
 
@@ -179,7 +183,7 @@ function computeModule(rows: FinanceRow[], schema: FinanceSchema, module: Financ
         computed: result,
         chart: {
           type: "waterfall_bridge",
-          title: `${module.fromPeriod} 到 ${module.toPeriod} ${module.metric}变化桥`,
+          title: getChartTitle([`${module.fromPeriod} 到 ${module.toPeriod}`, module.metric, "变化桥"]),
           result,
         },
       };

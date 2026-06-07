@@ -114,7 +114,9 @@ export type BarRankRequest = {
 export type BarRankItem = {
   label: string;
   value: number | null;
+  valueShare: number | null;
   changeValue: number | null;
+  changeShare: number | null;
   rowCount: number;
   blankValueCount: number;
   invalidValueCount: number;
