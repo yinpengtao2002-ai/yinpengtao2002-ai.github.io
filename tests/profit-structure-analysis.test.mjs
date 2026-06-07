@@ -209,6 +209,16 @@ test("scatter data is capped for high-cardinality dimension combinations", () =>
   assert.ok(scatter.items.every((item) => item.name.includes(" / ")));
 });
 
+test("profit structure tool requires the existing finance access key before booting charts", async () => {
+  const tool = await readFile(new URL("../src/app/finance/profit-structure/ProfitStructureTool.tsx", import.meta.url), "utf8");
+
+  assert.match(tool, /\/api\/tools\/finance-ai-assistant\/access/);
+  assert.match(tool, /多维结构关系分析模型内测访问/);
+  assert.match(tool, /type="password"/);
+  assert.match(tool, /if \(!accessToken\) {\s+return;\s+}/);
+  assert.match(tool, /\}, \[accessToken\]\);/);
+});
+
 test("source files for the tool do not expose rejected panels or rejected chart names", async () => {
   const [tool, page, engine] = await Promise.all([
     readFile(new URL("../src/app/finance/profit-structure/ProfitStructureTool.tsx", import.meta.url), "utf8"),

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { KeyRound, Loader2 } from "lucide-react";
 
 declare global {
     interface Window {
@@ -44,8 +45,35 @@ function loadBrowserScript(src: string) {
     return window.__financeToolScripts[src];
 }
 
+type AccessResponse = {
+    token?: string;
+    error?: string;
+    errorCode?: string;
+};
+
+function getAccessErrorMessage(payload: AccessResponse, fallback: string) {
+    if (payload.errorCode === "access_not_configured") {
+        return "内测密钥还没有在部署环境配置，请先配置 FINANCE_AI_ACCESS_KEY。";
+    }
+
+    if (payload.errorCode === "access_denied") {
+        return "内测密钥不正确。";
+    }
+
+    return payload.error || fallback;
+}
+
 export default function ProfitStructureTool() {
+    const [accessToken, setAccessToken] = useState("");
+    const [accessKey, setAccessKey] = useState("");
+    const [accessBusy, setAccessBusy] = useState(false);
+    const [accessError, setAccessError] = useState("");
+
     useEffect(() => {
+        if (!accessToken) {
+            return;
+        }
+
         let cancelled = false;
 
         async function bootTool() {
@@ -69,7 +97,78 @@ export default function ProfitStructureTool() {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [accessToken]);
+
+    async function handleAccessSubmit() {
+        const key = accessKey.trim();
+
+        if (!key) {
+            setAccessError("请输入内测密钥。");
+            return;
+        }
+
+        setAccessBusy(true);
+        setAccessError("");
+
+        try {
+            const response = await fetch("/api/tools/finance-ai-assistant/access", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ key }),
+            });
+            const payload = await response.json().catch(() => ({})) as AccessResponse;
+
+            if (!response.ok || !payload.token) {
+                throw new Error(getAccessErrorMessage(payload, "内测密钥校验失败。"));
+            }
+
+            setAccessToken(payload.token);
+            setAccessKey("");
+        } catch (error) {
+            setAccessError(error instanceof Error ? error.message : "内测密钥校验失败。");
+        } finally {
+            setAccessBusy(false);
+        }
+    }
+
+    if (!accessToken) {
+        return (
+            <div id="profit-structure-root" className="profit-structure-tool">
+                <section className="profit-structure-access-gate" aria-label="多维结构关系分析模型内测访问">
+                    <div className="profit-structure-access-card">
+                        <span className="profit-structure-access-icon" aria-hidden="true">
+                            <KeyRound />
+                        </span>
+                        <div>
+                            <p className="eyebrow">Private Beta</p>
+                            <h1>输入内测密钥</h1>
+                            <p>这个模型还在打磨中。通过后再上传底表，数据仍只保留在当前页面会话里。</p>
+                        </div>
+                        <form
+                            className="profit-structure-access-form"
+                            onSubmit={(event) => {
+                                event.preventDefault();
+                                void handleAccessSubmit();
+                            }}
+                        >
+                            <input
+                                value={accessKey}
+                                onChange={(event) => setAccessKey(event.target.value)}
+                                placeholder="输入内测密钥"
+                                type="password"
+                                autoComplete="off"
+                                disabled={accessBusy}
+                            />
+                            <button type="submit" disabled={accessBusy || !accessKey.trim()}>
+                                {accessBusy ? <Loader2 className="profit-structure-spin" aria-hidden="true" /> : "进入"}
+                            </button>
+                        </form>
+                        {accessError ? <p className="profit-structure-access-error">{accessError}</p> : null}
+                    </div>
+                </section>
+            </div>
+        );
+    }
 
     return (
         <div id="profit-structure-root" className="profit-structure-tool">

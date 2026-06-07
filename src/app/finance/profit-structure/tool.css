@@ -67,6 +67,119 @@
     border-radius: 999px;
 }
 
+.profit-structure-tool .profit-structure-access-gate {
+    display: grid;
+    width: 100%;
+    min-height: 100%;
+    flex: 1;
+    place-items: center;
+    padding: 1.5rem;
+}
+
+.profit-structure-tool .profit-structure-access-card {
+    width: min(520px, 100%);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: var(--shadow-soft);
+    padding: 1.35rem;
+    font-family: var(--font-sans);
+}
+
+.profit-structure-tool .profit-structure-access-icon {
+    display: inline-flex;
+    width: 42px;
+    height: 42px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.95rem;
+    border-radius: 8px;
+    background: rgba(217, 119, 87, 0.12);
+    color: var(--accent-orange);
+}
+
+.profit-structure-tool .profit-structure-access-icon svg,
+.profit-structure-tool .profit-structure-spin {
+    width: 20px;
+    height: 20px;
+}
+
+.profit-structure-tool .profit-structure-access-card h1 {
+    margin-top: 0.28rem;
+    color: var(--text-primary);
+    font-size: 1.36rem;
+    font-weight: 800;
+    line-height: 1.25;
+}
+
+.profit-structure-tool .profit-structure-access-card p {
+    margin-top: 0.6rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.7;
+}
+
+.profit-structure-tool .profit-structure-access-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.65rem;
+    margin-top: 1.25rem;
+}
+
+.profit-structure-tool .profit-structure-access-form input {
+    min-width: 0;
+    height: 44px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    outline: none;
+    padding: 0 0.78rem;
+    font-family: var(--font-sans);
+    font-size: 0.86rem;
+}
+
+.profit-structure-tool .profit-structure-access-form input:focus {
+    border-color: rgba(217, 119, 87, 0.62);
+    box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.12);
+}
+
+.profit-structure-tool .profit-structure-access-form button {
+    display: inline-flex;
+    min-width: 76px;
+    height: 44px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: var(--text-primary);
+    color: #fff;
+    font-family: var(--font-sans);
+    font-size: 0.86rem;
+    font-weight: 800;
+}
+
+.profit-structure-tool .profit-structure-access-form button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.profit-structure-tool .profit-structure-access-error {
+    color: var(--accent-red);
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.profit-structure-tool .profit-structure-spin {
+    animation: profitStructureSpin 1s linear infinite;
+}
+
+@keyframes profitStructureSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .profit-structure-tool .sidebar {
     position: sticky;
     top: 0;
