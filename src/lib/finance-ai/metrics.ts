@@ -53,6 +53,8 @@ type RankedItem = {
   order: number;
 };
 
+type ResultRankItem = Omit<RankedItem, "order">;
+
 type BridgeItem = {
   label: string;
   value: number;
@@ -167,21 +169,16 @@ export function buildBarRank(
     };
   });
 
+  const rankedItems = sortRankedItems(items, request.sort ?? "value_desc");
+  const visibleItems = rankedItems.slice(0, getLimit(request.limit)).map(toResultRankItem);
+
   return {
     metric: request.metric,
     dimension: request.dimension,
-    items: sortRankedItems(items, request.sort ?? "value_desc")
-      .slice(0, getLimit(request.limit))
-      .map(({ label, value, valueShare, changeValue, changeShare, rowCount, blankValueCount, invalidValueCount }) => ({
-        label,
-        value,
-        valueShare,
-        changeValue,
-        changeShare,
-        rowCount,
-        blankValueCount,
-        invalidValueCount,
-      })),
+    items: visibleItems,
+    totalItemCount: items.length,
+    visibleItemCount: visibleItems.length,
+    ...(request.comparison === "mom" && period ? { fullScan: buildBarRankFullScan(items, visibleItems.length) } : {}),
     filters,
     ...(period ? { period } : {}),
     ...(request.comparison ? { comparison: request.comparison } : {}),
@@ -509,6 +506,58 @@ function sortRankedItems(items: RankedItem[], sort: NonNullable<BarRankRequest["
     const valueCompare = compareNullableNumber(a[valueKey], b[valueKey], direction);
     return valueCompare || a.order - b.order;
   });
+}
+
+function toResultRankItem({
+  label,
+  value,
+  valueShare,
+  changeValue,
+  changeShare,
+  rowCount,
+  blankValueCount,
+  invalidValueCount,
+}: RankedItem): ResultRankItem {
+  return {
+    label,
+    value,
+    valueShare,
+    changeValue,
+    changeShare,
+    rowCount,
+    blankValueCount,
+    invalidValueCount,
+  };
+}
+
+function buildBarRankFullScan(items: RankedItem[], visibleItemCount: number) {
+  const changedItems = items.filter((item) => item.changeValue !== null);
+  const increases = changedItems
+    .filter((item) => (item.changeValue ?? 0) > 0)
+    .sort((a, b) => compareNullableNumber(a.changeValue, b.changeValue, "desc") || a.order - b.order)
+    .slice(0, 5)
+    .map(toResultRankItem);
+  const decreases = changedItems
+    .filter((item) => (item.changeValue ?? 0) < 0)
+    .sort((a, b) => compareNullableNumber(a.changeValue, b.changeValue, "asc") || a.order - b.order)
+    .slice(0, 5)
+    .map(toResultRankItem);
+  const largestAbsoluteChanges = [...changedItems]
+    .sort((a, b) => (
+      Math.abs(b.changeValue ?? 0) - Math.abs(a.changeValue ?? 0) ||
+      a.order - b.order
+    ))
+    .slice(0, 5)
+    .map(toResultRankItem);
+
+  return {
+    basis: "all_dimension_members" as const,
+    totalItemCount: items.length,
+    visibleItemCount,
+    increases,
+    decreases,
+    largestAbsoluteChanges,
+  };
 }
 
 function compareNullableNumber(a: number | null, b: number | null, direction: "asc" | "desc"): number {

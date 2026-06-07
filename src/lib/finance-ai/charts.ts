@@ -152,6 +152,9 @@ function buildTrendChartSpec(title: string, result: TrendResult): FinanceChartSp
 function buildBarRankChartSpec(title: string, result: BarRankResult): FinanceChartSpec {
   const items = [...result.items].reverse();
   const values = items.map((item) => item.value);
+  const scopeText = result.totalItemCount > result.visibleItemCount
+    ? `图中展示当前排名前 ${result.visibleItemCount} 项；最大增减判断已基于全量 ${result.totalItemCount} 个维度成员扫描。`
+    : "横向柱状图展示全部可见维度排名，条形旁标注当前值、占比和环比变化。";
 
   return {
     kind: "bar_rank",
@@ -184,7 +187,7 @@ function buildBarRankChartSpec(title: string, result: BarRankResult): FinanceCha
       yaxis: { automargin: true, tickfont: { color: COLORS.text }, fixedrange: true },
     },
     config: baseConfig,
-    note: "横向柱状图展示维度排名，条形旁标注当前值、占比和环比变化。",
+    note: scopeText,
   };
 }
 

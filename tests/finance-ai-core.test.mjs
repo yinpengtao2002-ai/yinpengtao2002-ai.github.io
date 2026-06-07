@@ -190,6 +190,38 @@ test("bar rank can rank dimensions by period contribution", () => {
 
   assert.deepEqual(rank.items.map((item) => item.label), ["巴西", "墨西哥"]);
   assert.deepEqual(rank.items.map((item) => item.value), [3500, 1100]);
+  assert.equal(rank.totalItemCount, 2);
+  assert.equal(rank.visibleItemCount, 2);
+});
+
+test("bar rank full scan captures biggest declines outside visible top items", () => {
+  const rows = [
+    { "Month": "3月", "Country": "巴西", "Sales Volume": 1000 },
+    { "Month": "4月", "Country": "巴西", "Sales Volume": 1200 },
+    { "Month": "3月", "Country": "英国", "Sales Volume": 900 },
+    { "Month": "4月", "Country": "英国", "Sales Volume": 1100 },
+    { "Month": "3月", "Country": "澳大利亚", "Sales Volume": 100 },
+    { "Month": "4月", "Country": "澳大利亚", "Sales Volume": 50 },
+    { "Month": "3月", "Country": "西班牙", "Sales Volume": 800 },
+    { "Month": "4月", "Country": "西班牙", "Sales Volume": 40 },
+  ];
+  const schema = inferFinanceSchema(rows);
+  const rank = buildBarRank(rows, schema, {
+    metric: "Sales Volume",
+    dimension: "Country",
+    period: "M04",
+    comparison: "mom",
+    sort: "value_desc",
+    limit: 2,
+  });
+
+  assert.deepEqual(rank.items.map((item) => item.label), ["巴西", "英国"]);
+  assert.equal(rank.totalItemCount, 4);
+  assert.equal(rank.visibleItemCount, 2);
+  assert.equal(rank.fullScan?.basis, "all_dimension_members");
+  assert.equal(rank.fullScan?.decreases[0]?.label, "西班牙");
+  assert.equal(rank.fullScan?.decreases[0]?.changeValue, -760);
+  assert.equal(rank.fullScan?.largestAbsoluteChanges[0]?.label, "西班牙");
 });
 
 test("waterfall bridge groups top dimensions and ties to period movement", () => {

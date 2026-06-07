@@ -122,10 +122,22 @@ export type BarRankItem = {
   invalidValueCount: number;
 };
 
+export type BarRankFullScan = {
+  basis: "all_dimension_members";
+  totalItemCount: number;
+  visibleItemCount: number;
+  increases: BarRankItem[];
+  decreases: BarRankItem[];
+  largestAbsoluteChanges: BarRankItem[];
+};
+
 export type BarRankResult = {
   metric: string;
   dimension: string;
   items: BarRankItem[];
+  totalItemCount: number;
+  visibleItemCount: number;
+  fullScan?: BarRankFullScan;
   filters: FinanceFilter;
   period?: string;
   comparison?: "mom";

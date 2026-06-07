@@ -189,6 +189,8 @@ test("finance AI explanation prompt keeps ranked contribution details visible", 
           dimension: "Dim_A",
           period: "M04",
           comparison: "mom",
+          totalItemCount: 12,
+          visibleItemCount: 2,
           items: [
             {
               label: "巴西",
@@ -207,6 +209,21 @@ test("finance AI explanation prompt keeps ranked contribution details visible", 
               rowCount: 19,
             },
           ],
+          fullScan: {
+            basis: "all_dimension_members",
+            totalItemCount: 12,
+            visibleItemCount: 2,
+            increases: [
+              { label: "巴西", value: 143047, valueShare: 0.62, changeValue: 22547, changeShare: 0.48, rowCount: 38 },
+            ],
+            decreases: [
+              { label: "西班牙", value: 7533, valueShare: 0.053, changeValue: -3188, changeShare: -0.14, rowCount: 12 },
+            ],
+            largestAbsoluteChanges: [
+              { label: "巴西", value: 143047, valueShare: 0.62, changeValue: 22547, changeShare: 0.48, rowCount: 38 },
+              { label: "西班牙", value: 7533, valueShare: 0.053, changeValue: -3188, changeShare: -0.14, rowCount: 12 },
+            ],
+          },
         },
       ],
     },
@@ -218,6 +235,10 @@ test("finance AI explanation prompt keeps ranked contribution details visible", 
   assert.match(explanationPrompt, /22547/);
   assert.match(explanationPrompt, /0\.48/);
   assert.match(explanationPrompt, /墨西哥/);
+  assert.match(explanationPrompt, /fullScan/);
+  assert.match(explanationPrompt, /all_dimension_members/);
+  assert.match(explanationPrompt, /西班牙/);
+  assert.match(explanationPrompt, /-3188/);
   assert.doesNotMatch(explanationPrompt, /未展开/);
   assert.doesNotMatch(explanationPrompt, /截断/);
   assert.doesNotMatch(explanationPrompt, /__truncated/);
@@ -407,11 +428,15 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(client, /X-Finance-AI-Access/);
   assert.doesNotMatch(client, /next\/image/);
   assert.match(client, /finance-ai-assistant-preview\.(png|webp)/);
+  assert.match(client, /finance-ai-composer-dock/);
   assert.match(client, /charts:\s*chartCards\.map/);
   assert.doesNotMatch(client, /<p>\{message\.text\}<\/p>/);
   assert.match(styles, /\.finance-ai-page\s*\{[\s\S]*background:\s*#f7f5ef/s);
   assert.match(styles, /\.finance-ai-access-gate/);
   assert.match(styles, /\.finance-ai-assistant-panel/);
+  assert.match(styles, /\.finance-ai-assistant-panel\s*\{[\s\S]*border:\s*0/s);
+  assert.match(styles, /\.finance-ai-chat\s*\{[\s\S]*overflow-y:\s*auto/s);
+  assert.match(styles, /\.finance-ai-composer-dock\s*\{[\s\S]*flex:\s*0 0 auto/s);
   assert.match(styles, /\.finance-ai-avatar-mini/);
   assert.match(styles, /\.finance-ai-thinking/);
   assert.match(styles, /\.finance-ai-message\.is-user\s+\.finance-ai-message-bubble/);

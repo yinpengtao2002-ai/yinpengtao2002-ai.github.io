@@ -335,9 +335,18 @@ export default function FinanceAIAssistantTool() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [fileName, setFileName] = useState("");
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   const dataSummary = useMemo(() => summarizeSchema(schema), [schema]);
   const canAsk = rows.length > 0 && Boolean(schema) && (schema?.requiredIssues.length ?? 0) === 0 && !busy;
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      chatEndRef.current?.scrollIntoView({ block: "end" });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [messages, busy]);
 
   async function handleAccessSubmit() {
     const key = accessKey.trim();
@@ -637,29 +646,32 @@ export default function FinanceAIAssistantTool() {
               </div>
             </article>
           ) : null}
+          <div ref={chatEndRef} aria-hidden="true" />
         </section>
 
-        <form
-          className="finance-ai-composer"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void handleSubmit();
-          }}
-        >
-          <input
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            placeholder={schema ? getDefaultQuestion(schema) : "先上传经营明细，再开始提问"}
-            disabled={busy || !canAsk}
-          />
-          <button type="submit" disabled={!input.trim() || !canAsk} aria-label="发送问题">
-            {busy ? <Loader2 className="finance-ai-spin" aria-hidden="true" /> : <ArrowUp aria-hidden="true" />}
-          </button>
-        </form>
+        <div className="finance-ai-composer-dock">
+          <form
+            className="finance-ai-composer"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void handleSubmit();
+            }}
+          >
+            <input
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              placeholder={schema ? getDefaultQuestion(schema) : "先上传经营明细，再开始提问"}
+              disabled={busy || !canAsk}
+            />
+            <button type="submit" disabled={!input.trim() || !canAsk} aria-label="发送问题">
+              {busy ? <Loader2 className="finance-ai-spin" aria-hidden="true" /> : <ArrowUp aria-hidden="true" />}
+            </button>
+          </form>
 
-        {!canAsk && schema && schema.requiredIssues.length === 0 ? null : (
-          <p className="finance-ai-session-note">数据仅保留在当前页面会话中，刷新后清空。</p>
-        )}
+          {!canAsk && schema && schema.requiredIssues.length === 0 ? null : (
+            <p className="finance-ai-session-note">数据仅保留在当前页面会话中，刷新后清空。</p>
+          )}
+        </div>
           </>
         )}
       </section>
