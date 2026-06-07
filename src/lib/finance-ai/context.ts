@@ -320,6 +320,7 @@ export function buildFinanceAIPlanningContext(
     "- period/fromPeriod/toPeriod/highlightPeriod 只能使用可用期间里的 key，例如 M04 或 2026-03，不要自造年份。",
     "- filters 只能使用维度字段和值数组。",
     "- bar_rank 必须设置 sort：用户说 Top/前五/最高/最多时用 value_desc；用户说最低/最少/倒数/bottom 时用 value_asc。",
+    "- 用户问环比下降最多/减少最多/负贡献/拖累/增长最多/正贡献等排名时，必须用 bar_rank，comparison 填 mom，sort 分别用 change_asc 或 change_desc；不要用 grouped_bar。",
     "- grouped_bar 目前只用于环比对比，comparison 填 mom。",
     "- 用户要求所有/全部/全量维度成员环比，且该维度成员数不超过 16 时，grouped_bar 的 limit 设置为该维度成员数；高基数全量列出用 detail_table。",
     "- 如果用户明确要求“全部/所有/全量/剩下也列出”，bar_rank 可以给出超过 10 的 limit；前端会把图表限制为前 10 项，并自动补充完整明细表。",

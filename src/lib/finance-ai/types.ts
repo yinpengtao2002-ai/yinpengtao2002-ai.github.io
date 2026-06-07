@@ -292,7 +292,7 @@ export type FinanceAIDirectHeatmapChart = {
   title: string;
   xLabels: string[];
   yLabels: string[];
-  values: number[][];
+  values: Array<Array<number | null>>;
   note?: string;
 };
 

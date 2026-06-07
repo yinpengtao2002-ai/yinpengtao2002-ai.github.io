@@ -676,6 +676,49 @@ test("all-member grouped bar questions keep every compact dimension member visib
   assert.equal(validated.modules[0].limit, 12);
 });
 
+test("grouped bar plans become change-ranked bars when the question asks for biggest declines", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const normalized = normalizeFinanceActionPlanForQuestion(schema, {
+    modules: [
+      {
+        type: "grouped_bar",
+        metric: "边际",
+        dimension: "国家",
+        period: "2026-03",
+        comparison: "mom",
+        limit: 10,
+      },
+    ],
+  }, "4月净收入总额环比下降最多的国家有哪些？请用横向排名柱状图，并把完整明细表列出来。");
+
+  assert.equal(normalized.modules[0].type, "bar_rank");
+  assert.equal(normalized.modules[0].sort, "change_asc");
+  assert.equal(normalized.modules[0].comparison, "mom");
+  assert.equal(normalized.modules[0].detailTable, true);
+});
+
+test("bar rank plans use change sorting when the question asks for biggest declines", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const normalized = normalizeFinanceActionPlanForQuestion(schema, {
+    modules: [
+      {
+        type: "bar_rank",
+        metric: "边际",
+        dimension: "国家",
+        period: "2026-03",
+        comparison: "mom",
+        sort: "value_desc",
+        limit: 10,
+      },
+    ],
+  }, "4月净收入总额环比下降最多的国家有哪些？请用横向排名柱状图，并把完整明细表列出来。");
+
+  assert.equal(normalized.modules[0].type, "bar_rank");
+  assert.equal(normalized.modules[0].sort, "change_asc");
+  assert.equal(normalized.modules[0].comparison, "mom");
+  assert.equal(normalized.modules[0].detailTable, true);
+});
+
 test("action plan alignment corrects explicit lowest and top rank directions per metric", () => {
   const rows = [
     { "Month": "3月", "Country": "巴西", "Sales Volume": 100, "Total Margin": 3000 },
@@ -998,7 +1041,7 @@ test("direct AI chart payloads support the approved expanded chart set", () => {
     title: "国家车型单车边际",
     xLabels: ["T1D", "T1E"],
     yLabels: ["泰国", "巴西"],
-    values: [[33.1, 23.3], [31.2, 26.8]],
+    values: [[33.1, null], [31.2, 26.8]],
   });
   const bubbleSpec = buildDirectChartSpec({
     type: "scatter_bubble",
@@ -1037,6 +1080,8 @@ test("direct AI chart payloads support the approved expanded chart set", () => {
   assert.equal(heatmapSpec.kind, "heatmap");
   assert.equal(heatmapSpec.size, "large");
   assert.equal(heatmapSpec.data[0].type, "heatmap");
+  assert.equal(heatmapSpec.data[0].z[0][1], null);
+  assert.equal(heatmapSpec.data[0].text[0][1], "-");
   assert.equal(bubbleSpec.kind, "scatter_bubble");
   assert.equal(bubbleSpec.size, "large");
   assert.equal(bubbleSpec.data[0].mode, "markers+text");

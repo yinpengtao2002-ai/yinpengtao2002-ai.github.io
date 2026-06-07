@@ -480,6 +480,7 @@ test("finance AI assistant analyze mode sends workbook rows and normalizes direc
     assert.equal(payload.charts[0].value, 35);
     assert.equal(payload.charts[0].subtitle, "环比 +40%");
     assert.equal(payload.charts[1].values.length, 2);
+    assert.equal(payload.charts[1].values[0][1], null);
     assert.equal(payload.charts[2].rows.length, 2);
   }, JSON.stringify({
     answer: "3 月巴西单车边际为 35。",
@@ -500,7 +501,7 @@ test("finance AI assistant analyze mode sends workbook rows and normalizes direc
         title: "国家车型单车边际",
         xLabels: ["T1D", "T1E"],
         yLabels: ["巴西", "西班牙"],
-        values: [[35, 22], [18, 16]],
+        values: [[35, null], [18, 16]],
       },
       {
         type: "detail_table",

@@ -31,6 +31,9 @@ const MAX_GROUPED_BAR_ITEMS = 16;
 const LOW_RANK_TOKENS = ["最低", "最少", "倒数", "bottom", "后五", "后5", "低的5", "低5"];
 const HIGH_RANK_TOKENS = ["最高", "最多", "top", "前五", "前5", "高的5", "高5"];
 const ALL_MEMBER_TOKENS = ["所有", "全部", "全量", "完整", "每个", "各个", "各大", "各国家", "各地区"];
+const LOW_CHANGE_RANK_TOKENS = ["下降最多", "减少最多", "下滑最多", "降幅最大", "负贡献", "拖累", "下降", "减少"];
+const HIGH_CHANGE_RANK_TOKENS = ["增长最多", "上涨最多", "增加最多", "增幅最大", "正贡献", "拉动", "增长", "上涨", "增加"];
+const DETAIL_TABLE_TOKENS = ["完整明细", "明细表", "全部列出", "全量列出", "完整列出", "剩下也列出"];
 
 type ActionType = FinanceActionModule["type"];
 type MutableModule = Record<string, unknown> & { type: ActionType; metric?: string };
@@ -238,11 +241,36 @@ export function alignFinanceActionPlanWithQuestion(
 ): FinanceActionModule[] {
   return modules.map((module) => {
     if (module.type === "grouped_bar") {
+      const changeRankSort = getChangeRankSortIntent(userQuestion);
+      if (changeRankSort) {
+        return {
+          type: "bar_rank",
+          metric: module.metric,
+          dimension: module.dimension,
+          period: module.period,
+          filters: module.filters,
+          comparison: "mom",
+          sort: changeRankSort,
+          limit: module.limit,
+          ...(hasDetailTableIntent(userQuestion) ? { detailTable: true } : {}),
+        };
+      }
+
       return alignGroupedBarLimitWithQuestion(schema, module, userQuestion);
     }
 
     if (module.type !== "bar_rank") {
       return module;
+    }
+
+    const changeRankSort = getChangeRankSortIntent(userQuestion);
+    if (changeRankSort) {
+      return {
+        ...module,
+        comparison: "mom",
+        sort: changeRankSort,
+        ...(hasDetailTableIntent(userQuestion) ? { detailTable: true } : {}),
+      };
     }
 
     const metricAliases = getMetricIntentAliases(schema, module.metric);
@@ -258,6 +286,34 @@ export function alignFinanceActionPlanWithQuestion(
       sort: lowScore > highScore ? "value_asc" : "value_desc",
     };
   });
+}
+
+function getChangeRankSortIntent(question: string): "change_asc" | "change_desc" | null {
+  const normalizedQuestion = normalizeIntentText(question);
+  const asksForRanking = /排名|排行|哪些|哪[个些]|最多|最大|top|前\d+|前五|前十|倒数|lowest|highest/i.test(question) ||
+    normalizedQuestion.includes("横向排名柱状图");
+
+  if (!asksForRanking) {
+    return null;
+  }
+
+  if (LOW_CHANGE_RANK_TOKENS.map(normalizeIntentText).some((token) => normalizedQuestion.includes(token))) {
+    return "change_asc";
+  }
+
+  if (HIGH_CHANGE_RANK_TOKENS.map(normalizeIntentText).some((token) => normalizedQuestion.includes(token))) {
+    return "change_desc";
+  }
+
+  return null;
+}
+
+function hasDetailTableIntent(question: string) {
+  const normalizedQuestion = normalizeIntentText(question);
+
+  return DETAIL_TABLE_TOKENS
+    .map(normalizeIntentText)
+    .some((token) => normalizedQuestion.includes(token));
 }
 
 function alignGroupedBarLimitWithQuestion(

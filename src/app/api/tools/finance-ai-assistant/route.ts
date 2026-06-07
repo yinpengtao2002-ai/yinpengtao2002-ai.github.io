@@ -372,9 +372,14 @@ function normalizeDirectHeatmapChart(record: Record<string, unknown>): FinanceAI
           return [];
         }
 
-        const normalizedRow = row.slice(0, xLabels.length).map(finiteNumber);
-        return normalizedRow.every((value) => value !== null) && normalizedRow.length === xLabels.length
-          ? [normalizedRow as number[]]
+        const rawRow = row.slice(0, xLabels.length);
+        const normalizedRow = rawRow.map((value) => value === null ? null : finiteNumber(value));
+        const hasOnlyNumbersOrNulls = rawRow.every((value, index) => (
+          value === null || normalizedRow[index] !== null
+        ));
+
+        return hasOnlyNumbersOrNulls && normalizedRow.length === xLabels.length
+          ? [normalizedRow as Array<number | null>]
           : [];
       })
     : [];

@@ -314,6 +314,84 @@ function getMetricValue(
   return buildMetricSnapshot(rows, schema, { metric, period, filters }).value ?? 0;
 }
 
+function getNullableMetricValue(
+  rows: FinanceRow[],
+  schema: FinanceSchema,
+  metric: string,
+  period: string,
+  filters?: FinanceFilter,
+) {
+  return buildMetricSnapshot(rows, schema, { metric, period, filters }).value;
+}
+
+function isUnitMetric(schema: FinanceSchema, metric: string) {
+  return schema.unitMetrics.some((item) => item.name === metric);
+}
+
+function getTableMetricValue(
+  rows: FinanceRow[],
+  schema: FinanceSchema,
+  metric: string,
+  period: string,
+  filters?: FinanceFilter,
+) {
+  const value = getNullableMetricValue(rows, schema, metric, period, filters);
+  return value ?? (isUnitMetric(schema, metric) ? null : 0);
+}
+
+function rowMatchesFilters(row: FinanceRow, filters?: FinanceFilter, ignoredField?: string) {
+  return Object.entries(filters ?? {}).every(([field, values]) => {
+    if (field === ignoredField || values.length === 0) {
+      return true;
+    }
+
+    return values.includes(String(row[field] ?? "").trim());
+  });
+}
+
+function getAllDimensionLabels(rows: FinanceRow[], dimension: string, filters?: FinanceFilter) {
+  if (filters?.[dimension]?.length) {
+    return filters[dimension];
+  }
+
+  const labels = new Set<string>();
+  rows.forEach((row) => {
+    if (!rowMatchesFilters(row, filters, dimension)) {
+      return;
+    }
+
+    const label = String(row[dimension] ?? "").trim();
+    if (label) {
+      labels.add(label);
+    }
+  });
+
+  return Array.from(labels);
+}
+
+function completeDetailLabels(
+  rows: FinanceRow[],
+  schema: FinanceSchema,
+  labels: string[],
+  dimension: string,
+  filters: FinanceFilter | undefined,
+  limit: number,
+) {
+  const memberCount = schema.profile.dimensionValueCounts[dimension] ?? 0;
+  if (memberCount <= 0 || limit < memberCount) {
+    return labels;
+  }
+
+  const merged = new Set(labels);
+  getAllDimensionLabels(rows, dimension, filters).forEach((label) => {
+    if (merged.size < limit) {
+      merged.add(label);
+    }
+  });
+
+  return Array.from(merged);
+}
+
 function getRankLabels(
   rows: FinanceRow[],
   schema: FinanceSchema,
@@ -419,7 +497,7 @@ function buildHeatmapPlanChart(rows: FinanceRow[], schema: FinanceSchema, module
   const xLabels = getRankLabels(rows, schema, module.metric, module.xDimension, module.period, module.filters, limit);
   const yLabels = getRankLabels(rows, schema, module.metric, module.yDimension, module.period, module.filters, limit);
   const values = yLabels.map((yLabel) => (
-    xLabels.map((xLabel) => getMetricValue(rows, schema, module.metric, module.period, mergeFilters(module.filters, {
+    xLabels.map((xLabel) => getNullableMetricValue(rows, schema, module.metric, module.period, mergeFilters(module.filters, {
       [module.xDimension]: [xLabel],
       [module.yDimension]: [yLabel],
     })))
@@ -475,21 +553,22 @@ function buildDetailTablePlanChart(rows: FinanceRow[], schema: FinanceSchema, mo
   }
 
   const primaryMetric = module.metrics[0] ?? schema.totalMetrics[0]?.name ?? schema.unitMetrics[0]?.name;
-  const labels = getRankLabels(
+  const limit = clampChartLimit(module.limit, 20, 120);
+  const labels = completeDetailLabels(rows, schema, getRankLabels(
     rows,
     schema,
     primaryMetric,
     module.dimension,
     module.period,
     module.filters,
-    clampChartLimit(module.limit, 20, 120),
-  );
+    limit,
+  ), module.dimension, module.filters, limit);
   const columns = [module.dimension, ...module.metrics];
   const rowsData = labels.map((label) => {
     const filters = mergeFilters(module.filters, { [module.dimension]: [label] });
     return [
       label,
-      ...module.metrics.map((metric) => getMetricValue(rows, schema, metric, module.period, filters)),
+      ...module.metrics.map((metric) => getTableMetricValue(rows, schema, metric, module.period, filters)),
     ];
   });
 
@@ -620,6 +699,7 @@ function buildComputedSummary(question: string, schema: FinanceSchema, computedM
       "items/visibleItemCount 只是图表可见项限制，不代表回答只能覆盖这些项。",
       "bar_rank 如果有 allItems 或 answerItems，说明完整明细表会在消息下方展示；不要说只返回、只能看到或仅给了可见 Top N。",
       "用户指定 Top/Bottom N 时，按 answerItems 或 allItems 的前 N 项回答；正文不要重复手写完整 Markdown 表格。",
+      "scatter_bubble、heatmap、stacked_bar、percent_stacked_bar 通常只是可视子集或交叉截面；除非 detail_table 明确覆盖全量，否则不要说所有国家/所有车型/完整全量都已展示。",
     ],
     schema: {
       rowCount: schema.profile.rowCount,
