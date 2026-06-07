@@ -485,6 +485,14 @@ body {
   max-width: min(620px, 100%);
 }
 
+.finance-ai-chart-card.is-metric_card {
+  max-width: min(360px, 100%);
+}
+
+.finance-ai-chart-card.is-metric_card .finance-ai-chart-host {
+  min-height: 150px;
+}
+
 .finance-ai-chart-card-header,
 .finance-ai-chart-modal-header {
   display: flex;

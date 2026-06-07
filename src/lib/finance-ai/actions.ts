@@ -121,13 +121,13 @@ function copyComparisons(source: Record<string, unknown>, target: MutableModule)
 function copyChart(source: Record<string, unknown>, target: MutableModule) {
   const chart = asRecord(source.chart);
 
-  if (chart.type !== "trend_chart") {
+  if (chart.type !== "trend_chart" && chart.type !== "metric_card") {
     return;
   }
 
   target.chart = {
-    type: "trend_chart",
-    ...(typeof chart.highlightPeriod === "string" && chart.highlightPeriod.trim()
+    type: chart.type,
+    ...(chart.type === "trend_chart" && typeof chart.highlightPeriod === "string" && chart.highlightPeriod.trim()
       ? { highlightPeriod: chart.highlightPeriod.trim() }
       : {}),
   };

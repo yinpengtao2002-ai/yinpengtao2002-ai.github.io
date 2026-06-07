@@ -45,6 +45,19 @@ const MAX_WORKBOOK_CELL_CHARS = 180;
 const MAX_CATALOG_SAMPLE_ROWS = 3;
 const MAX_CATALOG_VALUE_SAMPLES = 16;
 const OMIT_PROMPT_VALUE = Symbol("omit-prompt-value");
+const DIRECT_CHART_PROTOCOL_LINES = [
+  "charts 最多 3 个，可使用以下图表类型：",
+  "1. metric_card: {type,title,value,subtitle,deltaValue,deltaRate,note}",
+  "2. trend: {type,title,xLabel,yLabel,points:[{label,value}],note}",
+  "3. bar_rank: {type,title,xLabel,yLabel,items:[{label,value,share,changeValue,detail}],note}",
+  "4. waterfall: {type,title,startLabel,startValue,endLabel,endValue,items:[{label,value}],note}",
+  "5. grouped_bar: {type,title,xLabel,yLabel,series:[{name,items:[{label,value}]}],note}",
+  "6. stacked_bar: {type,title,xLabel,yLabel,series:[{name,items:[{label,value}]}],note}",
+  "7. percent_stacked_bar: {type,title,xLabel,yLabel,series:[{name,items:[{label,value}]}],note}",
+  "8. heatmap: {type,title,xLabels,yLabels,values,note}",
+  "9. scatter_bubble: {type,title,xLabel,yLabel,items:[{label,x,y,size}],note}",
+  "10. detail_table: {type,title,columns,rows,note}",
+];
 
 function compactList(values: string[], emptyLabel = "无") {
   const normalized = values.map((value) => value.trim()).filter(Boolean);
@@ -277,6 +290,7 @@ export function buildFinanceAIPlanningContext(
     "不要要求用户发送上传数据明细，也不要在计划里引用未出现在 schema/state 里的字段。",
     "每轮最少 1 个模块，最多生成 3 个模块。",
     "只允许这些动作：metric_snapshot、trend_chart、bar_rank、waterfall_bridge。",
+    "metric_snapshot 会默认渲染为小指标卡，适合回答某个期间某个指标的当前值、环比和同比。",
     "图表模块会渲染在聊天消息内部，所以模块标题要像对话回复的一部分。",
     "如果用户要求可视化、图表、占比、结构、构成、变化来源，必须生成至少一个图表模块，不要只返回 metric_snapshot。",
     "用户问占比、结构或构成变化时，优先用 bar_rank 搭配 comparison:\"mom\"，或用 waterfall_bridge 拆变化来源。",
@@ -323,11 +337,8 @@ export function buildFinanceAIDirectAnalyzePrompt(input: DirectAnalyzePromptInpu
     "只输出严格 JSON，不要输出 Markdown 代码块，不要在 JSON 外写任何文字。",
     "返回结构必须是：",
     '{"answer":"给用户看的中文分析结论，可包含 Markdown 加粗","assumptions":["字段、口径或计算假设"],"charts":[]}',
-    "charts 最多 3 个，只允许以下三种类型：",
-    "1. trend: {type,title,xLabel,yLabel,points:[{label,value}],note}",
-    "2. bar_rank: {type,title,xLabel,yLabel,items:[{label,value,share,changeValue,detail}],note}",
-    "3. waterfall: {type,title,startLabel,startValue,endLabel,endValue,items:[{label,value}],note}",
-    "图表规则：value/startValue/endValue/changeValue/share 必须是数字，不要写成带逗号或单位的字符串；share 使用 0 到 1 的小数；不确定时少出图，不要硬造图。",
+    ...DIRECT_CHART_PROTOCOL_LINES,
+    "图表规则：value/startValue/endValue/changeValue/share/x/y/size/values 必须是数字，不要写成带逗号或单位的字符串；share 和 percent_stacked_bar 的 value 使用 0 到 1 的小数；不确定时少出图，不要硬造图。",
     "分析规则：不要声称看不到底稿；如果字段口径不明确，先说明你的假设，再给结论；计算过程要和 answer、charts 保持一致。",
     `最近问题：${compactList(recentQuestions)}`,
     `最近图表：${compactList(chartHistory)}`,
@@ -379,11 +390,8 @@ export function buildFinanceAISelectedRowsAnalyzePrompt(input: SelectedRowsAnaly
     "只输出严格 JSON，不要输出 Markdown 代码块，不要在 JSON 外写任何文字。",
     "返回结构必须是：",
     '{"answer":"给用户看的中文分析结论，可包含 Markdown 加粗","assumptions":["字段、口径或计算假设"],"charts":[]}',
-    "charts 最多 3 个，只允许以下三种类型：",
-    "1. trend: {type,title,xLabel,yLabel,points:[{label,value}],note}",
-    "2. bar_rank: {type,title,xLabel,yLabel,items:[{label,value,share,changeValue,detail}],note}",
-    "3. waterfall: {type,title,startLabel,startValue,endLabel,endValue,items:[{label,value}],note}",
-    "图表规则：value/startValue/endValue/changeValue/share 必须是数字，不要写成带逗号或单位的字符串；share 使用 0 到 1 的小数。",
+    ...DIRECT_CHART_PROTOCOL_LINES,
+    "图表规则：value/startValue/endValue/changeValue/share/x/y/size/values 必须是数字，不要写成带逗号或单位的字符串；share 和 percent_stacked_bar 的 value 使用 0 到 1 的小数。",
     "如果 omittedRowCount 大于 0，必须在 assumptions 里说明本次只收到部分匹配明细，不能把结果说成全量。",
     `最近问题：${compactList(recentQuestions)}`,
     `最近图表：${compactList(chartHistory)}`,

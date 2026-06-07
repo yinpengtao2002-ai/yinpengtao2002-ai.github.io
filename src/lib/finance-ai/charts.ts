@@ -1,10 +1,16 @@
 import type {
   FinanceAIDirectBarRankChart,
   FinanceAIDirectChart,
+  FinanceAIDirectDetailTableChart,
+  FinanceAIDirectHeatmapChart,
+  FinanceAIDirectMetricCardChart,
+  FinanceAIDirectScatterBubbleChart,
+  FinanceAIDirectSeriesChart,
   FinanceAIDirectTrendChart,
   FinanceAIDirectWaterfallChart,
   BarRankResult,
   FinanceChartSpec,
+  MetricSnapshotResult,
   TrendResult,
   WaterfallBridgeResult,
 } from "./types.ts";
@@ -14,10 +20,13 @@ const COLORS = {
   blue: "#5c8fba",
   green: "#7f9165",
   red: "#b65f55",
+  yellow: "#c89b40",
   text: "#171615",
   muted: "#747168",
   grid: "#e8e5dc",
 };
+
+const SERIES_COLORS = [COLORS.blue, COLORS.green, COLORS.yellow, COLORS.orange, COLORS.red];
 
 const baseLayout = {
   paper_bgcolor: "rgba(0,0,0,0)",
@@ -37,11 +46,16 @@ const baseConfig = {
 };
 
 type ChartInput =
+  | { type: "metric_snapshot"; title: string; result: MetricSnapshotResult }
   | { type: "trend_chart"; title: string; result: TrendResult }
   | { type: "bar_rank"; title: string; result: BarRankResult }
   | { type: "waterfall_bridge"; title: string; result: WaterfallBridgeResult };
 
 export function buildChartSpec(input: ChartInput): FinanceChartSpec {
+  if (input.type === "metric_snapshot") {
+    return buildMetricCardChartSpec(input.title, input.result);
+  }
+
   if (input.type === "trend_chart") {
     return buildTrendChartSpec(input.title, input.result);
   }
@@ -54,6 +68,10 @@ export function buildChartSpec(input: ChartInput): FinanceChartSpec {
 }
 
 export function buildDirectChartSpec(input: FinanceAIDirectChart): FinanceChartSpec {
+  if (input.type === "metric_card") {
+    return buildDirectMetricCardChartSpec(input);
+  }
+
   if (input.type === "trend") {
     return buildDirectTrendChartSpec(input);
   }
@@ -62,7 +80,27 @@ export function buildDirectChartSpec(input: FinanceAIDirectChart): FinanceChartS
     return buildDirectBarRankChartSpec(input);
   }
 
-  return buildDirectWaterfallChartSpec(input);
+  if (input.type === "waterfall") {
+    return buildDirectWaterfallChartSpec(input);
+  }
+
+  if (input.type === "grouped_bar" || input.type === "stacked_bar" || input.type === "percent_stacked_bar") {
+    return buildDirectSeriesChartSpec(input);
+  }
+
+  if (input.type === "heatmap") {
+    return buildDirectHeatmapChartSpec(input);
+  }
+
+  if (input.type === "scatter_bubble") {
+    return buildDirectScatterBubbleChartSpec(input);
+  }
+
+  if (input.type === "detail_table") {
+    return buildDirectDetailTableChartSpec(input);
+  }
+
+  throw new Error("Unsupported finance AI direct chart type.");
 }
 
 function formatNumber(value: number | null | undefined, digits = 0) {
@@ -121,6 +159,75 @@ function waterfallRange(startValue: number, itemValues: number[], endValue: numb
 
   cumulativeValues.push(endValue);
   return paddedRange(cumulativeValues);
+}
+
+function buildMetricCardChartSpec(title: string, result: MetricSnapshotResult): FinanceChartSpec {
+  const deltaValue = result.mom?.changeValue ?? null;
+  const deltaRate = result.mom?.changeRate ?? null;
+  const value = result.value ?? 0;
+
+  return {
+    kind: "metric_card",
+    title,
+    data: [{
+      type: "indicator",
+      mode: "number+delta",
+      value,
+      number: { font: { color: COLORS.text, size: 30 } },
+      delta: {
+        reference: deltaValue !== null ? value - deltaValue : undefined,
+        relative: false,
+        valueformat: ",.2f",
+        increasing: { color: COLORS.green },
+        decreasing: { color: COLORS.red },
+      },
+      title: {
+        text: deltaRate !== null ? `环比 ${formatSignedNumber(deltaRate * 100, 1)}%` : result.base.isComputable ? result.base.period : "当前不可计算",
+        font: { color: COLORS.muted, size: 12 },
+      },
+    }],
+    layout: {
+      ...baseLayout,
+      height: 150,
+      margin: { t: 20, r: 16, b: 16, l: 16 },
+    },
+    config: baseConfig,
+    note: "指标卡展示当前值和环比变化；单车指标使用总额除以销量。",
+  };
+}
+
+function buildDirectMetricCardChartSpec(input: FinanceAIDirectMetricCardChart): FinanceChartSpec {
+  const reference = input.deltaValue !== null && input.deltaValue !== undefined
+    ? input.value - input.deltaValue
+    : input.deltaRate !== null && input.deltaRate !== undefined && input.deltaRate !== -1
+      ? input.value / (1 + input.deltaRate)
+      : undefined;
+
+  return {
+    kind: "metric_card",
+    title: input.title,
+    data: [{
+      type: "indicator",
+      mode: "number+delta",
+      value: input.value,
+      number: { font: { color: COLORS.text, size: 30 } },
+      delta: {
+        reference,
+        relative: input.deltaRate !== null && input.deltaRate !== undefined,
+        valueformat: input.deltaRate !== null && input.deltaRate !== undefined ? ".1%" : ",.2f",
+        increasing: { color: COLORS.green },
+        decreasing: { color: COLORS.red },
+      },
+      title: { text: input.subtitle ?? "", font: { color: COLORS.muted, size: 12 } },
+    }],
+    layout: {
+      ...baseLayout,
+      height: 150,
+      margin: { t: 20, r: 16, b: 16, l: 16 },
+    },
+    config: baseConfig,
+    note: input.note || "AI 基于上传底稿生成指标卡数据，前端按轻量 KPI 卡协议渲染。",
+  };
 }
 
 function buildTrendChartSpec(title: string, result: TrendResult): FinanceChartSpec {
@@ -382,5 +489,143 @@ function buildDirectWaterfallChartSpec(input: FinanceAIDirectWaterfallChart): Fi
     },
     config: baseConfig,
     note: input.note || "AI 基于上传底稿生成变化桥数据，前端按瀑布桥协议渲染。",
+  };
+}
+
+function getSeriesLabels(series: FinanceAIDirectSeriesChart["series"]) {
+  return Array.from(new Set(series.flatMap((item) => item.items.map((point) => point.label))));
+}
+
+function buildDirectSeriesChartSpec(input: FinanceAIDirectSeriesChart): FinanceChartSpec {
+  const labels = getSeriesLabels(input.series);
+  const kind = input.type === "grouped_bar"
+    ? "grouped_bar"
+    : input.type === "percent_stacked_bar"
+      ? "percent_stacked_bar"
+      : "stacked_bar";
+
+  return {
+    kind,
+    title: input.title,
+    data: input.series.map((series, index) => {
+      const valueByLabel = new Map(series.items.map((item) => [item.label, item.value]));
+      return {
+        type: "bar",
+        name: series.name,
+        x: labels,
+        y: labels.map((label) => valueByLabel.get(label) ?? 0),
+        marker: { color: SERIES_COLORS[index % SERIES_COLORS.length] },
+        text: labels.map((label) => (
+          input.type === "percent_stacked_bar"
+            ? formatShare(valueByLabel.get(label) ?? 0)
+            : formatNumber(valueByLabel.get(label) ?? 0, 1)
+        )),
+        textposition: input.type === "percent_stacked_bar" ? "inside" : "outside",
+        cliponaxis: false,
+        hovertemplate: `%{x}<br>${series.name} %{y:,.2f}<extra></extra>`,
+      };
+    }),
+    layout: {
+      ...baseLayout,
+      barmode: input.type === "grouped_bar" ? "group" : "stack",
+      showlegend: true,
+      xaxis: { title: input.xLabel, gridcolor: COLORS.grid, fixedrange: true },
+      yaxis: {
+        title: input.yLabel,
+        gridcolor: COLORS.grid,
+        fixedrange: true,
+        ...(input.type === "percent_stacked_bar" ? { tickformat: ".0%", range: [0, 1] } : {}),
+      },
+    },
+    config: baseConfig,
+    note: input.note || "AI 基于上传底稿生成系列柱状图数据，前端按分组或堆叠柱状图协议渲染。",
+  };
+}
+
+function buildDirectHeatmapChartSpec(input: FinanceAIDirectHeatmapChart): FinanceChartSpec {
+  return {
+    kind: "heatmap",
+    title: input.title,
+    data: [{
+      type: "heatmap",
+      x: input.xLabels,
+      y: input.yLabels,
+      z: input.values,
+      text: input.values.map((row) => row.map((value) => formatNumber(value, 1))),
+      texttemplate: "%{text}",
+      colorscale: [[0, "#f3dfd8"], [0.5, "#f8f3e8"], [1, "#d7e2cf"]],
+      showscale: false,
+      hovertemplate: "%{y} / %{x}<br>%{z:,.2f}<extra></extra>",
+    }],
+    layout: {
+      ...baseLayout,
+      margin: { t: 28, r: 18, b: 42, l: 74 },
+      xaxis: { fixedrange: true },
+      yaxis: { fixedrange: true },
+    },
+    config: baseConfig,
+    note: input.note || "AI 基于上传底稿生成二维交叉数据，前端按热力图协议渲染。",
+  };
+}
+
+function buildDirectScatterBubbleChartSpec(input: FinanceAIDirectScatterBubbleChart): FinanceChartSpec {
+  return {
+    kind: "scatter_bubble",
+    title: input.title,
+    data: [{
+      type: "scatter",
+      mode: "markers+text",
+      x: input.items.map((item) => item.x),
+      y: input.items.map((item) => item.y),
+      text: input.items.map((item) => item.label),
+      textposition: "top center",
+      marker: {
+        size: input.items.map((item) => Math.max(12, Math.min(item.size ?? 20, 48))),
+        color: input.items.map((_, index) => SERIES_COLORS[index % SERIES_COLORS.length]),
+        opacity: 0.82,
+        line: { color: "#fff", width: 2 },
+      },
+      hovertemplate: "%{text}<br>%{x:,.2f}<br>%{y:,.2f}<extra></extra>",
+    }],
+    layout: {
+      ...baseLayout,
+      xaxis: { title: input.xLabel, gridcolor: COLORS.grid, fixedrange: true },
+      yaxis: { title: input.yLabel, gridcolor: COLORS.grid, fixedrange: true },
+    },
+    config: baseConfig,
+    note: input.note || "AI 基于上传底稿生成定位数据，前端按气泡散点图协议渲染。",
+  };
+}
+
+function buildDirectDetailTableChartSpec(input: FinanceAIDirectDetailTableChart): FinanceChartSpec {
+  const columnValues = input.columns.map((_, columnIndex) => (
+    input.rows.map((row) => row[columnIndex] ?? "")
+  ));
+
+  return {
+    kind: "detail_table",
+    title: input.title,
+    data: [{
+      type: "table",
+      header: {
+        values: input.columns,
+        fill: { color: "#f0ebe1" },
+        align: "left",
+        font: { color: COLORS.text, size: 12 },
+      },
+      cells: {
+        values: columnValues,
+        fill: { color: "#fffaf2" },
+        align: "left",
+        font: { color: COLORS.text, size: 12 },
+        height: 28,
+      },
+    }],
+    layout: {
+      ...baseLayout,
+      margin: { t: 20, r: 12, b: 12, l: 12 },
+    },
+    config: baseConfig,
+    note: input.note || "AI 基于上传底稿生成可核对明细，前端按表格协议渲染。",
   };
 }

@@ -186,7 +186,7 @@ export type WaterfallBridgeResult = {
 };
 
 export type FinanceActionModule =
-  | ({ type: "metric_snapshot"; chart?: { type: "trend_chart"; highlightPeriod?: string } } & MetricSnapshotRequest)
+  | ({ type: "metric_snapshot"; chart?: { type: "metric_card" | "trend_chart"; highlightPeriod?: string } } & MetricSnapshotRequest)
   | ({ type: "trend_chart" } & TrendRequest)
   | ({ type: "bar_rank" } & BarRankRequest)
   | ({ type: "waterfall_bridge" } & WaterfallBridgeRequest);
@@ -229,6 +229,16 @@ export type FinanceAIDirectTrendChart = {
   note?: string;
 };
 
+export type FinanceAIDirectMetricCardChart = {
+  type: "metric_card";
+  title: string;
+  value: number;
+  subtitle?: string;
+  deltaValue?: number | null;
+  deltaRate?: number | null;
+  note?: string;
+};
+
 export type FinanceAIDirectBarRankChart = {
   type: "bar_rank";
   title: string;
@@ -255,10 +265,58 @@ export type FinanceAIDirectWaterfallChart = {
   note?: string;
 };
 
+export type FinanceAIDirectSeriesChart = {
+  type: "grouped_bar" | "stacked_bar" | "percent_stacked_bar";
+  title: string;
+  xLabel?: string;
+  yLabel?: string;
+  series: Array<{
+    name: string;
+    items: Array<{ label: string; value: number }>;
+  }>;
+  note?: string;
+};
+
+export type FinanceAIDirectHeatmapChart = {
+  type: "heatmap";
+  title: string;
+  xLabels: string[];
+  yLabels: string[];
+  values: number[][];
+  note?: string;
+};
+
+export type FinanceAIDirectScatterBubbleChart = {
+  type: "scatter_bubble";
+  title: string;
+  xLabel?: string;
+  yLabel?: string;
+  items: Array<{
+    label: string;
+    x: number;
+    y: number;
+    size?: number | null;
+  }>;
+  note?: string;
+};
+
+export type FinanceAIDirectDetailTableChart = {
+  type: "detail_table";
+  title: string;
+  columns: string[];
+  rows: Array<Array<string | number | null>>;
+  note?: string;
+};
+
 export type FinanceAIDirectChart =
+  | FinanceAIDirectMetricCardChart
   | FinanceAIDirectTrendChart
   | FinanceAIDirectBarRankChart
-  | FinanceAIDirectWaterfallChart;
+  | FinanceAIDirectWaterfallChart
+  | FinanceAIDirectSeriesChart
+  | FinanceAIDirectHeatmapChart
+  | FinanceAIDirectScatterBubbleChart
+  | FinanceAIDirectDetailTableChart;
 
 export type FinanceAIDirectAnalysis = {
   answer: string;

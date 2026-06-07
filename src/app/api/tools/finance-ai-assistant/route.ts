@@ -11,6 +11,11 @@ import type {
   FinanceAIDirectAnalysis,
   FinanceAIDirectBarRankChart,
   FinanceAIDirectChart,
+  FinanceAIDirectDetailTableChart,
+  FinanceAIDirectHeatmapChart,
+  FinanceAIDirectMetricCardChart,
+  FinanceAIDirectScatterBubbleChart,
+  FinanceAIDirectSeriesChart,
   FinanceAIDirectTrendChart,
   FinanceAIDirectWaterfallChart,
   FinanceActionPlan,
@@ -27,6 +32,11 @@ const MAX_DIRECT_CHARTS = 3;
 const MAX_DIRECT_TREND_POINTS = 48;
 const MAX_DIRECT_RANK_ITEMS = 15;
 const MAX_DIRECT_WATERFALL_ITEMS = 12;
+const MAX_DIRECT_SERIES = 6;
+const MAX_DIRECT_SERIES_ITEMS = 16;
+const MAX_DIRECT_HEATMAP_AXIS = 14;
+const MAX_DIRECT_TABLE_ROWS = 20;
+const MAX_DIRECT_TABLE_COLUMNS = 8;
 
 type ChatMessage = {
   role: "system" | "user";
@@ -202,6 +212,25 @@ function finiteNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function normalizeDirectMetricCardChart(record: Record<string, unknown>): FinanceAIDirectMetricCardChart | null {
+  const title = typeof record.title === "string" ? record.title.trim() : "";
+  const value = finiteNumber(record.value);
+
+  if (!title || value === null) {
+    return null;
+  }
+
+  return {
+    type: "metric_card",
+    title,
+    value,
+    ...(typeof record.subtitle === "string" && record.subtitle.trim() ? { subtitle: record.subtitle.trim() } : {}),
+    ...(finiteNumber(record.deltaValue) !== null ? { deltaValue: finiteNumber(record.deltaValue) } : {}),
+    ...(finiteNumber(record.deltaRate) !== null ? { deltaRate: finiteNumber(record.deltaRate) } : {}),
+    ...(typeof record.note === "string" && record.note.trim() ? { note: record.note.trim() } : {}),
+  };
+}
+
 function normalizeDirectTrendChart(record: Record<string, unknown>): FinanceAIDirectTrendChart | null {
   const title = typeof record.title === "string" ? record.title.trim() : "";
   const points = Array.isArray(record.points)
@@ -293,8 +322,156 @@ function normalizeDirectWaterfallChart(record: Record<string, unknown>): Finance
   };
 }
 
+function normalizeDirectSeriesChart(record: Record<string, unknown>): FinanceAIDirectSeriesChart | null {
+  const type = record.type === "grouped_bar" || record.type === "stacked_bar" || record.type === "percent_stacked_bar"
+    ? record.type
+    : null;
+  const title = typeof record.title === "string" ? record.title.trim() : "";
+  const series = Array.isArray(record.series)
+    ? record.series.flatMap((item) => {
+        const seriesRecord = asRecord(item);
+        const name = typeof seriesRecord.name === "string" ? seriesRecord.name.trim() : "";
+        const items = Array.isArray(seriesRecord.items)
+          ? seriesRecord.items.flatMap((seriesItem) => {
+              const point = asRecord(seriesItem);
+              const label = typeof point.label === "string" ? point.label.trim() : "";
+              const value = finiteNumber(point.value);
+              return label && value !== null ? [{ label, value }] : [];
+            }).slice(0, MAX_DIRECT_SERIES_ITEMS)
+          : [];
+
+        return name && items.length > 0 ? [{ name, items }] : [];
+      }).slice(0, MAX_DIRECT_SERIES)
+    : [];
+
+  if (!type || !title || series.length === 0) {
+    return null;
+  }
+
+  return {
+    type,
+    title,
+    ...(typeof record.xLabel === "string" && record.xLabel.trim() ? { xLabel: record.xLabel.trim() } : {}),
+    ...(typeof record.yLabel === "string" && record.yLabel.trim() ? { yLabel: record.yLabel.trim() } : {}),
+    series,
+    ...(typeof record.note === "string" && record.note.trim() ? { note: record.note.trim() } : {}),
+  };
+}
+
+function normalizeDirectHeatmapChart(record: Record<string, unknown>): FinanceAIDirectHeatmapChart | null {
+  const title = typeof record.title === "string" ? record.title.trim() : "";
+  const xLabels = Array.isArray(record.xLabels)
+    ? record.xLabels.filter((item): item is string => typeof item === "string" && item.trim().length > 0).map((item) => item.trim()).slice(0, MAX_DIRECT_HEATMAP_AXIS)
+    : [];
+  const yLabels = Array.isArray(record.yLabels)
+    ? record.yLabels.filter((item): item is string => typeof item === "string" && item.trim().length > 0).map((item) => item.trim()).slice(0, MAX_DIRECT_HEATMAP_AXIS)
+    : [];
+  const values = Array.isArray(record.values)
+    ? record.values.slice(0, yLabels.length).flatMap((row) => {
+        if (!Array.isArray(row)) {
+          return [];
+        }
+
+        const normalizedRow = row.slice(0, xLabels.length).map(finiteNumber);
+        return normalizedRow.every((value) => value !== null) && normalizedRow.length === xLabels.length
+          ? [normalizedRow as number[]]
+          : [];
+      })
+    : [];
+
+  if (!title || xLabels.length === 0 || yLabels.length === 0 || values.length !== yLabels.length) {
+    return null;
+  }
+
+  return {
+    type: "heatmap",
+    title,
+    xLabels,
+    yLabels,
+    values,
+    ...(typeof record.note === "string" && record.note.trim() ? { note: record.note.trim() } : {}),
+  };
+}
+
+function normalizeDirectScatterBubbleChart(record: Record<string, unknown>): FinanceAIDirectScatterBubbleChart | null {
+  const title = typeof record.title === "string" ? record.title.trim() : "";
+  const items = Array.isArray(record.items)
+    ? record.items.flatMap((item) => {
+        const point = asRecord(item);
+        const label = typeof point.label === "string" ? point.label.trim() : "";
+        const x = finiteNumber(point.x);
+        const y = finiteNumber(point.y);
+        if (!label || x === null || y === null) {
+          return [];
+        }
+
+        return [{
+          label,
+          x,
+          y,
+          ...(finiteNumber(point.size) !== null ? { size: finiteNumber(point.size) } : {}),
+        }];
+      }).slice(0, MAX_DIRECT_RANK_ITEMS)
+    : [];
+
+  if (!title || items.length === 0) {
+    return null;
+  }
+
+  return {
+    type: "scatter_bubble",
+    title,
+    ...(typeof record.xLabel === "string" && record.xLabel.trim() ? { xLabel: record.xLabel.trim() } : {}),
+    ...(typeof record.yLabel === "string" && record.yLabel.trim() ? { yLabel: record.yLabel.trim() } : {}),
+    items,
+    ...(typeof record.note === "string" && record.note.trim() ? { note: record.note.trim() } : {}),
+  };
+}
+
+function normalizeTableCell(value: unknown): string | number | null {
+  if (typeof value === "string" || typeof value === "number" || value === null) {
+    return value;
+  }
+
+  if (typeof value === "boolean") {
+    return value ? "是" : "否";
+  }
+
+  return String(value ?? "");
+}
+
+function normalizeDirectDetailTableChart(record: Record<string, unknown>): FinanceAIDirectDetailTableChart | null {
+  const title = typeof record.title === "string" ? record.title.trim() : "";
+  const columns = Array.isArray(record.columns)
+    ? record.columns.filter((item): item is string => typeof item === "string" && item.trim().length > 0).map((item) => item.trim()).slice(0, MAX_DIRECT_TABLE_COLUMNS)
+    : [];
+  const rows = Array.isArray(record.rows)
+    ? record.rows.flatMap((row) => (
+        Array.isArray(row)
+          ? [row.slice(0, columns.length).map(normalizeTableCell)]
+          : []
+      )).filter((row) => row.length === columns.length).slice(0, MAX_DIRECT_TABLE_ROWS)
+    : [];
+
+  if (!title || columns.length === 0 || rows.length === 0) {
+    return null;
+  }
+
+  return {
+    type: "detail_table",
+    title,
+    columns,
+    rows,
+    ...(typeof record.note === "string" && record.note.trim() ? { note: record.note.trim() } : {}),
+  };
+}
+
 function normalizeDirectChart(value: unknown): FinanceAIDirectChart | null {
   const record = asRecord(value);
+
+  if (record.type === "metric_card") {
+    return normalizeDirectMetricCardChart(record);
+  }
 
   if (record.type === "trend") {
     return normalizeDirectTrendChart(record);
@@ -306,6 +483,22 @@ function normalizeDirectChart(value: unknown): FinanceAIDirectChart | null {
 
   if (record.type === "waterfall") {
     return normalizeDirectWaterfallChart(record);
+  }
+
+  if (record.type === "grouped_bar" || record.type === "stacked_bar" || record.type === "percent_stacked_bar") {
+    return normalizeDirectSeriesChart(record);
+  }
+
+  if (record.type === "heatmap") {
+    return normalizeDirectHeatmapChart(record);
+  }
+
+  if (record.type === "scatter_bubble") {
+    return normalizeDirectScatterBubbleChart(record);
+  }
+
+  if (record.type === "detail_table") {
+    return normalizeDirectDetailTableChart(record);
   }
 
   return null;

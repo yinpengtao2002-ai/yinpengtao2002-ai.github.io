@@ -123,7 +123,9 @@ test("finance AI assistant API exposes planning and explanation responsibilities
   assert.match(context, /buildFinanceAIExplanationPrompt/);
   assert.match(context, /上传底稿/);
   assert.match(context, /safeWorkbookJson/);
-  assert.match(context, /只允许以下三种类型/);
+  assert.match(context, /metric_card/);
+  assert.match(context, /percent_stacked_bar/);
+  assert.match(context, /scatter_bubble/);
   assert.match(context, /AI 不负责计算数字/);
   assert.match(context, /图表模块会渲染在聊天消息内部/);
   assert.match(context, /最多生成 3 个模块/);
@@ -172,9 +174,17 @@ test("finance AI direct prompt includes uploaded workbook rows for provider anal
   assert.match(prompt, /\["2026-03","巴西",100,3000\]/);
   assert.doesNotMatch(prompt, /\{"月份":"2026-03","国家":"巴西","销量":100,"边际":3000\}/);
   assert.match(prompt, /charts 最多 3 个/);
+  assert.doesNotMatch(prompt, /只允许以下三种类型/);
+  assert.match(prompt, /metric_card/);
   assert.match(prompt, /trend/);
   assert.match(prompt, /bar_rank/);
   assert.match(prompt, /waterfall/);
+  assert.match(prompt, /grouped_bar/);
+  assert.match(prompt, /stacked_bar/);
+  assert.match(prompt, /percent_stacked_bar/);
+  assert.match(prompt, /heatmap/);
+  assert.match(prompt, /scatter_bubble/);
+  assert.match(prompt, /detail_table/);
   assert.doesNotMatch(prompt, /已省略完整明细数组/);
 });
 
@@ -453,39 +463,42 @@ test("finance AI assistant analyze mode sends workbook rows and normalizes direc
     assert.equal(payload.message, "3 月巴西单车边际为 35。");
     assert.deepEqual(payload.assumptions, ["单车边际=边际/销量"]);
     assert.equal(payload.charts.length, 3);
-    assert.equal(payload.charts[0].type, "trend");
-    assert.equal(payload.charts[1].type, "bar_rank");
-    assert.equal(payload.charts[2].type, "waterfall");
-    assert.equal(payload.charts[0].points.length, 2);
-    assert.equal(payload.charts[1].items.length, 2);
+    assert.equal(payload.charts[0].type, "metric_card");
+    assert.equal(payload.charts[1].type, "heatmap");
+    assert.equal(payload.charts[2].type, "detail_table");
+    assert.equal(payload.charts[0].value, 35);
+    assert.equal(payload.charts[0].subtitle, "环比 +40%");
+    assert.equal(payload.charts[1].values.length, 2);
+    assert.equal(payload.charts[2].rows.length, 2);
   }, JSON.stringify({
     answer: "3 月巴西单车边际为 35。",
     assumptions: ["单车边际=边际/销量"],
     charts: [
       {
-        type: "trend",
+        type: "metric_card",
         title: "巴西单车边际趋势",
+        value: 35,
+        subtitle: "环比 +40%",
         points: [
-          { label: "2026-02", value: 25 },
-          { label: "2026-03", value: 35 },
+          { label: "兼容旧字段", value: 1 },
+          { label: "兼容旧字段2", value: 2 },
         ],
       },
       {
-        type: "bar_rank",
-        title: "3 月国家边际排名",
-        items: [
-          { label: "巴西", value: 3500, share: 0.795 },
-          { label: "西班牙", value: 900, share: 0.205 },
-        ],
+        type: "heatmap",
+        title: "国家车型单车边际",
+        xLabels: ["T1D", "T1E"],
+        yLabels: ["巴西", "西班牙"],
+        values: [[35, 22], [18, 16]],
       },
       {
-        type: "waterfall",
-        title: "巴西边际环比变化桥",
-        startLabel: "2026-02",
-        startValue: 2000,
-        endLabel: "2026-03",
-        endValue: 3500,
-        items: [{ label: "边际增加", value: 1500 }],
+        type: "detail_table",
+        title: "低单车边际明细",
+        columns: ["国家", "销量", "单车边际"],
+        rows: [
+          ["巴西", 100, 35],
+          ["西班牙", 50, 18],
+        ],
       },
       { type: "pie", title: "不支持图", items: [{ label: "x", value: 1 }] },
       { type: "trend", title: "坏图", points: [{ label: "x", value: "bad" }] },

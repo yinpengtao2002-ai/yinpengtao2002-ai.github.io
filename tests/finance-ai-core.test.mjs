@@ -587,6 +587,23 @@ test("chart specs are compact and identify supported chart types", () => {
   assert.equal(typeof spec.note, "string");
 });
 
+test("metric snapshot chart spec renders as a compact KPI card", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const snapshot = buildMetricSnapshot(metricRows, schema, {
+    metric: "单车边际",
+    period: "2026-03",
+    filters: { "国家": ["巴西"] },
+    comparisons: ["mom", "yoy"],
+  });
+  const spec = buildChartSpec({ type: "metric_snapshot", title: "2026-03 巴西单车边际", result: snapshot });
+
+  assert.equal(spec.kind, "metric_card");
+  assert.equal(spec.data[0].type, "indicator");
+  assert.equal(spec.data[0].value, 35);
+  assert.equal(spec.layout.height, 150);
+  assert.equal(spec.config.displayModeBar, false);
+});
+
 test("bar rank chart spec uses horizontal bars without a separate numeric table", () => {
   const schema = inferFinanceSchema(metricRows);
   const rank = buildBarRank(metricRows, schema, {
@@ -712,4 +729,61 @@ test("direct AI chart payloads render through the supported chart specs", () => 
   assert.deepEqual(waterfallSpec.data[0].measure, ["absolute", "relative", "relative", "total"]);
   assert.deepEqual(waterfallSpec.data[0].text, ["4,800", "+900", "-150", "5,550"]);
   assert.equal(waterfallSpec.config.displayModeBar, false);
+});
+
+test("direct AI chart payloads support the approved expanded chart set", () => {
+  const metricSpec = buildDirectChartSpec({
+    type: "metric_card",
+    title: "4月泰国单车边际",
+    value: 32.5,
+    subtitle: "环比 +9.1%",
+  });
+  const groupedSpec = buildDirectChartSpec({
+    type: "grouped_bar",
+    title: "车型单车边际对比",
+    series: [
+      { name: "3月", items: [{ label: "T1D", value: 29.8 }, { label: "T1E", value: 24.1 }] },
+      { name: "4月", items: [{ label: "T1D", value: 33.1 }, { label: "T1E", value: 23.3 }] },
+    ],
+  });
+  const stackedSpec = buildDirectChartSpec({
+    type: "percent_stacked_bar",
+    title: "车型销量占比",
+    series: [
+      { name: "T1D", items: [{ label: "泰国", value: 0.33 }, { label: "巴西", value: 0.32 }] },
+      { name: "T1E", items: [{ label: "泰国", value: 0.67 }, { label: "巴西", value: 0.68 }] },
+    ],
+  });
+  const heatmapSpec = buildDirectChartSpec({
+    type: "heatmap",
+    title: "国家车型单车边际",
+    xLabels: ["T1D", "T1E"],
+    yLabels: ["泰国", "巴西"],
+    values: [[33.1, 23.3], [31.2, 26.8]],
+  });
+  const bubbleSpec = buildDirectChartSpec({
+    type: "scatter_bubble",
+    title: "国家经营定位",
+    xLabel: "销量",
+    yLabel: "单车边际",
+    items: [{ label: "泰国", x: 12450, y: 32.5, size: 22 }],
+  });
+  const tableSpec = buildDirectChartSpec({
+    type: "detail_table",
+    title: "低单车边际明细",
+    columns: ["国家", "销量", "单车边际"],
+    rows: [["英国", 13665, 24.6]],
+  });
+
+  assert.equal(metricSpec.kind, "metric_card");
+  assert.equal(groupedSpec.kind, "grouped_bar");
+  assert.equal(groupedSpec.layout.barmode, "group");
+  assert.equal(stackedSpec.kind, "percent_stacked_bar");
+  assert.equal(stackedSpec.layout.barmode, "stack");
+  assert.equal(heatmapSpec.kind, "heatmap");
+  assert.equal(heatmapSpec.data[0].type, "heatmap");
+  assert.equal(bubbleSpec.kind, "scatter_bubble");
+  assert.equal(bubbleSpec.data[0].mode, "markers+text");
+  assert.equal(tableSpec.kind, "detail_table");
+  assert.equal(tableSpec.data[0].type, "table");
 });
