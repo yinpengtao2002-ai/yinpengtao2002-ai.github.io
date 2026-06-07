@@ -11,7 +11,7 @@ import {
   buildTrendSeries,
   buildWaterfallBridge,
 } from "../src/lib/finance-ai/metrics.ts";
-import { validateFinanceActionPlan } from "../src/lib/finance-ai/actions.ts";
+import { alignFinanceActionPlanWithQuestion, validateFinanceActionPlan } from "../src/lib/finance-ai/actions.ts";
 import { buildChartSpec, buildDirectChartSpec } from "../src/lib/finance-ai/charts.ts";
 
 const rows = [
@@ -485,6 +485,38 @@ test("action validator rejects invalid rank options and caps oversized limits", 
   assert.match(invalid.errors.join("\n"), /排序方式不支持/);
   assert.match(invalid.errors.join("\n"), /排名数量最多 10 项/);
   assert.match(invalid.errors.join("\n"), /变化排序需要同时指定环比对比和期间/);
+});
+
+test("action plan alignment corrects explicit lowest and top rank directions per metric", () => {
+  const rows = [
+    { "Month": "3月", "Country": "巴西", "Sales Volume": 100, "Total Margin": 3000 },
+    { "Month": "4月", "Country": "巴西", "Sales Volume": 120, "Total Margin": 3900 },
+    { "Month": "4月", "Country": "英国", "Sales Volume": 80, "Total Margin": 800 },
+  ];
+  const schema = inferFinanceSchema(rows);
+  const aligned = alignFinanceActionPlanWithQuestion(schema, [
+    {
+      type: "bar_rank",
+      metric: "Sales Volume",
+      dimension: "Country",
+      period: "M04",
+      sort: "value_asc",
+      limit: 5,
+    },
+    {
+      type: "bar_rank",
+      metric: "单车边际",
+      dimension: "Country",
+      period: "M04",
+      sort: "value_desc",
+      limit: 5,
+    },
+  ], "4月，列出Top 5的这个国家销量来，然后还有单车边际最低的5个国家也给我。");
+
+  assert.equal(aligned[0].type, "bar_rank");
+  assert.equal(aligned[0].sort, "value_desc");
+  assert.equal(aligned[1].type, "bar_rank");
+  assert.equal(aligned[1].sort, "value_asc");
 });
 
 test("chart specs are compact and identify supported chart types", () => {

@@ -20,6 +20,8 @@ const ACTION_TYPES = new Set([
 const PERIOD_FIELDS = ["period", "fromPeriod", "toPeriod", "highlightPeriod"] as const;
 const BAR_RANK_SORTS = new Set(["value_desc", "value_asc", "change_desc", "change_asc"]);
 const MAX_CHART_ITEMS = 10;
+const LOW_RANK_TOKENS = ["最低", "最少", "倒数", "bottom", "后五", "后5", "低的5", "低5"];
+const HIGH_RANK_TOKENS = ["最高", "最多", "top", "前五", "前5", "高的5", "高5"];
 
 type ActionType = FinanceActionModule["type"];
 type MutableModule = Record<string, unknown> & { type: ActionType; metric: string };
@@ -174,6 +176,93 @@ export function validateFinanceActionPlan(
   return errors.length
     ? { ok: false, modules, errors }
     : { ok: true, modules, errors: [] };
+}
+
+export function alignFinanceActionPlanWithQuestion(
+  schema: FinanceSchema,
+  modules: FinanceActionModule[],
+  userQuestion: string,
+): FinanceActionModule[] {
+  return modules.map((module) => {
+    if (module.type !== "bar_rank") {
+      return module;
+    }
+
+    const metricAliases = getMetricIntentAliases(schema, module.metric);
+    const lowScore = getDirectionalIntentScore(userQuestion, metricAliases, LOW_RANK_TOKENS);
+    const highScore = getDirectionalIntentScore(userQuestion, metricAliases, HIGH_RANK_TOKENS);
+
+    if (lowScore === 0 && highScore === 0) {
+      return module;
+    }
+
+    return {
+      ...module,
+      sort: lowScore > highScore ? "value_asc" : "value_desc",
+    };
+  });
+}
+
+function normalizeIntentText(value: string) {
+  return value.toLowerCase().replace(/[\s_\-./,，。:：;；、"'“”‘’()（）]/g, "");
+}
+
+function getMetricIntentAliases(schema: FinanceSchema, metricName: string) {
+  const metric = findMetric(schema, metricName);
+  const rawAliases = new Set<string>([metricName]);
+
+  if (metric?.kind === "total") {
+    rawAliases.add(metric.name);
+    rawAliases.add(metric.column);
+
+    if (metric.column === schema.salesColumn || /sales|volume|qty|quantity|units/i.test(metric.column)) {
+      rawAliases.add("销量");
+      rawAliases.add("销售量");
+      rawAliases.add("volume");
+    }
+  }
+
+  if (metric?.kind === "unit") {
+    rawAliases.add(metric.name);
+    rawAliases.add(metric.numeratorColumn);
+    rawAliases.add("单车");
+    if (metric.name.includes("边际") || metric.numeratorColumn.includes("边际") || /margin/i.test(metric.numeratorColumn)) {
+      rawAliases.add("单车边际");
+      rawAliases.add("边际");
+      rawAliases.add("margin");
+    }
+  }
+
+  return Array.from(rawAliases)
+    .map(normalizeIntentText)
+    .filter((alias) => alias.length >= 2);
+}
+
+function getDirectionalIntentScore(question: string, metricAliases: string[], directionTokens: string[]) {
+  const normalizedQuestion = normalizeIntentText(question);
+  const normalizedTokens = directionTokens.map(normalizeIntentText);
+  let score = 0;
+
+  for (const alias of metricAliases) {
+    const aliasIndex = normalizedQuestion.indexOf(alias);
+    if (aliasIndex < 0) {
+      continue;
+    }
+
+    for (const token of normalizedTokens) {
+      const tokenIndex = normalizedQuestion.indexOf(token);
+      if (tokenIndex < 0) {
+        continue;
+      }
+
+      const distance = Math.abs(tokenIndex - aliasIndex);
+      if (distance <= 24) {
+        score = Math.max(score, 100 - distance);
+      }
+    }
+  }
+
+  return score;
 }
 
 function validateMetric(

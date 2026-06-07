@@ -301,6 +301,62 @@ test("finance AI assistant API validates provider action plans before returning 
   }));
 });
 
+test("finance AI assistant plan mode aligns explicit rank directions before returning modules", async () => {
+  const schema = {
+    headers: ["Month", "Country", "Sales Volume", "Total Margin"],
+    monthColumn: "Month",
+    salesColumn: "Sales Volume",
+    dimensionColumns: ["Country"],
+    totalMetrics: [
+      { kind: "total", name: "Sales Volume", column: "Sales Volume" },
+      { kind: "total", name: "Total Margin", column: "Total Margin" },
+    ],
+    unitMetrics: [{ kind: "unit", name: "单车边际", numeratorColumn: "Total Margin", denominatorColumn: "Sales Volume" }],
+    excludedMetricColumns: [],
+    requiredIssues: [],
+    profile: {
+      rowCount: 20,
+      periods: [
+        { key: "M03", label: "3月", sort: 3 },
+        { key: "M04", label: "4月", sort: 4 },
+      ],
+      dimensionValueCounts: { Country: 12 },
+    },
+  };
+
+  await withMockedProvider(async () => {
+    const response = await POST(makeRequest({
+      mode: "plan",
+      question: "4月，列出Top 5的这个国家销量来，然后还有单车边际最低的5个国家也给我。",
+      schema,
+    }));
+    const payload = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.modules[0].sort, "value_desc");
+    assert.equal(payload.modules[1].sort, "value_asc");
+  }, JSON.stringify({
+    modules: [
+      {
+        type: "bar_rank",
+        metric: "Sales Volume",
+        dimension: "Country",
+        period: "M04",
+        sort: "value_asc",
+        limit: 5,
+      },
+      {
+        type: "bar_rank",
+        metric: "单车边际",
+        dimension: "Country",
+        period: "M04",
+        sort: "value_desc",
+        limit: 5,
+      },
+    ],
+  }));
+});
+
 test("finance AI assistant analyze mode sends workbook rows and normalizes direct charts", async () => {
   await withMockedProvider(async (calls) => {
     const response = await POST(makeRequest({

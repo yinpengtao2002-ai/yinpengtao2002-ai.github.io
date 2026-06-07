@@ -298,8 +298,10 @@ export function buildFinanceAIPlanningContext(
     "- dimension 只能使用维度字段里的名称。",
     "- period/fromPeriod/toPeriod/highlightPeriod 只能使用可用期间里的 key，例如 M04 或 2026-03，不要自造年份。",
     "- filters 只能使用维度字段和值数组。",
+    "- bar_rank 必须设置 sort：用户说 Top/前五/最高/最多时用 value_desc；用户说最低/最少/倒数/bottom 时用 value_asc。",
+    "- 同一句里要求多个排名时，分别为每个指标生成独立 bar_rank 模块，不要把销量 Top 和单车指标最低混成一个模块。",
     "JSON 结构示例：",
-    '{"modules":[{"type":"metric_snapshot","metric":"单车边际","period":"2026-03","filters":{"国家":["巴西"]},"comparisons":["mom","yoy"]}]}',
+    '{"modules":[{"type":"metric_snapshot","metric":"单车边际","period":"2026-03","filters":{"国家":["巴西"]},"comparisons":["mom","yoy"]},{"type":"bar_rank","metric":"销量","dimension":"国家","period":"M04","sort":"value_desc","limit":5},{"type":"bar_rank","metric":"单车边际","dimension":"国家","period":"M04","sort":"value_asc","limit":5}]}',
   ].join("\n");
 }
 

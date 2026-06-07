@@ -2,7 +2,7 @@
 import { buildFinanceAIDirectAnalyzePrompt, buildFinanceAIDataRequestPrompt, buildFinanceAIExplanationPrompt, buildFinanceAIPlanningContext, buildFinanceAISelectedRowsAnalyzePrompt } from "../../../../lib/finance-ai/context.ts";
 import type { FinanceAIChatState } from "../../../../lib/finance-ai/context.ts";
 // @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
-import { validateFinanceActionPlan } from "../../../../lib/finance-ai/actions.ts";
+import { alignFinanceActionPlanWithQuestion, validateFinanceActionPlan } from "../../../../lib/finance-ai/actions.ts";
 // @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
 import { FINANCE_AI_ACCESS_HEADER, isFinanceAIAccessConfigured, verifyFinanceAIAccessToken } from "../../../../lib/finance-ai/access.ts";
 import type {
@@ -811,7 +811,7 @@ export async function POST(req: Request) {
         });
       }
 
-      return Response.json({ modules: validated.modules });
+      return Response.json({ modules: alignFinanceActionPlanWithQuestion(schema, validated.modules, question) });
     } catch (error) {
       return errorResponse(
         502,
