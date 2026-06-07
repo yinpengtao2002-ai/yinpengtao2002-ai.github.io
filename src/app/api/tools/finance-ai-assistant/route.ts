@@ -373,6 +373,14 @@ function getUpstreamStatus(error: unknown) {
   return 502;
 }
 
+function getUpstreamErrorMessage(error: unknown) {
+  if (error instanceof DOMException && error.name === "AbortError") {
+    return "DeepSeek 分析超时了，请稍后重试，或把问题缩窄到一个月份、一个指标或一个维度。";
+  }
+
+  return error instanceof Error ? error.message : "Upstream request failed";
+}
+
 async function callProvider(
   provider: ChatProvider,
   messages: ChatMessage[],
@@ -449,7 +457,7 @@ async function callFirstConfiguredProvider(messages: ChatMessage[], jsonMode: bo
       attempts.push({
         model: provider.model,
         status: getUpstreamStatus(error),
-        error: error instanceof Error ? error.message : "Upstream request failed",
+        error: getUpstreamErrorMessage(error),
       });
     }
   }

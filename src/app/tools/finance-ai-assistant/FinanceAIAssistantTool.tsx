@@ -162,6 +162,10 @@ function getAPIErrorMessage(payload: APIResponse, fallback: string) {
     return "当前环境还没有配置 AI Key，无法分析底稿。";
   }
 
+  if (payload.errorCode === "provider_timeout") {
+    return "DeepSeek 分析超时了，可以直接重试一次，或先把问题缩窄到一个月份、一个指标或一个维度。";
+  }
+
   if (payload.errorCode === "provider_failed" && payload.error?.includes("AI response was empty")) {
     return "上游模型这次没有返回内容，可以直接重试一次，或把问题说得更具体一点。";
   }

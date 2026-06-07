@@ -163,6 +163,10 @@ test("finance AI direct prompt includes uploaded workbook rows for provider anal
   assert.match(prompt, /2026-03/);
   assert.match(prompt, /巴西/);
   assert.match(prompt, /3000/);
+  assert.match(prompt, /compact_workbook_v1/);
+  assert.match(prompt, /Each sheet\.rows item is an array/);
+  assert.match(prompt, /\["2026-03","巴西",100,3000\]/);
+  assert.doesNotMatch(prompt, /\{"月份":"2026-03","国家":"巴西","销量":100,"边际":3000\}/);
   assert.match(prompt, /charts 最多 3 个/);
   assert.match(prompt, /trend/);
   assert.match(prompt, /bar_rank/);
@@ -492,6 +496,8 @@ test("finance AI assistant page is an independent chat workbench", async () => {
   assert.match(client, /buildDirectChartSpec/);
   assert.match(client, /mode:\s*"analyze"/);
   assert.match(client, /workbook/);
+  assert.match(client, /provider_timeout/);
+  assert.match(client, /DeepSeek 分析超时/);
   assert.doesNotMatch(client, /buildMetricSnapshot/);
   assert.doesNotMatch(client, /buildTrendSeries/);
   assert.doesNotMatch(client, /buildBarRank/);

@@ -173,14 +173,16 @@ function normalizeWorkbookCell(value: unknown): unknown {
 
 function safeWorkbookJson(workbook: FinanceRawWorkbook) {
   return JSON.stringify({
+    format: "compact_workbook_v1",
+    note: "Each sheet.rows item is an array of cell values in the same order as sheet.headers.",
     fileName: workbook.fileName,
     totalRowCount: workbook.totalRowCount,
     sheets: workbook.sheets.map((sheet) => ({
       name: sheet.name,
       headers: sheet.headers,
       rowCount: sheet.rowCount,
-      rows: sheet.rows.map((row) => Object.fromEntries(
-        Object.entries(row).map(([key, value]) => [key, normalizeWorkbookCell(value)]),
+      rows: sheet.rows.map((row) => (
+        sheet.headers.map((header) => normalizeWorkbookCell(row[header]))
       )),
     })),
   });
@@ -243,7 +245,7 @@ export function buildFinanceAIDirectAnalyzePrompt(input: DirectAnalyzePromptInpu
 
   return [
     "你是财务分析 AI 助手。用户已经上传底稿，你需要直接基于底稿回答问题并在适合时生成图表数据。",
-    "底稿会以 JSON 形式提供，包含 sheet 名、原始表头和数据行。你负责识别字段含义、判断口径、计算数值，并说明必要假设。",
+    "底稿会以紧凑 JSON 形式提供，包含 sheet 名、原始表头和数据行；每一行是按 headers 顺序排列的单元格数组。你负责识别字段含义、判断口径、计算数值，并说明必要假设。",
     "只输出严格 JSON，不要输出 Markdown 代码块，不要在 JSON 外写任何文字。",
     "返回结构必须是：",
     '{"answer":"给用户看的中文分析结论，可包含 Markdown 加粗","assumptions":["字段、口径或计算假设"],"charts":[]}',
