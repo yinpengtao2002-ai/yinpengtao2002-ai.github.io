@@ -333,7 +333,7 @@ test("waterfall chart sorts visible bridge items by sign and absolute contributi
     startLabel: "3月",
     startValue: 100,
     endLabel: "4月",
-    endValue: 85,
+    endValue: 103,
     items: [
       { label: "A", value: 2 },
       { label: "B", value: -12 },
@@ -352,7 +352,7 @@ test("waterfall chart sorts visible bridge items by sign and absolute contributi
 
   assert.equal(spec.size, "large");
   assert.deepEqual(spec.data[0].x, ["3月", "B", "L", "D", "F", "其他", "C", "E", "G", "I", "K", "A", "4月"]);
-  assert.deepEqual(spec.data[0].y, [100, -12, -8, -4, -3, -3, 9, 7, 6, 5, 4, 2, 85]);
+  assert.deepEqual(spec.data[0].y, [100, -12, -8, -4, -3, -3, 9, 7, 6, 5, 4, 2, 0]);
 });
 
 test("bar rank comparison includes previous-only groups and exposes change values", () => {

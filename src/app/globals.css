@@ -285,21 +285,6 @@ body {
   backdrop-filter: blur(16px);
 }
 
-.finance-ai-empty-state.is-loaded {
-  grid-template-columns: auto minmax(180px, 1fr);
-  gap: 8px;
-  margin-bottom: 2px;
-  padding: 6px 8px;
-}
-
-.finance-ai-empty-state.is-loaded .finance-ai-upload-chip,
-.finance-ai-empty-state.is-loaded .finance-ai-data-status,
-.finance-ai-empty-state.is-loaded .finance-ai-template-button {
-  min-height: 34px;
-  padding: 0 11px;
-  font-size: 0.8rem;
-}
-
 .finance-ai-assistant-panel.is-ready .finance-ai-chat {
   padding-top: 10px;
 }
@@ -774,11 +759,6 @@ body {
     width: calc(100% - 24px);
     grid-template-columns: 1fr;
     padding: 10px;
-  }
-
-  .finance-ai-empty-state.is-loaded {
-    grid-template-columns: 1fr;
-    padding: 7px;
   }
 
   .finance-ai-upload-row {

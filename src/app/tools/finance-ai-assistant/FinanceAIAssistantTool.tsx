@@ -214,6 +214,13 @@ function buildBarRankDetailTable(title: string, result: BarRankResult): FinanceC
   });
 }
 
+function getRequestedRankLimit(question: string) {
+  const match = question.match(/(?:top|bottom|前|后|倒数)\s*(\d{1,3})/i);
+  const limit = match ? Number(match[1]) : null;
+
+  return limit && Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : null;
+}
+
 function executeFinancePlan(
   rows: FinanceRow[],
   schema: FinanceSchema,
@@ -278,8 +285,15 @@ function executeFinancePlan(
 }
 
 function buildComputedSummary(question: string, schema: FinanceSchema, computedModules: ComputedModule[]) {
+  const requestedRankLimit = getRequestedRankLimit(question);
+
   return {
     question,
+    answerRules: [
+      "items/visibleItemCount 只是图表可见项限制，不代表回答只能覆盖这些项。",
+      "bar_rank 如果有 allItems 或 answerItems，说明完整明细表会在消息下方展示；不要说只返回、只能看到或仅给了可见 Top N。",
+      "用户指定 Top/Bottom N 时，按 answerItems 或 allItems 的前 N 项回答；正文不要重复手写完整 Markdown 表格。",
+    ],
     schema: {
       rowCount: schema.profile.rowCount,
       periods: schema.profile.periods,
@@ -287,7 +301,27 @@ function buildComputedSummary(question: string, schema: FinanceSchema, computedM
       totalMetrics: schema.totalMetrics,
       unitMetrics: schema.unitMetrics,
     },
-    modules: computedModules,
+    modules: computedModules.map((module) => {
+      if (module.type !== "bar_rank") {
+        return module;
+      }
+
+      const allRankItems = module.result.allItems ?? module.result.items;
+      const answerLimit = requestedRankLimit ?? allRankItems.length;
+
+      return {
+        ...module,
+        answerGuidance: {
+          requestedRankLimit,
+          chartVisibleItemCount: module.result.visibleItemCount,
+          totalItemCount: module.result.totalItemCount,
+          hasCompleteDetailTable: Boolean(module.result.allItems?.length),
+          answerItemCount: Math.min(answerLimit, allRankItems.length),
+          instruction: "用 answerItems 回答用户要的排名；visibleItemCount 只解释图表展示，不要说结果只返回了可见 Top N。",
+        },
+        answerItems: allRankItems.slice(0, answerLimit),
+      };
+    }),
   };
 }
 
@@ -481,20 +515,9 @@ export default function FinanceAIAssistantTool() {
     try {
       const parsed = await parseFile(file);
       const nextSchema = inferFinanceSchema(parsed.previewRows);
-      const newDatasetMessages: ChatMessage[] = [
-        {
-          id: `assistant-upload-${Date.now()}`,
-          role: "assistant",
-          text: nextSchema.requiredIssues.length
-            ? `${file.name} 已上传。${getSchemaIssueText(nextSchema)}我仍会把完整底稿交给 AI 识别，你可以直接提问。`
-            : `${file.name} 已上传。${summarizeSchema(nextSchema)}。现在可以直接提问。`,
-          meta: "数据仅保留在当前页面会话中，刷新后清空。",
-        },
-      ];
       setWorkbook(parsed.workbook);
       setSchema(nextSchema);
       setFileName(file.name);
-      setMessages(newDatasetMessages);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "文件读取失败，请换一个 CSV/XLS/XLSX 文件。");
     } finally {
@@ -666,7 +689,8 @@ export default function FinanceAIAssistantTool() {
           </section>
         ) : (
           <>
-        <section className={`finance-ai-empty-state ${workbook ? "is-loaded" : ""}`} aria-label="数据上传和识别状态">
+        {!workbook ? (
+        <section className="finance-ai-empty-state" aria-label="数据上传和识别状态">
           <div className="finance-ai-upload-row">
             <label className="finance-ai-upload-chip">
               <input
@@ -694,6 +718,7 @@ export default function FinanceAIAssistantTool() {
             <span>{fileName ? `${fileName} · ${dataSummary}` : dataSummary}</span>
           </div>
         </section>
+        ) : null}
 
         {schema?.requiredIssues.length ? (
           <p className="finance-ai-warning">{getSchemaIssueText(schema)}</p>

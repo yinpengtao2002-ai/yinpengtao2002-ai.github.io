@@ -236,6 +236,9 @@ test("finance AI context bounds filters and computed summaries before provider c
   assert.match(explanationPrompt, /聚合结果足够回答/);
   assert.match(explanationPrompt, /排名、占比、变化贡献/);
   assert.match(explanationPrompt, /不要说看不到明细/);
+  assert.match(explanationPrompt, /answerItems/);
+  assert.match(explanationPrompt, /不要说“只返回了前 N”/);
+  assert.match(explanationPrompt, /不要再手写完整 Markdown 表格/);
   assert.doesNotMatch(explanationPrompt, /已省略完整明细数组/);
   assert.doesNotMatch(explanationPrompt, /未展开/);
   assert.doesNotMatch(explanationPrompt, /截断/);
@@ -854,6 +857,9 @@ test("finance AI assistant page is an independent chat workbench", async () => {
   assert.match(client, /callAI\("plan"/);
   assert.match(client, /callAI\("explain"/);
   assert.match(client, /workbook/);
+  assert.match(client, /getRequestedRankLimit/);
+  assert.match(client, /answerItems/);
+  assert.match(client, /visibleItemCount 只是图表可见项限制/);
   assert.match(client, /provider_timeout/);
   assert.match(client, /DeepSeek 分析超时/);
   assert.doesNotMatch(client, /buildLocalFinanceAnalysis/);
@@ -861,9 +867,11 @@ test("finance AI assistant page is an independent chat workbench", async () => {
   assert.doesNotMatch(client, /callAI\("data_request"/);
   assert.doesNotMatch(client, /callAI\("analyze_selection"/);
   assert.match(client, /useEffect/);
-  assert.match(client, /newDatasetMessages/);
+  assert.doesNotMatch(client, /newDatasetMessages/);
+  assert.doesNotMatch(client, /assistant-upload/);
   assert.match(client, /finance-ai-assistant-panel \$\{workbook \? "is-ready" : ""\}/);
-  assert.match(client, /finance-ai-empty-state \$\{workbook \? "is-loaded" : ""\}/);
+  assert.match(client, /!\s*workbook\s*\?/);
+  assert.doesNotMatch(client, /finance-ai-empty-state \$\{workbook \? "is-loaded" : ""\}/);
   assert.doesNotMatch(client, /localStorage/);
   assert.doesNotMatch(client, /sessionStorage/);
   assert.doesNotMatch(client, /IndexedDB/);
@@ -874,7 +882,7 @@ test("finance AI assistant collapses non-chat chrome after data is loaded", asyn
 
   assert.match(styles, /\.finance-ai-assistant-panel\.is-ready\s+\.finance-ai-chat-header\s*\{[\s\S]*padding:\s*6px\s+0\s+4px/s);
   assert.match(styles, /\.finance-ai-assistant-panel\.is-ready\s+\.finance-ai-chat-header\s+\.finance-ai-avatar/s);
-  assert.match(styles, /\.finance-ai-empty-state\.is-loaded\s*\{[\s\S]*padding:\s*6px\s+8px/s);
+  assert.doesNotMatch(styles, /\.finance-ai-empty-state\.is-loaded/);
   assert.match(styles, /\.finance-ai-assistant-panel\.is-ready\s+\.finance-ai-chat\s*\{[\s\S]*padding-top:\s*10px/s);
 });
 

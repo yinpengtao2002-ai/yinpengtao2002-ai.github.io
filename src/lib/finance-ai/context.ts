@@ -410,6 +410,8 @@ export function buildFinanceAIExplanationPrompt(input: ExplanationPromptInput) {
     "计算结果是前端确定性计算后的聚合结果，聚合结果足够回答本轮问题。",
     "排名、占比、变化贡献等明细如果出现在计算结果里，就必须直接使用这些结果回答，不要说看不到明细、无法分析或无法出图。",
     "bar_rank 里的 items 是图表可见 Top N；如果同时有 fullScan，它基于所有维度成员计算，判断最大上涨、最大下降、最大负贡献时必须优先使用 fullScan，不要把图表 Top N 误认为全量名单。",
+    "bar_rank 如果有 allItems 或 answerItems，代表完整明细表会在消息下方展示；不要说“只返回了前 N”“只能看到 Top N”“明细只给了可见项”。",
+    "用户指定 Top/Bottom N 时，按 answerItems 或 allItems 的前 N 项回答；正文只给结论和口径，不要再手写完整 Markdown 表格，以免和下方表格重复。",
     "如果结果里出现不可计算、缺少上月或缺少年同期，需要直接说明。",
     "回复应像聊天消息，先给结论，再补一句口径。可以用 Markdown 加粗关键数字，必要时可用 LaTeX 公式。",
     `用户问题：${input.userQuestion.trim() || "无"}`,

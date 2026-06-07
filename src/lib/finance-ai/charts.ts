@@ -190,6 +190,21 @@ function normalizeWaterfallItems<T extends { label: string; value: number }>(ite
   return [...negatives, ...positives];
 }
 
+function reconcileWaterfallItems<T extends { label: string; value: number }>(
+  items: T[],
+  startValue: number,
+  endValue: number,
+): T[] {
+  const itemTotal = items.reduce((sum, item) => sum + item.value, 0);
+  const residualValue = endValue - startValue - itemTotal;
+
+  if (Math.abs(residualValue) < 1e-9) {
+    return items;
+  }
+
+  return [...items, { label: "未拆分差额", value: residualValue } as T];
+}
+
 function paddedRange(values: Array<number | null | undefined>) {
   const finiteValues = values.filter((value): value is number => (
     typeof value === "number" && Number.isFinite(value)
@@ -503,7 +518,7 @@ function buildDirectBarRankChartSpec(input: FinanceAIDirectBarRankChart): Financ
 }
 
 function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): FinanceChartSpec {
-  const items = normalizeWaterfallItems(result.items);
+  const items = normalizeWaterfallItems(reconcileWaterfallItems(result.items, result.startValue, result.endValue));
   const itemValues = items.map((item) => item.value);
   const scale = getScaleForValues([result.startValue, result.endValue, ...itemValues], title);
   const scaledStartValue = scaledChineseUnit(result.startValue, scale);
@@ -530,7 +545,7 @@ function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): 
       orientation: "v",
       measure: ["absolute", ...items.map(() => "relative"), "total"],
       x: [result.fromPeriod, ...items.map((item) => item.label), result.toPeriod],
-      y: [scaledStartValue, ...scaledItemValues, scaledEndValue],
+      y: [scaledStartValue, ...scaledItemValues, 0],
       text: [
         formatCompactNumber(result.startValue, scale),
         ...itemValues.map((value) => formatCompactNumber(value, scale, true)),
@@ -570,7 +585,7 @@ function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): 
 }
 
 function buildDirectWaterfallChartSpec(input: FinanceAIDirectWaterfallChart): FinanceChartSpec {
-  const items = normalizeWaterfallItems(input.items);
+  const items = normalizeWaterfallItems(reconcileWaterfallItems(input.items, input.startValue, input.endValue));
   const itemValues = items.map((item) => item.value);
   const scale = getScaleForValues([input.startValue, input.endValue, ...itemValues], input.title);
   const scaledStartValue = scaledChineseUnit(input.startValue, scale);
@@ -586,7 +601,7 @@ function buildDirectWaterfallChartSpec(input: FinanceAIDirectWaterfallChart): Fi
       orientation: "v",
       measure: ["absolute", ...items.map(() => "relative"), "total"],
       x: [input.startLabel, ...items.map((item) => item.label), input.endLabel],
-      y: [scaledStartValue, ...scaledItemValues, scaledEndValue],
+      y: [scaledStartValue, ...scaledItemValues, 0],
       text: [
         formatCompactNumber(input.startValue, scale),
         ...itemValues.map((value) => formatCompactNumber(value, scale, true)),
