@@ -49,6 +49,10 @@ function readEnv(value?: string) {
   return value?.trim() || "";
 }
 
+function isProviderFallbackEnabled() {
+  return readEnv(process.env.CHAT_ENABLE_PROVIDER_FALLBACKS).toLowerCase() === "true";
+}
+
 function getChatProviders(): ChatProvider[] {
   const deepseekApiUrl = readEnv(process.env.DEEPSEEK_API_URL) || DEEPSEEK_API_URL;
   const fallbackApiUrl = readEnv(process.env.CHAT_API_URL) || CHAT_FALLBACK_API_URL;
@@ -56,14 +60,19 @@ function getChatProviders(): ChatProvider[] {
   const fallbackApiKey = readEnv(process.env.CHAT_API_KEY);
   const fallbackModel = readEnv(process.env.CHAT_MODEL) || "gpt-5.2";
   const secondFallbackModel = readEnv(process.env.CHAT_MODEL_FALLBACK) || "gpt-5.4";
+  const primaryProvider = {
+    model: "deepseek-v4-pro",
+    apiUrl: deepseekApiUrl,
+    apiKey: deepseekApiKey,
+    timeoutMs: CHAT_PRIMARY_TIMEOUT_MS,
+  };
+
+  if (!isProviderFallbackEnabled()) {
+    return [primaryProvider];
+  }
 
   return [
-    {
-      model: "deepseek-v4-pro",
-      apiUrl: deepseekApiUrl,
-      apiKey: deepseekApiKey,
-      timeoutMs: CHAT_PRIMARY_TIMEOUT_MS,
-    },
+    primaryProvider,
     {
       model: fallbackModel,
       apiUrl: fallbackApiUrl,

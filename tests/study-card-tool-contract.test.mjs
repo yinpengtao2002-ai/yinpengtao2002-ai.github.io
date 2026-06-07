@@ -207,6 +207,9 @@ test("AI study card endpoint asks for structured learning output", async () => {
   assert.match(route, /JSON/);
   assert.match(route, /CHAT_API_KEY/);
   assert.match(route, /DEEPSEEK_API_KEY/);
+  assert.match(route, /CHAT_ENABLE_PROVIDER_FALLBACKS/);
+  assert.match(route, /isProviderFallbackEnabled/);
+  assert.match(route, /return \[primaryProvider\]/);
   assert.match(route, /response_format/);
   assert.match(route, /60000/);
   assert.match(route, /errorCode/);

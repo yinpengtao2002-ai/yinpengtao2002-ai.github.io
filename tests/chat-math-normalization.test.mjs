@@ -184,14 +184,18 @@ test("chat route link normalization keeps existing markdown links and code untou
   assert.equal(normalizeChatInternalLinks(input), input);
 });
 
-test("chat API uses a fixed three-model fallback chain", () => {
+test("chat API uses DeepSeek by default and gates third-party fallback providers", () => {
   assert.match(chatRoute, /model:\s*"deepseek-v4-pro"/);
   assert.match(chatRoute, /model:\s*"gpt-5\.2"/);
   assert.match(chatRoute, /model:\s*"gpt-5\.4"/);
+  assert.match(chatRoute, /CHAT_ENABLE_PROVIDER_FALLBACKS/);
+  assert.match(chatRoute, /isProviderFallbackEnabled/);
+  assert.match(chatRoute, /return \[primaryProvider\]/);
   assert.match(chatRoute, /DEEPSEEK_API_URL/);
   assert.match(chatRoute, /CHAT_FALLBACK_API_URL/);
   assert.match(envExample, /DEEPSEEK_API_KEY=/);
   assert.match(envExample, /DEEPSEEK_API_URL=https:\/\/api\.deepseek\.com\/chat\/completions/);
+  assert.match(envExample, /CHAT_ENABLE_PROVIDER_FALLBACKS=false/);
   assert.doesNotMatch(envExample, /CHAT_MODEL=/);
   assert.doesNotMatch(envExample, /CHAT_MODEL_FALLBACK=/);
   assert.doesNotMatch(chatRoute, /gpt-5\.4-mini/);
