@@ -27,8 +27,10 @@ const ACTION_TYPES = new Set([
 const PERIOD_FIELDS = ["period", "fromPeriod", "toPeriod", "highlightPeriod"] as const;
 const BAR_RANK_SORTS = new Set(["value_desc", "value_asc", "change_desc", "change_asc"]);
 const MAX_CHART_ITEMS = 10;
+const MAX_GROUPED_BAR_ITEMS = 16;
 const LOW_RANK_TOKENS = ["最低", "最少", "倒数", "bottom", "后五", "后5", "低的5", "低5"];
 const HIGH_RANK_TOKENS = ["最高", "最多", "top", "前五", "前5", "高的5", "高5"];
+const ALL_MEMBER_TOKENS = ["所有", "全部", "全量", "完整", "每个", "各个", "各大", "各国家", "各地区"];
 
 type ActionType = FinanceActionModule["type"];
 type MutableModule = Record<string, unknown> & { type: ActionType; metric?: string };
@@ -235,6 +237,10 @@ export function alignFinanceActionPlanWithQuestion(
   userQuestion: string,
 ): FinanceActionModule[] {
   return modules.map((module) => {
+    if (module.type === "grouped_bar") {
+      return alignGroupedBarLimitWithQuestion(schema, module, userQuestion);
+    }
+
     if (module.type !== "bar_rank") {
       return module;
     }
@@ -252,6 +258,42 @@ export function alignFinanceActionPlanWithQuestion(
       sort: lowScore > highScore ? "value_asc" : "value_desc",
     };
   });
+}
+
+function alignGroupedBarLimitWithQuestion(
+  schema: FinanceSchema,
+  module: Extract<FinanceActionModule, { type: "grouped_bar" }>,
+  userQuestion: string,
+): FinanceActionModule {
+  if (!hasAllMemberIntent(userQuestion)) {
+    return module;
+  }
+
+  const memberCount = schema.profile.dimensionValueCounts[module.dimension] ?? 0;
+  if (memberCount <= 0 || memberCount > MAX_GROUPED_BAR_ITEMS) {
+    return module;
+  }
+
+  const currentLimit = typeof module.limit === "number" && Number.isFinite(module.limit)
+    ? Math.floor(module.limit)
+    : 0;
+
+  if (currentLimit >= memberCount) {
+    return module;
+  }
+
+  return {
+    ...module,
+    limit: memberCount,
+  };
+}
+
+function hasAllMemberIntent(question: string) {
+  const normalizedQuestion = normalizeIntentText(question);
+
+  return ALL_MEMBER_TOKENS
+    .map(normalizeIntentText)
+    .some((token) => normalizedQuestion.includes(token));
 }
 
 function normalizeIntentText(value: string) {
@@ -409,12 +451,15 @@ function validateActionOptions(module: FinanceActionModule, errors: string[]) {
   }
 
   if (
-    module.type === "grouped_bar" ||
     module.type === "stacked_bar" ||
     module.type === "percent_stacked_bar" ||
     module.type === "heatmap"
   ) {
     normalizeChartLimit(module, MAX_CHART_ITEMS);
+  }
+
+  if (module.type === "grouped_bar") {
+    normalizeChartLimit(module, MAX_GROUPED_BAR_ITEMS);
   }
 
   if (module.type === "scatter_bubble") {

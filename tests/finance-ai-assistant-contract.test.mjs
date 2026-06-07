@@ -903,6 +903,7 @@ test("finance AI assistant chat styles size embedded chart cards", async () => {
   assert.match(styles, /\.finance-ai-chart-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
   assert.match(styles, /\.finance-ai-chart-card/);
   assert.match(styles, /\.finance-ai-message\.is-assistant\s+\.finance-ai-message-bubble\s*\{[\s\S]*width:\s*100%/s);
+  assert.match(styles, /\.finance-ai-chart-grid\s+\.finance-ai-chart-card:only-child:not\(\.is-large\):not\(\.is-small\)\s*\{[^}]*grid-column:\s*1\s*\/\s*-1/s);
   assert.match(styles, /\.finance-ai-chart-card\.is-large\s*\{[\s\S]*grid-column:\s*1\s*\/\s*-1/s);
   assert.match(styles, /\.finance-ai-chart-card\.is-small/);
   assert.match(styles, /\.finance-ai-chart-card\.is-small\s*\{[\s\S]*max-width:\s*min\(260px,\s*100%\)/s);

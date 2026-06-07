@@ -28,6 +28,8 @@ const COLORS = {
 
 const SERIES_COLORS = [COLORS.blue, COLORS.green, COLORS.yellow, COLORS.orange, COLORS.red];
 const MAX_WATERFALL_VISIBLE_ITEMS = 10;
+const MIN_BUBBLE_MARKER_SIZE = 12;
+const MAX_BUBBLE_MARKER_SIZE = 48;
 
 const baseLayout = {
   paper_bgcolor: "rgba(0,0,0,0)",
@@ -171,7 +173,7 @@ function scaledChineseUnit(value: number, scale = getChineseUnitScale(value)) {
 function formatCompactNumber(value: number, scale = getChineseUnitScale(value), signed = false) {
   const scaledValue = scaledChineseUnit(value, scale);
   const formatted = formatNumber(Math.abs(scaledValue), scale.digits);
-  const sign = signed ? (value > 0 ? "+" : value < 0 ? "-" : "") : "";
+  const sign = value < 0 ? "-" : signed && value > 0 ? "+" : "";
 
   return `${sign}${formatted}${scale.suffix}`;
 }
@@ -796,6 +798,39 @@ function buildDirectHeatmapChartSpec(input: FinanceAIDirectHeatmapChart): Financ
   };
 }
 
+function normalizeBubbleMarkerSizes(input: FinanceAIDirectScatterBubbleChart) {
+  const rawSizes = input.items.map((item) => (
+    typeof item.size === "number" && Number.isFinite(item.size)
+      ? Math.abs(item.size)
+      : null
+  ));
+  const finiteSizes = rawSizes.filter((size): size is number => size !== null);
+
+  if (finiteSizes.length === 0) {
+    return input.items.map(() => 20);
+  }
+
+  const minSize = Math.min(...finiteSizes);
+  const maxSize = Math.max(...finiteSizes);
+
+  if (maxSize === minSize) {
+    return input.items.map((_, index) => (rawSizes[index] === null ? 20 : 28));
+  }
+
+  const minRoot = Math.sqrt(minSize);
+  const maxRoot = Math.sqrt(maxSize);
+  const spread = maxRoot - minRoot || 1;
+
+  return rawSizes.map((size) => {
+    if (size === null) {
+      return 20;
+    }
+
+    const ratio = (Math.sqrt(size) - minRoot) / spread;
+    return MIN_BUBBLE_MARKER_SIZE + ratio * (MAX_BUBBLE_MARKER_SIZE - MIN_BUBBLE_MARKER_SIZE);
+  });
+}
+
 function buildDirectScatterBubbleChartSpec(input: FinanceAIDirectScatterBubbleChart): FinanceChartSpec {
   return {
     kind: "scatter_bubble",
@@ -809,7 +844,7 @@ function buildDirectScatterBubbleChartSpec(input: FinanceAIDirectScatterBubbleCh
       text: input.items.map((item) => item.label),
       textposition: "top center",
       marker: {
-        size: input.items.map((item) => Math.max(12, Math.min(item.size ?? 20, 48))),
+        size: normalizeBubbleMarkerSizes(input),
         color: input.items.map((_, index) => SERIES_COLORS[index % SERIES_COLORS.length]),
         opacity: 0.82,
         line: { color: "#fff", width: 2 },
@@ -829,6 +864,10 @@ function buildDirectScatterBubbleChartSpec(input: FinanceAIDirectScatterBubbleCh
 function formatDirectTableCell(value: unknown, column: string, tableTitle = "") {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return value ?? "";
+  }
+
+  if (/排名|名次|序号|序列|rank|index|no\.?|^#$/i.test(column)) {
+    return formatNumber(value, Number.isInteger(value) ? 0 : 2);
   }
 
   if (/占比|比例|率|share|percent/i.test(column) && Math.abs(value) <= 1) {

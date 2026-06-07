@@ -649,6 +649,33 @@ test("action validator accepts expanded chart plan modules for deterministic fro
   assert.deepEqual(validStructure.modules.map((module) => module.type), ["stacked_bar", "percent_stacked_bar", "detail_table"]);
 });
 
+test("all-member grouped bar questions keep every compact dimension member visible", () => {
+  const regionRows = Array.from({ length: 12 }, (_, index) => ({
+    "月份": "2026-04",
+    "大区": `大区${index + 1}`,
+    "销量": 1,
+    "净收入总额": 1200 - index,
+  }));
+  const schema = inferFinanceSchema(regionRows);
+  const normalized = normalizeFinanceActionPlanForQuestion(schema, {
+    modules: [
+      {
+        type: "grouped_bar",
+        metric: "净收入总额",
+        dimension: "大区",
+        period: "2026-04",
+        comparison: "mom",
+        limit: 10,
+      },
+    ],
+  }, "所有大区4月净收入总额环比情况怎么看？用上期和本期对比柱状图展示。");
+  const validated = validateFinanceActionPlan(schema, normalized);
+
+  assert.equal(validated.ok, true);
+  assert.equal(validated.modules[0].type, "grouped_bar");
+  assert.equal(validated.modules[0].limit, 12);
+});
+
 test("action plan alignment corrects explicit lowest and top rank directions per metric", () => {
   const rows = [
     { "Month": "3月", "Country": "巴西", "Sales Volume": 100, "Total Margin": 3000 },
@@ -992,6 +1019,12 @@ test("direct AI chart payloads support the approved expanded chart set", () => {
     columns: ["大区", "净收入总额", "占比", "环比变化"],
     rows: [["右舵地区部", 4817036664.26, 0.344, 1172553980.38]],
   });
+  const rankTableSpec = buildDirectChartSpec({
+    type: "detail_table",
+    title: "M04 国家净收入总额排名完整明细",
+    columns: ["排名", "国家", "净收入总额", "占比", "环比变化"],
+    rows: [[1, "西班牙", 840977230.49, 0.0601, -476067578.85]],
+  });
 
   assert.equal(metricSpec.kind, "metric_card");
   assert.equal(metricSpec.size, "small");
@@ -1016,4 +1049,32 @@ test("direct AI chart payloads support the approved expanded chart set", () => {
     ["34.4%"],
     ["11.73亿元"],
   ]);
+  assert.deepEqual(rankTableSpec.data[0].cells.values, [
+    ["1"],
+    ["西班牙"],
+    ["8.41亿元"],
+    ["6.0%"],
+    ["-4.76亿元"],
+  ]);
+});
+
+test("scatter bubble chart normalizes large size metrics instead of clamping every marker", () => {
+  const spec = buildDirectChartSpec({
+    type: "scatter_bubble",
+    title: "国家经营定位",
+    xLabel: "销量",
+    yLabel: "单车净收入",
+    items: [
+      { label: "A", x: 100, y: 10, size: 1_000_000_000 },
+      { label: "B", x: 120, y: 11, size: 2_500_000_000 },
+      { label: "C", x: 140, y: 12, size: 6_000_000_000 },
+    ],
+  });
+  const sizes = spec.data[0].marker.size;
+
+  assert.equal(new Set(sizes).size, 3);
+  assert.ok(sizes[0] < sizes[1]);
+  assert.ok(sizes[1] < sizes[2]);
+  assert.ok(Math.min(...sizes) >= 12);
+  assert.ok(Math.max(...sizes) <= 48);
 });

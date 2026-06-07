@@ -498,7 +498,8 @@ body {
 }
 
 .finance-ai-chart-grid .finance-ai-chart-card:only-child:not(.is-large):not(.is-small) {
-  max-width: min(620px, 100%);
+  grid-column: 1 / -1;
+  width: 100%;
 }
 
 .finance-ai-chart-card.is-large {
