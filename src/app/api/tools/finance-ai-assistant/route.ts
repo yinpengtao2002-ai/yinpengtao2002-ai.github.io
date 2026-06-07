@@ -40,8 +40,25 @@ type ChatMessage = {
 type ProviderAttempt = {
   model: string;
   status: number;
+  errorCode?: string;
   error: string;
+  finishReason?: string;
 };
+
+type ProviderCallOptions = {
+  jsonMode: boolean;
+  responseFormat?: boolean;
+};
+
+class ProviderEmptyResponseError extends Error {
+  finishReason?: string;
+
+  constructor(finishReason?: string) {
+    super("DeepSeek returned empty message content.");
+    this.name = "ProviderEmptyResponseError";
+    this.finishReason = finishReason;
+  }
+}
 
 function readEnv(value?: string) {
   return value?.trim() || "";
@@ -349,16 +366,33 @@ function getUpstreamErrorMessage(error: unknown) {
     return "DeepSeek 分析超时了，请稍后重试，或把问题缩窄到一个月份、一个指标或一个维度。";
   }
 
+  if (error instanceof ProviderEmptyResponseError) {
+    return "DeepSeek 这次没有返回正文内容。";
+  }
+
   return error instanceof Error ? error.message : "Upstream request failed";
+}
+
+function getUpstreamErrorCode(error: unknown) {
+  if (error instanceof DOMException && error.name === "AbortError") {
+    return "provider_timeout";
+  }
+
+  if (error instanceof ProviderEmptyResponseError) {
+    return "provider_empty_response";
+  }
+
+  return "provider_failed";
 }
 
 async function callProvider(
   provider: ChatProvider,
   messages: ChatMessage[],
-  jsonMode: boolean,
+  options: ProviderCallOptions,
 ) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), provider.timeoutMs);
+  const shouldUseProviderJsonMode = options.jsonMode && options.responseFormat !== false;
 
   try {
     const response = await fetch(provider.apiUrl, {
@@ -371,9 +405,9 @@ async function callProvider(
       },
       body: JSON.stringify({
         model: provider.model,
-        max_tokens: jsonMode ? 1800 : 1200,
+        max_tokens: options.jsonMode ? 1800 : 1200,
         stream: false,
-        ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
+        ...(shouldUseProviderJsonMode ? { response_format: { type: "json_object" } } : {}),
         messages,
       }),
       signal: controller.signal,
@@ -385,10 +419,13 @@ async function callProvider(
     }
 
     const payload = await response.json();
-    const content = payload?.choices?.[0]?.message?.content;
+    const choice = payload?.choices?.[0];
+    const content = choice?.message?.content;
 
     if (typeof content !== "string" || !content.trim()) {
-      throw new Error("AI response was empty");
+      throw new ProviderEmptyResponseError(
+        typeof choice?.finish_reason === "string" ? choice.finish_reason : undefined,
+      );
     }
 
     return content;
@@ -397,7 +434,7 @@ async function callProvider(
   }
 }
 
-async function callFirstConfiguredProvider(messages: ChatMessage[], jsonMode: boolean) {
+async function callFirstConfiguredProvider(messages: ChatMessage[], options: ProviderCallOptions) {
   const providers = getChatProviders();
   const attempts: ProviderAttempt[] = [];
 
@@ -422,22 +459,27 @@ async function callFirstConfiguredProvider(messages: ChatMessage[], jsonMode: bo
     }
 
     try {
-      const content = await callProvider(provider, messages, jsonMode);
+      const content = await callProvider(provider, messages, options);
       return { ok: true as const, content, provider: provider.model };
     } catch (error) {
       attempts.push({
         model: provider.model,
         status: getUpstreamStatus(error),
+        errorCode: getUpstreamErrorCode(error),
         error: getUpstreamErrorMessage(error),
+        ...(error instanceof ProviderEmptyResponseError && error.finishReason
+          ? { finishReason: error.finishReason }
+          : {}),
       });
     }
   }
 
   const timeoutAttempt = attempts.find((attempt) => attempt.status === 504);
+  const emptyAttempt = attempts.find((attempt) => attempt.errorCode === "provider_empty_response");
   return {
     ok: false as const,
     status: timeoutAttempt ? 504 : 502,
-    errorCode: timeoutAttempt ? "provider_timeout" : "provider_failed",
+    errorCode: timeoutAttempt ? "provider_timeout" : emptyAttempt ? "provider_empty_response" : "provider_failed",
     error: attempts.at(-1)?.error || "Finance AI provider failed.",
     attempts,
   };
@@ -504,7 +546,7 @@ export async function POST(req: Request) {
         },
         { role: "user", content: prompt },
       ],
-      true,
+      { jsonMode: true, responseFormat: false },
     );
 
     if (!providerResult.ok) {
@@ -561,7 +603,7 @@ export async function POST(req: Request) {
           content: `${planningContext}\n\n用户问题：${question}`,
         },
       ],
-      true,
+      { jsonMode: true },
     );
 
     if (!providerResult.ok) {
@@ -606,7 +648,7 @@ export async function POST(req: Request) {
         },
         { role: "user", content: prompt },
       ],
-      false,
+      { jsonMode: false },
     );
 
     if (!providerResult.ok) {

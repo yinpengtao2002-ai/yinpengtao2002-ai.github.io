@@ -370,6 +370,61 @@ test("finance AI assistant analyze mode sends workbook rows and normalizes direc
   }));
 });
 
+test("finance AI assistant analyze mode avoids provider JSON mode for raw workbook prompts", async () => {
+  await withMockedProvider(async (calls) => {
+    const response = await POST(makeRequest({
+      mode: "analyze",
+      question: "销量环比如何？",
+      workbook: {
+        fileName: "source.xlsx",
+        totalRowCount: 2,
+        sheets: [
+          {
+            name: "明细",
+            headers: ["月份", "国家", "销量"],
+            rowCount: 2,
+            rows: [
+              { "月份": "2026-03", "国家": "巴西", "销量": 100 },
+              { "月份": "2026-04", "国家": "巴西", "销量": 120 },
+            ],
+          },
+        ],
+      },
+    }));
+    const payload = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal("response_format" in calls[0], false);
+    assert.equal(payload.message, "4 月销量环比增长 20%。");
+  }, "```json\n{\"answer\":\"4 月销量环比增长 20%。\",\"charts\":[]}\n```");
+});
+
+test("finance AI assistant reports empty provider content as a distinct diagnosis", async () => {
+  await withMockedProvider(async () => {
+    const response = await POST(makeRequest({
+      mode: "analyze",
+      question: "销量环比如何？",
+      workbook: {
+        fileName: "source.xlsx",
+        totalRowCount: 1,
+        sheets: [
+          {
+            name: "明细",
+            headers: ["月份", "销量"],
+            rowCount: 1,
+            rows: [{ "月份": "2026-04", "销量": 120 }],
+          },
+        ],
+      },
+    }));
+    const payload = await response.json();
+
+    assert.equal(response.status, 502);
+    assert.equal(payload.errorCode, "provider_empty_response");
+    assert.equal(payload.attempts[0].errorCode, "provider_empty_response");
+  }, "");
+});
+
 test("finance AI assistant requires an internal access token", async () => {
   const lockedResponse = await POST(makeRequest({
     mode: "plan",
