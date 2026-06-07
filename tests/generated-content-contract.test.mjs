@@ -40,3 +40,11 @@ test("thinking generation canonicalizes duplicate Notion articles across databas
   assert.match(generator, /aliases/);
   assert.match(generator, /keys\.some\(\(key\) => seen\.has\(key\)\)/);
 });
+
+test("thinking generation keeps a local fallback for the World Cup commerce note", () => {
+  assert.match(generator, /LOCAL_THINKING_FALLBACKS/);
+  assert.match(generator, /观赛时间迁移与世界杯商业化重心的转变/);
+  assert.match(generated, /"slug": "notion-cb9e349d753a"/);
+  assert.match(generated, /"title": "观赛时间迁移与世界杯商业化重心的转变"/);
+  assert.match(generated, /"legacyCategory": "finance"/);
+});

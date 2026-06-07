@@ -640,10 +640,15 @@ test("thinking lab separates tools from source-backed reading categories", () =>
   assert.match(thinkingLab, /item\.legacyCategory === "ai"/);
   assert.match(thinkingLab, /item\.legacyCategory === "finance"/);
   assert.match(thinkingLab, /setActiveCategory/);
-  assert.match(thinkingLab, /thinking-tools-section/);
-  assert.match(thinkingLab, /thinking-content-section/);
+  assert.match(thinkingLab, /thinking-main-grid/);
+  assert.match(thinkingLab, /thinking-content-panel/);
+  assert.match(thinkingLab, /thinking-tools-panel/);
+  assert.match(thinkingLab, /thinking-filter-chips/);
   assert.match(thinkingLab, /thinking-tool-card/);
-  assert.match(thinkingLab, /thinking-article-row/);
+  assert.match(thinkingLab, /thinking-article-card/);
+  assert.doesNotMatch(thinkingLab, /thinking-filters/);
+  assert.doesNotMatch(thinkingLab, /thinking-mobile-filters/);
+  assert.doesNotMatch(thinkingLab, /thinking-article-head/);
   assert.match(thinkingLab, /打开工具/);
   assert.match(thinkingLab, /阅读/);
   assert.doesNotMatch(thinkingLab, /thinking-index-list/);

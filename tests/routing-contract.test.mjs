@@ -55,35 +55,51 @@ test("subtitle workbench is embedded as a seamless hosted tool", () => {
 });
 
 test("thinking lab separates usable tools from reading content", () => {
-  assert.match(thinkingClient, /thinking-tools-section/);
-  assert.match(thinkingClient, /thinking-content-section/);
+  assert.match(thinkingClient, /thinking-main-grid/);
+  assert.match(thinkingClient, /thinking-content-panel/);
+  assert.match(thinkingClient, /thinking-tools-panel/);
   assert.match(thinkingClient, /toolItems/);
   assert.match(thinkingClient, /contentItems/);
   assert.match(thinkingClient, /打开工具/);
   assert.match(thinkingClient, /阅读/);
   assert.match(thinkingClient, /thinking-tool-card/);
-  assert.match(thinkingClient, /thinking-article-row/);
+  assert.match(thinkingClient, /thinking-article-card/);
   assert.doesNotMatch(thinkingClient, /style=\{\{/);
-  assert.match(globals, /\.thinking-tools-section\s*\{/);
+  assert.match(globals, /\.thinking-main-grid\s*\{/);
+  assert.match(globals, /\.thinking-content-panel\s*\{/);
+  assert.match(globals, /\.thinking-tools-panel\s*\{/);
   assert.match(globals, /\.thinking-tool-card\s*\{/);
-  assert.match(globals, /\.thinking-content-section\s*\{/);
-  assert.match(globals, /\.thinking-article-row\s*\{/);
+  assert.match(globals, /\.thinking-article-card\s*\{/);
+  assert.doesNotMatch(thinkingClient, /thinking-filters/);
+  assert.doesNotMatch(thinkingClient, /thinking-mobile-filters/);
+  assert.doesNotMatch(thinkingClient, /thinking-article-head/);
+  assert.doesNotMatch(globals, /\.thinking-filters\s*\{/);
+  assert.doesNotMatch(globals, /\.thinking-article-head/);
 });
 
-test("thinking lab keeps the header compact and removes explanatory subtitles from the tool hub", () => {
+test("thinking lab is a compact two-column index with article chips and quick tools", () => {
+  assert.match(thinkingClient, /TOOLS & THINKING/);
   assert.match(thinkingClient, /className="thinking-index-title"/);
-  assert.doesNotMatch(thinkingClient, /thinking-index-intro/);
-  assert.doesNotMatch(thinkingClient, /这些是可以直接使用的小工具/);
-  assert.doesNotMatch(thinkingClient, /保留一些观察和复盘/);
-  assert.doesNotMatch(thinkingClient, /TOOL_DETAILS/);
+  assert.match(thinkingClient, /可直接打开的 AI 工具、创作片段与思考记录。/);
+  assert.match(thinkingClient, /thinking-index-shell/);
+  assert.match(thinkingClient, /thinking-filter-chips/);
+  assert.match(thinkingClient, /快捷工具/);
+  assert.match(thinkingClient, /知识内容 → 问答闪卡/);
+  assert.match(thinkingClient, /视频\/音频 → 字幕总结/);
   assert.doesNotMatch(thinkingClient, /thinking-tool-detail/);
   assert.doesNotMatch(thinkingClient, />适合</);
   assert.doesNotMatch(thinkingClient, />解决</);
   assert.match(
     globals,
-    /\.thinking-index-title\s*\{[^}]*font-size:\s*clamp\(1\.95rem,\s*4\.6vw,\s*3\.15rem\)/s
+    /\.thinking-index-shell\s*\{[^}]*width:\s*min\(100%\s*-\s*48px,\s*1160px\)/s
   );
-  assert.doesNotMatch(globals, /\.thinking-index-intro\s*\{/);
-  assert.doesNotMatch(globals, /\.thinking-section-head p\s*\{/);
+  assert.match(
+    globals,
+    /\.thinking-main-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*7fr\)\s*minmax\(280px,\s*3fr\)/s
+  );
+  assert.match(
+    globals,
+    /\.thinking-index-hero\s*\{[^}]*min-height:\s*clamp\(120px,\s*18vh,\s*160px\)/s
+  );
   assert.doesNotMatch(globals, /\.thinking-tool-detail\s*\{/);
 });

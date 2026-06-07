@@ -1,5 +1,5 @@
 // Auto-generated content data from markdown + Notion
-// Generated at: 2026-06-07T03:44:41.919Z
+// Generated at: 2026-06-07T09:26:04.303Z
 // DO NOT EDIT MANUALLY - run 'npm run prebuild' to regenerate
 
 export interface ContentItem {
@@ -91,6 +91,18 @@ export const financeContent: ContentItem[] = [
 
 export const thinkingContent: ContentItem[] = [
   {
+    "slug": "notion-cb9e349d753a",
+    "title": "观赛时间迁移与世界杯商业化重心的转变",
+    "description": "观赛时间迁移背后，是全球内容消费习惯与商业化重心的变化。",
+    "date": "2026-05-18",
+    "category": null,
+    "href": "/thinking-lab/notion-cb9e349d753a",
+    "content": "## 观赛时间迁移与世界杯商业化重心的转变\n\n观赛时间迁移背后，是全球内容消费习惯与商业化重心的变化。\n\n当大型赛事的黄金时段不再只围绕传统欧美电视收视习惯安排，商业价值也会随之重新分配。世界杯这样的全球内容产品，正在从单一转播逻辑走向更复杂的跨时区、跨平台、跨市场经营。",
+    "source": "notion",
+    "legacyCategory": "finance",
+    "id": 1
+  },
+  {
     "slug": "moonlight-ferry",
     "title": "月光渡口",
     "description": "看山是山",
@@ -103,7 +115,7 @@ export const thinkingContent: ContentItem[] = [
       "notion-355e349d753a"
     ],
     "legacyCategory": "ai",
-    "id": 1
+    "id": 2
   },
   {
     "slug": "humanities-ai-guide",
@@ -118,7 +130,7 @@ export const thinkingContent: ContentItem[] = [
       "notion-24ae349d753a"
     ],
     "legacyCategory": "ai",
-    "id": 2
+    "id": 3
   },
   {
     "slug": "gold-stock-selloff-iran-war-2026",
@@ -133,7 +145,7 @@ export const thinkingContent: ContentItem[] = [
       "notion-fbde349d753a"
     ],
     "legacyCategory": "essays",
-    "id": 3
+    "id": 4
   }
 ];
 

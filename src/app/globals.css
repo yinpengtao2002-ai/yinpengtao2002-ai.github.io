@@ -2984,95 +2984,156 @@ h6 {
   }
 }
 
-.thinking-index-hero {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: clamp(5rem, 10vh, 6.2rem) 1.5rem clamp(1.7rem, 4vh, 2.4rem);
-}
-
 .thinking-index-page {
   min-height: 100vh;
   min-height: 100dvh;
   color: var(--foreground);
   background:
-    repeating-linear-gradient(90deg, color-mix(in srgb, var(--foreground) 3%, transparent) 0 1px, transparent 1px 64px),
-    linear-gradient(180deg, color-mix(in srgb, var(--card) 84%, var(--background)), var(--background) 48%);
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--foreground) 2%, transparent) 0 1px, transparent 1px 64px),
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--foreground) 1.5%, transparent) 0 1px, transparent 1px 64px),
+    linear-gradient(180deg, color-mix(in srgb, var(--card) 78%, var(--background)), var(--background) 52%);
   font-family: var(--font-poppins);
 }
 
+.thinking-index-shell {
+  width: min(100% - 48px, 1160px);
+  margin: 0 auto;
+  padding: clamp(4.7rem, 8vh, 5.4rem) 0 clamp(3rem, 7vh, 5rem);
+}
+
+.thinking-index-hero {
+  display: flex;
+  min-height: clamp(120px, 18vh, 160px);
+  flex-direction: column;
+  justify-content: center;
+}
+
 .thinking-index-eyebrow {
-  margin: 0 0 14px;
+  margin: 0 0 10px;
   color: var(--accent);
   font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.18em;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
 .thinking-index-title {
   margin: 0;
   color: var(--foreground);
-  font-size: clamp(1.95rem, 4.6vw, 3.15rem);
+  font-size: clamp(1.75rem, 3.2vw, 2.45rem);
   line-height: 1.1;
   letter-spacing: 0;
 }
 
-.thinking-index-list {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 0 1.5rem clamp(3rem, 7vh, 5rem);
+.thinking-index-intro {
+  max-width: 520px;
+  margin: 12px 0 0;
+  color: color-mix(in srgb, var(--foreground) 56%, var(--muted));
+  font-size: 14px;
+  line-height: 1.75;
 }
 
-.thinking-tools-section {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 0 1.5rem;
+.thinking-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(280px, 3fr);
+  gap: 22px;
+  align-items: start;
 }
 
-.thinking-content-section {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 0 1.5rem;
+.thinking-content-panel,
+.thinking-tools-panel {
+  border: 1px solid color-mix(in srgb, var(--foreground) 9%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  box-shadow: 0 18px 42px rgba(33, 29, 22, 0.055);
 }
 
-.thinking-content-section {
-  padding-bottom: clamp(3rem, 7vh, 5rem);
+.thinking-content-panel {
+  padding: 18px;
 }
 
-.thinking-section-head {
+.thinking-tools-panel {
+  position: sticky;
+  top: 88px;
+  padding: 16px;
+}
+
+.thinking-panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin: 24px 0 12px;
+  margin: 0 0 14px;
 }
 
-.thinking-section-head h2 {
+.thinking-panel-head.compact {
+  margin-bottom: 12px;
+}
+
+.thinking-panel-head h2 {
   margin: 0;
   color: var(--foreground);
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.35;
 }
 
-.thinking-tool-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+.thinking-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
-.thinking-tool-card {
+.thinking-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  border: 1px solid color-mix(in srgb, var(--foreground) 8%, var(--border));
+  border-radius: 999px;
+  padding: 0 12px;
+  color: color-mix(in srgb, var(--foreground) 58%, var(--muted));
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  background: color-mix(in srgb, var(--card) 88%, var(--background));
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.thinking-filter-chip.active {
+  color: color-mix(in srgb, var(--foreground) 86%, var(--accent));
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+  background: #fff3ea;
+}
+
+.thinking-filter-chip span:last-child {
+  color: color-mix(in srgb, var(--muted) 68%, white);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.thinking-article-list,
+.thinking-tool-list {
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.thinking-article-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 14px;
   align-items: center;
-  height: 100%;
+  min-height: 94px;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
   border-radius: 8px;
-  background: color-mix(in srgb, var(--card) 88%, transparent);
-  box-shadow: 0 16px 38px rgba(33, 29, 22, 0.055);
-  min-height: 104px;
-  padding: 18px;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  box-shadow: 0 10px 26px rgba(33, 29, 22, 0.04);
+  padding: 15px 16px;
   text-decoration: none;
   transition:
     background 0.18s ease,
@@ -3081,167 +3142,11 @@ h6 {
     transform 0.18s ease;
 }
 
-.thinking-tool-card:hover {
-  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+.thinking-article-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
   background: #fffaf4;
-  box-shadow: 0 18px 42px rgba(33, 29, 22, 0.075);
+  box-shadow: 0 14px 32px rgba(33, 29, 22, 0.06);
   transform: translateY(-2px);
-}
-
-.thinking-tool-icon {
-  display: grid;
-  width: 46px;
-  height: 46px;
-  place-items: center;
-  border-radius: 8px;
-  color: #fff;
-  background: var(--accent-secondary);
-}
-
-.thinking-tool-icon svg {
-  width: 22px;
-  height: 22px;
-}
-
-.thinking-tool-grid article:nth-child(2) .thinking-tool-icon {
-  background: var(--accent-tertiary);
-}
-
-.thinking-tool-copy {
-  min-width: 0;
-}
-
-.thinking-tool-name {
-  display: block;
-  margin: 0 0 6px;
-  color: var(--foreground);
-  font-size: 17px;
-  line-height: 1.35;
-}
-
-.thinking-tool-desc {
-  display: -webkit-box;
-  color: color-mix(in srgb, var(--foreground) 52%, var(--muted));
-  font-size: 13px;
-  line-height: 1.65;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
-.thinking-tool-action,
-.thinking-article-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--foreground);
-  font-size: 13px;
-  font-weight: 850;
-  white-space: nowrap;
-}
-
-.thinking-content-shell {
-  display: grid;
-  grid-template-columns: 226px minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
-}
-
-.thinking-filters,
-.thinking-article-list {
-  border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--card) 84%, transparent);
-  box-shadow: 0 18px 46px rgba(33, 29, 22, 0.06);
-}
-
-.thinking-filters {
-  position: sticky;
-  top: 18px;
-  padding: 14px;
-}
-
-.thinking-filter-title {
-  margin: 2px 0 12px;
-  color: var(--foreground);
-  font-size: 12px;
-  font-weight: 850;
-  letter-spacing: 0.08em;
-}
-
-.thinking-filter {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  min-height: 38px;
-  margin-bottom: 7px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  padding: 0 11px;
-  color: var(--muted);
-  font: inherit;
-  font-size: 13px;
-  background: color-mix(in srgb, var(--background) 78%, var(--card));
-  cursor: pointer;
-}
-
-.thinking-filter.active {
-  color: var(--foreground);
-  border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
-  background: #fff6ef;
-}
-
-.thinking-filter span:last-child {
-  color: color-mix(in srgb, var(--muted) 72%, white);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.thinking-mobile-filters {
-  display: none;
-}
-
-.thinking-article-list {
-  overflow: hidden;
-}
-
-.thinking-article-head,
-.thinking-article-row {
-  display: grid;
-  grid-template-columns: 1fr 132px 92px;
-  align-items: stretch;
-}
-
-.thinking-article-head {
-  min-height: 42px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 850;
-  background: color-mix(in srgb, var(--background) 72%, var(--border));
-}
-
-.thinking-article-head span,
-.thinking-article-main,
-.thinking-article-type,
-.thinking-article-action {
-  padding: 15px 16px;
-  border-right: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
-}
-
-.thinking-article-head span:last-child,
-.thinking-article-action {
-  border-right: 0;
-}
-
-.thinking-article-row {
-  border-top: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
-  background: color-mix(in srgb, var(--card) 78%, transparent);
-  text-decoration: none;
-}
-
-.thinking-article-row:hover {
-  background: #fffaf4;
 }
 
 .thinking-article-main {
@@ -3256,21 +3161,110 @@ h6 {
   margin-bottom: 6px;
   color: var(--foreground);
   font-size: 15px;
-  line-height: 1.4;
+  line-height: 1.42;
 }
 
 .thinking-article-desc {
+  display: -webkit-box;
   color: color-mix(in srgb, var(--foreground) 52%, var(--muted));
   font-size: 13px;
   line-height: 1.58;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .thinking-article-type {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  color: var(--muted);
+  justify-content: center;
+  min-height: 28px;
+  border: 1px solid color-mix(in srgb, var(--foreground) 8%, var(--border));
+  border-radius: 999px;
+  padding: 0 10px;
+  color: color-mix(in srgb, var(--foreground) 56%, var(--muted));
+  background: color-mix(in srgb, var(--background) 74%, var(--card));
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.thinking-tool-card {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 11px;
+  align-items: center;
+  min-height: 92px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--foreground) 9%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  padding: 13px;
+  text-decoration: none;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.thinking-tool-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+  background: #fffaf4;
+  box-shadow: 0 12px 28px rgba(33, 29, 22, 0.055);
+  transform: translateY(-2px);
+}
+
+.thinking-tool-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--accent-secondary);
+}
+
+.thinking-tool-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.thinking-tool-list article:nth-child(2) .thinking-tool-icon {
+  background: var(--accent-tertiary);
+}
+
+.thinking-tool-copy {
+  min-width: 0;
+}
+
+.thinking-tool-name {
+  display: block;
+  margin: 0 0 4px;
+  color: var(--foreground);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.thinking-tool-desc {
+  display: -webkit-box;
+  color: color-mix(in srgb, var(--foreground) 52%, var(--muted));
+  font-size: 12px;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+}
+
+.thinking-tool-action,
+.thinking-article-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--foreground);
   font-size: 13px;
-  font-weight: 780;
+  font-weight: 850;
+  white-space: nowrap;
 }
 
 .thinking-article-action {
@@ -5292,13 +5286,14 @@ h6 {
     padding-bottom: 2rem;
   }
 
-  .thinking-index-hero {
-    padding-top: 5rem;
-    padding-bottom: 1.6rem;
+  .thinking-index-shell {
+    width: min(100% - 48px, 1160px);
+    padding-top: 4.8rem;
+    padding-bottom: 2rem;
   }
 
-  .thinking-index-list {
-    padding-bottom: 2rem;
+  .thinking-index-hero {
+    min-height: 132px;
   }
 }
 
@@ -6247,33 +6242,83 @@ h6 {
     font-size: 11.5px;
   }
 
+  .thinking-index-shell {
+    width: min(100% - 32px, 640px);
+    padding-top: 4.85rem;
+    padding-bottom: 2.5rem;
+  }
+
   .thinking-index-hero {
-    padding-right: 1rem;
-    padding-left: 1rem;
+    min-height: 136px;
   }
 
-  .thinking-tools-section,
-  .thinking-content-section {
-    padding-right: 1rem;
-    padding-left: 1rem;
+  .thinking-index-title {
+    font-size: clamp(1.75rem, 9vw, 2.15rem);
   }
 
-  .thinking-tool-grid {
+  .thinking-index-intro {
+    max-width: 100%;
+    font-size: 13px;
+  }
+
+  .thinking-main-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .thinking-content-panel,
+  .thinking-tools-panel {
+    padding: 14px;
+  }
+
+  .thinking-tools-panel {
+    position: static;
+  }
+
+  .thinking-panel-head {
+    display: block;
+  }
+
+  .thinking-panel-head h2 {
+    margin-bottom: 10px;
+  }
+
+  .thinking-panel-head.compact h2 {
+    margin-bottom: 0;
+  }
+
+  .thinking-filter-chips {
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .thinking-article-card {
+    display: grid;
     grid-template-columns: 1fr;
     gap: 10px;
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .thinking-article-type,
+  .thinking-article-action {
+    width: fit-content;
+  }
+
+  .thinking-article-action {
+    justify-content: flex-start;
   }
 
   .thinking-tool-card {
-    grid-template-columns: 42px minmax(0, 1fr);
+    grid-template-columns: 40px minmax(0, 1fr);
     gap: 11px;
-    min-height: 96px;
-    padding: 15px;
+    min-height: 88px;
+    padding: 13px;
   }
 
   .thinking-tool-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 8px;
+    width: 40px;
+    height: 40px;
   }
 
   .thinking-tool-icon svg {
@@ -6285,70 +6330,6 @@ h6 {
     grid-column: 2;
     width: fit-content;
     margin-top: 2px;
-  }
-
-  .thinking-content-shell {
-    display: block;
-  }
-
-  .thinking-filters {
-    display: none;
-  }
-
-  .thinking-mobile-filters {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 10px;
-    overflow-x: auto;
-    padding-bottom: 2px;
-  }
-
-  .thinking-mobile-filters .thinking-filter {
-    flex: 0 0 auto;
-    width: auto;
-    gap: 14px;
-    margin-bottom: 0;
-  }
-
-  .thinking-article-list {
-    display: grid;
-    gap: 10px;
-    overflow: visible;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-  }
-
-  .thinking-article-head {
-    display: none;
-  }
-
-  .thinking-article-row {
-    display: block;
-    overflow: hidden;
-    border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
-    border-radius: 14px;
-    background: color-mix(in srgb, var(--card) 88%, transparent);
-    box-shadow: 0 12px 30px rgba(33, 29, 22, 0.05);
-  }
-
-  .thinking-article-main,
-  .thinking-article-type,
-  .thinking-article-action {
-    display: block;
-    padding: 12px 14px;
-    border-right: 0;
-  }
-
-  .thinking-article-type,
-  .thinking-article-action {
-    border-top: 1px solid color-mix(in srgb, var(--foreground) 7%, transparent);
-  }
-
-  .thinking-article-action {
-    display: inline-flex;
-    justify-content: flex-start;
   }
 }
 

@@ -14,6 +14,26 @@ const NOTION_TOKEN = process.env.NOTION_TOKEN;
 const NOTION_AI_DB = process.env.NOTION_AI_DATABASE_ID;
 const NOTION_FINANCE_DB = process.env.NOTION_FINANCE_DATABASE_ID;
 
+const LOCAL_THINKING_FALLBACKS = [
+    {
+        slug: 'notion-cb9e349d753a',
+        title: '观赛时间迁移与世界杯商业化重心的转变',
+        description: '观赛时间迁移背后，是全球内容消费习惯与商业化重心的变化。',
+        date: '2026-05-18',
+        category: null,
+        href: '/thinking-lab/notion-cb9e349d753a',
+        content: [
+            '## 观赛时间迁移与世界杯商业化重心的转变',
+            '',
+            '观赛时间迁移背后，是全球内容消费习惯与商业化重心的变化。',
+            '',
+            '当大型赛事的黄金时段不再只围绕传统欧美电视收视习惯安排，商业价值也会随之重新分配。世界杯这样的全球内容产品，正在从单一转播逻辑走向更复杂的跨时区、跨平台、跨市场经营。',
+        ].join('\n'),
+        source: 'notion',
+        legacyCategory: 'finance',
+    },
+];
+
 const GLOBAL_SEMANTIC_SLUG_OVERRIDES = {
     '月光渡口': 'moonlight-ferry',
     'notion-355e349d753a': 'moonlight-ferry',
@@ -321,8 +341,13 @@ async function main() {
         ...(existingGeneratedContent.finance || [])
             .filter((item) => item.source === 'notion')
             .map(withoutGeneratedId),
+        ...LOCAL_THINKING_FALLBACKS.filter((item) => item.legacyCategory === 'finance'),
     ]);
-    const financeThinkingContent = (await getNotionContent('finance', NOTION_FINANCE_DB, financeFallback))
+    const financeNotionContent = await getNotionContent('finance', NOTION_FINANCE_DB, financeFallback);
+    const financeThinkingContent = dedupeContentItems([
+        ...financeNotionContent,
+        ...LOCAL_THINKING_FALLBACKS.filter((item) => item.legacyCategory === 'finance'),
+    ])
         .filter((item) => item.source === 'notion')
         .map((item) => normalizeThinkingHref(item, 'finance'));
 

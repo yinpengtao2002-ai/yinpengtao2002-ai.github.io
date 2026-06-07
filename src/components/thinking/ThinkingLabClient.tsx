@@ -9,6 +9,11 @@ import type { ContentItem } from "@/lib/data/generated/content";
 
 const THINKING_CATEGORY_ORDER = ["全部", "AI创作", "思考记录"];
 
+const TOOL_SHORT_COPY = {
+  "study-cards": "知识内容 → 问答闪卡",
+  "subtitle-workbench": "视频/音频 → 字幕总结",
+};
+
 const TOOL_ICONS = {
   "study-cards": BookOpenCheck,
   "subtitle-workbench": Captions,
@@ -67,113 +72,97 @@ export default function ThinkingLabClient({ articles }: { articles: ContentItem[
 
   return (
     <div className="thinking-index-page">
-      <section className="thinking-index-hero">
-        <p className="thinking-index-eyebrow">
-          Tools & Thinking
-        </p>
-        <h1 className="thinking-index-title">
-          工具与思考
-        </h1>
-      </section>
+      <main className="thinking-index-shell">
+        <section className="thinking-index-hero">
+          <p className="thinking-index-eyebrow">
+            TOOLS & THINKING
+          </p>
+          <h1 className="thinking-index-title">
+            工具与思考
+          </h1>
+          <p className="thinking-index-intro">
+            可直接打开的 AI 工具、创作片段与思考记录。
+          </p>
+        </section>
 
-      <section className="thinking-tools-section" aria-labelledby="thinking-tools-title">
-        <div className="thinking-section-head">
-          <h2 id="thinking-tools-title">可直接打开的工具</h2>
-        </div>
-
-        <div className="thinking-tool-grid">
-          {toolItems.map((tool, index) => {
-            const ToolIcon = TOOL_ICONS[tool.slug as keyof typeof TOOL_ICONS] ?? Wrench;
-
-            return (
-              <motion.article
-                key={tool.slug}
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.28, delay: index * 0.04 }}
-              >
-                <Link href={tool.href} className="thinking-tool-card">
-                  <span className="thinking-tool-icon" aria-hidden="true">
-                    <ToolIcon aria-hidden="true" />
-                  </span>
-                  <span className="thinking-tool-copy">
-                    <strong className="thinking-tool-name">{tool.title}</strong>
-                    <span className="thinking-tool-desc">{tool.description}</span>
-                  </span>
-                  <span className="thinking-tool-action">
-                    打开工具 <ArrowRight />
-                  </span>
-                </Link>
-              </motion.article>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="thinking-content-section" aria-labelledby="thinking-content-title">
-        <div className="thinking-section-head">
-          <h2 id="thinking-content-title">思考内容</h2>
-        </div>
-
-        <div className="thinking-mobile-filters" aria-label="内容分类">
-          {categories.map((category) => (
-            <button
-              key={category}
-              type="button"
-              onClick={() => setActiveCategory(category)}
-              className={`thinking-filter${activeCategory === category ? " active" : ""}`}
-            >
-              <span>{category}</span>
-              <span>{categoryCount(category, contentItems)}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="thinking-content-shell">
-          <aside className="thinking-filters" aria-label="内容分类">
-            <h2 className="thinking-filter-title">内容分类</h2>
-            {categories.map((category) => (
-              <button
-                key={category}
-                type="button"
-                onClick={() => setActiveCategory(category)}
-                className={`thinking-filter${activeCategory === category ? " active" : ""}`}
-              >
-                <span>{category}</span>
-                <span>{categoryCount(category, contentItems)}</span>
-              </button>
-            ))}
-          </aside>
-
-          <div className="thinking-article-list">
-            <div className="thinking-article-head" aria-hidden="true">
-              <span>内容</span>
-              <span>类型</span>
-              <span>入口</span>
+        <div className="thinking-main-grid">
+          <section className="thinking-content-panel" aria-labelledby="thinking-content-title">
+            <div className="thinking-panel-head">
+              <h2 id="thinking-content-title">思考内容</h2>
+              <div className="thinking-filter-chips" aria-label="内容分类">
+                {categories.map((category) => (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() => setActiveCategory(category)}
+                    className={`thinking-filter-chip${activeCategory === category ? " active" : ""}`}
+                  >
+                    <span>{category}</span>
+                    <span>{categoryCount(category, contentItems)}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {visibleArticles.map((article, index) => (
-              <motion.article
-                key={article.slug}
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.24, delay: index * 0.035 }}
-              >
-                <Link href={article.href} className="thinking-article-row">
-                  <span className="thinking-article-main">
-                    <strong className="thinking-article-title">{article.title}</strong>
-                    <span className="thinking-article-desc">{article.description}</span>
-                  </span>
-                  <span className="thinking-article-type">{getDisplayCategory(article)}</span>
-                  <span className="thinking-article-action">
-                    阅读 <ArrowRight />
-                  </span>
-                </Link>
-              </motion.article>
-            ))}
-          </div>
+            <div className="thinking-article-list">
+              {visibleArticles.map((article, index) => (
+                <motion.article
+                  key={article.slug}
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.24, delay: index * 0.035 }}
+                >
+                  <Link href={article.href} className="thinking-article-card">
+                    <span className="thinking-article-main">
+                      <strong className="thinking-article-title">{article.title}</strong>
+                      <span className="thinking-article-desc">{article.description}</span>
+                    </span>
+                    <span className="thinking-article-type">{getDisplayCategory(article)}</span>
+                    <span className="thinking-article-action">
+                      阅读 <ArrowRight aria-hidden="true" />
+                    </span>
+                  </Link>
+                </motion.article>
+              ))}
+            </div>
+          </section>
+
+          <aside className="thinking-tools-panel" aria-labelledby="thinking-tools-title">
+            <div className="thinking-panel-head compact">
+              <h2 id="thinking-tools-title">快捷工具</h2>
+            </div>
+
+            <div className="thinking-tool-list">
+              {toolItems.map((tool, index) => {
+                const ToolIcon = TOOL_ICONS[tool.slug as keyof typeof TOOL_ICONS] ?? Wrench;
+                const toolCopy = TOOL_SHORT_COPY[tool.slug as keyof typeof TOOL_SHORT_COPY] ?? tool.description;
+
+                return (
+                  <motion.article
+                    key={tool.slug}
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.28, delay: index * 0.04 }}
+                  >
+                    <Link href={tool.href} className="thinking-tool-card">
+                      <span className="thinking-tool-icon" aria-hidden="true">
+                        <ToolIcon aria-hidden="true" />
+                      </span>
+                      <span className="thinking-tool-copy">
+                        <strong className="thinking-tool-name">{tool.title}</strong>
+                        <span className="thinking-tool-desc">{toolCopy}</span>
+                      </span>
+                      <span className="thinking-tool-action">
+                        打开工具 <ArrowRight aria-hidden="true" />
+                      </span>
+                    </Link>
+                  </motion.article>
+                );
+              })}
+            </div>
+          </aside>
         </div>
-      </section>
+      </main>
     </div>
   );
 }
