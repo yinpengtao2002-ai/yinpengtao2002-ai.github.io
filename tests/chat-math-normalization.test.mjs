@@ -184,9 +184,11 @@ test("chat route link normalization keeps existing markdown links and code untou
   assert.equal(normalizeChatInternalLinks(input), input);
 });
 
-test("chat API uses DeepSeek only and has no third-party fallback provider", () => {
-  assert.match(chatRoute, /model:\s*"deepseek-v4-pro"/);
-  assert.match(chatRoute, /DEEPSEEK_API_URL/);
+test("chat API uses shared GPT primary and DeepSeek fallback provider config", () => {
+  assert.match(chatRoute, /getChatProviders\(CHAT_PRIMARY_TIMEOUT_MS\)/);
+  assert.match(envExample, /AI_PRIMARY_API_KEY=/);
+  assert.match(envExample, /AI_PRIMARY_API_URL=https:\/\/api\.dstopology\.com/);
+  assert.match(envExample, /AI_PRIMARY_MODEL=gpt-5\.5/);
   assert.match(envExample, /DEEPSEEK_API_KEY=/);
   assert.match(envExample, /DEEPSEEK_API_URL=https:\/\/api\.deepseek\.com\/chat\/completions/);
   assert.doesNotMatch(chatRoute, /gpt-5\.2/);

@@ -1,33 +1,10 @@
 import { NextRequest } from "next/server";
 import { buildActiveThinkingArticlePrompt } from "@/lib/chatArticleContext";
 import { thinkingLabContent } from "@/lib/data/thinkingLabContent";
+import { getChatProviders, type ChatProvider } from "@/lib/ai/providers";
 import { financeModels, getFinanceModelBySlug, type FinanceModelItem } from "@/lib/finance/modelRegistry";
 
 const CHAT_PRIMARY_TIMEOUT_MS = 18000;
-const DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions";
-
-type ChatProvider = {
-  model: string;
-  apiUrl: string;
-  apiKey?: string;
-  timeoutMs: number;
-};
-
-function readEnv(value?: string) {
-  return value?.trim() || "";
-}
-
-function getChatProviders(): ChatProvider[] {
-  const deepseekApiUrl = readEnv(process.env.DEEPSEEK_API_URL) || DEEPSEEK_API_URL;
-  const deepseekApiKey = readEnv(process.env.DEEPSEEK_API_KEY);
-
-  return [{
-    model: "deepseek-v4-pro",
-    apiUrl: deepseekApiUrl,
-    apiKey: deepseekApiKey,
-    timeoutMs: CHAT_PRIMARY_TIMEOUT_MS,
-  }];
-}
 
 function buildActiveFinanceModelPrompt(activeFinanceModel?: FinanceModelItem) {
   if (!activeFinanceModel) {
@@ -144,7 +121,7 @@ export async function POST(req: NextRequest) {
     const activeThinkingArticle =
       typeof currentThinkingArticleHref === "string" ? getThinkingArticleByHref(currentThinkingArticleHref) : undefined;
 
-    const chatProviders = getChatProviders();
+    const chatProviders = getChatProviders(CHAT_PRIMARY_TIMEOUT_MS);
 
     const callUpstream = async (provider: ChatProvider) => {
       const controller = new AbortController();

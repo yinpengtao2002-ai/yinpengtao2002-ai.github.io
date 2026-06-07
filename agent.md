@@ -120,10 +120,12 @@ Current models:
 
 ## AI Assistant Configuration
 
-- `/api/chat` uses DeepSeek (`deepseek-v4-pro`) by default.
-- DeepSeek uses `DEEPSEEK_API_KEY` with default endpoint `https://api.deepseek.com/chat/completions`.
-- Do not reintroduce the old OpenAI-compatible third-party fallback variables (`CHAT_API_URL` / `CHAT_API_KEY`); that key path is deprecated.
-- Local development chat falls back to local content unless `.env.local` provides `DEEPSEEK_API_KEY`.
+- `/api/chat`, `/api/tools/finance-ai-assistant`, and `/api/tools/study-cards` share `src/lib/ai/providers.ts`.
+- The primary provider is GPT (`gpt-5.5`) through `AI_PRIMARY_API_KEY`, `AI_PRIMARY_API_URL`, and optional `AI_PRIMARY_MODEL`; the default URL is `https://api.dstopology.com`, normalized to `/v1/chat/completions`.
+- DeepSeek (`deepseek-v4-pro`) stays as the fallback model. If `DEEPSEEK_API_KEY` is absent, fallback reuses the primary NewAPI key and URL; if `DEEPSEEK_API_KEY` is present, it uses `DEEPSEEK_API_URL`, defaulting to `https://api.deepseek.com/chat/completions`.
+- Do not hard-code real AI secrets in the repo. Configure production keys in Vercel environment variables.
+- Do not reintroduce the old generic fallback variables (`CHAT_API_URL` / `CHAT_API_KEY`); that key path is deprecated.
+- Local development chat falls back to local content unless `.env.local` provides at least one provider key.
 - On 2026-04-28, `z-ai/glm-5.1` and `z-ai/glm5` timed out through 8848AI, so do not restore them as defaults without retesting.
 - Keep fallback wording user-facing; avoid phrases like "站内索引" unless deliberately exposing implementation details.
 

@@ -54,11 +54,19 @@ function makeRequest(body, token = createFinanceAIAccessToken()) {
 async function withMockedProvider(handler, content) {
   const originalFetch = global.fetch;
   const originalEnv = {
+    AI_PRIMARY_API_KEY: process.env.AI_PRIMARY_API_KEY,
+    AI_PRIMARY_API_URL: process.env.AI_PRIMARY_API_URL,
+    AI_PRIMARY_MODEL: process.env.AI_PRIMARY_MODEL,
     DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
+    DEEPSEEK_API_URL: process.env.DEEPSEEK_API_URL,
   };
   const calls = [];
 
+  process.env.AI_PRIMARY_API_KEY = "test-primary-key";
+  process.env.AI_PRIMARY_API_URL = "https://api.dstopology.com";
+  process.env.AI_PRIMARY_MODEL = "";
   process.env.DEEPSEEK_API_KEY = "test-key";
+  process.env.DEEPSEEK_API_URL = "";
   global.fetch = async (_url, init) => {
     calls.push(JSON.parse(String(init?.body ?? "{}")));
     return new Response(JSON.stringify({
@@ -73,7 +81,13 @@ async function withMockedProvider(handler, content) {
     return await handler(calls);
   } finally {
     global.fetch = originalFetch;
-    process.env.DEEPSEEK_API_KEY = originalEnv.DEEPSEEK_API_KEY;
+    Object.entries(originalEnv).forEach(([key, value]) => {
+      if (typeof value === "undefined") {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    });
   }
 }
 
@@ -87,9 +101,7 @@ test("finance AI assistant API exposes planning and explanation responsibilities
   assert.match(route, /analyze/);
   assert.match(route, /plan/);
   assert.match(route, /explain/);
-  assert.match(route, /DEEPSEEK_API_KEY/);
-  assert.match(route, /DEEPSEEK_API_URL/);
-  assert.match(route, /deepseek-v4-pro/);
+  assert.match(route, /getChatProviders/);
   assert.doesNotMatch(route, /CHAT_API_KEY/);
   assert.doesNotMatch(route, /CHAT_API_URL/);
   assert.doesNotMatch(route, /CHAT_MODEL/);
@@ -703,7 +715,7 @@ test("finance AI assistant API can run a tiny provider diagnostic without workbo
 
     assert.equal(response.status, 200);
     assert.equal(payload.ok, true);
-    assert.equal(payload.provider, "deepseek-v4-pro");
+    assert.equal(payload.provider, "gpt-5.5");
     assert.equal(payload.contentLength, 2);
     assert.match(providerBody, /ping/);
     assert.doesNotMatch(providerBody, /workbook/);

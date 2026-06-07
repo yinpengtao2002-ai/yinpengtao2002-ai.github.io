@@ -205,7 +205,7 @@ test("AI study card endpoint asks for structured learning output", async () => {
 
   assert.match(route, /cards/);
   assert.match(route, /JSON/);
-  assert.match(route, /DEEPSEEK_API_KEY/);
+  assert.match(route, /getChatProviders/);
   assert.doesNotMatch(route, /CHAT_API_KEY/);
   assert.doesNotMatch(route, /CHAT_API_URL/);
   assert.doesNotMatch(route, /gpt-5\.2/);

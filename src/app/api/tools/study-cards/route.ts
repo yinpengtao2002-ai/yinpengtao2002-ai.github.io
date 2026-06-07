@@ -1,15 +1,8 @@
 import { NextRequest } from "next/server";
+import { getChatProviders, type ChatProvider } from "@/lib/ai/providers";
 
 const CHAT_PRIMARY_TIMEOUT_MS = 60000;
-const DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions";
 const PUBLIC_STUDY_CARDS_API_URL = "https://yinpengtao.cn/api/tools/study-cards";
-
-type ChatProvider = {
-  model: string;
-  apiUrl: string;
-  apiKey?: string;
-  timeoutMs: number;
-};
 
 type StudyCard = {
   front: string;
@@ -21,22 +14,6 @@ type StudyCardResult = {
   summary: string;
   cards: StudyCard[];
 };
-
-function readEnv(value?: string) {
-  return value?.trim() || "";
-}
-
-function getChatProviders(): ChatProvider[] {
-  const deepseekApiUrl = readEnv(process.env.DEEPSEEK_API_URL) || DEEPSEEK_API_URL;
-  const deepseekApiKey = readEnv(process.env.DEEPSEEK_API_KEY);
-
-  return [{
-    model: "deepseek-v4-pro",
-    apiUrl: deepseekApiUrl,
-    apiKey: deepseekApiKey,
-    timeoutMs: CHAT_PRIMARY_TIMEOUT_MS,
-  }];
-}
 
 function hasConfiguredProvider(providers: ChatProvider[]) {
   return providers.some((provider) => Boolean(provider.apiKey && provider.apiUrl));
@@ -275,7 +252,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const providers = getChatProviders();
+    const providers = getChatProviders(CHAT_PRIMARY_TIMEOUT_MS);
     if (shouldUsePublicDevProxy(req, providers)) {
       return proxyToPublicStudyCardsApi({ content, difficulty, cardCount });
     }

@@ -5,6 +5,8 @@ import type { FinanceAIChatState } from "../../../../lib/finance-ai/context.ts";
 import { alignFinanceActionPlanWithQuestion, validateFinanceActionPlan } from "../../../../lib/finance-ai/actions.ts";
 // @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
 import { FINANCE_AI_ACCESS_HEADER, isFinanceAIAccessConfigured, verifyFinanceAIAccessToken } from "../../../../lib/finance-ai/access.ts";
+// @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
+import { getChatProviders, type ChatProvider } from "../../../../lib/ai/providers.ts";
 import type {
   FinanceAIDirectAnalysis,
   FinanceAIDirectBarRankChart,
@@ -25,14 +27,6 @@ const MAX_DIRECT_CHARTS = 3;
 const MAX_DIRECT_TREND_POINTS = 48;
 const MAX_DIRECT_RANK_ITEMS = 15;
 const MAX_DIRECT_WATERFALL_ITEMS = 12;
-const DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions";
-
-type ChatProvider = {
-  model: string;
-  apiUrl: string;
-  apiKey?: string;
-  timeoutMs: number;
-};
 
 type ChatMessage = {
   role: "system" | "user";
@@ -60,22 +54,6 @@ class ProviderEmptyResponseError extends Error {
     this.name = "ProviderEmptyResponseError";
     this.finishReason = finishReason;
   }
-}
-
-function readEnv(value?: string) {
-  return value?.trim() || "";
-}
-
-function getChatProviders(): ChatProvider[] {
-  const deepseekApiUrl = readEnv(process.env.DEEPSEEK_API_URL) || DEEPSEEK_API_URL;
-  const deepseekApiKey = readEnv(process.env.DEEPSEEK_API_KEY);
-
-  return [{
-    model: "deepseek-v4-pro",
-    apiUrl: deepseekApiUrl,
-    apiKey: deepseekApiKey,
-    timeoutMs: CHAT_PRIMARY_TIMEOUT_MS,
-  }];
 }
 
 function hasConfiguredProvider(providers: ChatProvider[]) {
@@ -494,7 +472,7 @@ async function callProvider(
 }
 
 async function callFirstConfiguredProvider(messages: ChatMessage[], options: ProviderCallOptions) {
-  const providers = getChatProviders();
+  const providers = getChatProviders(CHAT_PRIMARY_TIMEOUT_MS);
   const attempts: ProviderAttempt[] = [];
 
   if (!hasConfiguredProvider(providers)) {
