@@ -8,26 +8,17 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import * as XLSX from "xlsx";
 import "katex/dist/katex.min.css";
-import { validateFinanceActionPlan } from "@/lib/finance-ai/actions";
-import { buildChartSpec } from "@/lib/finance-ai/charts";
-import {
-  buildBarRank,
-  buildMetricSnapshot,
-  buildTrendSeries,
-  buildWaterfallBridge,
-} from "@/lib/finance-ai/metrics";
+import { buildDirectChartSpec } from "@/lib/finance-ai/charts";
 import { inferFinanceSchema } from "@/lib/finance-ai/schema";
 import { normalizeChatMathMarkdown } from "@/lib/markdown/normalizeChatMathMarkdown";
 import { normalizeMarkdownStrongEmphasis } from "@/lib/markdown/normalizeStrongEmphasis";
 import type {
-  BarRankResult,
-  FinanceActionModule,
+  FinanceAIDirectChart,
   FinanceChartSpec,
+  FinanceRawWorkbook,
+  FinanceRawWorkbookSheet,
   FinanceRow,
   FinanceSchema,
-  MetricSnapshotResult,
-  TrendResult,
-  WaterfallBridgeResult,
 } from "@/lib/finance-ai/types";
 
 type ChatRole = "user" | "assistant";
@@ -49,7 +40,8 @@ type ChatMessage = {
 
 type APIResponse = {
   message?: string;
-  modules?: unknown;
+  assumptions?: string[];
+  charts?: FinanceAIDirectChart[];
   error?: string;
   errorCode?: string;
   errors?: string[];
@@ -67,17 +59,8 @@ type PlotlyModule = {
   };
 };
 
-type ComputedModule = {
-  computed: MetricSnapshotResult | TrendResult | BarRankResult | WaterfallBridgeResult;
-  chart:
-    | { type: "trend_chart"; title: string; result: TrendResult }
-    | { type: "bar_rank"; title: string; result: BarRankResult }
-    | { type: "waterfall_bridge"; title: string; result: WaterfallBridgeResult }
-    | null;
-};
-
 const FINANCE_AI_ACCESS_HEADER = "X-Finance-AI-Access";
-const ASSISTANT_PREVIEW_IMAGE = "/images/product-stage/finance-ai-assistant-preview.png";
+const ASSISTANT_PREVIEW_IMAGE = "/images/product-stage/finance-ai-assistant-preview.webp";
 const SAMPLE_TEMPLATE_ROWS = [
   { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 100, "Total Margin": 3000 },
   { "Month": "4月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 120, "Total Margin": 3900 },
@@ -105,25 +88,44 @@ function normalizeRows(rows: unknown[]): FinanceRow[] {
   ));
 }
 
-async function parseFile(file: File): Promise<FinanceRow[]> {
+type ParsedWorkbook = {
+  workbook: FinanceRawWorkbook;
+  previewRows: FinanceRow[];
+};
+
+function buildRawWorkbookSheet(name: string, sheet: XLSX.WorkSheet): FinanceRawWorkbookSheet {
+  const rows = normalizeRows(XLSX.utils.sheet_to_json(sheet, { defval: "" }));
+  const headers = rows[0] ? Object.keys(rows[0]) : [];
+
+  return {
+    name,
+    headers,
+    rows,
+    rowCount: rows.length,
+  };
+}
+
+async function parseFile(file: File): Promise<ParsedWorkbook> {
   const name = file.name.toLowerCase();
-  const workbook = name.endsWith(".csv")
+  const xlsxWorkbook = name.endsWith(".csv")
     ? XLSX.read(await file.text(), { type: "string", cellDates: true })
     : XLSX.read(new Uint8Array(await file.arrayBuffer()), { type: "array", cellDates: true });
-  const firstSheetName = workbook.SheetNames[0];
+  const sheets = xlsxWorkbook.SheetNames
+    .map((sheetName) => buildRawWorkbookSheet(sheetName, xlsxWorkbook.Sheets[sheetName]))
+    .filter((sheet) => sheet.rowCount > 0);
 
-  if (!firstSheetName) {
+  if (sheets.length === 0) {
     throw new Error("文件里没有可读取的工作表。");
   }
 
-  const sheet = workbook.Sheets[firstSheetName];
-  const rows = normalizeRows(XLSX.utils.sheet_to_json(sheet, { defval: "" }));
-
-  if (rows.length === 0) {
-    throw new Error("没有读到有效数据行，请检查表头和明细。");
-  }
-
-  return rows;
+  return {
+    workbook: {
+      fileName: file.name,
+      sheets,
+      totalRowCount: sheets.reduce((sum, sheet) => sum + sheet.rowCount, 0),
+    },
+    previewRows: sheets[0]?.rows ?? [],
+  };
 }
 
 function getDefaultQuestion(schema: FinanceSchema | null) {
@@ -137,69 +139,11 @@ function getDefaultQuestion(schema: FinanceSchema | null) {
   return `${period} ${dimension}表现怎么看？${metric}环比同比如何？`;
 }
 
-function getChartTitle(parts: string[]) {
-  return parts.map((part) => part.trim()).filter(Boolean).join(" · ");
-}
-
-function computeModule(rows: FinanceRow[], schema: FinanceSchema, module: FinanceActionModule): ComputedModule {
-  switch (module.type) {
-    case "metric_snapshot": {
-      const computed = buildMetricSnapshot(rows, schema, module);
-      const trend = module.chart?.type === "trend_chart"
-        ? buildTrendSeries(rows, schema, {
-            metric: module.metric,
-            filters: module.filters,
-            highlightPeriod: module.chart.highlightPeriod ?? module.period,
-          })
-        : null;
-
-      return {
-        computed,
-        chart: trend
-          ? { type: "trend_chart", title: getChartTitle([module.metric, "趋势"]), result: trend }
-          : null,
-      };
-    }
-
-    case "trend_chart": {
-      const result = buildTrendSeries(rows, schema, module);
-      return {
-        computed: result,
-        chart: { type: "trend_chart", title: getChartTitle([module.metric, "趋势"]), result },
-      };
-    }
-
-    case "bar_rank": {
-      const result = buildBarRank(rows, schema, module);
-      return {
-        computed: result,
-        chart: { type: "bar_rank", title: getChartTitle([module.dimension, module.metric, "排名"]), result },
-      };
-    }
-
-    case "waterfall_bridge": {
-      const result = buildWaterfallBridge(rows, schema, module);
-      return {
-        computed: result,
-        chart: {
-          type: "waterfall_bridge",
-          title: getChartTitle([`${module.fromPeriod} 到 ${module.toPeriod}`, module.metric, "变化桥"]),
-          result,
-        },
-      };
-    }
-  }
-}
-
-function buildChartCard(id: string, computed: ComputedModule): ChartCard | null {
-  if (!computed.chart) {
-    return null;
-  }
-
-  const spec = buildChartSpec(computed.chart);
+function buildChartCard(id: string, chart: FinanceAIDirectChart): ChartCard {
+  const spec = buildDirectChartSpec(chart);
   return {
     id,
-    title: computed.chart.title,
+    title: chart.title,
     spec,
     note: spec.note,
   };
@@ -215,7 +159,7 @@ function getAPIErrorMessage(payload: APIResponse, fallback: string) {
   }
 
   if (payload.errorCode === "provider_not_configured") {
-    return "当前环境还没有配置 AI Key，无法生成分析计划。";
+    return "当前环境还没有配置 AI Key，无法分析底稿。";
   }
 
   if (payload.errorCode === "provider_failed" && payload.error?.includes("AI response was empty")) {
@@ -224,6 +168,10 @@ function getAPIErrorMessage(payload: APIResponse, fallback: string) {
 
   if (payload.errorCode === "provider_invalid_plan" && payload.errors?.length) {
     return `AI 计划没有通过校验：${payload.errors.join(" ")}`;
+  }
+
+  if (payload.errorCode === "provider_invalid_json") {
+    return "上游模型这次没有按约定返回图表数据，可以直接重试一次。";
   }
 
   if (payload.errors?.length) {
@@ -321,7 +269,7 @@ export default function FinanceAIAssistantTool() {
   const [accessKey, setAccessKey] = useState("");
   const [accessBusy, setAccessBusy] = useState(false);
   const [accessError, setAccessError] = useState("");
-  const [rows, setRows] = useState<FinanceRow[]>([]);
+  const [workbook, setWorkbook] = useState<FinanceRawWorkbook | null>(null);
   const [schema, setSchema] = useState<FinanceSchema | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -338,7 +286,7 @@ export default function FinanceAIAssistantTool() {
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   const dataSummary = useMemo(() => summarizeSchema(schema), [schema]);
-  const canAsk = rows.length > 0 && Boolean(schema) && (schema?.requiredIssues.length ?? 0) === 0 && !busy;
+  const canAsk = Boolean(workbook) && !busy;
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -385,19 +333,19 @@ export default function FinanceAIAssistantTool() {
     setError("");
 
     try {
-      const parsedRows = await parseFile(file);
-      const nextSchema = inferFinanceSchema(parsedRows);
+      const parsed = await parseFile(file);
+      const nextSchema = inferFinanceSchema(parsed.previewRows);
       const newDatasetMessages: ChatMessage[] = [
         {
           id: `assistant-upload-${Date.now()}`,
           role: "assistant",
           text: nextSchema.requiredIssues.length
-            ? getSchemaIssueText(nextSchema)
+            ? `${file.name} 已上传。${getSchemaIssueText(nextSchema)}我仍会把完整底稿交给 AI 识别，你可以直接提问。`
             : `${file.name} 已上传。${summarizeSchema(nextSchema)}。现在可以直接提问。`,
           meta: "数据仅保留在当前页面会话中，刷新后清空。",
         },
       ];
-      setRows(parsedRows);
+      setWorkbook(parsed.workbook);
       setSchema(nextSchema);
       setFileName(file.name);
       setMessages(newDatasetMessages);
@@ -408,7 +356,7 @@ export default function FinanceAIAssistantTool() {
     }
   }
 
-  async function callAI(mode: "plan" | "explain", body: Record<string, unknown>): Promise<APIResponse> {
+  async function callAI(body: Record<string, unknown>): Promise<APIResponse> {
     if (!accessToken) {
       throw new Error("请先输入正确的内测密钥。");
     }
@@ -419,7 +367,7 @@ export default function FinanceAIAssistantTool() {
         "Content-Type": "application/json",
         [FINANCE_AI_ACCESS_HEADER]: accessToken,
       },
-      body: JSON.stringify({ mode, ...body }),
+      body: JSON.stringify({ mode: "analyze", ...body }),
     });
     const payload = await response.json().catch(() => ({})) as APIResponse;
 
@@ -437,13 +385,8 @@ export default function FinanceAIAssistantTool() {
       return;
     }
 
-    if (!schema || rows.length === 0) {
+    if (!workbook) {
       setError("请先上传一张 CSV/XLS/XLSX 经营明细。");
-      return;
-    }
-
-    if (schema.requiredIssues.length > 0) {
-      setError(getSchemaIssueText(schema));
       return;
     }
 
@@ -453,9 +396,9 @@ export default function FinanceAIAssistantTool() {
     setMessages((current) => [...current, { id: `user-${Date.now()}`, role: "user", text: question }]);
 
     try {
-      const plan = await callAI("plan", {
+      const analysis = await callAI({
         question,
-        schema,
+        workbook,
         state: {
           recentQuestions: messages
             .filter((message) => message.role === "user")
@@ -466,36 +409,20 @@ export default function FinanceAIAssistantTool() {
           )).slice(-6),
         },
       });
-      const validated = validateFinanceActionPlan(schema, plan);
-
-      if (!validated.ok) {
-        throw new Error(`AI 计划没有通过校验：${validated.errors.join(" ")}`);
-      }
-
-      const computedModules = validated.modules.map((module) => computeModule(rows, schema, module));
-      const chartCards = computedModules
-        .map((computed, index) => buildChartCard(`chart-${Date.now()}-${index}`, computed))
-        .filter((card): card is ChartCard => card !== null);
-      const explanation = await callAI("explain", {
-        question,
-        computedSummary: {
-          modules: computedModules.map((module) => module.computed),
-          charts: chartCards.map((card) => ({
-            type: card.spec.kind,
-            title: card.title,
-            note: card.note,
-          })),
-        },
-      });
+      const chartCards = (analysis.charts ?? [])
+        .map((chart, index) => buildChartCard(`chart-${Date.now()}-${index}`, chart));
+      const assumptionText = analysis.assumptions?.length
+        ? `口径：${analysis.assumptions.join("；")}`
+        : "口径：AI 直接读取当前上传底稿并按图表协议返回结果。";
 
       setMessages((current) => [
         ...current,
         {
           id: `assistant-${Date.now()}`,
           role: "assistant",
-          text: explanation.message || "我已经根据当前底稿生成分析结果。",
+          text: analysis.message || "我已经根据当前底稿生成分析结果。",
           chartCards,
-          meta: "口径：单车指标按筛选范围先汇总总额和销量，再相除。",
+          meta: assumptionText,
         },
       ]);
     } catch (submitError) {
@@ -513,7 +440,7 @@ export default function FinanceAIAssistantTool() {
   }
 
   function resetData() {
-    setRows([]);
+    setWorkbook(null);
     setSchema(null);
     setFileName("");
     setInput("");
@@ -534,7 +461,7 @@ export default function FinanceAIAssistantTool() {
           <div className="finance-ai-header-copy">
             <p className="finance-ai-kicker">Lucas Finance AI</p>
             <h1>财务分析 AI 助手</h1>
-            <p>上传经营明细后，用对话生成趋势、排名和变化桥；数字由本页本地计算。</p>
+            <p>上传经营明细后，直接对话生成趋势、排名和变化桥；数据刷新后清空。</p>
           </div>
           <div className="finance-ai-header-actions">
             <button type="button" className="finance-ai-icon-button" onClick={resetData} aria-label="清空当前数据">
@@ -660,7 +587,7 @@ export default function FinanceAIAssistantTool() {
             <input
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder={schema ? getDefaultQuestion(schema) : "先上传经营明细，再开始提问"}
+              placeholder={workbook ? getDefaultQuestion(schema) : "先上传经营明细，再开始提问"}
               disabled={busy || !canAsk}
             />
             <button type="submit" disabled={!input.trim() || !canAsk} aria-label="发送问题">

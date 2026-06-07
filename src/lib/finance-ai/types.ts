@@ -50,6 +50,19 @@ export type FinanceRow = Record<string, unknown>;
 
 export type FinanceFilter = Record<string, string[]>;
 
+export type FinanceRawWorkbookSheet = {
+  name: string;
+  headers: string[];
+  rows: FinanceRow[];
+  rowCount: number;
+};
+
+export type FinanceRawWorkbook = {
+  fileName: string;
+  sheets: FinanceRawWorkbookSheet[];
+  totalRowCount: number;
+};
+
 export type FinanceComparisonKind = "mom" | "yoy";
 
 export type MetricSnapshotRequest = {
@@ -192,4 +205,50 @@ export type FinanceChartSpec = {
   layout: Record<string, unknown>;
   config: Record<string, unknown>;
   note: string;
+};
+
+export type FinanceAIDirectTrendChart = {
+  type: "trend";
+  title: string;
+  xLabel?: string;
+  yLabel?: string;
+  points: Array<{ label: string; value: number }>;
+  note?: string;
+};
+
+export type FinanceAIDirectBarRankChart = {
+  type: "bar_rank";
+  title: string;
+  xLabel?: string;
+  yLabel?: string;
+  items: Array<{
+    label: string;
+    value: number;
+    share?: number | null;
+    changeValue?: number | null;
+    detail?: string;
+  }>;
+  note?: string;
+};
+
+export type FinanceAIDirectWaterfallChart = {
+  type: "waterfall";
+  title: string;
+  startLabel: string;
+  startValue: number;
+  endLabel: string;
+  endValue: number;
+  items: Array<{ label: string; value: number }>;
+  note?: string;
+};
+
+export type FinanceAIDirectChart =
+  | FinanceAIDirectTrendChart
+  | FinanceAIDirectBarRankChart
+  | FinanceAIDirectWaterfallChart;
+
+export type FinanceAIDirectAnalysis = {
+  answer: string;
+  assumptions: string[];
+  charts: FinanceAIDirectChart[];
 };

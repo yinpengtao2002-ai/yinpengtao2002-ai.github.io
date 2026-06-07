@@ -1,4 +1,8 @@
 import type {
+  FinanceAIDirectBarRankChart,
+  FinanceAIDirectChart,
+  FinanceAIDirectTrendChart,
+  FinanceAIDirectWaterfallChart,
   BarRankResult,
   FinanceChartSpec,
   TrendResult,
@@ -47,6 +51,18 @@ export function buildChartSpec(input: ChartInput): FinanceChartSpec {
   }
 
   return buildWaterfallChartSpec(input.title, input.result);
+}
+
+export function buildDirectChartSpec(input: FinanceAIDirectChart): FinanceChartSpec {
+  if (input.type === "trend") {
+    return buildDirectTrendChartSpec(input);
+  }
+
+  if (input.type === "bar_rank") {
+    return buildDirectBarRankChartSpec(input);
+  }
+
+  return buildDirectWaterfallChartSpec(input);
 }
 
 function formatNumber(value: number | null | undefined, digits = 0) {
@@ -149,6 +165,42 @@ function buildTrendChartSpec(title: string, result: TrendResult): FinanceChartSp
   };
 }
 
+function buildDirectTrendChartSpec(input: FinanceAIDirectTrendChart): FinanceChartSpec {
+  const values = input.points.map((point) => point.value);
+
+  return {
+    kind: "trend_chart",
+    title: input.title,
+    data: [{
+      type: "scatter",
+      mode: "lines+markers+text",
+      x: input.points.map((point) => point.label),
+      y: values,
+      text: values.map((value) => formatNumber(value, 2)),
+      textposition: "top center",
+      cliponaxis: false,
+      line: { color: COLORS.blue, width: 2.5 },
+      marker: { color: COLORS.blue, size: 7 },
+      hovertemplate: "%{x}<br>%{y:,.2f}<extra></extra>",
+    }],
+    layout: {
+      ...baseLayout,
+      margin: { t: 36, r: 28, b: 42, l: 56 },
+      xaxis: { title: input.xLabel, gridcolor: COLORS.grid, zeroline: false, tickfont: { color: COLORS.muted }, fixedrange: true },
+      yaxis: {
+        title: input.yLabel,
+        gridcolor: COLORS.grid,
+        zeroline: false,
+        tickfont: { color: COLORS.muted },
+        range: paddedRange(values),
+        fixedrange: true,
+      },
+    },
+    config: baseConfig,
+    note: input.note || "AI 基于上传底稿生成趋势数据，前端按趋势图协议渲染。",
+  };
+}
+
 function buildBarRankChartSpec(title: string, result: BarRankResult): FinanceChartSpec {
   const items = [...result.items].reverse();
   const values = items.map((item) => item.value);
@@ -188,6 +240,49 @@ function buildBarRankChartSpec(title: string, result: BarRankResult): FinanceCha
     },
     config: baseConfig,
     note: scopeText,
+  };
+}
+
+function buildDirectBarRankChartSpec(input: FinanceAIDirectBarRankChart): FinanceChartSpec {
+  const items = [...input.items].reverse();
+  const values = items.map((item) => item.value);
+
+  return {
+    kind: "bar_rank",
+    title: input.title,
+    data: [{
+      type: "bar",
+      orientation: "h",
+      x: values,
+      y: items.map((item) => item.label),
+      text: items.map((item) => {
+        const shareText = item.share !== null && item.share !== undefined ? `｜${formatShare(item.share)}` : "";
+        const changeText = item.changeValue !== null && item.changeValue !== undefined
+          ? `｜变化 ${formatSignedNumber(item.changeValue)}`
+          : "";
+        const detailText = item.detail ? `｜${item.detail}` : "";
+        return `${formatNumber(item.value)}${shareText}${changeText}${detailText}`;
+      }),
+      textposition: "outside",
+      cliponaxis: false,
+      marker: { color: COLORS.green },
+      hovertemplate: "%{y}<br>%{text}<extra></extra>",
+    }],
+    layout: {
+      ...baseLayout,
+      margin: { t: 28, r: 128, b: 36, l: 92 },
+      xaxis: {
+        title: input.yLabel,
+        gridcolor: COLORS.grid,
+        zeroline: false,
+        tickfont: { color: COLORS.muted },
+        fixedrange: true,
+        range: paddedRange([0, ...values]),
+      },
+      yaxis: { title: input.xLabel, automargin: true, tickfont: { color: COLORS.text }, fixedrange: true },
+    },
+    config: baseConfig,
+    note: input.note || "AI 基于上传底稿生成排名数据，前端按横向柱状图协议渲染。",
   };
 }
 
@@ -231,5 +326,48 @@ function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): 
     },
     config: baseConfig,
     note: "瀑布桥仅用于可加总指标，按维度拆解两个期间的变化贡献。",
+  };
+}
+
+function buildDirectWaterfallChartSpec(input: FinanceAIDirectWaterfallChart): FinanceChartSpec {
+  const itemValues = input.items.map((item) => item.value);
+
+  return {
+    kind: "waterfall_bridge",
+    title: input.title,
+    data: [{
+      type: "waterfall",
+      orientation: "v",
+      measure: ["absolute", ...input.items.map(() => "relative"), "total"],
+      x: [input.startLabel, ...input.items.map((item) => item.label), input.endLabel],
+      y: [input.startValue, ...itemValues, input.endValue],
+      text: [
+        formatNumber(input.startValue),
+        ...itemValues.map((value) => formatSignedNumber(value)),
+        formatNumber(input.endValue),
+      ],
+      textposition: "outside",
+      cliponaxis: false,
+      connector: { line: { color: COLORS.grid, width: 1 } },
+      increasing: { marker: { color: COLORS.green } },
+      decreasing: { marker: { color: COLORS.red } },
+      totals: { marker: { color: COLORS.blue } },
+      hovertemplate: "%{x}<br>%{y:,.2f}<extra></extra>",
+    }],
+    layout: {
+      ...baseLayout,
+      margin: { t: 36, r: 30, b: 52, l: 60 },
+      xaxis: { tickfont: { color: COLORS.muted }, fixedrange: true },
+      yaxis: {
+        gridcolor: COLORS.grid,
+        zeroline: true,
+        zerolinecolor: COLORS.grid,
+        tickfont: { color: COLORS.muted },
+        range: waterfallRange(input.startValue, itemValues, input.endValue),
+        fixedrange: true,
+      },
+    },
+    config: baseConfig,
+    note: input.note || "AI 基于上传底稿生成变化桥数据，前端按瀑布桥协议渲染。",
   };
 }

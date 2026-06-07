@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import {
+  buildFinanceAIDirectAnalyzePrompt,
   buildFinanceAIExplanationPrompt,
   buildFinanceAIPlanningContext,
 } from "../src/lib/finance-ai/context.ts";
@@ -86,6 +87,7 @@ test("finance AI assistant API exposes planning and explanation responsibilities
 
   assert.match(route, /\/api\/tools\/finance-ai-assistant/);
   assert.match(route, /mode/);
+  assert.match(route, /analyze/);
   assert.match(route, /plan/);
   assert.match(route, /explain/);
   assert.match(route, /DEEPSEEK_API_KEY/);
@@ -98,15 +100,20 @@ test("finance AI assistant API exposes planning and explanation responsibilities
   assert.match(route, /gpt-5\.2/);
   assert.match(route, /gpt-5\.4/);
   assert.match(route, /response_format/);
+  assert.match(route, /workbook/);
+  assert.match(route, /normalizeDirectAnalysis/);
   assert.match(route, /modules/);
   assert.match(route, /errorCode/);
   assert.match(route, /503/);
   assert.match(route, /400/);
   assert.match(route, /AI 不负责计算数字/);
-  assert.doesNotMatch(route, /完整底稿/);
 
+  assert.match(context, /buildFinanceAIDirectAnalyzePrompt/);
   assert.match(context, /buildFinanceAIPlanningContext/);
   assert.match(context, /buildFinanceAIExplanationPrompt/);
+  assert.match(context, /上传底稿/);
+  assert.match(context, /safeWorkbookJson/);
+  assert.match(context, /只允许以下三种类型/);
   assert.match(context, /AI 不负责计算数字/);
   assert.match(context, /图表模块会渲染在聊天消息内部/);
   assert.match(context, /最多生成 3 个模块/);
@@ -121,9 +128,40 @@ test("finance AI assistant API exposes planning and explanation responsibilities
   assert.match(context, /trend_chart/);
   assert.match(context, /bar_rank/);
   assert.match(context, /waterfall_bridge/);
-  assert.doesNotMatch(context, /完整底稿/);
 
   assert.match(packageJson, /tests\/finance-ai-assistant-contract\.test\.mjs/);
+});
+
+test("finance AI direct prompt includes uploaded workbook rows for provider analysis", () => {
+  const prompt = buildFinanceAIDirectAnalyzePrompt({
+    userQuestion: "今年 3 月巴西单车边际是多少？环比多少？",
+    workbook: {
+      fileName: "底稿.xlsx",
+      totalRowCount: 2,
+      sheets: [
+        {
+          name: "明细",
+          headers: ["月份", "国家", "销量", "边际"],
+          rowCount: 2,
+          rows: [
+            { "月份": "2026-03", "国家": "巴西", "销量": 100, "边际": 3000 },
+            { "月份": "2026-04", "国家": "巴西", "销量": 120, "边际": 3900 },
+          ],
+        },
+      ],
+    },
+  });
+
+  assert.match(prompt, /上传底稿/);
+  assert.match(prompt, /底稿\.xlsx/);
+  assert.match(prompt, /2026-03/);
+  assert.match(prompt, /巴西/);
+  assert.match(prompt, /3000/);
+  assert.match(prompt, /charts 最多 3 个/);
+  assert.match(prompt, /trend/);
+  assert.match(prompt, /bar_rank/);
+  assert.match(prompt, /waterfall/);
+  assert.doesNotMatch(prompt, /已省略完整明细数组/);
 });
 
 test("finance AI context bounds filters and computed summaries before provider calls", () => {
@@ -261,6 +299,78 @@ test("finance AI assistant API validates provider action plans before returning 
   }));
 });
 
+test("finance AI assistant analyze mode sends workbook rows and normalizes direct charts", async () => {
+  await withMockedProvider(async (calls) => {
+    const response = await POST(makeRequest({
+      mode: "analyze",
+      question: "今年 3 月巴西单车边际是多少？",
+      workbook: {
+        fileName: "source.xlsx",
+        totalRowCount: 3,
+        sheets: [
+          {
+            name: "明细",
+            headers: ["月份", "国家", "销量", "边际"],
+            rowCount: 3,
+            rows: [
+              { "月份": "2026-02", "国家": "巴西", "销量": 80, "边际": 2000 },
+              { "月份": "2026-03", "国家": "巴西", "销量": 100, "边际": 3500 },
+              { "月份": "2026-03", "国家": "西班牙", "销量": 50, "边际": 900 },
+            ],
+          },
+        ],
+      },
+    }));
+    const payload = await response.json();
+    const providerBody = JSON.stringify(calls[0]);
+
+    assert.equal(response.status, 200);
+    assert.match(providerBody, /source\.xlsx/);
+    assert.match(providerBody, /2026-02/);
+    assert.match(providerBody, /西班牙/);
+    assert.equal(payload.message, "3 月巴西单车边际为 35。");
+    assert.deepEqual(payload.assumptions, ["单车边际=边际/销量"]);
+    assert.equal(payload.charts.length, 3);
+    assert.equal(payload.charts[0].type, "trend");
+    assert.equal(payload.charts[1].type, "bar_rank");
+    assert.equal(payload.charts[2].type, "waterfall");
+    assert.equal(payload.charts[0].points.length, 2);
+    assert.equal(payload.charts[1].items.length, 2);
+  }, JSON.stringify({
+    answer: "3 月巴西单车边际为 35。",
+    assumptions: ["单车边际=边际/销量"],
+    charts: [
+      {
+        type: "trend",
+        title: "巴西单车边际趋势",
+        points: [
+          { label: "2026-02", value: 25 },
+          { label: "2026-03", value: 35 },
+        ],
+      },
+      {
+        type: "bar_rank",
+        title: "3 月国家边际排名",
+        items: [
+          { label: "巴西", value: 3500, share: 0.795 },
+          { label: "西班牙", value: 900, share: 0.205 },
+        ],
+      },
+      {
+        type: "waterfall",
+        title: "巴西边际环比变化桥",
+        startLabel: "2026-02",
+        startValue: 2000,
+        endLabel: "2026-03",
+        endValue: 3500,
+        items: [{ label: "边际增加", value: 1500 }],
+      },
+      { type: "pie", title: "不支持图", items: [{ label: "x", value: 1 }] },
+      { type: "trend", title: "坏图", points: [{ label: "x", value: "bad" }] },
+    ],
+  }));
+});
+
 test("finance AI assistant requires an internal access token", async () => {
   const lockedResponse = await POST(makeRequest({
     mode: "plan",
@@ -372,12 +482,17 @@ test("finance AI assistant page is an independent chat workbench", async () => {
   assert.match(client, /数据仅保留在当前页面会话中，刷新后清空/);
   assert.match(client, /已识别/);
   assert.match(client, /inferFinanceSchema/);
-  assert.match(client, /buildMetricSnapshot/);
-  assert.match(client, /buildTrendSeries/);
-  assert.match(client, /buildBarRank/);
-  assert.match(client, /buildWaterfallBridge/);
-  assert.match(client, /validateFinanceActionPlan/);
-  assert.match(client, /buildChartSpec/);
+  assert.match(client, /FinanceRawWorkbook/);
+  assert.match(client, /buildDirectChartSpec/);
+  assert.match(client, /mode:\s*"analyze"/);
+  assert.match(client, /workbook/);
+  assert.doesNotMatch(client, /buildMetricSnapshot/);
+  assert.doesNotMatch(client, /buildTrendSeries/);
+  assert.doesNotMatch(client, /buildBarRank/);
+  assert.doesNotMatch(client, /buildWaterfallBridge/);
+  assert.doesNotMatch(client, /validateFinanceActionPlan/);
+  assert.doesNotMatch(client, /callAI\("plan"/);
+  assert.doesNotMatch(client, /callAI\("explain"/);
   assert.match(client, /useEffect/);
   assert.match(client, /newDatasetMessages/);
   assert.doesNotMatch(client, /localStorage/);
@@ -429,7 +544,7 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.doesNotMatch(client, /next\/image/);
   assert.match(client, /finance-ai-assistant-preview\.(png|webp)/);
   assert.match(client, /finance-ai-composer-dock/);
-  assert.match(client, /charts:\s*chartCards\.map/);
+  assert.match(client, /analysis\.charts/);
   assert.doesNotMatch(client, /<p>\{message\.text\}<\/p>/);
   assert.match(styles, /\.finance-ai-page\s*\{[\s\S]*background:\s*#f7f5ef/s);
   assert.match(styles, /\.finance-ai-access-gate/);

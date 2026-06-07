@@ -23,7 +23,7 @@ function ProjectDescription({ className = "" }: { className?: string }) {
       </ul>
       <h2>输入数据</h2>
       <ul>
-        <li>支持 CSV、XLS 和 XLSX，默认读取第一张表。</li>
+        <li>支持 CSV、XLS 和 XLSX，上传后读取可用工作表和明细行。</li>
         <li>建议包含月份、销量、维度字段以及净收入、成本、边际或利润等指标。</li>
         <li>上传数据只保留在当前浏览器页面中，刷新后清空。</li>
       </ul>

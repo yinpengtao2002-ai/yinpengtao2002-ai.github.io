@@ -12,7 +12,7 @@ import {
   buildWaterfallBridge,
 } from "../src/lib/finance-ai/metrics.ts";
 import { validateFinanceActionPlan } from "../src/lib/finance-ai/actions.ts";
-import { buildChartSpec } from "../src/lib/finance-ai/charts.ts";
+import { buildChartSpec, buildDirectChartSpec } from "../src/lib/finance-ai/charts.ts";
 
 const rows = [
   { "月份": "2025-03", "大区": "拉美", "国家": "巴西", "车型": "T1D", "销量": 100, "净收入": 9000, "成本": -7000, "边际": 2000 },
@@ -548,4 +548,47 @@ test("waterfall chart spec uses Plotly waterfall for total-metric bridge results
   assert.equal(Array.isArray(spec.layout.yaxis.range), true);
   assert.equal(spec.layout.yaxis.fixedrange, true);
   assert.equal(spec.config.displayModeBar, false);
+});
+
+test("direct AI chart payloads render through the supported chart specs", () => {
+  const trendSpec = buildDirectChartSpec({
+    type: "trend",
+    title: "巴西单车边际趋势",
+    points: [
+      { label: "3月", value: 30 },
+      { label: "4月", value: 32.5 },
+    ],
+  });
+  const rankSpec = buildDirectChartSpec({
+    type: "bar_rank",
+    title: "国家边际排名",
+    items: [
+      { label: "巴西", value: 3900, share: 0.7, changeValue: 900 },
+      { label: "墨西哥", value: 1650, share: 0.3, changeValue: -150 },
+    ],
+  });
+  const waterfallSpec = buildDirectChartSpec({
+    type: "waterfall",
+    title: "边际变化桥",
+    startLabel: "3月",
+    startValue: 4800,
+    endLabel: "4月",
+    endValue: 5550,
+    items: [
+      { label: "巴西", value: 900 },
+      { label: "墨西哥", value: -150 },
+    ],
+  });
+
+  assert.equal(trendSpec.kind, "trend_chart");
+  assert.deepEqual(trendSpec.data[0].text, ["30.00", "32.50"]);
+  assert.equal(Array.isArray(trendSpec.layout.yaxis.range), true);
+  assert.equal(rankSpec.kind, "bar_rank");
+  assert.equal(rankSpec.data[0].orientation, "h");
+  assert.match(rankSpec.data[0].text.at(-1), /70\.0%/);
+  assert.equal(rankSpec.layout.xaxis.fixedrange, true);
+  assert.equal(waterfallSpec.kind, "waterfall_bridge");
+  assert.deepEqual(waterfallSpec.data[0].measure, ["absolute", "relative", "relative", "total"]);
+  assert.deepEqual(waterfallSpec.data[0].text, ["4,800", "+900", "-150", "5,550"]);
+  assert.equal(waterfallSpec.config.displayModeBar, false);
 });

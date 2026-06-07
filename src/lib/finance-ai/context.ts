@@ -1,4 +1,4 @@
-import type { FinanceSchema } from "./types";
+import type { FinanceRawWorkbook, FinanceSchema } from "./types";
 
 export type FinanceAIChatState = {
   recentQuestions?: string[];
@@ -12,6 +12,12 @@ type ExplanationPromptInput = {
   computedSummary: unknown;
 };
 
+type DirectAnalyzePromptInput = {
+  userQuestion: string;
+  workbook: FinanceRawWorkbook;
+  state?: FinanceAIChatState;
+};
+
 const MAX_LIST_ITEMS = 24;
 const MAX_RECENT_QUESTIONS = 4;
 const MAX_CHART_HISTORY = 4;
@@ -22,6 +28,7 @@ const MAX_SUMMARY_OBJECT_KEYS = 28;
 const MAX_SUMMARY_DEPTH = 8;
 const MAX_STRING_CHARS = 240;
 const MAX_SUMMARY_JSON_CHARS = 16000;
+const MAX_WORKBOOK_CELL_CHARS = 180;
 const OMIT_PROMPT_VALUE = Symbol("omit-prompt-value");
 
 function compactList(values: string[], emptyLabel = "无") {
@@ -144,6 +151,41 @@ function safeBoundedJson(value: unknown) {
     : json;
 }
 
+function normalizeWorkbookCell(value: unknown): unknown {
+  if (typeof value === "string") {
+    return truncateText(value, MAX_WORKBOOK_CELL_CHARS);
+  }
+
+  if (
+    value === null ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  return String(value ?? "");
+}
+
+function safeWorkbookJson(workbook: FinanceRawWorkbook) {
+  return JSON.stringify({
+    fileName: workbook.fileName,
+    totalRowCount: workbook.totalRowCount,
+    sheets: workbook.sheets.map((sheet) => ({
+      name: sheet.name,
+      headers: sheet.headers,
+      rowCount: sheet.rowCount,
+      rows: sheet.rows.map((row) => Object.fromEntries(
+        Object.entries(row).map(([key, value]) => [key, normalizeWorkbookCell(value)]),
+      )),
+    })),
+  });
+}
+
 export function buildFinanceAIPlanningContext(
   schema: FinanceSchema,
   state: FinanceAIChatState = {},
@@ -186,6 +228,36 @@ export function buildFinanceAIPlanningContext(
     "- filters 只能使用维度字段和值数组。",
     "JSON 结构示例：",
     '{"modules":[{"type":"metric_snapshot","metric":"单车边际","period":"2026-03","filters":{"国家":["巴西"]},"comparisons":["mom","yoy"]}]}',
+  ].join("\n");
+}
+
+export function buildFinanceAIDirectAnalyzePrompt(input: DirectAnalyzePromptInput) {
+  const recentQuestions = (input.state?.recentQuestions ?? [])
+    .slice(-MAX_RECENT_QUESTIONS)
+    .map((question) => question.trim())
+    .filter(Boolean);
+  const chartHistory = (input.state?.chartHistory ?? [])
+    .slice(-MAX_CHART_HISTORY)
+    .map((chart) => `${chart.type}:${chart.title}`)
+    .filter(Boolean);
+
+  return [
+    "你是财务分析 AI 助手。用户已经上传底稿，你需要直接基于底稿回答问题并在适合时生成图表数据。",
+    "底稿会以 JSON 形式提供，包含 sheet 名、原始表头和数据行。你负责识别字段含义、判断口径、计算数值，并说明必要假设。",
+    "只输出严格 JSON，不要输出 Markdown 代码块，不要在 JSON 外写任何文字。",
+    "返回结构必须是：",
+    '{"answer":"给用户看的中文分析结论，可包含 Markdown 加粗","assumptions":["字段、口径或计算假设"],"charts":[]}',
+    "charts 最多 3 个，只允许以下三种类型：",
+    "1. trend: {type,title,xLabel,yLabel,points:[{label,value}],note}",
+    "2. bar_rank: {type,title,xLabel,yLabel,items:[{label,value,share,changeValue,detail}],note}",
+    "3. waterfall: {type,title,startLabel,startValue,endLabel,endValue,items:[{label,value}],note}",
+    "图表规则：value/startValue/endValue/changeValue/share 必须是数字，不要写成带逗号或单位的字符串；share 使用 0 到 1 的小数；不确定时少出图，不要硬造图。",
+    "分析规则：不要声称看不到底稿；如果字段口径不明确，先说明你的假设，再给结论；计算过程要和 answer、charts 保持一致。",
+    `最近问题：${compactList(recentQuestions)}`,
+    `最近图表：${compactList(chartHistory)}`,
+    `用户问题：${input.userQuestion.trim() || "无"}`,
+    "上传底稿：",
+    safeWorkbookJson(input.workbook),
   ].join("\n");
 }
 

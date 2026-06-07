@@ -1,16 +1,29 @@
 // @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
-import { buildFinanceAIExplanationPrompt, buildFinanceAIPlanningContext } from "../../../../lib/finance-ai/context.ts";
+import { buildFinanceAIDirectAnalyzePrompt, buildFinanceAIExplanationPrompt, buildFinanceAIPlanningContext } from "../../../../lib/finance-ai/context.ts";
 import type { FinanceAIChatState } from "../../../../lib/finance-ai/context.ts";
 // @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
 import { validateFinanceActionPlan } from "../../../../lib/finance-ai/actions.ts";
 // @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
 import { FINANCE_AI_ACCESS_HEADER, isFinanceAIAccessConfigured, verifyFinanceAIAccessToken } from "../../../../lib/finance-ai/access.ts";
-import type { FinanceActionPlan, FinanceSchema } from "../../../../lib/finance-ai/types.ts";
+import type {
+  FinanceAIDirectAnalysis,
+  FinanceAIDirectBarRankChart,
+  FinanceAIDirectChart,
+  FinanceAIDirectTrendChart,
+  FinanceAIDirectWaterfallChart,
+  FinanceActionPlan,
+  FinanceRawWorkbook,
+  FinanceSchema,
+} from "../../../../lib/finance-ai/types.ts";
 
 const API_ROUTE_PATH = "/api/tools/finance-ai-assistant";
 const PLANNING_BOUNDARY = "AI 不负责计算数字";
 const CHAT_PRIMARY_TIMEOUT_MS = 60000;
 const CHAT_FALLBACK_TIMEOUT_MS = 60000;
+const MAX_DIRECT_CHARTS = 3;
+const MAX_DIRECT_TREND_POINTS = 48;
+const MAX_DIRECT_RANK_ITEMS = 15;
+const MAX_DIRECT_WATERFALL_ITEMS = 12;
 const DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions";
 const CHAT_FALLBACK_API_URL = "https://api.884819.xyz/v1/chat/completions";
 
@@ -128,6 +141,26 @@ function isPeriodList(value: unknown) {
   });
 }
 
+function isRowRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isRawWorkbook(value: unknown): value is FinanceRawWorkbook {
+  const record = asRecord(value);
+  if (typeof record.fileName !== "string" || !Array.isArray(record.sheets)) {
+    return false;
+  }
+
+  return record.sheets.every((item) => {
+    const sheet = asRecord(item);
+    return typeof sheet.name === "string" &&
+      isStringArray(sheet.headers) &&
+      typeof sheet.rowCount === "number" &&
+      Array.isArray(sheet.rows) &&
+      sheet.rows.every(isRowRecord);
+  });
+}
+
 function isFinanceSchema(value: unknown): value is FinanceSchema {
   const record = asRecord(value);
   const profile = asRecord(record.profile);
@@ -186,6 +219,141 @@ function normalizeChatState(value: unknown): FinanceAIChatState {
     currentFilters: normalizeFilterState(state.currentFilters),
     ...(chartHistory.length > 0 ? { chartHistory } : {}),
   };
+}
+
+function finiteNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function normalizeDirectTrendChart(record: Record<string, unknown>): FinanceAIDirectTrendChart | null {
+  const title = typeof record.title === "string" ? record.title.trim() : "";
+  const points = Array.isArray(record.points)
+    ? record.points.flatMap((item) => {
+        const point = asRecord(item);
+        const label = typeof point.label === "string" ? point.label.trim() : "";
+        const value = finiteNumber(point.value);
+        return label && value !== null ? [{ label, value }] : [];
+      }).slice(0, MAX_DIRECT_TREND_POINTS)
+    : [];
+
+  if (!title || points.length === 0) {
+    return null;
+  }
+
+  return {
+    type: "trend",
+    title,
+    ...(typeof record.xLabel === "string" && record.xLabel.trim() ? { xLabel: record.xLabel.trim() } : {}),
+    ...(typeof record.yLabel === "string" && record.yLabel.trim() ? { yLabel: record.yLabel.trim() } : {}),
+    points,
+    ...(typeof record.note === "string" && record.note.trim() ? { note: record.note.trim() } : {}),
+  };
+}
+
+function normalizeDirectBarRankChart(record: Record<string, unknown>): FinanceAIDirectBarRankChart | null {
+  const title = typeof record.title === "string" ? record.title.trim() : "";
+  const items = Array.isArray(record.items)
+    ? record.items.flatMap((item) => {
+        const rankItem = asRecord(item);
+        const label = typeof rankItem.label === "string" ? rankItem.label.trim() : "";
+        const value = finiteNumber(rankItem.value);
+        if (!label || value === null) {
+          return [];
+        }
+
+        return [{
+          label,
+          value,
+          ...(finiteNumber(rankItem.share) !== null ? { share: finiteNumber(rankItem.share) } : {}),
+          ...(finiteNumber(rankItem.changeValue) !== null ? { changeValue: finiteNumber(rankItem.changeValue) } : {}),
+          ...(typeof rankItem.detail === "string" && rankItem.detail.trim() ? { detail: rankItem.detail.trim() } : {}),
+        }];
+      }).slice(0, MAX_DIRECT_RANK_ITEMS)
+    : [];
+
+  if (!title || items.length === 0) {
+    return null;
+  }
+
+  return {
+    type: "bar_rank",
+    title,
+    ...(typeof record.xLabel === "string" && record.xLabel.trim() ? { xLabel: record.xLabel.trim() } : {}),
+    ...(typeof record.yLabel === "string" && record.yLabel.trim() ? { yLabel: record.yLabel.trim() } : {}),
+    items,
+    ...(typeof record.note === "string" && record.note.trim() ? { note: record.note.trim() } : {}),
+  };
+}
+
+function normalizeDirectWaterfallChart(record: Record<string, unknown>): FinanceAIDirectWaterfallChart | null {
+  const title = typeof record.title === "string" ? record.title.trim() : "";
+  const startLabel = typeof record.startLabel === "string" ? record.startLabel.trim() : "";
+  const endLabel = typeof record.endLabel === "string" ? record.endLabel.trim() : "";
+  const startValue = finiteNumber(record.startValue);
+  const endValue = finiteNumber(record.endValue);
+  const items = Array.isArray(record.items)
+    ? record.items.flatMap((item) => {
+        const bridgeItem = asRecord(item);
+        const label = typeof bridgeItem.label === "string" ? bridgeItem.label.trim() : "";
+        const value = finiteNumber(bridgeItem.value);
+        return label && value !== null ? [{ label, value }] : [];
+      }).slice(0, MAX_DIRECT_WATERFALL_ITEMS)
+    : [];
+
+  if (!title || !startLabel || !endLabel || startValue === null || endValue === null || items.length === 0) {
+    return null;
+  }
+
+  return {
+    type: "waterfall",
+    title,
+    startLabel,
+    startValue,
+    endLabel,
+    endValue,
+    items,
+    ...(typeof record.note === "string" && record.note.trim() ? { note: record.note.trim() } : {}),
+  };
+}
+
+function normalizeDirectChart(value: unknown): FinanceAIDirectChart | null {
+  const record = asRecord(value);
+
+  if (record.type === "trend") {
+    return normalizeDirectTrendChart(record);
+  }
+
+  if (record.type === "bar_rank") {
+    return normalizeDirectBarRankChart(record);
+  }
+
+  if (record.type === "waterfall") {
+    return normalizeDirectWaterfallChart(record);
+  }
+
+  return null;
+}
+
+function normalizeDirectAnalysis(value: unknown): FinanceAIDirectAnalysis {
+  const record = asRecord(value);
+  const answer = typeof record.answer === "string" && record.answer.trim()
+    ? record.answer.trim()
+    : "我已经读取底稿，但这次没有生成可展示的分析结论。";
+  const assumptions = Array.isArray(record.assumptions)
+    ? record.assumptions
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .slice(0, 8)
+    : [];
+  const charts = Array.isArray(record.charts)
+    ? record.charts
+        .map(normalizeDirectChart)
+        .filter((chart): chart is FinanceAIDirectChart => chart !== null)
+        .slice(0, MAX_DIRECT_CHARTS)
+    : [];
+
+  return { answer, assumptions, charts };
 }
 
 function getUpstreamStatus(error: unknown) {
@@ -322,6 +490,57 @@ export async function POST(req: Request) {
   }
 
   const mode = String(body.mode || "");
+
+  if (mode === "analyze") {
+    const question = typeof body.question === "string" ? body.question.trim() : "";
+    const workbook = body.workbook;
+
+    if (!question) {
+      return errorResponse(400, "missing_question", "Analyze mode requires a question.");
+    }
+
+    if (!isRawWorkbook(workbook)) {
+      return errorResponse(400, "invalid_workbook", "Analyze mode requires a valid uploaded workbook.");
+    }
+
+    const prompt = buildFinanceAIDirectAnalyzePrompt({
+      userQuestion: question,
+      workbook,
+      state: normalizeChatState(body.state),
+    });
+    const providerResult = await callFirstConfiguredProvider(
+      [
+        {
+          role: "system",
+          content: "你是 Lucas 网站里的财务分析 AI 助手。你直接读取用户上传底稿，并只返回严格 JSON。",
+        },
+        { role: "user", content: prompt },
+      ],
+      true,
+    );
+
+    if (!providerResult.ok) {
+      return errorResponse(providerResult.status, providerResult.errorCode, providerResult.error, {
+        attempts: providerResult.attempts,
+      });
+    }
+
+    try {
+      const analysis = normalizeDirectAnalysis(extractJsonObject(providerResult.content));
+      return Response.json({
+        message: analysis.answer,
+        assumptions: analysis.assumptions,
+        charts: analysis.charts,
+      });
+    } catch (error) {
+      return errorResponse(
+        502,
+        "provider_invalid_json",
+        error instanceof Error ? error.message : "AI response was not valid JSON.",
+        { provider: providerResult.provider },
+      );
+    }
+  }
 
   if (mode === "plan") {
     const schema = body.schema as FinanceSchema | undefined;
