@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { ArrowUp, FileSpreadsheet, Loader2, RotateCcw, Trash2, UploadCloud } from "lucide-react";
 import * as XLSX from "xlsx";
 import { validateFinanceActionPlan } from "@/lib/finance-ai/actions";
@@ -391,13 +390,7 @@ export default function FinanceAIAssistantTool() {
       <section className="finance-ai-assistant-panel">
         <header className="finance-ai-chat-header">
           <div className="finance-ai-avatar" aria-hidden="true">
-            <Image
-              src="/images/product-stage/finance-ai-assistant-preview.png"
-              alt=""
-              fill
-              sizes="74px"
-              priority
-            />
+            <span>AI</span>
           </div>
           <div className="finance-ai-header-copy">
             <p className="finance-ai-kicker">Lucas Finance AI</p>

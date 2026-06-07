@@ -82,19 +82,25 @@ body {
 }
 
 .finance-ai-avatar {
-  position: relative;
   width: 74px;
   height: 74px;
   flex: 0 0 auto;
   border: 1px solid color-mix(in srgb, var(--border) 76%, var(--accent-secondary));
   border-radius: 22px;
-  overflow: hidden;
-  background: var(--background);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.95), transparent 34%),
+    linear-gradient(135deg, color-mix(in srgb, var(--accent-secondary) 88%, var(--card)), color-mix(in srgb, var(--accent-tertiary) 82%, var(--card)));
+  color: #fff;
   box-shadow: 0 10px 26px rgba(63, 86, 111, 0.15);
 }
 
-.finance-ai-avatar img {
-  object-fit: cover;
+.finance-ai-avatar span {
+  font-size: 1.05rem;
+  font-weight: 850;
+  letter-spacing: 0;
 }
 
 .finance-ai-header-copy {

@@ -302,6 +302,8 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(client, /finance-ai-avatar/);
   assert.match(client, /finance-ai-upload-chip/);
   assert.match(client, /finance-ai-empty-state/);
+  assert.doesNotMatch(client, /next\/image/);
+  assert.doesNotMatch(client, /finance-ai-assistant-preview\.png/);
   assert.match(styles, /\.finance-ai-page\s*\{[\s\S]*background:\s*color-mix\(in srgb,\s*var\(--background\)/s);
   assert.match(styles, /\.finance-ai-assistant-panel/);
   assert.match(styles, /\.finance-ai-message-avatar/);
