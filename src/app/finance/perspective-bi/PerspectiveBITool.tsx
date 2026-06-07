@@ -1,6 +1,7 @@
 "use client";
 
-import { createElement, useEffect } from "react";
+import { createElement, useEffect, useState } from "react";
+import { KeyRound, Loader2 } from "lucide-react";
 
 declare global {
     interface Window {
@@ -10,8 +11,35 @@ declare global {
     }
 }
 
+type AccessResponse = {
+    token?: string;
+    error?: string;
+    errorCode?: string;
+};
+
+function getAccessErrorMessage(payload: AccessResponse, fallback: string) {
+    if (payload.errorCode === "access_not_configured") {
+        return "内测密钥还没有在部署环境配置，请先配置 FINANCE_AI_ACCESS_KEY。";
+    }
+
+    if (payload.errorCode === "access_denied") {
+        return "内测密钥不正确。";
+    }
+
+    return payload.error || fallback;
+}
+
 export default function PerspectiveBITool() {
+    const [accessToken, setAccessToken] = useState("");
+    const [accessKey, setAccessKey] = useState("");
+    const [accessBusy, setAccessBusy] = useState(false);
+    const [accessError, setAccessError] = useState("");
+
     useEffect(() => {
+        if (!accessToken) {
+            return;
+        }
+
         let cancelled = false;
 
         async function bootTool() {
@@ -31,7 +59,78 @@ export default function PerspectiveBITool() {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [accessToken]);
+
+    async function handleAccessSubmit() {
+        const key = accessKey.trim();
+
+        if (!key) {
+            setAccessError("请输入内测密钥。");
+            return;
+        }
+
+        setAccessBusy(true);
+        setAccessError("");
+
+        try {
+            const response = await fetch("/api/tools/finance-ai-assistant/access", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ key }),
+            });
+            const payload = await response.json().catch(() => ({})) as AccessResponse;
+
+            if (!response.ok || !payload.token) {
+                throw new Error(getAccessErrorMessage(payload, "内测密钥校验失败。"));
+            }
+
+            setAccessToken(payload.token);
+            setAccessKey("");
+        } catch (error) {
+            setAccessError(error instanceof Error ? error.message : "内测密钥校验失败。");
+        } finally {
+            setAccessBusy(false);
+        }
+    }
+
+    if (!accessToken) {
+        return (
+            <div id="perspective-bi-root" className="perspective-bi-tool">
+                <section className="perspective-access-gate" aria-label="Perspective BI 分析台内测访问">
+                    <div className="perspective-access-card">
+                        <span className="perspective-access-icon" aria-hidden="true">
+                            <KeyRound />
+                        </span>
+                        <div>
+                            <p className="eyebrow">Private Beta</p>
+                            <h1>输入内测密钥</h1>
+                            <p>这个分析台还在内测中。通过后再上传或探索明细，数据仍只保留在当前页面会话里。</p>
+                        </div>
+                        <form
+                            className="perspective-access-form"
+                            onSubmit={(event) => {
+                                event.preventDefault();
+                                void handleAccessSubmit();
+                            }}
+                        >
+                            <input
+                                value={accessKey}
+                                onChange={(event) => setAccessKey(event.target.value)}
+                                placeholder="输入内测密钥"
+                                type="password"
+                                autoComplete="off"
+                                disabled={accessBusy}
+                            />
+                            <button type="submit" disabled={accessBusy || !accessKey.trim()}>
+                                {accessBusy ? <Loader2 className="perspective-spin" aria-hidden="true" /> : "进入"}
+                            </button>
+                        </form>
+                        {accessError ? <p className="perspective-access-error">{accessError}</p> : null}
+                    </div>
+                </section>
+            </div>
+        );
+    }
 
     return (
         <div id="perspective-bi-root" className="perspective-bi-tool">

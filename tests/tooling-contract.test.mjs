@@ -85,3 +85,15 @@ test("Perspective BI dependencies and local browser assets are wired", () => {
   assert.match(perspectiveShim, /class PerspectiveSelectDetail/);
   assert.match(perspectiveShim, /removeFilters/);
 });
+
+test("Perspective BI requires the existing finance access key before booting", async () => {
+  const tool = await readRequiredProjectFile("../src/app/finance/perspective-bi/PerspectiveBITool.tsx");
+  const styles = await readRequiredProjectFile("../src/app/finance/perspective-bi/tool.css");
+
+  assert.match(tool, /\/api\/tools\/finance-ai-assistant\/access/);
+  assert.match(tool, /Perspective BI 分析台内测访问/);
+  assert.match(tool, /type="password"/);
+  assert.match(tool, /if \(!accessToken\) {\s+return;\s+}/);
+  assert.match(tool, /\}, \[accessToken\]\);/);
+  assert.match(styles, /\.perspective-access-gate/);
+});
