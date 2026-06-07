@@ -153,7 +153,7 @@ function buildLearningQueue(
 
 function getStudyCardErrorMessage(payload: { error?: string; errorCode?: string } | null) {
   if (payload?.errorCode === "API_NOT_CONFIGURED") {
-    return "当前本地环境没有配置 AI Key。线上页面可以直接使用；本地预览需要配置 CHAT_API_KEY 或 DEEPSEEK_API_KEY。";
+    return "当前本地环境没有配置 AI Key。线上页面可以直接使用；本地预览需要配置 DEEPSEEK_API_KEY。";
   }
 
   if (payload?.errorCode === "AI_TIMEOUT") {

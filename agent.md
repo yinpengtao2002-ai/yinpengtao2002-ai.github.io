@@ -122,9 +122,8 @@ Current models:
 
 - `/api/chat` uses DeepSeek (`deepseek-v4-pro`) by default.
 - DeepSeek uses `DEEPSEEK_API_KEY` with default endpoint `https://api.deepseek.com/chat/completions`.
-- The two GPT fallbacks use the OpenAI-compatible `CHAT_API_URL` and `CHAT_API_KEY`, but only when `CHAT_ENABLE_PROVIDER_FALLBACKS=true`.
-- `.env.example` uses the 8848AI endpoint: `https://api.884819.xyz/v1/chat/completions`.
-- Local development chat falls back to local content unless `.env.local` provides `DEEPSEEK_API_KEY`, or explicitly enables provider fallbacks with `CHAT_ENABLE_PROVIDER_FALLBACKS=true` and the GPT fallback pair `CHAT_API_KEY` / `CHAT_API_URL`.
+- Do not reintroduce the old OpenAI-compatible third-party fallback variables (`CHAT_API_URL` / `CHAT_API_KEY`); that key path is deprecated.
+- Local development chat falls back to local content unless `.env.local` provides `DEEPSEEK_API_KEY`.
 - On 2026-04-28, `z-ai/glm-5.1` and `z-ai/glm5` timed out through 8848AI, so do not restore them as defaults without retesting.
 - Keep fallback wording user-facing; avoid phrases like "站内索引" unless deliberately exposing implementation details.
 

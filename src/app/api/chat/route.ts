@@ -4,9 +4,7 @@ import { thinkingLabContent } from "@/lib/data/thinkingLabContent";
 import { financeModels, getFinanceModelBySlug, type FinanceModelItem } from "@/lib/finance/modelRegistry";
 
 const CHAT_PRIMARY_TIMEOUT_MS = 18000;
-const CHAT_FALLBACK_TIMEOUT_MS = 18000;
 const DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions";
-const CHAT_FALLBACK_API_URL = "https://api.884819.xyz/v1/chat/completions";
 
 type ChatProvider = {
   model: string;
@@ -19,41 +17,16 @@ function readEnv(value?: string) {
   return value?.trim() || "";
 }
 
-function isProviderFallbackEnabled() {
-  return readEnv(process.env.CHAT_ENABLE_PROVIDER_FALLBACKS).toLowerCase() === "true";
-}
-
 function getChatProviders(): ChatProvider[] {
   const deepseekApiUrl = readEnv(process.env.DEEPSEEK_API_URL) || DEEPSEEK_API_URL;
-  const fallbackApiUrl = readEnv(process.env.CHAT_API_URL) || CHAT_FALLBACK_API_URL;
   const deepseekApiKey = readEnv(process.env.DEEPSEEK_API_KEY);
-  const fallbackApiKey = readEnv(process.env.CHAT_API_KEY);
-  const primaryProvider = {
+
+  return [{
     model: "deepseek-v4-pro",
     apiUrl: deepseekApiUrl,
     apiKey: deepseekApiKey,
     timeoutMs: CHAT_PRIMARY_TIMEOUT_MS,
-  };
-
-  if (!isProviderFallbackEnabled()) {
-    return [primaryProvider];
-  }
-
-  return [
-    primaryProvider,
-    {
-      model: "gpt-5.2",
-      apiUrl: fallbackApiUrl,
-      apiKey: fallbackApiKey,
-      timeoutMs: CHAT_FALLBACK_TIMEOUT_MS,
-    },
-    {
-      model: "gpt-5.4",
-      apiUrl: fallbackApiUrl,
-      apiKey: fallbackApiKey,
-      timeoutMs: CHAT_FALLBACK_TIMEOUT_MS,
-    },
-  ];
+  }];
 }
 
 function buildActiveFinanceModelPrompt(activeFinanceModel?: FinanceModelItem) {

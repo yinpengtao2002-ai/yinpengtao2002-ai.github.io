@@ -52,16 +52,10 @@ async function withMockedProvider(handler, content) {
   const originalFetch = global.fetch;
   const originalEnv = {
     DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
-    CHAT_API_KEY: process.env.CHAT_API_KEY,
-    CHAT_API_URL: process.env.CHAT_API_URL,
-    CHAT_ENABLE_PROVIDER_FALLBACKS: process.env.CHAT_ENABLE_PROVIDER_FALLBACKS,
   };
   const calls = [];
 
   process.env.DEEPSEEK_API_KEY = "test-key";
-  process.env.CHAT_API_KEY = "";
-  process.env.CHAT_API_URL = "https://example.test/v1/chat/completions";
-  process.env.CHAT_ENABLE_PROVIDER_FALLBACKS = "";
   global.fetch = async (_url, init) => {
     calls.push(JSON.parse(String(init?.body ?? "{}")));
     return new Response(JSON.stringify({
@@ -77,9 +71,6 @@ async function withMockedProvider(handler, content) {
   } finally {
     global.fetch = originalFetch;
     process.env.DEEPSEEK_API_KEY = originalEnv.DEEPSEEK_API_KEY;
-    process.env.CHAT_API_KEY = originalEnv.CHAT_API_KEY;
-    process.env.CHAT_API_URL = originalEnv.CHAT_API_URL;
-    process.env.CHAT_ENABLE_PROVIDER_FALLBACKS = originalEnv.CHAT_ENABLE_PROVIDER_FALLBACKS;
   }
 }
 
@@ -95,16 +86,14 @@ test("finance AI assistant API exposes planning and explanation responsibilities
   assert.match(route, /explain/);
   assert.match(route, /DEEPSEEK_API_KEY/);
   assert.match(route, /DEEPSEEK_API_URL/);
-  assert.match(route, /CHAT_API_KEY/);
-  assert.match(route, /CHAT_API_URL/);
-  assert.match(route, /CHAT_MODEL/);
-  assert.match(route, /CHAT_MODEL_FALLBACK/);
   assert.match(route, /deepseek-v4-pro/);
-  assert.match(route, /gpt-5\.2/);
-  assert.match(route, /gpt-5\.4/);
-  assert.match(route, /CHAT_ENABLE_PROVIDER_FALLBACKS/);
-  assert.match(route, /isProviderFallbackEnabled/);
-  assert.match(route, /return \[primaryProvider\]/);
+  assert.doesNotMatch(route, /CHAT_API_KEY/);
+  assert.doesNotMatch(route, /CHAT_API_URL/);
+  assert.doesNotMatch(route, /CHAT_MODEL/);
+  assert.doesNotMatch(route, /CHAT_MODEL_FALLBACK/);
+  assert.doesNotMatch(route, /gpt-5\.2/);
+  assert.doesNotMatch(route, /gpt-5\.4/);
+  assert.doesNotMatch(route, /884819/);
   assert.match(route, /response_format/);
   assert.match(route, /workbook/);
   assert.match(route, /normalizeDirectAnalysis/);

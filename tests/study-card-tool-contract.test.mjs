@@ -205,11 +205,12 @@ test("AI study card endpoint asks for structured learning output", async () => {
 
   assert.match(route, /cards/);
   assert.match(route, /JSON/);
-  assert.match(route, /CHAT_API_KEY/);
   assert.match(route, /DEEPSEEK_API_KEY/);
-  assert.match(route, /CHAT_ENABLE_PROVIDER_FALLBACKS/);
-  assert.match(route, /isProviderFallbackEnabled/);
-  assert.match(route, /return \[primaryProvider\]/);
+  assert.doesNotMatch(route, /CHAT_API_KEY/);
+  assert.doesNotMatch(route, /CHAT_API_URL/);
+  assert.doesNotMatch(route, /gpt-5\.2/);
+  assert.doesNotMatch(route, /gpt-5\.4/);
+  assert.doesNotMatch(route, /884819/);
   assert.match(route, /response_format/);
   assert.match(route, /60000/);
   assert.match(route, /errorCode/);
