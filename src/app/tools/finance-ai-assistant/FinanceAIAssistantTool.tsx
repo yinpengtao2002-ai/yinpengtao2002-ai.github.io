@@ -9,6 +9,7 @@ import rehypeKatex from "rehype-katex";
 import * as XLSX from "xlsx";
 import "katex/dist/katex.min.css";
 import { buildDirectChartSpec } from "@/lib/finance-ai/charts";
+import { buildLocalFinanceAnalysis } from "@/lib/finance-ai/local-analysis";
 import { inferFinanceSchema } from "@/lib/finance-ai/schema";
 import { normalizeChatMathMarkdown } from "@/lib/markdown/normalizeChatMathMarkdown";
 import { normalizeMarkdownStrongEmphasis } from "@/lib/markdown/normalizeStrongEmphasis";
@@ -147,6 +148,10 @@ function buildChartCard(id: string, chart: FinanceAIDirectChart): ChartCard {
     spec,
     note: spec.note,
   };
+}
+
+function getWorkbookRows(workbook: FinanceRawWorkbook | null): FinanceRow[] {
+  return workbook?.sheets.flatMap((sheet) => sheet.rows) ?? [];
 }
 
 function getAPIErrorMessage(payload: APIResponse, fallback: string) {
@@ -400,7 +405,8 @@ export default function FinanceAIAssistantTool() {
     setMessages((current) => [...current, { id: `user-${Date.now()}`, role: "user", text: question }]);
 
     try {
-      const analysis = await callAI({
+      const localAnalysis = buildLocalFinanceAnalysis(question, getWorkbookRows(workbook), schema);
+      const analysis = localAnalysis ?? await callAI({
         question,
         workbook,
         state: {
@@ -418,13 +424,14 @@ export default function FinanceAIAssistantTool() {
       const assumptionText = analysis.assumptions?.length
         ? `口径：${analysis.assumptions.join("；")}`
         : "口径：AI 直接读取当前上传底稿并按图表协议返回结果。";
+      const messageText = "answer" in analysis ? analysis.answer : analysis.message;
 
       setMessages((current) => [
         ...current,
         {
           id: `assistant-${Date.now()}`,
           role: "assistant",
-          text: analysis.message || "我已经根据当前底稿生成分析结果。",
+          text: messageText || "我已经根据当前底稿生成分析结果。",
           chartCards,
           meta: assumptionText,
         },

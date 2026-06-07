@@ -538,6 +538,8 @@ test("finance AI assistant page is an independent chat workbench", async () => {
   assert.match(client, /inferFinanceSchema/);
   assert.match(client, /FinanceRawWorkbook/);
   assert.match(client, /buildDirectChartSpec/);
+  assert.match(client, /buildLocalFinanceAnalysis/);
+  assert.match(client, /getWorkbookRows/);
   assert.match(client, /mode:\s*"analyze"/);
   assert.match(client, /workbook/);
   assert.match(client, /provider_timeout/);
