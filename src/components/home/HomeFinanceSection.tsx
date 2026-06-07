@@ -72,6 +72,12 @@ const modelDetails: Record<string, { focus: string; detail: string; guide: strin
     guide: "先上传明细或查看示例数据，再用字段拖拽确认维度和指标，最后把清晰的问题带入专项模型。",
     points: ["自助 BI 透视", "字段拖拽分析", "上传明细探索"],
   },
+  "finance-ai-assistant": {
+    focus: "上传底稿后的对话式财务分析",
+    detail: "适合直接问某月、某国家、某车型的单车边际、环比同比、维度排名和变化来源，并把结果生成在聊天里的图表卡片。",
+    guide: "先上传经营明细，再用自然语言提问；系统负责本地算数，AI 负责选择趋势、排名或瀑布桥来解释结果。",
+    points: ["持续聊天问答", "图表嵌入回复", "本地计算口径"],
+  },
 };
 
 export default function HomeFinanceSection() {

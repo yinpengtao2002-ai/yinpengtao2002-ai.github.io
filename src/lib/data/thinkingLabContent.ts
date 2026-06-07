@@ -24,20 +24,7 @@ export const studyCardsContent: ContentItem = {
   source: "hosted-tool",
 };
 
-export const financeAIAssistantContent: ContentItem = {
-  id: 9003,
-  slug: "finance-ai-assistant",
-  title: "财务分析 AI 助手",
-  description: "上传经营明细后，用持续聊天生成趋势图、横向排名和瀑布桥分析。",
-  date: "2026-06-06",
-  category: "工具",
-  href: "/tools/finance-ai-assistant",
-  content: "",
-  source: "hosted-tool",
-};
-
 export const thinkingLabContent: ContentItem[] = [
-  financeAIAssistantContent,
   studyCardsContent,
   subtitleWorkbenchContent,
   ...thinkingContent,

@@ -241,7 +241,7 @@ test("finance AI assistant API rejects malformed nested schema and state without
 });
 
 test("finance AI assistant page is an independent chat workbench", async () => {
-  const page = await readProjectFile("src/app/tools/finance-ai-assistant/page.tsx");
+  const page = await readProjectFile("src/app/finance/finance-ai-assistant/page.tsx");
   const client = await readProjectFile("src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
 
   assert.match(page, /财务分析 AI 助手/);
@@ -288,9 +288,23 @@ test("finance AI assistant is styled and isolated from global assistant", async 
   assert.match(styles, /\.finance-ai-chart-card/);
   assert.match(styles, /\.finance-ai-chart-host/);
   assert.match(styles, /@media \(max-width: 760px\)/);
-  assert.match(shell, /\/tools\/finance-ai-assistant/);
+  assert.match(shell, /\/finance\/finance-ai-assistant/);
   assert.match(shell.match(/function shouldHideAssistant[\s\S]*?\n}/)?.[0] ?? "", /finance-ai-assistant/);
-  assert.match(sitemap, /\$\{BASE_URL\}\/tools\/finance-ai-assistant/);
-  assert.match(content, /finance-ai-assistant/);
-  assert.match(content, /财务分析 AI 助手/);
+  assert.match(sitemap, /\$\{BASE_URL\}\/finance\/finance-ai-assistant/);
+  assert.doesNotMatch(sitemap, /\$\{BASE_URL\}\/tools\/finance-ai-assistant/);
+  assert.doesNotMatch(content, /finance-ai-assistant/);
+});
+
+test("finance AI assistant page follows the site chat assistant interaction style", async () => {
+  const client = await readProjectFile("src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
+  const styles = await readProjectFile("src/app/globals.css");
+
+  assert.match(client, /finance-ai-avatar/);
+  assert.match(client, /finance-ai-upload-chip/);
+  assert.match(client, /finance-ai-empty-state/);
+  assert.match(styles, /\.finance-ai-page\s*\{[\s\S]*background:\s*color-mix\(in srgb,\s*var\(--background\)/s);
+  assert.match(styles, /\.finance-ai-assistant-panel/);
+  assert.match(styles, /\.finance-ai-message-avatar/);
+  assert.match(styles, /\.finance-ai-message\.is-user\s+\.finance-ai-message-bubble/);
+  assert.match(styles, /\.finance-ai-composer\s*\{[\s\S]*border-radius:\s*24px/s);
 });

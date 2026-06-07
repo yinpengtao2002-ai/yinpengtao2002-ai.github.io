@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import FinanceAIAssistantTool from "./FinanceAIAssistantTool";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "财务分析 AI 助手｜Lucas Yin",
-  description: "上传经营明细后，通过持续聊天生成趋势图、横向排名和瀑布桥分析。",
+  description: "财务分析 AI 助手已经归入财务模型库。",
 };
 
 export default function FinanceAIAssistantPage() {
-  return <FinanceAIAssistantTool />;
+  redirect("/finance/finance-ai-assistant");
 }

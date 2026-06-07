@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { ArrowUp, FileSpreadsheet, Loader2, RotateCcw, Trash2, UploadCloud } from "lucide-react";
 import * as XLSX from "xlsx";
 import { validateFinanceActionPlan } from "@/lib/finance-ai/actions";
@@ -387,12 +388,21 @@ export default function FinanceAIAssistantTool() {
 
   return (
     <main className="finance-ai-page">
-      <section className="finance-ai-shell">
-        <header className="finance-ai-header">
-          <div>
-            <p className="finance-ai-kicker">Finance Workbench</p>
+      <section className="finance-ai-assistant-panel">
+        <header className="finance-ai-chat-header">
+          <div className="finance-ai-avatar" aria-hidden="true">
+            <Image
+              src="/images/product-stage/finance-ai-assistant-preview.png"
+              alt=""
+              fill
+              sizes="74px"
+              priority
+            />
+          </div>
+          <div className="finance-ai-header-copy">
+            <p className="finance-ai-kicker">Lucas Finance AI</p>
             <h1>财务分析 AI 助手</h1>
-            <p>上传经营明细后，在聊天里生成趋势、排名和变化桥；数字由本页本地计算。</p>
+            <p>上传经营明细后，直接用聊天生成趋势、排名和变化桥；数字由本页本地计算。</p>
           </div>
           <div className="finance-ai-header-actions">
             <button type="button" className="finance-ai-icon-button" onClick={resetData} aria-label="清空当前数据">
@@ -404,23 +414,26 @@ export default function FinanceAIAssistantTool() {
           </div>
         </header>
 
-        <section className="finance-ai-data-bar" aria-label="数据上传和识别状态">
-          <label className="finance-ai-upload">
-            <input
-              type="file"
-              accept=".csv,.xls,.xlsx"
-              hidden
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) {
-                  void handleFile(file);
-                }
-                event.currentTarget.value = "";
-              }}
-            />
-            <UploadCloud aria-hidden="true" />
-            <span>上传 CSV / XLS / XLSX</span>
-          </label>
+        <section className="finance-ai-empty-state" aria-label="数据上传和识别状态">
+          <div className="finance-ai-upload-row">
+            <label className="finance-ai-upload-chip">
+              <input
+                type="file"
+                accept=".csv,.xls,.xlsx"
+                hidden
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) {
+                    void handleFile(file);
+                  }
+                  event.currentTarget.value = "";
+                }}
+              />
+              <UploadCloud aria-hidden="true" />
+              <span>上传 CSV / XLS / XLSX</span>
+            </label>
+            <p>我会先识别月份、销量、维度和指标，再按你的问题生成聊天内图表。</p>
+          </div>
           <div className="finance-ai-data-status">
             <FileSpreadsheet aria-hidden="true" />
             <span>{fileName ? `${fileName} · ${dataSummary}` : dataSummary}</span>
@@ -435,6 +448,9 @@ export default function FinanceAIAssistantTool() {
         <section className="finance-ai-chat" aria-label="财务分析聊天流">
           {messages.map((message) => (
             <article key={message.id} className={`finance-ai-message is-${message.role}`}>
+              {message.role === "assistant" ? (
+                <div className="finance-ai-message-avatar" aria-hidden="true">AI</div>
+              ) : null}
               <div className="finance-ai-message-bubble">
                 <p>{message.text}</p>
                 {message.chartCards?.map((card) => (
@@ -450,6 +466,7 @@ export default function FinanceAIAssistantTool() {
           ))}
           {busy ? (
             <article className="finance-ai-message is-assistant">
+              <div className="finance-ai-message-avatar" aria-hidden="true">AI</div>
               <div className="finance-ai-message-bubble">
                 <p><Loader2 className="finance-ai-spin" aria-hidden="true" /> 正在生成分析计划...</p>
               </div>
@@ -468,9 +485,9 @@ export default function FinanceAIAssistantTool() {
             value={input}
             onChange={(event) => setInput(event.target.value)}
             placeholder={schema ? getDefaultQuestion(schema) : "先上传经营明细，再开始提问"}
-            disabled={busy}
+            disabled={busy || !canAsk}
           />
-          <button type="submit" disabled={!input.trim() || busy} aria-label="发送问题">
+          <button type="submit" disabled={!input.trim() || !canAsk} aria-label="发送问题">
             {busy ? <Loader2 className="finance-ai-spin" aria-hidden="true" /> : <ArrowUp aria-hidden="true" />}
           </button>
         </form>

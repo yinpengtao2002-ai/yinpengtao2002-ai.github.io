@@ -1,5 +1,5 @@
 // Auto-generated content data from markdown + Notion
-// Generated at: 2026-06-01T16:50:37.838Z
+// Generated at: 2026-06-07T03:44:41.919Z
 // DO NOT EDIT MANUALLY - run 'npm run prebuild' to regenerate
 
 export interface ContentItem {
@@ -76,6 +76,16 @@ export const financeContent: ContentItem[] = [
     "content": "用于探索式 BI 分析，把用户上传的经营明细快速变成可拖拽字段、可筛选、可排序、可切换图表的网页工作台。\n\n使用步骤：\n1. 打开模型后先查看自动加载的示例数据。\n2. 上传 CSV、XLSX 或 XLS 明细表，页面会读取第一张表。\n3. 先在字段口径确认区检查维度、指标和聚合方式，再在右侧 Perspective 面板拖动字段。",
     "source": "registry",
     "id": 6
+  },
+  {
+    "slug": "finance-ai-assistant",
+    "title": "财务分析 AI 助手",
+    "description": "上传经营明细后，用持续聊天生成趋势图、横向排名和瀑布桥分析。",
+    "date": "2026-06-06",
+    "href": "/finance/finance-ai-assistant",
+    "content": "用于上传经营明细后的对话式财务分析，把用户问题转换为本地计算和聊天内图表展示。\n\n使用步骤：\n1. 打开模型后上传一张 CSV、XLS 或 XLSX 经营明细。\n2. 在聊天框直接提问，例如某月某国家的单车边际、环比同比或维度排名。\n3. 查看 AI 回复里的趋势图、横向排名和瀑布桥，再继续追问同一份底稿。",
+    "source": "registry",
+    "id": 7
   }
 ];
 
