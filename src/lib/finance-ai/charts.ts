@@ -136,6 +136,10 @@ function isMoneyContext(context: string) {
   return /收入|边际|成本|利润|金额|总额|费用|税|毛利|净利|贡献|扣减|价格|售价|单价/.test(context);
 }
 
+function isCountContext(context: string) {
+  return /销量|台数|数量|件数|行数|volume|units?|count/i.test(context);
+}
+
 function getChineseUnitScale(value: number | null | undefined, context = "") {
   const absolute = Math.abs(value ?? 0);
   const money = isMoneyContext(context);
@@ -172,27 +176,37 @@ function formatCompactNumber(value: number, scale = getChineseUnitScale(value), 
   return `${sign}${formatted}${scale.suffix}`;
 }
 
-function buildWaterfallConnectorTrace(labels: string[], levels: number[]) {
-  const x: Array<string | null> = [];
-  const y: Array<number | null> = [];
+type WaterfallDisplayItem = {
+  label: string;
+  value: number;
+  mixEffect?: number;
+  rateEffect?: number;
+};
 
-  for (let index = 0; index < labels.length - 1; index += 1) {
-    x.push(labels[index], labels[index + 1], null);
-    y.push(levels[index], levels[index], null);
+function mergeWaterfallItems<T extends WaterfallDisplayItem>(items: T[]): T[] {
+  const merged = new Map<string, WaterfallDisplayItem>();
+
+  for (const item of items) {
+    const current = merged.get(item.label);
+
+    if (!current) {
+      merged.set(item.label, { ...item });
+      continue;
+    }
+
+    current.value += item.value;
+    if (typeof item.mixEffect === "number" || typeof current.mixEffect === "number") {
+      current.mixEffect = (current.mixEffect ?? 0) + (item.mixEffect ?? 0);
+    }
+    if (typeof item.rateEffect === "number" || typeof current.rateEffect === "number") {
+      current.rateEffect = (current.rateEffect ?? 0) + (item.rateEffect ?? 0);
+    }
   }
 
-  return {
-    type: "scatter",
-    mode: "lines",
-    x,
-    y,
-    line: { color: "#7d766b", width: 1.6 },
-    hoverinfo: "skip",
-    showlegend: false,
-  };
+  return Array.from(merged.values()) as T[];
 }
 
-function buildWaterfallBars({
+function buildWaterfallTrace({
   labels,
   itemValues,
   startValue,
@@ -214,28 +228,14 @@ function buildWaterfallBars({
   const scaledStartValue = scaledChineseUnit(startValue, scale);
   const scaledEndValue = scaledChineseUnit(endValue, scale);
   const scaledItemValues = itemValues.map((value) => scaledChineseUnit(value, scale));
-  const base = [0];
-  const y = [scaledStartValue];
-  const levels = [scaledStartValue];
-  let cursor = scaledStartValue;
-
-  for (const value of scaledItemValues) {
-    base.push(cursor);
-    y.push(value);
-    cursor += value;
-    levels.push(cursor);
-  }
-
-  base.push(0);
-  y.push(scaledEndValue);
 
   return {
-    connector: buildWaterfallConnectorTrace(labels, levels),
-    bars: {
-      type: "bar",
+    trace: {
+      type: "waterfall",
+      orientation: "v",
+      measure: ["absolute", ...itemValues.map(() => "relative"), "total"],
       x: labels,
-      y,
-      base,
+      y: [scaledStartValue, ...scaledItemValues, 0],
       text: [
         formatCompactNumber(startValue, scale),
         ...itemValues.map((value) => formatCompactNumber(value, getChineseUnitScale(value, title), true)),
@@ -243,13 +243,10 @@ function buildWaterfallBars({
       ],
       textposition: "outside",
       cliponaxis: false,
-      marker: {
-        color: [
-          COLORS.blue,
-          ...itemValues.map((value) => (value >= 0 ? COLORS.green : COLORS.red)),
-          COLORS.blue,
-        ],
-      },
+      connector: { line: { color: "#cfcabe", width: 1.4 } },
+      increasing: { marker: { color: COLORS.green } },
+      decreasing: { marker: { color: COLORS.red } },
+      totals: { marker: { color: COLORS.blue } },
       ...(customdata ? { customdata } : {}),
       hovertemplate,
     },
@@ -259,18 +256,29 @@ function buildWaterfallBars({
   };
 }
 
-function normalizeWaterfallItems<T extends { label: string; value: number }>(items: T[]): T[] {
-  const sorted = [...items].sort((left, right) => Math.abs(right.value) - Math.abs(left.value));
+function normalizeWaterfallItems<T extends WaterfallDisplayItem>(items: T[]): T[] {
+  const sorted = mergeWaterfallItems(items).sort((left, right) => Math.abs(right.value) - Math.abs(left.value));
   const visible = sorted.slice(0, MAX_WATERFALL_VISIBLE_ITEMS);
   const hidden = sorted.slice(MAX_WATERFALL_VISIBLE_ITEMS);
   const otherValue = hidden.reduce((sum, item) => sum + item.value, 0);
+  const otherMixEffect = hidden.reduce((sum, item) => sum + (item.mixEffect ?? 0), 0);
+  const otherRateEffect = hidden.reduce((sum, item) => sum + (item.rateEffect ?? 0), 0);
   const withOther = hidden.length > 0 && Math.abs(otherValue) > 1e-9
-    ? [...visible, { label: "其他", value: otherValue } as T]
+    ? [
+        ...visible,
+        {
+          label: "其他",
+          value: otherValue,
+          ...(hidden.some((item) => typeof item.mixEffect === "number") ? { mixEffect: otherMixEffect } : {}),
+          ...(hidden.some((item) => typeof item.rateEffect === "number") ? { rateEffect: otherRateEffect } : {}),
+        } as T,
+      ]
     : visible;
-  const negatives = withOther
+  const merged = mergeWaterfallItems(withOther);
+  const negatives = merged
     .filter((item) => item.value < 0)
     .sort((left, right) => Math.abs(right.value) - Math.abs(left.value));
-  const positives = withOther
+  const positives = merged
     .filter((item) => item.value >= 0)
     .sort((left, right) => Math.abs(right.value) - Math.abs(left.value));
 
@@ -620,7 +628,7 @@ function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): 
       ]
     : undefined;
   const labels = [result.fromPeriod, ...items.map((item) => item.label), result.toPeriod];
-  const waterfall = buildWaterfallBars({
+  const waterfall = buildWaterfallTrace({
     labels,
     itemValues,
     startValue: result.startValue,
@@ -637,7 +645,7 @@ function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): 
     kind: "waterfall_bridge",
     size: "large",
     title,
-    data: [waterfall.connector, waterfall.bars],
+    data: [waterfall.trace],
     layout: {
       ...baseLayout,
       bargap: 0.28,
@@ -666,7 +674,7 @@ function buildDirectWaterfallChartSpec(input: FinanceAIDirectWaterfallChart): Fi
   const itemValues = items.map((item) => item.value);
   const scale = getScaleForValues([input.startValue, input.endValue, ...itemValues], input.title);
   const labels = [input.startLabel, ...items.map((item) => item.label), input.endLabel];
-  const waterfall = buildWaterfallBars({
+  const waterfall = buildWaterfallTrace({
     labels,
     itemValues,
     startValue: input.startValue,
@@ -680,7 +688,7 @@ function buildDirectWaterfallChartSpec(input: FinanceAIDirectWaterfallChart): Fi
     kind: "waterfall_bridge",
     size: "large",
     title: input.title,
-    data: [waterfall.connector, waterfall.bars],
+    data: [waterfall.trace],
     layout: {
       ...baseLayout,
       bargap: 0.28,
@@ -818,9 +826,26 @@ function buildDirectScatterBubbleChartSpec(input: FinanceAIDirectScatterBubbleCh
   };
 }
 
+function formatDirectTableCell(value: unknown, column: string, tableTitle = "") {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return value ?? "";
+  }
+
+  if (/占比|比例|率|share|percent/i.test(column) && Math.abs(value) <= 1) {
+    return formatShare(value);
+  }
+
+  const context = `${tableTitle} ${column}`;
+  if (!isCountContext(column) && isMoneyContext(context)) {
+    return formatCompactNumber(value, getChineseUnitScale(value, context));
+  }
+
+  return formatNumber(value, Number.isInteger(value) ? 0 : 2);
+}
+
 function buildDirectDetailTableChartSpec(input: FinanceAIDirectDetailTableChart): FinanceChartSpec {
   const columnValues = input.columns.map((_, columnIndex) => (
-    input.rows.map((row) => row[columnIndex] ?? "")
+    input.rows.map((row) => formatDirectTableCell(row[columnIndex] ?? "", input.columns[columnIndex] ?? "", input.title))
   ));
 
   return {

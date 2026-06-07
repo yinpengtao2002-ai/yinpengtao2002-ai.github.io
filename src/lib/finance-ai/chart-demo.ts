@@ -1,4 +1,6 @@
 import type { FinanceChartSpec } from "./types";
+// @ts-expect-error - Node's test runner imports this TypeScript module by extension.
+import { buildDirectChartSpec } from "./charts.ts";
 
 const COLORS = {
   orange: "#d97757",
@@ -62,69 +64,16 @@ function waterfallSpec(
   items: Array<{ label: string; value: number }>,
   note: string,
 ): FinanceChartSpec {
-  const labels = [startLabel, ...items.map((item) => item.label), endLabel];
-  const base = [0];
-  const y = [startValue];
-  const levels = [startValue];
-  let cursor = startValue;
-
-  for (const item of items) {
-    base.push(cursor);
-    y.push(item.value);
-    cursor += item.value;
-    levels.push(cursor);
-  }
-
-  base.push(0);
-  y.push(endValue);
-
-  const connectorX: Array<string | null> = [];
-  const connectorY: Array<number | null> = [];
-  for (let index = 0; index < labels.length - 1; index += 1) {
-    connectorX.push(labels[index], labels[index + 1], null);
-    connectorY.push(levels[index], levels[index], null);
-  }
-
-  return spec("waterfall_bridge", title, [
-    {
-      type: "scatter",
-      mode: "lines",
-      x: connectorX,
-      y: connectorY,
-      line: { color: "#7d766b", width: 1.6 },
-      hoverinfo: "skip",
-      showlegend: false,
-    },
-    {
-      type: "bar",
-      x: labels,
-      y,
-      base,
-      text: [
-        formatDemoNumber(startValue),
-        ...items.map((item) => formatDemoNumber(item.value, true)),
-        formatDemoNumber(endValue),
-      ],
-      textposition: "outside",
-      marker: {
-        color: [
-          COLORS.blue,
-          ...items.map((item) => (item.value >= 0 ? COLORS.green : COLORS.red)),
-          COLORS.blue,
-        ],
-      },
-      cliponaxis: false,
-    },
-  ], {
-    bargap: 0.28,
-    yaxis: { gridcolor: COLORS.grid, fixedrange: true },
-    xaxis: { fixedrange: true },
-  }, note);
-}
-
-function formatDemoNumber(value: number, signed = false) {
-  const sign = signed ? (value > 0 ? "+" : value < 0 ? "-" : "") : "";
-  return `${sign}${Math.abs(value).toLocaleString("zh-CN", { maximumFractionDigits: 1 })}`;
+  return buildDirectChartSpec({
+    type: "waterfall",
+    title,
+    startLabel,
+    startValue,
+    endLabel,
+    endValue,
+    items,
+    note,
+  });
 }
 
 export function buildFinanceAIChartDemoSpecs(): FinanceChartSpec[] {

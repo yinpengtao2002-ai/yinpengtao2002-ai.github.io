@@ -351,11 +351,56 @@ test("waterfall chart sorts visible bridge items by sign and absolute contributi
   });
 
   assert.equal(spec.size, "large");
-  assert.equal(spec.data[0].type, "scatter");
-  assert.equal(spec.data[0].mode, "lines");
-  assert.deepEqual(spec.data[1].x, ["3月", "B", "L", "D", "F", "其他", "C", "E", "G", "I", "K", "A", "4月"]);
-  assert.deepEqual(spec.data[1].base, [0, 100, 88, 80, 76, 73, 70, 79, 86, 92, 97, 101, 0]);
-  assert.deepEqual(spec.data[1].y, [100, -12, -8, -4, -3, -3, 9, 7, 6, 5, 4, 2, 103]);
+  assert.equal(spec.data[0].type, "waterfall");
+  assert.deepEqual(spec.data[0].measure, [
+    "absolute",
+    "relative",
+    "relative",
+    "relative",
+    "relative",
+    "relative",
+    "relative",
+    "relative",
+    "relative",
+    "relative",
+    "relative",
+    "relative",
+    "total",
+  ]);
+  assert.deepEqual(spec.data[0].x, ["3月", "B", "L", "D", "F", "其他", "C", "E", "G", "I", "K", "A", "4月"]);
+  assert.deepEqual(spec.data[0].y, [100, -12, -8, -4, -3, -3, 9, 7, 6, 5, 4, 2, 0]);
+});
+
+test("waterfall chart merges explicit other buckets with grouped residuals", () => {
+  const spec = buildDirectChartSpec({
+    type: "waterfall",
+    title: "单车边际变化桥",
+    startLabel: "3月",
+    startValue: 100,
+    endLabel: "4月",
+    endValue: 103,
+    items: [
+      { label: "A", value: 2 },
+      { label: "B", value: -12 },
+      { label: "C", value: 9 },
+      { label: "D", value: -4 },
+      { label: "E", value: 7 },
+      { label: "F", value: -3 },
+      { label: "G", value: 6 },
+      { label: "H", value: -2 },
+      { label: "I", value: 5 },
+      { label: "J", value: -1 },
+      { label: "K", value: 4 },
+      { label: "L", value: -8 },
+      { label: "其他", value: -3 },
+    ],
+  });
+  const trace = spec.data[0];
+  const otherCount = trace.x.filter((label) => label === "其他").length;
+  const itemTotal = trace.y.slice(1, -1).reduce((sum, value) => sum + value, 0);
+
+  assert.equal(otherCount, 1);
+  approx(trace.y[0] + itemTotal, 103, "waterfall visible deltas tie to the final period");
 });
 
 test("bar rank comparison includes previous-only groups and exposes change values", () => {
@@ -715,11 +760,11 @@ test("waterfall chart uses compact Chinese money units instead of raw yuan label
     ],
   });
 
-  approx(spec.data[1].y[0], 118.8785511859, "waterfall start value is scaled to yi yuan");
-  assert.equal(spec.data[1].text[0], "118.88亿元");
-  assert.deepEqual(spec.data[1].text.slice(1, 4), ["-4.76亿元", "+17.27亿元", "+5.36亿元"]);
+  approx(spec.data[0].y[0], 118.8785511859, "waterfall start value is scaled to yi yuan");
+  assert.equal(spec.data[0].text[0], "118.88亿元");
+  assert.deepEqual(spec.data[0].text.slice(1, 4), ["-4.76亿元", "+17.27亿元", "+5.36亿元"]);
   assert.equal(spec.layout.yaxis.ticksuffix, "亿元");
-  assert.doesNotMatch(spec.data[1].text.join(" "), /11887855118|1,188,785,511|B/);
+  assert.doesNotMatch(spec.data[0].text.join(" "), /11887855118|1,188,785,511|B/);
 });
 
 test("bar rank chart spec uses horizontal bars without a separate numeric table", () => {
@@ -756,14 +801,12 @@ test("waterfall chart spec renders a continuous bridge for total-metric results"
 
   assert.equal(spec.kind, "waterfall_bridge");
   assert.equal(spec.size, "large");
-  assert.equal(spec.data[0].type, "scatter");
-  assert.equal(spec.data[0].mode, "lines");
-  assert.equal(spec.data[1].type, "bar");
-  assert.deepEqual(spec.data[1].base, [0, 2400, 3500, 0]);
-  assert.deepEqual(spec.data[1].y, [2400, 1100, 1100, 4600]);
-  assert.deepEqual(spec.data[1].text, ["2,400元", "+1,100元", "+1,100元", "4,600元"]);
-  assert.equal(spec.data[1].textposition, "outside");
-  assert.equal(spec.data[1].cliponaxis, false);
+  assert.equal(spec.data[0].type, "waterfall");
+  assert.deepEqual(spec.data[0].measure, ["absolute", "relative", "relative", "total"]);
+  assert.deepEqual(spec.data[0].y, [2400, 1100, 1100, 0]);
+  assert.deepEqual(spec.data[0].text, ["2,400元", "+1,100元", "+1,100元", "4,600元"]);
+  assert.equal(spec.data[0].textposition, "outside");
+  assert.equal(spec.data[0].cliponaxis, false);
   assert.equal(Array.isArray(spec.layout.yaxis.range), true);
   assert.equal(spec.layout.yaxis.fixedrange, true);
   assert.equal(spec.config.displayModeBar, false);
@@ -781,12 +824,12 @@ test("waterfall chart spec labels unit-metric bridges as mix and rate attributio
 
   assert.equal(spec.kind, "waterfall_bridge");
   assert.equal(spec.size, "large");
-  assert.equal(spec.data[1].type, "bar");
+  assert.equal(spec.data[0].type, "waterfall");
   assert.match(spec.note, /结构效应/);
   assert.match(spec.note, /费率效应/);
   assert.doesNotMatch(spec.note, /仅用于可加总指标/);
-  assert.ok(Array.isArray(spec.data[1].customdata));
-  assert.match(spec.data[1].hovertemplate, /结构效应/);
+  assert.ok(Array.isArray(spec.data[0].customdata));
+  assert.match(spec.data[0].hovertemplate, /结构效应/);
 });
 
 test("finance AI chart demo specs cover every supported chart style", () => {
@@ -850,9 +893,9 @@ test("direct AI chart payloads render through the supported chart specs", () => 
   assert.match(rankSpec.data[0].text.at(-1), /70\.0%/);
   assert.equal(rankSpec.layout.xaxis.fixedrange, true);
   assert.equal(waterfallSpec.kind, "waterfall_bridge");
-  assert.deepEqual(waterfallSpec.data[1].base, [0, 4800, 4650, 0]);
-  assert.deepEqual(waterfallSpec.data[1].y, [4800, -150, 900, 5550]);
-  assert.deepEqual(waterfallSpec.data[1].text, ["4,800元", "-150元", "+900元", "5,550元"]);
+  assert.deepEqual(waterfallSpec.data[0].measure, ["absolute", "relative", "relative", "total"]);
+  assert.deepEqual(waterfallSpec.data[0].y, [4800, -150, 900, 0]);
+  assert.deepEqual(waterfallSpec.data[0].text, ["4,800元", "-150元", "+900元", "5,550元"]);
   assert.equal(waterfallSpec.config.displayModeBar, false);
 });
 
@@ -871,10 +914,10 @@ test("direct waterfall chart reconciles incomplete items and uses readable delta
   });
 
   assert.equal(spec.kind, "waterfall_bridge");
-  assert.deepEqual(spec.data[1].x, ["M03", "T1E", "未拆分差额", "M1A", "M04"]);
-  assert.deepEqual(spec.data[1].base, [0, 9.87, 9.76, 9.75, 0]);
-  assert.deepEqual(spec.data[1].y, [9.87, -0.11, -0.01, 0.04, 9.79]);
-  assert.deepEqual(spec.data[1].text, ["9.87万元", "-1,100元", "-100元", "+400元", "9.79万元"]);
+  assert.deepEqual(spec.data[0].x, ["M03", "T1E", "未拆分差额", "M1A", "M04"]);
+  assert.deepEqual(spec.data[0].measure, ["absolute", "relative", "relative", "relative", "total"]);
+  assert.deepEqual(spec.data[0].y, [9.87, -0.11, -0.01, 0.04, 0]);
+  assert.deepEqual(spec.data[0].text, ["9.87万元", "-1,100元", "-100元", "+400元", "9.79万元"]);
 });
 
 test("direct AI chart payloads support the approved expanded chart set", () => {
@@ -920,6 +963,12 @@ test("direct AI chart payloads support the approved expanded chart set", () => {
     columns: ["国家", "销量", "单车边际"],
     rows: [["英国", 13665, 24.6]],
   });
+  const moneyTableSpec = buildDirectChartSpec({
+    type: "detail_table",
+    title: "4月大区净收入总额明细",
+    columns: ["大区", "净收入总额", "占比", "环比变化"],
+    rows: [["右舵地区部", 4817036664.26, 0.344, 1172553980.38]],
+  });
 
   assert.equal(metricSpec.kind, "metric_card");
   assert.equal(metricSpec.size, "small");
@@ -938,4 +987,10 @@ test("direct AI chart payloads support the approved expanded chart set", () => {
   assert.equal(tableSpec.kind, "detail_table");
   assert.equal(tableSpec.size, "large");
   assert.equal(tableSpec.data[0].type, "table");
+  assert.deepEqual(moneyTableSpec.data[0].cells.values, [
+    ["右舵地区部"],
+    ["48.17亿元"],
+    ["34.4%"],
+    ["11.73亿元"],
+  ]);
 });
