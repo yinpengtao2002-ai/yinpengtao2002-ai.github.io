@@ -25,7 +25,7 @@ test("finance registry is a direct model list without category metadata", () => 
 test("finance registry contains the approved model routes", () => {
   assert.deepEqual(
     registry.models.map((model) => model.slug).sort(),
-    ["business-analysis", "margin-analysis", "monthly-trend", "perspective-bi", "profit-structure", "sensitivity-analysis"]
+    ["business-analysis", "finance-ai-assistant", "margin-analysis", "monthly-trend", "perspective-bi", "profit-structure", "sensitivity-analysis"]
   );
   for (const model of registry.models) {
     assert.match(model.href, /^\/finance\/[a-z-]+$/);
@@ -34,6 +34,21 @@ test("finance registry contains the approved model routes", () => {
     assert.ok(Array.isArray(model.aiGuide.steps), `${model.slug} needs AI guide steps`);
     assert.ok(model.aiGuide.steps.length >= 3, `${model.slug} needs at least three usage steps`);
   }
+});
+
+test("finance AI assistant is registered as a finance model with its own assistant visual", () => {
+  const model = registry.models.find((item) => item.slug === "finance-ai-assistant");
+
+  assert.ok(model, "finance-ai-assistant should be present in the finance model registry");
+  assert.equal(model.href, "/finance/finance-ai-assistant");
+  assert.equal(model.title, "财务分析 AI 助手");
+  assert.match(model.summary, /聊天|图表|经营明细/);
+  assert.equal(model.previewImage, "/images/product-stage/finance-ai-assistant-preview.png");
+  assert.match(model.previewAlt, /卡通 AI 助手/);
+  assert.match(model.aiGuide.purpose, /上传经营明细/);
+  assert.ok(model.aiGuide.steps.some((step) => /上传/.test(step)));
+  assert.ok(model.aiGuide.steps.some((step) => /提问|聊天/.test(step)));
+  assert.ok(model.aiGuide.fields.some((field) => /月份|销量|指标|维度/.test(field.name)));
 });
 
 test("Perspective BI is registered as a user-operable finance model", () => {
@@ -53,7 +68,7 @@ test("Perspective BI is registered as a user-operable finance model", () => {
 test("finance registry preserves model order as the only browsing structure", () => {
   assert.deepEqual(
     registry.models.map((model) => model.slug),
-    ["business-analysis", "monthly-trend", "profit-structure", "sensitivity-analysis", "margin-analysis", "perspective-bi"]
+    ["business-analysis", "monthly-trend", "profit-structure", "sensitivity-analysis", "margin-analysis", "perspective-bi", "finance-ai-assistant"]
   );
 });
 
