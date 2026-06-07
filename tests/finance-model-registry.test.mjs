@@ -106,35 +106,32 @@ test("finance model library renders the preview component", async () => {
   ]);
 });
 
-test("finance model library uses a preview-backed scenario table instead of tool spec labels", async () => {
+test("finance model library uses the previous preview card grid instead of the table directory", async () => {
   const library = await readFile(
     new URL("../src/components/finance/FinanceModelLibrary.tsx", import.meta.url),
     "utf8"
   );
   const globals = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
 
-  assert.match(library, /finance-model-directory/);
-  assert.match(library, /finance-model-directory-head/);
-  assert.match(library, /finance-model-row/);
-  assert.match(library, /finance-model-preview-cell/);
-  assert.match(library, /finance-model-scenario/);
-  assert.match(library, /finance-model-problem/);
+  assert.match(library, /finance-model-library-grid/);
+  assert.match(library, /finance-model-card/);
   assert.match(library, /FinanceModelPreview/);
-  assert.match(library, /适合场景/);
-  assert.match(library, /解决问题/);
-  assert.doesNotMatch(library, /输入格式/);
-  assert.doesNotMatch(library, /输出结果/);
-  assert.doesNotMatch(library, /CSV/);
-  assert.doesNotMatch(library, /XLSX/);
-  assert.doesNotMatch(library, /Excel/);
+  assert.match(library, /model\.summary/);
   assert.match(library, /finance-model-card-title/);
+  assert.match(library, /finance-model-card-summary/);
   assert.match(library, /finance-model-card-action/);
-  assert.match(globals, /\.finance-model-directory\s*\{/);
-  assert.match(globals, /\.finance-model-directory-head\s*\{/);
-  assert.match(globals, /\.finance-model-row\s*\{/);
-  assert.match(globals, /\.finance-model-preview-cell\s*\{/);
-  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.finance-model-directory-head\s*\{[\s\S]*display:\s*none/s);
-  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.finance-model-row\s*\{[\s\S]*display:\s*block/s);
+  assert.doesNotMatch(library, /finance-model-directory/);
+  assert.doesNotMatch(library, /finance-model-directory-head/);
+  assert.doesNotMatch(library, /finance-model-row/);
+  assert.doesNotMatch(library, /finance-model-scenario/);
+  assert.doesNotMatch(library, /finance-model-problem/);
+  assert.doesNotMatch(library, /适合场景/);
+  assert.doesNotMatch(library, /解决问题/);
+  assert.match(globals, /\.finance-model-library-grid\s*\{/);
+  assert.match(globals, /\.finance-model-card\s*\{/);
+  assert.doesNotMatch(globals, /\.finance-model-directory\s*\{/);
+  assert.doesNotMatch(globals, /\.finance-model-directory-head\s*\{/);
+  assert.doesNotMatch(globals, /\.finance-model-row\s*\{/);
 });
 
 test("finance model library presents models as one focused library without category filters", async () => {
@@ -144,7 +141,7 @@ test("finance model library presents models as one focused library without categ
   );
   const globals = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
 
-  assert.match(library, /finance-model-directory/);
+  assert.match(library, /finance-model-library-grid/);
   assert.doesNotMatch(library, /useState/);
   assert.doesNotMatch(library, /activeCategory/);
   assert.doesNotMatch(library, /financeModelCategories/);
@@ -166,12 +163,15 @@ test("finance index page keeps the model library high and readable", async () =>
 
   assert.match(page, /finance-index-page/);
   assert.match(page, /finance-index-shell/);
-  assert.match(page, /finance-index-hero-card/);
-  assert.match(page, /home-finance-title-card finance-index-hero-card/);
-  assert.match(page, /className="home-finance-title"/);
+  assert.match(page, /finance-index-hero/);
+  assert.match(page, /finance-index-eyebrow/);
+  assert.match(page, /finance-index-title/);
   assert.match(page, /finance-index-intro/);
-  assert.match(page, /问题驱动的财务模型/);
+  assert.match(page, /FINANCE MODELS/);
+  assert.match(page, /财务模型/);
   assert.match(page, /这里收录的是我自己搭建并持续打磨的财务模型和分析工具，欢迎大家使用。/);
+  assert.doesNotMatch(page, /home-finance-title-card/);
+  assert.doesNotMatch(page, /home-finance-title/);
   assert.doesNotMatch(page, /目前共有 \{financeModels\.length\} 个模型/);
   assert.doesNotMatch(page, /Finance Model Library/);
   assert.doesNotMatch(page, /MODEL LIBRARY/);
@@ -179,15 +179,15 @@ test("finance index page keeps the model library high and readable", async () =>
   assert.doesNotMatch(page, /按经营问题进入模型/);
   assert.doesNotMatch(page, /style=\{\{/);
   assert.match(globals, /\.finance-index-page\s*\{/);
-  assert.match(globals, /\.finance-index-hero-card\s*\{/);
+  assert.match(globals, /\.finance-index-hero\s*\{/);
+  assert.match(globals, /\.finance-index-eyebrow\s*\{/);
+  assert.match(globals, /\.finance-index-title\s*\{/);
   assert.doesNotMatch(globals, /\.finance-index-hero-card::before/);
   assert.doesNotMatch(globals, /\.finance-index-hero-card::after/);
   assert.doesNotMatch(globals, /\.finance-index-title-meta\s*\{/);
   assert.doesNotMatch(globals, /\.finance-index-title-copy\s*\{/);
-  assert.doesNotMatch(globals, /\.finance-index-title\s*\{/);
-  assert.match(globals, /\.home-finance-title\s*\{[^}]*font-family:\s*var\(--font-hero-display\)/s);
   assert.match(globals, /\.finance-index-intro\s*\{/);
-  assert.match(globals, /color-mix\(in srgb,\s*var\(--foreground\)\s*62%,\s*var\(--muted\)\)/);
+  assert.doesNotMatch(globals, /\.finance-index-hero-card\s*\{/);
 });
 
 test("site shell does not force pages wider than the visible viewport", async () => {

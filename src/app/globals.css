@@ -1928,8 +1928,9 @@ h6 {
 }
 
 .finance-index-page {
-  min-height: min(100dvh, 760px);
-  padding: clamp(4.4rem, 7vh, 5.2rem) 0 2rem;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 0 0 clamp(3rem, 7vh, 5rem);
   background:
     repeating-linear-gradient(90deg, color-mix(in srgb, var(--foreground) 3%, transparent) 0 1px, transparent 1px 64px),
     linear-gradient(180deg, color-mix(in srgb, var(--card) 92%, var(--background)), var(--background) 48%);
@@ -1939,14 +1940,33 @@ h6 {
   max-width: 1040px;
 }
 
-.finance-index-hero-card {
-  margin-bottom: 24px;
+.finance-index-hero {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(5rem, 10vh, 6.2rem) 0 clamp(1.7rem, 4vh, 2.4rem);
+}
+
+.finance-index-eyebrow {
+  margin: 0 0 14px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.finance-index-title {
+  margin: 0 0 16px;
+  color: var(--foreground);
+  font-size: clamp(1.95rem, 4.6vw, 3.15rem);
+  line-height: 1.1;
+  letter-spacing: 0;
 }
 
 .finance-index-intro {
   position: relative;
   max-width: 660px;
-  color: color-mix(in srgb, var(--foreground) 62%, var(--muted));
+  color: color-mix(in srgb, var(--foreground) 58%, var(--muted));
   font-size: 15px;
   line-height: 1.78;
   margin-bottom: 0;
@@ -1955,107 +1975,6 @@ h6 {
 .finance-model-library {
   width: 100%;
   font-family: var(--font-poppins);
-}
-
-.finance-model-directory {
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--card) 86%, transparent);
-  box-shadow: 0 18px 46px rgba(33, 29, 22, 0.06);
-}
-
-.finance-model-directory-head,
-.finance-model-row {
-  display: grid;
-  grid-template-columns: 136px 1fr 1.05fr 1.35fr auto;
-  align-items: stretch;
-}
-
-.finance-model-directory-head {
-  min-height: 42px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 850;
-  background: color-mix(in srgb, var(--background) 72%, var(--border));
-}
-
-.finance-model-directory-head span,
-.finance-model-preview-cell,
-.finance-model-name-cell,
-.finance-model-scenario,
-.finance-model-problem,
-.finance-model-action-cell {
-  padding: 15px 16px;
-  border-right: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
-}
-
-.finance-model-directory-head span:last-child,
-.finance-model-action-cell {
-  border-right: 0;
-}
-
-.finance-model-row-motion {
-  border-top: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
-}
-
-.finance-model-row {
-  min-height: 118px;
-  background: color-mix(in srgb, var(--card) 78%, transparent);
-  text-decoration: none;
-  transition:
-    background 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.finance-model-row:hover {
-  background: #fffaf4;
-}
-
-.finance-model-preview-cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: color-mix(in srgb, var(--background) 58%, var(--card));
-}
-
-.finance-model-preview-cell .finance-model-preview.compact {
-  width: 104px;
-  aspect-ratio: 1.35;
-  border: 1px solid color-mix(in srgb, var(--foreground) 8%, var(--border));
-  border-radius: 10px;
-  box-shadow: 0 10px 24px rgba(33, 29, 22, 0.08);
-}
-
-.finance-model-name-cell,
-.finance-model-scenario,
-.finance-model-problem,
-.finance-model-action-cell {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.finance-model-kicker {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 780;
-}
-
-.finance-model-scenario p,
-.finance-model-problem p {
-  margin: 0;
-  color: color-mix(in srgb, var(--foreground) 54%, var(--muted));
-  font-size: 13px;
-  line-height: 1.68;
-}
-
-.finance-model-mobile-label {
-  display: none;
-}
-
-.finance-model-action-cell {
-  align-items: center;
 }
 
 .home-thinking-section {
@@ -4855,12 +4774,6 @@ h6 {
     padding-bottom: 2rem;
   }
 
-  .finance-index-page {
-    min-height: 100dvh;
-    padding-top: 4.6rem;
-    padding-bottom: 1.6rem;
-  }
-
   .thinking-index-hero {
     padding-top: 5rem;
     padding-bottom: 1.6rem;
@@ -5498,11 +5411,16 @@ h6 {
 
   .finance-index-page {
     min-height: 100svh;
-    padding: 4.2rem 0 1.6rem;
+    padding-bottom: 1.6rem;
   }
 
-  .finance-index-hero-card {
-    margin-bottom: 18px;
+  .finance-index-hero {
+    padding-top: 4.8rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .finance-index-title {
+    font-size: clamp(1.72rem, 8.4vw, 2.55rem);
   }
 
   .finance-index-intro {
@@ -5718,10 +5636,6 @@ h6 {
   flex: 0 0 auto;
 }
 
-.finance-model-card-link.finance-model-row {
-  display: grid;
-}
-
 .finance-model-preview {
   position: relative;
   width: 100%;
@@ -5748,80 +5662,6 @@ h6 {
 }
 
 @media (max-width: 768px) {
-  .finance-model-directory {
-    display: grid;
-    gap: 10px;
-    overflow: visible;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-  }
-
-  .finance-model-directory-head {
-    display: none;
-  }
-
-  .finance-model-row-motion {
-    border-top: 0;
-  }
-
-  .finance-model-card-link.finance-model-row,
-  .finance-model-row {
-    display: block;
-    overflow: hidden;
-    min-height: 0;
-    border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
-    border-radius: 14px;
-    background: color-mix(in srgb, var(--card) 88%, transparent);
-    box-shadow: 0 12px 30px rgba(33, 29, 22, 0.05);
-  }
-
-  .finance-model-preview-cell {
-    padding: 0;
-    border-right: 0;
-    border-bottom: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
-  }
-
-  .finance-model-preview-cell .finance-model-preview.compact {
-    width: 100%;
-    height: 92px;
-    aspect-ratio: auto;
-    border: 0;
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  .finance-model-name-cell,
-  .finance-model-scenario,
-  .finance-model-problem,
-  .finance-model-action-cell {
-    display: block;
-    padding: 12px 14px;
-    border-right: 0;
-  }
-
-  .finance-model-scenario,
-  .finance-model-problem,
-  .finance-model-action-cell {
-    border-top: 1px solid color-mix(in srgb, var(--foreground) 7%, transparent);
-  }
-
-  .finance-model-mobile-label {
-    display: block;
-    margin-bottom: 5px;
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 850;
-    letter-spacing: 0.08em;
-  }
-
-  .finance-model-scenario p,
-  .finance-model-problem p {
-    font-size: 12.5px;
-    line-height: 1.58;
-  }
-
   .finance-model-library-grid.compact {
     grid-template-columns: 1fr;
     gap: 10px;
