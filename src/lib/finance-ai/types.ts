@@ -122,6 +122,7 @@ export type BarRankRequest = {
   comparison?: "mom";
   sort?: "value_desc" | "value_asc" | "change_desc" | "change_asc";
   limit?: number;
+  detailTable?: boolean;
 };
 
 export type BarRankItem = {
@@ -148,6 +149,7 @@ export type BarRankResult = {
   metric: string;
   dimension: string;
   items: BarRankItem[];
+  allItems?: BarRankItem[];
   totalItemCount: number;
   visibleItemCount: number;
   fullScan?: BarRankFullScan;

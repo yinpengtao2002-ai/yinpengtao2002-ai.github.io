@@ -173,11 +173,13 @@ export function buildBarRank(
 
   const rankedItems = sortRankedItems(items, request.sort ?? "value_desc");
   const visibleItems = rankedItems.slice(0, getLimit(request.limit)).map(toResultRankItem);
+  const allItems = request.detailTable ? rankedItems.map(toResultRankItem) : undefined;
 
   return {
     metric: request.metric,
     dimension: request.dimension,
     items: visibleItems,
+    ...(allItems ? { allItems } : {}),
     totalItemCount: items.length,
     visibleItemCount: visibleItems.length,
     ...(request.comparison === "mom" && period ? { fullScan: buildBarRankFullScan(items, visibleItems.length) } : {}),

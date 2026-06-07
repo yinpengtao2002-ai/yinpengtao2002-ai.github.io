@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUp, Download, FileSpreadsheet, KeyRound, Loader2, Maximize2, RotateCcw, Trash2, UploadCloud, X } from "lucide-react";
+import { ArrowUp, Download, FileSpreadsheet, KeyRound, Loader2, RotateCcw, Trash2, UploadCloud } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import * as XLSX from "xlsx";
 import "katex/dist/katex.min.css";
-import { buildChartSpec } from "@/lib/finance-ai/charts";
+import { buildChartSpec, buildDirectChartSpec } from "@/lib/finance-ai/charts";
 import {
   buildBarRank,
   buildMetricSnapshot,
@@ -178,6 +178,42 @@ function getModuleTitle(module: FinanceActionModule) {
   return `${module.fromPeriod} 至 ${module.toPeriod} ${module.metric}变化桥`;
 }
 
+function formatTableNumber(value: number | null | undefined) {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return "-";
+  }
+
+  return value.toLocaleString("zh-CN", { maximumFractionDigits: 2 });
+}
+
+function formatTableShare(value: number | null | undefined) {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return "-";
+  }
+
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+function buildBarRankDetailTable(title: string, result: BarRankResult): FinanceChartSpec | null {
+  if (!result.allItems?.length || result.allItems.length <= result.visibleItemCount) {
+    return null;
+  }
+
+  return buildDirectChartSpec({
+    type: "detail_table",
+    title: `${title}完整明细`,
+    columns: ["排名", result.dimension, result.metric, "占比", "环比变化"],
+    rows: result.allItems.map((item, index) => [
+      index + 1,
+      item.label,
+      formatTableNumber(item.value),
+      formatTableShare(item.valueShare),
+      formatTableNumber(item.changeValue),
+    ]),
+    note: "按用户要求列出完整维度明细；图表仅保留可读的前 10 项。",
+  });
+}
+
 function executeFinancePlan(
   rows: FinanceRow[],
   schema: FinanceSchema,
@@ -220,6 +256,15 @@ function executeFinancePlan(
       const spec = buildChartSpec({ type: "bar_rank", title, result });
       computedModules.push({ type: "bar_rank", title, request: module, result });
       chartCards.push({ id: `chart-${Date.now()}-${index}`, title, spec, note: spec.note });
+      const detailSpec = buildBarRankDetailTable(title, result);
+      if (detailSpec) {
+        chartCards.push({
+          id: `chart-${Date.now()}-${index}-detail-table`,
+          title: detailSpec.title,
+          spec: detailSpec,
+          note: detailSpec.note,
+        });
+      }
       return;
     }
 
@@ -384,7 +429,6 @@ export default function FinanceAIAssistantTool() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [fileName, setFileName] = useState("");
-  const [expandedChart, setExpandedChart] = useState<ChartCard | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   const dataSummary = useMemo(() => summarizeSchema(schema), [schema]);
@@ -569,7 +613,7 @@ export default function FinanceAIAssistantTool() {
 
   return (
     <main className="finance-ai-page">
-      <section className="finance-ai-assistant-panel">
+      <section className={`finance-ai-assistant-panel ${workbook ? "is-ready" : ""}`}>
         <header className="finance-ai-chat-header">
           <AssistantAvatar />
           <div className="finance-ai-header-copy">
@@ -622,7 +666,7 @@ export default function FinanceAIAssistantTool() {
           </section>
         ) : (
           <>
-        <section className="finance-ai-empty-state" aria-label="数据上传和识别状态">
+        <section className={`finance-ai-empty-state ${workbook ? "is-loaded" : ""}`} aria-label="数据上传和识别状态">
           <div className="finance-ai-upload-row">
             <label className="finance-ai-upload-chip">
               <input
@@ -670,18 +714,8 @@ export default function FinanceAIAssistantTool() {
                       <div className={`finance-ai-chart-card is-${card.spec.kind} is-${card.spec.size}`} key={card.id}>
                         <div className="finance-ai-chart-card-header">
                           <h2>{card.title}</h2>
-                          <button
-                            type="button"
-                            className="finance-ai-chart-zoom"
-                            onClick={() => setExpandedChart(card)}
-                            aria-label={`放大查看${card.title}`}
-                            title="放大查看"
-                          >
-                            <Maximize2 aria-hidden="true" />
-                          </button>
                         </div>
                         <PlotlyChart spec={card.spec} />
-                        <p>{card.note}</p>
                       </div>
                     ))}
                   </div>
@@ -731,32 +765,6 @@ export default function FinanceAIAssistantTool() {
           </>
         )}
       </section>
-      {expandedChart ? (
-        <div
-          className="finance-ai-chart-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-label={expandedChart.title}
-          onClick={() => setExpandedChart(null)}
-        >
-          <div className="finance-ai-chart-modal-panel" onClick={(event) => event.stopPropagation()}>
-            <div className="finance-ai-chart-modal-header">
-              <h2>{expandedChart.title}</h2>
-              <button
-                type="button"
-                className="finance-ai-chart-zoom"
-                onClick={() => setExpandedChart(null)}
-                aria-label="关闭放大图表"
-                title="关闭"
-              >
-                <X aria-hidden="true" />
-              </button>
-            </div>
-            <PlotlyChart spec={expandedChart.spec} className="finance-ai-chart-host is-expanded" />
-            <p>{expandedChart.note}</p>
-          </div>
-        </div>
-      ) : null}
     </main>
   );
 }

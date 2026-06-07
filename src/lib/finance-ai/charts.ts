@@ -132,26 +132,44 @@ function formatShare(value: number | null | undefined) {
   return `${(value * 100).toFixed(1)}%`;
 }
 
-function getChineseUnitScale(value: number | null | undefined) {
+function isMoneyContext(context: string) {
+  return /收入|边际|成本|利润|金额|总额|费用|税|毛利|净利|贡献|扣减|价格|售价|单价/.test(context);
+}
+
+function getChineseUnitScale(value: number | null | undefined, context = "") {
   const absolute = Math.abs(value ?? 0);
+  const money = isMoneyContext(context);
 
   if (absolute >= 1_000_000_000_000) {
-    return { divisor: 1_000_000_000_000, suffix: "万亿", digits: 2 };
+    return { divisor: 1_000_000_000_000, suffix: money ? "万亿元" : "万亿", digits: 2 };
   }
 
   if (absolute >= 100_000_000) {
-    return { divisor: 100_000_000, suffix: "亿", digits: 2 };
+    return { divisor: 100_000_000, suffix: money ? "亿元" : "亿", digits: 2 };
   }
 
   if (absolute >= 10_000) {
-    return { divisor: 10_000, suffix: "万", digits: 2 };
+    return { divisor: 10_000, suffix: money ? "万元" : "万", digits: 2 };
   }
 
   return { divisor: 1, suffix: "", digits: 2 };
 }
 
+function getScaleForValues(values: number[], context = "") {
+  const maxAbsolute = values.reduce((max, value) => Math.max(max, Math.abs(value)), 0);
+  return getChineseUnitScale(maxAbsolute, context);
+}
+
 function scaledChineseUnit(value: number, scale = getChineseUnitScale(value)) {
   return value / scale.divisor;
+}
+
+function formatCompactNumber(value: number, scale = getChineseUnitScale(value), signed = false) {
+  const scaledValue = scaledChineseUnit(value, scale);
+  const formatted = formatNumber(Math.abs(scaledValue), scale.digits);
+  const sign = signed ? (value > 0 ? "+" : value < 0 ? "-" : "") : "";
+
+  return `${sign}${formatted}${scale.suffix}`;
 }
 
 function normalizeWaterfallItems<T extends { label: string; value: number }>(items: T[]): T[] {
@@ -206,7 +224,7 @@ function buildMetricCardChartSpec(title: string, result: MetricSnapshotResult): 
   const deltaValue = result.mom?.changeValue ?? null;
   const deltaRate = result.mom?.changeRate ?? null;
   const value = result.value ?? 0;
-  const scale = getChineseUnitScale(value);
+  const scale = getChineseUnitScale(value, title);
   const scaledValue = scaledChineseUnit(value, scale);
   const scaledDeltaValue = deltaValue !== null ? scaledChineseUnit(deltaValue, scale) : null;
 
@@ -219,7 +237,7 @@ function buildMetricCardChartSpec(title: string, result: MetricSnapshotResult): 
       mode: "number+delta",
       value: scaledValue,
       number: {
-        font: { color: COLORS.text, size: 30 },
+        font: { color: COLORS.text, size: 24 },
         suffix: scale.suffix,
         valueformat: `,.${scale.digits}f`,
       },
@@ -233,13 +251,13 @@ function buildMetricCardChartSpec(title: string, result: MetricSnapshotResult): 
       },
       title: {
         text: deltaRate !== null ? `环比 ${formatSignedNumber(deltaRate * 100, 1)}%` : result.base.isComputable ? result.base.period : "当前不可计算",
-        font: { color: COLORS.muted, size: 12 },
+        font: { color: COLORS.muted, size: 11 },
       },
     }],
     layout: {
       ...baseLayout,
-      height: 150,
-      margin: { t: 20, r: 16, b: 16, l: 16 },
+      height: 104,
+      margin: { t: 8, r: 10, b: 8, l: 10 },
     },
     config: baseConfig,
     note: "指标卡展示当前值和环比变化；单车指标使用总额除以销量。",
@@ -247,7 +265,7 @@ function buildMetricCardChartSpec(title: string, result: MetricSnapshotResult): 
 }
 
 function buildDirectMetricCardChartSpec(input: FinanceAIDirectMetricCardChart): FinanceChartSpec {
-  const scale = getChineseUnitScale(input.value);
+  const scale = getChineseUnitScale(input.value, input.title);
   const scaledValue = scaledChineseUnit(input.value, scale);
   const scaledDeltaValue = input.deltaValue !== null && input.deltaValue !== undefined
     ? scaledChineseUnit(input.deltaValue, scale)
@@ -267,7 +285,7 @@ function buildDirectMetricCardChartSpec(input: FinanceAIDirectMetricCardChart): 
       mode: "number+delta",
       value: scaledValue,
       number: {
-        font: { color: COLORS.text, size: 30 },
+        font: { color: COLORS.text, size: 24 },
         suffix: scale.suffix,
         valueformat: `,.${scale.digits}f`,
       },
@@ -281,12 +299,12 @@ function buildDirectMetricCardChartSpec(input: FinanceAIDirectMetricCardChart): 
         increasing: { color: COLORS.green },
         decreasing: { color: COLORS.red },
       },
-      title: { text: input.subtitle ?? "", font: { color: COLORS.muted, size: 12 } },
+      title: { text: input.subtitle ?? "", font: { color: COLORS.muted, size: 11 } },
     }],
     layout: {
       ...baseLayout,
-      height: 150,
-      margin: { t: 20, r: 16, b: 16, l: 16 },
+      height: 104,
+      margin: { t: 8, r: 10, b: 8, l: 10 },
     },
     config: baseConfig,
     note: input.note || "AI 基于上传底稿生成指标卡数据，前端按轻量 KPI 卡协议渲染。",
@@ -295,6 +313,9 @@ function buildDirectMetricCardChartSpec(input: FinanceAIDirectMetricCardChart): 
 
 function buildTrendChartSpec(title: string, result: TrendResult): FinanceChartSpec {
   const values = result.points.map((point) => point.value);
+  const finiteValues = values.filter((value): value is number => value !== null && value !== undefined);
+  const scale = getScaleForValues(finiteValues, title);
+  const scaledValues = values.map((value) => value === null || value === undefined ? null : scaledChineseUnit(value, scale));
 
   return {
     kind: "trend_chart",
@@ -304,8 +325,8 @@ function buildTrendChartSpec(title: string, result: TrendResult): FinanceChartSp
       type: "scatter",
       mode: "lines+markers+text",
       x: result.points.map((point) => point.periodLabel),
-      y: values,
-      text: values.map((value) => formatNumber(value, 2)),
+      y: scaledValues,
+      text: values.map((value) => value === null || value === undefined ? "-" : formatCompactNumber(value, scale)),
       textposition: "top center",
       cliponaxis: false,
       line: { color: COLORS.blue, width: 2.5 },
@@ -317,7 +338,7 @@ function buildTrendChartSpec(title: string, result: TrendResult): FinanceChartSp
           point.period === result.highlightPeriod ? 9 : 6
         )),
       },
-      hovertemplate: "%{x}<br>%{y:,.2f}<extra></extra>",
+      hovertemplate: `%{x}<br>%{y:,.2f}${scale.suffix}<extra></extra>`,
     }],
     layout: {
       ...baseLayout,
@@ -327,7 +348,9 @@ function buildTrendChartSpec(title: string, result: TrendResult): FinanceChartSp
         gridcolor: COLORS.grid,
         zeroline: false,
         tickfont: { color: COLORS.muted },
-        range: paddedRange(values),
+        range: paddedRange(scaledValues),
+        tickformat: `,.${scale.digits}f`,
+        ticksuffix: scale.suffix,
         fixedrange: true,
       },
     },
@@ -338,6 +361,8 @@ function buildTrendChartSpec(title: string, result: TrendResult): FinanceChartSp
 
 function buildDirectTrendChartSpec(input: FinanceAIDirectTrendChart): FinanceChartSpec {
   const values = input.points.map((point) => point.value);
+  const scale = getScaleForValues(values, `${input.title}${input.yLabel ?? ""}`);
+  const scaledValues = values.map((value) => scaledChineseUnit(value, scale));
 
   return {
     kind: "trend_chart",
@@ -347,13 +372,13 @@ function buildDirectTrendChartSpec(input: FinanceAIDirectTrendChart): FinanceCha
       type: "scatter",
       mode: "lines+markers+text",
       x: input.points.map((point) => point.label),
-      y: values,
-      text: values.map((value) => formatNumber(value, 2)),
+      y: scaledValues,
+      text: values.map((value) => formatCompactNumber(value, scale)),
       textposition: "top center",
       cliponaxis: false,
       line: { color: COLORS.blue, width: 2.5 },
       marker: { color: COLORS.blue, size: 7 },
-      hovertemplate: "%{x}<br>%{y:,.2f}<extra></extra>",
+      hovertemplate: `%{x}<br>%{y:,.2f}${scale.suffix}<extra></extra>`,
     }],
     layout: {
       ...baseLayout,
@@ -364,7 +389,9 @@ function buildDirectTrendChartSpec(input: FinanceAIDirectTrendChart): FinanceCha
         gridcolor: COLORS.grid,
         zeroline: false,
         tickfont: { color: COLORS.muted },
-        range: paddedRange(values),
+        range: paddedRange(scaledValues),
+        tickformat: `,.${scale.digits}f`,
+        ticksuffix: scale.suffix,
         fixedrange: true,
       },
     },
@@ -376,6 +403,12 @@ function buildDirectTrendChartSpec(input: FinanceAIDirectTrendChart): FinanceCha
 function buildBarRankChartSpec(title: string, result: BarRankResult): FinanceChartSpec {
   const items = [...result.items].reverse();
   const values = items.map((item) => item.value);
+  const numericValues = values.filter((value): value is number => value !== null && value !== undefined);
+  const changeValues = items
+    .map((item) => item.changeValue)
+    .filter((value): value is number => value !== null && value !== undefined);
+  const scale = getScaleForValues([...numericValues, ...changeValues], `${title}${result.metric}`);
+  const scaledValues = values.map((value) => value === null || value === undefined ? value : scaledChineseUnit(value, scale));
   const scopeText = result.totalItemCount > result.visibleItemCount
     ? `图中展示当前排名前 ${result.visibleItemCount} 项；最大增减判断已基于全量 ${result.totalItemCount} 个维度成员扫描。`
     : "横向柱状图展示全部可见维度排名，条形旁标注当前值、占比和环比变化。";
@@ -387,17 +420,17 @@ function buildBarRankChartSpec(title: string, result: BarRankResult): FinanceCha
     data: [{
       type: "bar",
       orientation: "h",
-      x: values,
+      x: scaledValues,
       y: items.map((item) => item.label),
       text: items.map((item) => {
         const shareText = item.valueShare !== null && item.valueShare !== undefined ? `｜${formatShare(item.valueShare)}` : "";
-        const changeText = item.changeValue !== null ? `｜环比 ${formatSignedNumber(item.changeValue)}` : "";
-        return `${formatNumber(item.value)}${shareText}${changeText}`;
+        const changeText = item.changeValue !== null ? `｜环比 ${formatCompactNumber(item.changeValue, scale, true)}` : "";
+        return `${item.value === null ? "-" : formatCompactNumber(item.value, scale)}${shareText}${changeText}`;
       }),
       textposition: "outside",
       cliponaxis: false,
       marker: { color: COLORS.green },
-      hovertemplate: "%{y}<br>当前值 %{x:,.2f}<br>%{text}<extra></extra>",
+      hovertemplate: `%{y}<br>当前值 %{x:,.2f}${scale.suffix}<br>%{text}<extra></extra>`,
     }],
     layout: {
       ...baseLayout,
@@ -407,7 +440,9 @@ function buildBarRankChartSpec(title: string, result: BarRankResult): FinanceCha
         zeroline: false,
         tickfont: { color: COLORS.muted },
         fixedrange: true,
-        range: paddedRange([0, ...values]),
+        range: paddedRange([0, ...scaledValues]),
+        tickformat: `,.${scale.digits}f`,
+        ticksuffix: scale.suffix,
       },
       yaxis: { automargin: true, tickfont: { color: COLORS.text }, fixedrange: true },
     },
@@ -419,6 +454,11 @@ function buildBarRankChartSpec(title: string, result: BarRankResult): FinanceCha
 function buildDirectBarRankChartSpec(input: FinanceAIDirectBarRankChart): FinanceChartSpec {
   const items = [...input.items].reverse();
   const values = items.map((item) => item.value);
+  const changeValues = items
+    .map((item) => item.changeValue)
+    .filter((value): value is number => value !== null && value !== undefined);
+  const scale = getScaleForValues([...values, ...changeValues], `${input.title}${input.yLabel ?? ""}`);
+  const scaledValues = values.map((value) => scaledChineseUnit(value, scale));
 
   return {
     kind: "bar_rank",
@@ -427,15 +467,15 @@ function buildDirectBarRankChartSpec(input: FinanceAIDirectBarRankChart): Financ
     data: [{
       type: "bar",
       orientation: "h",
-      x: values,
+      x: scaledValues,
       y: items.map((item) => item.label),
       text: items.map((item) => {
         const shareText = item.share !== null && item.share !== undefined ? `｜${formatShare(item.share)}` : "";
         const changeText = item.changeValue !== null && item.changeValue !== undefined
-          ? `｜变化 ${formatSignedNumber(item.changeValue)}`
+          ? `｜变化 ${formatCompactNumber(item.changeValue, scale, true)}`
           : "";
         const detailText = item.detail ? `｜${item.detail}` : "";
-        return `${formatNumber(item.value)}${shareText}${changeText}${detailText}`;
+        return `${formatCompactNumber(item.value, scale)}${shareText}${changeText}${detailText}`;
       }),
       textposition: "outside",
       cliponaxis: false,
@@ -451,7 +491,9 @@ function buildDirectBarRankChartSpec(input: FinanceAIDirectBarRankChart): Financ
         zeroline: false,
         tickfont: { color: COLORS.muted },
         fixedrange: true,
-        range: paddedRange([0, ...values]),
+        range: paddedRange([0, ...scaledValues]),
+        tickformat: `,.${scale.digits}f`,
+        ticksuffix: scale.suffix,
       },
       yaxis: { title: input.xLabel, automargin: true, tickfont: { color: COLORS.text }, fixedrange: true },
     },
@@ -463,11 +505,18 @@ function buildDirectBarRankChartSpec(input: FinanceAIDirectBarRankChart): Financ
 function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): FinanceChartSpec {
   const items = normalizeWaterfallItems(result.items);
   const itemValues = items.map((item) => item.value);
+  const scale = getScaleForValues([result.startValue, result.endValue, ...itemValues], title);
+  const scaledStartValue = scaledChineseUnit(result.startValue, scale);
+  const scaledEndValue = scaledChineseUnit(result.endValue, scale);
+  const scaledItemValues = itemValues.map((value) => scaledChineseUnit(value, scale));
   const isUnitMetricBridge = result.basis === "unit_metric_mix_rate";
   const customdata = isUnitMetricBridge
     ? [
         [null, null],
-        ...items.map((item) => [item.mixEffect ?? 0, item.rateEffect ?? 0]),
+        ...items.map((item) => [
+          scaledChineseUnit(item.mixEffect ?? 0, scale),
+          scaledChineseUnit(item.rateEffect ?? 0, scale),
+        ]),
         [null, null],
       ]
     : undefined;
@@ -481,11 +530,11 @@ function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): 
       orientation: "v",
       measure: ["absolute", ...items.map(() => "relative"), "total"],
       x: [result.fromPeriod, ...items.map((item) => item.label), result.toPeriod],
-      y: [result.startValue, ...itemValues, result.endValue],
+      y: [scaledStartValue, ...scaledItemValues, scaledEndValue],
       text: [
-        formatNumber(result.startValue),
-        ...itemValues.map((value) => formatSignedNumber(value)),
-        formatNumber(result.endValue),
+        formatCompactNumber(result.startValue, scale),
+        ...itemValues.map((value) => formatCompactNumber(value, scale, true)),
+        formatCompactNumber(result.endValue, scale),
       ],
       textposition: "outside",
       cliponaxis: false,
@@ -495,8 +544,8 @@ function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): 
       decreasing: { marker: { color: COLORS.red } },
       totals: { marker: { color: COLORS.blue } },
       hovertemplate: isUnitMetricBridge
-        ? "%{x}<br>数值 %{y:,.2f}<br>结构效应 %{customdata[0]:,.2f}<br>费率效应 %{customdata[1]:,.2f}<extra></extra>"
-        : "%{x}<br>%{y:,.2f}<extra></extra>",
+        ? `%{x}<br>数值 %{y:,.2f}${scale.suffix}<br>结构效应 %{customdata[0]:,.2f}${scale.suffix}<br>费率效应 %{customdata[1]:,.2f}${scale.suffix}<extra></extra>`
+        : `%{x}<br>%{y:,.2f}${scale.suffix}<extra></extra>`,
     }],
     layout: {
       ...baseLayout,
@@ -507,7 +556,9 @@ function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): 
         zeroline: true,
         zerolinecolor: COLORS.grid,
         tickfont: { color: COLORS.muted },
-        range: waterfallRange(result.startValue, itemValues, result.endValue),
+        range: waterfallRange(scaledStartValue, scaledItemValues, scaledEndValue),
+        tickformat: `,.${scale.digits}f`,
+        ticksuffix: scale.suffix,
         fixedrange: true,
       },
     },
@@ -521,6 +572,10 @@ function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): 
 function buildDirectWaterfallChartSpec(input: FinanceAIDirectWaterfallChart): FinanceChartSpec {
   const items = normalizeWaterfallItems(input.items);
   const itemValues = items.map((item) => item.value);
+  const scale = getScaleForValues([input.startValue, input.endValue, ...itemValues], input.title);
+  const scaledStartValue = scaledChineseUnit(input.startValue, scale);
+  const scaledEndValue = scaledChineseUnit(input.endValue, scale);
+  const scaledItemValues = itemValues.map((value) => scaledChineseUnit(value, scale));
 
   return {
     kind: "waterfall_bridge",
@@ -531,11 +586,11 @@ function buildDirectWaterfallChartSpec(input: FinanceAIDirectWaterfallChart): Fi
       orientation: "v",
       measure: ["absolute", ...items.map(() => "relative"), "total"],
       x: [input.startLabel, ...items.map((item) => item.label), input.endLabel],
-      y: [input.startValue, ...itemValues, input.endValue],
+      y: [scaledStartValue, ...scaledItemValues, scaledEndValue],
       text: [
-        formatNumber(input.startValue),
-        ...itemValues.map((value) => formatSignedNumber(value)),
-        formatNumber(input.endValue),
+        formatCompactNumber(input.startValue, scale),
+        ...itemValues.map((value) => formatCompactNumber(value, scale, true)),
+        formatCompactNumber(input.endValue, scale),
       ],
       textposition: "outside",
       cliponaxis: false,
@@ -543,7 +598,7 @@ function buildDirectWaterfallChartSpec(input: FinanceAIDirectWaterfallChart): Fi
       increasing: { marker: { color: COLORS.green } },
       decreasing: { marker: { color: COLORS.red } },
       totals: { marker: { color: COLORS.blue } },
-      hovertemplate: "%{x}<br>%{y:,.2f}<extra></extra>",
+      hovertemplate: `%{x}<br>%{y:,.2f}${scale.suffix}<extra></extra>`,
     }],
     layout: {
       ...baseLayout,
@@ -554,7 +609,9 @@ function buildDirectWaterfallChartSpec(input: FinanceAIDirectWaterfallChart): Fi
         zeroline: true,
         zerolinecolor: COLORS.grid,
         tickfont: { color: COLORS.muted },
-        range: waterfallRange(input.startValue, itemValues, input.endValue),
+        range: waterfallRange(scaledStartValue, scaledItemValues, scaledEndValue),
+        tickformat: `,.${scale.digits}f`,
+        ticksuffix: scale.suffix,
         fixedrange: true,
       },
     },

@@ -359,8 +359,12 @@ function validateLimit(module: FinanceActionModule, errors: string[], label: str
 
   const normalizedLimit = Math.floor(record.limit);
   if (normalizedLimit > MAX_CHART_ITEMS) {
-    errors.push(`${label}最多 ${MAX_CHART_ITEMS} 项。`);
     record.limit = MAX_CHART_ITEMS;
+    if (label === "排名数量") {
+      record.detailTable = true;
+    } else {
+      errors.push(`${label}最多 ${MAX_CHART_ITEMS} 项。`);
+    }
     return;
   }
 

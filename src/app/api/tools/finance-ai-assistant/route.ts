@@ -35,8 +35,8 @@ const MAX_DIRECT_WATERFALL_ITEMS = 12;
 const MAX_DIRECT_SERIES = 6;
 const MAX_DIRECT_SERIES_ITEMS = 16;
 const MAX_DIRECT_HEATMAP_AXIS = 14;
-const MAX_DIRECT_TABLE_ROWS = 20;
-const MAX_DIRECT_TABLE_COLUMNS = 8;
+const MAX_DIRECT_TABLE_ROWS = 120;
+const MAX_DIRECT_TABLE_COLUMNS = 10;
 
 type ChatMessage = {
   role: "system" | "user";

@@ -380,6 +380,28 @@ test("bar rank comparison includes previous-only groups and exposes change value
   assert.deepEqual(rank.items.map((item) => item.rowCount), [0, 1, 1]);
 });
 
+test("bar rank keeps all ranked items when detail table is requested", () => {
+  const rankRows = Array.from({ length: 12 }, (_, index) => ({
+    "月份": "2026-03",
+    "国家": `国家${index + 1}`,
+    "销量": 1,
+    "边际": 1200 - index,
+  }));
+  const schema = inferFinanceSchema(rankRows);
+  const rank = buildBarRank(rankRows, schema, {
+    metric: "边际",
+    dimension: "国家",
+    period: "2026-03",
+    sort: "value_desc",
+    limit: 10,
+    detailTable: true,
+  });
+
+  assert.equal(rank.items.length, 10);
+  assert.equal(rank.allItems?.length, 12);
+  assert.equal(rank.allItems?.[11]?.label, "国家12");
+});
+
 test("metric aggregation counts malformed numeric values without dropping valid rows", () => {
   const malformedRows = [
     { "月份": "2026-03", "国家": "巴西", "销量": 100, "边际": 3000 },
@@ -502,7 +524,7 @@ test("action validator rejects modules with missing required period fields", () 
   assert.match(invalid.errors.join("\n"), /瀑布桥需要指定结束期间/);
 });
 
-test("action validator rejects invalid rank options and caps oversized limits", () => {
+test("action validator rejects invalid rank options while oversized rank limits request detail tables", () => {
   const schema = inferFinanceSchema(metricRows);
   const invalid = validateFinanceActionPlan(schema, {
     modules: [
@@ -526,12 +548,34 @@ test("action validator rejects invalid rank options and caps oversized limits", 
 
   assert.equal(invalid.ok, false);
   assert.equal(invalid.modules[0].limit, 10);
+  assert.equal(invalid.modules[0].detailTable, true);
   assert.equal("comparison" in invalid.modules[0], false);
   assert.equal("sort" in invalid.modules[0], false);
   assert.match(invalid.errors.join("\n"), /排名对比只支持环比/);
   assert.match(invalid.errors.join("\n"), /排序方式不支持/);
-  assert.match(invalid.errors.join("\n"), /排名数量最多 10 项/);
+  assert.doesNotMatch(invalid.errors.join("\n"), /排名数量最多 10 项/);
   assert.match(invalid.errors.join("\n"), /变化排序需要同时指定环比对比和期间/);
+});
+
+test("action validator accepts all-rank requests by capping chart items and adding a detail table flag", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const valid = validateFinanceActionPlan(schema, {
+    modules: [
+      {
+        type: "bar_rank",
+        metric: "边际",
+        dimension: "国家",
+        period: "2026-03",
+        sort: "value_desc",
+        limit: 999,
+      },
+    ],
+  });
+
+  assert.equal(valid.ok, true);
+  assert.equal(valid.modules[0].type, "bar_rank");
+  assert.equal(valid.modules[0].limit, 10);
+  assert.equal(valid.modules[0].detailTable, true);
 });
 
 test("action plan alignment corrects explicit lowest and top rank directions per metric", () => {
@@ -633,7 +677,7 @@ test("metric snapshot chart spec renders as a compact KPI card", () => {
   assert.equal(spec.data[0].value, 35);
   assert.equal(spec.data[0].number.suffix, "");
   assert.equal(spec.data[0].delta.suffix, "");
-  assert.equal(spec.layout.height, 150);
+  assert.equal(spec.layout.height, 104);
   assert.equal(spec.config.displayModeBar, false);
 });
 
@@ -648,9 +692,31 @@ test("metric card chart uses Chinese units for value and absolute delta", () => 
 
   assert.equal(spec.size, "small");
   assert.equal(spec.data[0].value, 139.999);
-  assert.equal(spec.data[0].number.suffix, "亿");
+  assert.equal(spec.data[0].number.suffix, "亿元");
   assert.equal(spec.data[0].delta.reference, 118.8785945166);
-  assert.equal(spec.data[0].delta.suffix, "亿");
+  assert.equal(spec.data[0].delta.suffix, "亿元");
+});
+
+test("waterfall chart uses compact Chinese money units instead of raw yuan labels", () => {
+  const spec = buildDirectChartSpec({
+    type: "waterfall",
+    title: "M03 至 M04 净收入总额变化桥",
+    startLabel: "M03",
+    startValue: 11887855118.59,
+    endLabel: "M04",
+    endValue: 13999895666.93,
+    items: [
+      { label: "巴西", value: 1726912254 },
+      { label: "西班牙", value: -476067579 },
+      { label: "澳大利亚", value: 536122289 },
+    ],
+  });
+
+  approx(spec.data[0].y[0], 118.8785511859, "waterfall start value is scaled to yi yuan");
+  assert.equal(spec.data[0].text[0], "118.88亿元");
+  assert.deepEqual(spec.data[0].text.slice(1, 4), ["-4.76亿元", "+17.27亿元", "+5.36亿元"]);
+  assert.equal(spec.layout.yaxis.ticksuffix, "亿元");
+  assert.doesNotMatch(spec.data[0].text.join(" "), /11887855118|1,188,785,511|B/);
 });
 
 test("bar rank chart spec uses horizontal bars without a separate numeric table", () => {
@@ -689,7 +755,7 @@ test("waterfall chart spec uses Plotly waterfall for total-metric bridge results
   assert.equal(spec.size, "large");
   assert.equal(spec.data[0].type, "waterfall");
   assert.deepEqual(spec.data[0].measure, ["absolute", "relative", "relative", "total"]);
-  assert.deepEqual(spec.data[0].text, ["2,400", "+1,100", "+1,100", "4,600"]);
+  assert.deepEqual(spec.data[0].text, ["2,400.00", "+1,100.00", "+1,100.00", "4,600.00"]);
   assert.equal(spec.data[0].textposition, "outside");
   assert.equal(spec.data[0].cliponaxis, false);
   assert.equal(Array.isArray(spec.layout.yaxis.range), true);
@@ -779,7 +845,7 @@ test("direct AI chart payloads render through the supported chart specs", () => 
   assert.equal(rankSpec.layout.xaxis.fixedrange, true);
   assert.equal(waterfallSpec.kind, "waterfall_bridge");
   assert.deepEqual(waterfallSpec.data[0].measure, ["absolute", "relative", "relative", "total"]);
-  assert.deepEqual(waterfallSpec.data[0].text, ["4,800", "-150", "+900", "5,550"]);
+  assert.deepEqual(waterfallSpec.data[0].text, ["4,800.00", "-150.00", "+900.00", "5,550.00"]);
   assert.equal(waterfallSpec.config.displayModeBar, false);
 });
 

@@ -56,7 +56,7 @@ const DIRECT_CHART_PROTOCOL_LINES = [
   "7. percent_stacked_bar: {type,title,xLabel,yLabel,series:[{name,items:[{label,value}]}],note}",
   "8. heatmap: {type,title,xLabels,yLabels,values,note}",
   "9. scatter_bubble: {type,title,xLabel,yLabel,items:[{label,x,y,size}],note}",
-  "10. detail_table: {type,title,columns,rows,note}",
+  "10. detail_table: {type,title,columns,rows,note}，适合承接用户要求全量列出的明细，最多约 120 行",
 ];
 
 function compactList(values: string[], emptyLabel = "无") {
@@ -314,6 +314,7 @@ export function buildFinanceAIPlanningContext(
     "- period/fromPeriod/toPeriod/highlightPeriod 只能使用可用期间里的 key，例如 M04 或 2026-03，不要自造年份。",
     "- filters 只能使用维度字段和值数组。",
     "- bar_rank 必须设置 sort：用户说 Top/前五/最高/最多时用 value_desc；用户说最低/最少/倒数/bottom 时用 value_asc。",
+    "- 如果用户明确要求“全部/所有/全量/剩下也列出”，bar_rank 可以给出超过 10 的 limit；前端会把图表限制为前 10 项，并自动补充完整明细表。",
     "- 单车指标问“哪些车型/国家/维度影响环比/变化来源”时，优先用 waterfall_bridge，metric 填单车指标，dimension 填对应维度，fromPeriod/toPeriod 填对比期和当前期。",
     "- 同一句里要求多个排名时，分别为每个指标生成独立 bar_rank 模块，不要把销量 Top 和单车指标最低混成一个模块。",
     "JSON 结构示例：",

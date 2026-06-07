@@ -139,6 +139,8 @@ test("finance AI assistant API exposes planning and explanation responsibilities
   assert.match(context, /metric_snapshot/);
   assert.match(context, /trend_chart/);
   assert.match(context, /bar_rank/);
+  assert.match(context, /完整明细表/);
+  assert.match(context, /超过 10 的 limit/);
   assert.match(context, /waterfall_bridge/);
 
   assert.match(packageJson, /tests\/finance-ai-assistant-contract\.test\.mjs/);
@@ -860,9 +862,20 @@ test("finance AI assistant page is an independent chat workbench", async () => {
   assert.doesNotMatch(client, /callAI\("analyze_selection"/);
   assert.match(client, /useEffect/);
   assert.match(client, /newDatasetMessages/);
+  assert.match(client, /finance-ai-assistant-panel \$\{workbook \? "is-ready" : ""\}/);
+  assert.match(client, /finance-ai-empty-state \$\{workbook \? "is-loaded" : ""\}/);
   assert.doesNotMatch(client, /localStorage/);
   assert.doesNotMatch(client, /sessionStorage/);
   assert.doesNotMatch(client, /IndexedDB/);
+});
+
+test("finance AI assistant collapses non-chat chrome after data is loaded", async () => {
+  const styles = await readProjectFile("src/app/globals.css");
+
+  assert.match(styles, /\.finance-ai-assistant-panel\.is-ready\s+\.finance-ai-chat-header\s*\{[\s\S]*padding:\s*6px\s+0\s+4px/s);
+  assert.match(styles, /\.finance-ai-assistant-panel\.is-ready\s+\.finance-ai-chat-header\s+\.finance-ai-avatar/s);
+  assert.match(styles, /\.finance-ai-empty-state\.is-loaded\s*\{[\s\S]*padding:\s*6px\s+8px/s);
+  assert.match(styles, /\.finance-ai-assistant-panel\.is-ready\s+\.finance-ai-chat\s*\{[\s\S]*padding-top:\s*10px/s);
 });
 
 test("finance AI assistant chat styles size embedded chart cards", async () => {
@@ -878,11 +891,14 @@ test("finance AI assistant chat styles size embedded chart cards", async () => {
   assert.match(styles, /\.finance-ai-message\.is-assistant\s+\.finance-ai-message-bubble\s*\{[\s\S]*width:\s*100%/s);
   assert.match(styles, /\.finance-ai-chart-card\.is-large\s*\{[\s\S]*grid-column:\s*1\s*\/\s*-1/s);
   assert.match(styles, /\.finance-ai-chart-card\.is-small/);
-  assert.match(styles, /\.finance-ai-chart-host\s*\{[\s\S]*min-height:\s*220px/s);
-  assert.match(styles, /\.finance-ai-chart-zoom/);
-  assert.match(styles, /\.finance-ai-chart-modal/);
-  assert.match(client, /Maximize2/);
-  assert.match(client, /expandedChart/);
+  assert.match(styles, /\.finance-ai-chart-card\.is-small\s*\{[\s\S]*max-width:\s*min\(260px,\s*100%\)/s);
+  assert.match(styles, /\.finance-ai-chart-card\.is-small\s+\.finance-ai-chart-host[\s\S]*min-height:\s*104px/s);
+  assert.match(styles, /\.finance-ai-chart-host\s*\{[\s\S]*min-height:\s*210px/s);
+  assert.doesNotMatch(styles, /\.finance-ai-chart-zoom/);
+  assert.doesNotMatch(styles, /\.finance-ai-chart-modal/);
+  assert.doesNotMatch(client, /Maximize2/);
+  assert.doesNotMatch(client, /expandedChart/);
+  assert.doesNotMatch(client, /<p>\{card\.note\}<\/p>/);
   assert.match(styles, /\.finance-ai-markdown/);
   assert.match(styles, /\.finance-ai-markdown\s+\.katex-display/);
 });
