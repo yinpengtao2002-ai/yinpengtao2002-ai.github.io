@@ -35,6 +35,7 @@ const ALL_MEMBER_TOKENS = ["所有", "全部", "全量", "完整", "每个", "�
 const LOW_CHANGE_RANK_TOKENS = ["下降最多", "减少最多", "下滑最多", "降幅最大", "负贡献", "拖累", "下降", "减少"];
 const HIGH_CHANGE_RANK_TOKENS = ["增长最多", "上涨最多", "增加最多", "增幅最大", "正贡献", "拉动", "增长", "上涨", "增加"];
 const DETAIL_TABLE_TOKENS = ["完整明细", "明细表", "全部列出", "全量列出", "完整列出", "剩下也列出"];
+const DRILLDOWN_TOKENS = ["构成", "组成", "内部", "下面", "下级", "下钻", "细分", "拆开", "拆成", "自身", "自己", "哪些国家", "哪些车型", "由哪些"];
 const PRIMARY_DIMENSION_MODULE_TYPES = new Set<ActionType>([
   "bar_rank",
   "waterfall_bridge",
@@ -45,6 +46,12 @@ const PRIMARY_DIMENSION_MODULE_TYPES = new Set<ActionType>([
 
 type ActionType = FinanceActionModule["type"];
 type MutableModule = Record<string, unknown> & { type: ActionType; metric?: string };
+type FinanceActionQuestionContext = {
+  currentFilters?: FinanceFilter;
+  analysisContext?: Array<{
+    focusValues?: Array<{ dimension: string; value: string }>;
+  }>;
+};
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -232,12 +239,14 @@ export function normalizeFinanceActionPlanForQuestion(
   schema: FinanceSchema,
   plan: FinanceActionPlan,
   userQuestion: string,
+  context: FinanceActionQuestionContext = {},
 ): FinanceActionPlan {
   return {
     modules: alignFinanceActionPlanWithQuestion(
       schema,
       plan.modules,
       userQuestion,
+      context,
     ),
   };
 }
@@ -246,9 +255,11 @@ export function alignFinanceActionPlanWithQuestion(
   schema: FinanceSchema,
   modules: FinanceActionModule[],
   userQuestion: string,
+  context: FinanceActionQuestionContext = {},
 ): FinanceActionModule[] {
   return modules.map((module) => {
     module = alignPrimaryDimensionWithQuestion(schema, module, userQuestion);
+    module = alignExplicitDimensionMemberWithQuestion(schema, module, userQuestion, context);
 
     if (module.type === "grouped_bar") {
       const changeRankSort = getChangeRankSortIntent(userQuestion);
@@ -325,6 +336,175 @@ function alignPrimaryDimensionWithQuestion(
     ...module,
     dimension,
   } as FinanceActionModule;
+}
+
+function alignExplicitDimensionMemberWithQuestion(
+  schema: FinanceSchema,
+  module: FinanceActionModule,
+  userQuestion: string,
+  context: FinanceActionQuestionContext,
+): FinanceActionModule {
+  const memberIntent = getExplicitDimensionMemberIntent(schema, module, userQuestion) ??
+    getContextualDimensionMemberIntent(schema, userQuestion, context);
+
+  if (!memberIntent) {
+    return module;
+  }
+
+  const record = module as Record<string, unknown>;
+  const currentDimension = typeof record.dimension === "string" ? record.dimension : "";
+  const asksForDrilldown = hasDrilldownIntent(userQuestion);
+
+  if (
+    PRIMARY_DIMENSION_MODULE_TYPES.has(module.type) &&
+    currentDimension === memberIntent.dimension &&
+    !asksForDrilldown
+  ) {
+    return module;
+  }
+
+  const withFilters = {
+    ...module,
+    filters: mergeQuestionFilters("filters" in module ? module.filters : undefined, {
+      [memberIntent.dimension]: [memberIntent.value],
+    }),
+  } as FinanceActionModule;
+
+  if (!PRIMARY_DIMENSION_MODULE_TYPES.has(module.type) || !asksForDrilldown) {
+    return withFilters;
+  }
+
+  const drillDimension = getDrilldownDimension(schema, userQuestion, memberIntent.dimension);
+  if (!drillDimension) {
+    return withFilters;
+  }
+
+  return {
+    ...withFilters,
+    dimension: drillDimension,
+  } as FinanceActionModule;
+}
+
+function mergeQuestionFilters(base: FinanceFilter | undefined, extra: FinanceFilter): FinanceFilter {
+  const merged: FinanceFilter = { ...(base ?? {}) };
+
+  Object.entries(extra).forEach(([field, values]) => {
+    const currentValues = merged[field] ?? [];
+    merged[field] = Array.from(new Set([...currentValues, ...values]));
+  });
+
+  return merged;
+}
+
+function getExplicitDimensionMemberIntent(
+  schema: FinanceSchema,
+  module: FinanceActionModule,
+  question: string,
+): { dimension: string; value: string } | null {
+  for (const dimension of schema.dimensionColumns) {
+    const fromDimensionPhrase = getDimensionMemberNearLabel(question, dimension);
+    if (fromDimensionPhrase) {
+      return { dimension, value: fromDimensionPhrase };
+    }
+  }
+
+  const record = module as Record<string, unknown>;
+  const currentDimension = typeof record.dimension === "string" ? record.dimension : "";
+  if (!currentDimension || !schema.dimensionColumns.includes(currentDimension) || !hasDrilldownIntent(question)) {
+    return null;
+  }
+
+  const standaloneToken = question.match(/([A-Za-z][A-Za-z0-9_-]{1,30})(?=\s*(?:中|内|里|自身|自己|的))/)?.[1]?.trim();
+  return standaloneToken ? { dimension: currentDimension, value: standaloneToken } : null;
+}
+
+function getContextualDimensionMemberIntent(
+  schema: FinanceSchema,
+  question: string,
+  context: FinanceActionQuestionContext,
+): { dimension: string; value: string } | null {
+  if (!hasFollowupReferenceIntent(question)) {
+    return null;
+  }
+
+  const currentFilterIntent = Object.entries(context.currentFilters ?? {})
+    .find(([dimension, values]) => schema.dimensionColumns.includes(dimension) && values.length === 1);
+  if (currentFilterIntent) {
+    return { dimension: currentFilterIntent[0], value: currentFilterIntent[1][0] };
+  }
+
+  const contextFocusValues = (context.analysisContext ?? [])
+    .slice()
+    .reverse()
+    .flatMap((item) => item.focusValues ?? []);
+  const focusValue = contextFocusValues.find((item) => (
+    schema.dimensionColumns.includes(item.dimension) &&
+    typeof item.value === "string" &&
+    item.value.trim()
+  ));
+
+  return focusValue ? { dimension: focusValue.dimension, value: focusValue.value.trim() } : null;
+}
+
+function getDimensionMemberNearLabel(question: string, dimension: string): string {
+  const lowerQuestion = question.toLowerCase();
+  const lowerDimension = dimension.toLowerCase();
+  const dimensionIndex = lowerQuestion.indexOf(lowerDimension);
+
+  if (dimensionIndex < 0) {
+    return "";
+  }
+
+  const prefix = question.slice(0, dimensionIndex).trim();
+  const prefixAsciiToken = prefix.match(/([A-Za-z][A-Za-z0-9_-]{1,30})\s*$/)?.[1]?.trim();
+  if (prefixAsciiToken && !isQuestionToken(prefixAsciiToken)) {
+    return prefixAsciiToken;
+  }
+
+  const suffix = question.slice(dimensionIndex + dimension.length);
+  const suffixToken = suffix.match(/^\s*(?:=|是|为|:|：)\s*([A-Za-z][A-Za-z0-9_-]{1,30}|[\u4e00-\u9fa5]{1,16})/)?.[1]?.trim();
+  if (suffixToken && !isQuestionToken(suffixToken)) {
+    return suffixToken;
+  }
+
+  return "";
+}
+
+function isQuestionToken(value: string) {
+  return /^(哪些|哪个|这个|那个|所有|全部|各个|每个|主要|什么)$/.test(value);
+}
+
+function hasDrilldownIntent(question: string) {
+  const normalizedQuestion = normalizeIntentText(question);
+
+  return DRILLDOWN_TOKENS
+    .map(normalizeIntentText)
+    .some((token) => normalizedQuestion.includes(token));
+}
+
+function hasFollowupReferenceIntent(question: string) {
+  const normalizedQuestion = normalizeIntentText(question);
+
+  return ["它", "这个", "那个", "其中", "上面", "刚才", "前面", "该项", "自身", "自己"]
+    .map(normalizeIntentText)
+    .some((token) => normalizedQuestion.includes(token));
+}
+
+function getDrilldownDimension(schema: FinanceSchema, question: string, filteredDimension: string) {
+  const normalizedQuestion = normalizeIntentText(question);
+  const explicitTarget = schema.dimensionColumns.find((dimension) => (
+    dimension !== filteredDimension &&
+    normalizedQuestion.includes(normalizeIntentText(dimension))
+  ));
+
+  if (explicitTarget) {
+    return explicitTarget;
+  }
+
+  const filteredIndex = schema.dimensionColumns.indexOf(filteredDimension);
+  return schema.dimensionColumns[filteredIndex + 1] ??
+    schema.dimensionColumns.find((dimension) => dimension !== filteredDimension) ??
+    "";
 }
 
 function getChangeRankSortIntent(question: string): "change_asc" | "change_desc" | null {

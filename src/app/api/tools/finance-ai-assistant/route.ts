@@ -189,6 +189,12 @@ function normalizeChatState(value: unknown): FinanceAIChatState {
         .map((item) => item.trim())
         .filter(Boolean)
     : [];
+  const recentAssistantMessages = Array.isArray(state.recentAssistantMessages)
+    ? state.recentAssistantMessages
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => item.trim())
+        .filter(Boolean)
+    : [];
   const chartHistory = Array.isArray(state.chartHistory)
     ? state.chartHistory.flatMap((item) => {
         const chart = asRecord(item);
@@ -197,14 +203,45 @@ function normalizeChatState(value: unknown): FinanceAIChatState {
           : [];
       })
     : [];
+  const analysisContext = Array.isArray(state.analysisContext)
+    ? state.analysisContext.flatMap((item) => {
+        const contextItem = asRecord(item);
+        if (typeof contextItem.type !== "string" || typeof contextItem.title !== "string") {
+          return [];
+        }
+
+        const focusValues = Array.isArray(contextItem.focusValues)
+          ? contextItem.focusValues.flatMap((focus) => {
+              const focusRecord = asRecord(focus);
+              return typeof focusRecord.dimension === "string" && typeof focusRecord.value === "string"
+                ? [{ dimension: focusRecord.dimension.trim(), value: focusRecord.value.trim() }]
+                : [];
+            }).filter((focus) => focus.dimension && focus.value)
+          : [];
+
+        return [{
+          type: contextItem.type.trim(),
+          title: contextItem.title.trim(),
+          ...(typeof contextItem.metric === "string" && contextItem.metric.trim() ? { metric: contextItem.metric.trim() } : {}),
+          ...(typeof contextItem.dimension === "string" && contextItem.dimension.trim() ? { dimension: contextItem.dimension.trim() } : {}),
+          ...(typeof contextItem.period === "string" && contextItem.period.trim() ? { period: contextItem.period.trim() } : {}),
+          ...(typeof contextItem.fromPeriod === "string" && contextItem.fromPeriod.trim() ? { fromPeriod: contextItem.fromPeriod.trim() } : {}),
+          ...(typeof contextItem.toPeriod === "string" && contextItem.toPeriod.trim() ? { toPeriod: contextItem.toPeriod.trim() } : {}),
+          filters: normalizeFilterState(contextItem.filters),
+          ...(focusValues.length > 0 ? { focusValues } : {}),
+        }];
+      })
+    : [];
 
   return {
     ...(recentQuestions.length > 0 ? { recentQuestions } : {}),
+    ...(recentAssistantMessages.length > 0 ? { recentAssistantMessages } : {}),
     ...(typeof state.currentMetric === "string" && state.currentMetric.trim()
       ? { currentMetric: state.currentMetric.trim() }
       : {}),
     currentFilters: normalizeFilterState(state.currentFilters),
     ...(chartHistory.length > 0 ? { chartHistory } : {}),
+    ...(analysisContext.length > 0 ? { analysisContext } : {}),
   };
 }
 
@@ -951,9 +988,10 @@ export async function POST(req: Request) {
       return errorResponse(400, "missing_question", "Plan mode requires a question.");
     }
 
+    const chatState = normalizeChatState(body.state);
     const planningContext = buildFinanceAIPlanningContext(
       schema,
-      normalizeChatState(body.state),
+      chatState,
     );
     const providerResult = await callFirstConfiguredProvider(
       [
@@ -980,6 +1018,7 @@ export async function POST(req: Request) {
         schema,
         normalizePlan(extractJsonObject(providerResult.content)),
         question,
+        chatState,
       );
       const validated = validateFinanceActionPlan(schema, plan);
 

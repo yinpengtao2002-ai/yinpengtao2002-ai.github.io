@@ -112,6 +112,8 @@ test("finance AI assistant API exposes planning and explanation responsibilities
   assert.match(route, /response_format/);
   assert.match(route, /workbook/);
   assert.match(route, /normalizeDirectAnalysis/);
+  assert.match(route, /recentAssistantMessages/);
+  assert.match(route, /analysisContext/);
   assert.match(route, /modules/);
   assert.match(route, /errorCode/);
   assert.match(route, /503/);
@@ -148,6 +150,7 @@ test("finance AI assistant API exposes planning and explanation responsibilities
   assert.match(context, /完整明细表/);
   assert.match(context, /超过 10 的 limit/);
   assert.match(context, /waterfall_bridge/);
+  assert.match(context, /维度成员 \+ 维度字段/);
 
   assert.match(packageJson, /tests\/finance-ai-assistant-contract\.test\.mjs/);
 });
@@ -218,6 +221,7 @@ test("finance AI context bounds filters and computed summaries before provider c
   };
   const planningPrompt = buildFinanceAIPlanningContext(schema, {
     recentQuestions: Array.from({ length: 20 }, (_, index) => `最近问题${index}`),
+    recentAssistantMessages: Array.from({ length: 10 }, (_, index) => `最近助手结论${index}`),
     currentFilters: Object.fromEntries(
       Array.from({ length: 40 }, (_, fieldIndex) => [
         `维度${fieldIndex}`,
@@ -225,6 +229,14 @@ test("finance AI context bounds filters and computed summaries before provider c
       ]),
     ),
     chartHistory: Array.from({ length: 20 }, (_, index) => ({ type: "trend_chart", title: `图表${index}` })),
+    analysisContext: Array.from({ length: 20 }, (_, index) => ({
+      type: "waterfall_bridge",
+      title: `计算模块${index}`,
+      metric: "单车边际",
+      dimension: "大区",
+      filters: { "大区": ["MBT"] },
+      focusValues: [{ dimension: "大区", value: "MBT" }],
+    })),
   });
   const explanationPrompt = buildFinanceAIExplanationPrompt({
     userQuestion: "今年 3 月巴西单车边际是多少？",
@@ -236,7 +248,13 @@ test("finance AI context bounds filters and computed summaries before provider c
 
   assert.equal(planningPrompt.length < 12000, true);
   assert.match(planningPrompt, /当前筛选/);
+  assert.match(planningPrompt, /最近助手结论/);
+  assert.match(planningPrompt, /最近计算模块/);
+  assert.match(planningPrompt, /当前上传底稿重新规划/);
+  assert.match(planningPrompt, /不要因为上一轮结果没包含某个切片/);
   assert.match(planningPrompt, /另有/);
+  assert.doesNotMatch(planningPrompt, /最近助手结论0/);
+  assert.doesNotMatch(planningPrompt, /计算模块0/);
   assert.doesNotMatch(planningPrompt, /筛选值39-39/);
   assert.equal(explanationPrompt.length < 8000, true);
   assert.match(explanationPrompt, /聚合结果足够回答/);
@@ -244,6 +262,7 @@ test("finance AI context bounds filters and computed summaries before provider c
   assert.match(explanationPrompt, /不要说看不到明细/);
   assert.match(explanationPrompt, /answerItems/);
   assert.match(explanationPrompt, /不要说“只返回了前 N”/);
+  assert.match(explanationPrompt, /不要把本轮没有覆盖的切片说成“看不到底稿”/);
   assert.match(explanationPrompt, /不要再手写完整 Markdown 表格/);
   assert.doesNotMatch(explanationPrompt, /已省略完整明细数组/);
   assert.doesNotMatch(explanationPrompt, /未展开/);
@@ -865,6 +884,9 @@ test("finance AI assistant page is an independent chat workbench", async () => {
   assert.match(client, /callAI\("explain"/);
   assert.match(client, /workbook/);
   assert.match(client, /getRequestedRankLimit/);
+  assert.match(client, /recentAssistantMessages/);
+  assert.match(client, /analysisContext/);
+  assert.match(client, /buildAnalysisContext/);
   assert.match(client, /answerItems/);
   assert.match(client, /visibleItemCount 只是图表可见项限制/);
   assert.match(client, /provider_timeout/);

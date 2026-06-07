@@ -329,7 +329,21 @@ function waterfallRange(startValue: number, itemValues: number[], endValue: numb
   }
 
   cumulativeValues.push(endValue);
-  return paddedRange(cumulativeValues);
+  const range = paddedRange(cumulativeValues);
+  if (!range) {
+    return range;
+  }
+
+  const [lowerBound, upperBound] = range;
+  const lowerNetValue = Math.min(startValue, endValue);
+  if (lowerNetValue <= 0 || upperBound <= lowerNetValue) {
+    return range;
+  }
+
+  const minVisibleNetShare = 0.32;
+  const lowerBoundForVisibleNet = (lowerNetValue - minVisibleNetShare * upperBound) / (1 - minVisibleNetShare);
+
+  return [Math.min(lowerBound, lowerBoundForVisibleNet), upperBound];
 }
 
 function buildMetricCardChartSpec(title: string, result: MetricSnapshotResult): FinanceChartSpec {

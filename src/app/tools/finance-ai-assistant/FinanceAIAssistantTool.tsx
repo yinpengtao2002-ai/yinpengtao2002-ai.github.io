@@ -27,7 +27,9 @@ import type {
   FinanceRawWorkbookSheet,
   FinanceRow,
   FinanceSchema,
+  WaterfallBridgeResult,
 } from "@/lib/finance-ai/types";
+import type { FinanceAIChatState } from "@/lib/finance-ai/context";
 
 type ChatRole = "user" | "assistant";
 
@@ -43,6 +45,7 @@ type ChatMessage = {
   role: ChatRole;
   text: string;
   chartCards?: ChartCard[];
+  analysisContext?: NonNullable<FinanceAIChatState["analysisContext"]>;
   meta?: string;
 };
 
@@ -61,6 +64,8 @@ type ComputedModule = {
   request: FinanceActionModule;
   result: unknown;
 };
+
+type AnalysisContextItem = NonNullable<FinanceAIChatState["analysisContext"]>[number];
 
 type PlotlyModule = {
   default: {
@@ -696,6 +701,84 @@ function buildComputedSummary(question: string, schema: FinanceSchema, computedM
   };
 }
 
+function getRequestMetric(request: FinanceActionModule) {
+  if ("metric" in request && typeof request.metric === "string") {
+    return request.metric;
+  }
+
+  if ("yMetric" in request && typeof request.yMetric === "string") {
+    return request.yMetric;
+  }
+
+  return undefined;
+}
+
+function getRequestDimension(request: FinanceActionModule) {
+  const record = request as Record<string, unknown>;
+
+  return typeof record.dimension === "string"
+    ? record.dimension
+    : typeof record.yDimension === "string"
+      ? record.yDimension
+      : undefined;
+}
+
+function getRequestPeriod(request: FinanceActionModule) {
+  const record = request as Record<string, unknown>;
+
+  return typeof record.period === "string" ? record.period : undefined;
+}
+
+function getRequestFilters(request: FinanceActionModule) {
+  return "filters" in request ? request.filters : undefined;
+}
+
+function getModuleFocusValues(module: ComputedModule): AnalysisContextItem["focusValues"] {
+  const requestDimension = getRequestDimension(module.request);
+  const filterFocusValues = Object.entries(getRequestFilters(module.request) ?? {})
+    .flatMap(([dimension, values]) => values.slice(0, 4).map((value) => ({ dimension, value })));
+
+  if (module.type === "bar_rank" && requestDimension) {
+    const result = module.result as BarRankResult;
+    return [
+      ...filterFocusValues,
+      ...(result.allItems ?? result.items)
+        .slice(0, 5)
+        .map((item) => ({ dimension: requestDimension, value: item.label })),
+    ];
+  }
+
+  if (module.type === "waterfall_bridge" && requestDimension) {
+    const result = module.result as WaterfallBridgeResult;
+    return [
+      ...filterFocusValues,
+      ...result.items
+        .slice(0, 5)
+        .map((item) => ({ dimension: requestDimension, value: item.label })),
+    ];
+  }
+
+  return filterFocusValues;
+}
+
+function buildAnalysisContext(computedModules: ComputedModule[]): NonNullable<FinanceAIChatState["analysisContext"]> {
+  return computedModules.map((module) => {
+    const request = module.request as Record<string, unknown>;
+
+    return {
+      type: module.type,
+      title: module.title,
+      ...(getRequestMetric(module.request) ? { metric: getRequestMetric(module.request) } : {}),
+      ...(getRequestDimension(module.request) ? { dimension: getRequestDimension(module.request) } : {}),
+      ...(getRequestPeriod(module.request) ? { period: getRequestPeriod(module.request) } : {}),
+      ...(typeof request.fromPeriod === "string" ? { fromPeriod: request.fromPeriod } : {}),
+      ...(typeof request.toPeriod === "string" ? { toPeriod: request.toPeriod } : {}),
+      ...(getRequestFilters(module.request) ? { filters: getRequestFilters(module.request) } : {}),
+      focusValues: getModuleFocusValues(module),
+    };
+  });
+}
+
 function getAPIErrorMessage(payload: APIResponse, fallback: string) {
   if (payload.errorCode === "access_not_configured") {
     return "内测密钥还没有在部署环境配置，请先配置 FINANCE_AI_ACCESS_KEY。";
@@ -941,9 +1024,20 @@ export default function FinanceAIAssistantTool() {
           .filter((message) => message.role === "user")
           .slice(-4)
           .map((message) => message.text),
+        recentAssistantMessages: messages
+          .filter((message) => message.role === "assistant")
+          .slice(-2)
+          .map((message) => message.text),
         chartHistory: messages.flatMap((message) => (
           message.chartCards?.map((card) => ({ type: card.spec.kind, title: card.title })) ?? []
         )).slice(-6),
+        analysisContext: messages.flatMap((message) => message.analysisContext ?? []).slice(-6),
+      };
+      const lastAnalysisContext = chatState.analysisContext.at(-1);
+      const stateForPlanning = {
+        ...chatState,
+        ...(lastAnalysisContext?.metric ? { currentMetric: lastAnalysisContext.metric } : {}),
+        ...(lastAnalysisContext?.filters ? { currentFilters: lastAnalysisContext.filters } : {}),
       };
       if (!schema) {
         throw new Error("当前底稿还没有识别出可分析字段，请检查示例格式后重新上传。");
@@ -952,13 +1046,14 @@ export default function FinanceAIAssistantTool() {
       const plan = await callAI("plan", {
         question,
         schema,
-        state: chatState,
+        state: stateForPlanning,
       });
       if (!plan.modules?.length) {
         throw new Error("AI 这次没有返回可执行的分析计划，请直接重试一次。");
       }
 
       const { computedModules, chartCards } = executeFinancePlan(getRowsForSchema(workbook, schema), schema, plan.modules);
+      const analysisContext = buildAnalysisContext(computedModules);
       const analysis = await callAI("explain", {
         question,
         computedSummary: buildComputedSummary(question, schema, computedModules),
@@ -974,6 +1069,7 @@ export default function FinanceAIAssistantTool() {
           role: "assistant",
           text: analysis.message || "我已经按 AI 计划计算并生成图表。",
           chartCards,
+          analysisContext,
           meta: assumptionText,
         },
       ]);

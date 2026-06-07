@@ -2,9 +2,21 @@ import type { FinanceAIDataSelection, FinanceRawWorkbook, FinanceSchema } from "
 
 export type FinanceAIChatState = {
   recentQuestions?: string[];
+  recentAssistantMessages?: string[];
   currentMetric?: string;
   currentFilters?: Record<string, string[]>;
   chartHistory?: Array<{ type: string; title: string }>;
+  analysisContext?: Array<{
+    type: string;
+    title: string;
+    metric?: string;
+    dimension?: string;
+    period?: string;
+    fromPeriod?: string;
+    toPeriod?: string;
+    filters?: Record<string, string[]>;
+    focusValues?: Array<{ dimension: string; value: string }>;
+  }>;
 };
 
 type ExplanationPromptInput = {
@@ -33,7 +45,10 @@ type SelectedRowsAnalyzePromptInput = {
 
 const MAX_LIST_ITEMS = 24;
 const MAX_RECENT_QUESTIONS = 4;
+const MAX_RECENT_ASSISTANT_MESSAGES = 2;
 const MAX_CHART_HISTORY = 4;
+const MAX_ANALYSIS_CONTEXT_ITEMS = 4;
+const MAX_FOCUS_VALUES = 6;
 const MAX_FILTER_FIELDS = 12;
 const MAX_FILTER_VALUES = 8;
 const MAX_SUMMARY_ARRAY_ITEMS = 24;
@@ -102,6 +117,25 @@ function compactFilters(filters: Record<string, string[]> | undefined) {
     ...Object.fromEntries(visibleEntries),
     ...(hiddenFieldCount > 0 ? { "__moreFilterFields": hiddenFieldCount } : {}),
   };
+}
+
+function compactAnalysisContext(items: NonNullable<FinanceAIChatState["analysisContext"]>) {
+  return JSON.stringify(items.slice(-MAX_ANALYSIS_CONTEXT_ITEMS).map((item) => ({
+    type: truncateText(item.type, 40),
+    title: truncateText(item.title, 80),
+    ...(item.metric ? { metric: truncateText(item.metric, 60) } : {}),
+    ...(item.dimension ? { dimension: truncateText(item.dimension, 60) } : {}),
+    ...(item.period ? { period: truncateText(item.period, 40) } : {}),
+    ...(item.fromPeriod ? { fromPeriod: truncateText(item.fromPeriod, 40) } : {}),
+    ...(item.toPeriod ? { toPeriod: truncateText(item.toPeriod, 40) } : {}),
+    ...(item.filters ? { filters: compactFilters(item.filters) } : {}),
+    ...(item.focusValues?.length ? {
+      focusValues: item.focusValues.slice(0, MAX_FOCUS_VALUES).map((focus) => ({
+        dimension: truncateText(focus.dimension, 60),
+        value: truncateText(focus.value, 80),
+      })),
+    } : {}),
+  })));
 }
 
 function isRawRowsKey(key: string) {
@@ -279,10 +313,15 @@ export function buildFinanceAIPlanningContext(
     .slice(-MAX_RECENT_QUESTIONS)
     .map((question) => question.trim())
     .filter(Boolean);
+  const recentAssistantMessages = (state.recentAssistantMessages ?? [])
+    .slice(-MAX_RECENT_ASSISTANT_MESSAGES)
+    .map((message) => truncateText(message, 180))
+    .filter(Boolean);
   const chartHistory = (state.chartHistory ?? [])
     .slice(-MAX_CHART_HISTORY)
     .map((chart) => `${chart.type}:${chart.title}`)
     .filter(Boolean);
+  const analysisContext = state.analysisContext ?? [];
 
   return [
     "你是财务分析 AI 助手，只负责把用户问题转成结构化分析动作。",
@@ -297,6 +336,9 @@ export function buildFinanceAIPlanningContext(
     "用户问占比、结构或构成时，可用 stacked_bar 或 percent_stacked_bar；用户问二维交叉高低表现时用 heatmap；用户问规模和质量关系时用 scatter_bubble；用户要求全部列出时用 detail_table。",
     "用户问变化来源、贡献拆解或归因时，优先用 waterfall_bridge。",
     "waterfall_bridge 可用于总额指标，也可用于单车指标；单车指标会按结构效应和费率效应生成归因瀑布桥。",
+    "用户说“维度成员 + 维度字段”（如 MBT大区）并追问自身、内部、构成、下面有哪些时，把该成员写入 filters，并把 dimension 切到下一层可用维度（如 国家或车型）。",
+    "最近助手结论和最近计算模块只用于理解“它、其中、这个、刚才那个”等指代；每一轮仍然要围绕当前上传底稿重新规划可计算模块。",
+    "不要因为上一轮结果没包含某个切片，就输出会导致解释阶段说看不到结果的计划；需要的切片应在本轮用 filters、dimension、metric 重新计算。",
     "可用字段：",
     `月份列：${schema.monthColumn || "未识别"}`,
     `销量列：${schema.salesColumn || "未识别"}`,
@@ -306,9 +348,11 @@ export function buildFinanceAIPlanningContext(
     `单车指标：${compactList(schema.unitMetrics.map((metric) => metric.name))}`,
     `可用期间：${formatPeriods(schema)}`,
     `最近问题：${compactList(recentQuestions)}`,
+    `最近助手结论：${compactList(recentAssistantMessages)}`,
     `当前指标：${state.currentMetric || "无"}`,
     `当前筛选：${JSON.stringify(compactFilters(state.currentFilters))}`,
     `最近图表：${compactList(chartHistory)}`,
+    `最近计算模块：${analysisContext.length ? compactAnalysisContext(analysisContext) : "无"}`,
     "输出规则：",
     "- 只输出 JSON，不输出 Markdown。",
     "- modules 数组必须有 1 到 3 项。",
@@ -422,6 +466,7 @@ export function buildFinanceAIExplanationPrompt(input: ExplanationPromptInput) {
     "bar_rank 如果有 allItems 或 answerItems，代表完整明细表会在消息下方展示；不要说“只返回了前 N”“只能看到 Top N”“明细只给了可见项”。",
     "用户指定 Top/Bottom N 时，按 answerItems 或 allItems 的前 N 项回答；正文只给结论和口径，不要再手写完整 Markdown 表格，以免和下方表格重复。",
     "如果结果里出现不可计算、缺少上月或缺少年同期，需要直接说明。",
+    "不要把本轮没有覆盖的切片说成“看不到底稿”或“结果里未包含”；本工具上传后始终可以围绕当前底稿重新规划计算。",
     "回复应像聊天消息，先给结论，再补一句口径。可以用 Markdown 加粗关键数字，必要时可用 LaTeX 公式。",
     `用户问题：${input.userQuestion.trim() || "无"}`,
     "计算结果：",

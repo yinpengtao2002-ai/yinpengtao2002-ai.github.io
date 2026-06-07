@@ -836,6 +836,70 @@ test("action plan normalization keeps unit-metric waterfall requests for attribu
   assert.equal(validated.ok, true);
 });
 
+test("action plan normalization drills into explicit dimension members from the question", () => {
+  const schema = inferFinanceSchema([
+    { "Month": "3月", "大区": "MBT", "国家": "泰国", "车型": "T1D", "Sales Volume": 100, "Net Revenue": 9000000 },
+    { "Month": "4月", "大区": "MBT", "国家": "泰国", "车型": "T1D", "Sales Volume": 120, "Net Revenue": 11000000 },
+    { "Month": "3月", "大区": "MBT", "国家": "越南", "车型": "T1E", "Sales Volume": 60, "Net Revenue": 5400000 },
+    { "Month": "4月", "大区": "MBT", "国家": "越南", "车型": "T1E", "Sales Volume": 55, "Net Revenue": 4950000 },
+    { "Month": "4月", "大区": "欧洲", "国家": "西班牙", "车型": "T1D", "Sales Volume": 80, "Net Revenue": 7200000 },
+  ]);
+  const normalized = normalizeFinanceActionPlanForQuestion(schema, {
+    modules: [
+      {
+        type: "waterfall_bridge",
+        metric: "单车净收入",
+        dimension: "大区",
+        fromPeriod: "M03",
+        toPeriod: "M04",
+        limit: 10,
+      },
+    ],
+  }, "MBT大区的销量是最重要的，我想知道MBT中的单车净收入自身怎么变化，主要由哪些国家构成？");
+  const validated = validateFinanceActionPlan(schema, normalized);
+
+  assert.equal(normalized.modules[0].type, "waterfall_bridge");
+  assert.equal(normalized.modules[0].dimension, "国家");
+  assert.deepEqual(normalized.modules[0].filters, { "大区": ["MBT"] });
+  assert.equal(validated.ok, true);
+});
+
+test("action plan normalization resolves follow-up pronouns from prior analysis context", () => {
+  const schema = inferFinanceSchema([
+    { "Month": "3月", "大区": "MBT", "国家": "泰国", "车型": "T1D", "Sales Volume": 100, "Net Revenue": 9000000 },
+    { "Month": "4月", "大区": "MBT", "国家": "泰国", "车型": "T1D", "Sales Volume": 120, "Net Revenue": 11000000 },
+    { "Month": "3月", "大区": "MBT", "国家": "越南", "车型": "T1E", "Sales Volume": 60, "Net Revenue": 5400000 },
+    { "Month": "4月", "大区": "MBT", "国家": "越南", "车型": "T1E", "Sales Volume": 55, "Net Revenue": 4950000 },
+    { "Month": "4月", "大区": "欧洲", "国家": "西班牙", "车型": "T1D", "Sales Volume": 80, "Net Revenue": 7200000 },
+  ]);
+  const normalized = normalizeFinanceActionPlanForQuestion(schema, {
+    modules: [
+      {
+        type: "waterfall_bridge",
+        metric: "单车净收入",
+        dimension: "大区",
+        fromPeriod: "M03",
+        toPeriod: "M04",
+        limit: 10,
+      },
+    ],
+  }, "那它自身的单车净收入怎么变化，下面由哪些国家构成？", {
+    analysisContext: [{
+      type: "waterfall_bridge",
+      title: "M03 至 M04 销量变化桥",
+      metric: "销量",
+      dimension: "大区",
+      focusValues: [{ dimension: "大区", value: "MBT" }],
+    }],
+  });
+  const validated = validateFinanceActionPlan(schema, normalized);
+
+  assert.equal(normalized.modules[0].type, "waterfall_bridge");
+  assert.equal(normalized.modules[0].dimension, "国家");
+  assert.deepEqual(normalized.modules[0].filters, { "大区": ["MBT"] });
+  assert.equal(validated.ok, true);
+});
+
 test("chart specs are compact and identify supported chart types", () => {
   const schema = inferFinanceSchema(metricRows);
   const trend = buildTrendSeries(metricRows, schema, { metric: "单车边际", filters: { "国家": ["巴西"] }, highlightPeriod: "2026-03" });
@@ -1092,6 +1156,37 @@ test("direct waterfall chart reconciles incomplete items and uses readable delta
   assert.deepEqual(spec.data[0].measure, ["absolute", "relative", "relative", "relative", "total"]);
   assert.deepEqual(spec.data[0].y, [9.87, -0.11, -0.01, 0.04, 0]);
   assert.deepEqual(spec.data[0].text, ["9.87万元", "-1,100元", "-100元", "+400元", "9.79万元"]);
+});
+
+test("waterfall axis keeps positive start and end bars visibly anchored", () => {
+  const spec = buildDirectChartSpec({
+    type: "waterfall",
+    title: "销量变化桥",
+    startLabel: "M03",
+    startValue: 120500,
+    endLabel: "M04",
+    endValue: 143000,
+    items: [
+      { label: "中东大区", value: -3519 },
+      { label: "埃及大区", value: -1716 },
+      { label: "拉美地区部", value: -264 },
+      { label: "KM地区部", value: -230 },
+      { label: "MBT大区", value: 16200 },
+      { label: "右舵地区部", value: 10300 },
+      { label: "东欧/亚太大区", value: 867 },
+      { label: "斯坦王国", value: 420 },
+      { label: "欧盟地区部", value: 258 },
+      { label: "非洲大区", value: 192 },
+      { label: "其他", value: -8 },
+    ],
+  });
+  const range = spec.layout.yaxis.range;
+  const startValue = spec.data[0].y[0];
+  const visibleShare = (startValue - range[0]) / (range[1] - range[0]);
+
+  assert.equal(Array.isArray(range), true);
+  assert.equal(range[0] > 0, true);
+  assert.equal(visibleShare >= 0.3, true);
 });
 
 test("direct AI chart payloads support the approved expanded chart set", () => {
