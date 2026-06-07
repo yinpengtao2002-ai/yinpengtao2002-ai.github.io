@@ -2,7 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUp, Download, FileSpreadsheet, KeyRound, Loader2, RotateCcw, Trash2, UploadCloud } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import * as XLSX from "xlsx";
+import "katex/dist/katex.min.css";
 import { validateFinanceActionPlan } from "@/lib/finance-ai/actions";
 import { buildChartSpec } from "@/lib/finance-ai/charts";
 import {
@@ -12,6 +17,8 @@ import {
   buildWaterfallBridge,
 } from "@/lib/finance-ai/metrics";
 import { inferFinanceSchema } from "@/lib/finance-ai/schema";
+import { normalizeChatMathMarkdown } from "@/lib/markdown/normalizeChatMathMarkdown";
+import { normalizeMarkdownStrongEmphasis } from "@/lib/markdown/normalizeStrongEmphasis";
 import type {
   BarRankResult,
   FinanceActionModule,
@@ -249,6 +256,28 @@ function downloadSampleTemplate() {
   URL.revokeObjectURL(url);
 }
 
+function FinanceAIMessageContent({ text }: { text: string }) {
+  const normalizedText = normalizeMarkdownStrongEmphasis(normalizeChatMathMarkdown(text));
+
+  return (
+    <div className="finance-ai-markdown">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, [remarkMath, { singleDollarTextMath: true }]]}
+        rehypePlugins={[rehypeKatex]}
+        components={{
+          a: ({ href, children }) => (
+            <a href={href || "#"} target="_blank" rel="noreferrer">
+              {children}
+            </a>
+          ),
+        }}
+      >
+        {normalizedText}
+      </ReactMarkdown>
+    </div>
+  );
+}
+
 function PlotlyChart({ spec }: { spec: FinanceChartSpec }) {
   const nodeRef = useRef<HTMLDivElement | null>(null);
 
@@ -436,7 +465,14 @@ export default function FinanceAIAssistantTool() {
         .filter((card): card is ChartCard => card !== null);
       const explanation = await callAI("explain", {
         question,
-        computedSummary: { modules: computedModules.map((module) => module.computed) },
+        computedSummary: {
+          modules: computedModules.map((module) => module.computed),
+          charts: chartCards.map((card) => ({
+            type: card.spec.kind,
+            title: card.title,
+            note: card.note,
+          })),
+        },
       });
 
       setMessages((current) => [
@@ -573,7 +609,7 @@ export default function FinanceAIAssistantTool() {
                 <AssistantAvatar compact />
               ) : null}
               <div className="finance-ai-message-bubble">
-                <p>{message.text}</p>
+                <FinanceAIMessageContent text={message.text} />
                 {message.chartCards?.map((card) => (
                   <div className="finance-ai-chart-card" key={card.id}>
                     <h2>{card.title}</h2>

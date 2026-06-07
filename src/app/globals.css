@@ -380,6 +380,69 @@ body {
   line-height: 1.68;
 }
 
+.finance-ai-markdown {
+  color: inherit;
+  font-size: 0.95rem;
+  line-height: 1.68;
+}
+
+.finance-ai-markdown > :first-child {
+  margin-top: 0;
+}
+
+.finance-ai-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.finance-ai-markdown p {
+  margin: 0.42em 0;
+}
+
+.finance-ai-markdown strong {
+  color: var(--foreground);
+  font-weight: 760;
+}
+
+.finance-ai-markdown ul,
+.finance-ai-markdown ol {
+  margin: 0.5em 0;
+  padding-left: 1.2em;
+}
+
+.finance-ai-markdown li {
+  margin: 0.2em 0;
+}
+
+.finance-ai-markdown a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.finance-ai-markdown code {
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 0.88em;
+  padding: 1px 5px;
+}
+
+.finance-ai-markdown pre {
+  overflow: auto;
+  margin: 0.6em 0;
+}
+
+.finance-ai-markdown pre code {
+  display: block;
+  padding: 10px 12px;
+}
+
+.finance-ai-markdown .katex-display {
+  margin: 0.65em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
 .finance-ai-message-bubble small {
   display: block;
   margin-top: 12px;

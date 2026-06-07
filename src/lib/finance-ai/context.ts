@@ -22,6 +22,7 @@ const MAX_SUMMARY_OBJECT_KEYS = 18;
 const MAX_SUMMARY_DEPTH = 4;
 const MAX_STRING_CHARS = 240;
 const MAX_SUMMARY_JSON_CHARS = 6000;
+const OMIT_PROMPT_VALUE = Symbol("omit-prompt-value");
 
 function compactList(values: string[], emptyLabel = "无") {
   const normalized = values.map((value) => value.trim()).filter(Boolean);
@@ -82,7 +83,7 @@ function looksLikeLargeRecordArray(value: unknown[]) {
     ));
 }
 
-function sanitizePromptValue(value: unknown, key = "", depth = 0): unknown {
+function sanitizePromptValue(value: unknown, key = "", depth = 0): unknown | typeof OMIT_PROMPT_VALUE {
   if (typeof value === "string") {
     return truncateText(value);
   }
@@ -97,15 +98,18 @@ function sanitizePromptValue(value: unknown, key = "", depth = 0): unknown {
 
   if (Array.isArray(value)) {
     if (isRawRowsKey(key) || looksLikeLargeRecordArray(value)) {
-      return `已省略完整明细数组（${value.length} 行）`;
+      return OMIT_PROMPT_VALUE;
     }
 
     const visibleItems = value
       .slice(0, MAX_SUMMARY_ARRAY_ITEMS)
-      .map((item) => sanitizePromptValue(item, key, depth + 1));
+      .flatMap((item) => {
+        const nextValue = sanitizePromptValue(item, key, depth + 1);
+        return nextValue === OMIT_PROMPT_VALUE ? [] : [nextValue];
+      });
     const hiddenCount = value.length - MAX_SUMMARY_ARRAY_ITEMS;
     return hiddenCount > 0
-      ? [...visibleItems, { "__omitted": `另有 ${hiddenCount} 项已省略` }]
+      ? [...visibleItems, { "__truncated": `另有 ${hiddenCount} 项未展开` }]
       : visibleItems;
   }
 
@@ -114,26 +118,27 @@ function sanitizePromptValue(value: unknown, key = "", depth = 0): unknown {
   }
 
   if (depth >= MAX_SUMMARY_DEPTH) {
-    return "[已省略嵌套内容]";
+    return "[嵌套内容未展开]";
   }
 
   const entries = Object.entries(value as Record<string, unknown>);
   const sanitizedEntries = entries
     .slice(0, MAX_SUMMARY_OBJECT_KEYS)
-    .map(([entryKey, entryValue]) => [
-      entryKey,
-      sanitizePromptValue(entryValue, entryKey, depth + 1),
-    ]);
+    .flatMap(([entryKey, entryValue]) => {
+      const nextValue = sanitizePromptValue(entryValue, entryKey, depth + 1);
+      return nextValue === OMIT_PROMPT_VALUE ? [] : [[entryKey, nextValue]];
+    });
   const hiddenKeyCount = entries.length - MAX_SUMMARY_OBJECT_KEYS;
 
   return {
     ...Object.fromEntries(sanitizedEntries),
-    ...(hiddenKeyCount > 0 ? { "__omitted": `另有 ${hiddenKeyCount} 个字段已省略` } : {}),
+    ...(hiddenKeyCount > 0 ? { "__truncated": `另有 ${hiddenKeyCount} 个字段未展开` } : {}),
   };
 }
 
 function safeBoundedJson(value: unknown) {
-  const json = JSON.stringify(sanitizePromptValue(value ?? {}));
+  const sanitizedValue = sanitizePromptValue(value ?? {});
+  const json = JSON.stringify(sanitizedValue === OMIT_PROMPT_VALUE ? {} : sanitizedValue);
   return json.length > MAX_SUMMARY_JSON_CHARS
     ? `${json.slice(0, MAX_SUMMARY_JSON_CHARS)}...（已截断）`
     : json;
@@ -159,6 +164,8 @@ export function buildFinanceAIPlanningContext(
     "每轮最少 1 个模块，最多生成 3 个模块。",
     "只允许这些动作：metric_snapshot、trend_chart、bar_rank、waterfall_bridge。",
     "图表模块会渲染在聊天消息内部，所以模块标题要像对话回复的一部分。",
+    "如果用户要求可视化、图表、占比、结构、构成、变化来源，必须生成至少一个图表模块，不要只返回 metric_snapshot。",
+    "用户问占比、结构或构成变化时，优先用 bar_rank 搭配 comparison:\"mom\"，或用 waterfall_bridge 拆变化来源。",
     "可用字段：",
     `月份列：${schema.monthColumn || "未识别"}`,
     `销量列：${schema.salesColumn || "未识别"}`,
@@ -186,8 +193,10 @@ export function buildFinanceAIExplanationPrompt(input: ExplanationPromptInput) {
   return [
     "你是财务分析 AI 助手。请基于前端已经计算好的结果，用中文给出简短解释。",
     "不要重新计算数字，不要编造字段，不要引入计算结果之外的数据。",
+    "计算结果是前端确定性计算后的聚合结果，聚合结果足够回答本轮问题。",
+    "不要说数据被省略、看不到明细、无法分析或无法出图；如果图表信息存在，就按聊天里已展示的图表解释。",
     "如果结果里出现不可计算、缺少上月或缺少年同期，需要直接说明。",
-    "回复应像聊天消息，先给结论，再补一句口径。",
+    "回复应像聊天消息，先给结论，再补一句口径。可以用 Markdown 加粗关键数字，必要时可用 LaTeX 公式。",
     `用户问题：${input.userQuestion.trim() || "无"}`,
     "计算结果：",
     safeBoundedJson(input.computedSummary ?? {}),

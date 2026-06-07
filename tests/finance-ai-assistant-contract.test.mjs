@@ -169,7 +169,9 @@ test("finance AI context bounds filters and computed summaries before provider c
   assert.match(planningPrompt, /另有/);
   assert.doesNotMatch(planningPrompt, /筛选值39-39/);
   assert.equal(explanationPrompt.length < 8000, true);
-  assert.match(explanationPrompt, /已省略完整明细数组/);
+  assert.match(explanationPrompt, /聚合结果足够回答/);
+  assert.match(explanationPrompt, /不要说数据被省略/);
+  assert.doesNotMatch(explanationPrompt, /已省略完整明细数组/);
   assert.doesNotMatch(explanationPrompt, /raw-secret-79/);
 });
 
@@ -235,7 +237,9 @@ test("finance AI assistant API strips raw-row-like summaries before explain prov
 
     assert.equal(response.status, 200);
     assert.equal(payload.message, "解释完成");
-    assert.match(providerBody, /已省略完整明细数组/);
+    assert.match(providerBody, /聚合结果足够回答/);
+    assert.match(providerBody, /不要说数据被省略/);
+    assert.doesNotMatch(providerBody, /已省略完整明细数组/);
     assert.doesNotMatch(providerBody, /raw-secret-79/);
     assert.doesNotMatch(providerBody, /raw-secret-0/);
   }, "解释完成");
@@ -287,6 +291,12 @@ test("finance AI assistant page is an independent chat workbench", async () => {
   assert.match(client, /type ChatMessage/);
   assert.match(client, /chartCards/);
   assert.match(client, /PlotlyChart/);
+  assert.match(client, /FinanceAIMessageContent/);
+  assert.match(client, /ReactMarkdown/);
+  assert.match(client, /remarkMath/);
+  assert.match(client, /rehypeKatex/);
+  assert.match(client, /normalizeChatMathMarkdown/);
+  assert.match(client, /normalizeMarkdownStrongEmphasis/);
   assert.match(client, /数据仅保留在当前页面会话中，刷新后清空/);
   assert.match(client, /已识别/);
   assert.match(client, /inferFinanceSchema/);
@@ -311,6 +321,8 @@ test("finance AI assistant chat styles size embedded chart cards", async () => {
   assert.match(styles, /\.finance-ai-message\.is-assistant/);
   assert.match(styles, /\.finance-ai-chart-card/);
   assert.match(styles, /\.finance-ai-chart-host\s*\{[\s\S]*min-height:\s*320px/s);
+  assert.match(styles, /\.finance-ai-markdown/);
+  assert.match(styles, /\.finance-ai-markdown\s+\.katex-display/);
 });
 
 test("finance AI assistant is styled and isolated from global assistant", async () => {
@@ -344,6 +356,8 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(client, /X-Finance-AI-Access/);
   assert.doesNotMatch(client, /next\/image/);
   assert.match(client, /finance-ai-assistant-preview\.png/);
+  assert.match(client, /charts:\s*chartCards\.map/);
+  assert.doesNotMatch(client, /<p>\{message\.text\}<\/p>/);
   assert.match(styles, /\.finance-ai-page\s*\{[\s\S]*background:\s*#f7f5ef/s);
   assert.match(styles, /\.finance-ai-access-gate/);
   assert.match(styles, /\.finance-ai-assistant-panel/);
