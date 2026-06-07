@@ -719,6 +719,29 @@ test("bar rank plans use change sorting when the question asks for biggest decli
   assert.equal(normalized.modules[0].detailTable, true);
 });
 
+test("detail table plans expand compact full-detail requests to the dimension member count", () => {
+  const detailRows = Array.from({ length: 25 }, (_, index) => ({
+    "月份": "2026-03",
+    "国家": `国家${index + 1}`,
+    "销量": 1,
+    "边际": 1000 + index,
+  }));
+  const schema = inferFinanceSchema(detailRows);
+  const normalized = normalizeFinanceActionPlanForQuestion(schema, {
+    modules: [
+      {
+        type: "detail_table",
+        metrics: ["边际"],
+        dimension: "国家",
+        period: "2026-03",
+      },
+    ],
+  }, "把国家净收入总额完整明细表列出来。");
+
+  assert.equal(normalized.modules[0].type, "detail_table");
+  assert.equal(normalized.modules[0].limit, 25);
+});
+
 test("action plan alignment corrects explicit lowest and top rank directions per metric", () => {
   const rows = [
     { "Month": "3月", "Country": "巴西", "Sales Volume": 100, "Total Margin": 3000 },
@@ -880,6 +903,31 @@ test("bar rank chart spec uses horizontal bars without a separate numeric table"
   assert.equal(spec.layout.xaxis.fixedrange, true);
   assert.equal("table" in spec, false);
   assert.equal(spec.config.displayModeBar, false);
+});
+
+test("change-ranked bar chart plots mom change values instead of current values", () => {
+  const rankRows = [
+    { "月份": "2026-02", "国家": "巴西", "销量": 10, "边际": 200 },
+    { "月份": "2026-02", "国家": "智利", "销量": 10, "边际": 500 },
+    { "月份": "2026-03", "国家": "巴西", "销量": 10, "边际": 350 },
+    { "月份": "2026-03", "国家": "墨西哥", "销量": 10, "边际": 100 },
+  ];
+  const schema = inferFinanceSchema(rankRows);
+  const rank = buildBarRank(rankRows, schema, {
+    metric: "边际",
+    dimension: "国家",
+    period: "2026-03",
+    comparison: "mom",
+    sort: "change_asc",
+    limit: 10,
+  });
+  const spec = buildChartSpec({ type: "bar_rank", title: "国家边际下降排名", result: rank });
+
+  assert.deepEqual(spec.data[0].y, ["巴西", "墨西哥", "智利"]);
+  assert.deepEqual(spec.data[0].x, [150, 100, -500]);
+  assert.match(spec.data[0].text.at(-1), /环比 -500元/);
+  assert.match(spec.data[0].text.at(-1), /当前值 0元/);
+  assert.deepEqual(spec.layout.xaxis.range, [-604, 254]);
 });
 
 test("waterfall chart spec renders a continuous bridge for total-metric results", () => {
@@ -1062,6 +1110,12 @@ test("direct AI chart payloads support the approved expanded chart set", () => {
     columns: ["大区", "净收入总额", "占比", "环比变化"],
     rows: [["右舵地区部", 4817036664.26, 0.344, 1172553980.38]],
   });
+  const zeroMoneyTableSpec = buildDirectChartSpec({
+    type: "detail_table",
+    title: "4月大区净收入总额明细",
+    columns: ["大区", "净收入总额"],
+    rows: [["右舵地区部", 4817036664.26], ["国际合作中心", 0]],
+  });
   const rankTableSpec = buildDirectChartSpec({
     type: "detail_table",
     title: "M04 国家净收入总额排名完整明细",
@@ -1093,6 +1147,10 @@ test("direct AI chart payloads support the approved expanded chart set", () => {
     ["48.17亿元"],
     ["34.4%"],
     ["11.73亿元"],
+  ]);
+  assert.deepEqual(zeroMoneyTableSpec.data[0].cells.values, [
+    ["右舵地区部", "国际合作中心"],
+    ["48.17亿元", "0.00亿元"],
   ]);
   assert.deepEqual(rankTableSpec.data[0].cells.values, [
     ["1"],

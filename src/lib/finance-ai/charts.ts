@@ -519,8 +519,12 @@ function buildBarRankChartSpec(title: string, result: BarRankResult): FinanceCha
   const changeValues = items
     .map((item) => item.changeValue)
     .filter((value): value is number => value !== null && value !== undefined);
-  const scale = getScaleForValues([...numericValues, ...changeValues], `${title}${result.metric}`);
-  const scaledValues = values.map((value) => value === null || value === undefined ? value : scaledChineseUnit(value, scale));
+  const isChangeRank = result.comparison === "mom" && result.sort.startsWith("change") && changeValues.length > 0;
+  const displayValues = isChangeRank ? items.map((item) => item.changeValue) : values;
+  const numericDisplayValues = displayValues.filter((value): value is number => value !== null && value !== undefined);
+  const scale = getScaleForValues(numericDisplayValues, `${title}${result.metric}`);
+  const currentScale = getScaleForValues(numericValues, `${title}${result.metric}`);
+  const scaledValues = displayValues.map((value) => value === null || value === undefined ? value : scaledChineseUnit(value, scale));
   const scopeText = result.totalItemCount > result.visibleItemCount
     ? `图中展示当前排名前 ${result.visibleItemCount} 项；最大增减判断已基于全量 ${result.totalItemCount} 个维度成员扫描。`
     : "横向柱状图展示全部可见维度排名，条形旁标注当前值、占比和环比变化。";
@@ -535,21 +539,35 @@ function buildBarRankChartSpec(title: string, result: BarRankResult): FinanceCha
       x: scaledValues,
       y: items.map((item) => item.label),
       text: items.map((item) => {
+        if (isChangeRank) {
+          const changeText = item.changeValue === null ? "-" : formatCompactNumber(item.changeValue, scale, true);
+          const currentText = item.value === null ? "-" : formatCompactNumber(item.value, currentScale);
+          const shareText = item.valueShare !== null && item.valueShare !== undefined ? `｜${formatShare(item.valueShare)}` : "";
+          return `环比 ${changeText}｜当前值 ${currentText}${shareText}`;
+        }
+
         const shareText = item.valueShare !== null && item.valueShare !== undefined ? `｜${formatShare(item.valueShare)}` : "";
         const changeText = item.changeValue !== null ? `｜环比 ${formatCompactNumber(item.changeValue, scale, true)}` : "";
         return `${item.value === null ? "-" : formatCompactNumber(item.value, scale)}${shareText}${changeText}`;
       }),
       textposition: "outside",
       cliponaxis: false,
-      marker: { color: COLORS.green },
-      hovertemplate: `%{y}<br>当前值 %{x:,.2f}${scale.suffix}<br>%{text}<extra></extra>`,
+      marker: {
+        color: isChangeRank
+          ? displayValues.map((value) => (typeof value === "number" && value < 0 ? COLORS.red : COLORS.green))
+          : COLORS.green,
+      },
+      hovertemplate: isChangeRank
+        ? `%{y}<br>环比变化 %{x:,.2f}${scale.suffix}<br>%{text}<extra></extra>`
+        : `%{y}<br>当前值 %{x:,.2f}${scale.suffix}<br>%{text}<extra></extra>`,
     }],
     layout: {
       ...baseLayout,
       margin: { t: 28, r: 116, b: 36, l: 92 },
       xaxis: {
         gridcolor: COLORS.grid,
-        zeroline: false,
+        zeroline: isChangeRank,
+        zerolinecolor: COLORS.grid,
         tickfont: { color: COLORS.muted },
         fixedrange: true,
         range: paddedRange([0, ...scaledValues]),
@@ -861,7 +879,14 @@ function buildDirectScatterBubbleChartSpec(input: FinanceAIDirectScatterBubbleCh
   };
 }
 
-function formatDirectTableCell(value: unknown, column: string, tableTitle = "") {
+type ChineseUnitScale = ReturnType<typeof getChineseUnitScale>;
+
+function shouldFormatMoneyColumn(column: string, tableTitle = "") {
+  const context = `${tableTitle} ${column}`;
+  return !isCountContext(column) && isMoneyContext(context);
+}
+
+function formatDirectTableCell(value: unknown, column: string, tableTitle = "", scale?: ChineseUnitScale) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return value ?? "";
   }
@@ -874,17 +899,32 @@ function formatDirectTableCell(value: unknown, column: string, tableTitle = "") 
     return formatShare(value);
   }
 
-  const context = `${tableTitle} ${column}`;
-  if (!isCountContext(column) && isMoneyContext(context)) {
-    return formatCompactNumber(value, getChineseUnitScale(value, context));
+  if (shouldFormatMoneyColumn(column, tableTitle)) {
+    return formatCompactNumber(value, scale ?? getChineseUnitScale(value, `${tableTitle} ${column}`));
   }
 
   return formatNumber(value, Number.isInteger(value) ? 0 : 2);
 }
 
 function buildDirectDetailTableChartSpec(input: FinanceAIDirectDetailTableChart): FinanceChartSpec {
+  const columnScales = input.columns.map((column, columnIndex) => {
+    if (!shouldFormatMoneyColumn(column, input.title)) {
+      return undefined;
+    }
+
+    const values = input.rows
+      .map((row) => row[columnIndex])
+      .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+
+    return values.length > 0 ? getScaleForValues(values, `${input.title} ${column}`) : undefined;
+  });
   const columnValues = input.columns.map((_, columnIndex) => (
-    input.rows.map((row) => formatDirectTableCell(row[columnIndex] ?? "", input.columns[columnIndex] ?? "", input.title))
+    input.rows.map((row) => formatDirectTableCell(
+      row[columnIndex] ?? "",
+      input.columns[columnIndex] ?? "",
+      input.title,
+      columnScales[columnIndex],
+    ))
   ));
 
   return {

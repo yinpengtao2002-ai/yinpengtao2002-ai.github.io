@@ -125,6 +125,8 @@ export type BarRankRequest = {
   detailTable?: boolean;
 };
 
+export type BarRankSort = NonNullable<BarRankRequest["sort"]>;
+
 export type BarRankItem = {
   label: string;
   value: number | null;
@@ -152,6 +154,7 @@ export type BarRankResult = {
   allItems?: BarRankItem[];
   totalItemCount: number;
   visibleItemCount: number;
+  sort: BarRankSort;
   fullScan?: BarRankFullScan;
   filters: FinanceFilter;
   period?: string;

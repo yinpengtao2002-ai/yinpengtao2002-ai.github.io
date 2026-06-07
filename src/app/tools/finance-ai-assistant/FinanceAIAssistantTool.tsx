@@ -263,6 +263,10 @@ function buildBarRankDetailTable(title: string, result: BarRankResult): FinanceC
 }
 
 function buildBarRankComparisonChart(title: string, result: BarRankResult): FinanceChartSpec | null {
+  if (result.sort.startsWith("change")) {
+    return null;
+  }
+
   if (result.comparison !== "mom" || !result.items.some((item) => item.changeValue !== null && item.value !== null)) {
     return null;
   }

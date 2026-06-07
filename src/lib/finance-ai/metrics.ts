@@ -171,7 +171,8 @@ export function buildBarRank(
     };
   });
 
-  const rankedItems = sortRankedItems(items, request.sort ?? "value_desc");
+  const sort = request.sort ?? "value_desc";
+  const rankedItems = sortRankedItems(items, sort);
   const visibleItems = rankedItems.slice(0, getLimit(request.limit)).map(toResultRankItem);
   const allItems = request.detailTable ? rankedItems.map(toResultRankItem) : undefined;
 
@@ -182,6 +183,7 @@ export function buildBarRank(
     ...(allItems ? { allItems } : {}),
     totalItemCount: items.length,
     visibleItemCount: visibleItems.length,
+    sort,
     ...(request.comparison === "mom" && period ? { fullScan: buildBarRankFullScan(items, visibleItems.length) } : {}),
     filters,
     ...(period ? { period } : {}),

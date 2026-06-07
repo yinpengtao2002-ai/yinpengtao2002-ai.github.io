@@ -28,6 +28,7 @@ const PERIOD_FIELDS = ["period", "fromPeriod", "toPeriod", "highlightPeriod"] as
 const BAR_RANK_SORTS = new Set(["value_desc", "value_asc", "change_desc", "change_asc"]);
 const MAX_CHART_ITEMS = 10;
 const MAX_GROUPED_BAR_ITEMS = 16;
+const MAX_DETAIL_TABLE_ITEMS = 120;
 const LOW_RANK_TOKENS = ["最低", "最少", "倒数", "bottom", "后五", "后5", "低的5", "低5"];
 const HIGH_RANK_TOKENS = ["最高", "最多", "top", "前五", "前5", "高的5", "高5"];
 const ALL_MEMBER_TOKENS = ["所有", "全部", "全量", "完整", "每个", "各个", "各大", "各国家", "各地区"];
@@ -259,6 +260,10 @@ export function alignFinanceActionPlanWithQuestion(
       return alignGroupedBarLimitWithQuestion(schema, module, userQuestion);
     }
 
+    if (module.type === "detail_table") {
+      return alignDetailTableLimitWithQuestion(schema, module, userQuestion);
+    }
+
     if (module.type !== "bar_rank") {
       return module;
     }
@@ -341,6 +346,35 @@ function alignGroupedBarLimitWithQuestion(
   return {
     ...module,
     limit: memberCount,
+  };
+}
+
+function alignDetailTableLimitWithQuestion(
+  schema: FinanceSchema,
+  module: Extract<FinanceActionModule, { type: "detail_table" }>,
+  userQuestion: string,
+): FinanceActionModule {
+  if (!hasAllMemberIntent(userQuestion) && !hasDetailTableIntent(userQuestion)) {
+    return module;
+  }
+
+  const memberCount = schema.profile.dimensionValueCounts[module.dimension] ?? 0;
+  if (memberCount <= 0) {
+    return module;
+  }
+
+  const targetLimit = Math.min(memberCount, MAX_DETAIL_TABLE_ITEMS);
+  const currentLimit = typeof module.limit === "number" && Number.isFinite(module.limit)
+    ? Math.floor(module.limit)
+    : 0;
+
+  if (currentLimit >= targetLimit) {
+    return module;
+  }
+
+  return {
+    ...module,
+    limit: targetLimit,
   };
 }
 
