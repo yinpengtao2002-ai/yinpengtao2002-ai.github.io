@@ -53,6 +53,80 @@ function spec(kind: FinanceChartSpec["kind"], title: string, data: FinanceChartS
   };
 }
 
+function waterfallSpec(
+  title: string,
+  startLabel: string,
+  startValue: number,
+  endLabel: string,
+  endValue: number,
+  items: Array<{ label: string; value: number }>,
+  note: string,
+): FinanceChartSpec {
+  const labels = [startLabel, ...items.map((item) => item.label), endLabel];
+  const base = [0];
+  const y = [startValue];
+  const levels = [startValue];
+  let cursor = startValue;
+
+  for (const item of items) {
+    base.push(cursor);
+    y.push(item.value);
+    cursor += item.value;
+    levels.push(cursor);
+  }
+
+  base.push(0);
+  y.push(endValue);
+
+  const connectorX: Array<string | null> = [];
+  const connectorY: Array<number | null> = [];
+  for (let index = 0; index < labels.length - 1; index += 1) {
+    connectorX.push(labels[index], labels[index + 1], null);
+    connectorY.push(levels[index], levels[index], null);
+  }
+
+  return spec("waterfall_bridge", title, [
+    {
+      type: "scatter",
+      mode: "lines",
+      x: connectorX,
+      y: connectorY,
+      line: { color: "#7d766b", width: 1.6 },
+      hoverinfo: "skip",
+      showlegend: false,
+    },
+    {
+      type: "bar",
+      x: labels,
+      y,
+      base,
+      text: [
+        formatDemoNumber(startValue),
+        ...items.map((item) => formatDemoNumber(item.value, true)),
+        formatDemoNumber(endValue),
+      ],
+      textposition: "outside",
+      marker: {
+        color: [
+          COLORS.blue,
+          ...items.map((item) => (item.value >= 0 ? COLORS.green : COLORS.red)),
+          COLORS.blue,
+        ],
+      },
+      cliponaxis: false,
+    },
+  ], {
+    bargap: 0.28,
+    yaxis: { gridcolor: COLORS.grid, fixedrange: true },
+    xaxis: { fixedrange: true },
+  }, note);
+}
+
+function formatDemoNumber(value: number, signed = false) {
+  const sign = signed ? (value > 0 ? "+" : value < 0 ? "-" : "") : "";
+  return `${sign}${Math.abs(value).toLocaleString("zh-CN", { maximumFractionDigits: 1 })}`;
+}
+
 export function buildFinanceAIChartDemoSpecs(): FinanceChartSpec[] {
   return [
     spec("metric_card", "泰国 4月单车边际", [{
@@ -98,39 +172,17 @@ export function buildFinanceAIChartDemoSpecs(): FinanceChartSpec[] {
       yaxis: { fixedrange: true },
     }, "用于 Top、Bottom、环比增减和全量维度扫描。"),
 
-    spec("waterfall_bridge", "4月边际总额变化桥", [{
-      type: "waterfall",
-      measure: ["absolute", "relative", "relative", "relative", "total"],
-      x: ["3月", "巴西", "英国", "其他", "4月"],
-      y: [4800, 900, -180, 260, 0],
-      text: ["4,800", "+900", "-180", "+260", "5,780"],
-      textposition: "outside",
-      connector: { line: { color: COLORS.grid } },
-      increasing: { marker: { color: COLORS.green } },
-      decreasing: { marker: { color: COLORS.red } },
-      totals: { marker: { color: COLORS.blue } },
-      cliponaxis: false,
-    }], {
-      yaxis: { gridcolor: COLORS.grid, fixedrange: true },
-      xaxis: { fixedrange: true },
-    }, "用于可加总指标的期间变化来源。"),
+    waterfallSpec("4月边际总额变化桥", "3月", 4800, "4月", 5780, [
+      { label: "巴西", value: 900 },
+      { label: "英国", value: -180 },
+      { label: "其他", value: 260 },
+    ], "用于可加总指标的期间变化来源。"),
 
-    spec("waterfall_bridge", "泰国单车边际归因桥", [{
-      type: "waterfall",
-      measure: ["absolute", "relative", "relative", "relative", "total"],
-      x: ["3月", "T1D 结构", "T1D 费率", "T1E 费率", "4月"],
-      y: [29.8, -1.2, 2.6, 1.3, 0],
-      text: ["29.8", "-1.2", "+2.6", "+1.3", "32.5"],
-      textposition: "outside",
-      connector: { line: { color: COLORS.grid } },
-      increasing: { marker: { color: COLORS.green } },
-      decreasing: { marker: { color: COLORS.red } },
-      totals: { marker: { color: COLORS.blue } },
-      cliponaxis: false,
-    }], {
-      yaxis: { gridcolor: COLORS.grid, fixedrange: true },
-      xaxis: { fixedrange: true },
-    }, "用于单车指标的结构效应和费率效应归因。"),
+    waterfallSpec("泰国单车边际归因桥", "3月", 29.8, "4月", 32.5, [
+      { label: "T1D 结构", value: -1.2 },
+      { label: "T1D 费率", value: 2.6 },
+      { label: "T1E 费率", value: 1.3 },
+    ], "用于单车指标的结构效应和费率效应归因。"),
 
     spec("grouped_bar", "3月 vs 4月车型单车边际", [
       { type: "bar", name: "3月", x: ["T1D", "T1E", "T19", "T26"], y: [29.8, 24.1, 18.4, 35.2], marker: { color: COLORS.blue }, text: ["29.8", "24.1", "18.4", "35.2"], textposition: "outside" },

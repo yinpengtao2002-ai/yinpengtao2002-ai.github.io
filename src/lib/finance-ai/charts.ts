@@ -152,7 +152,7 @@ function getChineseUnitScale(value: number | null | undefined, context = "") {
     return { divisor: 10_000, suffix: money ? "万元" : "万", digits: 2 };
   }
 
-  return { divisor: 1, suffix: "", digits: 2 };
+  return { divisor: 1, suffix: money ? "元" : "", digits: money && absolute >= 100 ? 0 : 2 };
 }
 
 function getScaleForValues(values: number[], context = "") {
@@ -170,6 +170,93 @@ function formatCompactNumber(value: number, scale = getChineseUnitScale(value), 
   const sign = signed ? (value > 0 ? "+" : value < 0 ? "-" : "") : "";
 
   return `${sign}${formatted}${scale.suffix}`;
+}
+
+function buildWaterfallConnectorTrace(labels: string[], levels: number[]) {
+  const x: Array<string | null> = [];
+  const y: Array<number | null> = [];
+
+  for (let index = 0; index < labels.length - 1; index += 1) {
+    x.push(labels[index], labels[index + 1], null);
+    y.push(levels[index], levels[index], null);
+  }
+
+  return {
+    type: "scatter",
+    mode: "lines",
+    x,
+    y,
+    line: { color: "#7d766b", width: 1.6 },
+    hoverinfo: "skip",
+    showlegend: false,
+  };
+}
+
+function buildWaterfallBars({
+  labels,
+  itemValues,
+  startValue,
+  endValue,
+  scale,
+  title,
+  customdata,
+  hovertemplate,
+}: {
+  labels: string[];
+  itemValues: number[];
+  startValue: number;
+  endValue: number;
+  scale: ReturnType<typeof getChineseUnitScale>;
+  title: string;
+  customdata?: Array<Array<number | null>>;
+  hovertemplate: string;
+}) {
+  const scaledStartValue = scaledChineseUnit(startValue, scale);
+  const scaledEndValue = scaledChineseUnit(endValue, scale);
+  const scaledItemValues = itemValues.map((value) => scaledChineseUnit(value, scale));
+  const base = [0];
+  const y = [scaledStartValue];
+  const levels = [scaledStartValue];
+  let cursor = scaledStartValue;
+
+  for (const value of scaledItemValues) {
+    base.push(cursor);
+    y.push(value);
+    cursor += value;
+    levels.push(cursor);
+  }
+
+  base.push(0);
+  y.push(scaledEndValue);
+
+  return {
+    connector: buildWaterfallConnectorTrace(labels, levels),
+    bars: {
+      type: "bar",
+      x: labels,
+      y,
+      base,
+      text: [
+        formatCompactNumber(startValue, scale),
+        ...itemValues.map((value) => formatCompactNumber(value, getChineseUnitScale(value, title), true)),
+        formatCompactNumber(endValue, scale),
+      ],
+      textposition: "outside",
+      cliponaxis: false,
+      marker: {
+        color: [
+          COLORS.blue,
+          ...itemValues.map((value) => (value >= 0 ? COLORS.green : COLORS.red)),
+          COLORS.blue,
+        ],
+      },
+      ...(customdata ? { customdata } : {}),
+      hovertemplate,
+    },
+    scaledStartValue,
+    scaledEndValue,
+    scaledItemValues,
+  };
 }
 
 function normalizeWaterfallItems<T extends { label: string; value: number }>(items: T[]): T[] {
@@ -521,9 +608,6 @@ function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): 
   const items = normalizeWaterfallItems(reconcileWaterfallItems(result.items, result.startValue, result.endValue));
   const itemValues = items.map((item) => item.value);
   const scale = getScaleForValues([result.startValue, result.endValue, ...itemValues], title);
-  const scaledStartValue = scaledChineseUnit(result.startValue, scale);
-  const scaledEndValue = scaledChineseUnit(result.endValue, scale);
-  const scaledItemValues = itemValues.map((value) => scaledChineseUnit(value, scale));
   const isUnitMetricBridge = result.basis === "unit_metric_mix_rate";
   const customdata = isUnitMetricBridge
     ? [
@@ -535,35 +619,28 @@ function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): 
         [null, null],
       ]
     : undefined;
+  const labels = [result.fromPeriod, ...items.map((item) => item.label), result.toPeriod];
+  const waterfall = buildWaterfallBars({
+    labels,
+    itemValues,
+    startValue: result.startValue,
+    endValue: result.endValue,
+    scale,
+    title,
+    customdata,
+    hovertemplate: isUnitMetricBridge
+      ? `%{x}<br>%{text}<br>结构效应 %{customdata[0]:,.2f}${scale.suffix}<br>费率效应 %{customdata[1]:,.2f}${scale.suffix}<extra></extra>`
+      : `%{x}<br>%{text}<extra></extra>`,
+  });
 
   return {
     kind: "waterfall_bridge",
     size: "large",
     title,
-    data: [{
-      type: "waterfall",
-      orientation: "v",
-      measure: ["absolute", ...items.map(() => "relative"), "total"],
-      x: [result.fromPeriod, ...items.map((item) => item.label), result.toPeriod],
-      y: [scaledStartValue, ...scaledItemValues, 0],
-      text: [
-        formatCompactNumber(result.startValue, scale),
-        ...itemValues.map((value) => formatCompactNumber(value, scale, true)),
-        formatCompactNumber(result.endValue, scale),
-      ],
-      textposition: "outside",
-      cliponaxis: false,
-      ...(customdata ? { customdata } : {}),
-      connector: { line: { color: COLORS.grid, width: 1 } },
-      increasing: { marker: { color: COLORS.green } },
-      decreasing: { marker: { color: COLORS.red } },
-      totals: { marker: { color: COLORS.blue } },
-      hovertemplate: isUnitMetricBridge
-        ? `%{x}<br>数值 %{y:,.2f}${scale.suffix}<br>结构效应 %{customdata[0]:,.2f}${scale.suffix}<br>费率效应 %{customdata[1]:,.2f}${scale.suffix}<extra></extra>`
-        : `%{x}<br>%{y:,.2f}${scale.suffix}<extra></extra>`,
-    }],
+    data: [waterfall.connector, waterfall.bars],
     layout: {
       ...baseLayout,
+      bargap: 0.28,
       margin: { t: 36, r: 30, b: 52, l: 60 },
       xaxis: { tickfont: { color: COLORS.muted }, fixedrange: true },
       yaxis: {
@@ -571,7 +648,7 @@ function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): 
         zeroline: true,
         zerolinecolor: COLORS.grid,
         tickfont: { color: COLORS.muted },
-        range: waterfallRange(scaledStartValue, scaledItemValues, scaledEndValue),
+        range: waterfallRange(waterfall.scaledStartValue, waterfall.scaledItemValues, waterfall.scaledEndValue),
         tickformat: `,.${scale.digits}f`,
         ticksuffix: scale.suffix,
         fixedrange: true,
@@ -588,35 +665,25 @@ function buildDirectWaterfallChartSpec(input: FinanceAIDirectWaterfallChart): Fi
   const items = normalizeWaterfallItems(reconcileWaterfallItems(input.items, input.startValue, input.endValue));
   const itemValues = items.map((item) => item.value);
   const scale = getScaleForValues([input.startValue, input.endValue, ...itemValues], input.title);
-  const scaledStartValue = scaledChineseUnit(input.startValue, scale);
-  const scaledEndValue = scaledChineseUnit(input.endValue, scale);
-  const scaledItemValues = itemValues.map((value) => scaledChineseUnit(value, scale));
+  const labels = [input.startLabel, ...items.map((item) => item.label), input.endLabel];
+  const waterfall = buildWaterfallBars({
+    labels,
+    itemValues,
+    startValue: input.startValue,
+    endValue: input.endValue,
+    scale,
+    title: input.title,
+    hovertemplate: `%{x}<br>%{text}<extra></extra>`,
+  });
 
   return {
     kind: "waterfall_bridge",
     size: "large",
     title: input.title,
-    data: [{
-      type: "waterfall",
-      orientation: "v",
-      measure: ["absolute", ...items.map(() => "relative"), "total"],
-      x: [input.startLabel, ...items.map((item) => item.label), input.endLabel],
-      y: [scaledStartValue, ...scaledItemValues, 0],
-      text: [
-        formatCompactNumber(input.startValue, scale),
-        ...itemValues.map((value) => formatCompactNumber(value, scale, true)),
-        formatCompactNumber(input.endValue, scale),
-      ],
-      textposition: "outside",
-      cliponaxis: false,
-      connector: { line: { color: COLORS.grid, width: 1 } },
-      increasing: { marker: { color: COLORS.green } },
-      decreasing: { marker: { color: COLORS.red } },
-      totals: { marker: { color: COLORS.blue } },
-      hovertemplate: `%{x}<br>%{y:,.2f}${scale.suffix}<extra></extra>`,
-    }],
+    data: [waterfall.connector, waterfall.bars],
     layout: {
       ...baseLayout,
+      bargap: 0.28,
       margin: { t: 36, r: 30, b: 52, l: 60 },
       xaxis: { tickfont: { color: COLORS.muted }, fixedrange: true },
       yaxis: {
@@ -624,7 +691,7 @@ function buildDirectWaterfallChartSpec(input: FinanceAIDirectWaterfallChart): Fi
         zeroline: true,
         zerolinecolor: COLORS.grid,
         tickfont: { color: COLORS.muted },
-        range: waterfallRange(scaledStartValue, scaledItemValues, scaledEndValue),
+        range: waterfallRange(waterfall.scaledStartValue, waterfall.scaledItemValues, waterfall.scaledEndValue),
         tickformat: `,.${scale.digits}f`,
         ticksuffix: scale.suffix,
         fixedrange: true,
@@ -646,6 +713,10 @@ function buildDirectSeriesChartSpec(input: FinanceAIDirectSeriesChart): FinanceC
     : input.type === "percent_stacked_bar"
       ? "percent_stacked_bar"
       : "stacked_bar";
+  const rawValues = input.series.flatMap((series) => series.items.map((item) => item.value));
+  const scale = input.type === "percent_stacked_bar"
+    ? { divisor: 1, suffix: "", digits: 0 }
+    : getScaleForValues(rawValues, `${input.title}${input.yLabel ?? ""}`);
 
   return {
     kind,
@@ -657,16 +728,16 @@ function buildDirectSeriesChartSpec(input: FinanceAIDirectSeriesChart): FinanceC
         type: "bar",
         name: series.name,
         x: labels,
-        y: labels.map((label) => valueByLabel.get(label) ?? 0),
+        y: labels.map((label) => scaledChineseUnit(valueByLabel.get(label) ?? 0, scale)),
         marker: { color: SERIES_COLORS[index % SERIES_COLORS.length] },
         text: labels.map((label) => (
           input.type === "percent_stacked_bar"
             ? formatShare(valueByLabel.get(label) ?? 0)
-            : formatNumber(valueByLabel.get(label) ?? 0, 1)
+            : formatCompactNumber(valueByLabel.get(label) ?? 0, scale)
         )),
         textposition: input.type === "percent_stacked_bar" ? "inside" : "outside",
         cliponaxis: false,
-        hovertemplate: `%{x}<br>${series.name} %{y:,.2f}<extra></extra>`,
+        hovertemplate: `%{x}<br>${series.name} %{text}<extra></extra>`,
       };
     }),
     layout: {
@@ -678,6 +749,10 @@ function buildDirectSeriesChartSpec(input: FinanceAIDirectSeriesChart): FinanceC
         title: input.yLabel,
         gridcolor: COLORS.grid,
         fixedrange: true,
+        ...(input.type === "percent_stacked_bar" ? {} : {
+          tickformat: `,.${scale.digits}f`,
+          ticksuffix: scale.suffix,
+        }),
         ...(input.type === "percent_stacked_bar" ? { tickformat: ".0%", range: [0, 1] } : {}),
       },
     },

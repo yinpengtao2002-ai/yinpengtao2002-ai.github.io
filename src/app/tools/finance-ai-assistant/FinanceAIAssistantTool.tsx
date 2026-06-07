@@ -178,12 +178,37 @@ function getModuleTitle(module: FinanceActionModule) {
   return `${module.fromPeriod} 至 ${module.toPeriod} ${module.metric}变化桥`;
 }
 
-function formatTableNumber(value: number | null | undefined) {
+function isMoneyTableContext(context: string) {
+  return /收入|边际|成本|利润|金额|总额|费用|税|毛利|净利|贡献|扣减|价格|售价|单价/.test(context);
+}
+
+function formatTableNumber(value: number | null | undefined, context = "", signed = false) {
   if (value === null || value === undefined || !Number.isFinite(value)) {
     return "-";
   }
 
-  return value.toLocaleString("zh-CN", { maximumFractionDigits: 2 });
+  if (!isMoneyTableContext(context)) {
+    const prefix = signed && value > 0 ? "+" : "";
+    return `${prefix}${value.toLocaleString("zh-CN", { maximumFractionDigits: 2 })}`;
+  }
+
+  const absolute = Math.abs(value);
+  const sign = signed ? (value > 0 ? "+" : value < 0 ? "-" : "") : value < 0 ? "-" : "";
+  const units = [
+    { threshold: 1_000_000_000_000, divisor: 1_000_000_000_000, suffix: "万亿元" },
+    { threshold: 100_000_000, divisor: 100_000_000, suffix: "亿元" },
+    { threshold: 10_000, divisor: 10_000, suffix: "万元" },
+  ];
+  const unit = units.find((item) => absolute >= item.threshold);
+
+  if (!unit) {
+    return `${sign}${absolute.toLocaleString("zh-CN", { maximumFractionDigits: 0 })}元`;
+  }
+
+  return `${sign}${(absolute / unit.divisor).toLocaleString("zh-CN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}${unit.suffix}`;
 }
 
 function formatTableShare(value: number | null | undefined) {
@@ -206,11 +231,38 @@ function buildBarRankDetailTable(title: string, result: BarRankResult): FinanceC
     rows: result.allItems.map((item, index) => [
       index + 1,
       item.label,
-      formatTableNumber(item.value),
+      formatTableNumber(item.value, result.metric),
       formatTableShare(item.valueShare),
-      formatTableNumber(item.changeValue),
+      formatTableNumber(item.changeValue, `${result.metric}环比变化`, true),
     ]),
     note: "按用户要求列出完整维度明细；图表仅保留可读的前 10 项。",
+  });
+}
+
+function buildBarRankComparisonChart(title: string, result: BarRankResult): FinanceChartSpec | null {
+  if (result.comparison !== "mom" || !result.items.some((item) => item.changeValue !== null && item.value !== null)) {
+    return null;
+  }
+
+  const previousItems = result.items.map((item) => ({
+    label: item.label,
+    value: item.value !== null && item.changeValue !== null ? item.value - item.changeValue : 0,
+  }));
+  const currentItems = result.items.map((item) => ({
+    label: item.label,
+    value: item.value ?? 0,
+  }));
+
+  return buildDirectChartSpec({
+    type: "grouped_bar",
+    title: title.replace(/排名$/, "环比对比"),
+    xLabel: result.dimension,
+    yLabel: result.metric,
+    series: [
+      { name: "上期", items: previousItems },
+      { name: result.period ?? "本期", items: currentItems },
+    ],
+    note: "用分组柱状图对比上期和本期，环比差异由两组柱高直接体现。",
   });
 }
 
@@ -260,7 +312,7 @@ function executeFinancePlan(
 
     if (module.type === "bar_rank") {
       const result = buildBarRank(rows, schema, module);
-      const spec = buildChartSpec({ type: "bar_rank", title, result });
+      const spec = buildBarRankComparisonChart(title, result) ?? buildChartSpec({ type: "bar_rank", title, result });
       computedModules.push({ type: "bar_rank", title, request: module, result });
       chartCards.push({ id: `chart-${Date.now()}-${index}`, title, spec, note: spec.note });
       const detailSpec = buildBarRankDetailTable(title, result);
