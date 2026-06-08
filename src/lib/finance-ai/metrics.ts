@@ -413,12 +413,23 @@ function shiftPeriodKey(periodKey: string, monthOffset: number): string {
     return periodKey;
   }
 
-  const yearlessMatch = period.key.match(/^M(\d{2})$/);
+  const yearlessMatch = period.key.match(/^M(\d{2})(__(?:actual|target|budget|forecast|plan))?$/);
   if (yearlessMatch) {
     const shiftedMonth = Number(yearlessMatch[1]) + monthOffset;
+    const qualifierSuffix = yearlessMatch[2] ?? "";
     return shiftedMonth >= 1 && shiftedMonth <= 12
-      ? `M${String(shiftedMonth).padStart(2, "0")}`
+      ? `M${String(shiftedMonth).padStart(2, "0")}${qualifierSuffix}`
       : `MISSING_${period.key}_${monthOffset}`;
+  }
+
+  const yearMonthMatch = period.key.match(/^(\d{4})-(\d{2})(__(?:actual|target|budget|forecast|plan))?$/);
+  if (yearMonthMatch) {
+    const shiftedSort = Number(yearMonthMatch[1]) * 12 + Number(yearMonthMatch[2]) + monthOffset;
+    const year = Math.floor((shiftedSort - 1) / 12);
+    const month = ((shiftedSort - 1) % 12) + 1;
+    const qualifierSuffix = yearMonthMatch[3] ?? "";
+
+    return `${year}-${String(month).padStart(2, "0")}${qualifierSuffix}`;
   }
 
   const shiftedSort = period.sort + monthOffset;

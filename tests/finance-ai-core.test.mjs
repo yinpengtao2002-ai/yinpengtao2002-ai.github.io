@@ -70,6 +70,13 @@ test("normalizePeriodValue supports common month formats", () => {
   assert.deepEqual(normalizePeriodValue("五月"), { key: "M05", label: "五月", sort: 5 });
 });
 
+test("normalizePeriodValue supports month labels with scenario qualifiers", () => {
+  assert.deepEqual(normalizePeriodValue("4月实际"), { key: "M04__actual", label: "4月实际", sort: 4.01 });
+  assert.deepEqual(normalizePeriodValue("5 月目标"), { key: "M05__target", label: "5 月目标", sort: 5.02 });
+  assert.deepEqual(normalizePeriodValue("2026年4月预算"), { key: "2026-04__budget", label: "2026年4月预算", sort: 24316.03 });
+  assert.deepEqual(normalizePeriodValue("M05__actual"), { key: "M05__actual", label: "M05__actual", sort: 5.01 });
+});
+
 test("finance AI schema keeps numeric dimension codes while excluding metadata columns", () => {
   const schema = inferFinanceSchema([
     { "月份": "2025-03", "版本": "v1", "备注": "内部口径", "国家代码": 76, "经销商编码": 1001, "渠道": "直营", "销量": 10, "净收入": 30000 },
@@ -119,6 +126,40 @@ test("finance AI schema supports yearless month labels from margin templates", (
   });
   assert.equal(snapshot.value, 2);
   assert.equal(snapshot.mom?.value, 3);
+});
+
+test("finance AI schema keeps actual and target month periods separate", () => {
+  const qualifiedRows = [
+    { "月份": "4月实际", "国家": "巴西", "销量": 100, "边际": 2000 },
+    { "月份": "5月实际", "国家": "巴西", "销量": 130, "边际": 2600 },
+    { "月份": "4月目标", "国家": "巴西", "销量": 200, "边际": 4000 },
+    { "月份": "5月目标", "国家": "巴西", "销量": 240, "边际": 4800 },
+  ];
+  const schema = inferFinanceSchema(qualifiedRows);
+
+  assert.equal(schema.monthColumn, "月份");
+  assert.deepEqual(schema.profile.periods.map((period) => period.key), [
+    "M04__actual",
+    "M04__target",
+    "M05__actual",
+    "M05__target",
+  ]);
+
+  const actualSnapshot = buildMetricSnapshot(qualifiedRows, schema, {
+    metric: "销量",
+    period: "M05__actual",
+    comparisons: ["mom"],
+  });
+  assert.equal(actualSnapshot.value, 130);
+  assert.equal(actualSnapshot.mom?.value, 100);
+
+  const targetSnapshot = buildMetricSnapshot(qualifiedRows, schema, {
+    metric: "销量",
+    period: "M05__target",
+    comparisons: ["mom"],
+  });
+  assert.equal(targetSnapshot.value, 240);
+  assert.equal(targetSnapshot.mom?.value, 200);
 });
 
 test("finance AI workbook parser detects margin template headers below preamble rows", () => {

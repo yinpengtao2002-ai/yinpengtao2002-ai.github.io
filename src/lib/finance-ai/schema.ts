@@ -110,6 +110,14 @@ const CHINESE_MONTH_NUMBERS: Record<string, number> = {
   "十一": 11,
   "十二": 12,
 };
+const CHINESE_MONTH_NAMES = Object.keys(CHINESE_MONTH_NUMBERS).sort((a, b) => b.length - a.length);
+const PERIOD_QUALIFIERS = [
+  { key: "actual", order: 1, aliases: ["实际", "实绩", "actual", "actuals", "act"] },
+  { key: "target", order: 2, aliases: ["目标", "考核", "target", "goal"] },
+  { key: "budget", order: 3, aliases: ["预算", "budget", "bud"] },
+  { key: "forecast", order: 4, aliases: ["预测", "预估", "滚动", "forecast", "fcst", "estimate"] },
+  { key: "plan", order: 5, aliases: ["计划", "规划", "plan"] },
+];
 
 const ISSUE_MESSAGES: Record<FinanceSchemaIssue["code"], string> = {
   missing_month: "未识别月份列，请提供月份、月度、期间或 month/date/period 字段。",
@@ -277,6 +285,71 @@ function makeIssue(code: FinanceSchemaIssue["code"]): FinanceSchemaIssue {
   };
 }
 
+function normalizePeriodQualifier(value: string): { key: string; order: number } | null {
+  const normalized = normalizeHeaderName(value)
+    .replace(/^(数据|口径)/, "")
+    .replace(/(数据|数|值)$/, "");
+
+  if (!normalized) {
+    return null;
+  }
+
+  for (const qualifier of PERIOD_QUALIFIERS) {
+    if (qualifier.aliases.some((alias) => normalized === normalizeHeaderName(alias))) {
+      return { key: qualifier.key, order: qualifier.order };
+    }
+  }
+
+  return null;
+}
+
+function buildPeriod(year: number | null, month: number, label: string, qualifierText = ""): FinancePeriod | null {
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    return null;
+  }
+
+  const qualifier = qualifierText ? normalizePeriodQualifier(qualifierText) : null;
+  if (qualifierText && !qualifier) {
+    return null;
+  }
+
+  const monthText = String(month).padStart(2, "0");
+  const baseKey = year ? `${year}-${monthText}` : `M${monthText}`;
+  const baseSort = year ? year * 12 + month : month;
+
+  return {
+    key: qualifier ? `${baseKey}__${qualifier.key}` : baseKey,
+    label,
+    sort: qualifier ? baseSort + qualifier.order / 100 : baseSort,
+  };
+}
+
+function getChineseMonthPrefix(text: string): { month: number; suffix: string } | null {
+  const compactText = text.replace(/\s/g, "");
+
+  for (const monthName of CHINESE_MONTH_NAMES) {
+    if (compactText === monthName || compactText === `${monthName}月`) {
+      return { month: CHINESE_MONTH_NUMBERS[monthName], suffix: "" };
+    }
+
+    if (compactText.startsWith(`${monthName}月`)) {
+      return {
+        month: CHINESE_MONTH_NUMBERS[monthName],
+        suffix: compactText.slice(`${monthName}月`.length),
+      };
+    }
+
+    if (compactText.startsWith(monthName)) {
+      return {
+        month: CHINESE_MONTH_NUMBERS[monthName],
+        suffix: compactText.slice(monthName.length),
+      };
+    }
+  }
+
+  return null;
+}
+
 export function normalizePeriodValue(value: unknown): FinancePeriod | null {
   if (value instanceof Date && Number.isFinite(value.getTime())) {
     const year = value.getFullYear();
@@ -293,18 +366,29 @@ export function normalizePeriodValue(value: unknown): FinancePeriod | null {
   }
 
   const text = String(value).trim();
+  const internalKeyMatch =
+    text.match(/^M(\d{1,2})__(actual|target|budget|forecast|plan)$/i) ??
+    text.match(/^(\d{4})-(\d{1,2})__(actual|target|budget|forecast|plan)$/i);
+  if (internalKeyMatch) {
+    const isYearlessKey = internalKeyMatch[0].toUpperCase().startsWith("M");
+    const year = isYearlessKey ? null : Number(internalKeyMatch[1]);
+    const month = Number(isYearlessKey ? internalKeyMatch[1] : internalKeyMatch[2]);
+    const qualifierKey = isYearlessKey ? internalKeyMatch[2] : internalKeyMatch[3];
+    const qualifier = PERIOD_QUALIFIERS.find((item) => item.key.toLowerCase() === qualifierKey.toLowerCase());
+
+    if (!qualifier) {
+      return null;
+    }
+
+    return buildPeriod(year, month, text, qualifier.aliases[0]);
+  }
+
   const chineseYearMonthMatch = text.match(/^(\d{4})年\s*([一二三四五六七八九十]{1,3})月$/);
   if (chineseYearMonthMatch) {
     const year = Number(chineseYearMonthMatch[1]);
     const month = CHINESE_MONTH_NUMBERS[chineseYearMonthMatch[2]];
 
-    if (Number.isInteger(year) && Number.isInteger(month) && month >= 1 && month <= 12) {
-      return {
-        key: `${year}-${String(month).padStart(2, "0")}`,
-        label: text,
-        sort: year * 12 + month,
-      };
-    }
+    return buildPeriod(year, month, text);
   }
 
   const match =
@@ -317,13 +401,27 @@ export function normalizePeriodValue(value: unknown): FinancePeriod | null {
     text.match(/^(\d{4})(\d{2})$/);
 
   if (!match) {
-    const chineseMonth = CHINESE_MONTH_NUMBERS[text.match(/^([一二三四五六七八九十]{1,3})月$/)?.[1] ?? ""];
-    if (Number.isInteger(chineseMonth) && chineseMonth >= 1 && chineseMonth <= 12) {
-      return {
-        key: `M${String(chineseMonth).padStart(2, "0")}`,
-        label: text,
-        sort: chineseMonth,
-      };
+    const qualifiedYearMonthMatch =
+      text.match(/^(\d{4})年\s*([一二三四五六七八九十]{1,3})月\s*(.+)$/) ??
+      text.match(/^(\d{4})年\s*(\d{1,2})月\s*(.+)$/) ??
+      text.match(/^(\d{4})[-/.](\d{1,2})\s*[-_/]?\s*(.+)$/) ??
+      text.match(/^(\d{4})\s*[mM]\s*(\d{1,2})\s*[-_/]?\s*(.+)$/);
+    if (qualifiedYearMonthMatch) {
+      const year = Number(qualifiedYearMonthMatch[1]);
+      const month = CHINESE_MONTH_NUMBERS[qualifiedYearMonthMatch[2]] ?? Number(qualifiedYearMonthMatch[2]);
+      return buildPeriod(year, month, text, qualifiedYearMonthMatch[3]);
+    }
+
+    const chineseMonthPrefix = getChineseMonthPrefix(text);
+    if (chineseMonthPrefix) {
+      return buildPeriod(null, chineseMonthPrefix.month, text, chineseMonthPrefix.suffix);
+    }
+
+    const qualifiedYearlessMatch =
+      text.match(/^(\d{1,2})\s*月\s*(.+)$/) ??
+      text.match(/^[mM]\s*(\d{1,2})(?:\s+|[-_/]+)(.+)$/);
+    if (qualifiedYearlessMatch) {
+      return buildPeriod(null, Number(qualifiedYearlessMatch[1]), text, qualifiedYearlessMatch[2]);
     }
 
     const yearlessMatch = text.match(/^(\d{1,2})\s*月$/) ?? text.match(/^[mM]\s*(\d{1,2})$/);
@@ -332,29 +430,13 @@ export function normalizePeriodValue(value: unknown): FinancePeriod | null {
     }
 
     const month = Number(yearlessMatch[1]);
-    if (!Number.isInteger(month) || month < 1 || month > 12) {
-      return null;
-    }
-
-    return {
-      key: `M${String(month).padStart(2, "0")}`,
-      label: text,
-      sort: month,
-    };
+    return buildPeriod(null, month, text);
   }
 
   const year = Number(match[1]);
   const month = Number(match[2]);
 
-  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
-    return null;
-  }
-
-  return {
-    key: `${year}-${String(month).padStart(2, "0")}`,
-    label: text,
-    sort: year * 12 + month,
-  };
+  return buildPeriod(year, month, text);
 }
 
 export function toFinanceNumber(value: unknown): number | null {
