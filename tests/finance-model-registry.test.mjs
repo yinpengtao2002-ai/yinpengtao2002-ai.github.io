@@ -154,11 +154,11 @@ test("finance model previews use shared wide-strip assets for home and index car
     const ratio = dimensions.width / dimensions.height;
 
     assert.ok(
-      ratio >= 1.9 && ratio <= 2.35,
+      ratio >= 3.05 && ratio <= 3.45,
       `${model.slug} preview should be a wide strip image, got ${dimensions.width}x${dimensions.height}`
     );
-    assert.ok(dimensions.width >= 1100, `${model.slug} preview should be wide enough for the homepage`);
-    assert.ok(dimensions.height <= 640, `${model.slug} preview should stay shallow for compact cards`);
+    assert.ok(dimensions.width >= 1500, `${model.slug} preview should be wide enough for the homepage`);
+    assert.ok(dimensions.height <= 520, `${model.slug} preview should stay shallow for compact cards`);
   }
 });
 
@@ -245,7 +245,7 @@ test("finance compact library uses one-row three-up strip cards on desktop", asy
     "gap: 12px",
   ]);
   assertCssRuleHas(globals, ".finance-model-preview.compact", [
-    "aspect-ratio: 2.05",
+    "aspect-ratio: 3.2",
   ]);
   assertCssRuleHas(globals, ".finance-model-library-grid.compact .finance-model-card-summary", [
     "-webkit-line-clamp: 2",

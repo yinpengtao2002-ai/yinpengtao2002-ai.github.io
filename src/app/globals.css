@@ -1526,10 +1526,9 @@ h6 {
 
 .home-hero-stage-image {
   z-index: 2;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center;
   opacity: 0;
-  padding: clamp(10px, 1.5vw, 18px);
   pointer-events: none;
   transform: scale(0.992);
   transition:
@@ -5883,7 +5882,7 @@ h6 {
   }
 
   .home-hero-stage-image {
-    padding: 8px;
+    padding: 0;
   }
 
   .home-hero-stage-float-note {
@@ -6507,7 +6506,7 @@ h6 {
 }
 
 .finance-model-library-grid.compact .finance-model-card-body {
-  padding: 12px 13px 13px;
+  padding: 10px 13px 12px;
 }
 
 .finance-model-card-title {
@@ -6536,9 +6535,9 @@ h6 {
 
 .finance-model-library-grid.compact .finance-model-card-summary {
   display: -webkit-box;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   font-size: 12px;
-  line-height: 1.55;
+  line-height: 1.48;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
@@ -6579,7 +6578,7 @@ h6 {
 }
 
 .finance-model-preview.compact {
-  aspect-ratio: 2.05;
+  aspect-ratio: 3.2;
 }
 
 .finance-model-preview-image {
@@ -6602,8 +6601,8 @@ h6 {
 
   .finance-model-library-grid.compact .finance-model-card {
     display: grid;
-    grid-template-columns: 96px minmax(0, 1fr);
-    min-height: 104px;
+    grid-template-columns: 118px minmax(0, 1fr);
+    min-height: 92px;
   }
 
   .finance-model-card-body {
@@ -6624,8 +6623,8 @@ h6 {
 
   .finance-model-card .finance-model-preview.compact {
     height: 100%;
-    min-height: 88px;
-    aspect-ratio: 1.28;
+    min-height: 84px;
+    aspect-ratio: auto;
     border-right: 1px solid var(--border);
     border-bottom: 0;
   }
