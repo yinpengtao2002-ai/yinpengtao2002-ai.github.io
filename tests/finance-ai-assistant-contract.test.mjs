@@ -1002,6 +1002,20 @@ test("finance AI assistant chat styles size embedded chart cards", async () => {
   assert.match(styles, /\.finance-ai-markdown\s+\.katex-display/);
 });
 
+test("finance AI assistant chart surfaces blend with the warm page background", async () => {
+  const styles = await readProjectFile("src/app/globals.css");
+
+  assert.match(styles, /--finance-ai-page-surface:\s*#f7f5ef/);
+  assert.match(styles, /--finance-ai-chart-surface:\s*color-mix\(in srgb,\s*var\(--finance-ai-page-surface\)\s*88%,\s*var\(--card\)\)/);
+  assert.match(styles, /--finance-ai-chart-border:\s*color-mix\(in srgb,\s*var\(--border\)\s*78%,\s*#d7cdbc\)/);
+  assert.match(styles, /\.finance-ai-page\s*\{[\s\S]*background:\s*var\(--finance-ai-page-surface\)/s);
+  assert.match(styles, /\.finance-ai-chart-card\s*\{[\s\S]*background:\s*var\(--finance-ai-chart-surface\)/s);
+  assert.match(styles, /\.finance-ai-demo-card\s*\{[\s\S]*background:\s*var\(--finance-ai-chart-surface\)/s);
+  assert.match(styles, /\.finance-ai-chart-host\s*\{[\s\S]*background:\s*transparent/s);
+  assert.doesNotMatch(styles, /\.finance-ai-chart-card\s*\{[^}]*background:\s*rgba\(255,\s*255,\s*255/s);
+  assert.doesNotMatch(styles, /\.finance-ai-demo-card\s*\{[^}]*background:\s*rgba\(255,\s*255,\s*255/s);
+});
+
 test("finance AI assistant interleaves metric cards before narrative chart analysis", async () => {
   const client = await readProjectFile("src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
 
@@ -1107,7 +1121,7 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(client, /resolveFinanceActionFilterMembers/);
   assert.match(client, /filterResolution\.ok/);
   assert.doesNotMatch(client, /<p>\{message\.text\}<\/p>/);
-  assert.match(styles, /\.finance-ai-page\s*\{[\s\S]*background:\s*#f7f5ef/s);
+  assert.match(styles, /\.finance-ai-page\s*\{[\s\S]*background:\s*var\(--finance-ai-page-surface\)/s);
   assert.match(styles, /\.finance-ai-access-gate/);
   assert.match(styles, /\.finance-ai-assistant-panel/);
   assert.match(styles, /\.finance-ai-assistant-panel\s*\{[\s\S]*border:\s*0/s);

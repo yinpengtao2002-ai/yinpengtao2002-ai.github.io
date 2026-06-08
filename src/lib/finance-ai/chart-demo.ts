@@ -10,7 +10,9 @@ const COLORS = {
   yellow: "#c89b40",
   text: "#171615",
   muted: "#747168",
-  grid: "#e8e5dc",
+  grid: "#ded8cb",
+  plotSurface: "#f7f3ea",
+  plotSurfaceStrong: "#eee7dc",
 };
 
 const baseLayout = {
@@ -188,7 +190,7 @@ export function buildFinanceAIChartDemoSpecs(): FinanceChartSpec[] {
       y: [32.5, 28.7, 24.6, 35.1, 30.2],
       text: ["泰国", "巴西", "英国", "澳大利亚", "意大利"],
       textposition: "top center",
-      marker: { size: [22, 42, 28, 24, 20], color: [COLORS.orange, COLORS.green, COLORS.blue, COLORS.yellow, COLORS.red], opacity: 0.82, line: { color: "#fff", width: 2 } },
+      marker: { size: [22, 42, 28, 24, 20], color: [COLORS.orange, COLORS.green, COLORS.blue, COLORS.yellow, COLORS.red], opacity: 0.82, line: { color: COLORS.plotSurface, width: 2 } },
       hovertemplate: "%{text}<br>销量 %{x:,}<br>单车边际 %{y:.1f}<extra></extra>",
     }], {
       xaxis: { title: "销量", gridcolor: COLORS.grid, fixedrange: true },
@@ -197,7 +199,7 @@ export function buildFinanceAIChartDemoSpecs(): FinanceChartSpec[] {
 
     spec("detail_table", "低单车边际国家明细", [{
       type: "table",
-      header: { values: ["国家", "销量", "单车边际", "环比", "主要车型"], fill: { color: "#f0ebe1" }, align: "left", font: { color: COLORS.text, size: 12 } },
+      header: { values: ["国家", "销量", "单车边际", "环比", "主要车型"], fill: { color: COLORS.plotSurfaceStrong }, align: "left", font: { color: COLORS.text, size: 12 } },
       cells: {
         values: [
           ["英国", "T19", "墨西哥", "意大利", "智利"],
@@ -206,7 +208,7 @@ export function buildFinanceAIChartDemoSpecs(): FinanceChartSpec[] {
           ["-1.4", "+3.4", "-0.8", "+0.6", "-2.1"],
           ["T1E", "T19", "T1D", "T26", "T19"],
         ],
-        fill: { color: "#fffaf2" },
+        fill: { color: COLORS.plotSurface },
         align: "left",
         font: { color: COLORS.text, size: 12 },
         height: 28,

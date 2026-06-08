@@ -10,6 +10,10 @@
   --muted: #b0aea5;
   --card: #ffffff;
   --border: #e8e6dc;
+  --finance-ai-page-surface: #f7f5ef;
+  --finance-ai-chart-surface: color-mix(in srgb, var(--finance-ai-page-surface) 88%, var(--card));
+  --finance-ai-chart-border: color-mix(in srgb, var(--border) 78%, #d7cdbc);
+  --finance-ai-chart-shadow: 0 12px 28px rgba(64, 52, 36, 0.045);
   --font-poppins: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   --font-lora: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
   --font-hero-display: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
@@ -50,7 +54,7 @@ body {
 .finance-ai-page {
   min-height: 100dvh;
   overflow: visible;
-  background: #f7f5ef;
+  background: var(--finance-ai-page-surface);
   color: var(--foreground);
   display: flex;
   align-items: stretch;
@@ -539,11 +543,11 @@ body {
 }
 
 .finance-ai-chart-card {
-  border: 1px solid color-mix(in srgb, var(--border) 88%, var(--accent));
+  border: 1px solid var(--finance-ai-chart-border);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.62);
+  background: var(--finance-ai-chart-surface);
   padding: 10px;
-  box-shadow: 0 10px 24px rgba(20, 20, 19, 0.04);
+  box-shadow: var(--finance-ai-chart-shadow);
 }
 
 .finance-ai-chart-grid .finance-ai-chart-card:only-child:not(.is-large):not(.is-small) {
@@ -593,11 +597,12 @@ body {
 .finance-ai-chart-host {
   width: 100%;
   min-height: 210px;
+  background: transparent;
 }
 
 .finance-ai-demo-page {
   min-height: 100vh;
-  background: #f7f5ef;
+  background: var(--finance-ai-page-surface);
   color: var(--foreground);
   font-family: var(--font-poppins);
 }
@@ -635,10 +640,10 @@ body {
 }
 
 .finance-ai-demo-card {
-  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  border: 1px solid var(--finance-ai-chart-border);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.78);
-  box-shadow: 0 16px 36px rgba(20, 20, 19, 0.055);
+  background: var(--finance-ai-chart-surface);
+  box-shadow: var(--finance-ai-chart-shadow);
   padding: 14px;
 }
 
@@ -687,6 +692,7 @@ body {
 .finance-ai-demo-chart-host {
   width: 100%;
   min-height: 280px;
+  background: transparent;
 }
 
 .finance-ai-demo-card p {

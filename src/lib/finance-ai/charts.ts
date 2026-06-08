@@ -23,7 +23,9 @@ const COLORS = {
   yellow: "#c89b40",
   text: "#171615",
   muted: "#747168",
-  grid: "#e8e5dc",
+  grid: "#ded8cb",
+  plotSurface: "#f7f3ea",
+  plotSurfaceStrong: "#eee7dc",
 };
 
 const SERIES_COLORS = [COLORS.blue, COLORS.green, COLORS.yellow, COLORS.orange, COLORS.red];
@@ -883,7 +885,7 @@ function buildDirectScatterBubbleChartSpec(input: FinanceAIDirectScatterBubbleCh
         size: normalizeBubbleMarkerSizes(input),
         color: input.items.map((_, index) => SERIES_COLORS[index % SERIES_COLORS.length]),
         opacity: 0.82,
-        line: { color: "#fff", width: 2 },
+        line: { color: COLORS.plotSurface, width: 2 },
       },
       hovertemplate: "%{text}<br>%{x:,.2f}<br>%{y:,.2f}<extra></extra>",
     }],
@@ -953,13 +955,13 @@ function buildDirectDetailTableChartSpec(input: FinanceAIDirectDetailTableChart)
       type: "table",
       header: {
         values: input.columns,
-        fill: { color: "#f0ebe1" },
+        fill: { color: COLORS.plotSurfaceStrong },
         align: "left",
         font: { color: COLORS.text, size: 12 },
       },
       cells: {
         values: columnValues,
-        fill: { color: "#fffaf2" },
+        fill: { color: COLORS.plotSurface },
         align: "left",
         font: { color: COLORS.text, size: 12 },
         height: 28,

@@ -1554,9 +1554,11 @@ test("direct AI chart payloads support the approved expanded chart set", () => {
   assert.equal(bubbleSpec.kind, "scatter_bubble");
   assert.equal(bubbleSpec.size, "large");
   assert.equal(bubbleSpec.data[0].mode, "markers+text");
+  assert.notEqual(bubbleSpec.data[0].marker.line.color, "#fff");
   assert.equal(tableSpec.kind, "detail_table");
   assert.equal(tableSpec.size, "large");
   assert.equal(tableSpec.data[0].type, "table");
+  assert.notEqual(tableSpec.data[0].cells.fill.color, "#fffaf2");
   assert.deepEqual(moneyTableSpec.data[0].cells.values, [
     ["右舵地区部"],
     ["48.17亿"],
@@ -1574,6 +1576,17 @@ test("direct AI chart payloads support the approved expanded chart set", () => {
     ["6.0%"],
     ["-4.76亿"],
   ]);
+});
+
+test("chart demo specs avoid white Plotly details on warm finance AI surfaces", () => {
+  const demoSpecs = buildFinanceAIChartDemoSpecs();
+  const bubbleSpec = demoSpecs.find((spec) => spec.kind === "scatter_bubble");
+  const tableSpec = demoSpecs.find((spec) => spec.kind === "detail_table");
+
+  assert.ok(bubbleSpec);
+  assert.ok(tableSpec);
+  assert.notEqual(bubbleSpec.data[0].marker.line.color, "#fff");
+  assert.notEqual(tableSpec.data[0].cells.fill.color, "#fffaf2");
 });
 
 test("scatter bubble chart normalizes large size metrics instead of clamping every marker", () => {
