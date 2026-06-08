@@ -532,10 +532,6 @@ body {
   gap: 12px;
 }
 
-.finance-ai-inline-chart-grid {
-  margin: 6px 0 2px;
-}
-
 .finance-ai-chart-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -551,7 +547,7 @@ body {
   box-shadow: var(--finance-ai-chart-shadow);
 }
 
-.finance-ai-chart-grid .finance-ai-chart-card:only-child:not(.is-large):not(.is-small) {
+.finance-ai-chart-grid .finance-ai-chart-card:only-child:not(.is-large) {
   grid-column: 1 / -1;
   width: 100%;
 }
@@ -566,16 +562,6 @@ body {
 
 .finance-ai-chart-card.is-medium .finance-ai-chart-host {
   min-height: 220px;
-}
-
-.finance-ai-chart-card.is-small {
-  max-width: min(260px, 100%);
-  padding: 8px 10px;
-}
-
-.finance-ai-chart-card.is-small .finance-ai-chart-host,
-.finance-ai-chart-card.is-metric_card .finance-ai-chart-host {
-  min-height: 104px;
 }
 
 .finance-ai-chart-card-header {

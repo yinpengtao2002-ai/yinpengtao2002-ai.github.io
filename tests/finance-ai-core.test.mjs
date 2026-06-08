@@ -19,7 +19,6 @@ import {
 import { resolveFinanceActionFilterMembers } from "../src/lib/finance-ai/filter-resolution.ts";
 import { buildChartSpec, buildDirectChartSpec } from "../src/lib/finance-ai/charts.ts";
 import { buildFinanceAIChartDemoSpecs } from "../src/lib/finance-ai/chart-demo.ts";
-import { splitAssistantTextForMetricCards } from "../src/lib/finance-ai/message-sections.ts";
 import {
   buildFinanceAnalysisRowsFromWorkbook,
   buildFinanceRawWorkbookSheetFromRows,
@@ -819,6 +818,32 @@ test("action validator accepts expanded chart plan modules for deterministic fro
   assert.deepEqual(validStructure.modules.map((module) => module.type), ["stacked_bar", "percent_stacked_bar", "detail_table"]);
 });
 
+test("budget target comparison plans use grouped bars instead of stacked bars", () => {
+  const schema = inferFinanceSchema([
+    { "月份": "5月", "国家": "巴西", "数据口径": "实际", "销量": 120 },
+    { "月份": "5月", "国家": "巴西", "数据口径": "预算", "销量": 100 },
+    { "月份": "5月", "国家": "西班牙", "数据口径": "实际", "销量": 80 },
+    { "月份": "5月", "国家": "西班牙", "数据口径": "预算", "销量": 90 },
+  ]);
+  const normalized = normalizeFinanceActionPlanForQuestion(schema, {
+    modules: [
+      {
+        type: "stacked_bar",
+        metric: "销量",
+        dimension: "国家",
+        seriesDimension: "数据口径",
+        period: "M05",
+      },
+    ],
+  }, "这个和预算目标比一下销量，分国家的。");
+  const validated = validateFinanceActionPlan(schema, normalized);
+
+  assert.equal(normalized.modules[0].type, "grouped_bar");
+  assert.equal(normalized.modules[0].seriesDimension, "数据口径");
+  assert.equal(normalized.modules[0].comparison, undefined);
+  assert.equal(validated.ok, true);
+});
+
 test("all-member grouped bar questions keep every compact dimension member visible", () => {
   const regionRows = Array.from({ length: 12 }, (_, index) => ({
     "月份": "2026-04",
@@ -1192,21 +1217,7 @@ test("chart specs are compact and identify supported chart types", () => {
   assert.equal(typeof spec.note, "string");
 });
 
-test("metric-card text splitting keeps markdown strong markers paired", () => {
-  const split = splitAssistantTextForMetricCards("**5月整体销量完成 120,000 台。** 分解来看，巴西和西班牙贡献最大。", true);
-
-  assert.equal(split.introText, "**5月整体销量完成 120,000 台。**");
-  assert.equal(split.analysisText, "分解来看，巴西和西班牙贡献最大。");
-});
-
-test("metric-card text splitting avoids cutting inside open markdown strong text", () => {
-  const split = splitAssistantTextForMetricCards("**5月整体销量完成 120,000 台。分解来看，巴西贡献最大。** 后续看车型结构。", true);
-
-  assert.equal(split.introText, "**5月整体销量完成 120,000 台。分解来看，巴西贡献最大。**");
-  assert.equal(split.analysisText, "后续看车型结构。");
-});
-
-test("metric snapshot chart spec renders as a compact KPI card", () => {
+test("metric snapshot remains computable without requiring a pure KPI chart card", () => {
   const schema = inferFinanceSchema(metricRows);
   const snapshot = buildMetricSnapshot(metricRows, schema, {
     metric: "单车边际",
@@ -1214,32 +1225,9 @@ test("metric snapshot chart spec renders as a compact KPI card", () => {
     filters: { "国家": ["巴西"] },
     comparisons: ["mom", "yoy"],
   });
-  const spec = buildChartSpec({ type: "metric_snapshot", title: "2026-03 巴西单车边际", result: snapshot });
 
-  assert.equal(spec.kind, "metric_card");
-  assert.equal(spec.size, "small");
-  assert.equal(spec.data[0].type, "indicator");
-  assert.equal(spec.data[0].value, 35);
-  assert.equal(spec.data[0].number.suffix, "");
-  assert.equal(spec.data[0].delta.suffix, "");
-  assert.equal(spec.layout.height, 104);
-  assert.equal(spec.config.displayModeBar, false);
-});
-
-test("metric card chart uses Chinese units for value and absolute delta", () => {
-  const spec = buildDirectChartSpec({
-    type: "metric_card",
-    title: "M04 边际总额",
-    value: 13999900000,
-    subtitle: "环比 +17.8%",
-    deltaValue: 2112040548.34,
-  });
-
-  assert.equal(spec.size, "small");
-  assert.equal(spec.data[0].value, 139.999);
-  assert.equal(spec.data[0].number.suffix, "亿");
-  assert.equal(spec.data[0].delta.reference, 118.8785945166);
-  assert.equal(spec.data[0].delta.suffix, "亿");
+  assert.equal(snapshot.value, 35);
+  assert.equal(snapshot.mom.changeValue, 15);
 });
 
 test("waterfall chart uses compact Chinese magnitude units without assuming currency", () => {
@@ -1376,13 +1364,12 @@ test("finance AI chart demo specs cover every supported chart style", () => {
   const specs = buildFinanceAIChartDemoSpecs();
   const kinds = new Set(specs.map((spec) => spec.kind));
 
-  assert.equal(specs.length, 11);
+  assert.equal(specs.length, 10);
   assert.deepEqual([...kinds].sort(), [
     "bar_rank",
     "detail_table",
     "grouped_bar",
     "heatmap",
-    "metric_card",
     "percent_stacked_bar",
     "scatter_bubble",
     "stacked_bar",
@@ -1494,12 +1481,6 @@ test("waterfall axis keeps positive start and end bars visibly anchored", () => 
 });
 
 test("direct AI chart payloads support the approved expanded chart set", () => {
-  const metricSpec = buildDirectChartSpec({
-    type: "metric_card",
-    title: "4月泰国单车边际",
-    value: 32.5,
-    subtitle: "环比 +9.1%",
-  });
   const groupedSpec = buildDirectChartSpec({
     type: "grouped_bar",
     title: "车型单车边际对比",
@@ -1555,8 +1536,6 @@ test("direct AI chart payloads support the approved expanded chart set", () => {
     rows: [[1, "西班牙", 840977230.49, 0.0601, -476067578.85]],
   });
 
-  assert.equal(metricSpec.kind, "metric_card");
-  assert.equal(metricSpec.size, "small");
   assert.equal(groupedSpec.kind, "grouped_bar");
   assert.equal(groupedSpec.size, "medium");
   assert.equal(groupedSpec.layout.barmode, "group");

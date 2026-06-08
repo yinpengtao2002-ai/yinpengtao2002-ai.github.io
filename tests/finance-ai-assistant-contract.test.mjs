@@ -125,7 +125,7 @@ test("finance AI assistant API exposes planning and explanation responsibilities
   assert.match(context, /buildFinanceAIExplanationPrompt/);
   assert.match(context, /上传底稿/);
   assert.match(context, /safeWorkbookJson/);
-  assert.match(context, /metric_card/);
+  assert.doesNotMatch(context, /metric_card/);
   assert.match(context, /percent_stacked_bar/);
   assert.match(context, /scatter_bubble/);
   assert.match(context, /AI 不负责计算数字/);
@@ -144,6 +144,8 @@ test("finance AI assistant API exposes planning and explanation responsibilities
   assert.match(context, /grouped_bar/);
   assert.match(context, /stacked_bar/);
   assert.match(context, /percent_stacked_bar/);
+  assert.match(context, /预算.*目标.*grouped_bar|grouped_bar.*预算.*目标/);
+  assert.match(context, /不要.*stacked_bar.*预算|预算.*不要.*stacked_bar/);
   assert.match(context, /heatmap/);
   assert.match(context, /scatter_bubble/);
   assert.match(context, /detail_table/);
@@ -187,13 +189,15 @@ test("finance AI direct prompt includes uploaded workbook rows for provider anal
   assert.doesNotMatch(prompt, /\{"月份":"2026-03","国家":"巴西","销量":100,"边际":3000\}/);
   assert.match(prompt, /charts 最多 3 个/);
   assert.doesNotMatch(prompt, /只允许以下三种类型/);
-  assert.match(prompt, /metric_card/);
+  assert.doesNotMatch(prompt, /metric_card/);
   assert.match(prompt, /trend/);
   assert.match(prompt, /bar_rank/);
   assert.match(prompt, /waterfall/);
   assert.match(prompt, /grouped_bar/);
   assert.match(prompt, /stacked_bar/);
   assert.match(prompt, /percent_stacked_bar/);
+  assert.match(prompt, /预算.*目标.*grouped_bar|grouped_bar.*预算.*目标/);
+  assert.match(prompt, /不要.*stacked_bar.*预算|预算.*不要.*stacked_bar/);
   assert.match(prompt, /heatmap/);
   assert.match(prompt, /scatter_bubble/);
   assert.match(prompt, /detail_table/);
@@ -467,6 +471,56 @@ test("finance AI assistant plan mode aligns explicit rank directions before retu
   }));
 });
 
+test("finance AI assistant plan mode converts budget target stacks into grouped comparison bars", async () => {
+  const schema = {
+    headers: ["Month", "Country", "数据口径", "Sales Volume"],
+    monthColumn: "Month",
+    salesColumn: "Sales Volume",
+    dimensionColumns: ["Country", "数据口径"],
+    totalMetrics: [
+      { kind: "total", name: "Sales Volume", column: "Sales Volume" },
+    ],
+    unitMetrics: [],
+    excludedMetricColumns: [],
+    requiredIssues: [],
+    profile: {
+      rowCount: 40,
+      periods: [
+        { key: "M05", label: "5月", sort: 5 },
+      ],
+      dimensionValueCounts: { Country: 8, "数据口径": 2 },
+    },
+  };
+
+  await withMockedProvider(async () => {
+    const response = await POST(makeRequest({
+      mode: "plan",
+      question: "这个和预算目标比一下销量，分国家的。",
+      schema,
+    }));
+    const payload = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.modules[0].type, "grouped_bar");
+    assert.equal(payload.modules[0].metric, "Sales Volume");
+    assert.equal(payload.modules[0].dimension, "Country");
+    assert.equal(payload.modules[0].seriesDimension, "数据口径");
+    assert.equal(payload.modules[0].period, "M05");
+    assert.equal(payload.modules[0].comparison, undefined);
+  }, JSON.stringify({
+    modules: [
+      {
+        type: "stacked_bar",
+        metric: "Sales Volume",
+        dimension: "Country",
+        seriesDimension: "数据口径",
+        period: "M05",
+        limit: 8,
+      },
+    ],
+  }));
+});
+
 test("finance AI assistant plan mode accepts unit-metric waterfall plans", async () => {
   const schema = {
     headers: ["Month", "Country", "Model", "Sales Volume", "Total Margin"],
@@ -550,15 +604,12 @@ test("finance AI assistant analyze mode sends workbook rows and normalizes direc
     assert.match(providerBody, /西班牙/);
     assert.equal(payload.message, "3 月巴西单车边际为 35。");
     assert.deepEqual(payload.assumptions, ["单车边际=边际/销量"]);
-    assert.equal(payload.charts.length, 3);
-    assert.equal(payload.charts[0].type, "metric_card");
-    assert.equal(payload.charts[1].type, "heatmap");
-    assert.equal(payload.charts[2].type, "detail_table");
-    assert.equal(payload.charts[0].value, 35);
-    assert.equal(payload.charts[0].subtitle, "环比 +40%");
-    assert.equal(payload.charts[1].values.length, 2);
-    assert.equal(payload.charts[1].values[0][1], null);
-    assert.equal(payload.charts[2].rows.length, 2);
+    assert.equal(payload.charts.length, 2);
+    assert.equal(payload.charts[0].type, "heatmap");
+    assert.equal(payload.charts[1].type, "detail_table");
+    assert.equal(payload.charts[0].values.length, 2);
+    assert.equal(payload.charts[0].values[0][1], null);
+    assert.equal(payload.charts[1].rows.length, 2);
   }, JSON.stringify({
     answer: "3 月巴西单车边际为 35。",
     assumptions: ["单车边际=边际/销量"],
@@ -591,6 +642,58 @@ test("finance AI assistant analyze mode sends workbook rows and normalizes direc
       },
       { type: "pie", title: "不支持图", items: [{ label: "x", value: 1 }] },
       { type: "trend", title: "坏图", points: [{ label: "x", value: "bad" }] },
+    ],
+  }));
+});
+
+test("finance AI analyze mode converts budget target stacked charts into grouped bars", async () => {
+  await withMockedProvider(async () => {
+    const response = await POST(makeRequest({
+      mode: "analyze",
+      question: "这个和预算目标比一下销量，分国家的。",
+      workbook: {
+        fileName: "source.xlsx",
+        totalRowCount: 4,
+        sheets: [
+          {
+            name: "实际",
+            headers: ["月份", "国家", "销量"],
+            rowCount: 2,
+            rows: [
+              { "月份": "5月", "国家": "巴西", "销量": 120 },
+              { "月份": "5月", "国家": "西班牙", "销量": 80 },
+            ],
+          },
+          {
+            name: "预算",
+            headers: ["月份", "国家", "销量"],
+            rowCount: 2,
+            rows: [
+              { "月份": "5月", "国家": "巴西", "销量": 100 },
+              { "月份": "5月", "国家": "西班牙", "销量": 90 },
+            ],
+          },
+        ],
+      },
+    }));
+    const payload = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.charts.length, 1);
+    assert.equal(payload.charts[0].type, "grouped_bar");
+    assert.deepEqual(payload.charts[0].series.map((item) => item.name), ["实际", "预算"]);
+  }, JSON.stringify({
+    answer: "5月销量按国家对比，巴西实际高于预算，西班牙低于预算。",
+    assumptions: [],
+    charts: [
+      {
+        type: "stacked_bar",
+        title: "5月国家销量实际 vs 预算",
+        series: [
+          { name: "实际", items: [{ label: "巴西", value: 120 }, { label: "西班牙", value: 80 }] },
+          { name: "预算", items: [{ label: "巴西", value: 100 }, { label: "西班牙", value: 90 }] },
+        ],
+      },
     ],
   }));
 });
@@ -987,11 +1090,9 @@ test("finance AI assistant chat styles size embedded chart cards", async () => {
   assert.match(styles, /\.finance-ai-chart-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
   assert.match(styles, /\.finance-ai-chart-card/);
   assert.match(styles, /\.finance-ai-message\.is-assistant\s+\.finance-ai-message-bubble\s*\{[\s\S]*width:\s*100%/s);
-  assert.match(styles, /\.finance-ai-chart-grid\s+\.finance-ai-chart-card:only-child:not\(\.is-large\):not\(\.is-small\)\s*\{[^}]*grid-column:\s*1\s*\/\s*-1/s);
+  assert.match(styles, /\.finance-ai-chart-grid\s+\.finance-ai-chart-card:only-child:not\(\.is-large\)\s*\{[^}]*grid-column:\s*1\s*\/\s*-1/s);
   assert.match(styles, /\.finance-ai-chart-card\.is-large\s*\{[\s\S]*grid-column:\s*1\s*\/\s*-1/s);
-  assert.match(styles, /\.finance-ai-chart-card\.is-small/);
-  assert.match(styles, /\.finance-ai-chart-card\.is-small\s*\{[\s\S]*max-width:\s*min\(260px,\s*100%\)/s);
-  assert.match(styles, /\.finance-ai-chart-card\.is-small\s+\.finance-ai-chart-host[\s\S]*min-height:\s*104px/s);
+  assert.doesNotMatch(styles, /\.finance-ai-chart-card\.is-small/);
   assert.match(styles, /\.finance-ai-chart-host\s*\{[\s\S]*min-height:\s*210px/s);
   assert.doesNotMatch(styles, /\.finance-ai-chart-zoom/);
   assert.doesNotMatch(styles, /\.finance-ai-chart-modal/);
@@ -1016,16 +1117,13 @@ test("finance AI assistant chart surfaces blend with the warm page background", 
   assert.doesNotMatch(styles, /\.finance-ai-demo-card\s*\{[^}]*background:\s*rgba\(255,\s*255,\s*255/s);
 });
 
-test("finance AI assistant interleaves metric cards before narrative chart analysis", async () => {
+test("finance AI assistant does not interleave pure metric cards into narrative text", async () => {
   const client = await readProjectFile("src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
 
   assert.match(client, /buildAssistantMessageSections/);
-  assert.match(client, /introText/);
-  assert.match(client, /metricCards/);
-  assert.match(client, /analysisText/);
-  assert.match(client, /remainingChartCards/);
-  assert.match(client, /card\.spec\.kind === "metric_card"/);
-  assert.match(client, /finance-ai-inline-chart-grid/);
+  assert.doesNotMatch(client, /splitAssistantTextForMetricCards/);
+  assert.doesNotMatch(client, /metricCards/);
+  assert.doesNotMatch(client, /finance-ai-inline-chart-grid/);
   assert.match(client, /messageSections\.map/);
 });
 

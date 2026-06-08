@@ -13,7 +13,6 @@ import type {
   FinanceAIDirectChart,
   FinanceAIDirectDetailTableChart,
   FinanceAIDirectHeatmapChart,
-  FinanceAIDirectMetricCardChart,
   FinanceAIDirectScatterBubbleChart,
   FinanceAIDirectSeriesChart,
   FinanceAIDirectTrendChart,
@@ -37,6 +36,8 @@ const MAX_DIRECT_SERIES_ITEMS = 16;
 const MAX_DIRECT_HEATMAP_AXIS = 14;
 const MAX_DIRECT_TABLE_ROWS = 120;
 const MAX_DIRECT_TABLE_COLUMNS = 10;
+const DIRECT_SCENARIO_COMPARE_TOKENS = ["预算", "目标", "实际", "预测", "计划", "达成", "对比", "比一下", "比一比", "比较", "target", "budget", "actual", "forecast", "plan"];
+const DIRECT_SCENARIO_SERIES_TOKENS = ["实际", "预算", "目标", "预测", "计划", "actual", "budget", "target", "forecast", "plan"];
 
 type ChatMessage = {
   role: "system" | "user";
@@ -247,25 +248,6 @@ function normalizeChatState(value: unknown): FinanceAIChatState {
 
 function finiteNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
-function normalizeDirectMetricCardChart(record: Record<string, unknown>): FinanceAIDirectMetricCardChart | null {
-  const title = typeof record.title === "string" ? record.title.trim() : "";
-  const value = finiteNumber(record.value);
-
-  if (!title || value === null) {
-    return null;
-  }
-
-  return {
-    type: "metric_card",
-    title,
-    value,
-    ...(typeof record.subtitle === "string" && record.subtitle.trim() ? { subtitle: record.subtitle.trim() } : {}),
-    ...(finiteNumber(record.deltaValue) !== null ? { deltaValue: finiteNumber(record.deltaValue) } : {}),
-    ...(finiteNumber(record.deltaRate) !== null ? { deltaRate: finiteNumber(record.deltaRate) } : {}),
-    ...(typeof record.note === "string" && record.note.trim() ? { note: record.note.trim() } : {}),
-  };
 }
 
 function normalizeDirectTrendChart(record: Record<string, unknown>): FinanceAIDirectTrendChart | null {
@@ -511,10 +493,6 @@ function normalizeDirectDetailTableChart(record: Record<string, unknown>): Finan
 function normalizeDirectChart(value: unknown): FinanceAIDirectChart | null {
   const record = asRecord(value);
 
-  if (record.type === "metric_card") {
-    return normalizeDirectMetricCardChart(record);
-  }
-
   if (record.type === "trend") {
     return normalizeDirectTrendChart(record);
   }
@@ -546,7 +524,44 @@ function normalizeDirectChart(value: unknown): FinanceAIDirectChart | null {
   return null;
 }
 
-function normalizeDirectAnalysis(value: unknown): FinanceAIDirectAnalysis {
+function normalizeDirectIntentText(value: string) {
+  return value.toLowerCase().replace(/[\s_\-./,，。:：;；、"'“”‘’()（）]/g, "");
+}
+
+function hasDirectScenarioCompareIntent(question: string) {
+  const normalizedQuestion = normalizeDirectIntentText(question);
+
+  return DIRECT_SCENARIO_COMPARE_TOKENS
+    .map(normalizeDirectIntentText)
+    .some((token) => normalizedQuestion.includes(token));
+}
+
+function directSeriesLooksLikeScenario(series: FinanceAIDirectSeriesChart["series"]) {
+  const tokens = DIRECT_SCENARIO_SERIES_TOKENS.map(normalizeDirectIntentText);
+
+  return series.some((item) => {
+    const name = normalizeDirectIntentText(item.name);
+    return tokens.some((token) => name.includes(token));
+  });
+}
+
+function alignDirectChartWithQuestion(chart: FinanceAIDirectChart, question: string): FinanceAIDirectChart {
+  if (
+    (chart.type === "stacked_bar" || chart.type === "percent_stacked_bar") &&
+    hasDirectScenarioCompareIntent(question) &&
+    directSeriesLooksLikeScenario(chart.series)
+  ) {
+    return {
+      ...chart,
+      type: "grouped_bar",
+      note: chart.note || "实际、预算、目标等口径不能相加，因此用并列柱对比。",
+    };
+  }
+
+  return chart;
+}
+
+function normalizeDirectAnalysis(value: unknown, question = ""): FinanceAIDirectAnalysis {
   const record = asRecord(value);
   const answer = typeof record.answer === "string" && record.answer.trim()
     ? record.answer.trim()
@@ -562,6 +577,7 @@ function normalizeDirectAnalysis(value: unknown): FinanceAIDirectAnalysis {
     ? record.charts
         .map(normalizeDirectChart)
         .filter((chart): chart is FinanceAIDirectChart => chart !== null)
+        .map((chart) => alignDirectChartWithQuestion(chart, question))
         .slice(0, MAX_DIRECT_CHARTS)
     : [];
 
@@ -905,7 +921,7 @@ export async function POST(req: Request) {
     }
 
     try {
-      const analysis = normalizeDirectAnalysis(extractJsonObject(providerResult.content));
+      const analysis = normalizeDirectAnalysis(extractJsonObject(providerResult.content), question);
       return Response.json({
         message: analysis.answer,
         assumptions: analysis.assumptions,
@@ -956,7 +972,7 @@ export async function POST(req: Request) {
     }
 
     try {
-      const analysis = normalizeDirectAnalysis(extractJsonObject(providerResult.content));
+      const analysis = normalizeDirectAnalysis(extractJsonObject(providerResult.content), question);
       return Response.json({
         message: analysis.answer,
         assumptions: analysis.assumptions,

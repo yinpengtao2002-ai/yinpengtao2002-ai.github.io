@@ -38,6 +38,8 @@ const DETAIL_TABLE_TOKENS = ["完整明细", "明细表", "全部列出", "全�
 const DRILLDOWN_TOKENS = ["构成", "组成", "内部", "下面", "下级", "下钻", "细分", "拆开", "拆成", "自身", "自己", "哪些国家", "哪些车型", "由哪些"];
 const REASON_FOLLOWUP_TOKENS = ["为什么", "为啥", "原因", "怎么会", "怎么", "咋", "下降这么多", "降这么多", "减少这么多", "变化这么多", "差这么多", "坏这么多", "坏的", "拖累这么多", "影响这么多"];
 const CONJUNCTIVE_CHANGE_TOKENS = ["都增长", "均增长", "同时增长", "一起增长", "都增加", "均增加", "同时增加", "都上涨", "均上涨", "同时上涨", "都上升", "均上升", "双增长", "双升", "都下降", "均下降", "同时下降", "都减少", "均减少", "同时减少"];
+const SCENARIO_COMPARE_TOKENS = ["预算", "目标", "实际", "预测", "计划", "达成", "对比", "比一下", "比一比", "比较", "target", "budget", "actual", "forecast", "plan"];
+const SCENARIO_DIMENSION_ALIASES = ["数据口径", "口径", "场景", "scenario", "scenarios"];
 const PRIMARY_DIMENSION_MODULE_TYPES = new Set<ActionType>([
   "bar_rank",
   "waterfall_bridge",
@@ -226,6 +228,10 @@ export function validateFinanceActionPlan(
       validateDimension(schema, module.dimension, errors, "维度字段");
     }
 
+    if (module.type === "grouped_bar" && module.seriesDimension) {
+      validateDimension(schema, module.seriesDimension, errors, "系列维度字段");
+    }
+
     if (module.type === "stacked_bar" || module.type === "percent_stacked_bar") {
       validateDimension(schema, module.dimension, errors, "主维度字段");
       validateDimension(schema, module.seriesDimension, errors, "系列维度字段");
@@ -269,6 +275,7 @@ export function alignFinanceActionPlanWithQuestion(
     module = alignReasonFollowupWithContext(schema, module, userQuestion, context);
     module = alignPrimaryDimensionWithQuestion(schema, module, userQuestion);
     module = alignExplicitDimensionMemberWithQuestion(schema, module, userQuestion, context);
+    module = alignScenarioComparisonChartWithQuestion(schema, module, userQuestion);
 
     if (module.type === "grouped_bar") {
       const changeRankSort = getChangeRankSortIntent(userQuestion);
@@ -355,6 +362,56 @@ function alignConjunctiveChangePlanWithQuestion(
   }
 
   return [...modules.slice(0, 2), detailTable];
+}
+
+function alignScenarioComparisonChartWithQuestion(
+  schema: FinanceSchema,
+  module: FinanceActionModule,
+  userQuestion: string,
+): FinanceActionModule {
+  const scenarioDimension = getScenarioDimension(schema);
+  if (!scenarioDimension || !hasScenarioComparisonIntent(userQuestion)) {
+    return module;
+  }
+
+  if (
+    (module.type === "stacked_bar" || module.type === "percent_stacked_bar") &&
+    module.seriesDimension === scenarioDimension
+  ) {
+    return {
+      type: "grouped_bar",
+      metric: module.metric,
+      dimension: module.dimension,
+      seriesDimension: module.seriesDimension,
+      period: module.period,
+      filters: module.filters,
+      limit: module.limit,
+      seriesLimit: module.seriesLimit,
+    } satisfies FinanceActionModule;
+  }
+
+  if (module.type !== "grouped_bar") {
+    return module;
+  }
+
+  if (module.seriesDimension === scenarioDimension) {
+    return withoutGroupedComparison(module);
+  }
+
+  if (module.comparison === "mom") {
+    return {
+      ...withoutGroupedComparison(module),
+      seriesDimension: scenarioDimension,
+    };
+  }
+
+  return module;
+}
+
+function withoutGroupedComparison(module: Extract<FinanceActionModule, { type: "grouped_bar" }>) {
+  const nextModule = { ...module };
+  delete nextModule.comparison;
+  return nextModule;
 }
 
 function getConjunctiveChangeIntent(
@@ -644,6 +701,22 @@ function hasConjunctiveChangeIntent(question: string) {
   return CONJUNCTIVE_CHANGE_TOKENS
     .map(normalizeIntentText)
     .some((token) => normalizedQuestion.includes(token));
+}
+
+function hasScenarioComparisonIntent(question: string) {
+  const normalizedQuestion = normalizeIntentText(question);
+
+  return SCENARIO_COMPARE_TOKENS
+    .map(normalizeIntentText)
+    .some((token) => normalizedQuestion.includes(token));
+}
+
+function getScenarioDimension(schema: FinanceSchema) {
+  const aliases = SCENARIO_DIMENSION_ALIASES.map(normalizeIntentText);
+
+  return schema.dimensionColumns.find((dimension) => (
+    aliases.includes(normalizeIntentText(dimension))
+  ));
 }
 
 function getMentionedMetrics(schema: FinanceSchema, question: string) {
@@ -958,9 +1031,18 @@ function validateActionOptions(module: FinanceActionModule, errors: string[]) {
 
   if (module.type === "grouped_bar") {
     const record = module as Record<string, unknown>;
+    const hasSeriesDimension = hasStringValue(record.seriesDimension);
     if (typeof record.comparison === "string" && record.comparison !== "mom") {
       errors.push("分组柱状图对比只支持环比。");
       delete record.comparison;
+    }
+
+    if (hasSeriesDimension && typeof record.comparison === "string") {
+      delete record.comparison;
+    }
+
+    if (!hasSeriesDimension && record.comparison !== "mom") {
+      errors.push("分组柱状图需要指定环比对比或系列维度。");
     }
   }
 
@@ -994,7 +1076,7 @@ function validateActionOptions(module: FinanceActionModule, errors: string[]) {
     normalizeChartLimit(module, 120);
   }
 
-  if (module.type === "stacked_bar" || module.type === "percent_stacked_bar") {
+  if (module.type === "grouped_bar" || module.type === "stacked_bar" || module.type === "percent_stacked_bar") {
     validateSeriesLimit(module, errors);
   }
 }

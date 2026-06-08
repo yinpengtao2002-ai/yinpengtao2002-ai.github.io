@@ -80,17 +80,6 @@ function waterfallSpec(
 
 export function buildFinanceAIChartDemoSpecs(): FinanceChartSpec[] {
   return [
-    spec("metric_card", "泰国 4月单车边际", [{
-      type: "indicator",
-      mode: "number+delta",
-      value: 32.5,
-      number: { suffix: " / 台", font: { color: COLORS.text, size: 42 } },
-      delta: { reference: 29.8, relative: true, valueformat: ".1%", increasing: { color: COLORS.green }, decreasing: { color: COLORS.red } },
-      title: { text: "环比 +9.1%，销量 12,450 台", font: { color: COLORS.muted, size: 13 } },
-    }], {
-      margin: { t: 28, r: 18, b: 18, l: 18 },
-    }, "用于回答某个指标当前值、环比、同比和口径。"),
-
     spec("trend_chart", "泰国单车边际趋势", [{
       type: "scatter",
       mode: "lines+markers+text",

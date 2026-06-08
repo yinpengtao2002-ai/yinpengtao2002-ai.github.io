@@ -197,7 +197,7 @@ export type FinanceActionModule =
   | ({ type: "trend_chart" } & TrendRequest)
   | ({ type: "bar_rank" } & BarRankRequest)
   | ({ type: "waterfall_bridge" } & WaterfallBridgeRequest)
-  | ({ type: "grouped_bar"; comparison?: "mom" } & Pick<BarRankRequest, "metric" | "dimension" | "period" | "filters" | "limit">)
+  | ({ type: "grouped_bar"; comparison?: "mom"; seriesDimension?: string; seriesLimit?: number } & Pick<BarRankRequest, "metric" | "dimension" | "period" | "filters" | "limit">)
   | ({ type: "stacked_bar" | "percent_stacked_bar"; metric: string; dimension: string; seriesDimension: string; period: string; filters?: FinanceFilter; limit?: number; seriesLimit?: number })
   | ({ type: "heatmap"; metric: string; xDimension: string; yDimension: string; period: string; filters?: FinanceFilter; limit?: number })
   | ({ type: "scatter_bubble"; xMetric: string; yMetric: string; sizeMetric?: string; dimension: string; period: string; filters?: FinanceFilter; limit?: number })

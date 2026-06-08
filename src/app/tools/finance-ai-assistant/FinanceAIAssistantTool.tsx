@@ -23,7 +23,6 @@ import {
   buildWaterfallBridge,
 } from "@/lib/finance-ai/metrics";
 import { inferFinanceSchema, normalizePeriodValue } from "@/lib/finance-ai/schema";
-import { splitAssistantTextForMetricCards } from "@/lib/finance-ai/message-sections";
 import { normalizeChatMathMarkdown } from "@/lib/markdown/normalizeChatMathMarkdown";
 import { normalizeMarkdownStrongEmphasis } from "@/lib/markdown/normalizeStrongEmphasis";
 import type {
@@ -76,10 +75,8 @@ type ComputedModule = {
 type AnalysisContextItem = NonNullable<FinanceAIChatState["analysisContext"]>[number];
 
 type AssistantMessageSection = {
-  introText: string;
-  metricCards: ChartCard[];
-  analysisText: string;
-  remainingChartCards: ChartCard[];
+  text: string;
+  chartCards: ChartCard[];
 };
 
 type PlotlyModule = {
@@ -220,6 +217,10 @@ function getModuleTitle(module: FinanceActionModule, schema: FinanceSchema) {
   }
 
   if (module.type === "grouped_bar") {
+    if (module.seriesDimension) {
+      return `${getPeriodDisplayLabel(schema, module.period)} ${module.dimension}×${module.seriesDimension}${module.metric}对比`;
+    }
+
     return `${getPeriodDisplayLabel(schema, module.period)} ${module.dimension}${module.metric}环比对比`;
   }
 
@@ -429,6 +430,53 @@ function getRankLabels(
 function buildGroupedPlanChart(rows: FinanceRow[], schema: FinanceSchema, module: FinanceActionModule, title: string) {
   if (module.type !== "grouped_bar") {
     return null;
+  }
+
+  const period = module.period ?? "";
+  const seriesDimension = module.seriesDimension ?? "";
+
+  if (seriesDimension && period) {
+    const labels = getRankLabels(
+      rows,
+      schema,
+      module.metric,
+      module.dimension,
+      period,
+      module.filters,
+      clampChartLimit(module.limit, 8, 16),
+    );
+    const seriesLabels = getRankLabels(
+      rows,
+      schema,
+      module.metric,
+      seriesDimension,
+      period,
+      module.filters,
+      clampChartLimit(module.seriesLimit, 4, 6),
+    );
+    const series = seriesLabels.map((seriesLabel) => ({
+      name: seriesLabel,
+      items: labels.map((label) => ({
+        label,
+        value: getMetricValue(rows, schema, module.metric, period, mergeFilters(module.filters, {
+          [module.dimension]: [label],
+          [seriesDimension]: [seriesLabel],
+        })),
+      })),
+    }));
+    const spec = buildDirectChartSpec({
+      type: "grouped_bar",
+      title,
+      xLabel: module.dimension,
+      yLabel: module.metric,
+      series,
+      note: "用并列柱对比实际、预算、目标等不同口径，同一维度下的口径不能相加。",
+    });
+
+    return {
+      result: series,
+      spec,
+    };
   }
 
   const result = buildBarRank(rows, schema, {
@@ -652,9 +700,7 @@ function executeFinancePlan(
 
     if (module.type === "metric_snapshot") {
       const result = buildMetricSnapshot(rows, schema, module);
-      const spec = buildChartSpec({ type: "metric_snapshot", title, result });
       computedModules.push({ type: "metric_snapshot", title, request: module, result });
-      chartCards.push({ id: `chart-${Date.now()}-${index}-snapshot-card`, title, spec, note: spec.note });
 
       if (module.chart?.type === "trend_chart") {
         const trendResult = buildTrendSeries(rows, schema, {
@@ -933,18 +979,10 @@ function FinanceAIMessageContent({ text }: { text: string }) {
 
 function buildAssistantMessageSections(message: ChatMessage): AssistantMessageSection[] {
   const chartCards = message.chartCards ?? [];
-  const metricCards = chartCards.filter((card) => card.spec.kind === "metric_card");
-  const remainingChartCards = chartCards.filter((card) => card.spec.kind !== "metric_card");
-  const { introText, analysisText } = splitAssistantTextForMetricCards(
-    message.text,
-    message.role === "assistant" && metricCards.length > 0,
-  );
 
   return [{
-    introText,
-    metricCards: message.role === "assistant" ? metricCards : [],
-    analysisText,
-    remainingChartCards: message.role === "assistant" ? remainingChartCards : chartCards,
+    text: message.text,
+    chartCards,
   }];
 }
 
@@ -1327,13 +1365,8 @@ export default function FinanceAIAssistantTool() {
                 <div className="finance-ai-message-bubble">
                   {messageSections.map((section, sectionIndex) => (
                     <div className="finance-ai-message-section" key={`${message.id}-${sectionIndex}`}>
-                      {section.introText ? <FinanceAIMessageContent text={section.introText} /> : null}
-                      <FinanceAIChartGrid
-                        cards={section.metricCards}
-                        className="finance-ai-chart-grid finance-ai-inline-chart-grid"
-                      />
-                      {section.analysisText ? <FinanceAIMessageContent text={section.analysisText} /> : null}
-                      <FinanceAIChartGrid cards={section.remainingChartCards} />
+                      {section.text ? <FinanceAIMessageContent text={section.text} /> : null}
+                      <FinanceAIChartGrid cards={section.chartCards} />
                     </div>
                   ))}
                   {message.meta ? <small>{message.meta}</small> : null}
