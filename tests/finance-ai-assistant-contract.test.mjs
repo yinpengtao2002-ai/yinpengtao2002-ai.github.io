@@ -1100,6 +1100,8 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(client, /finance-ai-composer-dock/);
   assert.match(client, /computedModules/);
   assert.match(client, /chartCards/);
+  assert.match(client, /resolveFinanceActionFilterMembers/);
+  assert.match(client, /filterResolution\.ok/);
   assert.doesNotMatch(client, /<p>\{message\.text\}<\/p>/);
   assert.match(styles, /\.finance-ai-page\s*\{[\s\S]*background:\s*#f7f5ef/s);
   assert.match(styles, /\.finance-ai-access-gate/);

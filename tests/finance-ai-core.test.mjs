@@ -16,6 +16,7 @@ import {
   normalizeFinanceActionPlanForQuestion,
   validateFinanceActionPlan,
 } from "../src/lib/finance-ai/actions.ts";
+import { resolveFinanceActionFilterMembers } from "../src/lib/finance-ai/filter-resolution.ts";
 import { buildChartSpec, buildDirectChartSpec } from "../src/lib/finance-ai/charts.ts";
 import { buildFinanceAIChartDemoSpecs } from "../src/lib/finance-ai/chart-demo.ts";
 import { buildFinanceRawWorkbookSheetFromRows } from "../src/lib/finance-ai/workbook.ts";
@@ -526,6 +527,48 @@ test("invalid filter array elements are ignored without becoming string filters"
 
   assert.deepEqual(snapshot.filters, { "国家": ["巴西"] });
   assert.equal(snapshot.value, 3500);
+});
+
+test("finance AI action filters move fuzzy dimension members to the only matching dimension", () => {
+  const filterRows = [
+    { "月份": "4月", "大区": "右舵地区部", "品牌": "OMODA", "车型": "T1", "销量": 10, "边际": 100 },
+    { "月份": "5月", "大区": "右舵地区部", "品牌": "OMODA", "车型": "T1", "销量": 12, "边际": 150 },
+  ];
+  const schema = inferFinanceSchema(filterRows);
+  const resolved = resolveFinanceActionFilterMembers(filterRows, schema, [
+    {
+      type: "metric_snapshot",
+      metric: "销量",
+      period: "M05",
+      filters: { "品牌": ["右舵"] },
+      comparisons: ["mom"],
+    },
+  ]);
+
+  assert.equal(resolved.ok, true);
+  assert.deepEqual(resolved.modules[0].filters, { "大区": ["右舵地区部"] });
+});
+
+test("finance AI action filters ask for dimension clarification when fuzzy members are ambiguous", () => {
+  const filterRows = [
+    { "月份": "5月", "大区": "右舵地区部", "品牌": "右舵品牌", "车型": "T1", "销量": 10, "边际": 100 },
+  ];
+  const schema = inferFinanceSchema(filterRows);
+  const resolved = resolveFinanceActionFilterMembers(filterRows, schema, [
+    {
+      type: "metric_snapshot",
+      metric: "销量",
+      period: "M05",
+      filters: { "车型": ["右舵"] },
+      comparisons: ["mom"],
+    },
+  ]);
+
+  assert.equal(resolved.ok, false);
+  assert.match(resolved.message, /右舵/);
+  assert.match(resolved.message, /大区/);
+  assert.match(resolved.message, /品牌/);
+  assert.match(resolved.message, /哪个维度/);
 });
 
 test("action validator accepts recognized modules and enforces module limit", () => {

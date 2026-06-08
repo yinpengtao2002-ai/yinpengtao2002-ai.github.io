@@ -9,6 +9,7 @@ import rehypeKatex from "rehype-katex";
 import * as XLSX from "xlsx";
 import "katex/dist/katex.min.css";
 import { buildChartSpec, buildDirectChartSpec } from "@/lib/finance-ai/charts";
+import { resolveFinanceActionFilterMembers } from "@/lib/finance-ai/filter-resolution";
 import { buildFinanceRawWorkbookSheetFromRows } from "@/lib/finance-ai/workbook";
 import {
   buildBarRank,
@@ -1146,7 +1147,13 @@ export default function FinanceAIAssistantTool() {
         throw new Error("AI 这次没有返回可执行的分析计划，请直接重试一次。");
       }
 
-      const { computedModules, chartCards } = executeFinancePlan(getRowsForSchema(workbook, schema), schema, plan.modules);
+      const rows = getRowsForSchema(workbook, schema);
+      const filterResolution = resolveFinanceActionFilterMembers(rows, schema, plan.modules);
+      if (!filterResolution.ok) {
+        throw new Error(filterResolution.message);
+      }
+
+      const { computedModules, chartCards } = executeFinancePlan(rows, schema, filterResolution.modules);
       const analysisContext = buildAnalysisContext(computedModules);
       const analysis = await callAI("explain", {
         question,
