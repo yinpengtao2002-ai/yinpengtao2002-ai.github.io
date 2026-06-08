@@ -1023,6 +1023,28 @@ test("finance AI assistant rank detail tables keep numeric cells for shared unit
   assert.match(client, /item\.changeValue,/);
 });
 
+test("finance AI assistant supports conjunctive multi-metric growth questions", async () => {
+  const schema = makeSchema({
+    totalMetrics: [
+      { kind: "total", name: "销量", column: "销量" },
+      { kind: "total", name: "边际", column: "边际" },
+    ],
+    unitMetrics: [{ kind: "unit", name: "单车边际", numeratorColumn: "边际", denominatorColumn: "销量" }],
+  });
+  const context = buildFinanceAIPlanningContext(schema, {
+    recentQuestions: ["哪些国家销量和单车边际都增长的？"],
+    chartHistory: [],
+  });
+  const client = await readProjectFile("src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
+
+  assert.match(context, /多个指标.*都增长|都增长.*多个指标/);
+  assert.match(context, /detail_table/);
+  assert.match(context, /comparison:"mom"/);
+  assert.match(client, /module\.metrics\.forEach/);
+  assert.match(client, /\`\$\{metric\}环比变化\`/);
+  assert.doesNotMatch(client, /columns\.push\(\`\$\{primaryMetric\}环比变化\`\)/);
+});
+
 test("finance AI chart demo page renders all demo chart styles", async () => {
   const page = await readProjectFile("src/app/finance/finance-ai-assistant/chart-demo/page.tsx");
   const client = await readProjectFile("src/app/finance/finance-ai-assistant/chart-demo/FinanceAIChartDemo.tsx");
@@ -1069,6 +1091,7 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(client, /finance-ai-avatar/);
   assert.match(client, /finance-ai-access-gate/);
   assert.match(client, /finance-ai-upload-chip/);
+  assert.match(client, /finance-ai-empty-card/);
   assert.match(client, /downloadSampleTemplate/);
   assert.match(client, /finance-ai-empty-state/);
   assert.match(client, /X-Finance-AI-Access/);
@@ -1092,5 +1115,8 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(styles, /\.finance-ai-avatar-mini/);
   assert.match(styles, /\.finance-ai-thinking/);
   assert.match(styles, /\.finance-ai-message\.is-user\s+\.finance-ai-message-bubble/);
+  assert.match(styles, /\.finance-ai-message\.is-user\s+\.finance-ai-message-bubble\s*\{[\s\S]*margin-left:\s*auto/s);
+  assert.match(styles, /\.finance-ai-empty-state\s*\{[\s\S]*place-items:\s*center/s);
+  assert.match(styles, /\.finance-ai-empty-card/);
   assert.match(styles, /\.finance-ai-composer\s*\{[\s\S]*border-radius:\s*26px/s);
 });

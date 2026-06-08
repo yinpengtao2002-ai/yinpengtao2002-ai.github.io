@@ -37,6 +37,7 @@ const HIGH_CHANGE_RANK_TOKENS = ["增长最多", "上涨最多", "增加最多",
 const DETAIL_TABLE_TOKENS = ["完整明细", "明细表", "全部列出", "全量列出", "完整列出", "剩下也列出"];
 const DRILLDOWN_TOKENS = ["构成", "组成", "内部", "下面", "下级", "下钻", "细分", "拆开", "拆成", "自身", "自己", "哪些国家", "哪些车型", "由哪些"];
 const REASON_FOLLOWUP_TOKENS = ["为什么", "为啥", "原因", "怎么会", "怎么", "咋", "下降这么多", "降这么多", "减少这么多", "变化这么多", "差这么多", "坏这么多", "坏的", "拖累这么多", "影响这么多"];
+const CONJUNCTIVE_CHANGE_TOKENS = ["都增长", "均增长", "同时增长", "一起增长", "都增加", "均增加", "同时增加", "都上涨", "均上涨", "同时上涨", "都上升", "均上升", "双增长", "双升", "都下降", "均下降", "同时下降", "都减少", "均减少", "同时减少"];
 const PRIMARY_DIMENSION_MODULE_TYPES = new Set<ActionType>([
   "bar_rank",
   "waterfall_bridge",
@@ -264,7 +265,7 @@ export function alignFinanceActionPlanWithQuestion(
   userQuestion: string,
   context: FinanceActionQuestionContext = {},
 ): FinanceActionModule[] {
-  return modules.map((module) => {
+  const alignedModules: FinanceActionModule[] = modules.map((module) => {
     module = alignReasonFollowupWithContext(schema, module, userQuestion, context);
     module = alignPrimaryDimensionWithQuestion(schema, module, userQuestion);
     module = alignExplicitDimensionMemberWithQuestion(schema, module, userQuestion, context);
@@ -282,7 +283,7 @@ export function alignFinanceActionPlanWithQuestion(
           sort: changeRankSort,
           limit: module.limit,
           ...(hasDetailTableIntent(userQuestion) ? { detailTable: true } : {}),
-        };
+        } satisfies FinanceActionModule;
       }
 
       return alignGroupedBarLimitWithQuestion(schema, module, userQuestion);
@@ -319,6 +320,71 @@ export function alignFinanceActionPlanWithQuestion(
       sort: lowScore > highScore ? "value_asc" : "value_desc",
     };
   });
+
+  return alignConjunctiveChangePlanWithQuestion(schema, alignedModules, userQuestion);
+}
+
+function alignConjunctiveChangePlanWithQuestion(
+  schema: FinanceSchema,
+  modules: FinanceActionModule[],
+  userQuestion: string,
+): FinanceActionModule[] {
+  const intent = getConjunctiveChangeIntent(schema, modules, userQuestion);
+  if (!intent) {
+    return modules;
+  }
+
+  const existingIndex = modules.findIndex((module) => module.type === "detail_table");
+  const baseDetailTable = existingIndex >= 0 ? modules[existingIndex] : undefined;
+  const detailTable = {
+    type: "detail_table",
+    ...(baseDetailTable && "filters" in baseDetailTable ? { filters: baseDetailTable.filters } : {}),
+    metrics: intent.metrics,
+    dimension: intent.dimension,
+    period: intent.period,
+    comparison: "mom",
+    limit: intent.limit,
+  } satisfies FinanceActionModule;
+
+  if (existingIndex >= 0) {
+    return modules.map((module, index) => index === existingIndex ? detailTable : module);
+  }
+
+  if (modules.length < 3) {
+    return [...modules, detailTable];
+  }
+
+  return [...modules.slice(0, 2), detailTable];
+}
+
+function getConjunctiveChangeIntent(
+  schema: FinanceSchema,
+  modules: FinanceActionModule[],
+  question: string,
+): { metrics: string[]; dimension: string; period: string; limit: number } | null {
+  if (!hasConjunctiveChangeIntent(question)) {
+    return null;
+  }
+
+  const metrics = getMentionedMetrics(schema, question).slice(0, 6);
+  if (metrics.length < 2) {
+    return null;
+  }
+
+  const dimension = getDimensionIntent(schema, question) ||
+    (schema.dimensionColumns.includes("国家") ? "国家" : schema.dimensionColumns[0]);
+  const period = getModulePeriod(schema, modules) || getQuestionPeriod(schema, question) || schema.profile.periods.at(-1)?.key;
+  if (!dimension || !period) {
+    return null;
+  }
+
+  const memberCount = schema.profile.dimensionValueCounts[dimension] ?? MAX_DETAIL_TABLE_ITEMS;
+  return {
+    metrics,
+    dimension,
+    period,
+    limit: Math.min(Math.max(memberCount, 1), MAX_DETAIL_TABLE_ITEMS),
+  };
 }
 
 function alignReasonFollowupWithContext(
@@ -570,6 +636,70 @@ function hasReasonFollowupIntent(question: string) {
   return REASON_FOLLOWUP_TOKENS
     .map(normalizeIntentText)
     .some((token) => normalizedQuestion.includes(token));
+}
+
+function hasConjunctiveChangeIntent(question: string) {
+  const normalizedQuestion = normalizeIntentText(question);
+
+  return CONJUNCTIVE_CHANGE_TOKENS
+    .map(normalizeIntentText)
+    .some((token) => normalizedQuestion.includes(token));
+}
+
+function getMentionedMetrics(schema: FinanceSchema, question: string) {
+  const normalizedQuestion = normalizeIntentText(question);
+  const metrics = [...schema.totalMetrics, ...schema.unitMetrics];
+
+  const mentionedMetrics = metrics
+    .map((metric) => {
+      const aliases = getMetricIntentAliases(schema, metric.name);
+      const firstIndex = aliases.reduce((bestIndex, alias) => {
+        const index = normalizedQuestion.indexOf(alias);
+        return index >= 0 && (bestIndex < 0 || index < bestIndex) ? index : bestIndex;
+      }, -1);
+
+      return { name: metric.name, kind: metric.kind, normalizedName: normalizeIntentText(metric.name), firstIndex };
+    })
+    .filter((metric) => metric.firstIndex >= 0);
+
+  return mentionedMetrics
+    .filter((metric) => !mentionedMetrics.some((other) => (
+      other.name !== metric.name &&
+      other.normalizedName.length > metric.normalizedName.length &&
+      other.normalizedName.includes(metric.normalizedName) &&
+      other.firstIndex <= metric.firstIndex &&
+      metric.kind === "total"
+    )))
+    .sort((a, b) => a.firstIndex - b.firstIndex)
+    .map((metric) => metric.name);
+}
+
+function getModulePeriod(schema: FinanceSchema, modules: FinanceActionModule[]) {
+  const periodKeys = new Set(schema.profile.periods.map((period) => period.key));
+
+  for (const actionModule of modules) {
+    const record = actionModule as Record<string, unknown>;
+    const period = typeof record.period === "string"
+      ? record.period
+      : typeof record.toPeriod === "string"
+        ? record.toPeriod
+        : "";
+
+    if (periodKeys.has(period)) {
+      return period;
+    }
+  }
+
+  return "";
+}
+
+function getQuestionPeriod(schema: FinanceSchema, question: string) {
+  const normalizedQuestion = normalizeIntentText(question);
+
+  return schema.profile.periods.find((period) => (
+    normalizedQuestion.includes(normalizeIntentText(period.key)) ||
+    normalizedQuestion.includes(normalizeIntentText(period.label))
+  ))?.key ?? "";
 }
 
 function getDrilldownDimension(schema: FinanceSchema, question: string, filteredDimension: string) {

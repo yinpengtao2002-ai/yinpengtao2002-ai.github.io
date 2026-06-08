@@ -312,6 +312,17 @@ function getTableMetricValue(
   return value ?? (isUnitMetric(schema, metric) ? null : 0);
 }
 
+function getTableComparisonMetricValue(
+  rows: FinanceRow[],
+  schema: FinanceSchema,
+  metric: string,
+  period: string,
+  filters?: FinanceFilter,
+) {
+  const value = getNullableMetricValue(rows, schema, metric, period, filters);
+  return value ?? (isUnitMetric(schema, metric) ? null : 0);
+}
+
 function rowMatchesFilters(row: FinanceRow, filters?: FinanceFilter, ignoredField?: string) {
   return Object.entries(filters ?? {}).every(([field, values]) => {
     if (field === ignoredField || values.length === 0) {
@@ -551,13 +562,19 @@ function buildDetailTablePlanChart(rows: FinanceRow[], schema: FinanceSchema, mo
       .filter((period) => period.sort < currentPeriodSort)
       .at(-1);
 
-    columns.push(`${primaryMetric}环比变化`);
+    module.metrics.forEach((metric) => {
+      columns.push(`${metric}环比变化`);
+    });
     rowsData.forEach((row, index) => {
       const label = labels[index];
       const currentFilters = mergeFilters(module.filters, { [module.dimension]: [label] });
-      const current = getMetricValue(rows, schema, primaryMetric, module.period, currentFilters);
-      const previous = previousPeriod ? getMetricValue(rows, schema, primaryMetric, previousPeriod.key, currentFilters) : 0;
-      row.push(current - previous);
+      module.metrics.forEach((metric) => {
+        const current = getTableComparisonMetricValue(rows, schema, metric, module.period, currentFilters);
+        const previous = previousPeriod
+          ? getTableComparisonMetricValue(rows, schema, metric, previousPeriod.key, currentFilters)
+          : null;
+        row.push(current !== null && previous !== null ? current - previous : null);
+      });
     });
   }
 
@@ -1237,31 +1254,37 @@ export default function FinanceAIAssistantTool() {
           <>
         {!workbook ? (
         <section className="finance-ai-empty-state" aria-label="数据上传和识别状态">
-          <div className="finance-ai-upload-row">
-            <label className="finance-ai-upload-chip">
-              <input
-                type="file"
-                accept=".csv,.xls,.xlsx"
-                hidden
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) {
-                    void handleFile(file);
-                  }
-                  event.currentTarget.value = "";
-                }}
-              />
-              <UploadCloud aria-hidden="true" />
-              <span>上传 CSV / XLS / XLSX</span>
-            </label>
-            <button type="button" className="finance-ai-template-button" onClick={downloadSampleTemplate}>
-              <Download aria-hidden="true" />
-              <span>下载示例格式</span>
-            </button>
-          </div>
-          <div className="finance-ai-data-status">
-            <FileSpreadsheet aria-hidden="true" />
-            <span>{fileName ? `${fileName} · ${dataSummary}` : dataSummary}</span>
+          <div className="finance-ai-empty-card">
+            <AssistantAvatar />
+            <p className="finance-ai-kicker">Upload Workbook</p>
+            <h2>先上传一份经营明细</h2>
+            <p>支持 CSV、XLS、XLSX。上传后会直接进入对话分析，可以继续追问、生成图表和核对明细。</p>
+            <div className="finance-ai-upload-row">
+              <label className="finance-ai-upload-chip">
+                <input
+                  type="file"
+                  accept=".csv,.xls,.xlsx"
+                  hidden
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) {
+                      void handleFile(file);
+                    }
+                    event.currentTarget.value = "";
+                  }}
+                />
+                <UploadCloud aria-hidden="true" />
+                <span>上传数据</span>
+              </label>
+              <button type="button" className="finance-ai-template-button" onClick={downloadSampleTemplate}>
+                <Download aria-hidden="true" />
+                <span>下载示例格式</span>
+              </button>
+            </div>
+            <div className="finance-ai-data-status">
+              <FileSpreadsheet aria-hidden="true" />
+              <span>{fileName ? `${fileName} · ${dataSummary}` : dataSummary}</span>
+            </div>
           </div>
         </section>
         ) : null}

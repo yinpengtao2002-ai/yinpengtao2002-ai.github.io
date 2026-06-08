@@ -706,6 +706,37 @@ test("all-member grouped bar questions keep every compact dimension member visib
   assert.equal(validated.modules[0].limit, 12);
 });
 
+test("conjunctive growth questions add a full comparison detail table for every requested metric", () => {
+  const schema = inferFinanceSchema([
+    { "月份": "4月", "国家": "巴西", "销量": 10, "边际": 100, "车型": "A" },
+    { "月份": "5月", "国家": "巴西", "销量": 12, "边际": 150, "车型": "A" },
+    { "月份": "4月", "国家": "西班牙", "销量": 10, "边际": 200, "车型": "B" },
+    { "月份": "5月", "国家": "西班牙", "销量": 11, "边际": 180, "车型": "B" },
+  ]);
+  const normalized = normalizeFinanceActionPlanForQuestion(schema, {
+    modules: [
+      {
+        type: "grouped_bar",
+        metric: "销量",
+        dimension: "国家",
+        period: "M05",
+        comparison: "mom",
+        limit: 10,
+      },
+    ],
+  }, "哪些国家销量和单车边际都增长的？");
+  const validated = validateFinanceActionPlan(schema, normalized);
+  const detailTable = normalized.modules.find((module) => module.type === "detail_table");
+
+  assert.equal(validated.ok, true);
+  assert.ok(detailTable);
+  assert.deepEqual(detailTable.metrics, ["销量", "单车边际"]);
+  assert.equal(detailTable.dimension, "国家");
+  assert.equal(detailTable.period, "M05");
+  assert.equal(detailTable.comparison, "mom");
+  assert.equal(detailTable.limit, 2);
+});
+
 test("grouped bar plans become change-ranked bars when the question asks for biggest declines", () => {
   const schema = inferFinanceSchema(metricRows);
   const normalized = normalizeFinanceActionPlanForQuestion(schema, {
