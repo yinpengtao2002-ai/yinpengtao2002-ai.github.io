@@ -23,7 +23,20 @@ export default function FinanceModelLibrary({ compact = false }: { compact?: boo
             transition={{ duration: 0.25, delay: index * 0.04 }}
           >
             <Link href={model.href} className="finance-model-card-link">
-              <div className="finance-model-card">
+              <div
+                className={[
+                  "finance-model-card",
+                  model.status === "testing" ? "has-status" : "",
+                ].filter(Boolean).join(" ")}
+              >
+                {model.status === "testing" ? (
+                  <span
+                    className="finance-model-status-ribbon"
+                    aria-label={`${model.title}正在测试中`}
+                  >
+                    测试中
+                  </span>
+                ) : null}
                 <FinanceModelPreview
                   src={model.previewImage}
                   alt={model.previewAlt}

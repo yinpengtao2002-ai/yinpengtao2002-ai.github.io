@@ -65,6 +65,24 @@ test("Perspective BI is registered as a user-operable finance model", () => {
   assert.ok(model.aiGuide.fields.some((field) => /派生指标/.test(field.name)));
 });
 
+test("finance registry marks only the active testing models", () => {
+  assert.deepEqual(
+    registry.models
+      .filter((model) => model.status === "testing")
+      .map((model) => model.slug)
+      .sort(),
+    ["finance-ai-assistant", "perspective-bi", "profit-structure"]
+  );
+
+  for (const model of registry.models) {
+    if (["finance-ai-assistant", "perspective-bi", "profit-structure"].includes(model.slug)) {
+      assert.equal(model.status, "testing", `${model.slug} should be labeled as testing`);
+    } else {
+      assert.equal("status" in model, false, `${model.slug} should not show a testing ribbon`);
+    }
+  }
+});
+
 test("finance registry preserves model order as the only browsing structure", () => {
   assert.deepEqual(
     registry.models.map((model) => model.slug),
@@ -102,11 +120,20 @@ test("finance model library renders the preview component", async () => {
     new URL("../src/components/home/ProductStageVisual.tsx", import.meta.url),
     "utf8"
   );
+  const modelRegistry = await readFile(
+    new URL("../src/lib/finance/modelRegistry.ts", import.meta.url),
+    "utf8"
+  );
   const globals = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
 
   assert.match(library, /FinanceModelPreview/);
   assert.match(library, /previewImage/);
   assert.match(library, /previewAlt/);
+  assert.match(modelRegistry, /FinanceModelStatus/);
+  assert.match(modelRegistry, /status\?: FinanceModelStatus/);
+  assert.match(library, /model\.status === "testing"/);
+  assert.match(library, /finance-model-status-ribbon/);
+  assert.match(library, /测试中/);
   assert.match(preview, /draggable=\{false\}/);
   assert.match(productStage, /draggable=\{false\}/);
   assertCssRuleHas(globals, ".finance-model-preview-image", [
@@ -118,6 +145,12 @@ test("finance model library renders the preview component", async () => {
     "pointer-events: none",
     "user-select: none",
     "-webkit-user-drag: none",
+  ]);
+  assertCssRuleHas(globals, ".finance-model-status-ribbon", [
+    "position: absolute",
+    "transform: rotate(45deg)",
+    "background: linear-gradient",
+    "pointer-events: none",
   ]);
 });
 

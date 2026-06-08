@@ -1,6 +1,7 @@
 import registry from "./model-registry.json";
 
 export type FinanceModelAccent = "orange" | "blue" | "green";
+export type FinanceModelStatus = "testing";
 
 export interface FinanceModelGuide {
   purpose: string;
@@ -25,6 +26,7 @@ export interface FinanceModelItem {
   href: string;
   date: string;
   accent: FinanceModelAccent;
+  status?: FinanceModelStatus;
   previewImage: string;
   previewAlt: string;
   aiGuide: FinanceModelGuide;

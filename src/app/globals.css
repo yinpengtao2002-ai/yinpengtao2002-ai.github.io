@@ -6447,6 +6447,7 @@ h6 {
 }
 
 .finance-model-card {
+  position: relative;
   height: 100%;
   overflow: hidden;
   border: 1px solid var(--border);
@@ -6456,6 +6457,26 @@ h6 {
     border-color 0.24s ease,
     box-shadow 0.24s ease,
     transform 0.24s ease;
+}
+
+.finance-model-status-ribbon {
+  position: absolute;
+  top: 15px;
+  right: -42px;
+  z-index: 3;
+  width: 150px;
+  padding: 7px 0;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, #ffad57 0%, #f47b35 58%, #e85f24 100%);
+  box-shadow: 0 8px 18px rgba(217, 119, 87, 0.22);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  pointer-events: none;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(98, 48, 20, 0.18);
 }
 
 .finance-model-card-link {
@@ -6586,6 +6607,15 @@ h6 {
 
   .finance-model-preview-image {
     object-position: center top;
+  }
+
+  .finance-model-status-ribbon {
+    top: 8px;
+    right: auto;
+    left: 22px;
+    width: 92px;
+    padding: 4px 0;
+    font-size: 10px;
   }
 
   .finance-model-card-title {

@@ -97,6 +97,7 @@
       "href": "/finance/finance-ai-assistant",
       "date": "2026-06-06",
       "accent": "orange",
+      "status": "testing",
       "previewImage": "/images/product-stage/finance-ai-assistant-preview.webp",
       "previewAlt": "财务分析 AI 助手的卡通 AI 助手形象和趋势、排名、瀑布桥图表预览",
       "aiGuide": {
@@ -187,6 +188,7 @@
       "href": "/finance/profit-structure",
       "date": "2026-05-31",
       "accent": "blue",
+      "status": "testing",
       "previewImage": "/images/product-stage/profit-structure-preview.webp",
       "previewAlt": "多维结构关系分析模型的维度路径流向、交叉结构切分、组合气泡矩阵与定位散点预览",
       "aiGuide": {
@@ -277,6 +279,7 @@
       "href": "/finance/perspective-bi",
       "date": "2026-05-26",
       "accent": "green",
+      "status": "testing",
       "previewImage": "/images/product-stage/perspective-bi-preview.webp",
       "previewAlt": "Perspective BI 分析台的数据工具条、字段口径确认、透视表和图表预览",
       "aiGuide": {
