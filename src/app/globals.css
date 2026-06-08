@@ -482,6 +482,15 @@ body {
   line-height: 1.6;
 }
 
+.finance-ai-message-section {
+  display: grid;
+  gap: 12px;
+}
+
+.finance-ai-inline-chart-grid {
+  margin: 6px 0 2px;
+}
+
 .finance-ai-chart-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

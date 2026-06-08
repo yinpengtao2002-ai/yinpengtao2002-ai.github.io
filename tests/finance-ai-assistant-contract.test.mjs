@@ -941,6 +941,19 @@ test("finance AI assistant chat styles size embedded chart cards", async () => {
   assert.match(styles, /\.finance-ai-markdown\s+\.katex-display/);
 });
 
+test("finance AI assistant interleaves metric cards before narrative chart analysis", async () => {
+  const client = await readProjectFile("src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
+
+  assert.match(client, /buildAssistantMessageSections/);
+  assert.match(client, /introText/);
+  assert.match(client, /metricCards/);
+  assert.match(client, /analysisText/);
+  assert.match(client, /remainingChartCards/);
+  assert.match(client, /card\.spec\.kind === "metric_card"/);
+  assert.match(client, /finance-ai-inline-chart-grid/);
+  assert.match(client, /messageSections\.map/);
+});
+
 test("finance AI assistant rank detail tables keep numeric cells for shared unit scaling", async () => {
   const client = await readProjectFile("src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
 

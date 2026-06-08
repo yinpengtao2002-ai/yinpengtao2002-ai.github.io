@@ -67,6 +67,13 @@ type ComputedModule = {
 
 type AnalysisContextItem = NonNullable<FinanceAIChatState["analysisContext"]>[number];
 
+type AssistantMessageSection = {
+  introText: string;
+  metricCards: ChartCard[];
+  analysisText: string;
+  remainingChartCards: ChartCard[];
+};
+
 type PlotlyModule = {
   default: {
     react: (
@@ -864,6 +871,76 @@ function FinanceAIMessageContent({ text }: { text: string }) {
   );
 }
 
+function splitAssistantTextForMetricCards(text: string, hasMetricCards: boolean) {
+  const normalizedText = text.trim();
+
+  if (!hasMetricCards || !normalizedText) {
+    return { introText: text, analysisText: "" };
+  }
+
+  const paragraphMatch = normalizedText.match(/\n\s*\n/);
+  if (paragraphMatch?.index !== undefined) {
+    const splitIndex = paragraphMatch.index;
+    return {
+      introText: normalizedText.slice(0, splitIndex).trim(),
+      analysisText: normalizedText.slice(splitIndex + paragraphMatch[0].length).trim(),
+    };
+  }
+
+  const sentenceMatch = normalizedText.match(/[。！？]/);
+  if (sentenceMatch?.index !== undefined && sentenceMatch.index < normalizedText.length - 12) {
+    const splitIndex = sentenceMatch.index + sentenceMatch[0].length;
+    return {
+      introText: normalizedText.slice(0, splitIndex).trim(),
+      analysisText: normalizedText.slice(splitIndex).trim(),
+    };
+  }
+
+  return { introText: normalizedText, analysisText: "" };
+}
+
+function buildAssistantMessageSections(message: ChatMessage): AssistantMessageSection[] {
+  const chartCards = message.chartCards ?? [];
+  const metricCards = chartCards.filter((card) => card.spec.kind === "metric_card");
+  const remainingChartCards = chartCards.filter((card) => card.spec.kind !== "metric_card");
+  const { introText, analysisText } = splitAssistantTextForMetricCards(
+    message.text,
+    message.role === "assistant" && metricCards.length > 0,
+  );
+
+  return [{
+    introText,
+    metricCards: message.role === "assistant" ? metricCards : [],
+    analysisText,
+    remainingChartCards: message.role === "assistant" ? remainingChartCards : chartCards,
+  }];
+}
+
+function FinanceAIChartGrid({
+  cards,
+  className = "finance-ai-chart-grid",
+}: {
+  cards: ChartCard[];
+  className?: string;
+}) {
+  if (!cards.length) {
+    return null;
+  }
+
+  return (
+    <div className={className}>
+      {cards.map((card) => (
+        <div className={`finance-ai-chart-card is-${card.spec.kind} is-${card.spec.size}`} key={card.id}>
+          <div className="finance-ai-chart-card-header">
+            <h2>{card.title}</h2>
+          </div>
+          <PlotlyChart spec={card.spec} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function PlotlyChart({ spec, className = "finance-ai-chart-host" }: { spec: FinanceChartSpec; className?: string }) {
   const nodeRef = useRef<HTMLDivElement | null>(null);
 
@@ -1193,29 +1270,31 @@ export default function FinanceAIAssistantTool() {
         {error ? <p className="finance-ai-error">{error}</p> : null}
 
         <section className="finance-ai-chat" aria-label="财务分析聊天流">
-          {messages.map((message) => (
-            <article key={message.id} className={`finance-ai-message is-${message.role}`}>
-              {message.role === "assistant" ? (
-                <AssistantAvatar compact />
-              ) : null}
-              <div className="finance-ai-message-bubble">
-                <FinanceAIMessageContent text={message.text} />
-                {message.chartCards?.length ? (
-                  <div className="finance-ai-chart-grid">
-                    {message.chartCards.map((card) => (
-                      <div className={`finance-ai-chart-card is-${card.spec.kind} is-${card.spec.size}`} key={card.id}>
-                        <div className="finance-ai-chart-card-header">
-                          <h2>{card.title}</h2>
-                        </div>
-                        <PlotlyChart spec={card.spec} />
-                      </div>
-                    ))}
-                  </div>
+          {messages.map((message) => {
+            const messageSections = buildAssistantMessageSections(message);
+
+            return (
+              <article key={message.id} className={`finance-ai-message is-${message.role}`}>
+                {message.role === "assistant" ? (
+                  <AssistantAvatar compact />
                 ) : null}
-                {message.meta ? <small>{message.meta}</small> : null}
-              </div>
-            </article>
-          ))}
+                <div className="finance-ai-message-bubble">
+                  {messageSections.map((section, sectionIndex) => (
+                    <div className="finance-ai-message-section" key={`${message.id}-${sectionIndex}`}>
+                      {section.introText ? <FinanceAIMessageContent text={section.introText} /> : null}
+                      <FinanceAIChartGrid
+                        cards={section.metricCards}
+                        className="finance-ai-chart-grid finance-ai-inline-chart-grid"
+                      />
+                      {section.analysisText ? <FinanceAIMessageContent text={section.analysisText} /> : null}
+                      <FinanceAIChartGrid cards={section.remainingChartCards} />
+                    </div>
+                  ))}
+                  {message.meta ? <small>{message.meta}</small> : null}
+                </div>
+              </article>
+            );
+          })}
           {busy ? (
             <article className="finance-ai-message is-assistant">
               <AssistantAvatar compact />
