@@ -9,6 +9,7 @@ import rehypeKatex from "rehype-katex";
 import * as XLSX from "xlsx";
 import "katex/dist/katex.min.css";
 import { buildChartSpec, buildDirectChartSpec } from "@/lib/finance-ai/charts";
+import { buildFinanceRawWorkbookSheetFromRows } from "@/lib/finance-ai/workbook";
 import {
   buildBarRank,
   buildMetricSnapshot,
@@ -107,29 +108,14 @@ function getSchemaIssueText(schema: FinanceSchema) {
   return schema.requiredIssues.map((issue) => issue.message).join(" ");
 }
 
-function normalizeRows(rows: unknown[]): FinanceRow[] {
-  return rows.flatMap((row) => (
-    row && typeof row === "object" && !Array.isArray(row)
-      ? [row as FinanceRow]
-      : []
-  ));
-}
-
 type ParsedWorkbook = {
   workbook: FinanceRawWorkbook;
   previewRows: FinanceRow[];
 };
 
 function buildRawWorkbookSheet(name: string, sheet: XLSX.WorkSheet): FinanceRawWorkbookSheet {
-  const rows = normalizeRows(XLSX.utils.sheet_to_json(sheet, { defval: "" }));
-  const headers = rows[0] ? Object.keys(rows[0]) : [];
-
-  return {
-    name,
-    headers,
-    rows,
-    rowCount: rows.length,
-  };
+  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", blankrows: false }) as unknown[];
+  return buildFinanceRawWorkbookSheetFromRows(name, rows);
 }
 
 async function parseFile(file: File): Promise<ParsedWorkbook> {

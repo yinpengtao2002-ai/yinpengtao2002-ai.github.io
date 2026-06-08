@@ -18,6 +18,7 @@ import {
 } from "../src/lib/finance-ai/actions.ts";
 import { buildChartSpec, buildDirectChartSpec } from "../src/lib/finance-ai/charts.ts";
 import { buildFinanceAIChartDemoSpecs } from "../src/lib/finance-ai/chart-demo.ts";
+import { buildFinanceRawWorkbookSheetFromRows } from "../src/lib/finance-ai/workbook.ts";
 
 const rows = [
   { "月份": "2025-03", "大区": "拉美", "国家": "巴西", "车型": "T1D", "销量": 100, "净收入": 9000, "成本": -7000, "边际": 2000 },
@@ -116,6 +117,34 @@ test("finance AI schema supports yearless month labels from margin templates", (
   });
   assert.equal(snapshot.value, 2);
   assert.equal(snapshot.mom?.value, 3);
+});
+
+test("finance AI workbook parser detects margin template headers below preamble rows", () => {
+  const sheet = buildFinanceRawWorkbookSheetFromRows("单车边际底稿", [
+    ["单车边际分析底稿"],
+    ["单位：元"],
+    [],
+    ["请从下方表格开始填写"],
+    [],
+    ["Month", "Dim_A", "Dim_B", "Sales Volume", "Total Margin"],
+    ["4月", "非洲大区", "摩洛哥", 2, 426871.6248],
+    ["3月", "非洲大区", "摩洛哥", 3, 300000],
+  ]);
+
+  assert.deepEqual(sheet.headers, ["Month", "Dim_A", "Dim_B", "Sales Volume", "Total Margin"]);
+  assert.equal(sheet.rowCount, 2);
+  assert.deepEqual(sheet.rows[0], {
+    "Month": "4月",
+    "Dim_A": "非洲大区",
+    "Dim_B": "摩洛哥",
+    "Sales Volume": 2,
+    "Total Margin": 426871.6248,
+  });
+
+  const schema = inferFinanceSchema(sheet.rows);
+  assert.equal(schema.monthColumn, "Month");
+  assert.equal(schema.salesColumn, "Sales Volume");
+  assert.deepEqual(schema.profile.periods.map((period) => period.key), ["M03", "M04"]);
 });
 
 test("toFinanceNumber preserves unit scale, parentheses negatives, and percentages", () => {
