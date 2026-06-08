@@ -63,9 +63,10 @@ test("finance AI schema treats rate-like columns as non-default metrics", () => 
 });
 
 test("normalizePeriodValue supports common month formats", () => {
-  assert.deepEqual(normalizePeriodValue("2025-03"), { key: "2025-03", label: "2025年3月", sort: 24303 });
+  assert.deepEqual(normalizePeriodValue("2025-03"), { key: "2025-03", label: "2025-03", sort: 24303 });
   assert.deepEqual(normalizePeriodValue("2025年4月"), { key: "2025-04", label: "2025年4月", sort: 24304 });
-  assert.deepEqual(normalizePeriodValue("202505"), { key: "2025-05", label: "2025年5月", sort: 24305 });
+  assert.deepEqual(normalizePeriodValue("202505"), { key: "2025-05", label: "202505", sort: 24305 });
+  assert.deepEqual(normalizePeriodValue("五月"), { key: "M05", label: "五月", sort: 5 });
 });
 
 test("finance AI schema keeps numeric dimension codes while excluding metadata columns", () => {
@@ -92,27 +93,27 @@ test("finance AI schema matches common month and sales header variants", () => {
 });
 
 test("normalizePeriodValue supports separated and date-like month formats", () => {
-  assert.deepEqual(normalizePeriodValue("2025/03"), { key: "2025-03", label: "2025年3月", sort: 24303 });
-  assert.deepEqual(normalizePeriodValue("2025.03"), { key: "2025-03", label: "2025年3月", sort: 24303 });
-  assert.deepEqual(normalizePeriodValue("2025-03-01"), { key: "2025-03", label: "2025年3月", sort: 24303 });
+  assert.deepEqual(normalizePeriodValue("2025/03"), { key: "2025-03", label: "2025/03", sort: 24303 });
+  assert.deepEqual(normalizePeriodValue("2025.03"), { key: "2025-03", label: "2025.03", sort: 24303 });
+  assert.deepEqual(normalizePeriodValue("2025-03-01"), { key: "2025-03", label: "2025-03-01", sort: 24303 });
 });
 
 test("finance AI schema supports yearless month labels from margin templates", () => {
   const templateRows = [
-    { "Month": "4月", "Dim_A": "非洲大区", "Dim_B": "摩洛哥", "Sales Volume": 2, "Total Margin": 426871.6248 },
-    { "Month": "3月", "Dim_A": "非洲大区", "Dim_B": "摩洛哥", "Sales Volume": 3, "Total Margin": 300000 },
+    { "Month": "四月", "Dim_A": "非洲大区", "Dim_B": "摩洛哥", "Sales Volume": 2, "Total Margin": 426871.6248 },
+    { "Month": "三月", "Dim_A": "非洲大区", "Dim_B": "摩洛哥", "Sales Volume": 3, "Total Margin": 300000 },
   ];
   const schema = inferFinanceSchema(templateRows);
 
   assert.equal(schema.monthColumn, "Month");
   assert.equal(schema.salesColumn, "Sales Volume");
   assert.deepEqual(schema.profile.periods.map((period) => period.key), ["M03", "M04"]);
-  assert.deepEqual(schema.profile.periods.map((period) => period.label), ["3月", "4月"]);
+  assert.deepEqual(schema.profile.periods.map((period) => period.label), ["三月", "四月"]);
   assert.deepEqual(schema.totalMetrics.map((metric) => metric.name), ["Sales Volume", "Total Margin"]);
 
   const snapshot = buildMetricSnapshot(templateRows, schema, {
     metric: "Sales Volume",
-    period: "4月",
+    period: "四月",
     comparisons: ["mom"],
   });
   assert.equal(snapshot.value, 2);
@@ -929,6 +930,75 @@ test("action plan normalization resolves follow-up pronouns from prior analysis 
   assert.equal(validated.ok, true);
 });
 
+test("action plan normalization fills attribution dimension for reason follow-ups", () => {
+  const schema = inferFinanceSchema([
+    { "Month": "3月", "国家": "西班牙", "车型": "T1D", "Sales Volume": 100, "Total Margin": 3000 },
+    { "Month": "4月", "国家": "西班牙", "车型": "T1D", "Sales Volume": 80, "Total Margin": 1200 },
+    { "Month": "3月", "国家": "西班牙", "车型": "T1E", "Sales Volume": 50, "Total Margin": 2500 },
+    { "Month": "4月", "国家": "西班牙", "车型": "T1E", "Sales Volume": 70, "Total Margin": 2100 },
+  ]);
+  const normalized = normalizeFinanceActionPlanForQuestion(schema, {
+    modules: [
+      {
+        type: "waterfall_bridge",
+        metric: "单车边际",
+        fromPeriod: "M03",
+        toPeriod: "M04",
+        limit: 10,
+      },
+    ],
+  }, "为啥下降这么多呢？", {
+    analysisContext: [{
+      type: "metric_snapshot",
+      title: "M04 西班牙单车边际",
+      metric: "单车边际",
+      period: "M04",
+      filters: { "国家": ["西班牙"] },
+      focusValues: [{ dimension: "国家", value: "西班牙" }],
+    }],
+  });
+  const validated = validateFinanceActionPlan(schema, normalized);
+
+  assert.equal(normalized.modules[0].type, "waterfall_bridge");
+  assert.equal(normalized.modules[0].dimension, "车型");
+  assert.deepEqual(normalized.modules[0].filters, { "国家": ["西班牙"] });
+  assert.equal(validated.ok, true);
+});
+
+test("action plan normalization infers periods for reason follow-ups from the last snapshot", () => {
+  const schema = inferFinanceSchema([
+    { "Month": "3月", "国家": "西班牙", "车型": "T1D", "Sales Volume": 100, "Total Margin": 3000 },
+    { "Month": "4月", "国家": "西班牙", "车型": "T1D", "Sales Volume": 80, "Total Margin": 1200 },
+    { "Month": "3月", "国家": "西班牙", "车型": "T1E", "Sales Volume": 50, "Total Margin": 2500 },
+    { "Month": "4月", "国家": "西班牙", "车型": "T1E", "Sales Volume": 70, "Total Margin": 2100 },
+  ]);
+  const normalized = normalizeFinanceActionPlanForQuestion(schema, {
+    modules: [
+      {
+        type: "waterfall_bridge",
+        metric: "单车边际",
+      },
+    ],
+  }, "为啥下降这么多呢？", {
+    analysisContext: [{
+      type: "metric_snapshot",
+      title: "M04 西班牙单车边际",
+      metric: "单车边际",
+      period: "M04",
+      filters: { "国家": ["西班牙"] },
+      focusValues: [{ dimension: "国家", value: "西班牙" }],
+    }],
+  });
+  const validated = validateFinanceActionPlan(schema, normalized);
+
+  assert.equal(normalized.modules[0].type, "waterfall_bridge");
+  assert.equal(normalized.modules[0].fromPeriod, "M03");
+  assert.equal(normalized.modules[0].toPeriod, "M04");
+  assert.equal(normalized.modules[0].dimension, "车型");
+  assert.deepEqual(normalized.modules[0].filters, { "国家": ["西班牙"] });
+  assert.equal(validated.ok, true);
+});
+
 test("chart specs are compact and identify supported chart types", () => {
   const schema = inferFinanceSchema(metricRows);
   const trend = buildTrendSeries(metricRows, schema, { metric: "单车边际", filters: { "国家": ["巴西"] }, highlightPeriod: "2026-03" });
@@ -941,7 +1011,7 @@ test("chart specs are compact and identify supported chart types", () => {
   assert.equal(spec.layout.paper_bgcolor, "rgba(0,0,0,0)");
   assert.equal(spec.layout.plot_bgcolor, "rgba(0,0,0,0)");
   assert.equal(spec.data[0].mode, "lines+markers+text");
-  assert.deepEqual(spec.data[0].text, ["35.00元", "20.00元", "35.00元"]);
+  assert.deepEqual(spec.data[0].text, ["35.00", "20.00", "35.00"]);
   assert.equal(spec.data[0].textposition, "top center");
   assert.equal(spec.data[0].cliponaxis, false);
   assert.equal(Array.isArray(spec.layout.yaxis.range), true);
@@ -965,8 +1035,8 @@ test("metric snapshot chart spec renders as a compact KPI card", () => {
   assert.equal(spec.size, "small");
   assert.equal(spec.data[0].type, "indicator");
   assert.equal(spec.data[0].value, 35);
-  assert.equal(spec.data[0].number.suffix, "元");
-  assert.equal(spec.data[0].delta.suffix, "元");
+  assert.equal(spec.data[0].number.suffix, "");
+  assert.equal(spec.data[0].delta.suffix, "");
   assert.equal(spec.layout.height, 104);
   assert.equal(spec.config.displayModeBar, false);
 });
@@ -982,12 +1052,12 @@ test("metric card chart uses Chinese units for value and absolute delta", () => 
 
   assert.equal(spec.size, "small");
   assert.equal(spec.data[0].value, 139.999);
-  assert.equal(spec.data[0].number.suffix, "亿元");
+  assert.equal(spec.data[0].number.suffix, "亿");
   assert.equal(spec.data[0].delta.reference, 118.8785945166);
-  assert.equal(spec.data[0].delta.suffix, "亿元");
+  assert.equal(spec.data[0].delta.suffix, "亿");
 });
 
-test("waterfall chart uses compact Chinese money units instead of raw yuan labels", () => {
+test("waterfall chart uses compact Chinese magnitude units without assuming currency", () => {
   const spec = buildDirectChartSpec({
     type: "waterfall",
     title: "M03 至 M04 净收入总额变化桥",
@@ -1002,10 +1072,10 @@ test("waterfall chart uses compact Chinese money units instead of raw yuan label
     ],
   });
 
-  approx(spec.data[0].y[0], 118.8785511859, "waterfall start value is scaled to yi yuan");
-  assert.equal(spec.data[0].text[0], "118.88亿元");
-  assert.deepEqual(spec.data[0].text.slice(1, 4), ["-4.76亿元", "+17.27亿元", "+5.36亿元"]);
-  assert.equal(spec.layout.yaxis.ticksuffix, "亿元");
+  approx(spec.data[0].y[0], 118.8785511859, "waterfall start value is scaled to yi");
+  assert.equal(spec.data[0].text[0], "118.88亿");
+  assert.deepEqual(spec.data[0].text.slice(1, 4), ["-4.76亿", "+17.27亿", "+5.36亿"]);
+  assert.equal(spec.layout.yaxis.ticksuffix, "亿");
   assert.doesNotMatch(spec.data[0].text.join(" "), /11887855118|1,188,785,511|B/);
 });
 
@@ -1051,8 +1121,9 @@ test("change-ranked bar chart plots mom change values instead of current values"
 
   assert.deepEqual(spec.data[0].y, ["巴西", "墨西哥", "智利"]);
   assert.deepEqual(spec.data[0].x, [150, 100, -500]);
-  assert.match(spec.data[0].text.at(-1), /环比 -500元/);
-  assert.match(spec.data[0].text.at(-1), /当前值 0元/);
+  assert.match(spec.data[0].text.at(-1), /环比 -500/);
+  assert.match(spec.data[0].text.at(-1), /当前值 0/);
+  assert.doesNotMatch(spec.data[0].text.join(" "), /元|美元|欧元|人民币/);
   assert.deepEqual(spec.layout.xaxis.range, [-604, 254]);
 });
 
@@ -1071,12 +1142,29 @@ test("waterfall chart spec renders a continuous bridge for total-metric results"
   assert.equal(spec.data[0].type, "waterfall");
   assert.deepEqual(spec.data[0].measure, ["absolute", "relative", "relative", "total"]);
   assert.deepEqual(spec.data[0].y, [2400, 1100, 1100, 0]);
-  assert.deepEqual(spec.data[0].text, ["2,400元", "+1,100元", "+1,100元", "4,600元"]);
+  assert.deepEqual(spec.data[0].text, ["2,400", "+1,100", "+1,100", "4,600"]);
   assert.equal(spec.data[0].textposition, "outside");
   assert.equal(spec.data[0].cliponaxis, false);
   assert.equal(Array.isArray(spec.layout.yaxis.range), true);
   assert.equal(spec.layout.yaxis.fixedrange, true);
   assert.equal(spec.config.displayModeBar, false);
+});
+
+test("waterfall chart spec uses uploaded period labels instead of internal period keys", () => {
+  const rowsWithChineseMonthLabels = [
+    { "Month": "三月", "Country": "西班牙", "Sales Volume": 100, "Total Margin": 3000 },
+    { "Month": "四月", "Country": "西班牙", "Sales Volume": 80, "Total Margin": 1200 },
+  ];
+  const schema = inferFinanceSchema(rowsWithChineseMonthLabels);
+  const bridge = buildWaterfallBridge(rowsWithChineseMonthLabels, schema, {
+    metric: "Total Margin",
+    dimension: "Country",
+    fromPeriod: "M03",
+    toPeriod: "M04",
+  });
+  const spec = buildChartSpec({ type: "waterfall_bridge", title: "边际变化拆解", result: bridge });
+
+  assert.deepEqual(spec.data[0].x, ["三月", "西班牙", "四月"]);
 });
 
 test("waterfall chart spec labels unit-metric bridges as mix and rate attribution", () => {
@@ -1153,7 +1241,7 @@ test("direct AI chart payloads render through the supported chart specs", () => 
   });
 
   assert.equal(trendSpec.kind, "trend_chart");
-  assert.deepEqual(trendSpec.data[0].text, ["30.00元", "32.50元"]);
+  assert.deepEqual(trendSpec.data[0].text, ["30.00", "32.50"]);
   assert.equal(Array.isArray(trendSpec.layout.yaxis.range), true);
   assert.equal(rankSpec.kind, "bar_rank");
   assert.equal(rankSpec.data[0].orientation, "h");
@@ -1162,7 +1250,7 @@ test("direct AI chart payloads render through the supported chart specs", () => 
   assert.equal(waterfallSpec.kind, "waterfall_bridge");
   assert.deepEqual(waterfallSpec.data[0].measure, ["absolute", "relative", "relative", "total"]);
   assert.deepEqual(waterfallSpec.data[0].y, [4800, -150, 900, 0]);
-  assert.deepEqual(waterfallSpec.data[0].text, ["4,800元", "-150元", "+900元", "5,550元"]);
+  assert.deepEqual(waterfallSpec.data[0].text, ["4,800", "-150", "+900", "5,550"]);
   assert.equal(waterfallSpec.config.displayModeBar, false);
 });
 
@@ -1184,7 +1272,7 @@ test("direct waterfall chart reconciles incomplete items and uses readable delta
   assert.deepEqual(spec.data[0].x, ["M03", "T1E", "未拆分差额", "M1A", "M04"]);
   assert.deepEqual(spec.data[0].measure, ["absolute", "relative", "relative", "relative", "total"]);
   assert.deepEqual(spec.data[0].y, [9.87, -0.11, -0.01, 0.04, 0]);
-  assert.deepEqual(spec.data[0].text, ["9.87万元", "-1,100元", "-100元", "+400元", "9.79万元"]);
+  assert.deepEqual(spec.data[0].text, ["9.87万", "-1,100", "-100", "+400", "9.79万"]);
 });
 
 test("waterfall axis keeps positive start and end bars visibly anchored", () => {
@@ -1301,20 +1389,20 @@ test("direct AI chart payloads support the approved expanded chart set", () => {
   assert.equal(tableSpec.data[0].type, "table");
   assert.deepEqual(moneyTableSpec.data[0].cells.values, [
     ["右舵地区部"],
-    ["48.17亿元"],
+    ["48.17亿"],
     ["34.4%"],
-    ["11.73亿元"],
+    ["11.73亿"],
   ]);
   assert.deepEqual(zeroMoneyTableSpec.data[0].cells.values, [
     ["右舵地区部", "国际合作中心"],
-    ["48.17亿元", "0.00亿元"],
+    ["48.17亿", "0.00亿"],
   ]);
   assert.deepEqual(rankTableSpec.data[0].cells.values, [
     ["1"],
     ["西班牙"],
-    ["8.41亿元"],
+    ["8.41亿"],
     ["6.0%"],
-    ["-4.76亿元"],
+    ["-4.76亿"],
   ]);
 });
 

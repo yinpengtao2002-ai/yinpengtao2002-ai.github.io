@@ -16,7 +16,7 @@ import {
   buildTrendSeries,
   buildWaterfallBridge,
 } from "@/lib/finance-ai/metrics";
-import { inferFinanceSchema } from "@/lib/finance-ai/schema";
+import { inferFinanceSchema, normalizePeriodValue } from "@/lib/finance-ai/schema";
 import { normalizeChatMathMarkdown } from "@/lib/markdown/normalizeChatMathMarkdown";
 import { normalizeMarkdownStrongEmphasis } from "@/lib/markdown/normalizeStrongEmphasis";
 import type {
@@ -144,7 +144,7 @@ async function parseFile(file: File): Promise<ParsedWorkbook> {
 function getDefaultQuestion(schema: FinanceSchema | null) {
   const salesMetric = schema?.totalMetrics.find((metric) => metric.column === schema.salesColumn);
   const metric = salesMetric?.name ?? schema?.unitMetrics[0]?.name ?? schema?.totalMetrics[0]?.name ?? "销量";
-  const period = schema?.profile.periods.at(-1)?.key ?? "最近月份";
+  const period = schema?.profile.periods.at(-1)?.label ?? "最近月份";
   const dimension = schema?.dimensionColumns.includes("国家")
     ? "国家"
     : schema?.dimensionColumns[0] ?? "国家";
@@ -159,9 +159,21 @@ function getRowsForSchema(workbook: FinanceRawWorkbook, schema: FinanceSchema): 
   ))?.rows ?? workbook.sheets[0]?.rows ?? [];
 }
 
-function getModuleTitle(module: FinanceActionModule) {
+function getPeriodDisplayLabel(schema: FinanceSchema, value?: string) {
+  if (!value) {
+    return "";
+  }
+
+  const periodKey = normalizePeriodValue(value)?.key ?? value;
+  return schema.profile.periods.find((period) => (
+    period.key === periodKey ||
+    period.label === value
+  ))?.label ?? value;
+}
+
+function getModuleTitle(module: FinanceActionModule, schema: FinanceSchema) {
   if (module.type === "metric_snapshot") {
-    return `${module.period} ${module.metric}`;
+    return `${getPeriodDisplayLabel(schema, module.period)} ${module.metric}`;
   }
 
   if (module.type === "trend_chart") {
@@ -169,34 +181,34 @@ function getModuleTitle(module: FinanceActionModule) {
   }
 
   if (module.type === "bar_rank") {
-    return `${module.period ? `${module.period} ` : ""}${module.dimension}${module.metric}排名`;
+    return `${module.period ? `${getPeriodDisplayLabel(schema, module.period)} ` : ""}${module.dimension}${module.metric}排名`;
   }
 
   if (module.type === "waterfall_bridge") {
-    return `${module.fromPeriod} 至 ${module.toPeriod} ${module.metric}变化桥`;
+    return `${getPeriodDisplayLabel(schema, module.fromPeriod)} 至 ${getPeriodDisplayLabel(schema, module.toPeriod)} ${module.metric}变化桥`;
   }
 
   if (module.type === "grouped_bar") {
-    return `${module.period} ${module.dimension}${module.metric}环比对比`;
+    return `${getPeriodDisplayLabel(schema, module.period)} ${module.dimension}${module.metric}环比对比`;
   }
 
   if (module.type === "stacked_bar") {
-    return `${module.period} ${module.dimension}×${module.seriesDimension}${module.metric}结构`;
+    return `${getPeriodDisplayLabel(schema, module.period)} ${module.dimension}×${module.seriesDimension}${module.metric}结构`;
   }
 
   if (module.type === "percent_stacked_bar") {
-    return `${module.period} ${module.dimension}×${module.seriesDimension}${module.metric}占比`;
+    return `${getPeriodDisplayLabel(schema, module.period)} ${module.dimension}×${module.seriesDimension}${module.metric}占比`;
   }
 
   if (module.type === "heatmap") {
-    return `${module.period} ${module.yDimension}×${module.xDimension}${module.metric}热力图`;
+    return `${getPeriodDisplayLabel(schema, module.period)} ${module.yDimension}×${module.xDimension}${module.metric}热力图`;
   }
 
   if (module.type === "scatter_bubble") {
-    return `${module.period} ${module.dimension}${module.yMetric}经营定位`;
+    return `${getPeriodDisplayLabel(schema, module.period)} ${module.dimension}${module.yMetric}经营定位`;
   }
 
-  return `${module.period} ${module.dimension}明细表`;
+  return `${getPeriodDisplayLabel(schema, module.period)} ${module.dimension}明细表`;
 }
 
 function buildBarRankDetailTable(title: string, result: BarRankResult): FinanceChartSpec | null {
@@ -588,7 +600,7 @@ function executeFinancePlan(
   const chartCards: ChartCard[] = [];
 
   modules.forEach((module, index) => {
-    const title = getModuleTitle(module);
+    const title = getModuleTitle(module, schema);
 
     if (module.type === "metric_snapshot") {
       const result = buildMetricSnapshot(rows, schema, module);
@@ -661,10 +673,12 @@ function buildComputedSummary(question: string, schema: FinanceSchema, computedM
       "bar_rank 如果有 allItems 或 answerItems，说明完整明细表会在消息下方展示；不要说只返回、只能看到或仅给了可见 Top N。",
       "用户指定 Top/Bottom N 时，按 answerItems 或 allItems 的前 N 项回答；正文不要重复手写完整 Markdown 表格。",
       "scatter_bubble、heatmap、stacked_bar、percent_stacked_bar 通常只是可视子集或交叉截面；除非 detail_table 明确覆盖全量，否则不要说所有国家/所有车型/完整全量都已展示。",
+      "对用户可见的月份使用 schema.periods.periodLabels 或 result 里的 label，不要直接写 M03/M04 这类内部期间 key。",
     ],
     schema: {
       rowCount: schema.profile.rowCount,
       periods: schema.profile.periods,
+      periodLabels: Object.fromEntries(schema.profile.periods.map((period) => [period.key, period.label])),
       dimensions: schema.dimensionColumns,
       totalMetrics: schema.totalMetrics,
       unitMetrics: schema.unitMetrics,
@@ -1174,14 +1188,16 @@ export default function FinanceAIAssistantTool() {
             <h1>财务分析 AI 助手</h1>
             <p>上传经营明细后，直接对话生成趋势、排名和变化桥；数据刷新后清空。</p>
           </div>
-          <div className="finance-ai-header-actions">
-            <button type="button" className="finance-ai-icon-button" onClick={resetData} aria-label="清空当前数据">
-              <RotateCcw aria-hidden="true" />
-            </button>
-            <button type="button" className="finance-ai-icon-button" onClick={resetData} aria-label="重置对话和数据">
-              <Trash2 aria-hidden="true" />
-            </button>
-          </div>
+          {workbook ? (
+            <div className="finance-ai-header-actions">
+              <button type="button" className="finance-ai-icon-button" onClick={resetData} aria-label="清空当前数据">
+                <RotateCcw aria-hidden="true" />
+              </button>
+              <button type="button" className="finance-ai-icon-button" onClick={resetData} aria-label="重置对话和数据">
+                <Trash2 aria-hidden="true" />
+              </button>
+            </div>
+          ) : null}
         </header>
 
         {!accessToken ? (

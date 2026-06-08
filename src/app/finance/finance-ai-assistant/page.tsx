@@ -33,7 +33,7 @@ function ProjectDescription({ className = "" }: { className?: string }) {
 
 export default function FinanceAIAssistantPage() {
   return (
-    <div className="fixed inset-0 overflow-hidden bg-[#faf9f5]">
+    <div className="min-h-screen bg-[#faf9f5]">
       <ProjectDescription className="sr-only" />
 
       <noscript>

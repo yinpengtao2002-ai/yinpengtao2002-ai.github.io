@@ -229,6 +229,8 @@ export function buildWaterfallBridge(
     dimension: request.dimension,
     fromPeriod,
     toPeriod,
+    fromPeriodLabel: getPeriodLabel(schema, fromPeriod),
+    toPeriodLabel: getPeriodLabel(schema, toPeriod),
     startValue,
     endValue,
     changeValue: endValue - startValue,
@@ -287,6 +289,8 @@ function buildUnitMetricWaterfallBridge(
     dimension: request.dimension,
     fromPeriod,
     toPeriod,
+    fromPeriodLabel: getPeriodLabel(schema, fromPeriod),
+    toPeriodLabel: getPeriodLabel(schema, toPeriod),
     startValue,
     endValue,
     changeValue: endValue - startValue,
@@ -396,6 +400,10 @@ function normalizeDimensionValue(value: unknown): string {
 
 function normalizePeriodKey(value: unknown): string {
   return normalizePeriodValue(value)?.key ?? String(value ?? "").trim();
+}
+
+function getPeriodLabel(schema: FinanceSchema, periodKey: string) {
+  return schema.profile.periods.find((period) => period.key === periodKey)?.label ?? periodKey;
 }
 
 function shiftPeriodKey(periodKey: string, monthOffset: number): string {

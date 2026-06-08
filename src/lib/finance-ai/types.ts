@@ -182,6 +182,8 @@ export type WaterfallBridgeResult = {
   dimension: string;
   fromPeriod: string;
   toPeriod: string;
+  fromPeriodLabel?: string;
+  toPeriodLabel?: string;
   startValue: number;
   endValue: number;
   changeValue: number;

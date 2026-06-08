@@ -73,6 +73,13 @@ const DIRECT_CHART_PROTOCOL_LINES = [
   "9. scatter_bubble: {type,title,xLabel,yLabel,items:[{label,x,y,size}],note}",
   "10. detail_table: {type,title,columns,rows,note}，适合承接用户要求全量列出的明细，最多约 120 行",
 ];
+const UNIT_ASSUMPTION_RULE_LINES = [
+  "不要根据国家、市场或地区推断币种；底稿字段或用户没有明确单位时，只称为原始单位或省略单位。",
+  "没有明确单位时，答案和图表标题不要写人民币、元、美元、欧元等币种；图表数值只使用原始单位、万、亿、万亿这类数量级缩放。",
+];
+const PERIOD_LABEL_RULE_LINES = [
+  "内部计算可以使用期间 key；用户可见月份请使用可用期间里的 label 或底稿原始月份写法，不要把 M04/M05 这类内部期间 key 写给用户。",
+];
 
 function compactList(values: string[], emptyLabel = "无") {
   const normalized = values.map((value) => value.trim()).filter(Boolean);
@@ -339,6 +346,8 @@ export function buildFinanceAIPlanningContext(
     "用户说“维度成员 + 维度字段”（如 MBT大区）并追问自身、内部、构成、下面有哪些时，把该成员写入 filters，并把 dimension 切到下一层可用维度（如 国家或车型）。",
     "最近助手结论和最近计算模块只用于理解“它、其中、这个、刚才那个”等指代；每一轮仍然要围绕当前上传底稿重新规划可计算模块。",
     "不要因为上一轮结果没包含某个切片，就输出会导致解释阶段说看不到结果的计划；需要的切片应在本轮用 filters、dimension、metric 重新计算。",
+    ...UNIT_ASSUMPTION_RULE_LINES,
+    ...PERIOD_LABEL_RULE_LINES,
     "可用字段：",
     `月份列：${schema.monthColumn || "未识别"}`,
     `销量列：${schema.salesColumn || "未识别"}`,
@@ -391,6 +400,8 @@ export function buildFinanceAIDirectAnalyzePrompt(input: DirectAnalyzePromptInpu
     "只输出严格 JSON，不要输出 Markdown 代码块，不要在 JSON 外写任何文字。",
     "返回结构必须是：",
     '{"answer":"给用户看的中文分析结论，可包含 Markdown 加粗","assumptions":["字段、口径或计算假设"],"charts":[]}',
+    ...UNIT_ASSUMPTION_RULE_LINES,
+    ...PERIOD_LABEL_RULE_LINES,
     ...DIRECT_CHART_PROTOCOL_LINES,
     "图表规则：value/startValue/endValue/changeValue/share/x/y/size/values 必须是数字，不要写成带逗号或单位的字符串；share 和 percent_stacked_bar 的 value 使用 0 到 1 的小数；不确定时少出图，不要硬造图。",
     "分析规则：不要声称看不到底稿；如果字段口径不明确，先说明你的假设，再给结论；计算过程要和 answer、charts 保持一致。",
@@ -413,6 +424,8 @@ export function buildFinanceAIDataRequestPrompt(input: DataRequestPromptInput) {
     "客户端只能按你的请求筛选原始行和列；客户端不会汇总、排名、计算环比或生成任何分析结论。",
     "请根据用户问题和数据目录，返回一个 JSON 取数请求。优先选择最少必要列、必要期间和必要维度，避免要求整张表。",
     "如果用户问环比、同比、Top、排名、变化来源，要包含当前期和对比期所需原始行。",
+    ...UNIT_ASSUMPTION_RULE_LINES,
+    ...PERIOD_LABEL_RULE_LINES,
     "返回结构必须是：",
     '{"sheetName":"可选工作表名","columns":["需要的原始列"],"filters":{"列名":["原始值"]},"rowLimit":10000,"reason":"为什么需要这些原始行"}',
     "规则：",
@@ -444,6 +457,8 @@ export function buildFinanceAISelectedRowsAnalyzePrompt(input: SelectedRowsAnaly
     "只输出严格 JSON，不要输出 Markdown 代码块，不要在 JSON 外写任何文字。",
     "返回结构必须是：",
     '{"answer":"给用户看的中文分析结论，可包含 Markdown 加粗","assumptions":["字段、口径或计算假设"],"charts":[]}',
+    ...UNIT_ASSUMPTION_RULE_LINES,
+    ...PERIOD_LABEL_RULE_LINES,
     ...DIRECT_CHART_PROTOCOL_LINES,
     "图表规则：value/startValue/endValue/changeValue/share/x/y/size/values 必须是数字，不要写成带逗号或单位的字符串；share 和 percent_stacked_bar 的 value 使用 0 到 1 的小数。",
     "如果 omittedRowCount 大于 0，必须在 assumptions 里说明本次只收到部分匹配明细，不能把结果说成全量。",
@@ -461,6 +476,8 @@ export function buildFinanceAIExplanationPrompt(input: ExplanationPromptInput) {
     "你是财务分析 AI 助手。请基于前端已经计算好的结果，用中文给出简短解释。",
     "不要重新计算数字，不要编造字段，不要引入计算结果之外的数据。",
     "计算结果是前端确定性计算后的聚合结果，聚合结果足够回答本轮问题。",
+    ...UNIT_ASSUMPTION_RULE_LINES,
+    ...PERIOD_LABEL_RULE_LINES,
     "排名、占比、变化贡献等明细如果出现在计算结果里，就必须直接使用这些结果回答，不要说看不到明细、无法分析或无法出图。",
     "bar_rank 里的 items 是图表可见 Top N；如果同时有 fullScan，它基于所有维度成员计算，判断最大上涨、最大下降、最大负贡献时必须优先使用 fullScan，不要把图表 Top N 误认为全量名单。",
     "bar_rank 如果有 allItems 或 answerItems，代表完整明细表会在消息下方展示；不要说“只返回了前 N”“只能看到 Top N”“明细只给了可见项”。",

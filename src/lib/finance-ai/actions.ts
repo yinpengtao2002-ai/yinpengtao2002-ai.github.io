@@ -36,6 +36,7 @@ const LOW_CHANGE_RANK_TOKENS = ["下降最多", "减少最多", "下滑最多", 
 const HIGH_CHANGE_RANK_TOKENS = ["增长最多", "上涨最多", "增加最多", "增幅最大", "正贡献", "拉动", "增长", "上涨", "增加"];
 const DETAIL_TABLE_TOKENS = ["完整明细", "明细表", "全部列出", "全量列出", "完整列出", "剩下也列出"];
 const DRILLDOWN_TOKENS = ["构成", "组成", "内部", "下面", "下级", "下钻", "细分", "拆开", "拆成", "自身", "自己", "哪些国家", "哪些车型", "由哪些"];
+const REASON_FOLLOWUP_TOKENS = ["为什么", "为啥", "原因", "怎么会", "怎么", "咋", "下降这么多", "降这么多", "减少这么多", "变化这么多", "差这么多", "坏这么多", "坏的", "拖累这么多", "影响这么多"];
 const PRIMARY_DIMENSION_MODULE_TYPES = new Set<ActionType>([
   "bar_rank",
   "waterfall_bridge",
@@ -47,8 +48,14 @@ const PRIMARY_DIMENSION_MODULE_TYPES = new Set<ActionType>([
 type ActionType = FinanceActionModule["type"];
 type MutableModule = Record<string, unknown> & { type: ActionType; metric?: string };
 type FinanceActionQuestionContext = {
+  currentMetric?: string;
   currentFilters?: FinanceFilter;
   analysisContext?: Array<{
+    metric?: string;
+    period?: string;
+    fromPeriod?: string;
+    toPeriod?: string;
+    filters?: FinanceFilter;
     focusValues?: Array<{ dimension: string; value: string }>;
   }>;
 };
@@ -258,6 +265,7 @@ export function alignFinanceActionPlanWithQuestion(
   context: FinanceActionQuestionContext = {},
 ): FinanceActionModule[] {
   return modules.map((module) => {
+    module = alignReasonFollowupWithContext(schema, module, userQuestion, context);
     module = alignPrimaryDimensionWithQuestion(schema, module, userQuestion);
     module = alignExplicitDimensionMemberWithQuestion(schema, module, userQuestion, context);
 
@@ -313,6 +321,45 @@ export function alignFinanceActionPlanWithQuestion(
   });
 }
 
+function alignReasonFollowupWithContext(
+  schema: FinanceSchema,
+  module: FinanceActionModule,
+  userQuestion: string,
+  context: FinanceActionQuestionContext,
+): FinanceActionModule {
+  if (module.type !== "waterfall_bridge" || !hasReasonFollowupIntent(userQuestion)) {
+    return module;
+  }
+
+  const record = module as Record<string, unknown>;
+  const latestContext = getLatestAnalysisContext(context);
+  const updates: Record<string, unknown> = {};
+  const contextMetric = getContextMetric(schema, context);
+
+  if (!hasStringValue(record.metric) && contextMetric) {
+    updates.metric = contextMetric;
+  }
+
+  const toPeriod = hasStringValue(record.toPeriod)
+    ? String(record.toPeriod)
+    : latestContext?.toPeriod || latestContext?.period || "";
+  const fromPeriod = hasStringValue(record.fromPeriod)
+    ? String(record.fromPeriod)
+    : latestContext?.fromPeriod || getPreviousPeriodKey(schema, toPeriod);
+
+  if (!hasStringValue(record.toPeriod) && toPeriod) {
+    updates.toPeriod = toPeriod;
+  }
+
+  if (!hasStringValue(record.fromPeriod) && fromPeriod) {
+    updates.fromPeriod = fromPeriod;
+  }
+
+  return Object.keys(updates).length
+    ? { ...module, ...updates } as FinanceActionModule
+    : module;
+}
+
 function alignPrimaryDimensionWithQuestion(
   schema: FinanceSchema,
   module: FinanceActionModule,
@@ -353,7 +400,8 @@ function alignExplicitDimensionMemberWithQuestion(
 
   const record = module as Record<string, unknown>;
   const currentDimension = typeof record.dimension === "string" ? record.dimension : "";
-  const asksForDrilldown = hasDrilldownIntent(userQuestion);
+  const asksForDrilldown = hasDrilldownIntent(userQuestion) ||
+    (module.type === "waterfall_bridge" && hasReasonFollowupIntent(userQuestion));
 
   if (
     PRIMARY_DIMENSION_MODULE_TYPES.has(module.type) &&
@@ -446,6 +494,31 @@ function getContextualDimensionMemberIntent(
   return focusValue ? { dimension: focusValue.dimension, value: focusValue.value.trim() } : null;
 }
 
+function getLatestAnalysisContext(context: FinanceActionQuestionContext) {
+  return (context.analysisContext ?? [])
+    .slice()
+    .reverse()
+    .find((item) => item.metric || item.period || item.fromPeriod || item.toPeriod || item.filters || item.focusValues?.length);
+}
+
+function getContextMetric(schema: FinanceSchema, context: FinanceActionQuestionContext) {
+  const candidates = [
+    context.currentMetric,
+    ...(context.analysisContext ?? []).slice().reverse().map((item) => item.metric),
+  ];
+
+  return candidates.find((metric): metric is string => Boolean(metric && findMetric(schema, metric)));
+}
+
+function getPreviousPeriodKey(schema: FinanceSchema, periodKey: string) {
+  if (!periodKey) {
+    return "";
+  }
+
+  const periodIndex = schema.profile.periods.findIndex((period) => period.key === periodKey);
+  return periodIndex > 0 ? schema.profile.periods[periodIndex - 1]?.key ?? "" : "";
+}
+
 function getDimensionMemberNearLabel(question: string, dimension: string): string {
   const lowerQuestion = question.toLowerCase();
   const lowerDimension = dimension.toLowerCase();
@@ -486,6 +559,15 @@ function hasFollowupReferenceIntent(question: string) {
   const normalizedQuestion = normalizeIntentText(question);
 
   return ["它", "这个", "那个", "其中", "上面", "刚才", "前面", "该项", "自身", "自己"]
+    .map(normalizeIntentText)
+    .some((token) => normalizedQuestion.includes(token)) ||
+    hasReasonFollowupIntent(question);
+}
+
+function hasReasonFollowupIntent(question: string) {
+  const normalizedQuestion = normalizeIntentText(question);
+
+  return REASON_FOLLOWUP_TOKENS
     .map(normalizeIntentText)
     .some((token) => normalizedQuestion.includes(token));
 }

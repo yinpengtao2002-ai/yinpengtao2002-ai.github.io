@@ -199,6 +199,63 @@ test("finance AI direct prompt includes uploaded workbook rows for provider anal
   assert.doesNotMatch(prompt, /已省略完整明细数组/);
 });
 
+test("finance AI prompts forbid inferred currency units when workbook has no explicit unit", () => {
+  const schema = makeSchema();
+  const workbook = {
+    fileName: "margin.xlsx",
+    totalRowCount: 1,
+    sheets: [{
+      name: "Sheet1",
+      headers: ["月份", "国家", "销量", "边际"],
+      rowCount: 1,
+      rows: [{ "月份": "2026-03", "国家": "西班牙", "销量": 1, "边际": 100 }],
+    }],
+  };
+  const state = { recentQuestions: ["西班牙边际变化如何？"], chartHistory: [] };
+  const planningPrompt = buildFinanceAIPlanningContext(schema, state);
+  const directPrompt = buildFinanceAIDirectAnalyzePrompt({
+    workbook,
+    userQuestion: "西班牙边际变化如何？",
+    state,
+  });
+
+  assert.match(planningPrompt, /不要根据国家、市场或地区推断币种/);
+  assert.match(planningPrompt, /原始单位/);
+  assert.match(directPrompt, /不要根据国家、市场或地区推断币种/);
+  assert.match(directPrompt, /没有明确单位时/);
+});
+
+test("finance AI prompts and client keep internal period keys out of user-facing copy", async () => {
+  const schema = makeSchema({
+    profile: {
+      rowCount: 2,
+      periods: [
+        { key: "M04", label: "四月", sort: 4 },
+        { key: "M05", label: "五月", sort: 5 },
+      ],
+      dimensionValueCounts: { "国家": 1 },
+    },
+  });
+  const prompt = buildFinanceAIExplanationPrompt({
+    userQuestion: "五月西班牙单车边际为什么下降这么多？",
+    computedSummary: {
+      modules: [{
+        type: "waterfall_bridge",
+        request: { fromPeriod: "M04", toPeriod: "M05" },
+      }],
+      schema: { periods: schema.profile.periods },
+    },
+  });
+  const client = await readProjectFile("src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
+
+  assert.match(prompt, /用户可见月份/);
+  assert.match(prompt, /不要把 M04\/M05/);
+  assert.match(client, /function getPeriodDisplayLabel/);
+  assert.match(client, /function getModuleTitle\(module: FinanceActionModule, schema: FinanceSchema\)/);
+  assert.match(client, /getPeriodDisplayLabel\(schema, module\.fromPeriod\)/);
+  assert.match(client, /getModuleTitle\(module, schema\)/);
+});
+
 test("finance AI context bounds filters and computed summaries before provider calls", () => {
   const schema = {
     headers: ["月份", "国家", "销量", "边际"],
@@ -861,6 +918,8 @@ test("finance AI assistant page is an independent chat workbench", async () => {
 
   assert.match(page, /财务分析 AI 助手/);
   assert.match(page, /FinanceAIAssistantTool/);
+  assert.match(page, /min-h-screen/);
+  assert.doesNotMatch(page, /fixed inset-0 overflow-hidden/);
   assert.match(client, /\/api\/tools\/finance-ai-assistant/);
   assert.match(client, /type ChatMessage/);
   assert.match(client, /chartCards/);
@@ -899,6 +958,7 @@ test("finance AI assistant page is an independent chat workbench", async () => {
   assert.doesNotMatch(client, /newDatasetMessages/);
   assert.doesNotMatch(client, /assistant-upload/);
   assert.match(client, /finance-ai-assistant-panel \$\{workbook \? "is-ready" : ""\}/);
+  assert.match(client, /\{workbook \? \(\s*<div className="finance-ai-header-actions">/);
   assert.match(client, /!\s*workbook\s*\?/);
   assert.doesNotMatch(client, /finance-ai-empty-state \$\{workbook \? "is-loaded" : ""\}/);
   assert.doesNotMatch(client, /localStorage/);
@@ -1002,6 +1062,9 @@ test("finance AI assistant is styled and isolated from global assistant", async 
 test("finance AI assistant page follows the site chat assistant interaction style", async () => {
   const client = await readProjectFile("src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
   const styles = await readProjectFile("src/app/globals.css");
+  const financeAIPageBlock = styles.match(/(?:^|\n)\.finance-ai-page\s*\{(?<block>[^}]*)\}/)?.groups?.block ?? "";
+  const financeAIChatBlock = styles.match(/(?:^|\n)\.finance-ai-chat\s*\{(?<block>[^}]*)\}/)?.groups?.block ?? "";
+  const financeAIComposerDockBlock = styles.match(/(?:^|\n)\.finance-ai-composer-dock\s*\{(?<block>[^}]*)\}/)?.groups?.block ?? "";
 
   assert.match(client, /finance-ai-avatar/);
   assert.match(client, /finance-ai-access-gate/);
@@ -1019,7 +1082,12 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(styles, /\.finance-ai-access-gate/);
   assert.match(styles, /\.finance-ai-assistant-panel/);
   assert.match(styles, /\.finance-ai-assistant-panel\s*\{[\s\S]*border:\s*0/s);
-  assert.match(styles, /\.finance-ai-chat\s*\{[\s\S]*overflow-y:\s*auto/s);
+  assert.doesNotMatch(financeAIPageBlock, /(^|\n)\s*height:\s*100dvh/);
+  assert.match(financeAIPageBlock, /overflow:\s*visible/);
+  assert.match(financeAIChatBlock, /overflow-y:\s*visible/);
+  assert.match(financeAIChatBlock, /overflow-x:\s*clip/);
+  assert.match(financeAIComposerDockBlock, /position:\s*sticky/);
+  assert.match(financeAIComposerDockBlock, /bottom:\s*0/);
   assert.match(styles, /\.finance-ai-composer-dock\s*\{[\s\S]*flex:\s*0 0 auto/s);
   assert.match(styles, /\.finance-ai-avatar-mini/);
   assert.match(styles, /\.finance-ai-thinking/);

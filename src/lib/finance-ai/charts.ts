@@ -147,18 +147,18 @@ function getChineseUnitScale(value: number | null | undefined, context = "") {
   const money = isMoneyContext(context);
 
   if (absolute >= 1_000_000_000_000) {
-    return { divisor: 1_000_000_000_000, suffix: money ? "万亿元" : "万亿", digits: 2 };
+    return { divisor: 1_000_000_000_000, suffix: "万亿", digits: 2 };
   }
 
   if (absolute >= 100_000_000) {
-    return { divisor: 100_000_000, suffix: money ? "亿元" : "亿", digits: 2 };
+    return { divisor: 100_000_000, suffix: "亿", digits: 2 };
   }
 
   if (absolute >= 10_000) {
-    return { divisor: 10_000, suffix: money ? "万元" : "万", digits: 2 };
+    return { divisor: 10_000, suffix: "万", digits: 2 };
   }
 
-  return { divisor: 1, suffix: money ? "元" : "", digits: money && absolute >= 100 ? 0 : 2 };
+  return { divisor: 1, suffix: "", digits: money && absolute >= 100 ? 0 : 2 };
 }
 
 function getScaleForValues(values: number[], context = "") {
@@ -661,7 +661,11 @@ function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): 
         [null, null],
       ]
     : undefined;
-  const labels = [result.fromPeriod, ...items.map((item) => item.label), result.toPeriod];
+  const labels = [
+    result.fromPeriodLabel ?? result.fromPeriod,
+    ...items.map((item) => item.label),
+    result.toPeriodLabel ?? result.toPeriod,
+  ];
   const waterfall = buildWaterfallTrace({
     labels,
     itemValues,

@@ -96,6 +96,20 @@ const UNIT_SCALE_PATTERNS = [
   { pattern: /万元|万/i, multiplier: 10_000 },
   { pattern: /千元/i, multiplier: 1_000 },
 ];
+const CHINESE_MONTH_NUMBERS: Record<string, number> = {
+  "一": 1,
+  "二": 2,
+  "三": 3,
+  "四": 4,
+  "五": 5,
+  "六": 6,
+  "七": 7,
+  "八": 8,
+  "九": 9,
+  "十": 10,
+  "十一": 11,
+  "十二": 12,
+};
 
 const ISSUE_MESSAGES: Record<FinanceSchemaIssue["code"], string> = {
   missing_month: "未识别月份列，请提供月份、月度、期间或 month/date/period 字段。",
@@ -279,6 +293,20 @@ export function normalizePeriodValue(value: unknown): FinancePeriod | null {
   }
 
   const text = String(value).trim();
+  const chineseYearMonthMatch = text.match(/^(\d{4})年\s*([一二三四五六七八九十]{1,3})月$/);
+  if (chineseYearMonthMatch) {
+    const year = Number(chineseYearMonthMatch[1]);
+    const month = CHINESE_MONTH_NUMBERS[chineseYearMonthMatch[2]];
+
+    if (Number.isInteger(year) && Number.isInteger(month) && month >= 1 && month <= 12) {
+      return {
+        key: `${year}-${String(month).padStart(2, "0")}`,
+        label: text,
+        sort: year * 12 + month,
+      };
+    }
+  }
+
   const match =
     text.match(/^(\d{4})-(\d{1,2})$/) ??
     text.match(/^(\d{4})[/.](\d{1,2})$/) ??
@@ -289,6 +317,15 @@ export function normalizePeriodValue(value: unknown): FinancePeriod | null {
     text.match(/^(\d{4})(\d{2})$/);
 
   if (!match) {
+    const chineseMonth = CHINESE_MONTH_NUMBERS[text.match(/^([一二三四五六七八九十]{1,3})月$/)?.[1] ?? ""];
+    if (Number.isInteger(chineseMonth) && chineseMonth >= 1 && chineseMonth <= 12) {
+      return {
+        key: `M${String(chineseMonth).padStart(2, "0")}`,
+        label: text,
+        sort: chineseMonth,
+      };
+    }
+
     const yearlessMatch = text.match(/^(\d{1,2})\s*月$/) ?? text.match(/^[mM]\s*(\d{1,2})$/);
     if (!yearlessMatch) {
       return null;
@@ -301,7 +338,7 @@ export function normalizePeriodValue(value: unknown): FinancePeriod | null {
 
     return {
       key: `M${String(month).padStart(2, "0")}`,
-      label: `${month}月`,
+      label: text,
       sort: month,
     };
   }
@@ -315,7 +352,7 @@ export function normalizePeriodValue(value: unknown): FinancePeriod | null {
 
   return {
     key: `${year}-${String(month).padStart(2, "0")}`,
-    label: `${year}年${month}月`,
+    label: text,
     sort: year * 12 + month,
   };
 }
