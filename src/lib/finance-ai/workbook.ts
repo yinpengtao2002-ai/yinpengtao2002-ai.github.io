@@ -1,9 +1,10 @@
 // @ts-expect-error - Node's test runner imports this TypeScript module by extension.
 import { normalizePeriodValue, toFinanceNumber } from "./schema.ts";
-import type { FinanceRawWorkbookSheet, FinanceRow } from "./types.ts";
+import type { FinanceRawWorkbook, FinanceRawWorkbookSheet, FinanceRow } from "./types.ts";
 
 const MAX_HEADER_SCAN_ROWS = 40;
 const MAX_EVIDENCE_ROWS = 30;
+export const FINANCE_SCENARIO_COLUMN = "数据口径";
 
 const MONTH_ALIASES = [
   "月份",
@@ -65,9 +66,50 @@ const DIMENSION_PATTERNS = [
   "customer",
   "product",
 ];
+const SCENARIO_SHEET_ALIASES = [
+  { label: "实际", aliases: ["实际", "实际数", "实际数据", "actual", "actuals", "act"] },
+  { label: "预算", aliases: ["预算", "预算数", "预算数据", "budget", "bud"] },
+  { label: "目标", aliases: ["目标", "目标数", "目标数据", "target", "goal"] },
+  { label: "预测", aliases: ["预测", "预估", "滚动预测", "forecast", "fcst", "estimate"] },
+  { label: "计划", aliases: ["计划", "计划数", "计划数据", "plan"] },
+];
+const NON_DATA_SHEET_PATTERNS = [
+  "填表说明",
+  "填表规则",
+  "说明",
+  "规则",
+  "字段说明",
+  "维度说明",
+  "科目字典",
+  "readme",
+  "guide",
+  "instruction",
+  "instructions",
+  "dictionary",
+];
 
 function normalizeHeaderName(value: string): string {
   return value.trim().toLowerCase().replace(/^\uFEFF/, "").replace(/[\s_\-./()（）]/g, "");
+}
+
+function isInstructionSheetName(sheetName: string): boolean {
+  const normalizedName = normalizeHeaderName(sheetName);
+  return NON_DATA_SHEET_PATTERNS.some((pattern) => normalizedName.includes(normalizeHeaderName(pattern)));
+}
+
+export function getFinanceScenarioFromSheetName(sheetName: string): string {
+  const normalizedName = normalizeHeaderName(sheetName);
+
+  for (const scenario of SCENARIO_SHEET_ALIASES) {
+    if (scenario.aliases.some((alias) => {
+      const normalizedAlias = normalizeHeaderName(alias);
+      return normalizedName === normalizedAlias || normalizedName.startsWith(normalizedAlias);
+    })) {
+      return scenario.label;
+    }
+  }
+
+  return "";
 }
 
 function stringifyCell(value: unknown): string {
@@ -257,4 +299,46 @@ export function buildFinanceRawWorkbookSheetFromRows(name: string, rows: unknown
     rows: dataRows,
     rowCount: dataRows.length,
   };
+}
+
+function withScenarioColumn(sheet: FinanceRawWorkbookSheet, scenario: string): FinanceRawWorkbookSheet {
+  const headers = [
+    FINANCE_SCENARIO_COLUMN,
+    ...sheet.headers.filter((header) => header !== FINANCE_SCENARIO_COLUMN),
+  ];
+  const rows = sheet.rows.map((row) => {
+    const nextRow = {
+      [FINANCE_SCENARIO_COLUMN]: scenario,
+      ...row,
+    };
+    nextRow[FINANCE_SCENARIO_COLUMN] = scenario;
+    return nextRow;
+  });
+
+  return {
+    ...sheet,
+    headers,
+    rows,
+    rowCount: rows.length,
+  };
+}
+
+export function normalizeFinanceWorkbookSheets(sheets: FinanceRawWorkbookSheet[]): FinanceRawWorkbookSheet[] {
+  return sheets
+    .filter((sheet) => sheet.rowCount > 0 && !isInstructionSheetName(sheet.name))
+    .map((sheet) => {
+      const scenario = getFinanceScenarioFromSheetName(sheet.name);
+      return scenario ? withScenarioColumn(sheet, scenario) : sheet;
+    });
+}
+
+export function buildFinanceAnalysisRowsFromWorkbook(workbook: FinanceRawWorkbook): FinanceRow[] {
+  const sheets = normalizeFinanceWorkbookSheets(workbook.sheets);
+  const scenarioSheets = sheets.filter((sheet) => sheet.headers.includes(FINANCE_SCENARIO_COLUMN));
+
+  if (scenarioSheets.length > 0) {
+    return scenarioSheets.flatMap((sheet) => sheet.rows);
+  }
+
+  return sheets[0]?.rows ?? [];
 }

@@ -19,7 +19,11 @@ import {
 import { resolveFinanceActionFilterMembers } from "../src/lib/finance-ai/filter-resolution.ts";
 import { buildChartSpec, buildDirectChartSpec } from "../src/lib/finance-ai/charts.ts";
 import { buildFinanceAIChartDemoSpecs } from "../src/lib/finance-ai/chart-demo.ts";
-import { buildFinanceRawWorkbookSheetFromRows } from "../src/lib/finance-ai/workbook.ts";
+import {
+  buildFinanceAnalysisRowsFromWorkbook,
+  buildFinanceRawWorkbookSheetFromRows,
+  normalizeFinanceWorkbookSheets,
+} from "../src/lib/finance-ai/workbook.ts";
 
 const rows = [
   { "月份": "2025-03", "大区": "拉美", "国家": "巴西", "车型": "T1D", "销量": 100, "净收入": 9000, "成本": -7000, "边际": 2000 },
@@ -188,6 +192,57 @@ test("finance AI workbook parser detects margin template headers below preamble 
   assert.equal(schema.monthColumn, "Month");
   assert.equal(schema.salesColumn, "Sales Volume");
   assert.deepEqual(schema.profile.periods.map((period) => period.key), ["M03", "M04"]);
+});
+
+test("finance AI workbook parser derives data scenario from actual and budget sheet names", () => {
+  const rawSheets = [
+    buildFinanceRawWorkbookSheetFromRows("实际", [
+      ["Month", "Country", "Sales Volume", "Total Margin"],
+      ["4月", "巴西", 100, 3000],
+      ["5月", "巴西", 120, 3900],
+    ]),
+    buildFinanceRawWorkbookSheetFromRows("预算", [
+      ["Month", "Country", "Sales Volume", "Total Margin"],
+      ["4月", "巴西", 110, 3300],
+      ["5月", "巴西", 130, 4100],
+    ]),
+    buildFinanceRawWorkbookSheetFromRows("填表说明", [
+      ["项目", "说明"],
+      ["月份", "请填写 4月、5月 或 2026-05，不要写 5月实际。"],
+    ]),
+  ];
+  const sheets = normalizeFinanceWorkbookSheets(rawSheets);
+  const workbook = {
+    fileName: "多口径.xlsx",
+    sheets,
+    totalRowCount: sheets.reduce((sum, sheet) => sum + sheet.rowCount, 0),
+  };
+  const analysisRows = buildFinanceAnalysisRowsFromWorkbook(workbook);
+  const schema = inferFinanceSchema(analysisRows);
+
+  assert.deepEqual(sheets.map((sheet) => sheet.name), ["实际", "预算"]);
+  assert.deepEqual(sheets[0].headers.slice(0, 2), ["数据口径", "Month"]);
+  assert.deepEqual(analysisRows.map((row) => row["数据口径"]), ["实际", "实际", "预算", "预算"]);
+  assert.deepEqual(schema.profile.periods.map((period) => period.key), ["M04", "M05"]);
+  assert.ok(schema.dimensionColumns.includes("数据口径"));
+
+  const actualSnapshot = buildMetricSnapshot(analysisRows, schema, {
+    metric: "Sales Volume",
+    period: "M05",
+    filters: { "数据口径": ["实际"] },
+    comparisons: ["mom"],
+  });
+  assert.equal(actualSnapshot.value, 120);
+  assert.equal(actualSnapshot.mom?.value, 100);
+
+  const budgetSnapshot = buildMetricSnapshot(analysisRows, schema, {
+    metric: "Sales Volume",
+    period: "M05",
+    filters: { "数据口径": ["预算"] },
+    comparisons: ["mom"],
+  });
+  assert.equal(budgetSnapshot.value, 130);
+  assert.equal(budgetSnapshot.mom?.value, 110);
 });
 
 test("toFinanceNumber preserves unit scale, parentheses negatives, and percentages", () => {

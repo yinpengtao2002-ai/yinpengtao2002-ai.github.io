@@ -182,6 +182,7 @@ test("finance AI direct prompt includes uploaded workbook rows for provider anal
   assert.match(prompt, /3000/);
   assert.match(prompt, /compact_workbook_v1/);
   assert.match(prompt, /Each sheet\.rows item is an array/);
+  assert.match(prompt, /sheet 名为实际、预算、目标、预测/);
   assert.match(prompt, /\["2026-03","巴西",100,3000\]/);
   assert.doesNotMatch(prompt, /\{"月份":"2026-03","国家":"巴西","销量":100,"边际":3000\}/);
   assert.match(prompt, /charts 最多 3 个/);
@@ -1093,6 +1094,9 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(client, /finance-ai-upload-chip/);
   assert.match(client, /finance-ai-empty-card/);
   assert.match(client, /downloadSampleTemplate/);
+  assert.match(client, /book_append_sheet\(workbook,\s*actualWorksheet,\s*"实际"\)/);
+  assert.match(client, /book_append_sheet\(workbook,\s*budgetWorksheet,\s*"预算"\)/);
+  assert.match(client, /book_append_sheet\(workbook,\s*readmeWorksheet,\s*"填表说明"\)/);
   assert.match(client, /finance-ai-empty-state/);
   assert.match(client, /X-Finance-AI-Access/);
   assert.doesNotMatch(client, /next\/image/);

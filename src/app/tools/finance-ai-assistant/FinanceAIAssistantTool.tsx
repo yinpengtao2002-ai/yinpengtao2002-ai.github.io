@@ -10,7 +10,12 @@ import * as XLSX from "xlsx";
 import "katex/dist/katex.min.css";
 import { buildChartSpec, buildDirectChartSpec } from "@/lib/finance-ai/charts";
 import { resolveFinanceActionFilterMembers } from "@/lib/finance-ai/filter-resolution";
-import { buildFinanceRawWorkbookSheetFromRows } from "@/lib/finance-ai/workbook";
+import {
+  FINANCE_SCENARIO_COLUMN,
+  buildFinanceAnalysisRowsFromWorkbook,
+  buildFinanceRawWorkbookSheetFromRows,
+  normalizeFinanceWorkbookSheets,
+} from "@/lib/finance-ai/workbook";
 import {
   buildBarRank,
   buildMetricSnapshot,
@@ -90,11 +95,26 @@ type PlotlyModule = {
 
 const FINANCE_AI_ACCESS_HEADER = "X-Finance-AI-Access";
 const ASSISTANT_PREVIEW_IMAGE = "/images/product-stage/finance-ai-assistant-preview.webp";
-const SAMPLE_TEMPLATE_ROWS = [
+const SAMPLE_TEMPLATE_HEADERS = ["Month", "Dim_A", "Dim_B", "Dim_C", "Dim_D", "Dim_E", "Sales Volume", "Total Margin"];
+const ACTUAL_SAMPLE_TEMPLATE_ROWS = [
   { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 100, "Total Margin": 3000 },
   { "Month": "4月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 120, "Total Margin": 3900 },
   { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "墨西哥", "Dim_C": "T1E", "Dim_D": "EV", "Dim_E": "墨西哥-T1E", "Sales Volume": 80, "Total Margin": 1800 },
   { "Month": "4月", "Dim_A": "拉美大区", "Dim_B": "墨西哥", "Dim_C": "T1E", "Dim_D": "EV", "Dim_E": "墨西哥-T1E", "Sales Volume": 72, "Total Margin": 1650 },
+];
+const BUDGET_SAMPLE_TEMPLATE_ROWS = [
+  { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 105, "Total Margin": 3200 },
+  { "Month": "4月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 130, "Total Margin": 4200 },
+  { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "墨西哥", "Dim_C": "T1E", "Dim_D": "EV", "Dim_E": "墨西哥-T1E", "Sales Volume": 78, "Total Margin": 1850 },
+  { "Month": "4月", "Dim_A": "拉美大区", "Dim_B": "墨西哥", "Dim_C": "T1E", "Dim_D": "EV", "Dim_E": "墨西哥-T1E", "Sales Volume": 85, "Total Margin": 2100 },
+];
+const SAMPLE_TEMPLATE_README_ROWS = [
+  ["项目", "说明"],
+  ["推荐格式", "将实际和预算分别放在名为“实际”“预算”的工作表中；也可以使用 Actual、Budget 等英文 sheet 名。"],
+  ["月份", "Month/月份列只填写纯月份，例如 3月、4月、2026-04；不要写 4月实际、5月预算。"],
+  ["维度", "Dim_A 至 Dim_E 可替换为大区、国家、车型、渠道、业务单元等真实维度名称。"],
+  ["指标", "Sales Volume 是销量列；Total Margin、净收入、成本、利润等总额指标可以继续向右新增。"],
+  ["口径识别", "上传后页面会根据 sheet 名自动生成“数据口径”维度，AI 可用它区分实际、预算、目标或预测。"],
 ];
 
 function summarizeSchema(schema: FinanceSchema | null) {
@@ -124,21 +144,24 @@ async function parseFile(file: File): Promise<ParsedWorkbook> {
   const xlsxWorkbook = name.endsWith(".csv")
     ? XLSX.read(await file.text(), { type: "string", cellDates: true })
     : XLSX.read(new Uint8Array(await file.arrayBuffer()), { type: "array", cellDates: true });
-  const sheets = xlsxWorkbook.SheetNames
+  const rawSheets = xlsxWorkbook.SheetNames
     .map((sheetName) => buildRawWorkbookSheet(sheetName, xlsxWorkbook.Sheets[sheetName]))
     .filter((sheet) => sheet.rowCount > 0);
+  const sheets = normalizeFinanceWorkbookSheets(rawSheets);
 
   if (sheets.length === 0) {
-    throw new Error("文件里没有可读取的工作表。");
+    throw new Error("文件里没有可读取的经营数据工作表。");
   }
 
+  const workbook = {
+    fileName: file.name,
+    sheets,
+    totalRowCount: sheets.reduce((sum, sheet) => sum + sheet.rowCount, 0),
+  };
+
   return {
-    workbook: {
-      fileName: file.name,
-      sheets,
-      totalRowCount: sheets.reduce((sum, sheet) => sum + sheet.rowCount, 0),
-    },
-    previewRows: sheets[0]?.rows ?? [],
+    workbook,
+    previewRows: buildFinanceAnalysisRowsFromWorkbook(workbook),
   };
 }
 
@@ -146,14 +169,20 @@ function getDefaultQuestion(schema: FinanceSchema | null) {
   const salesMetric = schema?.totalMetrics.find((metric) => metric.column === schema.salesColumn);
   const metric = salesMetric?.name ?? schema?.unitMetrics[0]?.name ?? schema?.totalMetrics[0]?.name ?? "销量";
   const period = schema?.profile.periods.at(-1)?.label ?? "最近月份";
-  const dimension = schema?.dimensionColumns.includes("国家")
+  const businessDimensions = schema?.dimensionColumns.filter((dimension) => dimension !== FINANCE_SCENARIO_COLUMN) ?? [];
+  const dimension = businessDimensions.includes("国家")
     ? "国家"
-    : schema?.dimensionColumns[0] ?? "国家";
+    : businessDimensions[0] ?? "国家";
 
   return `${period} ${dimension}表现怎么看？${metric}环比同比如何？`;
 }
 
 function getRowsForSchema(workbook: FinanceRawWorkbook, schema: FinanceSchema): FinanceRow[] {
+  const analysisRows = buildFinanceAnalysisRowsFromWorkbook(workbook);
+  if (analysisRows.some((row) => schema.monthColumn in row && schema.salesColumn in row)) {
+    return analysisRows;
+  }
+
   return workbook.sheets.find((sheet) => (
     sheet.headers.includes(schema.monthColumn) &&
     sheet.headers.includes(schema.salesColumn)
@@ -849,10 +878,22 @@ function AssistantAvatar({ compact = false }: { compact?: boolean }) {
   );
 }
 
+function makeTemplateWorksheet(rows: Record<string, string | number>[]) {
+  const worksheet = XLSX.utils.json_to_sheet(rows, { header: SAMPLE_TEMPLATE_HEADERS });
+  worksheet["!cols"] = SAMPLE_TEMPLATE_HEADERS.map((header) => ({ wch: Math.max(header.length + 4, 14) }));
+  return worksheet;
+}
+
 function downloadSampleTemplate() {
-  const worksheet = XLSX.utils.json_to_sheet(SAMPLE_TEMPLATE_ROWS);
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "示例格式");
+  const actualWorksheet = makeTemplateWorksheet(ACTUAL_SAMPLE_TEMPLATE_ROWS);
+  const budgetWorksheet = makeTemplateWorksheet(BUDGET_SAMPLE_TEMPLATE_ROWS);
+  const readmeWorksheet = XLSX.utils.aoa_to_sheet(SAMPLE_TEMPLATE_README_ROWS);
+  readmeWorksheet["!cols"] = [{ wch: 18 }, { wch: 96 }];
+
+  XLSX.utils.book_append_sheet(workbook, actualWorksheet, "实际");
+  XLSX.utils.book_append_sheet(workbook, budgetWorksheet, "预算");
+  XLSX.utils.book_append_sheet(workbook, readmeWorksheet, "填表说明");
   const bytes = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
   const blob = new Blob([bytes], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -860,7 +901,7 @@ function downloadSampleTemplate() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "finance-ai-assistant-sample.xlsx";
+  link.download = "finance-ai-assistant-template.xlsx";
   document.body.appendChild(link);
   link.click();
   link.remove();
