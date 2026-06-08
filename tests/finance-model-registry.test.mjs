@@ -15,6 +15,44 @@ function assertCssRuleHas(css, selector, declarations) {
   }
 }
 
+function readWebpDimensions(buffer) {
+  assert.equal(buffer.toString("ascii", 0, 4), "RIFF", "asset should be a RIFF container");
+  assert.equal(buffer.toString("ascii", 8, 12), "WEBP", "asset should be a WebP image");
+
+  let offset = 12;
+  while (offset + 8 <= buffer.length) {
+    const chunkType = buffer.toString("ascii", offset, offset + 4);
+    const chunkSize = buffer.readUInt32LE(offset + 4);
+    const dataStart = offset + 8;
+
+    if (chunkType === "VP8 ") {
+      return {
+        width: buffer.readUInt16LE(dataStart + 6) & 0x3fff,
+        height: buffer.readUInt16LE(dataStart + 8) & 0x3fff,
+      };
+    }
+
+    if (chunkType === "VP8L") {
+      const packed = buffer.readUInt32LE(dataStart + 1);
+      return {
+        width: (packed & 0x3fff) + 1,
+        height: ((packed >> 14) & 0x3fff) + 1,
+      };
+    }
+
+    if (chunkType === "VP8X") {
+      return {
+        width: 1 + buffer.readUIntLE(dataStart + 4, 3),
+        height: 1 + buffer.readUIntLE(dataStart + 7, 3),
+      };
+    }
+
+    offset = dataStart + chunkSize + (chunkSize % 2);
+  }
+
+  assert.fail("asset should expose WebP dimensions");
+}
+
 test("finance registry is a direct model list without category metadata", () => {
   assert.equal("categories" in registry, false);
   for (const model of registry.models) {
@@ -107,6 +145,23 @@ test("finance models include chart-stacked preview assets", async () => {
   }
 });
 
+test("finance model previews use shared wide-strip assets for home and index cards", async () => {
+  const { readFile } = await import("node:fs/promises");
+
+  for (const model of registry.models) {
+    const assetPath = new URL(`../public${model.previewImage}`, import.meta.url);
+    const dimensions = readWebpDimensions(await readFile(assetPath));
+    const ratio = dimensions.width / dimensions.height;
+
+    assert.ok(
+      ratio >= 1.9 && ratio <= 2.35,
+      `${model.slug} preview should be a wide strip image, got ${dimensions.width}x${dimensions.height}`
+    );
+    assert.ok(dimensions.width >= 1100, `${model.slug} preview should be wide enough for the homepage`);
+    assert.ok(dimensions.height <= 640, `${model.slug} preview should stay shallow for compact cards`);
+  }
+});
+
 test("finance model library renders the preview component", async () => {
   const library = await readFile(
     new URL("../src/components/finance/FinanceModelLibrary.tsx", import.meta.url),
@@ -180,6 +235,26 @@ test("finance model library uses the previous preview card grid instead of the t
   assert.doesNotMatch(globals, /\.finance-model-directory\s*\{/);
   assert.doesNotMatch(globals, /\.finance-model-directory-head\s*\{/);
   assert.doesNotMatch(globals, /\.finance-model-row\s*\{/);
+});
+
+test("finance compact library uses one-row three-up strip cards on desktop", async () => {
+  const globals = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
+
+  assertCssRuleHas(globals, ".finance-model-library-grid.compact", [
+    "grid-template-columns: repeat(3, minmax(0, 1fr))",
+    "gap: 12px",
+  ]);
+  assertCssRuleHas(globals, ".finance-model-preview.compact", [
+    "aspect-ratio: 2.05",
+  ]);
+  assertCssRuleHas(globals, ".finance-model-library-grid.compact .finance-model-card-summary", [
+    "-webkit-line-clamp: 2",
+  ]);
+  assert.doesNotMatch(
+    globals,
+    /\.finance-model-library-grid\.compact\s*\{[^}]*auto-fit/s,
+    "compact finance grid should not auto-fit into uneven desktop columns"
+  );
 });
 
 test("finance model library presents models as one focused library without category filters", async () => {
