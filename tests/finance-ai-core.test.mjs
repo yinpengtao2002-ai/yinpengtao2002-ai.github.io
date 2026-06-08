@@ -19,6 +19,7 @@ import {
 import { resolveFinanceActionFilterMembers } from "../src/lib/finance-ai/filter-resolution.ts";
 import { buildChartSpec, buildDirectChartSpec } from "../src/lib/finance-ai/charts.ts";
 import { buildFinanceAIChartDemoSpecs } from "../src/lib/finance-ai/chart-demo.ts";
+import { splitAssistantTextForMetricCards } from "../src/lib/finance-ai/message-sections.ts";
 import {
   buildFinanceAnalysisRowsFromWorkbook,
   buildFinanceRawWorkbookSheetFromRows,
@@ -1191,6 +1192,20 @@ test("chart specs are compact and identify supported chart types", () => {
   assert.equal(typeof spec.note, "string");
 });
 
+test("metric-card text splitting keeps markdown strong markers paired", () => {
+  const split = splitAssistantTextForMetricCards("**5月整体销量完成 120,000 台。** 分解来看，巴西和西班牙贡献最大。", true);
+
+  assert.equal(split.introText, "**5月整体销量完成 120,000 台。**");
+  assert.equal(split.analysisText, "分解来看，巴西和西班牙贡献最大。");
+});
+
+test("metric-card text splitting avoids cutting inside open markdown strong text", () => {
+  const split = splitAssistantTextForMetricCards("**5月整体销量完成 120,000 台。分解来看，巴西贡献最大。** 后续看车型结构。", true);
+
+  assert.equal(split.introText, "**5月整体销量完成 120,000 台。分解来看，巴西贡献最大。**");
+  assert.equal(split.analysisText, "后续看车型结构。");
+});
+
 test("metric snapshot chart spec renders as a compact KPI card", () => {
   const schema = inferFinanceSchema(metricRows);
   const snapshot = buildMetricSnapshot(metricRows, schema, {
@@ -1259,7 +1274,7 @@ test("bar rank chart spec uses horizontal bars without a separate numeric table"
   const spec = buildChartSpec({ type: "bar_rank", title: "国家边际排名", result: rank });
 
   assert.equal(spec.kind, "bar_rank");
-  assert.equal(spec.size, "medium");
+  assert.equal(spec.size, "large");
   assert.equal(spec.data[0].type, "bar");
   assert.equal(spec.data[0].orientation, "h");
   assert.ok(Array.isArray(spec.data[0].text));
@@ -1375,6 +1390,7 @@ test("finance AI chart demo specs cover every supported chart style", () => {
     "waterfall_bridge",
   ]);
   assert.equal(specs.filter((spec) => spec.kind === "waterfall_bridge").length, 2);
+  assert.equal(specs.find((spec) => spec.kind === "bar_rank")?.size, "large");
   assert.equal(specs.every((spec) => spec.config.displayModeBar === false), true);
   assert.equal(specs.every((spec) => spec.data.length > 0), true);
   assert.equal(specs.every((spec) => typeof spec.note === "string" && spec.note.length > 0), true);
@@ -1414,6 +1430,7 @@ test("direct AI chart payloads render through the supported chart specs", () => 
   assert.deepEqual(trendSpec.data[0].text, ["30.00", "32.50"]);
   assert.equal(Array.isArray(trendSpec.layout.yaxis.range), true);
   assert.equal(rankSpec.kind, "bar_rank");
+  assert.equal(rankSpec.size, "large");
   assert.equal(rankSpec.data[0].orientation, "h");
   assert.match(rankSpec.data[0].text.at(-1), /70\.0%/);
   assert.equal(rankSpec.layout.xaxis.fixedrange, true);

@@ -547,7 +547,7 @@ function buildBarRankChartSpec(title: string, result: BarRankResult): FinanceCha
 
   return {
     kind: "bar_rank",
-    size: "medium",
+    size: "large",
     title,
     data: [{
       type: "bar",
@@ -608,7 +608,7 @@ function buildDirectBarRankChartSpec(input: FinanceAIDirectBarRankChart): Financ
 
   return {
     kind: "bar_rank",
-    size: "medium",
+    size: "large",
     title: input.title,
     data: [{
       type: "bar",

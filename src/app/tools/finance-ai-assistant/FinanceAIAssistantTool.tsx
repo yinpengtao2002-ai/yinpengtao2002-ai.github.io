@@ -23,6 +23,7 @@ import {
   buildWaterfallBridge,
 } from "@/lib/finance-ai/metrics";
 import { inferFinanceSchema, normalizePeriodValue } from "@/lib/finance-ai/schema";
+import { splitAssistantTextForMetricCards } from "@/lib/finance-ai/message-sections";
 import { normalizeChatMathMarkdown } from "@/lib/markdown/normalizeChatMathMarkdown";
 import { normalizeMarkdownStrongEmphasis } from "@/lib/markdown/normalizeStrongEmphasis";
 import type {
@@ -928,34 +929,6 @@ function FinanceAIMessageContent({ text }: { text: string }) {
       </ReactMarkdown>
     </div>
   );
-}
-
-function splitAssistantTextForMetricCards(text: string, hasMetricCards: boolean) {
-  const normalizedText = text.trim();
-
-  if (!hasMetricCards || !normalizedText) {
-    return { introText: text, analysisText: "" };
-  }
-
-  const paragraphMatch = normalizedText.match(/\n\s*\n/);
-  if (paragraphMatch?.index !== undefined) {
-    const splitIndex = paragraphMatch.index;
-    return {
-      introText: normalizedText.slice(0, splitIndex).trim(),
-      analysisText: normalizedText.slice(splitIndex + paragraphMatch[0].length).trim(),
-    };
-  }
-
-  const sentenceMatch = normalizedText.match(/[。！？]/);
-  if (sentenceMatch?.index !== undefined && sentenceMatch.index < normalizedText.length - 12) {
-    const splitIndex = sentenceMatch.index + sentenceMatch[0].length;
-    return {
-      introText: normalizedText.slice(0, splitIndex).trim(),
-      analysisText: normalizedText.slice(splitIndex).trim(),
-    };
-  }
-
-  return { introText: normalizedText, analysisText: "" };
 }
 
 function buildAssistantMessageSections(message: ChatMessage): AssistantMessageSection[] {

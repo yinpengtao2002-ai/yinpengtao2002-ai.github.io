@@ -436,7 +436,8 @@ body {
 }
 
 .finance-ai-message.is-user .finance-ai-message-bubble {
-  width: min(620px, 82%);
+  width: fit-content;
+  max-width: min(620px, 82%);
   margin-left: auto;
   border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
   border-radius: 18px;
@@ -845,8 +846,12 @@ body {
   }
 
   .finance-ai-message-bubble,
-  .finance-ai-message.is-user .finance-ai-message-bubble {
+  .finance-ai-message.is-assistant .finance-ai-message-bubble {
     width: calc(100% - 38px);
+  }
+
+  .finance-ai-message.is-user .finance-ai-message-bubble {
+    max-width: calc(100% - 38px);
   }
 
   .finance-ai-chart-grid {

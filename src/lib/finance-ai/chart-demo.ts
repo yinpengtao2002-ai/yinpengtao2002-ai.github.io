@@ -35,7 +35,7 @@ const baseConfig = {
 const SIZE_BY_KIND: Record<FinanceChartSpec["kind"], FinanceChartSpec["size"]> = {
   metric_card: "small",
   trend_chart: "large",
-  bar_rank: "medium",
+  bar_rank: "large",
   waterfall_bridge: "large",
   grouped_bar: "medium",
   stacked_bar: "medium",
