@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { buildFinanceAIChartDemoSpecs } from "@/lib/finance-ai/chart-demo";
+import FinanceAIDetailTable from "@/components/finance/FinanceAIDetailTable";
 import type { FinanceChartSpec } from "@/lib/finance-ai/types";
 
 type PlotlyModule = {
@@ -83,7 +84,11 @@ export default function FinanceAIChartDemo() {
                 <h2>{spec.title}</h2>
               </div>
             </div>
-            <PlotlyDemoChart spec={spec} />
+            {spec.kind === "detail_table" ? (
+              <FinanceAIDetailTable spec={spec} />
+            ) : (
+              <PlotlyDemoChart spec={spec} />
+            )}
             <p>{spec.note}</p>
           </article>
         ))}

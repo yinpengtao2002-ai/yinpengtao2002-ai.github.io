@@ -1136,6 +1136,53 @@ test("finance AI assistant rank detail tables keep numeric cells for shared unit
   assert.match(client, /item\.changeValue,/);
 });
 
+test("finance AI assistant detail tables use a filtered HTML table view", async () => {
+  const client = await readProjectFile("src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
+  const chartDemo = await readProjectFile("src/app/finance/finance-ai-assistant/chart-demo/FinanceAIChartDemo.tsx");
+  const detailTable = await readProjectFile("src/components/finance/FinanceAIDetailTable.tsx");
+  const styles = await readProjectFile("src/app/globals.css");
+
+  assert.match(client, /FinanceAIDetailTable/);
+  assert.match(chartDemo, /FinanceAIDetailTable/);
+  assert.match(detailTable, /function FinanceAIDetailTable/);
+  assert.match(detailTable, /filterValues/);
+  assert.match(detailTable, /filteredRows/);
+  assert.match(client, /spec\.kind === "detail_table"/);
+  assert.match(detailTable, /finance-ai-detail-table-filter/);
+  assert.match(detailTable, /finance-ai-detail-table-count/);
+  assert.match(styles, /\.finance-ai-detail-table-wrap/);
+  assert.match(styles, /\.finance-ai-detail-table-filter/);
+  assert.match(styles, /\.finance-ai-detail-table th/);
+});
+
+test("finance AI prompts ask detail tables to include useful comparison columns", () => {
+  const context = buildFinanceAIPlanningContext(makeSchema(), {
+    recentQuestions: ["把国家销量和单车边际都增长的列出来"],
+    chartHistory: [],
+  });
+  const directPrompt = buildFinanceAIDirectAnalyzePrompt({
+    userQuestion: "把国家销量和单车边际都增长的列出来",
+    workbook: {
+      fileName: "底稿.xlsx",
+      totalRowCount: 2,
+      sheets: [{
+        name: "明细",
+        headers: ["月份", "国家", "销量", "边际"],
+        rowCount: 2,
+        rows: [
+          { "月份": "2026-02", "国家": "巴西", "销量": 80, "边际": 2000 },
+          { "月份": "2026-03", "国家": "巴西", "销量": 100, "边际": 3500 },
+        ],
+      }],
+    },
+  });
+
+  assert.match(context, /detail_table.*上期.*本期.*变化.*变化率|上期.*本期.*变化.*变化率.*detail_table/);
+  assert.match(context, /表格.*至少.*4.*列|至少.*4.*列.*表格/);
+  assert.match(directPrompt, /detail_table.*关键维度.*当前值.*对比值.*变化|关键维度.*当前值.*对比值.*变化.*detail_table/);
+  assert.match(directPrompt, /不要只返回一两列/);
+});
+
 test("finance AI assistant supports conjunctive multi-metric growth questions", async () => {
   const schema = makeSchema({
     totalMetrics: [
@@ -1167,6 +1214,7 @@ test("finance AI chart demo page renders all demo chart styles", async () => {
   assert.match(page, /FinanceAIChartDemo/);
   assert.match(client, /buildFinanceAIChartDemoSpecs/);
   assert.match(client, /plotly\.js-dist-min/);
+  assert.match(client, /FinanceAIDetailTable/);
   assert.match(client, /finance-ai-demo-grid/);
   assert.match(demoSpecs, /percent_stacked_bar/);
   assert.match(demoSpecs, /scatter_bubble/);

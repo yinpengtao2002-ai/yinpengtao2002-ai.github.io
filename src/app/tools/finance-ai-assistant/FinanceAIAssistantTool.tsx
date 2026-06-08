@@ -25,6 +25,7 @@ import {
 import { inferFinanceSchema, normalizePeriodValue } from "@/lib/finance-ai/schema";
 import { normalizeChatMathMarkdown } from "@/lib/markdown/normalizeChatMathMarkdown";
 import { normalizeMarkdownStrongEmphasis } from "@/lib/markdown/normalizeStrongEmphasis";
+import FinanceAIDetailTable from "@/components/finance/FinanceAIDetailTable";
 import type {
   BarRankResult,
   FinanceActionModule,
@@ -248,17 +249,43 @@ function buildBarRankDetailTable(title: string, result: BarRankResult): FinanceC
     return null;
   }
 
+  const hasMomComparison = result.comparison === "mom" && result.allItems.some((item) => item.changeValue !== null);
+  const columns = hasMomComparison
+    ? ["排名", result.dimension, `${result.metric}上期`, `${result.metric}本期`, "占比", "环比变化", "环比变化率"]
+    : ["排名", result.dimension, result.metric, "占比", "行数"];
+
   return buildDirectChartSpec({
     type: "detail_table",
     title: `${title}完整明细`,
-    columns: ["排名", result.dimension, result.metric, "占比", "环比变化"],
-    rows: result.allItems.map((item, index) => [
-      index + 1,
-      item.label,
-      item.value,
-      item.valueShare,
-      item.changeValue,
-    ]),
+    columns,
+    rows: result.allItems.map((item, index) => {
+      if (!hasMomComparison) {
+        return [
+          index + 1,
+          item.label,
+          item.value,
+          item.valueShare,
+          item.rowCount,
+        ];
+      }
+
+      const previousValue = item.value !== null && item.changeValue !== null
+        ? item.value - item.changeValue
+        : null;
+      const changeRate = previousValue !== null && previousValue !== 0 && item.changeValue !== null
+        ? item.changeValue / previousValue
+        : null;
+
+      return [
+        index + 1,
+        item.label,
+        previousValue,
+        item.value,
+        item.valueShare,
+        item.changeValue,
+        changeRate,
+      ];
+    }),
     note: "按用户要求列出完整维度明细；图表仅保留可读的前 10 项。",
   });
 }
@@ -626,35 +653,59 @@ function buildDetailTablePlanChart(rows: FinanceRow[], schema: FinanceSchema, mo
     module.filters,
     limit,
   ), module.dimension, module.filters, limit);
-  const columns = [module.dimension, ...module.metrics];
+  const shouldCompareMom = module.comparison === "mom" && primaryMetric;
+  const currentPeriodSort = schema.profile.periods.find((item) => item.key === module.period)?.sort ?? 0;
+  const previousPeriod = shouldCompareMom
+    ? schema.profile.periods
+        .filter((period) => period.sort < currentPeriodSort)
+        .at(-1)
+    : undefined;
+  const columns = shouldCompareMom && previousPeriod
+    ? [
+        module.dimension,
+        ...module.metrics.flatMap((metric) => [
+          `${metric}上期`,
+          `${metric}本期`,
+          `${metric}环比变化`,
+          `${metric}环比变化率`,
+        ]),
+      ]
+    : [module.dimension, ...module.metrics];
   const rowsData = labels.map((label) => {
     const filters = mergeFilters(module.filters, { [module.dimension]: [label] });
+
+    if (!shouldCompareMom || !previousPeriod) {
+      return [
+        label,
+        ...module.metrics.map((metric) => getTableMetricValue(rows, schema, metric, module.period, filters)),
+      ];
+    }
+
     return [
       label,
-      ...module.metrics.map((metric) => getTableMetricValue(rows, schema, metric, module.period, filters)),
+      ...module.metrics.flatMap((metric) => {
+        const current = getTableComparisonMetricValue(rows, schema, metric, module.period, filters);
+        const previous = getTableComparisonMetricValue(rows, schema, metric, previousPeriod.key, filters);
+        const change = current !== null && previous !== null ? current - previous : null;
+        const changeRate = previous !== null && previous !== 0 && change !== null ? change / previous : null;
+
+        return [previous, current, change, changeRate];
+      }),
     ];
   });
 
-  if (module.comparison === "mom" && primaryMetric) {
+  if (module.comparison === "mom" && !previousPeriod) {
     const currentPeriodSort = schema.profile.periods.find((item) => item.key === module.period)?.sort ?? 0;
-    const previousPeriod = schema.profile.periods
-      .filter((period) => period.sort < currentPeriodSort)
-      .at(-1);
-
-    module.metrics.forEach((metric) => {
-      columns.push(`${metric}环比变化`);
-    });
-    rowsData.forEach((row, index) => {
-      const label = labels[index];
-      const currentFilters = mergeFilters(module.filters, { [module.dimension]: [label] });
+    if (currentPeriodSort > 0) {
       module.metrics.forEach((metric) => {
-        const current = getTableComparisonMetricValue(rows, schema, metric, module.period, currentFilters);
-        const previous = previousPeriod
-          ? getTableComparisonMetricValue(rows, schema, metric, previousPeriod.key, currentFilters)
-          : null;
-        row.push(current !== null && previous !== null ? current - previous : null);
+        columns.push(`${metric}环比变化`);
       });
-    });
+      rowsData.forEach((row) => {
+        module.metrics.forEach(() => {
+          row.push(null);
+        });
+      });
+    }
   }
 
   return buildDirectChartSpec({
@@ -1004,7 +1055,11 @@ function FinanceAIChartGrid({
           <div className="finance-ai-chart-card-header">
             <h2>{card.title}</h2>
           </div>
-          <PlotlyChart spec={card.spec} />
+          {card.spec.kind === "detail_table" ? (
+            <FinanceAIDetailTable spec={card.spec} />
+          ) : (
+            <PlotlyChart spec={card.spec} />
+          )}
         </div>
       ))}
     </div>
