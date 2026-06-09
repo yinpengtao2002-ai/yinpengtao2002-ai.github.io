@@ -1136,7 +1136,7 @@ test("finance AI assistant rank detail tables keep numeric cells for shared unit
   assert.match(client, /item\.changeValue,/);
 });
 
-test("finance AI assistant detail tables use a filtered HTML table view", async () => {
+test("finance AI assistant detail tables use Excel-style header filter menus", async () => {
   const client = await readProjectFile("src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
   const chartDemo = await readProjectFile("src/app/finance/finance-ai-assistant/chart-demo/FinanceAIChartDemo.tsx");
   const detailTable = await readProjectFile("src/components/finance/FinanceAIDetailTable.tsx");
@@ -1145,14 +1145,23 @@ test("finance AI assistant detail tables use a filtered HTML table view", async 
   assert.match(client, /FinanceAIDetailTable/);
   assert.match(chartDemo, /FinanceAIDetailTable/);
   assert.match(detailTable, /function FinanceAIDetailTable/);
-  assert.match(detailTable, /filterValues/);
+  assert.match(detailTable, /appliedFilters/);
+  assert.match(detailTable, /openFilterMenu/);
+  assert.match(detailTable, /createPortal/);
   assert.match(detailTable, /filteredRows/);
+  assert.match(detailTable, /finance-ai-detail-filter-trigger/);
+  assert.match(detailTable, /finance-ai-detail-filter-menu/);
+  assert.match(detailTable, /全选/);
+  assert.match(detailTable, /清空/);
+  assert.match(detailTable, /应用/);
   assert.match(client, /spec\.kind === "detail_table"/);
-  assert.match(detailTable, /finance-ai-detail-table-filter/);
   assert.match(detailTable, /finance-ai-detail-table-count/);
   assert.match(styles, /\.finance-ai-detail-table-wrap/);
-  assert.match(styles, /\.finance-ai-detail-table-filter/);
+  assert.match(styles, /\.finance-ai-detail-filter-trigger/);
+  assert.match(styles, /\.finance-ai-detail-filter-menu/);
   assert.match(styles, /\.finance-ai-detail-table th/);
+  assert.doesNotMatch(detailTable, /className="finance-ai-detail-table-filter"/);
+  assert.doesNotMatch(detailTable, /finance-ai-detail-table-filters/);
 });
 
 test("finance AI prompts ask detail tables to include useful comparison columns", () => {
