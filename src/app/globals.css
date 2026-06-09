@@ -119,8 +119,7 @@ body {
   height: 100%;
   display: block;
   object-fit: cover;
-  object-position: 50% 55%;
-  transform: scale(1.8);
+  object-position: center;
 }
 
 .finance-ai-avatar-mini {
@@ -6578,7 +6577,7 @@ h6 {
 }
 
 .finance-model-preview.compact {
-  aspect-ratio: 3.2;
+  aspect-ratio: 1.85;
 }
 
 .finance-model-preview-image {

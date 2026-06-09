@@ -93,7 +93,7 @@ type PlotlyModule = {
 };
 
 const FINANCE_AI_ACCESS_HEADER = "X-Finance-AI-Access";
-const ASSISTANT_PREVIEW_IMAGE = "/images/product-stage/finance-ai-assistant-preview.webp";
+const ASSISTANT_AVATAR_IMAGE = "/images/product-stage/finance-ai-assistant-avatar.webp";
 const SAMPLE_TEMPLATE_HEADERS = ["Month", "Dim_A", "Dim_B", "Dim_C", "Dim_D", "Dim_E", "Sales Volume", "Total Margin"];
 const ACTUAL_SAMPLE_TEMPLATE_ROWS = [
   { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 100, "Total Margin": 3000 },
@@ -970,8 +970,8 @@ function getAPIErrorMessage(payload: APIResponse, fallback: string) {
 function AssistantAvatar({ compact = false }: { compact?: boolean }) {
   return (
     <span className={compact ? "finance-ai-avatar-mini" : "finance-ai-avatar"} aria-hidden="true">
-      {/* eslint-disable-next-line @next/next/no-img-element -- This reused finance model preview asset is cropped as a tiny chat avatar. */}
-      <img src={ASSISTANT_PREVIEW_IMAGE} alt="" draggable="false" />
+      {/* eslint-disable-next-line @next/next/no-img-element -- Tiny decorative avatar outside Next image layout. */}
+      <img src={ASSISTANT_AVATAR_IMAGE} alt="" draggable="false" />
     </span>
   );
 }

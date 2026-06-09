@@ -1260,7 +1260,12 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(client, /finance-ai-empty-state/);
   assert.match(client, /X-Finance-AI-Access/);
   assert.doesNotMatch(client, /next\/image/);
-  assert.match(client, /finance-ai-assistant-preview\.(png|webp)/);
+  assert.match(client, /finance-ai-assistant-avatar\.webp/);
+  assert.doesNotMatch(
+    client,
+    /<img src=\{ASSISTANT_PREVIEW_IMAGE\}/,
+    "the chat avatar should not crop the finance model preview image"
+  );
   assert.match(client, /finance-ai-composer-dock/);
   assert.match(client, /computedModules/);
   assert.match(client, /chartCards/);

@@ -145,7 +145,7 @@ test("finance models include chart-stacked preview assets", async () => {
   }
 });
 
-test("finance model previews use shared wide-strip assets for home and index cards", async () => {
+test("finance model previews use hero-compatible product assets for home and index cards", async () => {
   const { readFile } = await import("node:fs/promises");
 
   for (const model of registry.models) {
@@ -154,11 +154,11 @@ test("finance model previews use shared wide-strip assets for home and index car
     const ratio = dimensions.width / dimensions.height;
 
     assert.ok(
-      ratio >= 3.05 && ratio <= 3.45,
-      `${model.slug} preview should be a wide strip image, got ${dimensions.width}x${dimensions.height}`
+      ratio >= 1.2 && ratio <= 1.65,
+      `${model.slug} preview should fit the home hero stage before reuse, got ${dimensions.width}x${dimensions.height}`
     );
-    assert.ok(dimensions.width >= 1500, `${model.slug} preview should be wide enough for the homepage`);
-    assert.ok(dimensions.height <= 520, `${model.slug} preview should stay shallow for compact cards`);
+    assert.ok(dimensions.width >= 1400, `${model.slug} preview should be wide enough for the homepage`);
+    assert.ok(dimensions.height >= 850, `${model.slug} preview should have enough height for the hero stage`);
   }
 });
 
@@ -237,7 +237,7 @@ test("finance model library uses the previous preview card grid instead of the t
   assert.doesNotMatch(globals, /\.finance-model-row\s*\{/);
 });
 
-test("finance compact library uses one-row three-up strip cards on desktop", async () => {
+test("finance compact library uses one-row three-up product cards on desktop", async () => {
   const globals = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
 
   assertCssRuleHas(globals, ".finance-model-library-grid.compact", [
@@ -245,7 +245,7 @@ test("finance compact library uses one-row three-up strip cards on desktop", asy
     "gap: 12px",
   ]);
   assertCssRuleHas(globals, ".finance-model-preview.compact", [
-    "aspect-ratio: 3.2",
+    "aspect-ratio: 1.85",
   ]);
   assertCssRuleHas(globals, ".finance-model-library-grid.compact .finance-model-card-summary", [
     "-webkit-line-clamp: 2",
