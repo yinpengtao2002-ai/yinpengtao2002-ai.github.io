@@ -4,8 +4,20 @@ import "@perspective-dev/viewer-datagrid";
 import "@perspective-dev/viewer-d3fc";
 import * as XLSX from "xlsx";
 
-const SAMPLE_ROW_TARGET = 216;
+const SAMPLE_ROW_TARGET = 5184;
 const SAMPLE_MONTHS = [
+    "2025-01",
+    "2025-02",
+    "2025-03",
+    "2025-04",
+    "2025-05",
+    "2025-06",
+    "2025-07",
+    "2025-08",
+    "2025-09",
+    "2025-10",
+    "2025-11",
+    "2025-12",
     "2026-01",
     "2026-02",
     "2026-03",
@@ -29,56 +41,96 @@ const SAMPLE_MARKETS = [
 ];
 const SAMPLE_MODELS = ["Alpha", "Beta", "Gamma", "Delta"];
 const SAMPLE_CHANNELS = ["经销", "直营", "集团客户"];
+const SAMPLE_PRICE_BANDS = ["入门", "主销", "高配", "豪华"];
+const SAMPLE_CUSTOMER_TYPES = ["个人", "企业", "租赁"];
 
 function buildSampleRows() {
     const rows = [];
     const modelScale = [1.06, 0.92, 1.18, 0.98];
     const channelScale = [1.04, 0.94, 1.16];
+    const customerScale = [1.02, 1.12, 0.9];
     const businessUnits = ["燃油车", "新能源", "混动"];
+    const powertrains = ["燃油", "纯电", "插混", "增程"];
+    const brandMarketTiers = ["核心市场", "成长市场", "机会市场"];
 
     SAMPLE_MONTHS.forEach((month, monthIndex) => {
+        const yearIndex = Math.floor(monthIndex / 12);
+        const monthOfYear = monthIndex % 12;
         SAMPLE_MARKETS.forEach((market, marketIndex) => {
-            for (let modelSlot = 0; modelSlot < 3; modelSlot += 1) {
-                const modelIndex = (monthIndex + marketIndex + modelSlot) % SAMPLE_MODELS.length;
-                const channelIndex = (monthIndex + modelSlot) % SAMPLE_CHANNELS.length;
-                const country = market.countries[(monthIndex + modelSlot) % market.countries.length];
-                const seasonLift = Math.sin((monthIndex + 1) / 12 * Math.PI * 2) * 46;
-                const marketLift = 1 + marketIndex * 0.055;
-                const baseVolume = 520 + monthIndex * 28 + marketIndex * 54 + modelIndex * 36 + modelSlot * 31;
-                const salesVolume = Math.round((baseVolume + seasonLift) * marketLift * modelScale[modelIndex] * channelScale[channelIndex]);
-                const orders = Math.round(salesVolume * (1.07 + modelSlot * 0.035) + 24 + marketIndex * 9);
-                const unitRevenue = 11.6 + modelIndex * 0.78 + marketIndex * 0.32 + monthIndex * 0.09 + channelIndex * 0.38;
-                const netRevenue = Math.round(salesVolume * unitRevenue);
-                const costRatio = 0.64 + ((marketIndex + modelIndex) % 5) * 0.024;
-                const cost = Math.round(netRevenue * costRatio);
-                const margin = netRevenue - cost;
-                const marketingExpense = Math.round(netRevenue * (0.032 + channelIndex * 0.007 + marketIndex * 0.002));
-                const collectedRevenue = Math.round(netRevenue * (0.86 + ((monthIndex + modelSlot) % 6) * 0.022));
-                const openingInventory = Math.round(salesVolume * (1.32 + (marketIndex % 3) * 0.08) + modelIndex * 42);
-                const endingInventory = Math.max(0, Math.round(openingInventory + orders - salesVolume));
-                const highestInventory = Math.max(openingInventory, endingInventory) + Math.round(salesVolume * (0.18 + modelSlot * 0.025));
-                const lowestInventory = Math.max(0, Math.min(openingInventory, endingInventory) - Math.round(salesVolume * (0.12 + channelIndex * 0.02)));
+            market.countries.forEach((country, countryIndex) => {
+                SAMPLE_MODELS.forEach((model, modelIndex) => {
+                    SAMPLE_CHANNELS.forEach((channel, channelIndex) => {
+                        const customerTypeIndex = (countryIndex + modelIndex + channelIndex) % SAMPLE_CUSTOMER_TYPES.length;
+                        const seasonLift = Math.sin((monthOfYear + 1) / 12 * Math.PI * 2) * 42;
+                        const marketLift = 1 + marketIndex * 0.052;
+                        const countryLift = 1 + countryIndex * 0.026 + ((countryIndex + marketIndex) % 2) * 0.018;
+                        const baseVolume = 280
+                            + yearIndex * 44
+                            + monthOfYear * 11
+                            + marketIndex * 31
+                            + countryIndex * 18
+                            + modelIndex * 27
+                            + channelIndex * 21;
+                        const salesVolume = Math.max(40, Math.round(
+                            (baseVolume + seasonLift)
+                            * marketLift
+                            * countryLift
+                            * modelScale[modelIndex]
+                            * channelScale[channelIndex]
+                            * customerScale[customerTypeIndex]
+                        ));
+                        const orders = Math.round(salesVolume * (1.04 + countryIndex * 0.012 + channelIndex * 0.028) + 18 + yearIndex * 6);
+                        const unitRevenue = 10.8
+                            + modelIndex * 0.74
+                            + marketIndex * 0.29
+                            + countryIndex * 0.18
+                            + monthOfYear * 0.08
+                            + yearIndex * 0.52
+                            + channelIndex * 0.34;
+                        const netRevenue = Math.round(salesVolume * unitRevenue);
+                        const discount = Math.round(netRevenue * (0.014 + countryIndex * 0.003 + channelIndex * 0.004));
+                        const costRatio = 0.61 + ((marketIndex + modelIndex + countryIndex) % 6) * 0.018 + channelIndex * 0.006;
+                        const cost = Math.round(netRevenue * costRatio);
+                        const margin = netRevenue - cost - discount;
+                        const marketingExpense = Math.round(netRevenue * (0.031 + channelIndex * 0.006 + marketIndex * 0.0018));
+                        const logisticsExpense = Math.round(salesVolume * (0.24 + marketIndex * 0.018 + countryIndex * 0.012));
+                        const contributionProfit = margin - marketingExpense - logisticsExpense;
+                        const collectedRevenue = Math.round(netRevenue * (0.84 + ((monthOfYear + countryIndex + channelIndex) % 7) * 0.021));
+                        const openingInventory = Math.round(salesVolume * (1.18 + (marketIndex % 3) * 0.09 + countryIndex * 0.035) + modelIndex * 33);
+                        const endingInventory = Math.max(0, Math.round(openingInventory + orders - salesVolume));
+                        const highestInventory = Math.max(openingInventory, endingInventory) + Math.round(salesVolume * (0.15 + countryIndex * 0.018 + channelIndex * 0.022));
+                        const lowestInventory = Math.max(0, Math.min(openingInventory, endingInventory) - Math.round(salesVolume * (0.1 + modelIndex * 0.014)));
 
-                rows.push({
-                    月份: month,
-                    大区: market.大区,
-                    国家: country,
-                    业务单元: businessUnits[(marketIndex + modelIndex) % businessUnits.length],
-                    车型: SAMPLE_MODELS[modelIndex],
-                    渠道: SAMPLE_CHANNELS[channelIndex],
-                    销量: salesVolume,
-                    订单量: orders,
-                    净收入: netRevenue,
-                    成本: cost,
-                    边际总额: margin,
-                    市场费用: marketingExpense,
-                    回款金额: collectedRevenue,
-                    期初库存: openingInventory,
-                    期末库存: endingInventory,
-                    最高库存: highestInventory,
-                    最低库存: lowestInventory,
+                        rows.push({
+                            月份: month,
+                            年度: `${month.slice(0, 4)}年`,
+                            大区: market.大区,
+                            国家: country,
+                            品牌市场: brandMarketTiers[(marketIndex + countryIndex) % brandMarketTiers.length],
+                            业务单元: businessUnits[(marketIndex + modelIndex) % businessUnits.length],
+                            动力类型: powertrains[(modelIndex + channelIndex) % powertrains.length],
+                            车型: model,
+                            价格带: SAMPLE_PRICE_BANDS[(modelIndex + countryIndex) % SAMPLE_PRICE_BANDS.length],
+                            渠道: channel,
+                            客户类型: SAMPLE_CUSTOMER_TYPES[customerTypeIndex],
+                            销量: salesVolume,
+                            订单量: orders,
+                            净收入: netRevenue,
+                            折扣金额: discount,
+                            成本: cost,
+                            边际总额: margin,
+                            市场费用: marketingExpense,
+                            物流费用: logisticsExpense,
+                            利润贡献: contributionProfit,
+                            回款金额: collectedRevenue,
+                            期初库存: openingInventory,
+                            期末库存: endingInventory,
+                            最高库存: highestInventory,
+                            最低库存: lowestInventory,
+                        });
+                    });
                 });
-            }
+            });
         });
     });
 

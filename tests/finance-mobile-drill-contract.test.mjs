@@ -115,13 +115,22 @@ test("Perspective BI templates only ask for base business fields without automat
 });
 
 test("Perspective BI default demo data is rich enough to exercise chart exploration", () => {
-  assert.match(perspectiveEngine, /const SAMPLE_ROW_TARGET\s*=\s*216/);
-  assert.match(perspectiveEngine, /const SAMPLE_MONTHS = \[[\s\S]*"2026-01"[\s\S]*"2026-12"[\s\S]*\]/);
+  assert.match(perspectiveEngine, /const SAMPLE_ROW_TARGET\s*=\s*5184/);
+  assert.match(perspectiveEngine, /const SAMPLE_MONTHS = \[[\s\S]*"2025-01"[\s\S]*"2026-12"[\s\S]*\]/);
   assert.match(perspectiveEngine, /const SAMPLE_MARKETS = \[[\s\S]*大区: "欧洲"[\s\S]*大区: "东盟"[\s\S]*大区: "非洲"/);
   assert.match(perspectiveEngine, /const SAMPLE_MODELS = \[[\s\S]*"Alpha"[\s\S]*"Delta"[\s\S]*\]/);
   assert.match(perspectiveEngine, /const SAMPLE_CHANNELS = \[[\s\S]*"经销"[\s\S]*"直营"[\s\S]*"集团客户"[\s\S]*\]/);
+  assert.match(perspectiveEngine, /const SAMPLE_PRICE_BANDS = \[[\s\S]*"入门"[\s\S]*"豪华"[\s\S]*\]/);
+  assert.match(perspectiveEngine, /const SAMPLE_CUSTOMER_TYPES = \[[\s\S]*"个人"[\s\S]*"企业"[\s\S]*"租赁"[\s\S]*\]/);
   assert.match(perspectiveEngine, /function buildSampleRows\(\)/);
   assert.match(perspectiveEngine, /const SAMPLE_ROWS = buildSampleRows\(\)/);
+  assert.match(perspectiveEngine, /market\.countries\.forEach/);
+  assert.match(perspectiveEngine, /SAMPLE_MODELS\.forEach/);
+  assert.match(perspectiveEngine, /SAMPLE_CHANNELS\.forEach/);
+  assert.match(perspectiveEngine, /品牌市场/);
+  assert.match(perspectiveEngine, /动力类型/);
+  assert.match(perspectiveEngine, /价格带/);
+  assert.match(perspectiveEngine, /客户类型/);
   assert.match(perspectiveEngine, /订单量/);
   assert.match(perspectiveEngine, /成本/);
   assert.match(perspectiveEngine, /市场费用/);
