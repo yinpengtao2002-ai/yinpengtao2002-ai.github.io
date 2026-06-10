@@ -236,7 +236,7 @@ function getStudyCardErrorMessage(payload: { error?: string; errorCode?: string 
 export default function StudyCardsTool() {
   const [content, setContent] = useState("");
   const [difficulty, setDifficulty] = useState(DIFFICULTY_OPTIONS[0]);
-  const [cardCount, setCardCount] = useState(8);
+  const [cardCount, setCardCount] = useState(10);
   const [result, setResult] = useState<StudyCardResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");

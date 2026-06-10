@@ -28,6 +28,7 @@ test("AI vocabulary card tool is exposed as an independent tool route", async ()
   assert.match(client, /日常阅读/);
   assert.match(client, /考试进阶/);
   assert.match(client, /高阶表达/);
+  assert.match(client, /const \[cardCount, setCardCount\] = useState\(10\)/);
   assert.doesNotMatch(client, /考试：/);
   assert.doesNotMatch(client, /独立工具/);
   assert.match(content, /slug:\s*"study-cards"/);
@@ -152,6 +153,7 @@ test("AI vocabulary card endpoint asks for article extraction and word-list enri
   assert.match(route, /cards/);
   assert.match(route, /JSON/);
   assert.match(route, /getChatProviders/);
+  assert.match(route, /if \(!Number\.isFinite\(numberValue\)\) return 10/);
   assert.doesNotMatch(route, /CHAT_API_KEY/);
   assert.doesNotMatch(route, /CHAT_API_URL/);
   assert.doesNotMatch(route, /gpt-5\.2/);

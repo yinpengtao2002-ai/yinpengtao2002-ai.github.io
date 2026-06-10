@@ -33,7 +33,7 @@ function shouldUsePublicDevProxy(req: NextRequest, providers: ChatProvider[]) {
 
 function clampCardCount(value: unknown) {
   const numberValue = Number(value);
-  if (!Number.isFinite(numberValue)) return 8;
+  if (!Number.isFinite(numberValue)) return 10;
   return Math.max(4, Math.min(12, Math.round(numberValue)));
 }
 
