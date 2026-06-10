@@ -664,9 +664,9 @@ function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): 
       ]
     : undefined;
   const labels = [
-    result.fromPeriodLabel ?? result.fromPeriod,
+    getWaterfallStartLabel(result),
     ...items.map((item) => item.label),
-    result.toPeriodLabel ?? result.toPeriod,
+    getWaterfallEndLabel(result),
   ];
   const waterfall = buildWaterfallTrace({
     labels,
@@ -703,10 +703,36 @@ function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): 
       },
     },
     config: baseConfig,
-    note: isUnitMetricBridge
-      ? "单车指标瀑布桥按结构效应和费率效应拆解两个期间的单车变化。"
-      : "瀑布桥按维度拆解可加总指标在两个期间之间的变化贡献。",
+    note: getWaterfallNote(result, isUnitMetricBridge),
   };
+}
+
+function getWaterfallStartLabel(result: WaterfallBridgeResult) {
+  if (result.comparison === "scenario") {
+    return `${result.periodLabel ?? result.period ?? ""}${result.fromScenario ?? "基准"}`;
+  }
+
+  return result.fromPeriodLabel ?? result.fromPeriod ?? "开始";
+}
+
+function getWaterfallEndLabel(result: WaterfallBridgeResult) {
+  if (result.comparison === "scenario") {
+    return `${result.periodLabel ?? result.period ?? ""}${result.toScenario ?? "当前"}`;
+  }
+
+  return result.toPeriodLabel ?? result.toPeriod ?? "结束";
+}
+
+function getWaterfallNote(result: WaterfallBridgeResult, isUnitMetricBridge: boolean) {
+  if (result.comparison === "scenario") {
+    return isUnitMetricBridge
+      ? "单车指标瀑布桥按结构效应和费率效应拆解同一期间不同口径之间的单车变化。"
+      : "瀑布桥按维度拆解同一期间不同口径之间的变化贡献。";
+  }
+
+  return isUnitMetricBridge
+    ? "单车指标瀑布桥按结构效应和费率效应拆解两个期间的单车变化。"
+    : "瀑布桥按维度拆解可加总指标在两个期间之间的变化贡献。";
 }
 
 function buildDirectWaterfallChartSpec(input: FinanceAIDirectWaterfallChart): FinanceChartSpec {

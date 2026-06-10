@@ -844,6 +844,196 @@ test("budget target comparison plans use grouped bars instead of stacked bars", 
   assert.equal(validated.ok, true);
 });
 
+test("budget actual scenario comparisons can use waterfall bridges for the same period", () => {
+  const scenarioRows = [
+    { "月份": "5月", "国家": "巴西", "数据口径": "实际", "销量": 120, "净收入": 1200 },
+    { "月份": "5月", "国家": "西班牙", "数据口径": "实际", "销量": 80, "净收入": 720 },
+    { "月份": "5月", "国家": "巴西", "数据口径": "预算", "销量": 100, "净收入": 900 },
+    { "月份": "5月", "国家": "西班牙", "数据口径": "预算", "销量": 90, "净收入": 810 },
+  ];
+  const schema = inferFinanceSchema(scenarioRows);
+  const bridge = buildWaterfallBridge(scenarioRows, schema, {
+    type: "waterfall_bridge",
+    metric: "销量",
+    dimension: "国家",
+    period: "M05",
+    comparison: "scenario",
+    fromScenario: "预算",
+    toScenario: "实际",
+  });
+  const spec = buildChartSpec({ type: "waterfall_bridge", title: "5月销量实际预算差异桥", result: bridge });
+
+  assert.equal(bridge.startValue, 190);
+  assert.equal(bridge.endValue, 200);
+  assert.equal(bridge.changeValue, 10);
+  assert.deepEqual(bridge.items, [
+    { label: "西班牙", value: -10 },
+    { label: "巴西", value: 20 },
+  ]);
+  assert.equal(bridge.comparison, "scenario");
+  assert.equal(bridge.fromScenario, "预算");
+  assert.equal(bridge.toScenario, "实际");
+  assert.deepEqual(spec.data[0].x, ["5月预算", "西班牙", "巴西", "5月实际"]);
+  assert.deepEqual(spec.data[0].measure, ["absolute", "relative", "relative", "total"]);
+});
+
+test("action plan normalization converts budget actual waterfall requests to scenario bridges", () => {
+  const schema = inferFinanceSchema([
+    { "月份": "5月", "国家": "巴西", "数据口径": "实际", "销量": 120, "净收入": 1200 },
+    { "月份": "5月", "国家": "巴西", "数据口径": "预算", "销量": 100, "净收入": 900 },
+  ]);
+  const normalized = normalizeFinanceActionPlanForQuestion(schema, {
+    modules: [
+      {
+        type: "waterfall_bridge",
+        metric: "销量",
+        dimension: "国家",
+        period: "M05",
+      },
+    ],
+  }, "5月和预算比一下销量差异来源，按国家做瀑布桥。");
+  const validated = validateFinanceActionPlan(schema, normalized);
+
+  assert.equal(validated.ok, true);
+  assert.equal(normalized.modules[0].type, "waterfall_bridge");
+  assert.equal(normalized.modules[0].comparison, "scenario");
+  assert.equal(normalized.modules[0].period, "M05");
+  assert.equal(normalized.modules[0].fromScenario, "预算");
+  assert.equal(normalized.modules[0].toScenario, "实际");
+  assert.equal("fromPeriod" in normalized.modules[0], false);
+  assert.equal("toPeriod" in normalized.modules[0], false);
+});
+
+test("scenario waterfall plans require an uploaded scenario dimension", () => {
+  const schema = inferFinanceSchema([
+    { "月份": "5月", "国家": "巴西", "销量": 120, "净收入": 1200 },
+    { "月份": "5月", "国家": "西班牙", "销量": 80, "净收入": 720 },
+  ]);
+  const invalid = validateFinanceActionPlan(schema, {
+    modules: [
+      {
+        type: "waterfall_bridge",
+        metric: "销量",
+        dimension: "国家",
+        period: "M05",
+        comparison: "scenario",
+        fromScenario: "预算",
+        toScenario: "实际",
+      },
+    ],
+  });
+
+  assert.equal(invalid.ok, false);
+  assert.match(invalid.errors.join("\n"), /口径瀑布桥需要数据口径维度/);
+});
+
+test("reason follow-ups preserve same-period scenario waterfall context", () => {
+  const schema = inferFinanceSchema([
+    { "月份": "4月", "国家": "巴西", "车型": "A", "数据口径": "实际", "销量": 110, "净收入": 990, "边际": 330 },
+    { "月份": "5月", "国家": "巴西", "车型": "A", "数据口径": "实际", "销量": 120, "净收入": 1320, "边际": 420 },
+    { "月份": "5月", "国家": "巴西", "车型": "A", "数据口径": "预算", "销量": 100, "净收入": 1000, "边际": 300 },
+    { "月份": "5月", "国家": "巴西", "车型": "B", "数据口径": "实际", "销量": 80, "净收入": 720, "边际": 160 },
+    { "月份": "5月", "国家": "巴西", "车型": "B", "数据口径": "预算", "销量": 90, "净收入": 810, "边际": 270 },
+  ]);
+  const normalized = normalizeFinanceActionPlanForQuestion(schema, {
+    modules: [
+      {
+        type: "waterfall_bridge",
+        metric: "单车边际",
+        dimension: "车型",
+      },
+    ],
+  }, "为什么差这么多？", {
+    analysisContext: [{
+      type: "waterfall_bridge",
+      title: "5月预算至实际单车边际差异桥",
+      metric: "单车边际",
+      dimension: "车型",
+      period: "M05",
+      comparison: "scenario",
+      fromScenario: "预算",
+      toScenario: "实际",
+      filters: { "国家": ["巴西"] },
+      focusValues: [{ dimension: "国家", value: "巴西" }],
+    }],
+  });
+  const validated = validateFinanceActionPlan(schema, normalized);
+
+  assert.equal(validated.ok, true);
+  assert.equal(normalized.modules[0].type, "waterfall_bridge");
+  assert.equal(normalized.modules[0].comparison, "scenario");
+  assert.equal(normalized.modules[0].period, "M05");
+  assert.equal(normalized.modules[0].fromScenario, "预算");
+  assert.equal(normalized.modules[0].toScenario, "实际");
+  assert.equal("fromPeriod" in normalized.modules[0], false);
+  assert.equal("toPeriod" in normalized.modules[0], false);
+  assert.deepEqual(normalized.modules[0].filters, { "国家": ["巴西"] });
+});
+
+test("scenario workbooks default ordinary charts to actual data instead of mixing scenarios", () => {
+  const schema = inferFinanceSchema([
+    { "月份": "5月", "国家": "巴西", "数据口径": "实际", "销量": 120 },
+    { "月份": "5月", "国家": "巴西", "数据口径": "预算", "销量": 100 },
+  ]);
+  const normalized = normalizeFinanceActionPlanForQuestion(schema, {
+    modules: [
+      {
+        type: "bar_rank",
+        metric: "销量",
+        dimension: "国家",
+        period: "M05",
+      },
+      {
+        type: "trend_chart",
+        metric: "销量",
+      },
+    ],
+  }, "5月国家销量表现怎么看？");
+
+  assert.deepEqual(normalized.modules[0].filters, { "数据口径": ["实际"] });
+  assert.deepEqual(normalized.modules[1].filters, { "数据口径": ["实际"] });
+});
+
+test("unit metric composition questions can add supporting volume and revenue comparison charts", () => {
+  const schema = inferFinanceSchema([
+    { "月份": "4月", "国家": "巴西", "车型": "A", "销量": 100, "净收入": 1000, "边际": 300 },
+    { "月份": "5月", "国家": "巴西", "车型": "A", "销量": 120, "净收入": 1320, "边际": 420 },
+  ]);
+  const normalized = normalizeFinanceActionPlanForQuestion(schema, {
+    modules: [
+      {
+        type: "waterfall_bridge",
+        metric: "单车边际",
+        dimension: "车型",
+        fromPeriod: "M04",
+        toPeriod: "M05",
+        filters: { "国家": ["巴西"] },
+      },
+    ],
+  }, "巴西单车边际构成分析，除了瀑布图，也看一下量比较和收入比较。");
+  const validated = validateFinanceActionPlan(schema, normalized);
+
+  assert.equal(validated.ok, true);
+  assert.deepEqual(normalized.modules.map((module) => module.type), ["waterfall_bridge", "grouped_bar", "grouped_bar"]);
+  assert.equal(normalized.modules[1].metric, "销量");
+  assert.equal(normalized.modules[1].comparison, "mom");
+  assert.equal(normalized.modules[2].metric, "净收入");
+  assert.equal(normalized.modules[2].comparison, "mom");
+});
+
+test("action validator rejects stacked charts for unit metrics that cannot be added as structure", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const invalid = validateFinanceActionPlan(schema, {
+    modules: [
+      { type: "stacked_bar", metric: "单车边际", dimension: "国家", seriesDimension: "车型", period: "2026-03" },
+      { type: "percent_stacked_bar", metric: "单车边际", dimension: "国家", seriesDimension: "车型", period: "2026-03" },
+    ],
+  });
+
+  assert.equal(invalid.ok, false);
+  assert.match(invalid.errors.join("\n"), /堆叠结构图不支持单车指标/);
+});
+
 test("all-member grouped bar questions keep every compact dimension member visible", () => {
   const regionRows = Array.from({ length: 12 }, (_, index) => ({
     "月份": "2026-04",

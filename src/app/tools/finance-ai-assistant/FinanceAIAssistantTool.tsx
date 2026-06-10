@@ -217,6 +217,11 @@ function getModuleTitle(module: FinanceActionModule, schema: FinanceSchema) {
   }
 
   if (module.type === "waterfall_bridge") {
+    if (module.comparison === "scenario") {
+      const periodLabel = getPeriodDisplayLabel(schema, module.period);
+      return `${periodLabel} ${module.fromScenario ?? "基准"}至${module.toScenario ?? "当前"} ${module.metric}差异桥`;
+    }
+
     return `${getPeriodDisplayLabel(schema, module.fromPeriod)} 至 ${getPeriodDisplayLabel(schema, module.toPeriod)} ${module.metric}变化桥`;
   }
 
@@ -1021,6 +1026,8 @@ function buildAnalysisContext(computedModules: ComputedModule[]): NonNullable<Fi
       ...(periods.length ? { periods } : {}),
       ...(typeof request.fromPeriod === "string" ? { fromPeriod: request.fromPeriod } : {}),
       ...(typeof request.toPeriod === "string" ? { toPeriod: request.toPeriod } : {}),
+      ...(typeof request.fromScenario === "string" ? { fromScenario: request.fromScenario } : {}),
+      ...(typeof request.toScenario === "string" ? { toScenario: request.toScenario } : {}),
       ...(comparison ? { comparison } : {}),
       ...(filters ? { filters } : {}),
       focusValues: getModuleFocusValues(module),

@@ -164,8 +164,12 @@ export type BarRankResult = {
 export type WaterfallBridgeRequest = {
   metric: string;
   dimension: string;
-  fromPeriod: string;
-  toPeriod: string;
+  fromPeriod?: string;
+  toPeriod?: string;
+  period?: string;
+  comparison?: "scenario";
+  fromScenario?: string;
+  toScenario?: string;
   filters?: FinanceFilter;
   limit?: number;
 };
@@ -180,10 +184,15 @@ export type WaterfallBridgeItem = {
 export type WaterfallBridgeResult = {
   metric: string;
   dimension: string;
-  fromPeriod: string;
-  toPeriod: string;
+  fromPeriod?: string;
+  toPeriod?: string;
+  period?: string;
+  comparison?: "scenario";
+  fromScenario?: string;
+  toScenario?: string;
   fromPeriodLabel?: string;
   toPeriodLabel?: string;
+  periodLabel?: string;
   startValue: number;
   endValue: number;
   changeValue: number;

@@ -262,6 +262,8 @@ function normalizeChatState(value: unknown): FinanceAIChatState {
           ...(periods.length > 0 ? { periods } : {}),
           ...(typeof contextItem.fromPeriod === "string" && contextItem.fromPeriod.trim() ? { fromPeriod: contextItem.fromPeriod.trim() } : {}),
           ...(typeof contextItem.toPeriod === "string" && contextItem.toPeriod.trim() ? { toPeriod: contextItem.toPeriod.trim() } : {}),
+          ...(typeof contextItem.fromScenario === "string" && contextItem.fromScenario.trim() ? { fromScenario: contextItem.fromScenario.trim() } : {}),
+          ...(typeof contextItem.toScenario === "string" && contextItem.toScenario.trim() ? { toScenario: contextItem.toScenario.trim() } : {}),
           ...(typeof contextItem.comparison === "string" && contextItem.comparison.trim() ? { comparison: contextItem.comparison.trim() } : {}),
           filters: normalizeFilterState(contextItem.filters),
           ...(focusValues.length > 0 ? { focusValues } : {}),

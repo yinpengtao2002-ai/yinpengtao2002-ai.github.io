@@ -20,8 +20,8 @@ async function readProjectFile(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-function makeSchema() {
-  return {
+function makeSchema(overrides = {}) {
+  const base = {
     headers: ["月份", "国家", "销量", "边际"],
     monthColumn: "月份",
     salesColumn: "销量",
@@ -37,6 +37,15 @@ function makeSchema() {
         { key: "2026-03", label: "2026年3月", sort: 24315 },
       ],
       dimensionValueCounts: { "国家": 2 },
+    },
+  };
+
+  return {
+    ...base,
+    ...overrides,
+    profile: {
+      ...base.profile,
+      ...(overrides.profile ?? {}),
     },
   };
 }
@@ -522,6 +531,59 @@ test("finance AI assistant plan mode converts budget target stacks into grouped 
   }));
 });
 
+test("finance AI assistant plan mode converts budget actual attribution into scenario waterfall bridges", async () => {
+  const schema = {
+    headers: ["Month", "Country", "数据口径", "Sales Volume", "Net Revenue"],
+    monthColumn: "Month",
+    salesColumn: "Sales Volume",
+    dimensionColumns: ["Country", "数据口径"],
+    totalMetrics: [
+      { kind: "total", name: "Sales Volume", column: "Sales Volume" },
+      { kind: "total", name: "Net Revenue", column: "Net Revenue" },
+    ],
+    unitMetrics: [],
+    excludedMetricColumns: [],
+    requiredIssues: [],
+    profile: {
+      rowCount: 40,
+      periods: [
+        { key: "M05", label: "5月", sort: 5 },
+      ],
+      dimensionValueCounts: { Country: 8, "数据口径": 2 },
+    },
+  };
+
+  await withMockedProvider(async () => {
+    const response = await POST(makeRequest({
+      mode: "plan",
+      question: "5月实际和预算比，销量差异来源是什么？按国家做瀑布桥。",
+      schema,
+    }));
+    const payload = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.modules[0].type, "waterfall_bridge");
+    assert.equal(payload.modules[0].metric, "Sales Volume");
+    assert.equal(payload.modules[0].dimension, "Country");
+    assert.equal(payload.modules[0].period, "M05");
+    assert.equal(payload.modules[0].comparison, "scenario");
+    assert.equal(payload.modules[0].fromScenario, "预算");
+    assert.equal(payload.modules[0].toScenario, "实际");
+    assert.equal("fromPeriod" in payload.modules[0], false);
+    assert.equal("toPeriod" in payload.modules[0], false);
+  }, JSON.stringify({
+    modules: [
+      {
+        type: "waterfall_bridge",
+        metric: "Sales Volume",
+        dimension: "Country",
+        period: "M05",
+        limit: 8,
+      },
+    ],
+  }));
+});
+
 test("finance AI assistant plan mode accepts unit-metric waterfall plans", async () => {
   const schema = {
     headers: ["Month", "Country", "Model", "Sales Volume", "Total Margin"],
@@ -569,6 +631,79 @@ test("finance AI assistant plan mode accepts unit-metric waterfall plans", async
         toPeriod: "M04",
         filters: { Country: ["泰国"] },
         limit: 5,
+      },
+    ],
+  }));
+});
+
+test("finance AI assistant plan mode keeps supporting volume and revenue charts for unit composition analysis", async () => {
+  const schema = {
+    headers: ["Month", "Country", "Model", "Sales Volume", "Net Revenue", "Total Margin"],
+    monthColumn: "Month",
+    salesColumn: "Sales Volume",
+    dimensionColumns: ["Country", "Model"],
+    totalMetrics: [
+      { kind: "total", name: "Sales Volume", column: "Sales Volume" },
+      { kind: "total", name: "Net Revenue", column: "Net Revenue" },
+      { kind: "total", name: "Total Margin", column: "Total Margin" },
+    ],
+    unitMetrics: [{ kind: "unit", name: "单车边际", numeratorColumn: "Total Margin", denominatorColumn: "Sales Volume" }],
+    excludedMetricColumns: [],
+    requiredIssues: [],
+    profile: {
+      rowCount: 5341,
+      periods: [
+        { key: "M04", label: "4月", sort: 4 },
+        { key: "M05", label: "5月", sort: 5 },
+      ],
+      dimensionValueCounts: { Country: 20, Model: 12 },
+    },
+  };
+
+  await withMockedProvider(async () => {
+    const response = await POST(makeRequest({
+      mode: "plan",
+      question: "巴西单车边际构成分析，除了瀑布图，也看一下量比较和收入比较。",
+      schema,
+    }));
+    const payload = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(payload.modules.map((module) => module.type), ["waterfall_bridge", "grouped_bar", "grouped_bar"]);
+    assert.equal(payload.modules[0].metric, "单车边际");
+    assert.equal(payload.modules[0].dimension, "Model");
+    assert.equal(payload.modules[1].metric, "Sales Volume");
+    assert.equal(payload.modules[1].comparison, "mom");
+    assert.equal(payload.modules[2].metric, "Net Revenue");
+    assert.equal(payload.modules[2].comparison, "mom");
+  }, JSON.stringify({
+    modules: [
+      {
+        type: "waterfall_bridge",
+        metric: "单车边际",
+        dimension: "Model",
+        fromPeriod: "M04",
+        toPeriod: "M05",
+        filters: { Country: ["巴西"] },
+        limit: 8,
+      },
+      {
+        type: "grouped_bar",
+        metric: "Sales Volume",
+        dimension: "Model",
+        period: "M05",
+        comparison: "mom",
+        filters: { Country: ["巴西"] },
+        limit: 8,
+      },
+      {
+        type: "grouped_bar",
+        metric: "Net Revenue",
+        dimension: "Model",
+        period: "M05",
+        comparison: "mom",
+        filters: { Country: ["巴西"] },
+        limit: 8,
       },
     ],
   }));

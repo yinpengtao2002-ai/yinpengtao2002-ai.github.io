@@ -18,6 +18,8 @@ export type FinanceAIChatState = {
     periods?: string[];
     fromPeriod?: string;
     toPeriod?: string;
+    fromScenario?: string;
+    toScenario?: string;
     comparison?: string;
     filters?: Record<string, string[]>;
     focusValues?: Array<{ dimension: string; value: string }>;
@@ -77,7 +79,8 @@ const DIRECT_CHART_PROTOCOL_LINES = [
   "8. scatter_bubble: {type,title,xLabel,yLabel,items:[{label,x,y,size}],note}",
   "9. detail_table: {type,title,variant,meta,columns,rows,note}，variant 可用 rank、comparison、budget_actual、attribution_detail、exception_list、generic；meta 可写 primaryDimension、metrics、period、periods、comparison、filters、focusValues；适合承接用户要求全量列出的明细，最多约 120 行；表格至少 4 列，优先包含关键维度、当前值、对比值、变化值、变化率、占比或口径，不要只返回一两列",
   "单点纯数字不要生成图表卡，直接写在 answer 文字里。",
-  "预算、目标、实际、预测、计划、达成率或同一指标不同口径的对比，必须用 grouped_bar；不要用 stacked_bar 或 percent_stacked_bar，因为这些口径不能相加。",
+  "预算、目标、实际、预测、计划、达成率或同一指标不同口径的并列对比，优先用 grouped_bar；差异来源、贡献拆解或归因可用 waterfall；不要用 stacked_bar 或 percent_stacked_bar，因为这些口径不能相加。",
+  "单车指标构成、原因或变化来源可以同时返回 2-3 张图：单车指标 waterfall + 销量 grouped_bar + 净收入/收入 grouped_bar；除非底稿缺少销量或收入字段，不要因为已有瀑布图就省略有助解释的量、收入对比。",
 ];
 const UNIT_ASSUMPTION_RULE_LINES = [
   "不要根据国家、市场或地区推断币种；底稿字段或用户没有明确单位时，只称为原始单位或省略单位。",
@@ -145,6 +148,8 @@ function compactAnalysisContext(items: NonNullable<FinanceAIChatState["analysisC
     ...(item.periods?.length ? { periods: item.periods.slice(0, 8).map((period) => truncateText(period, 40)) } : {}),
     ...(item.fromPeriod ? { fromPeriod: truncateText(item.fromPeriod, 40) } : {}),
     ...(item.toPeriod ? { toPeriod: truncateText(item.toPeriod, 40) } : {}),
+    ...(item.fromScenario ? { fromScenario: truncateText(item.fromScenario, 40) } : {}),
+    ...(item.toScenario ? { toScenario: truncateText(item.toScenario, 40) } : {}),
     ...(item.comparison ? { comparison: truncateText(item.comparison, 40) } : {}),
     ...(item.filters ? { filters: compactFilters(item.filters) } : {}),
     ...(item.focusValues?.length ? {
@@ -345,17 +350,17 @@ export function buildFinanceAIPlanningContext(
     "你是财务分析 AI 助手，只负责把用户问题转成结构化分析动作。",
     "AI 不负责计算数字；所有数值、环比、同比、排名和图表数据都由前端确定性计算。",
     "不要要求用户发送上传数据明细，也不要在计划里引用未出现在 schema/state 里的字段。",
-    "每轮最少 1 个模块，最多生成 3 个模块。",
+    "每轮最少 1 个模块，最多生成 3 个模块；复杂经营问题可以输出多张互补图，不要默认压缩成一张图。",
     "只允许这些动作：metric_snapshot、trend_chart、bar_rank、waterfall_bridge、grouped_bar、stacked_bar、percent_stacked_bar、heatmap、scatter_bubble、detail_table。",
     "metric_snapshot 只用于计算某个期间某个指标的当前值、环比和同比，前端不会把它渲染成纯数字图表卡；结论里的单点数字直接用文字表达。",
     "图表模块会渲染在聊天消息内部，所以模块标题要像对话回复的一部分。",
     "如果用户要求可视化、图表、占比、结构、构成、变化来源，必须生成至少一个图表模块，不要只返回 metric_snapshot。",
     "用户问所有维度成员的环比情况时，优先用 grouped_bar 搭配 comparison:\"mom\"，展示上期和本期两组柱，不要用单柱后面写环比数字。",
-    "用户问预算、目标、实际、预测、计划、达成率或同一指标不同口径对比时，必须用 grouped_bar，dimension 放业务维度，seriesDimension 放数据口径；不要用 stacked_bar 或 percent_stacked_bar，因为实际和预算不能相加。",
+    "用户问预算、目标、实际、预测、计划、达成率或同一指标不同口径的并列对比时，优先用 grouped_bar，dimension 放业务维度，seriesDimension 放数据口径；不要用 stacked_bar 或 percent_stacked_bar，因为实际和预算不能相加。",
     "用户问占比、结构或构成时，可用 stacked_bar 或 percent_stacked_bar；但预算、目标、实际、预测、计划这类口径对比不是结构构成。用户问二维交叉高低表现时用 heatmap；用户问规模和质量关系时用 scatter_bubble；用户要求全部列出时用 detail_table。",
     "用户问多个指标是否都增长、均增长、同时增长、都下降或同时变化时，必须用 detail_table，metrics 放入这些指标，comparison:\"mom\"，dimension 放用户询问的维度；detail_table 会展开上期、本期、变化、变化率等列，解释阶段按每个指标的环比变化列判断交集。",
-    "用户问变化来源、贡献拆解或归因时，优先用 waterfall_bridge。",
-    "waterfall_bridge 可用于总额指标，也可用于单车指标；单车指标会按结构效应和费率效应生成归因瀑布桥。",
+    "用户问变化来源、差异来源、贡献拆解或归因时，优先用 waterfall_bridge；如果是在同一期间比较实际/预算/目标/预测/计划等口径，使用口径瀑布桥。",
+    "waterfall_bridge 可用于两个期间之间的 period bridge，也可用于同一期间不同数据口径之间的 scenario bridge；总额指标按维度拆差，单车指标按结构效应和费率效应生成归因瀑布桥。",
     "如果维度字段包含“数据口径”，说明上传工作簿可能用 sheet 名区分实际、预算、目标或预测；用户说实际、预算、目标、预测时，必须用 filters.{\"数据口径\":[对应值]}，不要把这些词写进月份 period。",
     "如果存在“数据口径”且用户只问本月/当月/当前表现，默认按实际口径规划；只有用户明确问预算、目标、预测或对比时才切换或展开数据口径维度。",
     "用户说“维度成员 + 维度字段”（如 MBT大区）并追问自身、内部、构成、下面有哪些时，把该成员写入 filters，并把 dimension 切到下一层可用维度（如 国家或车型）。",
@@ -386,10 +391,11 @@ export function buildFinanceAIPlanningContext(
     "- metric 只能使用总额指标或单车指标里的名称。",
     "- detail_table 使用 metrics 数组，最多 6 个指标；comparison:\"mom\" 时前端会自动生成上期、本期、变化、变化率列；表格至少应有 4 列以上可核对信息。scatter_bubble 使用 xMetric/yMetric/sizeMetric。",
     "- dimension 只能使用维度字段里的名称。",
-    "- grouped_bar 用于环比时填 comparison:\"mom\"；用于预算/目标/实际/预测/计划口径对比时填 seriesDimension:\"数据口径\"，不要填 comparison。",
+    "- grouped_bar 用于环比时填 comparison:\"mom\"；用于预算/目标/实际/预测/计划口径并列对比时填 seriesDimension:\"数据口径\"，不要填 comparison。",
     "- stacked_bar/percent_stacked_bar 使用 dimension 作为横轴主维度，seriesDimension 作为堆叠系列维度；不要用于预算/目标/实际/预测/计划口径对比。",
     "- heatmap 使用 xDimension 和 yDimension。",
     "- period/fromPeriod/toPeriod/highlightPeriod 只能使用可用期间里的 key，例如 M04 或 2026-03，不要自造年份。",
+    "- waterfall_bridge 做两个期间变化桥时填 fromPeriod/toPeriod；做同一期间预算/实际/目标/预测/计划差异来源时填 period、comparison:\"scenario\"、fromScenario、toScenario，不要填 fromPeriod/toPeriod。",
     "- filters 只能使用维度字段和值数组。",
     "- 如果使用“数据口径”筛选，常见值为“实际”“预算”“目标”“预测”“计划”；用户没有指定口径且该字段存在时，优先 filters:{\"数据口径\":[\"实际\"]}。",
     "- bar_rank 必须设置 sort：用户说 Top/前五/最高/最多时用 value_desc；用户说最低/最少/倒数/bottom 时用 value_asc。",
@@ -398,7 +404,8 @@ export function buildFinanceAIPlanningContext(
     "- 用户要求所有/全部/全量维度成员环比，且该维度成员数不超过 16 时，grouped_bar 的 limit 设置为该维度成员数；高基数全量列出用 detail_table。",
     "- 用户问“哪些国家销量和单车边际都增长”这类多个指标同时增长/下降时，用 detail_table，metrics 同时包含销量和单车指标，comparison:\"mom\"，不要只返回当前期数值。",
     "- 如果用户明确要求“全部/所有/全量/剩下也列出”，bar_rank 可以给出超过 10 的 limit；前端会把图表限制为前 10 项，并自动补充完整明细表。",
-    "- 单车指标问“哪些车型/国家/维度影响环比/变化来源”时，优先用 waterfall_bridge，metric 填单车指标，dimension 填对应维度，fromPeriod/toPeriod 填对比期和当前期。",
+    "- 单车指标问“哪些车型/国家/维度影响环比/变化来源”时，优先用 waterfall_bridge，metric 填单车指标，dimension 填对应维度；期间桥填 fromPeriod/toPeriod，口径桥填 period/comparison/fromScenario/toScenario。",
+    "- 用户问单车指标构成、原因、影响或变化来源时，优先生成 2-3 个互补模块：单车指标 waterfall_bridge + 销量 grouped_bar + 净收入或收入 grouped_bar；除非 schema 里缺少销量或收入指标，不要只给一张瀑布图。",
     "- 同一句里要求多个排名时，分别为每个指标生成独立 bar_rank 模块，不要把销量 Top 和单车指标最低混成一个模块。",
     "JSON 结构示例：",
     '{"modules":[{"type":"metric_snapshot","metric":"单车边际","period":"2026-03","filters":{"国家":["巴西"]},"comparisons":["mom","yoy"]},{"type":"grouped_bar","metric":"净收入总额","dimension":"大区","period":"M04","comparison":"mom","limit":10},{"type":"heatmap","metric":"单车净收入","xDimension":"车型","yDimension":"国家","period":"M04","limit":8}]}',

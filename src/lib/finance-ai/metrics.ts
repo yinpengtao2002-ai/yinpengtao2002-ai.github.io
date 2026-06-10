@@ -20,6 +20,7 @@ import type {
 const UNCATEGORIZED_LABEL = "未分类";
 const OTHER_LABEL = "其他";
 const DEFAULT_LIMIT = 10;
+const SCENARIO_DIMENSION_ALIASES = ["数据口径", "口径", "场景", "scenario", "scenarios"];
 
 type CompiledFilter = {
   column: string;
@@ -197,6 +198,10 @@ export function buildWaterfallBridge(
   request: WaterfallBridgeRequest,
 ): WaterfallBridgeResult {
   const metric = requireMetric(schema, request.metric);
+  if (request.comparison === "scenario") {
+    return buildScenarioWaterfallBridge(rows, schema, metric, request);
+  }
+
   if (metric.kind === "unit") {
     return buildUnitMetricWaterfallBridge(rows, schema, metric, request);
   }
@@ -240,6 +245,57 @@ export function buildWaterfallBridge(
   };
 }
 
+function buildScenarioWaterfallBridge(
+  rows: FinanceRow[],
+  schema: FinanceSchema,
+  metric: FinanceMetric,
+  request: WaterfallBridgeRequest,
+): WaterfallBridgeResult {
+  const scenarioDimension = getScenarioDimension(schema);
+  if (!scenarioDimension) {
+    throw new Error("Scenario waterfall bridge requires a scenario dimension.");
+  }
+
+  const filters = withoutScenarioFilter(cloneFilters(request.filters), scenarioDimension);
+  const period = normalizePeriodKey(request.period);
+  const fromScenario = request.fromScenario?.trim() || "预算";
+  const toScenario = request.toScenario?.trim() || "实际";
+  const fromFilters = compileFilters(mergeScenarioFilter(filters, scenarioDimension, fromScenario));
+  const toFilters = compileFilters(mergeScenarioFilter(filters, scenarioDimension, toScenario));
+  const base = aggregateMetric(rows, schema, metric, period, fromFilters);
+  const current = aggregateMetric(rows, schema, metric, period, toFilters);
+  const startValue = valueOrZero(base.value);
+  const endValue = valueOrZero(current.value);
+  const fromGroups = aggregateByDimension(rows, schema, metric, request.dimension, period, fromFilters);
+  const toGroups = aggregateByDimension(rows, schema, metric, request.dimension, period, toFilters);
+  const labels = mergeGroupLabels(toGroups, fromGroups);
+  const items = metric.kind === "unit"
+    ? buildUnitBridgeItems(metric, labels, fromGroups, toGroups, base, current)
+    : buildTotalBridgeItems(metric, labels, fromGroups, toGroups);
+  const limitedItems = limitBridgeItems(sortBridgeItems(items), endValue - startValue, getLimit(request.limit));
+
+  return {
+    metric: request.metric,
+    dimension: request.dimension,
+    period,
+    periodLabel: getPeriodLabel(schema, period),
+    comparison: "scenario",
+    fromScenario,
+    toScenario,
+    startValue,
+    endValue,
+    changeValue: endValue - startValue,
+    basis: metric.kind === "unit" ? "unit_metric_mix_rate" : "total_metric",
+    items: limitedItems.map(({ label, value, mixEffect, rateEffect }) => ({
+      label,
+      value,
+      ...(mixEffect !== undefined ? { mixEffect } : {}),
+      ...(rateEffect !== undefined ? { rateEffect } : {}),
+    })),
+    filters,
+  };
+}
+
 function buildUnitMetricWaterfallBridge(
   rows: FinanceRow[],
   schema: FinanceSchema,
@@ -257,7 +313,56 @@ function buildUnitMetricWaterfallBridge(
   const fromGroups = aggregateByDimension(rows, schema, metric, request.dimension, fromPeriod, compiledFilters);
   const toGroups = aggregateByDimension(rows, schema, metric, request.dimension, toPeriod, compiledFilters);
   const labels = mergeGroupLabels(toGroups, fromGroups);
-  const items = labels
+  const items = buildUnitBridgeItems(metric, labels, fromGroups, toGroups, base, current);
+  const limitedItems = limitBridgeItems(sortBridgeItems(items), endValue - startValue, getLimit(request.limit));
+
+  return {
+    metric: request.metric,
+    dimension: request.dimension,
+    fromPeriod,
+    toPeriod,
+    fromPeriodLabel: getPeriodLabel(schema, fromPeriod),
+    toPeriodLabel: getPeriodLabel(schema, toPeriod),
+    startValue,
+    endValue,
+    changeValue: endValue - startValue,
+    basis: "unit_metric_mix_rate",
+    items: limitedItems.map(({ label, value, mixEffect, rateEffect }) => ({ label, value, mixEffect, rateEffect })),
+    filters,
+  };
+}
+
+function buildTotalBridgeItems(
+  metric: FinanceMetric,
+  labels: string[],
+  fromGroups: Map<string, Accumulator>,
+  toGroups: Map<string, Accumulator>,
+): BridgeItem[] {
+  return labels
+    .map((label) => {
+      const toValue = valueOrZero(getMetricValue(metric, toGroups.get(label) ?? makeAccumulator(0)));
+      const fromValue = valueOrZero(getMetricValue(metric, fromGroups.get(label) ?? makeAccumulator(0)));
+
+      return {
+        label,
+        value: toValue - fromValue,
+        order: toGroups.get(label)?.order ?? fromGroups.get(label)?.order ?? 0,
+      };
+    })
+    .filter((item) => item.value !== 0);
+}
+
+function buildUnitBridgeItems(
+  metric: FinanceMetric,
+  labels: string[],
+  fromGroups: Map<string, Accumulator>,
+  toGroups: Map<string, Accumulator>,
+  base: MetricValueBase,
+  current: MetricValueBase,
+): BridgeItem[] {
+  const startValue = valueOrZero(base.value);
+
+  return labels
     .map((label) => {
       const baseAccumulator = fromGroups.get(label);
       const currentAccumulator = toGroups.get(label);
@@ -282,22 +387,6 @@ function buildUnitMetricWaterfallBridge(
       };
     })
     .filter((item) => item.value !== 0 || item.mixEffect !== 0 || item.rateEffect !== 0);
-  const limitedItems = limitBridgeItems(sortBridgeItems(items), endValue - startValue, getLimit(request.limit));
-
-  return {
-    metric: request.metric,
-    dimension: request.dimension,
-    fromPeriod,
-    toPeriod,
-    fromPeriodLabel: getPeriodLabel(schema, fromPeriod),
-    toPeriodLabel: getPeriodLabel(schema, toPeriod),
-    startValue,
-    endValue,
-    changeValue: endValue - startValue,
-    basis: "unit_metric_mix_rate",
-    items: limitedItems.map(({ label, value, mixEffect, rateEffect }) => ({ label, value, mixEffect, rateEffect })),
-    filters,
-  };
 }
 
 function calculateUnitMetricEffects({
@@ -345,6 +434,31 @@ function requireMetric(schema: FinanceSchema, metricName: string): FinanceMetric
   }
 
   return metric;
+}
+
+function getScenarioDimension(schema: FinanceSchema) {
+  const aliases = SCENARIO_DIMENSION_ALIASES.map(normalizeIntentText);
+
+  return schema.dimensionColumns.find((dimension) => (
+    aliases.includes(normalizeIntentText(dimension))
+  ));
+}
+
+function mergeScenarioFilter(filters: FinanceFilter, scenarioDimension: string, scenarioValue: string): FinanceFilter {
+  return {
+    ...filters,
+    [scenarioDimension]: [scenarioValue],
+  };
+}
+
+function withoutScenarioFilter(filters: FinanceFilter, scenarioDimension: string): FinanceFilter {
+  const nextFilters = { ...filters };
+  delete nextFilters[scenarioDimension];
+  return nextFilters;
+}
+
+function normalizeIntentText(value: string) {
+  return value.toLowerCase().replace(/[\s_\-./,，。:：;；、"'“”‘’()（）]/g, "");
 }
 
 function cloneFilters(filters: FinanceFilter | undefined): FinanceFilter {
@@ -712,10 +826,15 @@ function valueOrZero(value: number | null): number {
 }
 
 function sortBridgeItems(items: BridgeItem[]): BridgeItem[] {
-  return [...items].sort((a, b) => (
+  const sortByContribution = (values: BridgeItem[]) => [...values].sort((a, b) => (
     Math.abs(b.value) - Math.abs(a.value) ||
     a.order - b.order
   ));
+
+  return [
+    ...sortByContribution(items.filter((item) => item.value < 0)),
+    ...sortByContribution(items.filter((item) => item.value >= 0)),
+  ];
 }
 
 function limitBridgeItems(items: BridgeItem[], changeValue: number, limit: number): BridgeItem[] {

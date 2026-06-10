@@ -38,7 +38,9 @@ const DETAIL_TABLE_TOKENS = ["完整明细", "明细表", "全部列出", "全�
 const DRILLDOWN_TOKENS = ["构成", "组成", "内部", "下面", "下级", "下钻", "细分", "拆开", "拆成", "自身", "自己", "哪些国家", "哪些车型", "由哪些"];
 const REASON_FOLLOWUP_TOKENS = ["为什么", "为啥", "原因", "怎么会", "怎么", "咋", "下降这么多", "降这么多", "减少这么多", "变化这么多", "差这么多", "坏这么多", "坏的", "拖累这么多", "影响这么多"];
 const CONJUNCTIVE_CHANGE_TOKENS = ["都增长", "均增长", "同时增长", "一起增长", "都增加", "均增加", "同时增加", "都上涨", "均上涨", "同时上涨", "都上升", "均上升", "双增长", "双升", "都下降", "均下降", "同时下降", "都减少", "均减少", "同时减少"];
-const SCENARIO_COMPARE_TOKENS = ["预算", "目标", "实际", "预测", "计划", "达成", "对比", "比一下", "比一比", "比较", "target", "budget", "actual", "forecast", "plan"];
+const SCENARIO_COMPARE_TOKENS = ["预算", "目标", "实际", "预测", "计划", "达成", "target", "budget", "actual", "forecast", "plan"];
+const WATERFALL_ATTRIBUTION_TOKENS = ["变化来源", "差异来源", "贡献拆解", "归因", "瀑布", "桥", "贡献", "拆解", "影响", "原因"];
+const UNIT_COMPOSITION_SUPPORT_TOKENS = ["构成分析", "构成", "组成", "结构", "量比较", "销量比较", "收入比较", "收入对比", "影响", "原因"];
 const SCENARIO_DIMENSION_ALIASES = ["数据口径", "口径", "场景", "scenario", "scenarios"];
 const PRIMARY_DIMENSION_MODULE_TYPES = new Set<ActionType>([
   "bar_rank",
@@ -58,6 +60,9 @@ type FinanceActionQuestionContext = {
     period?: string;
     fromPeriod?: string;
     toPeriod?: string;
+    comparison?: string;
+    fromScenario?: string;
+    toScenario?: string;
     filters?: FinanceFilter;
     focusValues?: Array<{ dimension: string; value: string }>;
   }>;
@@ -90,6 +95,8 @@ function normalizeModule(value: unknown): FinanceActionModule | null {
   copyOptionalString(record, actionModule, "period");
   copyOptionalString(record, actionModule, "fromPeriod");
   copyOptionalString(record, actionModule, "toPeriod");
+  copyOptionalString(record, actionModule, "fromScenario");
+  copyOptionalString(record, actionModule, "toScenario");
   copyOptionalString(record, actionModule, "highlightPeriod");
   copyOptionalString(record, actionModule, "dimension");
   copyOptionalString(record, actionModule, "seriesDimension");
@@ -220,7 +227,7 @@ export function validateFinanceActionPlan(
   modules.forEach((module) => {
     validateMetric(schema, module, errors);
     validateRequiredFields(module, errors);
-    validateActionOptions(module, errors);
+    validateActionOptions(schema, module, errors);
     validateFilters(schema, module, errors);
     validatePeriods(schema, module, errors);
 
@@ -328,7 +335,9 @@ export function alignFinanceActionPlanWithQuestion(
     };
   });
 
-  return alignConjunctiveChangePlanWithQuestion(schema, alignedModules, userQuestion);
+  const conjunctiveModules = alignConjunctiveChangePlanWithQuestion(schema, alignedModules, userQuestion);
+  const expandedModules = expandUnitCompositionSupportModules(schema, conjunctiveModules, userQuestion);
+  return applyDefaultScenarioFilters(schema, expandedModules, userQuestion);
 }
 
 function alignConjunctiveChangePlanWithQuestion(
@@ -374,6 +383,11 @@ function alignScenarioComparisonChartWithQuestion(
     return module;
   }
 
+  if (module.type === "waterfall_bridge") {
+    const scenarioBridge = buildScenarioWaterfallModule(schema, module, userQuestion);
+    return scenarioBridge ?? module;
+  }
+
   if (
     (module.type === "stacked_bar" || module.type === "percent_stacked_bar") &&
     module.seriesDimension === scenarioDimension
@@ -406,6 +420,192 @@ function alignScenarioComparisonChartWithQuestion(
   }
 
   return module;
+}
+
+function buildScenarioWaterfallModule(
+  schema: FinanceSchema,
+  module: Extract<FinanceActionModule, { type: "waterfall_bridge" }>,
+  userQuestion: string,
+): FinanceActionModule | null {
+  if (!hasWaterfallAttributionIntent(userQuestion)) {
+    return null;
+  }
+
+  const period = module.period || module.toPeriod || getQuestionPeriod(schema, userQuestion) || schema.profile.periods.at(-1)?.key;
+  if (!period) {
+    return null;
+  }
+
+  const scenarios = getScenarioComparisonSides(userQuestion);
+  const nextModule = { ...module };
+  delete nextModule.fromPeriod;
+  delete nextModule.toPeriod;
+
+  return {
+    ...nextModule,
+    period,
+    comparison: "scenario",
+    fromScenario: module.fromScenario || scenarios.fromScenario,
+    toScenario: module.toScenario || scenarios.toScenario,
+  } satisfies FinanceActionModule;
+}
+
+function expandUnitCompositionSupportModules(
+  schema: FinanceSchema,
+  modules: FinanceActionModule[],
+  userQuestion: string,
+): FinanceActionModule[] {
+  if (!hasUnitCompositionSupportIntent(userQuestion) || modules.length >= 3) {
+    return modules;
+  }
+
+  const waterfall = modules.find((module): module is Extract<FinanceActionModule, { type: "waterfall_bridge" }> => (
+    module.type === "waterfall_bridge" &&
+    findMetric(schema, module.metric)?.kind === "unit"
+  ));
+  if (!waterfall) {
+    return modules;
+  }
+
+  const supportMetrics = [getSalesMetricName(schema), getRevenueMetricName(schema)]
+    .filter((metric): metric is string => Boolean(metric))
+    .filter((metric, index, array) => array.indexOf(metric) === index);
+  if (!supportMetrics.length) {
+    return modules;
+  }
+
+  const existingKeys = new Set(modules.map((module) => {
+    const record = module as Record<string, unknown>;
+    return `${module.type}:${record.metric ?? ""}:${record.dimension ?? ""}:${record.period ?? ""}:${record.comparison ?? ""}:${record.seriesDimension ?? ""}`;
+  }));
+  const scenarioDimension = getScenarioDimension(schema);
+  const supportModules: FinanceActionModule[] = [];
+
+  for (const metric of supportMetrics) {
+    if (modules.length + supportModules.length >= 3) {
+      break;
+    }
+
+    const supportModule = buildSupportGroupedBarModule(waterfall, metric, scenarioDimension);
+    if (!supportModule) {
+      continue;
+    }
+
+    const supportRecord = supportModule as Record<string, unknown>;
+    const key = `${supportModule.type}:${supportRecord.metric ?? ""}:${supportRecord.dimension ?? ""}:${supportRecord.period ?? ""}:${supportRecord.comparison ?? ""}:${supportRecord.seriesDimension ?? ""}`;
+    if (existingKeys.has(key)) {
+      continue;
+    }
+
+    existingKeys.add(key);
+    supportModules.push(supportModule);
+  }
+
+  return supportModules.length ? [...modules, ...supportModules] : modules;
+}
+
+function buildSupportGroupedBarModule(
+  waterfall: Extract<FinanceActionModule, { type: "waterfall_bridge" }>,
+  metric: string,
+  scenarioDimension: string | undefined,
+): FinanceActionModule | null {
+  if (waterfall.comparison === "scenario") {
+    if (!waterfall.period || !scenarioDimension) {
+      return null;
+    }
+
+    return {
+      type: "grouped_bar",
+      metric,
+      dimension: waterfall.dimension,
+      period: waterfall.period,
+      seriesDimension: scenarioDimension,
+      filters: waterfall.filters,
+      limit: waterfall.limit,
+    } satisfies FinanceActionModule;
+  }
+
+  const period = waterfall.toPeriod || waterfall.period;
+  if (!period) {
+    return null;
+  }
+
+  return {
+    type: "grouped_bar",
+    metric,
+    dimension: waterfall.dimension,
+    period,
+    comparison: "mom",
+    filters: waterfall.filters,
+    limit: waterfall.limit,
+  } satisfies FinanceActionModule;
+}
+
+function getSalesMetricName(schema: FinanceSchema) {
+  return schema.totalMetrics.find((metric) => metric.column === schema.salesColumn || metric.name === schema.salesColumn)?.name ??
+    schema.totalMetrics.find((metric) => /销量|销售量|volume|qty|quantity|units/i.test(`${metric.name}${metric.column}`))?.name;
+}
+
+function getRevenueMetricName(schema: FinanceSchema) {
+  const revenuePatterns = [/净收入|net\s*revenue|netrevenue/i, /收入|revenue|income/i];
+
+  for (const pattern of revenuePatterns) {
+    const metric = schema.totalMetrics.find((candidate) => (
+      candidate.column !== schema.salesColumn &&
+      pattern.test(`${candidate.name}${candidate.column}`)
+    ));
+    if (metric) {
+      return metric.name;
+    }
+  }
+
+  return undefined;
+}
+
+function applyDefaultScenarioFilters(
+  schema: FinanceSchema,
+  modules: FinanceActionModule[],
+  userQuestion: string,
+): FinanceActionModule[] {
+  const scenarioDimension = getScenarioDimension(schema);
+  if (!scenarioDimension || hasNonActualScenarioIntent(userQuestion)) {
+    return modules;
+  }
+
+  return modules.map((module) => {
+    if (!canApplyDefaultScenarioFilter(module, scenarioDimension)) {
+      return module;
+    }
+
+    return {
+      ...module,
+      filters: mergeQuestionFilters("filters" in module ? module.filters : undefined, {
+        [scenarioDimension]: ["实际"],
+      }),
+    } as FinanceActionModule;
+  });
+}
+
+function canApplyDefaultScenarioFilter(module: FinanceActionModule, scenarioDimension: string) {
+  const record = module as Record<string, unknown>;
+  const filters = "filters" in module ? module.filters : undefined;
+
+  if (filters?.[scenarioDimension]?.length) {
+    return false;
+  }
+
+  if (module.type === "waterfall_bridge" && record.comparison === "scenario") {
+    return false;
+  }
+
+  if (
+    (module.type === "grouped_bar" || module.type === "stacked_bar" || module.type === "percent_stacked_bar") &&
+    record.seriesDimension === scenarioDimension
+  ) {
+    return false;
+  }
+
+  return true;
 }
 
 function withoutGroupedComparison(module: Extract<FinanceActionModule, { type: "grouped_bar" }>) {
@@ -461,6 +661,35 @@ function alignReasonFollowupWithContext(
 
   if (!hasStringValue(record.metric) && contextMetric) {
     updates.metric = contextMetric;
+  }
+
+  if (
+    latestContext?.comparison === "scenario" &&
+    !hasPeriodBridgeFollowupIntent(userQuestion)
+  ) {
+    const period = hasStringValue(record.period)
+      ? String(record.period)
+      : latestContext.period || "";
+    const fromScenario = hasStringValue(record.fromScenario)
+      ? String(record.fromScenario)
+      : latestContext.fromScenario || "";
+    const toScenario = hasStringValue(record.toScenario)
+      ? String(record.toScenario)
+      : latestContext.toScenario || "";
+
+    if (period && fromScenario && toScenario) {
+      const scenarioModule = {
+        ...module,
+        ...updates,
+        period,
+        comparison: "scenario",
+        fromScenario,
+        toScenario,
+      } as FinanceActionModule;
+      delete (scenarioModule as Record<string, unknown>).fromPeriod;
+      delete (scenarioModule as Record<string, unknown>).toPeriod;
+      return scenarioModule;
+    }
   }
 
   const toPeriod = hasStringValue(record.toPeriod)
@@ -621,7 +850,17 @@ function getLatestAnalysisContext(context: FinanceActionQuestionContext) {
   return (context.analysisContext ?? [])
     .slice()
     .reverse()
-    .find((item) => item.metric || item.period || item.fromPeriod || item.toPeriod || item.filters || item.focusValues?.length);
+    .find((item) => (
+      item.metric ||
+      item.period ||
+      item.fromPeriod ||
+      item.toPeriod ||
+      item.comparison ||
+      item.fromScenario ||
+      item.toScenario ||
+      item.filters ||
+      item.focusValues?.length
+    ));
 }
 
 function getContextMetric(schema: FinanceSchema, context: FinanceActionQuestionContext) {
@@ -695,6 +934,27 @@ function hasReasonFollowupIntent(question: string) {
     .some((token) => normalizedQuestion.includes(token));
 }
 
+function hasPeriodBridgeFollowupIntent(question: string) {
+  const normalizedQuestion = normalizeIntentText(question);
+
+  return [
+    "环比",
+    "同比",
+    "上月",
+    "上个月",
+    "上期",
+    "上一期",
+    "去年",
+    "上年",
+    "较上月",
+    "较上期",
+    "比上月",
+    "比上期",
+  ]
+    .map(normalizeIntentText)
+    .some((token) => normalizedQuestion.includes(token));
+}
+
 function hasConjunctiveChangeIntent(question: string) {
   const normalizedQuestion = normalizeIntentText(question);
 
@@ -709,6 +969,54 @@ function hasScenarioComparisonIntent(question: string) {
   return SCENARIO_COMPARE_TOKENS
     .map(normalizeIntentText)
     .some((token) => normalizedQuestion.includes(token));
+}
+
+function hasNonActualScenarioIntent(question: string) {
+  const normalizedQuestion = normalizeIntentText(question);
+
+  return ["预算", "目标", "预测", "计划", "达成", "budget", "target", "forecast", "plan"]
+    .map(normalizeIntentText)
+    .some((token) => normalizedQuestion.includes(token));
+}
+
+function hasWaterfallAttributionIntent(question: string) {
+  const normalizedQuestion = normalizeIntentText(question);
+
+  return WATERFALL_ATTRIBUTION_TOKENS
+    .map(normalizeIntentText)
+    .some((token) => normalizedQuestion.includes(token));
+}
+
+function hasUnitCompositionSupportIntent(question: string) {
+  const normalizedQuestion = normalizeIntentText(question);
+
+  return UNIT_COMPOSITION_SUPPORT_TOKENS
+    .map(normalizeIntentText)
+    .some((token) => normalizedQuestion.includes(token));
+}
+
+function getScenarioComparisonSides(question: string) {
+  const normalizedQuestion = normalizeIntentText(question);
+  const toScenario = normalizedQuestion.includes(normalizeIntentText("目标")) ||
+    normalizedQuestion.includes("target")
+    ? "目标"
+    : normalizedQuestion.includes(normalizeIntentText("预测")) || normalizedQuestion.includes("forecast")
+      ? "预测"
+      : normalizedQuestion.includes(normalizeIntentText("计划")) || normalizedQuestion.includes("plan")
+        ? "计划"
+        : "实际";
+  const fromScenario = normalizedQuestion.includes(normalizeIntentText("目标")) ||
+    normalizedQuestion.includes("target")
+    ? "目标"
+    : normalizedQuestion.includes(normalizeIntentText("预算")) || normalizedQuestion.includes("budget")
+      ? "预算"
+      : normalizedQuestion.includes(normalizeIntentText("预测")) || normalizedQuestion.includes("forecast")
+        ? "预测"
+        : "预算";
+
+  return fromScenario === toScenario
+    ? { fromScenario, toScenario: "实际" }
+    : { fromScenario, toScenario };
 }
 
 function getScenarioDimension(schema: FinanceSchema) {
@@ -1014,6 +1322,22 @@ function validateRequiredFields(module: FinanceActionModule, errors: string[]) {
   }
 
   if (module.type === "waterfall_bridge") {
+    if (record.comparison === "scenario") {
+      if (!hasStringValue(record.period)) {
+        errors.push("口径瀑布桥需要指定期间。");
+      }
+
+      if (!hasStringValue(record.fromScenario)) {
+        errors.push("口径瀑布桥需要指定基准口径。");
+      }
+
+      if (!hasStringValue(record.toScenario)) {
+        errors.push("口径瀑布桥需要指定对比口径。");
+      }
+
+      return;
+    }
+
     if (!hasStringValue(record.fromPeriod)) {
       errors.push("瀑布桥需要指定开始期间。");
     }
@@ -1024,7 +1348,7 @@ function validateRequiredFields(module: FinanceActionModule, errors: string[]) {
   }
 }
 
-function validateActionOptions(module: FinanceActionModule, errors: string[]) {
+function validateActionOptions(schema: FinanceSchema, module: FinanceActionModule, errors: string[]) {
   if (module.type === "bar_rank") {
     validateBarRankOptions(module, errors);
   }
@@ -1078,6 +1402,25 @@ function validateActionOptions(module: FinanceActionModule, errors: string[]) {
 
   if (module.type === "grouped_bar" || module.type === "stacked_bar" || module.type === "percent_stacked_bar") {
     validateSeriesLimit(module, errors);
+  }
+
+  if (module.type === "waterfall_bridge") {
+    const record = module as Record<string, unknown>;
+    if (typeof record.comparison === "string" && record.comparison !== "scenario") {
+      errors.push("瀑布桥对比只支持期间桥或口径桥。");
+      delete record.comparison;
+    }
+
+    if (record.comparison === "scenario" && !getScenarioDimension(schema)) {
+      errors.push("口径瀑布桥需要数据口径维度。");
+    }
+  }
+
+  if (
+    (module.type === "stacked_bar" || module.type === "percent_stacked_bar") &&
+    findMetric(schema, module.metric)?.kind === "unit"
+  ) {
+    errors.push("堆叠结构图不支持单车指标，请改用分组柱状图、瀑布桥或明细表。");
   }
 }
 
