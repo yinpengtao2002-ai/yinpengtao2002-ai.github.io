@@ -963,6 +963,17 @@ test("finance AI assistant API strips raw-row-like summaries before explain prov
   }, "解释完成");
 });
 
+test("finance AI assistant uses lighter provider settings for explanation calls", async () => {
+  const route = await readProjectFile("src/app/api/tools/finance-ai-assistant/route.ts");
+
+  assert.match(route, /const FINANCE_AI_PLAN_TIMEOUT_MS = 60000/);
+  assert.match(route, /const FINANCE_AI_EXPLAIN_TIMEOUT_MS = 25000/);
+  assert.match(route, /maxTokens\?: number/);
+  assert.match(route, /timeoutMs: options\.timeoutMs \?\? FINANCE_AI_PLAN_TIMEOUT_MS/);
+  assert.match(route, /max_tokens: options\.maxTokens \?\? \(options\.jsonMode \? 1800 : 1200\)/);
+  assert.match(route, /callFirstConfiguredProvider\([\s\S]*\{ jsonMode: false, timeoutMs: FINANCE_AI_EXPLAIN_TIMEOUT_MS, maxTokens: 700 \}/s);
+});
+
 test("finance AI assistant API can run a tiny provider diagnostic without workbook data", async () => {
   await withMockedProvider(async (calls) => {
     const response = await POST(makeRequest({
@@ -1055,6 +1066,10 @@ test("finance AI assistant page is an independent chat workbench", async () => {
   assert.match(client, /visibleItemCount 只是图表可见项限制/);
   assert.match(client, /provider_timeout/);
   assert.match(client, /DeepSeek 分析超时/);
+  assert.match(client, /const provisionalAssistantId = `assistant-\$\{Date\.now\(\)\}`/);
+  assert.match(client, /正在补充解读/);
+  assert.match(client, /setMessages\(\(current\) => \[\s*\.\.\.current,\s*\{\s*id: provisionalAssistantId/s);
+  assert.match(client, /setMessages\(\(current\) => current\.map\(\(message\) =>/);
   assert.doesNotMatch(client, /buildLocalFinanceAnalysis/);
   assert.doesNotMatch(client, /applyFinanceAIDataRequest/);
   assert.doesNotMatch(client, /callAI\("data_request"/);

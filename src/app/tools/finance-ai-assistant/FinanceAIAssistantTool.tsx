@@ -1359,25 +1359,51 @@ export default function FinanceAIAssistantTool() {
 
       const { computedModules, chartCards } = executeFinancePlan(rows, schema, filterResolution.modules);
       const analysisContext = buildAnalysisContext(computedModules);
-      const analysis = await callAI("explain", {
-        question,
-        computedSummary: buildComputedSummary(question, schema, computedModules),
-      });
-      const assumptionText = analysis.assumptions?.length
-        ? `口径：${analysis.assumptions.join("；")}`
-        : "口径：AI 生成分析计划，前端按计划聚合当前上传底稿，再由 AI 解读计算结果。";
+      const provisionalAssistantId = `assistant-${Date.now()}`;
+      const fallbackAssumptionText = "口径：AI 生成分析计划，前端按计划聚合当前上传底稿，再由 AI 解读计算结果。";
+      const computedSummary = buildComputedSummary(question, schema, computedModules);
 
       setMessages((current) => [
         ...current,
         {
-          id: `assistant-${Date.now()}`,
+          id: provisionalAssistantId,
           role: "assistant",
-          text: analysis.message || "我已经按 AI 计划计算并生成图表。",
+          text: "图表和明细已先生成，正在补充解读。",
           chartCards,
           analysisContext,
-          meta: assumptionText,
+          meta: fallbackAssumptionText,
         },
       ]);
+
+      void callAI("explain", {
+        question,
+        computedSummary,
+      }).then((analysis) => {
+        const assumptionText = analysis.assumptions?.length
+          ? `口径：${analysis.assumptions.join("；")}`
+          : fallbackAssumptionText;
+
+        setMessages((current) => current.map((message) => (
+          message.id === provisionalAssistantId
+            ? {
+                ...message,
+                text: analysis.message || "我已经按 AI 计划计算并生成图表。",
+                meta: assumptionText,
+              }
+            : message
+        )));
+      }).catch((explainError) => {
+        const reason = explainError instanceof Error ? explainError.message : "文字解读暂时失败。";
+        setMessages((current) => current.map((message) => (
+          message.id === provisionalAssistantId
+            ? {
+                ...message,
+                text: `图表和明细已生成，但文字解读这次没有返回完整结果。${reason}`,
+                meta: fallbackAssumptionText,
+              }
+            : message
+        )));
+      });
     } catch (submitError) {
       setMessages((current) => [
         ...current,

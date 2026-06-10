@@ -29,7 +29,8 @@ import type {
 
 const API_ROUTE_PATH = "/api/tools/finance-ai-assistant";
 const PLANNING_BOUNDARY = "AI 不负责计算数字";
-const CHAT_PRIMARY_TIMEOUT_MS = 60000;
+const FINANCE_AI_PLAN_TIMEOUT_MS = 60000;
+const FINANCE_AI_EXPLAIN_TIMEOUT_MS = 25000;
 const MAX_DIRECT_CHARTS = 3;
 const MAX_DIRECT_TREND_POINTS = 48;
 const MAX_DIRECT_RANK_ITEMS = 15;
@@ -66,6 +67,8 @@ type ProviderAttempt = {
 type ProviderCallOptions = {
   jsonMode: boolean;
   responseFormat?: boolean;
+  timeoutMs?: number;
+  maxTokens?: number;
 };
 
 class ProviderEmptyResponseError extends Error {
@@ -752,7 +755,7 @@ async function callProvider(
       },
       body: JSON.stringify({
         model: provider.model,
-        max_tokens: options.jsonMode ? 1800 : 1200,
+        max_tokens: options.maxTokens ?? (options.jsonMode ? 1800 : 1200),
         stream: false,
         ...(shouldUseProviderJsonMode ? { response_format: { type: "json_object" } } : {}),
         messages,
@@ -782,7 +785,8 @@ async function callProvider(
 }
 
 async function callFirstConfiguredProvider(messages: ChatMessage[], options: ProviderCallOptions) {
-  const providers = getChatProviders(CHAT_PRIMARY_TIMEOUT_MS);
+  const providerOptions = { timeoutMs: options.timeoutMs ?? FINANCE_AI_PLAN_TIMEOUT_MS };
+  const providers = getChatProviders(providerOptions.timeoutMs);
   const attempts: ProviderAttempt[] = [];
 
   if (!hasConfiguredProvider(providers)) {
@@ -1129,7 +1133,7 @@ export async function POST(req: Request) {
         },
         { role: "user", content: prompt },
       ],
-      { jsonMode: false },
+      { jsonMode: false, timeoutMs: FINANCE_AI_EXPLAIN_TIMEOUT_MS, maxTokens: 700 },
     );
 
     if (!providerResult.ok) {
