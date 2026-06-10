@@ -84,7 +84,7 @@ test("thinking lab is a compact two-column index with article chips and quick to
   assert.match(thinkingClient, /thinking-index-shell/);
   assert.match(thinkingClient, /thinking-filter-chips/);
   assert.match(thinkingClient, /快捷工具/);
-  assert.match(thinkingClient, /知识内容 → 问答闪卡/);
+  assert.match(thinkingClient, /英文文章 → 单词卡/);
   assert.match(thinkingClient, /视频\/音频 → 字幕总结/);
   assert.doesNotMatch(thinkingClient, /thinking-tool-detail/);
   assert.doesNotMatch(thinkingClient, />适合</);

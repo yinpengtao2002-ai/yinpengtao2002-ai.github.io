@@ -10,7 +10,7 @@ import type { ContentItem } from "@/lib/data/generated/content";
 const THINKING_CATEGORY_ORDER = ["全部", "AI创作", "思考记录"];
 
 const TOOL_SHORT_COPY = {
-  "study-cards": "知识内容 → 问答闪卡",
+  "study-cards": "英文文章 → 单词卡",
   "subtitle-workbench": "视频/音频 → 字幕总结",
 };
 

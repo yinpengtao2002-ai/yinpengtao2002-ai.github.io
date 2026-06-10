@@ -4,15 +4,19 @@ import { getChatProviders, type ChatProvider } from "@/lib/ai/providers";
 const CHAT_PRIMARY_TIMEOUT_MS = 60000;
 const PUBLIC_STUDY_CARDS_API_URL = "https://yinpengtao.cn/api/tools/study-cards";
 
-type StudyCard = {
-  front: string;
-  back: string;
-  note?: string;
+type VocabularyCard = {
+  word: string;
+  phonetic?: string;
+  translation: string;
+  example: string;
+  source?: string;
+  level?: string;
 };
 
 type StudyCardResult = {
   summary: string;
-  cards: StudyCard[];
+  mode?: "article" | "word-list";
+  cards: VocabularyCard[];
 };
 
 function hasConfiguredProvider(providers: ChatProvider[]) {
@@ -35,54 +39,49 @@ function normalizeText(value: unknown, fallback = "") {
   return typeof value === "string" ? value.trim() : fallback;
 }
 
-const QUESTION_TYPE_GUIDE = [
-  "出题框架：每张卡先选一种题型，再写 front；不要把材料标题直接改成问句。",
-  "- 适用条件：考什么时候该用某个概念、方法或判断，例如“何时需要 X 介入？”",
-  "- 区分边界：考两个概念、步骤或工具的分工，例如“X 和 Y 怎么分工？”",
-  "- 因果机制：考为什么会发生、为什么不能跳过，例如“为什么不能只看 X？”",
-  "- 迁移判断：给一个相似场景，考学习者先判断该看哪条原则，例如“遇到 Y 先检查什么？”",
-  "- 反例纠错：考常见误用会漏掉什么，例如“只做 X 会错过什么？”",
-  "- 顺序依赖：考前后步骤和必要前提，例如“做 X 前必须先确定什么？”",
-  "- 同一题型不要连续出现超过 2 张；整组卡片要覆盖概念、边界、因果和迁移。",
-];
+function countEnglishWords(text: string) {
+  return text.match(/[A-Za-z][A-Za-z'-]*/g)?.length ?? 0;
+}
 
-const BAD_QUESTION_PATTERNS = [
-  "坏问题：什么是 X？X 的核心是什么？X 有哪些特点？本文讲了什么？",
-  "不要问“核心是什么”“主要内容是什么”“有哪些方面”“如何理解 X”这类摘要题。",
-  "不要让 front 和 back 共享大段相同短语；front 要逼学习者先作判断。",
-];
+function isLikelyWordList(content: string) {
+  const lines = content
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
 
-const ANSWER_QUALITY_RULES = [
-  "答案写法：先判断，再解释依据；不要只给名词解释。",
-  "信息密度优先：宁可多写半句说明判断依据，也不要为了压缩字数把答案写成泛泛口号。",
-  "好的 back 应该像可复述的结论：判断 + 关键依据 / 差异 / 后果；必要时可以写 1 到 3 句。",
-  "note 只能给回忆方向，像“先看边界”“想想误判来源”；可以更具体地提示观察角度，但不能提前说出答案关键词。",
-  "生成前先自检：如果 front 只是定义题、摘要题、照搬标题或答案已被 note 泄露，必须重写。",
-];
+  if (lines.length < 3) return false;
 
-const QUESTION_DEPTH_RULES = [
-  "深度递进：难度提升不是把题干写长，而是从事实回忆逐步走向关系判断、因果推理、矛盾张力和材料结构。",
-  "优先挖掘材料里的因果链、矛盾张力、隐含前提、关键转折和作者判断依据；不要停留在表层事实清单。",
-  "每组卡片至少包含几张需要解释“为什么”“如何影响”“体现什么关系”的问题；只有材料确实只有事实点时，才生成事实回忆题。",
-];
+  const wordLikeLines = lines.filter((line) => /^[A-Za-z][A-Za-z'-]*(?:\s+[A-Za-z][A-Za-z'-]*)?$/.test(line));
+  return wordLikeLines.length / lines.length >= 0.75;
+}
 
-const SOURCE_GROUNDING_RULES = [
-  "忠于原文：问题和答案只能基于用户内容，不得引入原文没有出现的人名、数据、概念、案例、结论或外部背景。",
-  "每个 back 都必须能在用户内容里找到依据，可以重组表达，但不能替材料补充事实或价值判断。",
-  "不要根据常识、新闻背景或你自己的知识补充任何内容；材料没有写就不要写。",
-  "材料没有依据的判断不要生成卡片；宁可少覆盖一个角度，也不要编造更顺滑的解释。",
+function hasEnoughVocabularyInput(content: string) {
+  return countEnglishWords(content) >= 3 || content.replace(/\s/g, "").length >= 80;
+}
+
+const VOCABULARY_CARD_RULES = [
+  "目标：生成英文单词卡，帮助用户背英文单词，而不是总结文章观点或出阅读理解题。",
+  "逐行单词模式：如果用户每行基本是一个英文单词或短语，保留用户给出的单词，不要替换成别的词；只补充中文释义、音标、英文例句、记忆提示和难度标签。",
+  "英文文章模式：如果用户输入的是英文文章，从原文中挑选难度最高且值得记忆的单词；只从原文中出现过的单词里选择，不要发明文章外单词。",
+  "文章抽词优先级：优先选择抽象名词、学术词、表达力强的动词/形容词、考试高频词、影响理解的关键词。",
+  "不要选择专有名词、数字、缩写、过于常见的基础词、语气词、冠词、普通代词或只在原文里无意义重复的词。",
+  "同一个词只出现一次；如果原文有不同词形，优先输出最常见的词典原形，但 source 里保留原文句子。",
+  "translation 必须是中文释义，简洁准确，可以包含 1 到 3 个常见义项，避免长篇百科解释。",
+  "example 必须是英文例句。逐行单词模式可以自行造一个自然例句；英文文章模式优先改写或引用原文语境，不能捏造原文没有的事实。",
+  "source 是来源线索。文章模式写包含该词的原文短句；逐行单词模式写“来自单词清单”。",
+  "level 写可感知的难度标签，例如 CET-6、雅思、托福、GRE、学术、高阶表达。",
 ];
 
 function getDifficultyQuestionGuidance(difficulty: string) {
-  if (difficulty.includes("高级")) {
-    return "高级难度：优先挖掘深层结构、隐含前提、价值冲突、论证转折和作者判断依据；问题要逼学习者解释材料为什么成立，而不是只复述材料说了什么。";
+  if (difficulty.includes("高阶表达")) {
+    return "高阶表达：优先挑选学术、抽象、表达力强、适合写作和演讲复用的词，难度可以接近 GRE / 学术阅读。";
   }
 
-  if (difficulty.includes("进阶")) {
-    return "进阶难度：追问材料中的关系、张力、原因、后果和边界；保留必要术语，让学习者说出关键判断背后的依据。";
+  if (difficulty.includes("考试进阶")) {
+    return "考试进阶：优先挑选 CET-6、考研、雅思、托福常见难词，兼顾阅读理解和写作复用。";
   }
 
-  return "基础难度：抓住材料里的关键事实、明确因果和核心关系；问题可以直白，但不能低到只问标题或名词。";
+  return "日常阅读：挑选影响文章理解、但不至于过偏的实用词，释义要直白，例句要容易跟读。";
 }
 
 function buildStudyCardPrompt({
@@ -94,32 +93,30 @@ function buildStudyCardPrompt({
   difficulty: string;
   cardCount: number;
 }) {
+  const modeHint = isLikelyWordList(content) ? "逐行单词模式" : "英文文章模式";
+
   return [
-    "你是一个擅长把知识材料转成学习卡片的 AI 学习助手。",
-    "请基于用户提供的内容生成适合逐张翻看的问答闪卡，目标是帮助学习者回忆关键判断，而不是复述原文标题。",
-    "质量判断：",
-    "- 先提取材料里的关键概念、概念之间的关系、使用边界、因果链和易混点",
-    "- 优先生成能检查理解的问题，避免“什么是 X”这类只考定义的浅问题",
-    "- 不要把原文句子拆短后照搬；必须重新组织成适合主动回忆的问答",
-    ...QUESTION_TYPE_GUIDE,
-    ...BAD_QUESTION_PATTERNS,
-    ...ANSWER_QUALITY_RULES,
-    ...QUESTION_DEPTH_RULES,
-    ...SOURCE_GROUNDING_RULES,
+    "你是一个严格的英文词汇教练，任务是把用户输入转成可背诵的英文单词卡。",
+    "请生成适合逐张翻看的 AI 英文单词卡。正面给英文单词，背面给中文释义、英文例句和来源线索。",
+    "输入判断：",
+    `- 系统初步判断：${modeHint}`,
+    "- 如果用户每行基本是一个英文单词或短语，按逐行单词模式处理。",
+    "- 如果用户输入的是英文文章，按英文文章模式处理。",
+    ...VOCABULARY_CARD_RULES,
     "要求：",
     `- 难度：${difficulty}`,
     `- ${getDifficultyQuestionGuidance(difficulty)}`,
-    `- 生成 ${cardCount} 张问答卡`,
-    "- 每张卡只考一个知识点，不要把多个概念塞进一张卡",
-    "- front 可以是一句具体问题，适合抛给学习者主动回忆；建议 12 到 56 个中文字符，必要时可以稍长，但不要写成一整段背景",
-    "- 问题必须考判断、关系、边界或因果，不能只把小标题改成疑问句",
-    "- back 通常写 1 到 3 句，建议 100 到 220 个中文字符；答案必须能脱离原文独立复述，并明确说出判断依据、适用边界或核心差异；不要因为字数范围删掉关键限定",
-    "- note 是给学习者的提示，会在答案显示前展示；通常 12 到 48 个中文字符，可以提示观察角度或排查顺序",
-    "- 提示只能给回忆方向，不能泄露答案里的关键名词、结论或完整因果",
-    "- summary 不超过 28 个中文字符，只概括这组卡片的主题",
+    `- 最多生成 ${cardCount} 张单词卡；如果逐行单词少于这个数量，就按实际单词数生成`,
+    "- word 只写英文单词或短语，不要写中文，不要加序号",
+    "- phonetic 尽量给英式或美式音标；不确定时可以为空字符串",
+    "- translation 用中文释义，建议 6 到 40 个中文字符",
+    "- example 用英文例句，建议 8 到 24 个英文单词，句子自然、可背",
+    "- source 用原文短句或“来自单词清单”，不要超过 120 个字符",
+    "- level 用 CET-6、雅思、托福、GRE、学术、高阶表达等标签",
+    "- summary 不超过 24 个中文字符，只概括这组词的来源或难度",
     "- 只输出 JSON，不要输出 Markdown、解释文字或代码块",
     "JSON 结构必须是：",
-    '{"summary":"...","cards":[{"front":"...","back":"...","note":"..."}]}',
+    '{"summary":"...","mode":"article","cards":[{"word":"...","phonetic":"...","translation":"...","example":"...","source":"...","level":"..."}]}',
     "用户内容：",
     content,
   ].join("\n");
@@ -142,20 +139,24 @@ function normalizeStudyCardResult(value: unknown, cardCount: number): StudyCardR
   const cards = Array.isArray(raw.cards)
     ? raw.cards
         .map((item) => ({
-          front: normalizeText((item as StudyCard).front),
-          back: normalizeText((item as StudyCard).back),
-          note: normalizeText((item as StudyCard).note),
+          word: normalizeText((item as VocabularyCard).word),
+          phonetic: normalizeText((item as VocabularyCard).phonetic),
+          translation: normalizeText((item as VocabularyCard).translation),
+          example: normalizeText((item as VocabularyCard).example),
+          source: normalizeText((item as VocabularyCard).source),
+          level: normalizeText((item as VocabularyCard).level),
         }))
-        .filter((item) => item.front && item.back)
+        .filter((item) => item.word && item.translation)
         .slice(0, cardCount)
     : [];
 
   if (cards.length === 0) {
-    throw new Error("AI response missed required study card fields");
+    throw new Error("AI response missed required vocabulary card fields");
   }
 
   return {
-    summary: normalizeText(raw.summary, "已根据输入内容生成学习卡片。"),
+    summary: normalizeText(raw.summary, "已生成单词卡。"),
+    mode: raw.mode === "word-list" ? "word-list" : "article",
     cards,
   };
 }
@@ -235,12 +236,12 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => null);
     const content = normalizeText(body?.content);
-    const difficulty = normalizeText(body?.difficulty, "清晰、适合自学者");
+    const difficulty = normalizeText(body?.difficulty, "日常阅读：适合英文文章精读");
     const cardCount = clampCardCount(body?.cardCount);
 
-    if (content.length < 80) {
+    if (!hasEnoughVocabularyInput(content)) {
       return Response.json(
-        { error: "请至少输入 80 个字的学习内容。" },
+        { error: "请至少输入 3 个英文单词，或一段 80 字以上英文文章。" },
         { status: 400 }
       );
     }
@@ -306,7 +307,7 @@ export async function POST(req: NextRequest) {
     );
   } catch {
     return Response.json(
-      { error: "学习卡片生成失败，请刷新页面后再试。", errorCode: "INTERNAL_ERROR" },
+      { error: "单词卡生成失败，请刷新页面后再试。", errorCode: "INTERNAL_ERROR" },
       { status: 500 }
     );
   }

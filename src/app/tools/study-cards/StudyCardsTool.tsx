@@ -15,15 +15,19 @@ import {
   WandSparkles,
 } from "lucide-react";
 
-type StudyCard = {
-  front: string;
-  back: string;
-  note?: string;
+type VocabularyCard = {
+  word: string;
+  phonetic?: string;
+  translation: string;
+  example: string;
+  source?: string;
+  level?: string;
 };
 
 type StudyCardResult = {
   summary?: string;
-  cards: StudyCard[];
+  mode?: "article" | "word-list";
+  cards: VocabularyCard[];
 };
 
 type CardMotion = "idle" | "exit-next" | "enter-next" | "exit-prev" | "enter-prev";
@@ -42,65 +46,120 @@ type CardMemoryState = {
 const DRAG_THRESHOLD = 90;
 const MAX_DRAG_OFFSET = 150;
 
-const SAMPLE_CONTENT = `近年来，在社会结构变化、学业竞争加剧等多重冲击下，青少年心理健康危机日益凸显：中国接近五分之一的儿童青少年患有精神障碍，休学、花式上学现象逐年增多，约一成青少年曾产生自杀念头。与此同时，当AI以前所未有的深度嵌入生活，作为“数字原住民”一代的青少年，正面临真实社交与生命体验被稀释的困境。当“为何而学？为何而活？”的追问愈发迫切，生命教育正从教育理念的边缘地带走向社会关注的焦点。
+const SAMPLE_CONTENT = `In an age of algorithmic feeds, information feels ubiquitous but attention becomes fragmented. Students may skim dozens of articles without building durable understanding, because the most important ideas are often hidden inside unfamiliar vocabulary. A deliberate reading habit changes that: instead of rushing through every sentence, a reader pauses at words that carry nuance, ambiguity, or analytical weight.
 
-在此背景下，中国教育发展战略学会生命教育专业委员会5月24日在中国人民大学正式成立，清华大学心理与认知科学系教授、中国积极心理学发起人彭凯平当选为生命教育专业委员会首届理事会理事长。
-
-他在发言中指出，生命教育专业委员会的成立具有时代的必然性，“当代青少年生长在物质丰裕但信息爆炸、变化剧烈的时代，常陷入迷茫、焦虑、脆弱和无助。如果教育不能让孩子懂得生命的价值、存在的价值及爱的能力，高分仅是建立在冰山上的高楼。”
-
-近年来，彭凯平团队追踪调查中国42万多中小学生发现，当代青少年出现了让人担心的“四无”现象，即学习无动力、对真实世界无兴趣、社交无能力和生命无意义感。他在会上表示，生命教育不是教育改革的一个选项，而是教育之为教育的题中应有之义，其最终使命是帮助每一个独特的生命找到属于自己的“为什么要活着”的答案。`;
+Good vocabulary study is not about collecting obscure words for display. It is about noticing which words unlock the argument of a text. When a word like resilience, agency, or distortion appears in a paragraph, it often signals how the author frames a problem. Learning those words in context makes reading less mechanical and writing more precise.`;
 
 const SAMPLE_RESULT: StudyCardResult = {
-  summary: "生命教育为何迫切",
+  summary: "短文高频难词",
+  mode: "article",
   cards: [
     {
-      front: "危机已不只是普通压力，材料如何说明？",
-      back: "材料没有只写“压力变大”，而是列出接近五分之一儿童青少年患有精神障碍、休学和花式上学逐年增多、约一成青少年曾产生自杀念头。这些证据共同说明危机已触及精神障碍、学习中断和生命风险。",
-      note: "看材料列出的三类证据",
+      word: "ubiquitous",
+      phonetic: "/juːˈbɪkwɪtəs/",
+      translation: "无处不在的，普遍存在的",
+      example: "Smartphones have become ubiquitous in modern classrooms.",
+      source: "information feels ubiquitous but attention becomes fragmented",
+      level: "雅思 / 托福",
     },
     {
-      front: "AI 介入为什么会让生命教育更迫切？",
-      back: "材料说 AI 正以前所未有的深度嵌入生活，数字原住民一代正面临真实社交与生命体验被稀释的困境。也就是说，生命教育的迫切性不仅来自学业竞争，也来自真实关系和生命体验被削弱。",
-      note: "想 AI 改变了哪种体验",
+      word: "fragmented",
+      phonetic: "/fræɡˈmentɪd/",
+      translation: "碎片化的，支离破碎的",
+      example: "A fragmented schedule makes deep work difficult.",
+      source: "attention becomes fragmented",
+      level: "CET-6",
     },
     {
-      front: "“高分冰山高楼”指向哪种教育缺口？",
-      back: "这句话指向的是教育如果只留下高分，却不能让孩子懂得生命价值、存在价值及爱的能力，高分就缺少稳固根基。材料借这个比喻说明生命教育不是分数之外的装饰，而是教育要补上的底层支撑。",
-      note: "先找高分下方缺了什么",
+      word: "durable",
+      phonetic: "/ˈdjʊərəbl/",
+      translation: "持久的，耐用的",
+      example: "Durable habits are built through repeated practice.",
+      source: "without building durable understanding",
+      level: "CET-6",
     },
     {
-      front: "“四无”共同暴露了什么断裂？",
-      back: "“四无”从学习无动力，延伸到对真实世界无兴趣、社交无能力和生命无意义感。它暴露的不是单一学习问题，而是学习、真实世界、社交关系和生命意义之间的连续断裂。",
-      note: "按四个层面连起来看",
+      word: "deliberate",
+      phonetic: "/dɪˈlɪbərət/",
+      translation: "有意的，审慎的",
+      example: "She made a deliberate choice to slow down and read carefully.",
+      source: "A deliberate reading habit changes that",
+      level: "雅思",
     },
     {
-      front: "为什么生命教育不是改革选项？",
-      back: "材料把生命教育定位为教育之为教育的题中应有之义，因为它回应的是生命价值、存在价值、爱的能力，以及每个生命如何找到“为什么要活着”的答案。这些问题属于教育本身，不是可有可无的附加选择。",
-      note: "看它回应的是哪类问题",
+      word: "nuance",
+      phonetic: "/ˈnjuːɑːns/",
+      translation: "细微差别，微妙含义",
+      example: "The translation missed the nuance of the original sentence.",
+      source: "words that carry nuance, ambiguity, or analytical weight",
+      level: "托福 / 高阶表达",
     },
     {
-      front: "最终使命怎样回应前文追问？",
-      back: "前文提出“为何而学？为何而活？”越来越迫切，后文说生命教育的最终使命，是帮助每一个独特的生命找到自己的“为什么要活着”的答案。两者形成呼应：生命教育要回应的核心正是生命意义问题。",
-      note: "把开头追问和结尾使命相连",
+      word: "ambiguity",
+      phonetic: "/ˌæmbɪˈɡjuːəti/",
+      translation: "模糊性，歧义",
+      example: "The policy left too much ambiguity for teachers.",
+      source: "words that carry nuance, ambiguity, or analytical weight",
+      level: "雅思 / 托福",
+    },
+    {
+      word: "obscure",
+      phonetic: "/əbˈskjʊə(r)/",
+      translation: "晦涩的，不知名的",
+      example: "The article uses obscure terms without explaining them.",
+      source: "collecting obscure words for display",
+      level: "CET-6 / 雅思",
+    },
+    {
+      word: "resilience",
+      phonetic: "/rɪˈzɪliəns/",
+      translation: "韧性，恢复力",
+      example: "Resilience helps students recover from setbacks.",
+      source: "a word like resilience, agency, or distortion",
+      level: "托福 / 学术",
+    },
+    {
+      word: "agency",
+      phonetic: "/ˈeɪdʒənsi/",
+      translation: "主动性，行动能力",
+      example: "Learners need agency to choose better strategies.",
+      source: "a word like resilience, agency, or distortion",
+      level: "学术 / 高阶表达",
+    },
+    {
+      word: "distortion",
+      phonetic: "/dɪˈstɔːʃn/",
+      translation: "扭曲，失真",
+      example: "The chart created a distortion of the real trend.",
+      source: "a word like resilience, agency, or distortion",
+      level: "CET-6 / 学术",
     },
   ],
 };
 
 const DIFFICULTY_OPTIONS = [
-  "基础：解释更直白，适合第一次接触",
-  "进阶：保留关键术语，适合复习巩固",
-  "高级：强调迁移、辨析和易错点",
+  "日常阅读：适合英文文章精读",
+  "考试进阶：适合 CET-6 / 雅思 / 托福",
+  "高阶表达：偏学术、写作和表达",
 ];
 
 const PROGRESS_STEPS = [
-  { threshold: 28, label: "正在梳理材料结构" },
-  { threshold: 58, label: "正在生成问答卡片" },
-  { threshold: 82, label: "正在打磨卡片答案" },
+  { threshold: 28, label: "正在判断输入类型" },
+  { threshold: 58, label: "正在筛选高价值单词" },
+  { threshold: 82, label: "正在补充中文释义" },
   { threshold: 100, label: "正在校验输出格式" },
 ];
 
-function countChineseText(text: string) {
+function countEnglishWords(text: string) {
+  return text.match(/[A-Za-z][A-Za-z'-]*/g)?.length ?? 0;
+}
+
+function getReadableInputLength(text: string) {
   return text.replace(/\s/g, "").length;
+}
+
+function hasEnoughVocabularyInput(text: string) {
+  return countEnglishWords(text) >= 3 || getReadableInputLength(text) >= 80;
 }
 
 function compactText(text: string, maxLength: number) {
@@ -109,18 +168,29 @@ function compactText(text: string, maxLength: number) {
   return `${normalized.slice(0, maxLength).replace(/[，。；、：,.:\s]+$/, "")}...`;
 }
 
-function getCardTextDensity(card: StudyCard | null): CardTextDensity {
+function formatCardBack(card: VocabularyCard) {
+  const parts = [
+    card.translation,
+    card.example ? `例句：${card.example}` : "",
+    card.source ? `来源：${card.source}` : "",
+  ];
+
+  return parts.filter(Boolean).join(" ");
+}
+
+function getCardTextDensity(card: VocabularyCard | null): CardTextDensity {
   if (!card) return "normal";
 
-  const frontLength = compactText(card.front, 72).length;
-  const noteLength = compactText(card.note ?? "", 96).length;
-  const backLength = compactText(card.back, 240).length;
+  const wordLength = compactText(card.word, 48).length;
+  const translationLength = compactText(card.translation, 120).length;
+  const exampleLength = compactText(card.example, 180).length;
+  const backLength = compactText(formatCardBack(card), 260).length;
 
-  if (frontLength > 42 || noteLength > 62 || backLength > 180) {
+  if (wordLength > 28 || translationLength > 62 || exampleLength > 120 || backLength > 210) {
     return "compact";
   }
 
-  if (frontLength > 28 || noteLength > 38 || backLength > 132) {
+  if (wordLength > 18 || translationLength > 38 || exampleLength > 86 || backLength > 150) {
     return "dense";
   }
 
@@ -160,7 +230,7 @@ function getStudyCardErrorMessage(payload: { error?: string; errorCode?: string 
     return "生成超时了。可以先缩短输入内容，或把卡片数调少一点再试。";
   }
 
-  return payload?.error || "学习卡片生成失败，请刷新页面后再试。";
+  return payload?.error || "单词卡生成失败，请刷新页面后再试。";
 }
 
 export default function StudyCardsTool() {
@@ -188,8 +258,9 @@ export default function StudyCardsTool() {
   const wasDraggingRef = useRef(false);
   const outputPanelRef = useRef<HTMLElement | null>(null);
 
-  const contentLength = useMemo(() => countChineseText(content), [content]);
-  const canSubmit = contentLength >= 80 && !loading;
+  const contentLength = useMemo(() => getReadableInputLength(content), [content]);
+  const wordCount = useMemo(() => countEnglishWords(content), [content]);
+  const canSubmit = hasEnoughVocabularyInput(content) && !loading;
   const progressLabel = getProgressLabel(progressValue);
   const activeCard = useMemo(() => result?.cards[activeCardIndex] ?? null, [activeCardIndex, result]);
   const activeCardDensity = useMemo(() => getCardTextDensity(activeCard), [activeCard]);
@@ -205,17 +276,17 @@ export default function StudyCardsTool() {
         : ((activeCardIndex + 1) / totalCards) * 100
       : 0;
   const activeMemory = memoryStats[activeCardIndex];
-  const practiceModeLabel = practiceMode === "learn" ? "第一轮学习" : "翻看检查";
+  const practiceModeLabel = practiceMode === "learn" ? "先认词" : "回忆检查";
   const swipeHelp =
     practiceMode === "learn"
-      ? "第一轮先看答案；左滑或点右箭头表示通过，不熟练会近期复现"
-      : "先回忆再翻答案；左滑或点右箭头表示通过，右滑回看上一张";
+      ? "第一轮先看释义；左滑或点右箭头表示认识，陌生词会近期复现"
+      : "先回忆中文释义；左滑或点右箭头表示认识，右滑回看上一张";
   const memoryPrompt =
     activeMemory?.lastRating === "shaky"
-      ? "这张会很快再出现"
+      ? "这个词会很快再出现"
       : practiceMode === "learn"
-        ? "会了就左滑或点右箭头"
-        : "答对就继续下一张";
+        ? "认识就左滑或点右箭头"
+        : "认识就继续下一张";
   const cardStageStyle = {
     "--drag-x": `${dragOffset}px`,
     "--drag-rotate": `${dragOffset * 0.035}deg`,
@@ -592,7 +663,7 @@ export default function StudyCardsTool() {
 
   async function generateCards() {
     if (!canSubmit) {
-      setError("请先输入至少 80 个字的学习内容。");
+      setError("请先输入至少 3 个英文单词，或一段 80 字以上英文文章。");
       return;
     }
 
@@ -630,7 +701,7 @@ export default function StudyCardsTool() {
       settleCardMotion();
       focusCardsOnMobile();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "学习卡片生成失败，请刷新页面后再试。");
+      setError(err instanceof Error ? err.message : "单词卡生成失败，请刷新页面后再试。");
     } finally {
       setLoading(false);
     }
@@ -643,38 +714,38 @@ export default function StudyCardsTool() {
         <span>返回</span>
       </Link>
 
-      <section className="study-cards-shell" aria-label="AI 学习卡片生成器">
+      <section className="study-cards-shell" aria-label="AI 单词卡">
         <div className="study-cards-workspace">
-          <section className="study-cards-input-panel" aria-label="输入学习内容">
+          <section className="study-cards-input-panel" aria-label="输入英文文章或单词清单">
             <div className="study-cards-title-row">
               <div>
-                <p>AI Study Cards</p>
-                <h1>AI 学习卡片生成器</h1>
+                <p>AI Vocabulary Cards</p>
+                <h1>AI 单词卡</h1>
               </div>
             </div>
 
             {!result && (
               <div className="study-cards-inline-preview" aria-hidden="true">
-                <span>试试看这种卡片</span>
-                <strong>危机已不只是普通压力，材料如何说明？</strong>
-                <small>先判断，再翻面</small>
+                <span>试试看单词卡</span>
+                <strong>ubiquitous</strong>
+                <small>先看英文，再翻中文</small>
               </div>
             )}
 
             <label className="study-cards-textarea-label" htmlFor="study-card-source">
-              输入知识内容
+              输入英文文章或逐行单词
             </label>
             <textarea
               id="study-card-source"
               value={content}
               onChange={(event) => setContent(event.target.value)}
-              placeholder="粘贴课程笔记、文章段落、视频字幕或教材片段..."
+              placeholder="粘贴英文文章，AI 会挑出值得背的难词；也可以每行输入一个单词，AI 会补中文释义和例句。"
               className="study-cards-textarea"
             />
 
             <div className="study-cards-input-meta">
-              <span>{contentLength} 字</span>
-              <span>至少 80 字</span>
+              <span>{wordCount} 个英文词 / {contentLength} 字符</span>
+              <span>至少 3 个英文词或 80 字文章</span>
             </div>
 
             <div className="study-cards-control-grid" aria-label="生成设置">
@@ -704,7 +775,7 @@ export default function StudyCardsTool() {
             <div className="study-cards-actions">
               <button type="button" className="study-cards-primary" onClick={generateCards} disabled={!canSubmit}>
                 {loading ? <Loader2 aria-hidden="true" /> : <WandSparkles aria-hidden="true" />}
-                {loading ? "生成中" : "生成学习卡片"}
+                {loading ? "生成中" : "生成背单词卡"}
               </button>
               <button type="button" onClick={loadSampleContent}>
                 <BookOpen aria-hidden="true" />
@@ -741,7 +812,7 @@ export default function StudyCardsTool() {
                 <div
                   className="study-cards-progress-track"
                   role="progressbar"
-                  aria-label="学习卡片生成进度"
+                  aria-label="单词卡生成进度"
                   aria-valuemin={0}
                   aria-valuemax={100}
                   aria-valuenow={Math.round(progressValue)}
@@ -754,22 +825,22 @@ export default function StudyCardsTool() {
             {error && <p className="study-cards-error">{error}</p>}
           </section>
 
-          <section ref={outputPanelRef} className="study-cards-output-panel" aria-label="学习卡片结果">
+          <section ref={outputPanelRef} className="study-cards-output-panel" aria-label="背单词卡结果">
             {!result || !activeCard ? (
               <div className="study-cards-empty">
                 <div className="study-cards-empty-copy">
                   <Layers aria-hidden="true" />
-                  <span>试试看这种卡片</span>
-                  <h2>把材料变成可以翻看的闪卡</h2>
-                  <p>点击示例内容，先看一遍带答案的卡片，再进入回忆检查。</p>
+                  <span>试试看单词卡</span>
+                  <h2>把英文文章变成可以背的单词卡</h2>
+                  <p>点击示例内容，先看一遍释义和例句，再进入回忆检查。</p>
                 </div>
                 <div className="study-cards-empty-preview" aria-hidden="true">
                   <div className="study-cards-empty-card">
                     <span>01</span>
-                    <strong>危机已不只是普通压力，材料如何说明？</strong>
-                    <p>提示 · 看材料列出的三类证据</p>
+                    <strong>ubiquitous</strong>
+                    <p>音标 · /juːˈbɪkwɪtəs/</p>
                     <div className="study-cards-empty-answer">
-                      先判断，再翻面
+                      无处不在的，普遍存在的
                     </div>
                   </div>
                 </div>
@@ -786,7 +857,7 @@ export default function StudyCardsTool() {
                     <h2>{result.summary || "先想，再翻面"}</h2>
                   </div>
                   <span>
-                    {practiceMode === "learn" ? `已通过 ${learnedCardCount} / ${totalCards}` : `第 ${activeCardIndex + 1} / ${totalCards} 张`}
+                    {practiceMode === "learn" ? `已认识 ${learnedCardCount} / ${totalCards}` : `第 ${activeCardIndex + 1} / ${totalCards} 张`}
                   </span>
                 </div>
 
@@ -819,40 +890,40 @@ export default function StudyCardsTool() {
                       <article
                         key={activeCardIndex}
                         className={`study-cards-practice-card is-${cardMotion} is-density-${activeCardDensity}`}
-                        aria-label="当前问答卡片"
+                        aria-label="当前单词卡片"
                       >
                         <div className="study-cards-question-block">
                           <div className="study-cards-practice-kicker">
                             <span>{String(activeCardIndex + 1).padStart(2, "0")}</span>
                             <span>{practiceModeLabel}</span>
                           </div>
-                          <h3>{compactText(activeCard.front, 72)}</h3>
+                          <h3>{compactText(activeCard.word, 48)}</h3>
                         </div>
-                        {activeCard.note && (
-                          <p className="study-cards-recall-hint">
-                            <span>提示</span>
-                            {compactText(activeCard.note, 96)}
-                          </p>
-                        )}
+                        <p className="study-cards-recall-hint">
+                          <span>{activeCard.phonetic ? "音标" : "难度"}</span>
+                          {compactText(activeCard.phonetic || activeCard.level || "先回忆中文释义", 96)}
+                        </p>
                         <button
                           type="button"
                           className={`study-cards-answer-panel${answerRevealed ? " is-revealed" : " is-hidden"}`}
                           onClick={revealAnswer}
                           aria-expanded={answerRevealed}
-                          aria-label={answerRevealed ? "答案已显示" : "显示答案"}
+                          aria-label={answerRevealed ? "释义已显示" : "显示释义"}
                         >
                           {answerRevealed ? (
                             <span className="study-cards-answer-copy">
-                              <strong>背面答案</strong>
-                              <span>{compactText(activeCard.back, 240)}</span>
+                              <strong>{compactText(activeCard.translation, 120)}</strong>
+                              <span>{compactText(activeCard.example, 180)}</span>
+                              {activeCard.source && <small>{compactText(activeCard.source, 160)}</small>}
+                              {activeCard.level && <small>{compactText(activeCard.level, 48)}</small>}
                             </span>
                           ) : (
                             <span className="study-cards-answer-placeholder">
                               <span className="study-cards-answer-placeholder-icon">
                                 <Eye aria-hidden="true" />
                               </span>
-                              <span>先在心里回答</span>
-                              <small>轻点这里翻开答案</small>
+                              <span>先在心里说中文释义</span>
+                              <small>答完后点这里看释义</small>
                             </span>
                           )}
                         </button>
@@ -864,7 +935,7 @@ export default function StudyCardsTool() {
                             disabled={cardMotion !== "idle"}
                           >
                             <RotateCcw aria-hidden="true" />
-                            不熟练
+                            再记一次
                           </button>
                           <small>{memoryPrompt}</small>
                         </div>

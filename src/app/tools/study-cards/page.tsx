@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import StudyCardsTool from "./StudyCardsTool";
 
 export const metadata: Metadata = {
-  title: "AI 学习卡片生成器｜Lucas Yin",
-  description: "输入一段知识内容，生成适合逐张翻看的 AI 问答闪卡。",
+  title: "AI 单词卡｜Lucas Yin",
+  description: "从英文文章或单词清单生成背诵卡，逐张记中文释义和例句。",
 };
 
 export default function StudyCardsPage() {

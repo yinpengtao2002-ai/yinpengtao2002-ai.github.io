@@ -15,8 +15,8 @@ export const subtitleWorkbenchContent: ContentItem = {
 export const studyCardsContent: ContentItem = {
   id: 9002,
   slug: "study-cards",
-  title: "AI 学习卡片生成器",
-  description: "把一段知识内容转换成可以逐张翻看的 AI 问答闪卡。",
+  title: "AI 单词卡",
+  description: "把英文文章或单词清单转换成可以逐张背诵的单词卡。",
   date: "2026-06-02",
   category: "工具",
   href: "/tools/study-cards",
