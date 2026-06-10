@@ -134,7 +134,7 @@ export default function ProfitStructureTool() {
     if (!accessToken) {
         return (
             <div id="profit-structure-root" className="profit-structure-tool">
-                <section className="profit-structure-access-gate" aria-label="多维结构关系分析模型内测访问">
+                <section className="profit-structure-access-gate" aria-label="多维利润质量诊断模型内测访问">
                     <div className="profit-structure-access-card">
                         <span className="profit-structure-access-icon" aria-hidden="true">
                             <KeyRound />
@@ -178,9 +178,9 @@ export default function ProfitStructureTool() {
                 </button>
 
                 <section className="sidebar-block">
-                    <div className="sidebar-kicker">Structure Lab</div>
-                    <h1 className="sidebar-heading">多维结构关系分析模型</h1>
-                    <p className="sidebar-copy">上传通用经营明细，选择维度路径和指标角色，查看多层维度之间的结构关系。</p>
+                    <div className="sidebar-kicker">Quality Lab</div>
+                    <h1 className="sidebar-heading">多维利润质量诊断模型</h1>
+                    <p className="sidebar-copy">上传经营明细，选择质量指标和诊断粒度，判断先看哪个维度、哪些组合正在拖累整体质量。</p>
                     <div id="profit-structure-message-area" className="message-area" aria-live="polite" />
                 </section>
 
@@ -201,40 +201,40 @@ export default function ProfitStructureTool() {
                 </section>
 
                 <section className="sidebar-block">
-                    <h2 className="sidebar-title">维度路径</h2>
+                    <h2 className="sidebar-title">诊断粒度</h2>
                     <div className="form-grid">
                         <label className="field">
-                            <span>第一层维度</span>
+                            <span>第一诊断维度</span>
                             <select id="profit-structure-primary-dimension" className="input" />
                         </label>
                         <label className="field">
-                            <span>第二层维度</span>
+                            <span>第二诊断维度</span>
                             <select id="profit-structure-secondary-dimension" className="input" />
                         </label>
                         <label className="field">
-                            <span>第三层维度</span>
+                            <span>第三诊断维度</span>
                             <select id="profit-structure-tertiary-dimension" className="input" />
                         </label>
                         <label className="field">
-                            <span>第四层维度</span>
+                            <span>第四诊断维度</span>
                             <select id="profit-structure-fourth-dimension" className="input" />
                         </label>
                         <label className="field">
-                            <span>第五层维度</span>
+                            <span>第五诊断维度</span>
                             <select id="profit-structure-fifth-dimension" className="input" />
                         </label>
                     </div>
                 </section>
 
                 <section className="sidebar-block">
-                    <h2 className="sidebar-title">指标角色</h2>
+                    <h2 className="sidebar-title">诊断指标</h2>
                     <div className="form-grid">
                         <label className="field">
-                            <span>权重 / 横轴指标</span>
+                            <span>质量指标</span>
                             <select id="profit-structure-primary-metric" className="input" />
                         </label>
                         <label className="field">
-                            <span>纵轴指标</span>
+                            <span>参考指标</span>
                             <select id="profit-structure-secondary-metric" className="input" />
                         </label>
                         <label className="field">
@@ -264,8 +264,8 @@ export default function ProfitStructureTool() {
                 <header className="model-header">
                     <div>
                         <p className="eyebrow">Financial Modeling</p>
-                        <h1>多维结构关系分析模型</h1>
-                        <p className="model-subtitle">用同一张经营明细底表，在任意维度路径下查看指标流向和结构定位。</p>
+                        <h1>多维利润质量诊断模型</h1>
+                        <p className="model-subtitle">用同一张经营明细底表，找出最该优先下钻的维度，以及正在拉低整体质量的组合。</p>
                     </div>
                     <div className="header-actions">
                         <div className="data-status" id="profit-structure-data-status">示例数据</div>
@@ -274,27 +274,38 @@ export default function ProfitStructureTool() {
 
                 <section className="metrics-grid" id="profit-structure-metrics-grid" />
 
+                <section className="diagnostic-summary-grid" id="profit-structure-diagnostic-summary" />
+
                 <section className="workspace-grid featured-grid">
                     <article className="panel panel-large">
                         <div className="panel-header">
                             <div>
-                                <h2>维度路径流向</h2>
-                                <p id="profit-structure-flow-caption">维度路径与权重指标会跟随控制台同步。</p>
+                                <h2>维度解释力</h2>
+                                <p id="profit-structure-dimension-caption">判断哪个维度最能解释单位质量差异和负向拖累。</p>
                             </div>
                         </div>
-                        <div id="profit-structure-flow-chart" className="chart chart-tall" />
+                        <div id="profit-structure-dimension-chart" className="chart chart-medium" />
                     </article>
                 </section>
 
-                <section className="workspace-grid single-grid">
+                <section className="workspace-grid middle-grid">
                     <article className="panel panel-large">
                         <div className="panel-header">
                             <div>
-                                <h2>结构定位散点</h2>
-                                <p id="profit-structure-scatter-caption">维度组合在两个指标上的位置。</p>
+                                <h2>结构质量地图</h2>
+                                <p id="profit-structure-quality-caption">按规模占比和单位质量偏离定位核心组合。</p>
                             </div>
                         </div>
-                        <div id="profit-structure-scatter-chart" className="chart chart-tall" />
+                        <div id="profit-structure-quality-map" className="chart chart-tall" />
+                    </article>
+                    <article className="panel panel-large">
+                        <div className="panel-header">
+                            <div>
+                                <h2>拖累贡献</h2>
+                                <p id="profit-structure-drag-caption">按销量与单位质量差，列出最拉低整体质量的组合。</p>
+                            </div>
+                        </div>
+                        <div id="profit-structure-drag-list" className="drag-panel" />
                     </article>
                 </section>
             </main>

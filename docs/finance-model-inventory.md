@@ -22,7 +22,7 @@
 | 单车指标变动归因模型 | `/finance/margin-analysis` | `src/app/finance/margin-analysis/page.tsx` + `public/tools/margin-analysis/` | 已上线 |
 | 财务分析 AI 助手 | `/finance/finance-ai-assistant` | `src/app/finance/finance-ai-assistant/page.tsx` + `src/app/tools/finance-ai-assistant/` | 测试中 |
 | 分月指标趋势分析模型 | `/finance/monthly-trend` | `src/app/finance/monthly-trend/` | 已上线 |
-| 多维结构关系分析模型 | `/finance/profit-structure` | `src/app/finance/profit-structure/` | 测试中 |
+| 多维利润质量诊断模型 | `/finance/profit-structure` | `src/app/finance/profit-structure/` | 测试中 |
 | 利润敏感性分析 | `/finance/sensitivity-analysis` | `src/app/finance/sensitivity-analysis/` | 已上线 |
 | Perspective BI 分析台 | `/finance/perspective-bi` | `src/app/finance/perspective-bi/` | 测试中 |
 
@@ -138,25 +138,27 @@
 - 图表锁定 Plotly 缩放和工具栏，主要通过指标选择和维度筛选完成业务交互。
 - 移动端使用折叠式浮层控制台。
 
-### 多维结构关系分析模型
+### 多维利润质量诊断模型
 
 - 源码：`src/app/finance/profit-structure/ProfitStructureTool.tsx`、`src/app/finance/profit-structure/profit-structure-engine.js`、`src/app/finance/profit-structure/tool.css`
 - 路由：`/finance/profit-structure`
 - 状态：测试中
-- 用途：上传一张经营明细底表后，按任意维度路径和用户上传指标查看多层维度之间的结构关系。
+- 用途：上传一张经营明细底表后，按用户选择的质量指标和诊断粒度判断先看哪个维度，并定位拖累整体利润质量的组合。
 
 已设计图表：
 
 - KPI 指标卡。
-- 维度路径流向图：基于所选权重指标生成 Sankey 流向图。
-- 结构定位散点图：基于所选横轴指标和纵轴指标生成定位散点/气泡图。
+- 诊断结论卡：展示优先下钻维度、整体单位质量和最大拖累组合。
+- 维度解释力图：按单位质量差异和负向拖累判断哪个维度最值得优先下钻。
+- 结构质量地图：横轴为销量占比，纵轴为质量指标的单位值相对整体的差异，气泡大小代表销量。
+- 拖累贡献清单：按 `销量 x 单位质量差` 排出最拉低整体质量的组合。
 
 交互模式：
 
 - 通过共享财务内测访问接口进行密钥校验。
 - 支持上传 CSV/XLS/XLSX 经营明细、加载示例数据、下载 CSV/XLSX 模板。
-- 支持选择最多五层维度路径。
-- 支持选择权重/横轴指标、纵轴指标和期间范围。
+- 支持选择最多五个诊断维度作为组合粒度。
+- 支持选择质量指标、参考指标和期间范围。
 - 支持自动生成维度筛选器并重置筛选。
 - 解锁后数据只保存在当前页面会话中。
 - 移动端沿用折叠式控制台模式。

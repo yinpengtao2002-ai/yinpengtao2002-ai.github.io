@@ -3,23 +3,23 @@ import ToolBackButton from "@/components/finance/ToolBackButton";
 import ProfitStructureTool from "./ProfitStructureTool";
 
 export const metadata: Metadata = {
-    title: "多维结构关系分析模型｜财务诊断工具｜Lucas Yin",
-    description: "上传通用经营明细底表，选择任意维度路径和指标角色，查看多层维度之间的结构关系。",
+    title: "多维利润质量诊断模型｜财务诊断工具｜Lucas Yin",
+    description: "上传通用经营明细底表，判断哪个维度最值得优先下钻，以及哪些组合正在拖累整体利润质量。",
 };
 
 function ProjectDescription({ className = "" }: { className?: string }) {
     return (
         <section className={className}>
-            <h1>多维结构关系分析模型</h1>
+            <h1>多维利润质量诊断模型</h1>
             <p>
-                这是一个面向维度关系的通用结构模型。上传包含月份、维度、销量和任意指标的明细后，
-                可以选择任意维度路径，查看指标在不同维度组合之间的流向和定位。
+                这是一个面向利润质量的多维诊断模型。上传包含月份、维度、销量和任意指标的明细后，
+                可以选择质量指标和诊断粒度，找出优先下钻维度与拖累整体质量的组合。
             </p>
             <h2>适用场景</h2>
             <ul>
-                <li>按大区、国家、渠道、客户、业务单元或用户自定义维度查看结构关系。</li>
-                <li>比较多层维度叠加后的指标分布。</li>
-                <li>把用户上传的指标放入同一套维度路径中观察。</li>
+                <li>上传很多维度后，先判断哪个维度最值得优先分析。</li>
+                <li>识别规模大但单位质量低的组合。</li>
+                <li>用销量乘以单位质量差，定位拖累整体利润质量的结构。</li>
             </ul>
             <h2>输入数据</h2>
             <ul>
@@ -29,9 +29,9 @@ function ProjectDescription({ className = "" }: { className?: string }) {
             </ul>
             <h2>输出结果</h2>
             <ul>
-                <li>总销量、上传指标合计和可计算的单位值。</li>
-                <li>维度路径流向和结构定位散点。</li>
-                <li>按任意维度路径切换当前分析口径，并保留多维筛选。</li>
+                <li>总销量、上传指标合计和整体单位质量。</li>
+                <li>维度解释力排行、结构质量地图和拖累贡献清单。</li>
+                <li>按任意诊断粒度切换当前组合口径，并保留多维筛选。</li>
             </ul>
         </section>
     );

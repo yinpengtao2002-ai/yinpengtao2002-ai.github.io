@@ -14,25 +14,25 @@ const {
   buildDimensionOptions,
   buildSummaryCards,
   buildStructureBlueprints,
-  buildSankeyData,
-  buildScatterPlotItems,
+  buildDimensionDiagnostics,
+  buildQualityMapItems,
+  buildDragContributionItems,
   defaultDimensionPath,
   createSampleRows,
 } = profitStructure.default;
 
-test("profit structure model is registered as a multidimensional finance model", () => {
+test("profit structure model is registered as a profit quality diagnostic model", () => {
   const model = registry.models.find((item) => item.slug === "profit-structure");
 
   assert.ok(model, "profit-structure should be present in the finance model registry");
-  assert.equal(model.title, "多维结构关系分析模型");
+  assert.equal(model.title, "多维利润质量诊断模型");
   assert.equal(model.href, "/finance/profit-structure");
   assert.equal("categoryId" in model, false);
-  assert.match(model.summary, /任意维度/);
-  assert.match(model.summary, /上传指标|任意指标/);
-  assert.match(model.aiGuide.purpose, /结构关系|多维/);
+  assert.match(model.summary, /拖累|质量|先看哪个维度/);
+  assert.match(model.aiGuide.purpose, /利润质量|拖累|优先下钻/);
   assert.doesNotMatch(model.title, /车型|产品/);
   assert.doesNotMatch(model.summary, /默认车型/);
-  assert.doesNotMatch(JSON.stringify(model.aiGuide), /边际率|如果未填写边际|净收入\/成本\/边际|候选图表|明细表|排行榜|分层/);
+  assert.doesNotMatch(JSON.stringify(model.aiGuide), /结构关系|维度路径流向|Sankey|候选图表|明细表/);
 });
 
 test("template keeps the shared month-dimension-volume-metric shape", () => {
@@ -100,7 +100,7 @@ test("uploaded rows treat every column before volume as a selectable dimension a
   assert.equal(rows[0].dimensionValues.客户, "客户A");
 });
 
-test("summarizes uploaded metrics by any selected dimension path without synthesizing missing metrics or insight layers", () => {
+test("summarizes uploaded metrics by selected dimensions and computes quality gap", () => {
   const { rows, schema } = normalizeUploadedRows([
     { 月份: "2026-01", 大区: "欧洲", 国家: "德国", 车型: "A", 销量: 100, 净收入: 1000, 成本: -700, 边际: 300 },
     { 月份: "2026-01", 大区: "欧洲", 国家: "法国", 车型: "A", 销量: 20, 净收入: 220, 成本: -120, 边际: 100 },
@@ -115,6 +115,7 @@ test("summarizes uploaded metrics by any selected dimension path without synthes
   assert.equal(byRegion.totals.metrics.净收入, 3080);
   assert.equal(byRegion.totals.metrics.成本, -2720);
   assert.equal(byRegion.totals.metrics.边际, 360);
+  assert.equal(byRegion.totals.unitMetrics.边际, 360 / 370);
   assert.equal("边际率" in byRegion.totals.metrics, false);
   assert.equal("layerSummary" in byRegion, false);
   assert.ok(byRegion.items.every((item) => !("classification" in item)));
@@ -125,9 +126,13 @@ test("summarizes uploaded metrics by any selected dimension path without synthes
     ["德国 / A", "法国 / A", "墨西哥 / B", "巴西 / C"]
   );
   assert.deepEqual(byCountryModel.selectedDimensions, ["国家", "车型"]);
+  const brazil = byCountryModel.items.find((item) => item.name === "巴西 / C");
+  assert.ok(brazil);
+  assert.equal(brazil.qualityGap, brazil.primaryUnitValue - byCountryModel.totals.unitMetrics.边际);
+  assert.equal(brazil.dragContribution, brazil.volume * brazil.qualityGap);
 });
 
-test("structure positioning uses generic unit labels instead of vehicle-specific labels", () => {
+test("quality positioning uses scale, unit quality and drag labels instead of vehicle-specific labels", () => {
   const { rows, schema } = normalizeUploadedRows([
     { 月份: "2026-01", 大区: "欧洲", 国家: "德国", 销量: 100, 净收入: 1000, 成本: -700, 边际: 300 },
     { 月份: "2026-01", 大区: "拉美", 国家: "巴西", 销量: 70, 净收入: 420, 成本: -520, 边际: -100 },
@@ -136,13 +141,14 @@ test("structure positioning uses generic unit labels instead of vehicle-specific
 
   assert.equal(summary.analysis.primaryMetric, "边际");
   assert.equal(summary.analysis.secondaryMetric, "净收入");
-  assert.equal(summary.analysis.matrix.xTitle, "边际 / 销量");
-  assert.equal(summary.analysis.matrix.yTitle, "净收入 / 销量");
-  assert.doesNotMatch(summary.analysis.matrix.xTitle, /边际率|销量占比/);
+  assert.equal(summary.analysis.quality.xTitle, "销量占比");
+  assert.equal(summary.analysis.quality.yTitle, "边际 / 销量 vs 整体");
+  assert.equal(summary.analysis.quality.dragTitle, "拖累贡献");
+  assert.doesNotMatch(summary.analysis.quality.yTitle, /边际率|车型/);
   assert.doesNotMatch(JSON.stringify(summary.analysis), /单车|车型|产品/);
 });
 
-test("summary cards and structure blueprints follow uploaded metric names and reject dashboard-style chart candidates", () => {
+test("summary cards and diagnostic blueprints follow uploaded metric names and reject old structure charts", () => {
   const { rows, schema } = normalizeUploadedRows([
     { 月份: "2026-01", 大区: "欧洲", 国家: "德国", 销量: 100, GMV: 1000, 服务成本: -700, NPS: 8 },
     { 月份: "2026-02", 大区: "欧洲", 国家: "德国", 销量: 120, GMV: 1100, 服务成本: -760, NPS: 9 },
@@ -156,36 +162,35 @@ test("summary cards and structure blueprints follow uploaded metric names and re
 
   assert.deepEqual(cards.map((card) => card.label), ["销量", "GMV", "服务成本", "NPS"]);
   assert.deepEqual(charts.map((chart) => chart.kind), [
-    "dimension-flow",
-    "structure-scatter",
+    "dimension-diagnostics",
+    "quality-map",
+    "drag-contribution",
   ]);
   assert.ok(charts.every((chart) => chart.title && chart.description));
-  assert.ok(charts.some((chart) => /维度路径/.test(chart.title) && /GMV|服务成本|NPS/.test(chart.description)));
-  assert.doesNotMatch(combinedText, /边际率|净收入|单车边际|结构提示|候选图表|排行|热力图|明细|分层贡献|销量结构占比|交叉结构切分|维度组合气泡矩阵|主路径结构条|正负结构拆解/);
+  assert.ok(charts.some((chart) => /维度解释力/.test(chart.title) && /GMV|服务成本|NPS/.test(chart.description)));
+  assert.doesNotMatch(combinedText, /边际率|净收入|单车边际|结构提示|候选图表|热力图|明细|分层贡献|销量结构占比|维度路径流向|Sankey|交叉结构切分|维度组合气泡矩阵|主路径结构条|正负结构拆解/);
 });
 
-test("sankey data collapses high-cardinality long tails instead of rendering every node", () => {
-  const rows = Array.from({ length: 100 }, (_, index) => ({
-    月份: "2026-01",
-    大区: `大区${index % 10}`,
-    国家: `国家${index}`,
-    品牌: `品牌${index % 5}`,
-    销量: 10 + index,
-    GMV: 100 + index,
-  }));
-  const { rows: normalizedRows, schema } = normalizeUploadedRows(rows);
-  const summary = summarizeProfitStructure(normalizedRows, schema, {
-    dimensions: ["大区", "国家", "品牌"],
-    primaryMetric: "GMV",
+test("dimension diagnostics ranks dimensions by quality dispersion and drag concentration", () => {
+  const { rows, schema } = normalizeUploadedRows([
+    { 月份: "2026-01", 大区: "欧洲", 国家: "德国", 品牌: "A", 销量: 100, 边际: 300 },
+    { 月份: "2026-01", 大区: "欧洲", 国家: "法国", 品牌: "B", 销量: 100, 边际: 290 },
+    { 月份: "2026-01", 大区: "拉美", 国家: "巴西", 品牌: "A", 销量: 100, 边际: -80 },
+    { 月份: "2026-01", 大区: "拉美", 国家: "墨西哥", 品牌: "B", 销量: 100, 边际: -70 },
+  ]);
+  const summary = summarizeProfitStructure(rows, schema, {
+    dimensions: ["大区"],
+    primaryMetric: "边际",
   });
-  const sankey = buildSankeyData(summary, { maxValuesPerLevel: [10, 12, 8] });
-  const countryNodes = sankey.nodes.filter((node) => node.dimension === "国家");
+  const diagnostics = buildDimensionDiagnostics(summary);
 
-  assert.ok(countryNodes.length <= 13, "country level should be capped plus one tail bucket");
-  assert.ok(countryNodes.some((node) => node.value === "其他国家"));
+  assert.equal(diagnostics[0].dimension, "大区");
+  assert.ok(diagnostics[0].qualitySpread > diagnostics[1].qualitySpread);
+  assert.ok(diagnostics[0].score > diagnostics[1].score);
+  assert.match(diagnostics[0].reason, /质量差异|拖累/);
 });
 
-test("scatter data is capped for high-cardinality dimension combinations", () => {
+test("quality map and drag contribution cap high-cardinality combinations for readable diagnosis", () => {
   const rows = Array.from({ length: 180 }, (_, index) => ({
     月份: "2026-01",
     大区: `大区${index % 8}`,
@@ -202,18 +207,22 @@ test("scatter data is capped for high-cardinality dimension combinations", () =>
     primaryMetric: "边际",
     secondaryMetric: "净收入",
   });
-  const scatter = buildScatterPlotItems(summary, { limit: 50 });
+  const qualityMap = buildQualityMapItems(summary, { limit: 50 });
+  const dragItems = buildDragContributionItems(summary, { limit: 20 });
 
-  assert.ok(scatter.hasMore);
-  assert.equal(scatter.items.length, 50);
-  assert.ok(scatter.items.every((item) => item.name.includes(" / ")));
+  assert.ok(qualityMap.hasMore);
+  assert.equal(qualityMap.items.length, 50);
+  assert.ok(qualityMap.items.every((item) => item.name.includes(" / ")));
+  assert.ok(qualityMap.items.every((item) => ["高规模高质量", "高规模低质量", "低规模高质量", "低规模低质量"].includes(item.quadrant)));
+  assert.equal(dragItems.items.length, 20);
+  assert.ok(dragItems.items.every((item) => item.dragContribution <= 0));
 });
 
 test("profit structure tool requires the existing finance access key before booting charts", async () => {
   const tool = await readFile(new URL("../src/app/finance/profit-structure/ProfitStructureTool.tsx", import.meta.url), "utf8");
 
   assert.match(tool, /\/api\/tools\/finance-ai-assistant\/access/);
-  assert.match(tool, /多维结构关系分析模型内测访问/);
+  assert.match(tool, /多维利润质量诊断模型内测访问/);
   assert.match(tool, /type="password"/);
   assert.match(tool, /if \(!accessToken\) {\s+return;\s+}/);
   assert.match(tool, /\}, \[accessToken\]\);/);
@@ -227,8 +236,9 @@ test("source files for the tool do not expose rejected panels or rejected chart 
   ]);
   const surfaceText = `${tool}\n${page}\n${engine}`;
 
-  assert.doesNotMatch(surfaceText, /结构提示|候选图表|经营对象盈利明细|边际分层贡献|销量结构占比|合计排行|单车边际排行|分月趋势|对象 x 月份热力图|明细表/);
-  assert.match(surfaceText, /维度路径流向/);
-  assert.match(surfaceText, /结构定位散点/);
+  assert.doesNotMatch(surfaceText, /结构提示|候选图表|经营对象盈利明细|边际分层贡献|销量结构占比|合计排行|单车边际排行|分月趋势|对象 x 月份热力图|明细表|维度路径流向|Sankey|结构定位散点/);
+  assert.match(surfaceText, /维度解释力/);
+  assert.match(surfaceText, /结构质量地图/);
+  assert.match(surfaceText, /拖累贡献/);
   assert.doesNotMatch(surfaceText, /交叉结构切分|维度组合气泡矩阵|主路径结构条|正负结构拆解|markers\+text|textposition/);
 });

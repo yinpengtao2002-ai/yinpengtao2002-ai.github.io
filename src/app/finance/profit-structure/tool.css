@@ -452,6 +452,7 @@
 
 .profit-structure-tool .model-header,
 .profit-structure-tool .metrics-grid,
+.profit-structure-tool .diagnostic-summary-grid,
 .profit-structure-tool .workspace-grid {
     max-width: 1480px;
     margin-right: auto;
@@ -514,7 +515,15 @@
     margin-bottom: 0.85rem;
 }
 
+.profit-structure-tool .diagnostic-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
 .profit-structure-tool .metric-card,
+.profit-structure-tool .diagnostic-card,
 .profit-structure-tool .panel {
     border: 1px solid var(--border-light);
     border-radius: 8px;
@@ -531,10 +540,27 @@
     font-family: var(--font-sans);
 }
 
+.profit-structure-tool .diagnostic-card {
+    display: grid;
+    min-height: 122px;
+    align-content: center;
+    gap: 0.38rem;
+    padding: 0.9rem;
+    border-color: rgba(217, 119, 87, 0.2);
+    background: linear-gradient(180deg, #fff, #fffaf6);
+    font-family: var(--font-sans);
+}
+
 .profit-structure-tool .metric-card span {
     color: var(--text-secondary);
     font-size: 0.76rem;
     font-weight: 700;
+}
+
+.profit-structure-tool .diagnostic-card span {
+    color: var(--accent-orange);
+    font-size: 0.76rem;
+    font-weight: 800;
 }
 
 .profit-structure-tool .metric-card strong {
@@ -544,10 +570,23 @@
     overflow-wrap: anywhere;
 }
 
+.profit-structure-tool .diagnostic-card strong {
+    color: var(--text-primary);
+    font-size: clamp(1rem, 1.35vw, 1.24rem);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
 .profit-structure-tool .metric-card small {
     color: var(--text-muted);
     font-size: 0.72rem;
     line-height: 1.35;
+}
+
+.profit-structure-tool .diagnostic-card small {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    line-height: 1.45;
 }
 
 .profit-structure-tool .workspace-grid {
@@ -603,8 +642,90 @@
     min-height: 320px;
 }
 
+.profit-structure-tool .chart-medium {
+    min-height: 360px;
+}
+
 .profit-structure-tool .chart-tall {
     min-height: 440px;
+}
+
+.profit-structure-tool .drag-panel {
+    min-height: 440px;
+}
+
+.profit-structure-tool .drag-list {
+    display: grid;
+    gap: 0.62rem;
+    font-family: var(--font-sans);
+}
+
+.profit-structure-tool .drag-row {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr) minmax(112px, auto);
+    gap: 0.65rem;
+    align-items: center;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-soft);
+    padding: 0.58rem;
+}
+
+.profit-structure-tool .drag-rank {
+    display: grid;
+    width: 26px;
+    height: 26px;
+    place-items: center;
+    border-radius: 999px;
+    background: rgba(182, 95, 85, 0.1);
+    color: var(--accent-red);
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.profit-structure-tool .drag-main {
+    display: grid;
+    min-width: 0;
+    gap: 0.35rem;
+}
+
+.profit-structure-tool .drag-name {
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-weight: 800;
+    line-height: 1.32;
+    overflow-wrap: anywhere;
+}
+
+.profit-structure-tool .drag-bar-track {
+    height: 7px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #eee9df;
+}
+
+.profit-structure-tool .drag-bar-track span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--accent-red);
+}
+
+.profit-structure-tool .drag-values {
+    display: grid;
+    gap: 0.18rem;
+    text-align: right;
+}
+
+.profit-structure-tool .drag-values strong {
+    color: var(--accent-red);
+    font-size: 0.88rem;
+}
+
+.profit-structure-tool .drag-values small {
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    line-height: 1.35;
 }
 
 .profit-structure-tool .chart-gallery {
@@ -757,6 +878,7 @@
 }
 
 @media (max-width: 1180px) {
+    .profit-structure-tool .diagnostic-summary-grid,
     .profit-structure-tool .metrics-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
@@ -819,6 +941,10 @@
     .profit-structure-tool .metrics-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    .profit-structure-tool .diagnostic-summary-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
 @media (max-width: 620px) {
@@ -843,8 +969,22 @@
     }
 
     .profit-structure-tool .chart,
+    .profit-structure-tool .chart-medium,
     .profit-structure-tool .chart-tall {
         min-height: 300px;
+    }
+
+    .profit-structure-tool .drag-panel {
+        min-height: 300px;
+    }
+
+    .profit-structure-tool .drag-row {
+        grid-template-columns: 26px minmax(0, 1fr);
+    }
+
+    .profit-structure-tool .drag-values {
+        grid-column: 2;
+        text-align: left;
     }
 
     .profit-structure-tool .chart-compact {
