@@ -10,10 +10,25 @@ type DetailTableData = {
   rows: string[][];
 };
 
+type NumericFilterOperator = "none" | "gt" | "gte" | "lt" | "lte" | "eq" | "between" | "notBlank";
+
+type NumericFilterDraft = {
+  operator: NumericFilterOperator;
+  value: string;
+  valueTo: string;
+};
+
+type AppliedNumericFilter = {
+  operator: Exclude<NumericFilterOperator, "none">;
+  value?: number;
+  valueTo?: number;
+};
+
 type FilterMenuState = {
   columnIndex: number;
   searchText: string;
   selectedValues: string[];
+  numericFilter: NumericFilterDraft;
   left: number;
   top: number;
   width: number;
@@ -61,6 +76,114 @@ function isNumericTableColumn(rows: string[][], columnIndex: number) {
   return values.every((value) => /^[-+]?[\d,.]+(?:\.\d+)?%?(?:万亿|亿|万)?$/.test(value));
 }
 
+function parseTableNumber(value: string) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  const unitMultiplier = trimmed.endsWith("万亿")
+    ? 1_000_000_000_000
+    : trimmed.endsWith("亿")
+      ? 100_000_000
+      : trimmed.endsWith("万")
+        ? 10_000
+        : 1;
+  const normalized = trimmed
+    .replace(/万亿$|亿$|万$/u, "")
+    .replace(/,/g, "")
+    .replace(/%$/, "");
+  const parsed = Number(normalized);
+
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+
+  return trimmed.endsWith("%") ? (parsed / 100) * unitMultiplier : parsed * unitMultiplier;
+}
+
+function numericFilterMatches(value: string, filter: AppliedNumericFilter) {
+  const parsed = parseTableNumber(value);
+
+  if (filter.operator === "notBlank") {
+    return parsed !== null;
+  }
+
+  if (parsed === null) {
+    return false;
+  }
+
+  const threshold = filter.value ?? 0;
+
+  if (filter.operator === "gt") {
+    return parsed > threshold;
+  }
+
+  if (filter.operator === "gte") {
+    return parsed >= threshold;
+  }
+
+  if (filter.operator === "lt") {
+    return parsed < threshold;
+  }
+
+  if (filter.operator === "lte") {
+    return parsed <= threshold;
+  }
+
+  if (filter.operator === "eq") {
+    return parsed === threshold;
+  }
+
+  if (filter.operator === "between") {
+    const start = Math.min(filter.value ?? 0, filter.valueTo ?? 0);
+    const end = Math.max(filter.value ?? 0, filter.valueTo ?? 0);
+    return parsed >= start && parsed <= end;
+  }
+
+  return true;
+}
+
+function createEmptyNumericFilter(): NumericFilterDraft {
+  return { operator: "none", value: "", valueTo: "" };
+}
+
+function numericFilterToDraft(filter: AppliedNumericFilter | undefined): NumericFilterDraft {
+  if (!filter) {
+    return createEmptyNumericFilter();
+  }
+
+  return {
+    operator: filter.operator,
+    value: typeof filter.value === "number" ? String(filter.value) : "",
+    valueTo: typeof filter.valueTo === "number" ? String(filter.valueTo) : "",
+  };
+}
+
+function normalizeNumericFilter(filter: NumericFilterDraft): AppliedNumericFilter | null {
+  if (filter.operator === "none") {
+    return null;
+  }
+
+  if (filter.operator === "notBlank") {
+    return { operator: "notBlank" };
+  }
+
+  const value = parseTableNumber(filter.value);
+  const valueTo = parseTableNumber(filter.valueTo);
+
+  if (value === null) {
+    return null;
+  }
+
+  if (filter.operator === "between") {
+    return valueTo === null ? null : { operator: "between", value, valueTo };
+  }
+
+  return { operator: filter.operator, value };
+}
+
 function buildColumnOptions(rows: string[][], columnIndex: number) {
   const seen = new Set<string>();
   const values: string[] = [];
@@ -87,7 +210,7 @@ function getFilterMenuPosition(trigger: HTMLButtonElement) {
   const rect = trigger.getBoundingClientRect();
   const width = Math.min(260, Math.max(220, window.innerWidth - 24));
   const left = Math.min(Math.max(12, rect.left), Math.max(12, window.innerWidth - width - 12));
-  const estimatedHeight = 324;
+  const estimatedHeight = 392;
   const belowTop = rect.bottom + 8;
   const hasRoomBelow = belowTop + estimatedHeight <= window.innerHeight;
   const top = hasRoomBelow
@@ -126,6 +249,7 @@ export default function FinanceAIDetailTable({ spec }: { spec: FinanceChartSpec 
   const menuRef = useRef<HTMLDivElement | null>(null);
   const { columns, rows } = useMemo(() => extractDetailTableData(spec), [spec]);
   const [appliedFilters, setAppliedFilters] = useState<Record<number, string[]>>({});
+  const [appliedNumericFilters, setAppliedNumericFilters] = useState<Record<number, AppliedNumericFilter>>({});
   const [filterMenu, setFilterMenu] = useState<FilterMenuState | null>(null);
   const numericColumns = useMemo(() => (
     columns.map((_, columnIndex) => isNumericTableColumn(rows, columnIndex))
@@ -134,8 +258,8 @@ export default function FinanceAIDetailTable({ spec }: { spec: FinanceChartSpec 
     columns.map((_, columnIndex) => buildColumnOptions(rows, columnIndex))
   ), [columns, rows]);
   const filteredRows = useMemo(() => (
-    rows.filter((row) => (
-      Object.entries(appliedFilters).every(([columnIndexText, selectedValues]) => {
+    rows.filter((row) => {
+      const valueFiltersMatch = Object.entries(appliedFilters).every(([columnIndexText, selectedValues]) => {
         const columnIndex = Number(columnIndexText);
 
         if (!Number.isFinite(columnIndex) || !Array.isArray(selectedValues)) {
@@ -143,10 +267,21 @@ export default function FinanceAIDetailTable({ spec }: { spec: FinanceChartSpec 
         }
 
         return selectedValues.includes(row[columnIndex] ?? "");
-      })
-    ))
-  ), [appliedFilters, rows]);
-  const activeFilterCount = Object.keys(appliedFilters).length;
+      });
+      const numericFiltersMatch = Object.entries(appliedNumericFilters).every(([columnIndexText, filter]) => {
+        const columnIndex = Number(columnIndexText);
+
+        if (!Number.isFinite(columnIndex)) {
+          return true;
+        }
+
+        return numericFilterMatches(row[columnIndex] ?? "", filter);
+      });
+
+      return valueFiltersMatch && numericFiltersMatch;
+    })
+  ), [appliedFilters, appliedNumericFilters, rows]);
+  const activeFilterCount = Object.keys(appliedFilters).length + Object.keys(appliedNumericFilters).length;
   const menuOptions = filterMenu ? columnOptions[filterMenu.columnIndex] ?? [] : [];
   const searchedMenuOptions = filterMenu
     ? menuOptions.filter((value) => displayFilterValue(value).toLowerCase().includes(filterMenu.searchText.trim().toLowerCase()))
@@ -180,6 +315,7 @@ export default function FinanceAIDetailTable({ spec }: { spec: FinanceChartSpec 
   function openFilterMenu(columnIndex: number, trigger: HTMLButtonElement) {
     const options = columnOptions[columnIndex] ?? [];
     const appliedValues = appliedFilters[columnIndex];
+    const appliedNumericFilter = appliedNumericFilters[columnIndex];
     const position = getFilterMenuPosition(trigger);
 
     setFilterMenu((current) => (
@@ -189,6 +325,7 @@ export default function FinanceAIDetailTable({ spec }: { spec: FinanceChartSpec 
             columnIndex,
             searchText: "",
             selectedValues: appliedValues ? [...appliedValues] : [...options],
+            numericFilter: numericFilterToDraft(appliedNumericFilter),
             ...position,
           }
     ));
@@ -196,6 +333,12 @@ export default function FinanceAIDetailTable({ spec }: { spec: FinanceChartSpec 
 
   function updateMenuSelection(nextValues: string[]) {
     setFilterMenu((current) => current ? { ...current, selectedValues: nextValues } : current);
+  }
+
+  function updateNumericFilter(nextFilter: Partial<NumericFilterDraft>) {
+    setFilterMenu((current) => current
+      ? { ...current, numericFilter: { ...current.numericFilter, ...nextFilter } }
+      : current);
   }
 
   function toggleMenuValue(value: string) {
@@ -230,6 +373,20 @@ export default function FinanceAIDetailTable({ spec }: { spec: FinanceChartSpec 
 
       return next;
     });
+    setAppliedNumericFilters((current) => {
+      const next = { ...current };
+      const normalizedFilter = numericColumns[filterMenu.columnIndex]
+        ? normalizeNumericFilter(filterMenu.numericFilter)
+        : null;
+
+      if (normalizedFilter) {
+        next[filterMenu.columnIndex] = normalizedFilter;
+      } else {
+        delete next[filterMenu.columnIndex];
+      }
+
+      return next;
+    });
     setFilterMenu(null);
   }
 
@@ -248,7 +405,13 @@ export default function FinanceAIDetailTable({ spec }: { spec: FinanceChartSpec 
           </span>
         </span>
         {activeFilterCount ? (
-          <button type="button" onClick={() => setAppliedFilters({})}>
+          <button
+            type="button"
+            onClick={() => {
+              setAppliedFilters({});
+              setAppliedNumericFilters({});
+            }}
+          >
             重置筛选
           </button>
         ) : null}
@@ -263,7 +426,7 @@ export default function FinanceAIDetailTable({ spec }: { spec: FinanceChartSpec 
                     <span>{column}</span>
                     <button
                       type="button"
-                      className={`finance-ai-detail-filter-trigger ${appliedFilters[columnIndex] ? "is-active" : ""}`}
+                      className={`finance-ai-detail-filter-trigger ${appliedFilters[columnIndex] || appliedNumericFilters[columnIndex] ? "is-active" : ""}`}
                       aria-label={`筛选${column}`}
                       aria-expanded={filterMenu?.columnIndex === columnIndex}
                       onClick={(event) => openFilterMenu(columnIndex, event.currentTarget)}
@@ -296,6 +459,46 @@ export default function FinanceAIDetailTable({ spec }: { spec: FinanceChartSpec 
           style={{ left: filterMenu.left, top: filterMenu.top, width: filterMenu.width }}
         >
           <p className="finance-ai-detail-filter-menu-title">{columns[filterMenu.columnIndex]}筛选</p>
+          {numericColumns[filterMenu.columnIndex] ? (
+            <div className="finance-ai-detail-number-filter">
+              <label>
+                <span>数字条件</span>
+                <select
+                  value={filterMenu.numericFilter.operator}
+                  onChange={(event) => updateNumericFilter({
+                    operator: event.target.value as NumericFilterOperator,
+                  })}
+                >
+                  <option value="none">不使用</option>
+                  <option value="gt">大于</option>
+                  <option value="gte">大于等于</option>
+                  <option value="lt">小于</option>
+                  <option value="lte">小于等于</option>
+                  <option value="eq">等于</option>
+                  <option value="between">介于</option>
+                  <option value="notBlank">非空数字</option>
+                </select>
+              </label>
+              {filterMenu.numericFilter.operator !== "none" && filterMenu.numericFilter.operator !== "notBlank" ? (
+                <div className="finance-ai-detail-number-inputs">
+                  <input
+                    value={filterMenu.numericFilter.value}
+                    onChange={(event) => updateNumericFilter({ value: event.target.value })}
+                    placeholder={filterMenu.numericFilter.operator === "between" ? "最小值" : "数值"}
+                    aria-label={`${columns[filterMenu.columnIndex]}数字筛选值`}
+                  />
+                  {filterMenu.numericFilter.operator === "between" ? (
+                    <input
+                      value={filterMenu.numericFilter.valueTo}
+                      onChange={(event) => updateNumericFilter({ valueTo: event.target.value })}
+                      placeholder="最大值"
+                      aria-label={`${columns[filterMenu.columnIndex]}数字筛选最大值`}
+                    />
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           <input
             className="finance-ai-detail-filter-search"
             value={filterMenu.searchText}

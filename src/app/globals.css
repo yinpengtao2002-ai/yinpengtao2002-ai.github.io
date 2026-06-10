@@ -749,6 +749,63 @@ body {
   font-weight: 900;
 }
 
+.finance-ai-detail-number-filter {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 66%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--finance-ai-page-surface) 72%, rgba(255, 255, 255, 0.78));
+  padding: 8px;
+}
+
+.finance-ai-detail-number-filter label {
+  display: grid;
+  gap: 5px;
+  color: color-mix(in srgb, var(--foreground) 62%, var(--muted));
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.finance-ai-detail-number-filter select,
+.finance-ai-detail-number-inputs input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.75rem;
+  outline: none;
+}
+
+.finance-ai-detail-number-filter select {
+  height: 32px;
+  padding: 0 8px;
+}
+
+.finance-ai-detail-number-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.finance-ai-detail-number-inputs input {
+  height: 32px;
+  padding: 0 8px;
+}
+
+.finance-ai-detail-number-inputs input:only-child {
+  grid-column: 1 / -1;
+}
+
+.finance-ai-detail-number-filter select:focus,
+.finance-ai-detail-number-inputs input:focus {
+  border-color: color-mix(in srgb, var(--accent) 62%, var(--border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 13%, transparent);
+}
+
 .finance-ai-detail-filter-search {
   width: 100%;
   border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);

@@ -1162,11 +1162,19 @@ test("finance AI assistant detail tables use Excel-style header filter menus", a
   assert.match(chartDemo, /FinanceAIDetailTable/);
   assert.match(detailTable, /function FinanceAIDetailTable/);
   assert.match(detailTable, /appliedFilters/);
+  assert.match(detailTable, /appliedNumericFilters/);
   assert.match(detailTable, /openFilterMenu/);
   assert.match(detailTable, /createPortal/);
   assert.match(detailTable, /filteredRows/);
+  assert.match(detailTable, /parseTableNumber/);
+  assert.match(detailTable, /numericFilterMatches/);
+  assert.match(detailTable, /NumericFilterOperator/);
   assert.match(detailTable, /finance-ai-detail-filter-trigger/);
   assert.match(detailTable, /finance-ai-detail-filter-menu/);
+  assert.match(detailTable, /finance-ai-detail-number-filter/);
+  assert.match(detailTable, /大于/);
+  assert.match(detailTable, /小于/);
+  assert.match(detailTable, /介于/);
   assert.match(detailTable, /全选/);
   assert.match(detailTable, /清空/);
   assert.match(detailTable, /应用/);
@@ -1175,6 +1183,8 @@ test("finance AI assistant detail tables use Excel-style header filter menus", a
   assert.match(styles, /\.finance-ai-detail-table-wrap/);
   assert.match(styles, /\.finance-ai-detail-filter-trigger/);
   assert.match(styles, /\.finance-ai-detail-filter-menu/);
+  assert.match(styles, /\.finance-ai-detail-number-filter/);
+  assert.match(styles, /\.finance-ai-detail-number-inputs/);
   assert.match(styles, /\.finance-ai-detail-table th/);
   assert.doesNotMatch(detailTable, /className="finance-ai-detail-table-filter"/);
   assert.doesNotMatch(detailTable, /finance-ai-detail-table-filters/);
