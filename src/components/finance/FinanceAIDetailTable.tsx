@@ -97,6 +97,30 @@ function getFilterMenuPosition(trigger: HTMLButtonElement) {
   return { left, top, width };
 }
 
+function getTableVariantLabel(variant: FinanceChartSpec["tableVariant"]) {
+  if (variant === "rank") {
+    return "排名表";
+  }
+
+  if (variant === "comparison") {
+    return "对比表";
+  }
+
+  if (variant === "budget_actual") {
+    return "预算实际表";
+  }
+
+  if (variant === "attribution_detail") {
+    return "归因明细";
+  }
+
+  if (variant === "exception_list") {
+    return "异常清单";
+  }
+
+  return "明细表";
+}
+
 export default function FinanceAIDetailTable({ spec }: { spec: FinanceChartSpec }) {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -216,9 +240,12 @@ export default function FinanceAIDetailTable({ spec }: { spec: FinanceChartSpec 
   return (
     <div className="finance-ai-detail-table-panel" ref={panelRef}>
       <div className="finance-ai-detail-table-count">
-        <span>
-          显示 {filteredRows.length.toLocaleString("zh-CN")} / {rows.length.toLocaleString("zh-CN")} 行
-          {activeFilterCount ? ` · ${activeFilterCount} 个筛选` : ""}
+        <span className="finance-ai-detail-table-status">
+          <span className="finance-ai-detail-table-kind">{getTableVariantLabel(spec.tableVariant)}</span>
+          <span>
+            显示 {filteredRows.length.toLocaleString("zh-CN")} / {rows.length.toLocaleString("zh-CN")} 行
+            {activeFilterCount ? ` · ${activeFilterCount} 个筛选` : ""}
+          </span>
         </span>
         {activeFilterCount ? (
           <button type="button" onClick={() => setAppliedFilters({})}>

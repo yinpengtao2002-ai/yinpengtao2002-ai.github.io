@@ -973,5 +973,7 @@ function buildDirectDetailTableChartSpec(input: FinanceAIDirectDetailTableChart)
     },
     config: baseConfig,
     note: input.note || "AI 基于上传底稿生成可核对明细，前端按表格协议渲染。",
+    tableVariant: input.variant ?? "generic",
+    tableMeta: input.meta,
   };
 }

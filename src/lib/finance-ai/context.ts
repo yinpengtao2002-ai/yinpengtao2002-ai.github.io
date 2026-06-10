@@ -8,12 +8,17 @@ export type FinanceAIChatState = {
   chartHistory?: Array<{ type: string; title: string }>;
   analysisContext?: Array<{
     type: string;
+    chartKind?: string;
     title: string;
+    tableVariant?: string;
     metric?: string;
+    metrics?: string[];
     dimension?: string;
     period?: string;
+    periods?: string[];
     fromPeriod?: string;
     toPeriod?: string;
+    comparison?: string;
     filters?: Record<string, string[]>;
     focusValues?: Array<{ dimension: string; value: string }>;
   }>;
@@ -70,7 +75,7 @@ const DIRECT_CHART_PROTOCOL_LINES = [
   "6. percent_stacked_bar: {type,title,xLabel,yLabel,series:[{name,items:[{label,value}]}],note}",
   "7. heatmap: {type,title,xLabels,yLabels,values,note}",
   "8. scatter_bubble: {type,title,xLabel,yLabel,items:[{label,x,y,size}],note}",
-  "9. detail_table: {type,title,columns,rows,note}，适合承接用户要求全量列出的明细，最多约 120 行；表格至少 4 列，优先包含关键维度、当前值、对比值、变化值、变化率、占比或口径，不要只返回一两列",
+  "9. detail_table: {type,title,variant,meta,columns,rows,note}，variant 可用 rank、comparison、budget_actual、attribution_detail、exception_list、generic；meta 可写 primaryDimension、metrics、period、periods、comparison、filters、focusValues；适合承接用户要求全量列出的明细，最多约 120 行；表格至少 4 列，优先包含关键维度、当前值、对比值、变化值、变化率、占比或口径，不要只返回一两列",
   "单点纯数字不要生成图表卡，直接写在 answer 文字里。",
   "预算、目标、实际、预测、计划、达成率或同一指标不同口径的对比，必须用 grouped_bar；不要用 stacked_bar 或 percent_stacked_bar，因为这些口径不能相加。",
 ];
@@ -130,12 +135,17 @@ function compactFilters(filters: Record<string, string[]> | undefined) {
 function compactAnalysisContext(items: NonNullable<FinanceAIChatState["analysisContext"]>) {
   return JSON.stringify(items.slice(-MAX_ANALYSIS_CONTEXT_ITEMS).map((item) => ({
     type: truncateText(item.type, 40),
+    ...(item.chartKind ? { chartKind: truncateText(item.chartKind, 40) } : {}),
     title: truncateText(item.title, 80),
+    ...(item.tableVariant ? { tableVariant: truncateText(item.tableVariant, 40) } : {}),
     ...(item.metric ? { metric: truncateText(item.metric, 60) } : {}),
+    ...(item.metrics?.length ? { metrics: item.metrics.slice(0, 8).map((metric) => truncateText(metric, 60)) } : {}),
     ...(item.dimension ? { dimension: truncateText(item.dimension, 60) } : {}),
     ...(item.period ? { period: truncateText(item.period, 40) } : {}),
+    ...(item.periods?.length ? { periods: item.periods.slice(0, 8).map((period) => truncateText(period, 40)) } : {}),
     ...(item.fromPeriod ? { fromPeriod: truncateText(item.fromPeriod, 40) } : {}),
     ...(item.toPeriod ? { toPeriod: truncateText(item.toPeriod, 40) } : {}),
+    ...(item.comparison ? { comparison: truncateText(item.comparison, 40) } : {}),
     ...(item.filters ? { filters: compactFilters(item.filters) } : {}),
     ...(item.focusValues?.length ? {
       focusValues: item.focusValues.slice(0, MAX_FOCUS_VALUES).map((focus) => ({
@@ -351,6 +361,8 @@ export function buildFinanceAIPlanningContext(
     "用户说“维度成员 + 维度字段”（如 MBT大区）并追问自身、内部、构成、下面有哪些时，把该成员写入 filters，并把 dimension 切到下一层可用维度（如 国家或车型）。",
     "用户只给出维度成员简称但没有说明维度时，不要强行猜成品牌、车型或大区；无法从上下文唯一确定时，应让用户补充它到底属于哪个维度。",
     "最近助手结论和最近计算模块只用于理解“它、其中、这个、刚才那个”等指代；每一轮仍然要围绕当前上传底稿重新规划可计算模块。",
+    "如果用户说这张表、这个表、上张表、表里的这些、刚才这些国家或继续问为什么，优先从最近计算模块的 tableVariant、metrics、periods、comparison、filters、focusValues 解析指代。",
+    "解析追问时可继承刚才的指标 metrics、期间 periods、对比 comparison、维度 dimension、筛选 filters 和表格焦点 focusValues；但不要只围绕上一轮可见表格或可见图表回答。",
     "不要因为上一轮结果没包含某个切片，就输出会导致解释阶段说看不到结果的计划；需要的切片应在本轮用 filters、dimension、metric 重新计算。",
     ...UNIT_ASSUMPTION_RULE_LINES,
     ...PERIOD_LABEL_RULE_LINES,

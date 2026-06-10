@@ -20,8 +20,11 @@ import type {
   FinanceActionPlan,
   FinanceAIDataRequest,
   FinanceAIDataSelection,
+  FinanceFilter,
   FinanceRawWorkbook,
   FinanceSchema,
+  FinanceTableMeta,
+  FinanceTableVariant,
 } from "../../../../lib/finance-ai/types.ts";
 
 const API_ROUTE_PATH = "/api/tools/finance-ai-assistant";
@@ -36,6 +39,14 @@ const MAX_DIRECT_SERIES_ITEMS = 16;
 const MAX_DIRECT_HEATMAP_AXIS = 14;
 const MAX_DIRECT_TABLE_ROWS = 120;
 const MAX_DIRECT_TABLE_COLUMNS = 10;
+const DIRECT_TABLE_VARIANTS = new Set<FinanceTableVariant>([
+  "rank",
+  "comparison",
+  "budget_actual",
+  "attribution_detail",
+  "exception_list",
+  "generic",
+]);
 const DIRECT_SCENARIO_COMPARE_TOKENS = ["预算", "目标", "实际", "预测", "计划", "达成", "对比", "比一下", "比一比", "比较", "target", "budget", "actual", "forecast", "plan"];
 const DIRECT_SCENARIO_SERIES_TOKENS = ["实际", "预算", "目标", "预测", "计划", "actual", "budget", "target", "forecast", "plan"];
 
@@ -182,6 +193,27 @@ function normalizeFilterState(value: unknown): Record<string, string[]> {
   );
 }
 
+function normalizeStringList(value: unknown, maxItems = 12): string[] {
+  return Array.isArray(value)
+    ? value
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .slice(0, maxItems)
+    : [];
+}
+
+function normalizeFocusValues(value: unknown) {
+  return Array.isArray(value)
+    ? value.flatMap((focus) => {
+        const focusRecord = asRecord(focus);
+        return typeof focusRecord.dimension === "string" && typeof focusRecord.value === "string"
+          ? [{ dimension: focusRecord.dimension.trim(), value: focusRecord.value.trim() }]
+          : [];
+      }).filter((focus) => focus.dimension && focus.value).slice(0, 12)
+    : [];
+}
+
 function normalizeChatState(value: unknown): FinanceAIChatState {
   const state = asRecord(value);
   const recentQuestions = Array.isArray(state.recentQuestions)
@@ -211,23 +243,23 @@ function normalizeChatState(value: unknown): FinanceAIChatState {
           return [];
         }
 
-        const focusValues = Array.isArray(contextItem.focusValues)
-          ? contextItem.focusValues.flatMap((focus) => {
-              const focusRecord = asRecord(focus);
-              return typeof focusRecord.dimension === "string" && typeof focusRecord.value === "string"
-                ? [{ dimension: focusRecord.dimension.trim(), value: focusRecord.value.trim() }]
-                : [];
-            }).filter((focus) => focus.dimension && focus.value)
-          : [];
+        const focusValues = normalizeFocusValues(contextItem.focusValues);
+        const metrics = normalizeStringList(contextItem.metrics);
+        const periods = normalizeStringList(contextItem.periods);
 
         return [{
           type: contextItem.type.trim(),
           title: contextItem.title.trim(),
+          ...(typeof contextItem.chartKind === "string" && contextItem.chartKind.trim() ? { chartKind: contextItem.chartKind.trim() } : {}),
+          ...(typeof contextItem.tableVariant === "string" && contextItem.tableVariant.trim() ? { tableVariant: contextItem.tableVariant.trim() } : {}),
           ...(typeof contextItem.metric === "string" && contextItem.metric.trim() ? { metric: contextItem.metric.trim() } : {}),
+          ...(metrics.length > 0 ? { metrics } : {}),
           ...(typeof contextItem.dimension === "string" && contextItem.dimension.trim() ? { dimension: contextItem.dimension.trim() } : {}),
           ...(typeof contextItem.period === "string" && contextItem.period.trim() ? { period: contextItem.period.trim() } : {}),
+          ...(periods.length > 0 ? { periods } : {}),
           ...(typeof contextItem.fromPeriod === "string" && contextItem.fromPeriod.trim() ? { fromPeriod: contextItem.fromPeriod.trim() } : {}),
           ...(typeof contextItem.toPeriod === "string" && contextItem.toPeriod.trim() ? { toPeriod: contextItem.toPeriod.trim() } : {}),
+          ...(typeof contextItem.comparison === "string" && contextItem.comparison.trim() ? { comparison: contextItem.comparison.trim() } : {}),
           filters: normalizeFilterState(contextItem.filters),
           ...(focusValues.length > 0 ? { focusValues } : {}),
         }];
@@ -464,6 +496,31 @@ function normalizeTableCell(value: unknown): string | number | null {
   return String(value ?? "");
 }
 
+function normalizeTableVariant(value: unknown): FinanceTableVariant | undefined {
+  return typeof value === "string" && DIRECT_TABLE_VARIANTS.has(value as FinanceTableVariant)
+    ? value as FinanceTableVariant
+    : undefined;
+}
+
+function normalizeTableMeta(value: unknown): FinanceTableMeta | undefined {
+  const record = asRecord(value);
+  const metrics = normalizeStringList(record.metrics, 8);
+  const periods = normalizeStringList(record.periods, 8);
+  const focusValues = normalizeFocusValues(record.focusValues);
+  const filters = normalizeFilterState(record.filters) as FinanceFilter;
+  const meta: FinanceTableMeta = {
+    ...(typeof record.primaryDimension === "string" && record.primaryDimension.trim() ? { primaryDimension: record.primaryDimension.trim() } : {}),
+    ...(metrics.length > 0 ? { metrics } : {}),
+    ...(typeof record.period === "string" && record.period.trim() ? { period: record.period.trim() } : {}),
+    ...(periods.length > 0 ? { periods } : {}),
+    ...(typeof record.comparison === "string" && record.comparison.trim() ? { comparison: record.comparison.trim() } : {}),
+    ...(Object.keys(filters).length > 0 ? { filters } : {}),
+    ...(focusValues.length > 0 ? { focusValues } : {}),
+  };
+
+  return Object.keys(meta).length > 0 ? meta : undefined;
+}
+
 function normalizeDirectDetailTableChart(record: Record<string, unknown>): FinanceAIDirectDetailTableChart | null {
   const title = typeof record.title === "string" ? record.title.trim() : "";
   const columns = Array.isArray(record.columns)
@@ -484,6 +541,8 @@ function normalizeDirectDetailTableChart(record: Record<string, unknown>): Finan
   return {
     type: "detail_table",
     title,
+    ...(normalizeTableVariant(record.variant) ? { variant: normalizeTableVariant(record.variant) } : {}),
+    ...(normalizeTableMeta(record.meta) ? { meta: normalizeTableMeta(record.meta) } : {}),
     columns,
     rows,
     ...(typeof record.note === "string" && record.note.trim() ? { note: record.note.trim() } : {}),

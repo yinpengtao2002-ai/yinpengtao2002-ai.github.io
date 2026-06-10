@@ -605,6 +605,25 @@ body {
   line-height: 1.4;
 }
 
+.finance-ai-detail-table-status {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.finance-ai-detail-table-kind {
+  border: 1px solid color-mix(in srgb, var(--finance-ai-chart-border) 76%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--finance-ai-chart-surface) 62%, var(--finance-ai-page-surface));
+  color: color-mix(in srgb, var(--foreground) 66%, var(--muted));
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1;
+  padding: 0.26rem 0.48rem;
+}
+
 .finance-ai-detail-table-count button {
   border: 0;
   border-radius: 999px;

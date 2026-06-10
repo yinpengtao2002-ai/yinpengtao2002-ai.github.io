@@ -35,6 +35,8 @@ import type {
   FinanceRawWorkbookSheet,
   FinanceRow,
   FinanceSchema,
+  FinanceTableMeta,
+  FinanceTableVariant,
   WaterfallBridgeResult,
 } from "@/lib/finance-ai/types";
 import type { FinanceAIChatState } from "@/lib/finance-ai/context";
@@ -71,6 +73,7 @@ type ComputedModule = {
   title: string;
   request: FinanceActionModule;
   result: unknown;
+  chartSpec?: FinanceChartSpec;
 };
 
 type AnalysisContextItem = NonNullable<FinanceAIChatState["analysisContext"]>[number];
@@ -244,6 +247,14 @@ function getModuleTitle(module: FinanceActionModule, schema: FinanceSchema) {
   return `${getPeriodDisplayLabel(schema, module.period)} ${module.dimension}明细表`;
 }
 
+function buildTableFocusValues(dimension: string, labels: string[], limit = 6): FinanceTableMeta["focusValues"] {
+  return labels
+    .map((value) => String(value).trim())
+    .filter(Boolean)
+    .slice(0, limit)
+    .map((value) => ({ dimension, value }));
+}
+
 function buildBarRankDetailTable(title: string, result: BarRankResult): FinanceChartSpec | null {
   if (!result.allItems?.length || result.allItems.length <= result.visibleItemCount) {
     return null;
@@ -257,6 +268,15 @@ function buildBarRankDetailTable(title: string, result: BarRankResult): FinanceC
   return buildDirectChartSpec({
     type: "detail_table",
     title: `${title}完整明细`,
+    variant: hasMomComparison ? "comparison" : "rank",
+    meta: {
+      primaryDimension: result.dimension,
+      metrics: [result.metric],
+      ...(result.period ? { period: result.period } : {}),
+      ...(result.comparison ? { comparison: result.comparison } : {}),
+      filters: result.filters,
+      focusValues: buildTableFocusValues(result.dimension, result.allItems.map((item) => item.label)),
+    },
     columns,
     rows: result.allItems.map((item, index) => {
       if (!hasMomComparison) {
@@ -708,9 +728,36 @@ function buildDetailTablePlanChart(rows: FinanceRow[], schema: FinanceSchema, mo
     }
   }
 
+  const inferTableVariant = (): FinanceTableVariant => {
+    const context = `${title} ${module.dimension} ${module.metrics.join(" ")} ${Object.keys(module.filters ?? {}).join(" ")}`;
+    if (/预算|目标|实际|预测|计划|达成|口径/.test(context)) {
+      return "budget_actual";
+    }
+    if (/归因|贡献|拆解|结构效应|费率效应|影响/.test(context)) {
+      return "attribution_detail";
+    }
+    if (/异常|下降|减少|拖累|最低|最少|倒数|坏|差/.test(context)) {
+      return "exception_list";
+    }
+    if (module.comparison === "mom") {
+      return "comparison";
+    }
+    return "generic";
+  };
+
   return buildDirectChartSpec({
     type: "detail_table",
     title,
+    variant: inferTableVariant(),
+    meta: {
+      primaryDimension: module.dimension,
+      metrics: module.metrics,
+      period: module.period,
+      periods: previousPeriod ? [previousPeriod.key, module.period] : [module.period],
+      ...(module.comparison ? { comparison: module.comparison } : {}),
+      ...(module.filters ? { filters: module.filters } : {}),
+      focusValues: buildTableFocusValues(module.dimension, labels),
+    },
     columns,
     rows: rowsData,
     note: "按用户要求列出可核对的维度明细。",
@@ -768,7 +815,7 @@ function executeFinancePlan(
     if (module.type === "trend_chart") {
       const result = buildTrendSeries(rows, schema, module);
       const spec = buildChartSpec({ type: "trend_chart", title, result });
-      computedModules.push({ type: "trend_chart", title, request: module, result });
+      computedModules.push({ type: "trend_chart", title, request: module, result, chartSpec: spec });
       chartCards.push({ id: `chart-${Date.now()}-${index}`, title, spec, note: spec.note });
       return;
     }
@@ -776,9 +823,9 @@ function executeFinancePlan(
     if (module.type === "bar_rank") {
       const result = buildBarRank(rows, schema, module);
       const spec = buildBarRankComparisonChart(title, result) ?? buildChartSpec({ type: "bar_rank", title, result });
-      computedModules.push({ type: "bar_rank", title, request: module, result });
-      chartCards.push({ id: `chart-${Date.now()}-${index}`, title, spec, note: spec.note });
       const detailSpec = buildBarRankDetailTable(title, result);
+      computedModules.push({ type: "bar_rank", title, request: module, result, chartSpec: detailSpec ?? spec });
+      chartCards.push({ id: `chart-${Date.now()}-${index}`, title, spec, note: spec.note });
       if (detailSpec) {
         chartCards.push({
           id: `chart-${Date.now()}-${index}-detail-table`,
@@ -793,14 +840,14 @@ function executeFinancePlan(
     if (module.type === "waterfall_bridge") {
       const result = buildWaterfallBridge(rows, schema, module);
       const spec = buildChartSpec({ type: "waterfall_bridge", title, result });
-      computedModules.push({ type: "waterfall_bridge", title, request: module, result });
+      computedModules.push({ type: "waterfall_bridge", title, request: module, result, chartSpec: spec });
       chartCards.push({ id: `chart-${Date.now()}-${index}`, title, spec, note: spec.note });
       return;
     }
 
     const expanded = buildExpandedPlanChart(rows, schema, module, title);
     if (expanded) {
-      computedModules.push({ type: module.type, title, request: module, result: expanded.result });
+      computedModules.push({ type: module.type, title, request: module, result: expanded.result, chartSpec: expanded.spec });
       chartCards.push({ id: `chart-${Date.now()}-${index}`, title, spec: expanded.spec, note: expanded.spec.note });
     }
   });
@@ -865,6 +912,16 @@ function getRequestMetric(request: FinanceActionModule) {
   return undefined;
 }
 
+function getRequestMetrics(request: FinanceActionModule) {
+  if (request.type === "detail_table") {
+    return request.metrics;
+  }
+
+  const metric = getRequestMetric(request);
+
+  return metric ? [metric] : [];
+}
+
 function getRequestDimension(request: FinanceActionModule) {
   const record = request as Record<string, unknown>;
 
@@ -881,11 +938,39 @@ function getRequestPeriod(request: FinanceActionModule) {
   return typeof record.period === "string" ? record.period : undefined;
 }
 
+function getRequestPeriods(request: FinanceActionModule, chartSpec?: FinanceChartSpec) {
+  const tablePeriods = chartSpec?.tableMeta?.periods;
+  if (tablePeriods?.length) {
+    return tablePeriods;
+  }
+
+  const period = getRequestPeriod(request);
+  const record = request as Record<string, unknown>;
+  const periods = [
+    typeof record.fromPeriod === "string" ? record.fromPeriod : undefined,
+    typeof record.toPeriod === "string" ? record.toPeriod : undefined,
+    period,
+  ].filter((value): value is string => Boolean(value));
+
+  return Array.from(new Set(periods));
+}
+
 function getRequestFilters(request: FinanceActionModule) {
   return "filters" in request ? request.filters : undefined;
 }
 
+function getRequestComparison(request: FinanceActionModule) {
+  const record = request as Record<string, unknown>;
+
+  return typeof record.comparison === "string" ? record.comparison : undefined;
+}
+
 function getModuleFocusValues(module: ComputedModule): AnalysisContextItem["focusValues"] {
+  const tableFocusValues = module.chartSpec?.tableMeta?.focusValues;
+  if (tableFocusValues?.length) {
+    return tableFocusValues;
+  }
+
   const requestDimension = getRequestDimension(module.request);
   const filterFocusValues = Object.entries(getRequestFilters(module.request) ?? {})
     .flatMap(([dimension, values]) => values.slice(0, 4).map((value) => ({ dimension, value })));
@@ -916,16 +1001,28 @@ function getModuleFocusValues(module: ComputedModule): AnalysisContextItem["focu
 function buildAnalysisContext(computedModules: ComputedModule[]): NonNullable<FinanceAIChatState["analysisContext"]> {
   return computedModules.map((module) => {
     const request = module.request as Record<string, unknown>;
+    const chartSpec = module.chartSpec;
+    const metrics = chartSpec?.tableMeta?.metrics?.length
+      ? chartSpec.tableMeta.metrics
+      : getRequestMetrics(module.request);
+    const periods = getRequestPeriods(module.request, chartSpec);
+    const comparison = chartSpec?.tableMeta?.comparison ?? getRequestComparison(module.request);
+    const filters = chartSpec?.tableMeta?.filters ?? getRequestFilters(module.request);
 
     return {
       type: module.type,
+      ...(chartSpec?.kind ? { chartKind: chartSpec.kind } : {}),
       title: module.title,
+      ...(chartSpec?.tableVariant ? { tableVariant: chartSpec.tableVariant } : {}),
       ...(getRequestMetric(module.request) ? { metric: getRequestMetric(module.request) } : {}),
-      ...(getRequestDimension(module.request) ? { dimension: getRequestDimension(module.request) } : {}),
+      ...(metrics.length ? { metrics } : {}),
+      ...(chartSpec?.tableMeta?.primaryDimension ? { dimension: chartSpec.tableMeta.primaryDimension } : getRequestDimension(module.request) ? { dimension: getRequestDimension(module.request) } : {}),
       ...(getRequestPeriod(module.request) ? { period: getRequestPeriod(module.request) } : {}),
+      ...(periods.length ? { periods } : {}),
       ...(typeof request.fromPeriod === "string" ? { fromPeriod: request.fromPeriod } : {}),
       ...(typeof request.toPeriod === "string" ? { toPeriod: request.toPeriod } : {}),
-      ...(getRequestFilters(module.request) ? { filters: getRequestFilters(module.request) } : {}),
+      ...(comparison ? { comparison } : {}),
+      ...(filters ? { filters } : {}),
       focusValues: getModuleFocusValues(module),
     };
   });

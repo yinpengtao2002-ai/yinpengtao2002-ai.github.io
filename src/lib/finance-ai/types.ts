@@ -225,6 +225,24 @@ export type FinanceChartKind =
 
 export type FinanceChartSize = "small" | "medium" | "large";
 
+export type FinanceTableVariant =
+  | "rank"
+  | "comparison"
+  | "budget_actual"
+  | "attribution_detail"
+  | "exception_list"
+  | "generic";
+
+export type FinanceTableMeta = {
+  primaryDimension?: string;
+  metrics?: string[];
+  period?: string;
+  periods?: string[];
+  comparison?: string;
+  filters?: FinanceFilter;
+  focusValues?: Array<{ dimension: string; value: string }>;
+};
+
 export type FinanceChartSpec = {
   kind: FinanceChartKind;
   size: FinanceChartSize;
@@ -233,6 +251,8 @@ export type FinanceChartSpec = {
   layout: Record<string, unknown>;
   config: Record<string, unknown>;
   note: string;
+  tableVariant?: FinanceTableVariant;
+  tableMeta?: FinanceTableMeta;
 };
 
 export type FinanceAIDirectTrendChart = {
@@ -318,6 +338,8 @@ export type FinanceAIDirectScatterBubbleChart = {
 export type FinanceAIDirectDetailTableChart = {
   type: "detail_table";
   title: string;
+  variant?: FinanceTableVariant;
+  meta?: FinanceTableMeta;
   columns: string[];
   rows: Array<Array<string | number | null>>;
   note?: string;

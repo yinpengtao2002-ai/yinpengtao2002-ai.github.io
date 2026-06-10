@@ -9,6 +9,7 @@ import {
   buildFinanceAIPlanningContext,
 } from "../src/lib/finance-ai/context.ts";
 import { applyFinanceAIDataRequest } from "../src/lib/finance-ai/data-selection.ts";
+import { buildDirectChartSpec } from "../src/lib/finance-ai/charts.ts";
 import { POST } from "../src/app/api/tools/finance-ai-assistant/route.ts";
 import { POST as POSTAccess } from "../src/app/api/tools/finance-ai-assistant/access/route.ts";
 import { createFinanceAIAccessToken } from "../src/lib/finance-ai/access.ts";
@@ -1162,6 +1163,76 @@ test("finance AI assistant detail tables use Excel-style header filter menus", a
   assert.match(styles, /\.finance-ai-detail-table th/);
   assert.doesNotMatch(detailTable, /className="finance-ai-detail-table-filter"/);
   assert.doesNotMatch(detailTable, /finance-ai-detail-table-filters/);
+});
+
+test("finance AI detail tables carry business table variants and metadata", async () => {
+  const types = await readProjectFile("src/lib/finance-ai/types.ts");
+  const detailTable = await readProjectFile("src/components/finance/FinanceAIDetailTable.tsx");
+  const client = await readProjectFile("src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
+  const spec = buildDirectChartSpec({
+    type: "detail_table",
+    title: "国家销量与单车边际环比对比表",
+    variant: "comparison",
+    meta: {
+      primaryDimension: "国家",
+      metrics: ["销量", "单车边际"],
+      period: "2026-03",
+      periods: ["2026-02", "2026-03"],
+      comparison: "mom",
+      filters: { "数据口径": ["实际"] },
+      focusValues: [{ dimension: "国家", value: "巴西" }],
+    },
+    columns: ["国家", "销量上期", "销量本期", "销量环比变化", "单车边际上期", "单车边际本期", "单车边际环比变化"],
+    rows: [["巴西", 80, 100, 20, 25, 35, 10]],
+  });
+
+  assert.match(types, /FinanceTableVariant/);
+  assert.match(types, /tableVariant\?/);
+  assert.match(types, /tableMeta\?/);
+  assert.equal(spec.tableVariant, "comparison");
+  assert.deepEqual(spec.tableMeta.metrics, ["销量", "单车边际"]);
+  assert.deepEqual(spec.tableMeta.periods, ["2026-02", "2026-03"]);
+  assert.equal(spec.tableMeta.comparison, "mom");
+  assert.match(detailTable, /getTableVariantLabel/);
+  assert.match(detailTable, /finance-ai-detail-table-kind/);
+  assert.match(detailTable, /spec\.tableVariant/);
+  assert.match(client, /tableVariant/);
+  assert.match(client, /tableMeta/);
+});
+
+test("finance AI follow-up planning context preserves table metrics, periods, comparison and focus values", () => {
+  const prompt = buildFinanceAIPlanningContext(makeSchema(), {
+    recentQuestions: ["哪些国家销量和单车边际都增长？", "为什么巴西下降这么多？"],
+    chartHistory: [{ type: "detail_table", title: "国家销量与单车边际环比对比表" }],
+    analysisContext: [{
+      type: "detail_table",
+      chartKind: "detail_table",
+      title: "国家销量与单车边际环比对比表",
+      tableVariant: "comparison",
+      metrics: ["销量", "单车边际"],
+      dimension: "国家",
+      period: "2026-03",
+      periods: ["2026-02", "2026-03"],
+      comparison: "mom",
+      filters: { "数据口径": ["实际"] },
+      focusValues: [
+        { dimension: "国家", value: "巴西" },
+        { dimension: "国家", value: "西班牙" },
+      ],
+    }],
+  });
+
+  assert.match(prompt, /tableVariant/);
+  assert.match(prompt, /comparison/);
+  assert.match(prompt, /metrics/);
+  assert.match(prompt, /periods/);
+  assert.match(prompt, /focusValues/);
+  assert.match(prompt, /巴西/);
+  assert.match(prompt, /西班牙/);
+  assert.match(prompt, /这张表|这个表|上张表/);
+  assert.match(prompt, /刚才.*指标|metrics/);
+  assert.match(prompt, /仍然.*当前上传底稿重新规划/);
+  assert.match(prompt, /不要只围绕上一轮可见表格/);
 });
 
 test("finance AI prompts ask detail tables to include useful comparison columns", () => {
