@@ -178,6 +178,11 @@ test("AI vocabulary card endpoint asks for article extraction and word-list enri
   assert.match(route, /保留用户给出的单词/);
   assert.match(route, /如果用户输入的是英文文章/);
   assert.match(route, /只从原文中出现过的单词里选择/);
+  assert.match(route, /type StudyCardMode = "article" \| "word-list"/);
+  assert.match(route, /expectedMode: StudyCardMode/);
+  assert.match(route, /mode: expectedMode/);
+  assert.match(route, /const expectedMode = isLikelyWordList\(content\) \? "word-list" : "article"/);
+  assert.match(route, /normalizeStudyCardResult\(parsed, cardCount, expectedMode\)/);
   assert.match(route, /export async function POST/);
   assert.doesNotMatch(route, /问答闪卡/);
   assert.doesNotMatch(route, /概念之间的关系/);

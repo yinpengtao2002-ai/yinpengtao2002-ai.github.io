@@ -19,6 +19,8 @@ type StudyCardResult = {
   cards: VocabularyCard[];
 };
 
+type StudyCardMode = "article" | "word-list";
+
 function hasConfiguredProvider(providers: ChatProvider[]) {
   return providers.some((provider) => Boolean(provider.apiKey && provider.apiUrl));
 }
@@ -93,7 +95,8 @@ function buildStudyCardPrompt({
   difficulty: string;
   cardCount: number;
 }) {
-  const modeHint = isLikelyWordList(content) ? "逐行单词模式" : "英文文章模式";
+  const expectedMode: StudyCardMode = isLikelyWordList(content) ? "word-list" : "article";
+  const modeHint = expectedMode === "word-list" ? "逐行单词模式" : "英文文章模式";
 
   return [
     "你是一个严格的英文词汇教练，任务是把用户输入转成可背诵的英文单词卡。",
@@ -116,7 +119,7 @@ function buildStudyCardPrompt({
     "- summary 不超过 24 个中文字符，只概括这组词的来源或难度",
     "- 只输出 JSON，不要输出 Markdown、解释文字或代码块",
     "JSON 结构必须是：",
-    '{"summary":"...","mode":"article","cards":[{"word":"...","phonetic":"...","translation":"...","example":"...","source":"...","level":"..."}]}',
+    `{"summary":"...","mode":"${expectedMode}","cards":[{"word":"...","phonetic":"...","translation":"...","example":"...","source":"...","level":"..."}]}`,
     "用户内容：",
     content,
   ].join("\n");
@@ -134,7 +137,7 @@ function extractJsonObject(text: string) {
   return JSON.parse(candidate.slice(firstBrace, lastBrace + 1));
 }
 
-function normalizeStudyCardResult(value: unknown, cardCount: number): StudyCardResult {
+function normalizeStudyCardResult(value: unknown, cardCount: number, expectedMode: StudyCardMode): StudyCardResult {
   const raw = value as Partial<StudyCardResult>;
   const cards = Array.isArray(raw.cards)
     ? raw.cards
@@ -156,7 +159,7 @@ function normalizeStudyCardResult(value: unknown, cardCount: number): StudyCardR
 
   return {
     summary: normalizeText(raw.summary, "已生成单词卡。"),
-    mode: raw.mode === "word-list" ? "word-list" : "article",
+    mode: expectedMode,
     cards,
   };
 }
@@ -229,7 +232,8 @@ async function proxyToPublicStudyCardsApi(body: {
     );
   }
 
-  return Response.json(payload);
+  const expectedMode = isLikelyWordList(body.content) ? "word-list" : "article";
+  return Response.json(normalizeStudyCardResult(payload, body.cardCount, expectedMode));
 }
 
 export async function POST(req: NextRequest) {
@@ -259,6 +263,7 @@ export async function POST(req: NextRequest) {
     }
 
     const prompt = buildStudyCardPrompt({ content, difficulty, cardCount });
+    const expectedMode = isLikelyWordList(content) ? "word-list" : "article";
     let lastError = "API not configured";
     let lastModel = providers[0]?.model ?? "unknown";
 
@@ -273,7 +278,7 @@ export async function POST(req: NextRequest) {
       try {
         const aiText = await callProvider(provider, prompt);
         const parsed = extractJsonObject(aiText);
-        return Response.json(normalizeStudyCardResult(parsed, cardCount));
+        return Response.json(normalizeStudyCardResult(parsed, cardCount, expectedMode));
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
           lastError = "AI generation timed out";
