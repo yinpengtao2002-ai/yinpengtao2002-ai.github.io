@@ -262,6 +262,18 @@ export default function BusinessAnalysisTool() {
                     </article>
                 </section>
 
+                <section className="workspace-grid single-grid">
+                    <article className="panel panel-large">
+                        <div className="panel-header">
+                            <div>
+                                <h2 id="profit-sankey-title">利润结构桑基图</h2>
+                                <p id="profit-sankey-subtitle">以实际口径展示净收入流向变动成本、边际、固定科目和利润总额；可拖动节点调整布局。</p>
+                            </div>
+                        </div>
+                        <div id="profit-sankey-chart" className="chart sankey-chart" />
+                    </article>
+                </section>
+
                 <footer className="footer">
                     <span>预算实际对比模型</span>
                     <span>销量、净收入总额、单车净收入、边际总额、单车边际、利润总额与维度归因</span>

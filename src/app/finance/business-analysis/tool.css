@@ -1339,6 +1339,18 @@
     min-height: 430px;
 }
 
+.business-tool .sankey-chart {
+    min-height: 500px;
+}
+
+.business-tool .sankey-chart .sankey-node {
+    cursor: grab;
+}
+
+.business-tool .sankey-chart .sankey-node:active {
+    cursor: grabbing;
+}
+
 .business-tool .table-panel {
     min-height: 500px;
 }
@@ -1854,6 +1866,10 @@
 
     .business-tool .chart {
         min-height: 340px;
+    }
+
+    .business-tool .sankey-chart {
+        min-height: 420px;
     }
 
     .business-tool .waterfall-chart {
