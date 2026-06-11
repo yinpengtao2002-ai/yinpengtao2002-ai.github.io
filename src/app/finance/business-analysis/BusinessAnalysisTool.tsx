@@ -267,7 +267,7 @@ export default function BusinessAnalysisTool() {
                         <div className="panel-header">
                             <div>
                                 <h2 id="profit-sankey-title">利润结构桑基图</h2>
-                                <p id="profit-sankey-subtitle">以实际口径展示净收入流向变动成本、边际、固定科目和利润总额；可拖动节点调整布局。</p>
+                                <p id="profit-sankey-subtitle">以实际口径展示净收入流向变动成本、边际、固定科目和利润总额。</p>
                             </div>
                         </div>
                         <div id="profit-sankey-chart" className="chart sankey-chart" />

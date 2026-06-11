@@ -1315,13 +1315,6 @@
         };
     }
 
-    function sankeyPlotConfig() {
-        return {
-            ...plotConfig(),
-            staticPlot: false
-        };
-    }
-
     function downstreamDimensions(dimension) {
         const dimensions = currentDimensions();
         const index = dimensions.indexOf(dimension);
@@ -1613,8 +1606,8 @@
         if (sankeyTitle) sankeyTitle.textContent = isMarginScope ? "利润结构桑基图（边际口径）" : "利润结构桑基图";
         if (sankeySubtitle) {
             sankeySubtitle.textContent = isMarginScope
-                ? "当前筛选为维度口径，仅展示净收入流向变动成本和边际总额；可拖动节点调整布局。"
-                : "以实际口径展示净收入流向变动成本、边际、固定科目和利润总额；可拖动节点调整布局。";
+                ? "当前筛选为维度口径，仅展示净收入流向变动成本和边际总额。"
+                : "以实际口径展示净收入流向变动成本、边际、固定科目和利润总额。";
         }
     }
 
@@ -1864,7 +1857,7 @@
 
         Plotly.react("profit-sankey-chart", [{
             type: "sankey",
-            arrangement: "freeform",
+            arrangement: "snap",
             node: {
                 label: labels,
                 color: nodeColors,
@@ -1885,7 +1878,7 @@
             showlegend: false,
             height: isCompactBridgeViewport() ? 420 : 500,
             margin: { l: 20, r: 20, t: 30, b: 24 }
-        }), sankeyPlotConfig());
+        }), plotConfig());
 
     }
 

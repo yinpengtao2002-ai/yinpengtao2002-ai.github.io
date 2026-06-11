@@ -1343,12 +1343,11 @@
     min-height: 500px;
 }
 
-.business-tool .sankey-chart .sankey-node {
-    cursor: grab;
-}
-
-.business-tool .sankey-chart .sankey-node:active {
-    cursor: grabbing;
+.business-tool .sankey-chart .sankey-node,
+.business-tool .sankey-chart .sankey-link,
+.business-tool .sankey-chart .bgsankey {
+    pointer-events: none !important;
+    cursor: default !important;
 }
 
 .business-tool .table-panel {
