@@ -102,7 +102,7 @@ function buildSampleRows() {
                         const lowestInventory = Math.max(0, Math.min(openingInventory, endingInventory) - Math.round(salesVolume * (0.1 + modelIndex * 0.014)));
 
                         rows.push({
-                            月份: month,
+                            月份: `${month}月`,
                             年度: `${month.slice(0, 4)}年`,
                             大区: market.大区,
                             国家: country,
@@ -173,6 +173,14 @@ const unitMetricBlueprints = [
     { name: "单车净收入", numerators: ["净收入", "收入", "营业收入", "销售收入", "Revenue", "revenue"] },
     { name: "单车边际", numerators: ["边际总额", "边际", "贡献边际", "毛利", "Margin", "margin"] },
     { name: "单车成本", numerators: ["成本", "总成本", "变动成本", "Cost", "cost"] },
+];
+const FIELD_GOVERNANCE_GROUPS = [
+    { id: "time", label: "时间维度", tone: "dimension" },
+    { id: "business", label: "业务维度", tone: "dimension" },
+    { id: "amount", label: "金额指标", tone: "metric" },
+    { id: "unit", label: "单位/比率", tone: "metric" },
+    { id: "inventory", label: "库存区间", tone: "metric" },
+    { id: "other", label: "其他字段", tone: "neutral" },
 ];
 const WORKBENCH_GUIDES = {
     Datagrid: {
@@ -445,6 +453,105 @@ const PERSPECTIVE_LOCALIZATION_SELECTOR = [
 ].join(",");
 const PERSPECTIVE_SHADOW_LOCALIZATION_STYLE_ID = "perspective-shadow-localization-css";
 const PERSPECTIVE_SHADOW_LOCALIZATION_CSS = `
+:host {
+    --lucas-psp-panel-bg: #fff;
+    --lucas-psp-soft-bg: #fbfaf7;
+    --lucas-psp-border: rgba(232, 230, 220, 0.95);
+    --lucas-psp-text: #141413;
+    --lucas-psp-muted: #747168;
+    --lucas-psp-blue: #5c8fba;
+    --lucas-psp-orange: #d97757;
+    --lucas-psp-green: #788c5d;
+}
+#settings_panel,
+.sidebar_column {
+    background: var(--lucas-psp-panel-bg) !important;
+    color: var(--lucas-psp-text) !important;
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif !important;
+}
+#settings_panel {
+    border-left: 1px solid var(--lucas-psp-border) !important;
+    box-shadow: -10px 0 24px rgba(20, 20, 19, 0.05) !important;
+    padding-left: 10px !important;
+}
+#settings_panel > .split-panel-divider,
+#column_settings_sidebar .split-panel-divider {
+    border-color: rgba(232, 230, 220, 0.9) !important;
+}
+#plugin_selector_container {
+    margin: 0 0 8px -10px !important;
+    border: 1px solid rgba(232, 230, 220, 0.95) !important;
+    border-radius: 8px !important;
+    background: var(--lucas-psp-soft-bg) !important;
+    overflow: hidden !important;
+}
+#plugin_selector_container #plugin_selector_border {
+    background-color: rgba(232, 230, 220, 0.95) !important;
+}
+.plugin-select-item {
+    min-height: 42px !important;
+    height: 42px !important;
+    border-bottom: 1px solid rgba(232, 230, 220, 0.78) !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    color: var(--lucas-psp-text) !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+}
+.plugin-select-item:hover,
+#plugin_selector_container:not(.open) > .plugin-select-item[data-plugin] {
+    background: rgba(92, 143, 186, 0.1) !important;
+    color: #426f96 !important;
+}
+.plugin-select-item > .icon {
+    background-color: var(--lucas-psp-blue) !important;
+}
+#active-columns,
+#sub-columns {
+    scrollbar-color: rgba(217, 119, 87, 0.34) transparent !important;
+}
+.column-selector-column .column-selector-column-border,
+.pivot-column-border,
+.column-selector-draggable.empty-named,
+#add-expression {
+    border: 1px solid rgba(232, 230, 220, 0.95) !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    min-height: 30px !important;
+}
+.column-selector-column .column-selector-draggable.dragover,
+.dragdrop-highlight .column-selector-column .column-selector-border,
+.dragdrop-highlight .pivot-column-border,
+.dragdrop-highlight .column-selector-column-border {
+    border-color: rgba(92, 143, 186, 0.52) !important;
+    background: rgba(92, 143, 186, 0.08) !important;
+}
+.column_name,
+.plugin-select-item-name,
+#add-expression > span {
+    color: var(--lucas-psp-text) !important;
+    font-weight: 800 !important;
+}
+#sub-columns .scroll-panel-container:before,
+.column-selector-column[data-label]:before {
+    color: var(--lucas-psp-muted) !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0 !important;
+}
+#add-expression {
+    background: rgba(217, 119, 87, 0.08) !important;
+    color: #a95438 !important;
+}
+#add-expression > .icon,
+.is_column_active,
+.column-selector-column .column-selector-draggable:not(.empty-named) .drag-handle {
+    background-color: var(--lucas-psp-orange) !important;
+}
+regular-table {
+    --rt-hover--background-color: rgba(92, 143, 186, 0.08);
+    --rt-selected--background-color: rgba(217, 119, 87, 0.12);
+}
 .group_rollup_wrapper[data-value="Rollup"]::after { content: "折叠汇总 " !important; }
 .group_rollup_wrapper[data-value="Flat"]::after { content: "明细展开 " !important; }
 .group_rollup_wrapper[data-value="Total"]::after { content: "总计 " !important; }
@@ -620,20 +727,120 @@ function isNumericColumn(rows, column) {
 }
 
 function defaultAggregationForColumn(column) {
-    if (/率|单车|均|占比|margin|rate|avg/i.test(column)) return "avg";
+    if (/最高|high/i.test(column)) return "max";
+    if (/最低|low/i.test(column)) return "min";
+    if (/库存|期初|期末|inventory|stock|open|close/i.test(column)) return "avg";
+    if (/率|单车|均|占比|rate|avg|unit|per/i.test(column)) return "avg";
     return "sum";
 }
 
+function getFieldGovernanceGroup(groupId) {
+    return FIELD_GOVERNANCE_GROUPS.find((group) => group.id === groupId) ?? FIELD_GOVERNANCE_GROUPS.at(-1);
+}
+
+function getFieldGovernanceProfile(rows, column) {
+    const numeric = isNumericColumn(rows, column);
+
+    if (isTimeDimensionColumn(column)) {
+        return {
+            group: "time",
+            role: "dimension",
+            aggregation: "sum",
+            reason: "字段名像月份、期间或日期，适合作为时间维度。",
+        };
+    }
+
+    if (isIdentifierDimensionColumn(column)) {
+        return {
+            group: "business",
+            role: "dimension",
+            aggregation: "sum",
+            reason: "字段名像编号或编码，适合用于筛选和明细追踪。",
+        };
+    }
+
+    if (!numeric) {
+        return {
+            group: "business",
+            role: "dimension",
+            aggregation: "sum",
+            reason: "内容不是纯数字，更适合作为分组、拆分或筛选维度。",
+        };
+    }
+
+    if (/率|单车|均|占比|rate|avg|unit|per/i.test(column)) {
+        return {
+            group: "unit",
+            role: "metric",
+            aggregation: "avg",
+            reason: "字段名像单位、比率或均值指标，默认用平均，避免被求和放大。",
+        };
+    }
+
+    if (/最高|high/i.test(column)) {
+        return {
+            group: "inventory",
+            role: "metric",
+            aggregation: "max",
+            reason: "字段名像区间最高值，默认取最大值。",
+        };
+    }
+
+    if (/最低|low/i.test(column)) {
+        return {
+            group: "inventory",
+            role: "metric",
+            aggregation: "min",
+            reason: "字段名像区间最低值，默认取最小值。",
+        };
+    }
+
+    if (/库存|期初|期末|inventory|stock|open|close/i.test(column)) {
+        return {
+            group: "inventory",
+            role: "metric",
+            aggregation: "avg",
+            reason: "字段名像库存或区间时点值，默认用平均，不直接累计。",
+        };
+    }
+
+    if (/销量|销售量|订单|收入|成本|边际|费用|金额|利润|volume|sales|order|revenue|cost|margin|expense|amount|profit/i.test(column)) {
+        return {
+            group: "amount",
+            role: "metric",
+            aggregation: "sum",
+            reason: "字段名像销量、金额或利润类规模指标，默认可求和。",
+        };
+    }
+
+    return {
+        group: "other",
+        role: "metric",
+        aggregation: defaultAggregationForColumn(column),
+        reason: "内容为纯数字，但字段名没有明显财务口径，先作为指标保留。",
+    };
+}
+
+function buildFieldRoleInsights(rows) {
+    return getColumns(rows).map((column) => {
+        const profile = getFieldGovernanceProfile(rows, column);
+        const group = getFieldGovernanceGroup(profile.group);
+        const current = state.fieldRoles[column] ?? { role: profile.role, aggregation: profile.aggregation };
+        return {
+            column,
+            group,
+            role: current.role,
+            aggregation: current.aggregation,
+            suggestedRole: profile.role,
+            suggestedAggregation: profile.aggregation,
+            reason: profile.reason,
+        };
+    });
+}
+
 function inferFieldRole(rows, column) {
-    if (isTimeDimensionColumn(column) || isIdentifierDimensionColumn(column)) {
-        return { role: "dimension", aggregation: "sum" };
-    }
-
-    if (isNumericColumn(rows, column)) {
-        return { role: "metric", aggregation: defaultAggregationForColumn(column) };
-    }
-
-    return { role: "dimension", aggregation: "sum" };
+    const profile = getFieldGovernanceProfile(rows, column);
+    return { role: profile.role, aggregation: profile.aggregation };
 }
 
 function inferFieldRoles(rows) {
@@ -924,42 +1131,79 @@ function createOption(value, label, selected = false) {
     return option;
 }
 
+function renderFieldRoleRow(rows, insight) {
+    const column = insight.column;
+    const config = state.fieldRoles[column] ?? { role: insight.suggestedRole, aggregation: insight.suggestedAggregation };
+    const row = document.createElement("div");
+    const fieldName = document.createElement("div");
+    const title = document.createElement("span");
+    const reason = document.createElement("small");
+    const roleSelect = document.createElement("select");
+    const aggregateSelect = document.createElement("select");
+
+    row.className = `field-role-row role-${config.role}`;
+    fieldName.className = "field-role-name";
+    title.className = "field-role-title";
+    reason.className = "field-role-reason";
+    reason.setAttribute("data-field-reason", insight.reason);
+
+    title.textContent = column;
+    reason.textContent = `识别依据：${insight.reason}`;
+    fieldName.append(title, reason);
+
+    roleSelect.className = "field-role-select";
+    roleSelect.setAttribute("aria-label", `${column} 字段类型`);
+    roleSelect.setAttribute("data-role-select", column);
+    FIELD_ROLE_OPTIONS.forEach((role) => {
+        const option = createOption(role, ROLE_LABELS[role], role === config.role);
+        if (role === "metric" && !isNumericColumn(rows, column)) option.disabled = true;
+        roleSelect.append(option);
+    });
+
+    aggregateSelect.className = "field-role-select";
+    aggregateSelect.setAttribute("aria-label", `${column} 聚合方式`);
+    aggregateSelect.setAttribute("data-aggregate-select", column);
+    AGGREGATION_OPTIONS.forEach((aggregation) => {
+        aggregateSelect.append(createOption(aggregation, AGGREGATION_LABELS[aggregation], aggregation === config.aggregation));
+    });
+    aggregateSelect.disabled = config.role !== "metric";
+
+    row.append(fieldName, roleSelect, aggregateSelect);
+    return row;
+}
+
+function renderFieldRoleGroup(group, insights, rows) {
+    const groupNode = document.createElement("section");
+    const header = document.createElement("div");
+    const title = document.createElement("strong");
+    const count = document.createElement("span");
+    const list = document.createElement("div");
+
+    groupNode.className = `field-governance-group group-${group.tone}`;
+    groupNode.setAttribute("data-governance-group", group.id);
+    header.className = "field-governance-group-header";
+    list.className = "field-governance-group-list";
+
+    title.textContent = group.label;
+    count.textContent = `${insights.length} 个字段`;
+    header.append(title, count);
+    list.replaceChildren(...insights.map((insight) => renderFieldRoleRow(rows, insight)));
+    groupNode.append(header, list);
+    return groupNode;
+}
+
 function renderFieldRoles(rows) {
     const fieldRoles = byId("perspective-field-roles");
     if (!fieldRoles) return;
 
-    const columns = getColumns(rows);
-    const items = columns.map((column) => {
-        const config = state.fieldRoles[column] ?? inferFieldRole(rows, column);
-        const row = document.createElement("div");
-        const fieldName = document.createElement("div");
-        const roleSelect = document.createElement("select");
-        const aggregateSelect = document.createElement("select");
-
-        row.className = `field-role-row role-${config.role}`;
-        fieldName.className = "field-role-name";
-        fieldName.textContent = column;
-
-        roleSelect.className = "field-role-select";
-        roleSelect.setAttribute("aria-label", `${column} 字段类型`);
-        roleSelect.setAttribute("data-role-select", column);
-        FIELD_ROLE_OPTIONS.forEach((role) => {
-            const option = createOption(role, ROLE_LABELS[role], role === config.role);
-            if (role === "metric" && !isNumericColumn(rows, column)) option.disabled = true;
-            roleSelect.append(option);
-        });
-
-        aggregateSelect.className = "field-role-select";
-        aggregateSelect.setAttribute("aria-label", `${column} 聚合方式`);
-        aggregateSelect.setAttribute("data-aggregate-select", column);
-        AGGREGATION_OPTIONS.forEach((aggregation) => {
-            aggregateSelect.append(createOption(aggregation, AGGREGATION_LABELS[aggregation], aggregation === config.aggregation));
-        });
-        aggregateSelect.disabled = config.role !== "metric";
-
-        row.append(fieldName, roleSelect, aggregateSelect);
-        return row;
-    });
+    const insights = buildFieldRoleInsights(rows);
+    const items = FIELD_GOVERNANCE_GROUPS
+        .map((group) => {
+            const groupInsights = insights.filter((insight) => insight.group.id === group.id);
+            if (!groupInsights.length) return null;
+            return renderFieldRoleGroup(group, groupInsights, rows);
+        })
+        .filter(Boolean);
 
     fieldRoles.replaceChildren(...items);
     renderFieldRoleSummary(rows);
@@ -1516,6 +1760,50 @@ function handleAggregationChange(event) {
     void reloadViewer("聚合方式");
 }
 
+async function applyFieldGovernanceAction(action) {
+    const insights = buildFieldRoleInsights(state.rows);
+    let changedCount = 0;
+
+    insights.forEach((insight) => {
+        const current = state.fieldRoles[insight.column] ?? {
+            role: insight.suggestedRole,
+            aggregation: insight.suggestedAggregation,
+        };
+        let next = current;
+
+        if (action === "use-suggestion") {
+            next = {
+                ...current,
+                role: insight.suggestedRole,
+                aggregation: insight.suggestedRole === "metric" ? insight.suggestedAggregation : "sum",
+            };
+        }
+
+        if (action === "unit-average" && insight.group.id === "unit") {
+            next = { ...current, role: "metric", aggregation: "avg" };
+        }
+
+        if (action === "amount-sum" && insight.group.id === "amount") {
+            next = { ...current, role: "metric", aggregation: "sum" };
+        }
+
+        if (next.role !== current.role || next.aggregation !== current.aggregation) {
+            changedCount += 1;
+            state.fieldRoles[insight.column] = next;
+        }
+    });
+
+    renderFieldRoles(state.rows);
+
+    if (!changedCount) {
+        showMessage("字段治理当前已经符合这条规则。");
+        return;
+    }
+
+    await reloadViewer("字段治理");
+    showMessage(`字段治理已更新 ${changedCount} 个字段，并同步到下方 BI 工作台。`);
+}
+
 function toggleCalculatedMetricPanel() {
     state.calculatedMetricDraft.panelOpen = !state.calculatedMetricDraft.panelOpen;
     renderCalculatedMetricControls(state.rows);
@@ -1624,6 +1912,14 @@ function bindFieldRoleControls() {
         if (target?.matches?.("[data-aggregate-select]")) {
             handleAggregationChange(event);
         }
+    });
+
+    byId("perspective-field-governance-toolbar")?.addEventListener("click", (event) => {
+        const button = event.target?.closest?.("[data-field-governance-action]");
+        const action = button?.getAttribute?.("data-field-governance-action");
+        if (!action) return;
+        event.preventDefault();
+        void applyFieldGovernanceAction(action);
     });
 }
 

@@ -478,6 +478,7 @@
 }
 
 .perspective-bi-tool .field-role-panel.collapsed .field-role-list,
+.perspective-bi-tool .field-role-panel.collapsed .field-governance-toolbar,
 .perspective-bi-tool .field-role-panel.collapsed .field-role-help {
     display: none;
 }
@@ -521,10 +522,77 @@
     white-space: nowrap;
 }
 
+.perspective-bi-tool .field-governance-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.42rem;
+    margin-bottom: 0.55rem;
+    align-items: center;
+}
+
+.perspective-bi-tool .governance-action-btn {
+    border-color: rgba(92, 143, 186, 0.22);
+    background: rgba(92, 143, 186, 0.07);
+    color: #426f96;
+    font-size: 0.72rem;
+}
+
+.perspective-bi-tool .governance-action-btn:first-child {
+    border-color: rgba(217, 119, 87, 0.28);
+    background: rgba(217, 119, 87, 0.09);
+    color: #a95438;
+}
+
 .perspective-bi-tool .field-role-list {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
     gap: 0.38rem;
+}
+
+.perspective-bi-tool .field-governance-group {
+    display: grid;
+    gap: 0.34rem;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-soft);
+    padding: 0.42rem;
+}
+
+.perspective-bi-tool .field-governance-group.group-metric {
+    border-color: rgba(92, 143, 186, 0.2);
+    background: rgba(92, 143, 186, 0.045);
+}
+
+.perspective-bi-tool .field-governance-group.group-dimension {
+    border-color: rgba(120, 140, 93, 0.2);
+    background: rgba(120, 140, 93, 0.045);
+}
+
+.perspective-bi-tool .field-governance-group-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.45rem;
+    padding: 0.02rem 0.08rem;
+    font-family: var(--font-sans);
+}
+
+.perspective-bi-tool .field-governance-group-header strong {
+    color: var(--text-primary);
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.perspective-bi-tool .field-governance-group-header span {
+    color: var(--text-muted);
+    font-size: 0.66rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.perspective-bi-tool .field-governance-group-list {
+    display: grid;
+    gap: 0.3rem;
 }
 
 .perspective-bi-tool .field-role-row {
@@ -550,6 +618,8 @@
 }
 
 .perspective-bi-tool .field-role-name {
+    display: grid;
+    gap: 0.1rem;
     min-width: 0;
     color: var(--text-primary);
     font-family: var(--font-sans);
@@ -558,6 +628,22 @@
     line-height: 1.35;
     overflow-wrap: anywhere;
     word-break: break-word;
+}
+
+.perspective-bi-tool .field-role-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.perspective-bi-tool .field-role-reason {
+    color: var(--text-secondary);
+    font-size: 0.62rem;
+    font-weight: 700;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .perspective-bi-tool .calculated-metric-panel {
@@ -954,6 +1040,7 @@
 .perspective-bi-tool .viewer-frame {
     height: calc(100vh - 26rem);
     min-height: 560px;
+    background: linear-gradient(180deg, #fff, #fbfaf7);
     padding: 0.85rem;
 }
 
@@ -1004,6 +1091,15 @@ body.perspective-bi-workspace-focus #perspective-tool-back-button {
     background: #fff;
     color: #1f2933;
     font-family: var(--font-sans);
+    --psp--background-color: #fff;
+    --psp-main-column--background: #fff;
+    --psp-sidebar--background: #fbfaf7;
+    --psp-placeholder--background: rgba(250, 249, 245, 0.92);
+    --psp--color: #426f96;
+    --psp-active--color: #426f96;
+    --psp-inactive--color: #d9d6cb;
+    --psp-inactive--border-color: #e8e6dc;
+    --psp-active--background: rgba(92, 143, 186, 0.12);
     --plugin--background: #ffffff;
     --rt-pos-cell--color: #5f7544;
     --rt-neg-cell--color: #b65f55;
@@ -1163,6 +1259,14 @@ body.perspective-bi-workspace-focus #perspective-tool-back-button {
         flex-direction: column;
     }
 
+    .perspective-bi-tool .field-governance-toolbar {
+        align-items: stretch;
+    }
+
+    .perspective-bi-tool .governance-action-btn {
+        flex: 1 1 160px;
+    }
+
     .perspective-bi-tool .workbench-controls {
         justify-content: stretch;
     }
@@ -1190,6 +1294,10 @@ body.perspective-bi-workspace-focus #perspective-tool-back-button {
 
     .perspective-bi-tool .field-role-row {
         grid-template-columns: minmax(90px, 1fr) 86px 86px;
+    }
+
+    .perspective-bi-tool .field-role-reason {
+        white-space: normal;
     }
 
     .perspective-bi-tool .viewer-frame {

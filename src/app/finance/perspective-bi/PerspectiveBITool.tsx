@@ -169,8 +169,8 @@ export default function PerspectiveBITool() {
                 <section className="panel field-role-panel" id="perspective-field-role-panel" aria-label="字段口径确认">
                     <div className="field-role-header">
                         <div>
-                            <h2>字段口径确认</h2>
-                            <p className="field-role-help">系统会先判断维度和指标，你也可以手动调整后再继续拖拽分析。</p>
+                            <h2>字段治理</h2>
+                            <p className="field-role-help">系统会先按字段含义、数据类型和财务口径分组，用户可以一键采用建议，也可以逐项修正。</p>
                         </div>
                         <div className="field-role-actions">
                             <div className="field-role-summary" id="perspective-field-role-summary">字段待确认</div>
@@ -183,6 +183,17 @@ export default function PerspectiveBITool() {
                                 完成字段确认
                             </button>
                         </div>
+                    </div>
+                    <div className="field-governance-toolbar" id="perspective-field-governance-toolbar" aria-label="字段治理批量动作">
+                        <button type="button" className="btn btn-secondary compact-btn governance-action-btn" data-field-governance-action="use-suggestion">
+                            采用系统建议
+                        </button>
+                        <button type="button" className="btn btn-secondary compact-btn governance-action-btn" data-field-governance-action="unit-average">
+                            单位/比率用平均
+                        </button>
+                        <button type="button" className="btn btn-secondary compact-btn governance-action-btn" data-field-governance-action="amount-sum">
+                            金额/规模用求和
+                        </button>
                     </div>
                     <div id="perspective-field-roles" className="field-role-list" />
                 </section>

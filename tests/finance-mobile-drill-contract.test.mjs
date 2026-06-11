@@ -127,6 +127,7 @@ test("Perspective BI default demo data is rich enough to exercise chart explorat
   assert.match(perspectiveEngine, /market\.countries\.forEach/);
   assert.match(perspectiveEngine, /SAMPLE_MODELS\.forEach/);
   assert.match(perspectiveEngine, /SAMPLE_CHANNELS\.forEach/);
+  assert.match(perspectiveEngine, /月份:\s*`\$\{month\}月`/);
   assert.match(perspectiveEngine, /品牌市场/);
   assert.match(perspectiveEngine, /动力类型/);
   assert.match(perspectiveEngine, /价格带/);
@@ -261,6 +262,27 @@ test("Perspective BI lets users confirm field roles and aggregations before anal
   assert.match(perspectiveEngine, /data-aggregate-select/);
 });
 
+test("Perspective BI turns automatic field management into grouped field governance", () => {
+  assert.match(perspectiveTool, /字段治理/);
+  assert.match(perspectiveTool, /id="perspective-field-governance-toolbar"/);
+  assert.match(perspectiveTool, /data-field-governance-action="use-suggestion"/);
+  assert.match(perspectiveTool, /data-field-governance-action="unit-average"/);
+  assert.match(perspectiveTool, /data-field-governance-action="amount-sum"/);
+  assert.match(perspectiveEngine, /const FIELD_GOVERNANCE_GROUPS = \[/);
+  assert.match(perspectiveEngine, /function getFieldGovernanceProfile\(rows,\s*column\)/);
+  assert.match(perspectiveEngine, /function buildFieldRoleInsights\(rows\)/);
+  assert.match(perspectiveEngine, /function applyFieldGovernanceAction\(action\)/);
+  assert.match(perspectiveEngine, /function renderFieldRoleGroup/);
+  assert.match(perspectiveEngine, /data-governance-group/);
+  assert.match(perspectiveEngine, /data-field-reason/);
+  assert.match(perspectiveEngine, /识别依据/);
+  assert.match(perspectiveEngine, /时间维度|业务维度|金额指标|单位\/比率|库存区间|其他字段/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.field-governance-toolbar\s*\{/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.field-governance-group\s*\{/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.field-role-reason\s*\{/);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.governance-action-btn\s*\{/);
+});
+
 test("Perspective BI lets users collapse field confirmation after roles are set", () => {
   assert.match(perspectiveTool, /id="perspective-field-roles-toggle"/);
   assert.match(perspectiveTool, /id="perspective-field-role-summary"/);
@@ -348,6 +370,18 @@ test("Perspective BI localizes the native workbench UI labels to Chinese", () =>
   assert.match(perspectiveEngine, /localizePerspectiveWorkbench\(viewer\)/);
   assert.doesNotMatch(perspectiveCss, /--psp-plugin-name--x-y-line--content:\s*"[^"]*[XY][^"]*"/);
   assert.doesNotMatch(perspectiveCss, /--psp-plugin-name--y-scatter--content:\s*"[^"]*Y[^"]*"/);
+});
+
+test("Perspective BI skins the native Perspective operation panel to match finance tools", () => {
+  assert.match(perspectiveEngine, /PERSPECTIVE_SHADOW_LOCALIZATION_CSS[\s\S]*--lucas-psp-panel-bg:\s*#fff/s);
+  assert.match(perspectiveEngine, /PERSPECTIVE_SHADOW_LOCALIZATION_CSS[\s\S]*#settings_panel[\s\S]*var\(--lucas-psp-panel-bg\)/s);
+  assert.match(perspectiveEngine, /PERSPECTIVE_SHADOW_LOCALIZATION_CSS[\s\S]*#plugin_selector_container[\s\S]*border-radius:\s*8px/s);
+  assert.match(perspectiveEngine, /PERSPECTIVE_SHADOW_LOCALIZATION_CSS[\s\S]*\.plugin-select-item[\s\S]*rgba\(92,\s*143,\s*186,\s*0\.1\)/s);
+  assert.match(perspectiveEngine, /PERSPECTIVE_SHADOW_LOCALIZATION_CSS[\s\S]*\.column-selector-column[\s\S]*border:\s*1px solid rgba\(232,\s*230,\s*220,\s*0\.95\)/s);
+  assert.match(perspectiveEngine, /PERSPECTIVE_SHADOW_LOCALIZATION_CSS[\s\S]*regular-table[\s\S]*--rt-hover--background-color:\s*rgba\(92,\s*143,\s*186,\s*0\.08\)/s);
+  assert.match(perspectiveCss, /\.perspective-bi-tool perspective-viewer\s*\{[^}]*--psp-sidebar--background:\s*#fbfaf7/s);
+  assert.match(perspectiveCss, /\.perspective-bi-tool perspective-viewer\s*\{[^}]*--psp-active--background:\s*rgba\(92,\s*143,\s*186,\s*0\.12\)/s);
+  assert.match(perspectiveCss, /\.perspective-bi-tool \.viewer-frame\s*\{[^}]*background:\s*linear-gradient\(180deg,\s*#fff,\s*#fbfaf7\)/s);
 });
 
 test("Perspective BI workbench supports a page-level focus mode", () => {
