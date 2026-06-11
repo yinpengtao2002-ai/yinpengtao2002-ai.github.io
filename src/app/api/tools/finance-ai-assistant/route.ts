@@ -4,8 +4,6 @@ import type { FinanceAIChatState } from "../../../../lib/finance-ai/context.ts";
 // @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
 import { normalizeFinanceActionPlanForQuestion, validateFinanceActionPlan } from "../../../../lib/finance-ai/actions.ts";
 // @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
-import { FINANCE_AI_ACCESS_HEADER, isFinanceAIAccessConfigured, verifyFinanceAIAccessToken } from "../../../../lib/finance-ai/access.ts";
-// @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
 import { getChatProviders, type ChatProvider } from "../../../../lib/ai/providers.ts";
 import type {
   FinanceAIDirectAnalysis,
@@ -856,14 +854,6 @@ function errorResponse(
 }
 
 export async function POST(req: Request) {
-  if (!isFinanceAIAccessConfigured()) {
-    return errorResponse(503, "access_not_configured", "财务分析 AI 助手尚未配置内测密钥。");
-  }
-
-  if (!verifyFinanceAIAccessToken(req.headers.get(FINANCE_AI_ACCESS_HEADER))) {
-    return errorResponse(401, "access_denied", "请先输入内测密钥。");
-  }
-
   let body: Record<string, unknown>;
 
   try {

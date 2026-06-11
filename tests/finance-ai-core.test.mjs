@@ -696,6 +696,37 @@ test("action validator accepts recognized modules and enforces module limit", ()
   assert.match(invalid.errors.join("\n"), /指标不存在：不存在指标/);
 });
 
+test("action plan normalization defaults point queries without explicit period to latest period", () => {
+  const rows = [
+    { "月份": "4月", "国家": "泰国", "车型": "S56EV", "销量": 0, "边际": 0 },
+    { "月份": "5月", "国家": "泰国", "车型": "S56EV", "销量": 12, "边际": 360 },
+    { "月份": "5月", "国家": "越南", "车型": "S56EV", "销量": 8, "边际": 160 },
+  ];
+  const schema = inferFinanceSchema(rows);
+  const normalized = normalizeFinanceActionPlanForQuestion(schema, {
+    modules: [
+      {
+        type: "metric_snapshot",
+        metric: "单车边际",
+        filters: { "国家": ["泰国"], "车型": ["S56EV"] },
+        comparisons: ["mom"],
+      },
+      {
+        type: "detail_table",
+        metrics: ["销量", "单车边际"],
+        dimension: "车型",
+        filters: { "国家": ["泰国"], "车型": ["S56EV"] },
+        limit: 20,
+      },
+    ],
+  }, "泰国有没有卖 S56EV，单车是多少");
+  const validated = validateFinanceActionPlan(schema, normalized);
+
+  assert.equal(normalized.modules[0].period, "M05");
+  assert.equal(normalized.modules[1].period, "M05");
+  assert.equal(validated.ok, true);
+});
+
 test("action validator rejects unsupported actions and invalid dimensions filters and periods", () => {
   const schema = inferFinanceSchema(metricRows);
   const invalid = validateFinanceActionPlan(schema, {

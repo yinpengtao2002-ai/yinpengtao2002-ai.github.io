@@ -49,6 +49,16 @@ const PRIMARY_DIMENSION_MODULE_TYPES = new Set<ActionType>([
   "scatter_bubble",
   "detail_table",
 ]);
+const PERIOD_DEFAULTABLE_MODULE_TYPES = new Set<ActionType>([
+  "metric_snapshot",
+  "bar_rank",
+  "grouped_bar",
+  "stacked_bar",
+  "percent_stacked_bar",
+  "heatmap",
+  "scatter_bubble",
+  "detail_table",
+]);
 
 type ActionType = FinanceActionModule["type"];
 type MutableModule = Record<string, unknown> & { type: ActionType; metric?: string };
@@ -283,6 +293,7 @@ export function alignFinanceActionPlanWithQuestion(
     module = alignPrimaryDimensionWithQuestion(schema, module, userQuestion);
     module = alignExplicitDimensionMemberWithQuestion(schema, module, userQuestion, context);
     module = alignScenarioComparisonChartWithQuestion(schema, module, userQuestion);
+    module = alignDefaultPeriodWithQuestion(schema, module, userQuestion, context);
 
     if (module.type === "grouped_bar") {
       const changeRankSort = getChangeRankSortIntent(userQuestion);
@@ -712,6 +723,36 @@ function alignReasonFollowupWithContext(
     : module;
 }
 
+function alignDefaultPeriodWithQuestion(
+  schema: FinanceSchema,
+  module: FinanceActionModule,
+  userQuestion: string,
+  context: FinanceActionQuestionContext,
+): FinanceActionModule {
+  if (!PERIOD_DEFAULTABLE_MODULE_TYPES.has(module.type)) {
+    return module;
+  }
+
+  const record = module as Record<string, unknown>;
+  if (hasStringValue(record.period)) {
+    return module;
+  }
+
+  const defaultPeriod = getQuestionPeriod(schema, userQuestion) ||
+    getLatestContextPeriod(schema, context) ||
+    schema.profile.periods.at(-1)?.key ||
+    "";
+
+  if (!defaultPeriod) {
+    return module;
+  }
+
+  return {
+    ...module,
+    period: defaultPeriod,
+  } as FinanceActionModule;
+}
+
 function alignPrimaryDimensionWithQuestion(
   schema: FinanceSchema,
   module: FinanceActionModule,
@@ -870,6 +911,24 @@ function getContextMetric(schema: FinanceSchema, context: FinanceActionQuestionC
   ];
 
   return candidates.find((metric): metric is string => Boolean(metric && findMetric(schema, metric)));
+}
+
+function getLatestContextPeriod(schema: FinanceSchema, context: FinanceActionQuestionContext) {
+  const validPeriods = new Set(schema.profile.periods.map((period) => period.key));
+  const candidates = (context.analysisContext ?? [])
+    .slice()
+    .reverse()
+    .flatMap((item) => [item.period, item.toPeriod, item.fromPeriod])
+    .flatMap((period) => {
+      if (!period) {
+        return [];
+      }
+
+      const normalized = normalizePeriodValue(period)?.key ?? period;
+      return validPeriods.has(normalized) ? [normalized] : [];
+    });
+
+  return candidates[0] ?? "";
 }
 
 function getPreviousPeriodKey(schema: FinanceSchema, periodKey: string) {

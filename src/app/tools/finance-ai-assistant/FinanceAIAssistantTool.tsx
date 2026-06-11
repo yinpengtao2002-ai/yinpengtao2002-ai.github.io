@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUp, Download, FileSpreadsheet, KeyRound, Loader2, RotateCcw, Trash2, UploadCloud } from "lucide-react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { ArrowUp, Download, FileSpreadsheet, Loader2, RotateCcw, Trash2, UploadCloud } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -95,8 +95,29 @@ type PlotlyModule = {
   };
 };
 
-const FINANCE_AI_ACCESS_HEADER = "X-Finance-AI-Access";
 const ASSISTANT_AVATAR_IMAGE = "/images/product-stage/finance-ai-assistant-avatar.webp";
+const EXAMPLE_CONVERSATION = [
+  {
+    question: "泰国有没有卖 S56EV，单车边际是多少？",
+    answer: "会默认按最新期间看，筛选泰国和 S56EV，先判断销量是否大于 0，再给出单车边际。",
+  },
+  {
+    question: "5月巴西单车边际是多少？环比和同比如何？",
+    answer: "会返回巴西当期单车边际、环比和同比，并配合趋势图核对变化方向。",
+  },
+  {
+    question: "哪些国家销量和单车边际都增长？",
+    answer: "会按国家列出销量和单车边际的上期、本期、变化值、变化率，方便筛出双增长市场。",
+  },
+  {
+    question: "5月实际和预算比，销量差异主要来自哪里？",
+    answer: "会使用同期间预算到实际的差异桥，并用分组柱展示各国家的预算和实际销量。",
+  },
+  {
+    question: "西班牙单车边际为什么下降？顺便看销量和收入。",
+    answer: "会组合单车边际瀑布桥、销量对比和收入对比，避免只看单一图表得出片面结论。",
+  },
+];
 const SAMPLE_TEMPLATE_HEADERS = ["Month", "Dim_A", "Dim_B", "Dim_C", "Dim_D", "Dim_E", "Sales Volume", "Total Margin"];
 const ACTUAL_SAMPLE_TEMPLATE_ROWS = [
   { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 100, "Total Margin": 3000 },
@@ -1036,14 +1057,6 @@ function buildAnalysisContext(computedModules: ComputedModule[]): NonNullable<Fi
 }
 
 function getAPIErrorMessage(payload: APIResponse, fallback: string) {
-  if (payload.errorCode === "access_not_configured") {
-    return "内测密钥还没有在部署环境配置，请先配置 FINANCE_AI_ACCESS_KEY。";
-  }
-
-  if (payload.errorCode === "access_denied") {
-    return "请先输入正确的内测密钥。";
-  }
-
   if (payload.errorCode === "provider_not_configured") {
     return "当前环境还没有配置 AI Key，无法分析底稿。";
   }
@@ -1205,10 +1218,6 @@ function PlotlyChart({ spec, className = "finance-ai-chart-host" }: { spec: Fina
 }
 
 export default function FinanceAIAssistantTool() {
-  const [accessToken, setAccessToken] = useState("");
-  const [accessKey, setAccessKey] = useState("");
-  const [accessBusy, setAccessBusy] = useState(false);
-  const [accessError, setAccessError] = useState("");
   const [workbook, setWorkbook] = useState<FinanceRawWorkbook | null>(null);
   const [schema, setSchema] = useState<FinanceSchema | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -1228,45 +1237,37 @@ export default function FinanceAIAssistantTool() {
   const dataSummary = useMemo(() => summarizeSchema(schema), [schema]);
   const canAsk = Boolean(workbook) && !busy;
 
+  useLayoutEffect(() => {
+    if (!workbook) {
+      const previousScrollRestoration = window.history.scrollRestoration;
+      window.history.scrollRestoration = "manual";
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      const frame = window.requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      });
+      const timeout = window.setTimeout(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      }, 80);
+
+      return () => {
+        window.cancelAnimationFrame(frame);
+        window.clearTimeout(timeout);
+        window.history.scrollRestoration = previousScrollRestoration;
+      };
+    }
+  }, [workbook]);
+
   useEffect(() => {
+    if (!workbook) {
+      return;
+    }
+
     const frame = window.requestAnimationFrame(() => {
       chatEndRef.current?.scrollIntoView({ block: "end" });
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [messages, busy]);
-
-  async function handleAccessSubmit() {
-    const key = accessKey.trim();
-
-    if (!key) {
-      setAccessError("请输入内测密钥。");
-      return;
-    }
-
-    setAccessBusy(true);
-    setAccessError("");
-
-    try {
-      const response = await fetch("/api/tools/finance-ai-assistant/access", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key }),
-      });
-      const payload = await response.json().catch(() => ({})) as APIResponse & { token?: string };
-
-      if (!response.ok || !payload.token) {
-        throw new Error(getAPIErrorMessage(payload, "内测密钥校验失败。"));
-      }
-
-      setAccessToken(payload.token);
-      setAccessKey("");
-    } catch (accessSubmitError) {
-      setAccessError(accessSubmitError instanceof Error ? accessSubmitError.message : "内测密钥校验失败。");
-    } finally {
-      setAccessBusy(false);
-    }
-  }
+  }, [messages, busy, workbook]);
 
   async function handleFile(file: File) {
     setBusy(true);
@@ -1286,15 +1287,10 @@ export default function FinanceAIAssistantTool() {
   }
 
   async function callAI(mode: "plan" | "explain", body: Record<string, unknown>): Promise<APIResponse> {
-    if (!accessToken) {
-      throw new Error("请先输入正确的内测密钥。");
-    }
-
     const response = await fetch("/api/tools/finance-ai-assistant", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        [FINANCE_AI_ACCESS_HEADER]: accessToken,
       },
       body: JSON.stringify({ mode, ...body }),
     });
@@ -1461,41 +1457,6 @@ export default function FinanceAIAssistantTool() {
           ) : null}
         </header>
 
-        {!accessToken ? (
-          <section className="finance-ai-access-gate" aria-label="财务分析 AI 助手内测访问">
-            <div className="finance-ai-access-card">
-              <span className="finance-ai-access-icon" aria-hidden="true">
-                <KeyRound />
-              </span>
-              <div>
-                <p className="finance-ai-kicker">Private Beta</p>
-                <h2>输入内测密钥</h2>
-                <p>这个模型还在内测中。通过后再上传底表，数据仍只保留在当前页面会话里。</p>
-              </div>
-              <form
-                className="finance-ai-access-form"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void handleAccessSubmit();
-                }}
-              >
-                <input
-                  value={accessKey}
-                  onChange={(event) => setAccessKey(event.target.value)}
-                  placeholder="输入内测密钥"
-                  type="password"
-                  autoComplete="off"
-                  disabled={accessBusy}
-                />
-                <button type="submit" disabled={accessBusy || !accessKey.trim()}>
-                  {accessBusy ? <Loader2 className="finance-ai-spin" aria-hidden="true" /> : "进入"}
-                </button>
-              </form>
-              {accessError ? <p className="finance-ai-error">{accessError}</p> : null}
-            </div>
-          </section>
-        ) : (
-          <>
         {!workbook ? (
         <section className="finance-ai-empty-state" aria-label="数据上传和识别状态">
           <div className="finance-ai-empty-card">
@@ -1528,6 +1489,17 @@ export default function FinanceAIAssistantTool() {
             <div className="finance-ai-data-status">
               <FileSpreadsheet aria-hidden="true" />
               <span>{fileName ? `${fileName} · ${dataSummary}` : dataSummary}</span>
+            </div>
+            <div className="finance-ai-example-dialogue" aria-label="示例对话">
+              <h3>示例对话</h3>
+              <div className="finance-ai-example-list">
+                {EXAMPLE_CONVERSATION.map((item) => (
+                  <div className="finance-ai-example-item" key={item.question}>
+                    <p><span>问</span>{item.question}</p>
+                    <p><span>答</span>{item.answer}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -1597,8 +1569,6 @@ export default function FinanceAIAssistantTool() {
             <p className="finance-ai-session-note">数据仅保留在当前页面会话中，刷新后清空。</p>
           )}
         </div>
-          </>
-        )}
       </section>
     </main>
   );

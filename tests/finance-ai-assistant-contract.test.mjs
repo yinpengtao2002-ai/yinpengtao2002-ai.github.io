@@ -12,7 +12,6 @@ import { applyFinanceAIDataRequest } from "../src/lib/finance-ai/data-selection.
 import { buildDirectChartSpec } from "../src/lib/finance-ai/charts.ts";
 import { POST } from "../src/app/api/tools/finance-ai-assistant/route.ts";
 import { POST as POSTAccess } from "../src/app/api/tools/finance-ai-assistant/access/route.ts";
-import { createFinanceAIAccessToken } from "../src/lib/finance-ai/access.ts";
 
 process.env.FINANCE_AI_ACCESS_KEY = "test-finance-ai-access-key";
 
@@ -50,12 +49,11 @@ function makeSchema(overrides = {}) {
   };
 }
 
-function makeRequest(body, token = createFinanceAIAccessToken()) {
+function makeRequest(body) {
   return new Request("https://yinpengtao.cn/api/tools/finance-ai-assistant", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { "X-Finance-AI-Access": token } : {}),
     },
     body: JSON.stringify(body),
   });
@@ -141,6 +139,7 @@ test("finance AI assistant API exposes planning and explanation responsibilities
   assert.match(context, /AI 不负责计算数字/);
   assert.match(context, /图表模块会渲染在聊天消息内部/);
   assert.match(context, /最多生成 3 个模块/);
+  assert.match(context, /默认使用可用期间里的最新 key/);
   assert.match(context, /月份列/);
   assert.match(context, /销量列/);
   assert.match(context, /维度字段/);
@@ -1042,16 +1041,16 @@ test("finance AI assistant reports empty provider content as a distinct diagnosi
   }, "");
 });
 
-test("finance AI assistant requires an internal access token", async () => {
-  const lockedResponse = await POST(makeRequest({
+test("finance AI assistant is public while the shared access endpoint remains for private finance tools", async () => {
+  const publicResponse = await POST(makeRequest({
     mode: "plan",
     question: "巴西 3 月边际怎么看？",
-    schema: makeSchema(),
-  }, ""));
-  const lockedPayload = await lockedResponse.json();
+    schema: {},
+  }));
+  const publicPayload = await publicResponse.json();
 
-  assert.equal(lockedResponse.status, 401);
-  assert.equal(lockedPayload.errorCode, "access_denied");
+  assert.equal(publicResponse.status, 400);
+  assert.equal(publicPayload.errorCode, "invalid_schema");
 
   const accessResponse = await POSTAccess(makeRequest({
     key: "test-finance-ai-access-key",
@@ -1490,15 +1489,19 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   const financeAIComposerDockBlock = styles.match(/(?:^|\n)\.finance-ai-composer-dock\s*\{(?<block>[^}]*)\}/)?.groups?.block ?? "";
 
   assert.match(client, /finance-ai-avatar/);
-  assert.match(client, /finance-ai-access-gate/);
+  assert.doesNotMatch(client, /finance-ai-access-gate/);
   assert.match(client, /finance-ai-upload-chip/);
   assert.match(client, /finance-ai-empty-card/);
+  assert.match(client, /EXAMPLE_CONVERSATION/);
+  assert.match(client, /finance-ai-example-dialogue/);
+  assert.match(client, /泰国有没有卖 S56EV/);
+  assert.match(client, /if \(!workbook\) \{[\s\S]*window\.scrollTo\(\{ top: 0, left: 0, behavior: "auto" \}\)/);
   assert.match(client, /downloadSampleTemplate/);
   assert.match(client, /book_append_sheet\(workbook,\s*actualWorksheet,\s*"实际"\)/);
   assert.match(client, /book_append_sheet\(workbook,\s*budgetWorksheet,\s*"预算"\)/);
   assert.match(client, /book_append_sheet\(workbook,\s*readmeWorksheet,\s*"填表说明"\)/);
   assert.match(client, /finance-ai-empty-state/);
-  assert.match(client, /X-Finance-AI-Access/);
+  assert.doesNotMatch(client, /X-Finance-AI-Access/);
   assert.doesNotMatch(client, /next\/image/);
   assert.match(client, /finance-ai-assistant-avatar\.webp/);
   assert.doesNotMatch(
@@ -1513,7 +1516,10 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(client, /filterResolution\.ok/);
   assert.doesNotMatch(client, /<p>\{message\.text\}<\/p>/);
   assert.match(styles, /\.finance-ai-page\s*\{[\s\S]*background:\s*var\(--finance-ai-page-surface\)/s);
-  assert.match(styles, /\.finance-ai-access-gate/);
+  assert.doesNotMatch(styles, /\.finance-ai-access-gate/);
+  assert.match(styles, /\.finance-ai-example-dialogue/);
+  assert.match(styles, /\.finance-ai-example-list\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
+  assert.match(styles, /@media \(max-width:\s*760px\)\s*\{[\s\S]*\.finance-ai-example-list\s*\{[\s\S]*grid-template-columns:\s*1fr/s);
   assert.match(styles, /\.finance-ai-assistant-panel/);
   assert.match(styles, /\.finance-ai-assistant-panel\s*\{[\s\S]*border:\s*0/s);
   assert.doesNotMatch(financeAIPageBlock, /(^|\n)\s*height:\s*100dvh/);
