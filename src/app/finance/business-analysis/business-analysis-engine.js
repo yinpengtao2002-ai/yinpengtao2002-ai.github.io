@@ -1601,14 +1601,6 @@
                 : "从实际净收入扣减变动成本和固定科目得到实际利润。";
         }
 
-        const sankeyTitle = byId("profit-sankey-title");
-        const sankeySubtitle = byId("profit-sankey-subtitle");
-        if (sankeyTitle) sankeyTitle.textContent = isMarginScope ? "利润结构桑基图（边际口径）" : "利润结构桑基图";
-        if (sankeySubtitle) {
-            sankeySubtitle.textContent = isMarginScope
-                ? "当前筛选为维度口径，仅展示净收入流向变动成本和边际总额。"
-                : "以实际口径展示净收入流向变动成本、边际、固定科目和利润总额。";
-        }
     }
 
     function variableDifferenceFrame(startValue, rows, labels) {
@@ -1803,81 +1795,6 @@
             bridgeTrace({ measures, labels, values, text })
         ], bridgeLayout(labels, {
             margin: { l: 58, r: 24, t: 58, b: 64 }
-        }), plotConfig());
-
-    }
-
-    function positiveSankeyValue(value) {
-        if (!Number.isFinite(value)) return 0;
-        return Math.max(0, displayAmount(value));
-    }
-
-    function renderProfitSankey(summary) {
-        const isMarginScope = hasActiveDimensionFilter();
-        const actual = summary.actual;
-        const fixedRows = isMarginScope ? [] : fixedSubjectEntries(actual);
-        const labels = [
-            "净收入",
-            "材料成本",
-            "变动制造",
-            "变动销售",
-            "边际总额",
-            ...fixedRows.map((row) => row.subject),
-            ...(isMarginScope ? [] : ["利润总额"])
-        ];
-        const nodeColors = [
-            "rgba(217, 119, 87, 0.86)",
-            "rgba(182, 95, 85, 0.72)",
-            "rgba(182, 95, 85, 0.62)",
-            "rgba(182, 95, 85, 0.52)",
-            "rgba(120, 140, 93, 0.78)",
-            ...fixedRows.map(() => "rgba(116, 113, 104, 0.56)"),
-            ...(isMarginScope ? [] : ["rgba(92, 143, 186, 0.82)"])
-        ];
-        const links = [
-            { source: 0, target: 1, value: positiveSankeyValue(actual.materialCost), label: `材料成本 ${formatAmount(actual.materialCost)}`, color: "rgba(182, 95, 85, 0.22)" },
-            { source: 0, target: 2, value: positiveSankeyValue(actual.variableManufacturingCost), label: `变动制造 ${formatAmount(actual.variableManufacturingCost)}`, color: "rgba(182, 95, 85, 0.18)" },
-            { source: 0, target: 3, value: positiveSankeyValue(actual.variableSalesCost), label: `变动销售 ${formatAmount(actual.variableSalesCost)}`, color: "rgba(182, 95, 85, 0.14)" },
-            { source: 0, target: 4, value: positiveSankeyValue(actual.contributionMargin), label: `边际总额 ${formatAmount(actual.contributionMargin)}`, color: "rgba(120, 140, 93, 0.28)" },
-            ...fixedRows.map((row, index) => ({
-                source: 4,
-                target: 5 + index,
-                value: positiveSankeyValue(row.amount),
-                label: `${row.subject} ${formatAmount(row.amount)}`,
-                color: "rgba(116, 113, 104, 0.18)"
-            })),
-            ...(isMarginScope ? [] : [{
-                source: 4,
-                target: labels.length - 1,
-                value: positiveSankeyValue(actual.profit),
-                label: `利润总额 ${formatAmount(actual.profit)}`,
-                color: "rgba(92, 143, 186, 0.3)"
-            }])
-        ].filter((link) => link.value > 1e-9);
-
-        Plotly.react("profit-sankey-chart", [{
-            type: "sankey",
-            arrangement: "snap",
-            node: {
-                label: labels,
-                color: nodeColors,
-                pad: isCompactBridgeViewport() ? 14 : 18,
-                thickness: isCompactBridgeViewport() ? 14 : 18,
-                line: { color: "rgba(255,255,255,0.92)", width: 1 }
-            },
-            link: {
-                source: links.map((link) => link.source),
-                target: links.map((link) => link.target),
-                value: links.map((link) => link.value),
-                color: links.map((link) => link.color),
-                customdata: links.map((link) => link.label),
-                hovertemplate: "%{customdata}<extra></extra>"
-            },
-            hovertemplate: "%{label}<extra></extra>"
-        }], plotLayout({
-            showlegend: false,
-            height: isCompactBridgeViewport() ? 420 : 500,
-            margin: { l: 20, r: 20, t: 30, b: 24 }
         }), plotConfig());
 
     }
@@ -2303,7 +2220,7 @@
     function renderEmptyState() {
         updateBridgeTitles(hasActiveDimensionFilter());
         renderMetrics(enrichSummary(emptyPnl(), emptyPnl()));
-        ["unit-margin-chart", "variance-chart", "profit-bridge-chart", "profit-sankey-chart"].forEach((id) => {
+        ["unit-margin-chart", "variance-chart", "profit-bridge-chart"].forEach((id) => {
             Plotly.react(id, [], plotLayout({
                 annotations: [{
                     text: "当前筛选无数据",
@@ -2339,7 +2256,6 @@
         renderUnitMarginChart(rows);
         renderVarianceChart(summary);
         renderProfitBridge(summary);
-        renderProfitSankey(summary);
         renderRankingTable(rows);
         renderDrillPath();
     }

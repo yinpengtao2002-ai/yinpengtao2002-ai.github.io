@@ -1339,17 +1339,6 @@
     min-height: 430px;
 }
 
-.business-tool .sankey-chart {
-    min-height: 500px;
-}
-
-.business-tool .sankey-chart .sankey-node,
-.business-tool .sankey-chart .sankey-link,
-.business-tool .sankey-chart .bgsankey {
-    pointer-events: none !important;
-    cursor: default !important;
-}
-
 .business-tool .table-panel {
     min-height: 500px;
 }
@@ -1865,10 +1854,6 @@
 
     .business-tool .chart {
         min-height: 340px;
-    }
-
-    .business-tool .sankey-chart {
-        min-height: 420px;
     }
 
     .business-tool .waterfall-chart {
