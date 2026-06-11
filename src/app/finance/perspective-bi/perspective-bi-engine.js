@@ -178,9 +178,6 @@ const FIELD_GOVERNANCE_GROUPS = [
     { id: "time", label: "时间维度", tone: "dimension" },
     { id: "business", label: "业务维度", tone: "dimension" },
     { id: "amount", label: "金额指标", tone: "metric" },
-    { id: "unit", label: "单位/比率", tone: "metric" },
-    { id: "inventory", label: "库存区间", tone: "metric" },
-    { id: "other", label: "其他字段", tone: "neutral" },
 ];
 const WORKBENCH_GUIDES = {
     Datagrid: {
@@ -269,7 +266,7 @@ const WORKBENCH_GUIDES = {
         tips: [
             ["分组", "拖入月份、日期或期间字段，决定每根蜡烛的横向位置。"],
             ["开盘/收盘", "分别拖入期初值和期末值，蜡烛实体会表达区间涨跌。"],
-            ["最高/最低", "拖入区间最高值和最低值，形成上下影线。"],
+            ["最高/最低", "拖入最高值和最低值，形成上下影线。"],
             ["筛选", "聚焦一个市场、车型或渠道后，蜡烛图才更容易读。"],
         ],
     },
@@ -770,7 +767,7 @@ function getFieldGovernanceProfile(rows, column) {
 
     if (/率|单车|均|占比|rate|avg|unit|per/i.test(column)) {
         return {
-            group: "unit",
+            group: "amount",
             role: "metric",
             aggregation: "avg",
             reason: "字段名像单位、比率或均值指标，默认用平均，避免被求和放大。",
@@ -779,28 +776,28 @@ function getFieldGovernanceProfile(rows, column) {
 
     if (/最高|high/i.test(column)) {
         return {
-            group: "inventory",
+            group: "amount",
             role: "metric",
             aggregation: "max",
-            reason: "字段名像区间最高值，默认取最大值。",
+            reason: "字段名像最高值，默认取最大值。",
         };
     }
 
     if (/最低|low/i.test(column)) {
         return {
-            group: "inventory",
+            group: "amount",
             role: "metric",
             aggregation: "min",
-            reason: "字段名像区间最低值，默认取最小值。",
+            reason: "字段名像最低值，默认取最小值。",
         };
     }
 
     if (/库存|期初|期末|inventory|stock|open|close/i.test(column)) {
         return {
-            group: "inventory",
+            group: "amount",
             role: "metric",
             aggregation: "avg",
-            reason: "字段名像库存或区间时点值，默认用平均，不直接累计。",
+            reason: "字段名像期初、期末或库存时点值，默认用平均，不直接累计。",
         };
     }
 
@@ -814,7 +811,7 @@ function getFieldGovernanceProfile(rows, column) {
     }
 
     return {
-        group: "other",
+        group: "amount",
         role: "metric",
         aggregation: defaultAggregationForColumn(column),
         reason: "内容为纯数字，但字段名没有明显财务口径，先作为指标保留。",
@@ -1779,11 +1776,11 @@ async function applyFieldGovernanceAction(action) {
             };
         }
 
-        if (action === "unit-average" && insight.group.id === "unit") {
+        if (action === "unit-average" && insight.suggestedRole === "metric" && insight.suggestedAggregation === "avg") {
             next = { ...current, role: "metric", aggregation: "avg" };
         }
 
-        if (action === "amount-sum" && insight.group.id === "amount") {
+        if (action === "amount-sum" && insight.suggestedRole === "metric" && insight.suggestedAggregation === "sum") {
             next = { ...current, role: "metric", aggregation: "sum" };
         }
 

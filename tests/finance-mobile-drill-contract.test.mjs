@@ -276,7 +276,12 @@ test("Perspective BI turns automatic field management into grouped field governa
   assert.match(perspectiveEngine, /data-governance-group/);
   assert.match(perspectiveEngine, /data-field-reason/);
   assert.match(perspectiveEngine, /识别依据/);
-  assert.match(perspectiveEngine, /时间维度|业务维度|金额指标|单位\/比率|库存区间|其他字段/);
+  assert.match(perspectiveEngine, /时间维度/);
+  assert.match(perspectiveEngine, /业务维度/);
+  assert.match(perspectiveEngine, /金额指标/);
+  assert.doesNotMatch(perspectiveEngine, /label:\s*"单位\/比率"/);
+  assert.doesNotMatch(perspectiveEngine, /label:\s*"库存区间"/);
+  assert.doesNotMatch(perspectiveEngine, /label:\s*"其他字段"/);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.field-governance-toolbar\s*\{/);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.field-governance-group\s*\{/);
   assert.match(perspectiveCss, /\.perspective-bi-tool \.field-role-reason\s*\{/);

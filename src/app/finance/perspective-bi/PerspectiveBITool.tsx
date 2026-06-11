@@ -170,7 +170,7 @@ export default function PerspectiveBITool() {
                     <div className="field-role-header">
                         <div>
                             <h2>字段治理</h2>
-                            <p className="field-role-help">系统会先按字段含义、数据类型和财务口径分组，用户可以一键采用建议，也可以逐项修正。</p>
+                            <p className="field-role-help">系统会先按时间维度、业务维度、金额指标三类整理字段，用户可以一键采用建议，也可以逐项修正。</p>
                         </div>
                         <div className="field-role-actions">
                             <div className="field-role-summary" id="perspective-field-role-summary">字段待确认</div>
