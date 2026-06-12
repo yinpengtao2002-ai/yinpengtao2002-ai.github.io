@@ -77,6 +77,10 @@ body {
   overflow: visible;
 }
 
+.finance-ai-conversation-demo {
+  min-height: 100dvh;
+}
+
 .finance-ai-chat-header {
   width: min(1120px, calc(100% - 44px));
   flex: 0 0 auto;
@@ -88,6 +92,27 @@ body {
   padding: 14px 0 10px;
   background: transparent;
   backdrop-filter: none;
+}
+
+.finance-ai-readonly-pill {
+  min-height: 34px;
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border));
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: color-mix(in srgb, var(--accent) 9%, var(--card));
+  color: color-mix(in srgb, var(--accent) 78%, var(--foreground));
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  font-weight: 850;
+  line-height: 1;
+  padding: 0 12px;
+}
+
+.finance-ai-readonly-pill svg {
+  width: 15px;
+  height: 15px;
 }
 
 .finance-ai-assistant-panel.is-ready .finance-ai-chat-header {
@@ -1090,6 +1115,20 @@ body {
   margin: 8px auto 0;
   text-align: center;
   font-size: 0.8rem;
+}
+
+.finance-ai-composer-dock .finance-ai-session-note a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: color-mix(in srgb, var(--accent) 82%, var(--foreground));
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.finance-ai-composer-dock .finance-ai-session-note a svg {
+  width: 13px;
+  height: 13px;
 }
 
 .finance-ai-spin {
@@ -6727,8 +6766,17 @@ h6 {
 
 .finance-model-card-link {
   display: block;
+  flex: 1 1 auto;
   height: 100%;
   text-decoration: none;
+}
+
+.finance-model-library-item {
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .finance-model-library-grid {
@@ -6799,11 +6847,40 @@ h6 {
   font-weight: 800;
 }
 
+.finance-model-card-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.finance-model-card-demo-link {
+  min-height: 34px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border));
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--card));
+  color: color-mix(in srgb, var(--accent) 78%, var(--foreground));
+  font-size: 12px;
+  font-weight: 820;
+  line-height: 1;
+  padding: 0 12px;
+  text-decoration: none;
+}
+
+.finance-model-card-demo-link:hover,
+.finance-model-card-demo-link:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 58%, var(--border));
+  background: color-mix(in srgb, var(--accent) 14%, var(--card));
+  outline: none;
+}
+
 .finance-model-library-grid.compact .finance-model-card-action {
   font-size: 12px;
 }
 
 .finance-model-card-action svg,
+.finance-model-card-demo-link svg,
 .thinking-tool-action svg,
 .thinking-article-action svg {
   width: 14px;

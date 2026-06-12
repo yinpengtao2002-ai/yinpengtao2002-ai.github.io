@@ -1462,6 +1462,36 @@ test("finance AI chart demo page renders all demo chart styles", async () => {
   assert.match(styles, /\.finance-ai-demo-grid/);
 });
 
+test("finance AI assistant public demo is a read-only simulated chat", async () => {
+  const page = await readProjectFile("src/app/finance/finance-ai-assistant/demo/page.tsx");
+  const client = await readProjectFile("src/app/finance/finance-ai-assistant/demo/FinanceAIConversationDemo.tsx");
+  const styles = await readProjectFile("src/app/globals.css");
+
+  assert.match(page, /FinanceAIConversationDemo/);
+  assert.match(page, /只读示例/);
+  assert.match(client, /"use client"/);
+  assert.match(client, /SIMULATED_MESSAGES/);
+  assert.match(client, /finance-ai-page/);
+  assert.match(client, /finance-ai-message is-user/);
+  assert.match(client, /finance-ai-message is-assistant/);
+  assert.match(client, /FinanceAIMessageContent/);
+  assert.match(client, /FinanceAIChartGrid/);
+  assert.match(client, /FinanceAIDetailTable/);
+  assert.match(client, /plotly\.js-dist-min/);
+  assert.match(client, /buildFinanceAIChartDemoSpecs/);
+  assert.match(client, /finance-ai-composer/);
+  assert.match(client, /disabled/);
+  assert.match(client, /只读示例，不能追问或编辑/);
+  assert.match(client, /进入正式助手/);
+  assert.doesNotMatch(client, /fetch\(/);
+  assert.doesNotMatch(client, /\/api\/tools\/finance-ai-assistant/);
+  assert.doesNotMatch(client, /type="file"/);
+  assert.doesNotMatch(client, /onSubmit/);
+  assert.doesNotMatch(client, /onChange/);
+  assert.match(styles, /\.finance-ai-conversation-demo/);
+  assert.match(styles, /\.finance-ai-readonly-pill/);
+});
+
 test("finance AI assistant is styled and isolated from global assistant", async () => {
   const styles = await readProjectFile("src/app/globals.css");
   const shell = await readProjectFile("src/components/ClientShell.tsx");
@@ -1477,6 +1507,7 @@ test("finance AI assistant is styled and isolated from global assistant", async 
   assert.match(shell, /\/finance\/finance-ai-assistant/);
   assert.match(shell.match(/function shouldHideAssistant[\s\S]*?\n}/)?.[0] ?? "", /finance-ai-assistant/);
   assert.match(sitemap, /\$\{BASE_URL\}\/finance\/finance-ai-assistant/);
+  assert.match(sitemap, /\$\{BASE_URL\}\/finance\/finance-ai-assistant\/demo/);
   assert.doesNotMatch(sitemap, /\$\{BASE_URL\}\/tools\/finance-ai-assistant/);
   assert.doesNotMatch(content, /finance-ai-assistant/);
 });

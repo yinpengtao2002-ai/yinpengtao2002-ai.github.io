@@ -1,6 +1,6 @@
 # 财务模型清单
 
-最后核对时间：2026-06-10
+最后核对时间：2026-06-12
 
 这份文档用于记录当前财务模型库里的模型入口、源码位置、已设计的可视化图表和交互模式。只要财务模型内容发生实质变化，都要同步更新这份文档，包括新增、删除、重命名、迁移模型，增加或移除图表，调整交互方式，调整内测门禁，调整上传模板，或修改模型库元数据。
 
@@ -20,7 +20,7 @@
 | --- | --- | --- | --- |
 | 预算实际对比模型 | `/finance/business-analysis` | `src/app/finance/business-analysis/` | 已上线 |
 | 单车指标变动归因模型 | `/finance/margin-analysis` | `src/app/finance/margin-analysis/page.tsx` + `public/tools/margin-analysis/` | 已上线 |
-| 财务分析 AI 助手 | `/finance/finance-ai-assistant` | `src/app/finance/finance-ai-assistant/page.tsx` + `src/app/tools/finance-ai-assistant/` | 测试中 |
+| 财务分析 AI 助手 | `/finance/finance-ai-assistant` | `src/app/finance/finance-ai-assistant/page.tsx` + `src/app/tools/finance-ai-assistant/` | 公测中 |
 | 分月指标趋势分析模型 | `/finance/monthly-trend` | `src/app/finance/monthly-trend/` | 已上线 |
 | 多维利润质量诊断模型 | `/finance/profit-structure` | `src/app/finance/profit-structure/` | 测试中 |
 | 利润敏感性分析 | `/finance/sensitivity-analysis` | `src/app/finance/sensitivity-analysis/` | 已上线 |
@@ -82,6 +82,7 @@
 
 - 源码：`src/app/finance/finance-ai-assistant/page.tsx`、`src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx`、`src/lib/finance-ai/*`
 - 路由：`/finance/finance-ai-assistant`
+- 只读示例：`/finance/finance-ai-assistant/demo`
 - 状态：公测中
 - 用途：上传经营明细底稿后，通过连续聊天提出财务问题，并在回复中生成图表和可核对明细。
 
@@ -99,7 +100,7 @@
 
 交互模式：
 
-- 公开访问，进入页面后可直接上传 CSV/XLS/XLSX。
+- 公开访问，进入页面后可直接上传 CSV/XLS/XLSX；模型库卡片提供只读示例入口，示例页只展示模拟对话和图表，不支持追问、编辑、上传或模型调用。
 - 上传前展示 5 组示例对话，帮助用户理解可提问方式；这不是示例数据。
 - 上传数据只保存在当前浏览器页面会话中，刷新后清空。
 - 用户在聊天输入框中直接用自然语言提问。

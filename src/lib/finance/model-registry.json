@@ -95,9 +95,9 @@
       "title": "财务分析 AI 助手",
       "summary": "上传经营明细后，用持续聊天生成趋势图、横向排名和瀑布桥分析。",
       "href": "/finance/finance-ai-assistant",
+      "demoHref": "/finance/finance-ai-assistant/demo",
       "date": "2026-06-06",
       "accent": "orange",
-      "status": "testing",
       "previewImage": "/images/product-stage/finance-ai-assistant-preview.webp",
       "previewAlt": "财务分析 AI 助手的卡通 AI 助手形象和趋势、排名、瀑布桥图表预览",
       "aiGuide": {

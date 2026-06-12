@@ -18,6 +18,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.85,
     },
+    {
+      url: `${BASE_URL}/finance/finance-ai-assistant/demo`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.72,
+    },
   ];
 
   const dynamicPages: MetadataRoute.Sitemap = [
