@@ -79,7 +79,7 @@ test("finance AI assistant is registered as a finance model with its own assista
 
   assert.ok(model, "finance-ai-assistant should be present in the finance model registry");
   assert.equal(model.href, "/finance/finance-ai-assistant");
-  assert.equal(model.demoHref, "/finance/finance-ai-assistant/demo");
+  assert.equal("demoHref" in model, false, "demo entry should live inside the finance AI assistant page, not the model library");
   assert.equal(model.title, "财务分析 AI 助手");
   assert.match(model.summary, /聊天|图表|经营明细/);
   assert.equal(model.previewImage, "/images/product-stage/finance-ai-assistant-preview.webp");
@@ -224,9 +224,9 @@ test("finance model library uses the previous preview card grid instead of the t
   assert.match(library, /finance-model-card-title/);
   assert.match(library, /finance-model-card-summary/);
   assert.match(library, /finance-model-card-action/);
-  assert.match(library, /model\.demoHref/);
-  assert.match(library, /查看示例效果/);
-  assert.match(library, /finance-model-card-demo-link/);
+  assert.doesNotMatch(library, /model\.demoHref/);
+  assert.doesNotMatch(library, /查看示例效果/);
+  assert.doesNotMatch(library, /finance-model-card-demo-link/);
   assert.doesNotMatch(library, /finance-model-directory/);
   assert.doesNotMatch(library, /finance-model-directory-head/);
   assert.doesNotMatch(library, /finance-model-row/);
@@ -236,8 +236,8 @@ test("finance model library uses the previous preview card grid instead of the t
   assert.doesNotMatch(library, /解决问题/);
   assert.match(globals, /\.finance-model-library-grid\s*\{/);
   assert.match(globals, /\.finance-model-card\s*\{/);
-  assert.match(globals, /\.finance-model-card-actions\s*\{/);
-  assert.match(globals, /\.finance-model-card-demo-link\s*\{/);
+  assert.doesNotMatch(globals, /\.finance-model-card-actions\s*\{/);
+  assert.doesNotMatch(globals, /\.finance-model-card-demo-link\s*\{/);
   assert.doesNotMatch(globals, /\.finance-model-directory\s*\{/);
   assert.doesNotMatch(globals, /\.finance-model-directory-head\s*\{/);
   assert.doesNotMatch(globals, /\.finance-model-row\s*\{/);

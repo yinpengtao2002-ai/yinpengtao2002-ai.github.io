@@ -302,6 +302,11 @@ body {
   background: rgba(255, 255, 255, 0.82);
   font: inherit;
   font-weight: 700;
+  text-decoration: none;
+}
+
+.finance-ai-demo-effect-button {
+  color: color-mix(in srgb, var(--accent) 78%, var(--foreground));
 }
 
 .finance-ai-upload-chip svg,
@@ -6771,14 +6776,6 @@ h6 {
   text-decoration: none;
 }
 
-.finance-model-library-item {
-  min-width: 0;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 .finance-model-library-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -6847,40 +6844,11 @@ h6 {
   font-weight: 800;
 }
 
-.finance-model-card-actions {
-  display: flex;
-  justify-content: flex-start;
-}
-
-.finance-model-card-demo-link {
-  min-height: 34px;
-  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border));
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: color-mix(in srgb, var(--accent) 8%, var(--card));
-  color: color-mix(in srgb, var(--accent) 78%, var(--foreground));
-  font-size: 12px;
-  font-weight: 820;
-  line-height: 1;
-  padding: 0 12px;
-  text-decoration: none;
-}
-
-.finance-model-card-demo-link:hover,
-.finance-model-card-demo-link:focus-visible {
-  border-color: color-mix(in srgb, var(--accent) 58%, var(--border));
-  background: color-mix(in srgb, var(--accent) 14%, var(--card));
-  outline: none;
-}
-
 .finance-model-library-grid.compact .finance-model-card-action {
   font-size: 12px;
 }
 
 .finance-model-card-action svg,
-.finance-model-card-demo-link svg,
 .thinking-tool-action svg,
 .thinking-article-action svg {
   width: 14px;

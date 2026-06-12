@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, Eye } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import FinanceModelPreview from "@/components/finance/FinanceModelPreview";
 import { financeModels } from "@/lib/finance/modelRegistry";
 
@@ -18,7 +18,6 @@ export default function FinanceModelLibrary({ compact = false }: { compact?: boo
         {financeModels.map((model, index) => (
           <motion.article
             key={model.slug}
-            className="finance-model-library-item"
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: index * 0.04 }}
@@ -57,14 +56,6 @@ export default function FinanceModelLibrary({ compact = false }: { compact?: boo
                 </div>
               </div>
             </Link>
-            {model.demoHref ? (
-              <div className="finance-model-card-actions">
-                <Link href={model.demoHref} className="finance-model-card-demo-link">
-                  <Eye aria-hidden="true" />
-                  查看示例效果
-                </Link>
-              </div>
-            ) : null}
           </motion.article>
         ))}
       </div>

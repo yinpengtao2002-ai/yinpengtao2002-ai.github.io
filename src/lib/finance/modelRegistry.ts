@@ -24,7 +24,6 @@ export interface FinanceModelItem {
   title: string;
   summary: string;
   href: string;
-  demoHref?: string;
   date: string;
   accent: FinanceModelAccent;
   status?: FinanceModelStatus;

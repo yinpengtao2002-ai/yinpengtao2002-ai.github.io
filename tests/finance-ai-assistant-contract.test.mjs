@@ -10,6 +10,7 @@ import {
 } from "../src/lib/finance-ai/context.ts";
 import { applyFinanceAIDataRequest } from "../src/lib/finance-ai/data-selection.ts";
 import { buildDirectChartSpec } from "../src/lib/finance-ai/charts.ts";
+import { filterTableValueBySearchText } from "../src/components/finance/financeAIDetailTableFilters.ts";
 import { POST } from "../src/app/api/tools/finance-ai-assistant/route.ts";
 import { POST as POSTAccess } from "../src/app/api/tools/finance-ai-assistant/access/route.ts";
 
@@ -1324,6 +1325,16 @@ test("finance AI assistant detail tables use Excel-style header filter menus", a
   assert.doesNotMatch(detailTable, /finance-ai-detail-table-filters/);
 });
 
+test("finance AI detail table search matches formatted numeric values without separators", () => {
+  assert.equal(filterTableValueBySearchText("123,456", "45"), true);
+  assert.equal(filterTableValueBySearchText("123,456", "3456"), true);
+  assert.equal(filterTableValueBySearchText("123,456", "123456"), true);
+  assert.equal(filterTableValueBySearchText("12,345.67万", "2345.67"), true);
+  assert.equal(filterTableValueBySearchText("106.2%", "6.2"), true);
+  assert.equal(filterTableValueBySearchText("巴西", "西"), true);
+  assert.equal(filterTableValueBySearchText("123,456", "789"), false);
+});
+
 test("finance AI detail tables carry business table variants and metadata", async () => {
   const types = await readProjectFile("src/lib/finance-ai/types.ts");
   const detailTable = await readProjectFile("src/components/finance/FinanceAIDetailTable.tsx");
@@ -1458,6 +1469,7 @@ test("finance AI chart demo page renders all demo chart styles", async () => {
   assert.match(demoSpecs, /percent_stacked_bar/);
   assert.match(demoSpecs, /scatter_bubble/);
   assert.match(demoSpecs, /detail_table/);
+  assert.match(demoSpecs, /13,665/);
   assert.match(styles, /\.finance-ai-demo-page/);
   assert.match(styles, /\.finance-ai-demo-grid/);
 });
@@ -1487,9 +1499,19 @@ test("finance AI assistant public demo is a read-only simulated chat", async () 
   assert.match(client, /5月边际总额环比增加的原因是什么/);
   assert.match(client, /5月各大区销量预算实际对比/);
   assert.match(client, /巴西5月分指标预算实际表/);
+  assert.match(client, /30680/);
+  assert.match(client, /1025700000/);
   assert.match(client, /巴西单车边际变化归因桥/);
   assert.match(client, /5月各大区销量环比对比/);
   assert.match(client, /5月边际总额环比变化桥/);
+  assert.match(client, /S56 EV/);
+  assert.match(client, /Tiggo 8/);
+  assert.match(client, /西班牙/);
+  assert.match(client, /墨西哥/);
+  assert.doesNotMatch(client, /车型结构/);
+  assert.doesNotMatch(client, /单车净收入走弱/);
+  assert.doesNotMatch(client, /销量增长贡献/);
+  assert.doesNotMatch(client, /结构及其他/);
   assert.doesNotMatch(client, /3月 vs 4月车型单车边际/);
   assert.doesNotMatch(client, /国家经营定位气泡图/);
   assert.match(client, /finance-ai-composer/);
@@ -1535,12 +1557,17 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(client, /finance-ai-avatar/);
   assert.doesNotMatch(client, /finance-ai-access-gate/);
   assert.match(client, /finance-ai-upload-chip/);
+  assert.match(client, /finance-ai-demo-effect-button/);
+  assert.match(client, /查看示例效果/);
+  assert.match(client, /href="\/finance\/finance-ai-assistant\/demo"/);
   assert.match(client, /finance-ai-empty-card/);
   assert.match(client, /EXAMPLE_CONVERSATION/);
   assert.match(client, /finance-ai-example-dialogue/);
   assert.match(client, /泰国有没有卖 S56EV/);
   assert.match(client, /if \(!workbook\) \{[\s\S]*window\.scrollTo\(\{ top: 0, left: 0, behavior: "auto" \}\)/);
   assert.match(client, /downloadSampleTemplate/);
+  assert.match(client, /"Sales Volume": 123456/);
+  assert.match(client, /"Total Margin": 3703680/);
   assert.match(client, /book_append_sheet\(workbook,\s*actualWorksheet,\s*"实际"\)/);
   assert.match(client, /book_append_sheet\(workbook,\s*budgetWorksheet,\s*"预算"\)/);
   assert.match(client, /book_append_sheet\(workbook,\s*readmeWorksheet,\s*"填表说明"\)/);

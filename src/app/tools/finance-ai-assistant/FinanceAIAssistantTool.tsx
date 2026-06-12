@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ArrowUp, Download, FileSpreadsheet, Loader2, RotateCcw, Trash2, UploadCloud } from "lucide-react";
+import Link from "next/link";
+import { ArrowUp, Download, Eye, FileSpreadsheet, Loader2, RotateCcw, Trash2, UploadCloud } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -120,16 +121,16 @@ const EXAMPLE_CONVERSATION = [
 ];
 const SAMPLE_TEMPLATE_HEADERS = ["Month", "Dim_A", "Dim_B", "Dim_C", "Dim_D", "Dim_E", "Sales Volume", "Total Margin"];
 const ACTUAL_SAMPLE_TEMPLATE_ROWS = [
-  { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 100, "Total Margin": 3000 },
-  { "Month": "4月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 120, "Total Margin": 3900 },
-  { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "墨西哥", "Dim_C": "T1E", "Dim_D": "EV", "Dim_E": "墨西哥-T1E", "Sales Volume": 80, "Total Margin": 1800 },
-  { "Month": "4月", "Dim_A": "拉美大区", "Dim_B": "墨西哥", "Dim_C": "T1E", "Dim_D": "EV", "Dim_E": "墨西哥-T1E", "Sales Volume": 72, "Total Margin": 1650 },
+  { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 100000, "Total Margin": 3000000 },
+  { "Month": "4月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 123456, "Total Margin": 3703680 },
+  { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "墨西哥", "Dim_C": "T1E", "Dim_D": "EV", "Dim_E": "墨西哥-T1E", "Sales Volume": 80000, "Total Margin": 1800000 },
+  { "Month": "4月", "Dim_A": "拉美大区", "Dim_B": "墨西哥", "Dim_C": "T1E", "Dim_D": "EV", "Dim_E": "墨西哥-T1E", "Sales Volume": 72000, "Total Margin": 1650000 },
 ];
 const BUDGET_SAMPLE_TEMPLATE_ROWS = [
-  { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 105, "Total Margin": 3200 },
-  { "Month": "4月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 130, "Total Margin": 4200 },
-  { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "墨西哥", "Dim_C": "T1E", "Dim_D": "EV", "Dim_E": "墨西哥-T1E", "Sales Volume": 78, "Total Margin": 1850 },
-  { "Month": "4月", "Dim_A": "拉美大区", "Dim_B": "墨西哥", "Dim_C": "T1E", "Dim_D": "EV", "Dim_E": "墨西哥-T1E", "Sales Volume": 85, "Total Margin": 2100 },
+  { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 105000, "Total Margin": 3200000 },
+  { "Month": "4月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 130000, "Total Margin": 4200000 },
+  { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "墨西哥", "Dim_C": "T1E", "Dim_D": "EV", "Dim_E": "墨西哥-T1E", "Sales Volume": 78000, "Total Margin": 1850000 },
+  { "Month": "4月", "Dim_A": "拉美大区", "Dim_B": "墨西哥", "Dim_C": "T1E", "Dim_D": "EV", "Dim_E": "墨西哥-T1E", "Sales Volume": 85000, "Total Margin": 2100000 },
 ];
 const SAMPLE_TEMPLATE_README_ROWS = [
   ["项目", "说明"],
@@ -1485,6 +1486,10 @@ export default function FinanceAIAssistantTool() {
                 <Download aria-hidden="true" />
                 <span>下载示例格式</span>
               </button>
+              <Link href="/finance/finance-ai-assistant/demo" className="finance-ai-template-button finance-ai-demo-effect-button">
+                <Eye aria-hidden="true" />
+                <span>查看示例效果</span>
+              </Link>
             </div>
             <div className="finance-ai-data-status">
               <FileSpreadsheet aria-hidden="true" />

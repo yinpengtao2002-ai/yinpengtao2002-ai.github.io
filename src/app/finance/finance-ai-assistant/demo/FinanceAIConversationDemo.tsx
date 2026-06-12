@@ -98,11 +98,13 @@ const BUSINESS_DEMO_CHARTS: FinanceChartSpec[] = [
     endLabel: "5月",
     endValue: 28.7,
     items: [
-      { label: "车型结构", value: -1.4 },
-      { label: "单车净收入", value: -0.7 },
-      { label: "成本变化", value: -0.4 },
+      { label: "S56 EV", value: -0.9 },
+      { label: "Tiggo 8", value: -0.65 },
+      { label: "Arrizo 5", value: -0.45 },
+      { label: "T18 HEV", value: 0.25 },
+      { label: "其他车型", value: -0.75 },
     ],
-    note: "单车指标用瀑布桥解释结构、收入和成本的影响，首尾需要严丝合缝。",
+    note: "单车指标瀑布桥的中间项应下钻到车型、国家等维度成员，而不是停留在抽象原因。",
   }),
   buildDirectChartSpec({
     type: "grouped_bar",
@@ -174,11 +176,14 @@ const BUSINESS_DEMO_CHARTS: FinanceChartSpec[] = [
     endLabel: "5月边际总额",
     endValue: 57800000,
     items: [
-      { label: "销量增长", value: 15200000 },
-      { label: "单车边际下降", value: -7200000 },
-      { label: "结构及其他", value: 1800000 },
+      { label: "巴西", value: 4200000 },
+      { label: "泰国", value: 2100000 },
+      { label: "墨西哥", value: 1650000 },
+      { label: "马来西亚", value: 1100000 },
+      { label: "西班牙", value: -1250000 },
+      { label: "其他国家", value: 2000000 },
     ],
-    note: "总额变化原因用桥图解释正负贡献，保留对销量和单车质量的拆分。",
+    note: "总额变化桥按国家贡献下钻，正负贡献加总后与首尾差额一致。",
   }),
 ];
 
@@ -203,7 +208,7 @@ const SIMULATED_MESSAGES: SimulatedMessage[] = [
   {
     id: "demo-assistant-country",
     role: "assistant",
-    text: "**巴西是规模超预算、利润质量偏弱。**销量完成 106.2%，净收入完成 103.4%，但边际只完成 97.1%，利润完成 95.6%。\n\n所以巴西不是“卖不动”，而是销量增长没有完全转化成边际和利润。下一步应该看车型结构、单车收入和成本变化。",
+    text: "**巴西是规模超预算、利润质量偏弱。**销量完成 106.2%，净收入完成 103.4%，但边际只完成 97.1%，利润完成 95.6%。\n\n所以巴西不是“卖不动”，而是销量增长没有完全转化成边际和利润。下一步应该下钻到 S56 EV、Tiggo 8 等车型，看每个车型对单车边际的贡献。",
     chartTitles: ["巴西5月分指标预算实际表"],
   },
   {
@@ -214,7 +219,7 @@ const SIMULATED_MESSAGES: SimulatedMessage[] = [
   {
     id: "demo-assistant-unit-margin",
     role: "assistant",
-    text: "**巴西单车边际从 31.2 降到 28.7，下降 2.5。**最大拖累是车型结构，贡献 -1.4；其次是单车净收入走弱，贡献 -0.7；成本变化贡献 -0.4。\n\n这个问题用单车边际瀑布桥最直观，因为它能把首尾值和中间每个影响因素连续接起来。",
+    text: "**巴西单车边际从 31.2 降到 28.7，下降 2.5。**按车型下钻后，S56 EV 贡献 -0.9，Tiggo 8 贡献 -0.65，Arrizo 5 贡献 -0.45，T18 HEV 贡献 +0.25，其他车型贡献 -0.75。\n\n这个问题用单车边际瀑布桥最直观，因为它能把首尾值和每个车型贡献连续接起来。",
     chartTitles: ["巴西单车边际变化归因桥"],
   },
   {
@@ -236,7 +241,7 @@ const SIMULATED_MESSAGES: SimulatedMessage[] = [
   {
     id: "demo-assistant-total-change",
     role: "assistant",
-    text: "**5月边际总额环比增加 980 万，主要靠销量拉动。**销量增长贡献 +1,520 万；单车边际下降抵消 -720 万；结构及其他因素贡献 +180 万。\n\n结论是：总额增长看起来不错，但质量下滑已经吃掉了一部分规模收益，需要继续下钻到国家和车型。",
+    text: "**5月边际总额环比增加 980 万，主要来自国家层面的正贡献。**巴西贡献 +420 万，泰国贡献 +210 万，墨西哥贡献 +165 万，马来西亚贡献 +110 万；西班牙拖累 -125 万，其他国家合计贡献 +200 万。\n\n结论是：总额增长不能只说“销量拉动”，应该先把贡献落到国家或车型，再继续看这些市场内部的销量和单车质量。",
     chartTitles: ["5月边际总额环比变化桥"],
     meta: "只读示例，不能追问或编辑；进入正式助手后可以上传自己的经营明细继续分析。",
   },

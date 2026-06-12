@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, ListFilter } from "lucide-react";
+import { filterTableValueBySearchText } from "@/components/finance/financeAIDetailTableFilters";
 import type { FinanceChartSpec } from "@/lib/finance-ai/types";
 
 type DetailTableData = {
@@ -284,7 +285,7 @@ export default function FinanceAIDetailTable({ spec }: { spec: FinanceChartSpec 
   const activeFilterCount = Object.keys(appliedFilters).length + Object.keys(appliedNumericFilters).length;
   const menuOptions = filterMenu ? columnOptions[filterMenu.columnIndex] ?? [] : [];
   const searchedMenuOptions = filterMenu
-    ? menuOptions.filter((value) => displayFilterValue(value).toLowerCase().includes(filterMenu.searchText.trim().toLowerCase()))
+    ? menuOptions.filter((value) => filterTableValueBySearchText(displayFilterValue(value), filterMenu.searchText))
     : [];
   const menuSelectedSet = new Set(filterMenu?.selectedValues ?? []);
 
