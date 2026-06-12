@@ -1508,6 +1508,12 @@ test("finance AI assistant public demo is a read-only simulated chat", async () 
   assert.match(client, /Tiggo 8/);
   assert.match(client, /西班牙/);
   assert.match(client, /墨西哥/);
+  assert.doesNotMatch(client, /这类问题/);
+  assert.doesNotMatch(client, /这个问题用/);
+  assert.doesNotMatch(client, /不能只列环比百分比/);
+  assert.doesNotMatch(client, /最好用/);
+  assert.doesNotMatch(client, /下一步应该/);
+  assert.doesNotMatch(client, /应该先/);
   assert.doesNotMatch(client, /车型结构/);
   assert.doesNotMatch(client, /单车净收入走弱/);
   assert.doesNotMatch(client, /销量增长贡献/);
@@ -1561,9 +1567,9 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(client, /查看示例效果/);
   assert.match(client, /href="\/finance\/finance-ai-assistant\/demo"/);
   assert.match(client, /finance-ai-empty-card/);
-  assert.match(client, /EXAMPLE_CONVERSATION/);
-  assert.match(client, /finance-ai-example-dialogue/);
-  assert.match(client, /泰国有没有卖 S56EV/);
+  assert.doesNotMatch(client, /EXAMPLE_CONVERSATION/);
+  assert.doesNotMatch(client, /finance-ai-example-dialogue/);
+  assert.doesNotMatch(client, /泰国有没有卖 S56EV/);
   assert.match(client, /if \(!workbook\) \{[\s\S]*window\.scrollTo\(\{ top: 0, left: 0, behavior: "auto" \}\)/);
   assert.match(client, /downloadSampleTemplate/);
   assert.match(client, /"Sales Volume": 123456/);
@@ -1588,9 +1594,8 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.doesNotMatch(client, /<p>\{message\.text\}<\/p>/);
   assert.match(styles, /\.finance-ai-page\s*\{[\s\S]*background:\s*var\(--finance-ai-page-surface\)/s);
   assert.doesNotMatch(styles, /\.finance-ai-access-gate/);
-  assert.match(styles, /\.finance-ai-example-dialogue/);
-  assert.match(styles, /\.finance-ai-example-list\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
-  assert.match(styles, /@media \(max-width:\s*760px\)\s*\{[\s\S]*\.finance-ai-example-list\s*\{[\s\S]*grid-template-columns:\s*1fr/s);
+  assert.doesNotMatch(styles, /\.finance-ai-example-dialogue/);
+  assert.doesNotMatch(styles, /\.finance-ai-example-list/);
   assert.match(styles, /\.finance-ai-assistant-panel/);
   assert.match(styles, /\.finance-ai-assistant-panel\s*\{[\s\S]*border:\s*0/s);
   assert.doesNotMatch(financeAIPageBlock, /(^|\n)\s*height:\s*100dvh/);

@@ -97,28 +97,6 @@ type PlotlyModule = {
 };
 
 const ASSISTANT_AVATAR_IMAGE = "/images/product-stage/finance-ai-assistant-avatar.webp";
-const EXAMPLE_CONVERSATION = [
-  {
-    question: "泰国有没有卖 S56EV，单车边际是多少？",
-    answer: "会默认按最新期间看，筛选泰国和 S56EV，先判断销量是否大于 0，再给出单车边际。",
-  },
-  {
-    question: "5月巴西单车边际是多少？环比和同比如何？",
-    answer: "会返回巴西当期单车边际、环比和同比，并配合趋势图核对变化方向。",
-  },
-  {
-    question: "哪些国家销量和单车边际都增长？",
-    answer: "会按国家列出销量和单车边际的上期、本期、变化值、变化率，方便筛出双增长市场。",
-  },
-  {
-    question: "5月实际和预算比，销量差异主要来自哪里？",
-    answer: "会使用同期间预算到实际的差异桥，并用分组柱展示各国家的预算和实际销量。",
-  },
-  {
-    question: "西班牙单车边际为什么下降？顺便看销量和收入。",
-    answer: "会组合单车边际瀑布桥、销量对比和收入对比，避免只看单一图表得出片面结论。",
-  },
-];
 const SAMPLE_TEMPLATE_HEADERS = ["Month", "Dim_A", "Dim_B", "Dim_C", "Dim_D", "Dim_E", "Sales Volume", "Total Margin"];
 const ACTUAL_SAMPLE_TEMPLATE_ROWS = [
   { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 100000, "Total Margin": 3000000 },
@@ -1494,17 +1472,6 @@ export default function FinanceAIAssistantTool() {
             <div className="finance-ai-data-status">
               <FileSpreadsheet aria-hidden="true" />
               <span>{fileName ? `${fileName} · ${dataSummary}` : dataSummary}</span>
-            </div>
-            <div className="finance-ai-example-dialogue" aria-label="示例对话">
-              <h3>示例对话</h3>
-              <div className="finance-ai-example-list">
-                {EXAMPLE_CONVERSATION.map((item) => (
-                  <div className="finance-ai-example-item" key={item.question}>
-                    <p><span>问</span>{item.question}</p>
-                    <p><span>答</span>{item.answer}</p>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </section>
