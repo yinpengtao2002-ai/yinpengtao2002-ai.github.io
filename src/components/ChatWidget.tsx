@@ -930,17 +930,28 @@ export default function ChatWidget() {
                                     </div>
                                 </div>
                                 <button
+                                    type="button"
+                                    aria-label="关闭 Lucas AI 助手"
                                     onClick={handleClose}
                                     style={{
-                                        background: "none",
-                                        border: "none",
+                                        position: "relative",
+                                        zIndex: 3,
+                                        width: isMobileLike ? 38 : 30,
+                                        height: isMobileLike ? 38 : 30,
+                                        flexShrink: 0,
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        border: isMobileLike ? "1px solid var(--border)" : "none",
+                                        borderRadius: 999,
+                                        background: isMobileLike ? "var(--card)" : "none",
                                         color: "var(--muted)",
                                         cursor: "pointer",
-                                        padding: 4,
                                         display: "flex",
+                                        padding: 0,
+                                        touchAction: "manipulation",
                                     }}
                                 >
-                                    <X style={{ width: 18, height: 18 }} />
+                                    <X style={{ width: 18, height: 18 }} aria-hidden="true" />
                                 </button>
                             </div>
 

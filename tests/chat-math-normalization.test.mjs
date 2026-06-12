@@ -156,6 +156,11 @@ test("mobile chat launcher clearly identifies Lucas AI", () => {
   assert.match(chatWidget, /chat-floating-ai-badge/);
 });
 
+test("mobile chat panel exposes a clear Lucas AI close control", () => {
+  assert.match(chatWidget, /type="button"[\s\S]*aria-label="关闭 Lucas AI 助手"[\s\S]*onClick=\{handleClose\}/);
+  assert.match(chatWidget, /zIndex:\s*3/);
+});
+
 test("mobile chat launcher avoids reserving a large bottom blank before it is opened", () => {
   assert.doesNotMatch(chatWidget, /if \(!isOpen \|\| !isMobileLike/);
   assert.match(chatWidget, /const mobileLauncherStyle/);
