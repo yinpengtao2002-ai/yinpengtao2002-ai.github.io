@@ -1,6 +1,6 @@
 # 财务模型清单
 
-最后核对时间：2026-06-12
+最后核对时间：2026-06-13
 
 这份文档用于记录当前财务模型库里的模型入口、源码位置、已设计的可视化图表和交互模式。只要财务模型内容发生实质变化，都要同步更新这份文档，包括新增、删除、重命名、迁移模型，增加或移除图表，调整交互方式，调整内测门禁，调整上传模板，或修改模型库元数据。
 
@@ -10,7 +10,14 @@
 - `src/app/finance/page.tsx`：财务模型目录页。
 - `src/app/finance/*`：各个财务模型的路由页面。
 - `public/tools/margin-analysis/*`：单车指标变动归因模型的静态工具文件，由 `/finance/margin-analysis` 路由通过 iframe 加载。
-- `src/app/tools/finance-ai-assistant/*` 和 `src/lib/finance-ai/*`：财务分析 AI 助手的共享实现和图表协议。
+- `src/app/tools/finance-ai-assistant/*` 和 `src/lib/finance-ai/*`：财务分析 AI 助手的共享实现。
+- `src/lib/finance/charts/*`：财务模型共用图表协议、Plotly 主题、图表 builder 和明细表 spec。
+- `docs/finance-chart-system.md`：财务图表中枢、共享算法边界和模型依赖地图；改图表中枢或共享计算口径时要先核对这里。
+
+同步要求：
+
+- 改单个模型的图表、交互、上传模板或说明时，更新本文件。
+- 改中枢图表、Plotly 主题、`FinanceChartSpec`、PVM、FBP 利润链、字段识别或上传解析时，同时更新 `docs/finance-chart-system.md`，并检查依赖地图里受影响的模型。
 
 ## 当前财务模型目录
 

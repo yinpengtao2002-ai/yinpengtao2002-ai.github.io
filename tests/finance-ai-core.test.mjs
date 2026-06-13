@@ -17,7 +17,7 @@ import {
   validateFinanceActionPlan,
 } from "../src/lib/finance-ai/actions.ts";
 import { resolveFinanceActionFilterMembers } from "../src/lib/finance-ai/filter-resolution.ts";
-import { buildChartSpec, buildDirectChartSpec } from "../src/lib/finance-ai/charts.ts";
+import { buildChartSpec, buildDirectChartSpec } from "../src/lib/finance/charts/index.ts";
 import { buildFinanceAIChartDemoSpecs } from "../src/lib/finance-ai/chart-demo.ts";
 import {
   buildFinanceAnalysisRowsFromWorkbook,

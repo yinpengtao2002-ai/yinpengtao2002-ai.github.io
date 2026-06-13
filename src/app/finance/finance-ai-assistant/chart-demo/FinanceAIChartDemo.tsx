@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { buildFinanceAIChartDemoSpecs } from "@/lib/finance-ai/chart-demo";
 import FinanceAIDetailTable from "@/components/finance/FinanceAIDetailTable";
-import type { FinanceChartSpec } from "@/lib/finance-ai/types";
+import type { FinanceChartSpec } from "@/lib/finance/charts/types";
 
 type PlotlyModule = {
   default: {

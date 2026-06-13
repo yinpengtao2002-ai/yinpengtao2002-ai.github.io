@@ -1,6 +1,6 @@
-import type { FinanceChartSpec } from "./types";
+import type { FinanceChartSpec } from "../finance/charts/types";
 // @ts-expect-error - Node's test runner imports this TypeScript module by extension.
-import { buildDirectChartSpec } from "./charts.ts";
+import { buildDirectChartSpec } from "../finance/charts/index.ts";
 
 const COLORS = {
   orange: "#d97757",

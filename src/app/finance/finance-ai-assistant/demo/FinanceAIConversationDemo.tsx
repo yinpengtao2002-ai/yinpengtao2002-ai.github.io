@@ -8,11 +8,11 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
-import { buildDirectChartSpec } from "@/lib/finance-ai/charts";
+import { buildDirectChartSpec } from "@/lib/finance/charts";
 import { normalizeChatMathMarkdown } from "@/lib/markdown/normalizeChatMathMarkdown";
 import { normalizeMarkdownStrongEmphasis } from "@/lib/markdown/normalizeStrongEmphasis";
 import FinanceAIDetailTable from "@/components/finance/FinanceAIDetailTable";
-import type { FinanceChartSpec } from "@/lib/finance-ai/types";
+import type { FinanceChartSpec } from "@/lib/finance/charts/types";
 
 type ChatRole = "user" | "assistant";
 

@@ -9,7 +9,7 @@ import {
   buildFinanceAIPlanningContext,
 } from "../src/lib/finance-ai/context.ts";
 import { applyFinanceAIDataRequest } from "../src/lib/finance-ai/data-selection.ts";
-import { buildDirectChartSpec } from "../src/lib/finance-ai/charts.ts";
+import { buildDirectChartSpec } from "../src/lib/finance/charts/index.ts";
 import { filterTableValueBySearchText } from "../src/components/finance/financeAIDetailTableFilters.ts";
 import { POST } from "../src/app/api/tools/finance-ai-assistant/route.ts";
 import { POST as POSTAccess } from "../src/app/api/tools/finance-ai-assistant/access/route.ts";
@@ -1336,7 +1336,7 @@ test("finance AI detail table search matches formatted numeric values without se
 });
 
 test("finance AI detail tables carry business table variants and metadata", async () => {
-  const types = await readProjectFile("src/lib/finance-ai/types.ts");
+  const types = await readProjectFile("src/lib/finance/charts/types.ts");
   const detailTable = await readProjectFile("src/components/finance/FinanceAIDetailTable.tsx");
   const client = await readProjectFile("src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
   const spec = buildDirectChartSpec({

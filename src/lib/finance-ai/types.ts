@@ -1,3 +1,22 @@
+import type { FinanceAIDirectChart } from "../finance/charts/types";
+
+export type {
+  FinanceAIDirectBarRankChart,
+  FinanceAIDirectChart,
+  FinanceAIDirectDetailTableChart,
+  FinanceAIDirectHeatmapChart,
+  FinanceAIDirectMetricCardChart,
+  FinanceAIDirectScatterBubbleChart,
+  FinanceAIDirectSeriesChart,
+  FinanceAIDirectTrendChart,
+  FinanceAIDirectWaterfallChart,
+  FinanceChartKind,
+  FinanceChartSize,
+  FinanceChartSpec,
+  FinanceTableMeta,
+  FinanceTableVariant,
+} from "../finance/charts/types";
+
 export type FinancePeriod = {
   key: string;
   label: string;
@@ -219,150 +238,6 @@ export type FinanceActionPlan = {
 export type FinanceActionValidationResult =
   | { ok: true; modules: FinanceActionModule[]; errors: [] }
   | { ok: false; modules: FinanceActionModule[]; errors: string[] };
-
-export type FinanceChartKind =
-  | "metric_card"
-  | "trend_chart"
-  | "bar_rank"
-  | "waterfall_bridge"
-  | "grouped_bar"
-  | "stacked_bar"
-  | "percent_stacked_bar"
-  | "heatmap"
-  | "scatter_bubble"
-  | "detail_table";
-
-export type FinanceChartSize = "small" | "medium" | "large";
-
-export type FinanceTableVariant =
-  | "rank"
-  | "comparison"
-  | "budget_actual"
-  | "attribution_detail"
-  | "exception_list"
-  | "generic";
-
-export type FinanceTableMeta = {
-  primaryDimension?: string;
-  metrics?: string[];
-  period?: string;
-  periods?: string[];
-  comparison?: string;
-  filters?: FinanceFilter;
-  focusValues?: Array<{ dimension: string; value: string }>;
-};
-
-export type FinanceChartSpec = {
-  kind: FinanceChartKind;
-  size: FinanceChartSize;
-  title: string;
-  data: Array<Record<string, unknown>>;
-  layout: Record<string, unknown>;
-  config: Record<string, unknown>;
-  note: string;
-  tableVariant?: FinanceTableVariant;
-  tableMeta?: FinanceTableMeta;
-};
-
-export type FinanceAIDirectTrendChart = {
-  type: "trend";
-  title: string;
-  xLabel?: string;
-  yLabel?: string;
-  points: Array<{ label: string; value: number }>;
-  note?: string;
-};
-
-export type FinanceAIDirectMetricCardChart = {
-  type: "metric_card";
-  title: string;
-  value: number;
-  subtitle?: string;
-  deltaValue?: number | null;
-  deltaRate?: number | null;
-  note?: string;
-};
-
-export type FinanceAIDirectBarRankChart = {
-  type: "bar_rank";
-  title: string;
-  xLabel?: string;
-  yLabel?: string;
-  items: Array<{
-    label: string;
-    value: number;
-    share?: number | null;
-    changeValue?: number | null;
-    detail?: string;
-  }>;
-  note?: string;
-};
-
-export type FinanceAIDirectWaterfallChart = {
-  type: "waterfall";
-  title: string;
-  startLabel: string;
-  startValue: number;
-  endLabel: string;
-  endValue: number;
-  items: Array<{ label: string; value: number }>;
-  note?: string;
-};
-
-export type FinanceAIDirectSeriesChart = {
-  type: "grouped_bar" | "stacked_bar" | "percent_stacked_bar";
-  title: string;
-  xLabel?: string;
-  yLabel?: string;
-  series: Array<{
-    name: string;
-    items: Array<{ label: string; value: number }>;
-  }>;
-  note?: string;
-};
-
-export type FinanceAIDirectHeatmapChart = {
-  type: "heatmap";
-  title: string;
-  xLabels: string[];
-  yLabels: string[];
-  values: Array<Array<number | null>>;
-  note?: string;
-};
-
-export type FinanceAIDirectScatterBubbleChart = {
-  type: "scatter_bubble";
-  title: string;
-  xLabel?: string;
-  yLabel?: string;
-  items: Array<{
-    label: string;
-    x: number;
-    y: number;
-    size?: number | null;
-  }>;
-  note?: string;
-};
-
-export type FinanceAIDirectDetailTableChart = {
-  type: "detail_table";
-  title: string;
-  variant?: FinanceTableVariant;
-  meta?: FinanceTableMeta;
-  columns: string[];
-  rows: Array<Array<string | number | null>>;
-  note?: string;
-};
-
-export type FinanceAIDirectChart =
-  | FinanceAIDirectMetricCardChart
-  | FinanceAIDirectTrendChart
-  | FinanceAIDirectBarRankChart
-  | FinanceAIDirectWaterfallChart
-  | FinanceAIDirectSeriesChart
-  | FinanceAIDirectHeatmapChart
-  | FinanceAIDirectScatterBubbleChart
-  | FinanceAIDirectDetailTableChart;
 
 export type FinanceAIDirectAnalysis = {
   answer: string;

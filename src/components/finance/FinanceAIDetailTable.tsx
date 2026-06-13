@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, ListFilter } from "lucide-react";
 import { filterTableValueBySearchText } from "@/components/finance/financeAIDetailTableFilters";
-import type { FinanceChartSpec } from "@/lib/finance-ai/types";
+import type { FinanceChartSpec } from "@/lib/finance/charts/types";
 
 type DetailTableData = {
   columns: string[];

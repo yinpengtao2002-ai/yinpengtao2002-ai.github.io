@@ -9,7 +9,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import * as XLSX from "xlsx";
 import "katex/dist/katex.min.css";
-import { buildChartSpec, buildDirectChartSpec } from "@/lib/finance-ai/charts";
+import { buildChartSpec, buildDirectChartSpec } from "@/lib/finance/charts";
 import { resolveFinanceActionFilterMembers } from "@/lib/finance-ai/filter-resolution";
 import {
   FINANCE_SCENARIO_COLUMN,
@@ -30,16 +30,14 @@ import FinanceAIDetailTable from "@/components/finance/FinanceAIDetailTable";
 import type {
   BarRankResult,
   FinanceActionModule,
-  FinanceChartSpec,
   FinanceFilter,
   FinanceRawWorkbook,
   FinanceRawWorkbookSheet,
   FinanceRow,
   FinanceSchema,
-  FinanceTableMeta,
-  FinanceTableVariant,
   WaterfallBridgeResult,
 } from "@/lib/finance-ai/types";
+import type { FinanceChartSpec, FinanceTableMeta, FinanceTableVariant } from "@/lib/finance/charts/types";
 import type { FinanceAIChatState } from "@/lib/finance-ai/context";
 
 type ChatRole = "user" | "assistant";
