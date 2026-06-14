@@ -165,6 +165,24 @@ const PROGRESS_STEPS = [
 ];
 
 const VOCABULARY_CSV_HEADER = "单词,音标,中文释义,英文例句,例句中文,来源,难度";
+const HIGH_QUALITY_ENGLISH_VOICE_HINTS = [
+  "samantha",
+  "daniel",
+  "karen",
+  "moira",
+  "tessa",
+  "alex",
+  "google us english",
+  "google uk english",
+  "microsoft aria",
+  "microsoft jenny",
+  "microsoft guy",
+  "microsoft libby",
+  "microsoft ryan",
+  "natural",
+  "enhanced",
+  "premium",
+];
 
 function countEnglishWords(text: string) {
   return text.match(/[A-Za-z][A-Za-z'-]*/g)?.length ?? 0;
@@ -209,6 +227,35 @@ function buildVocabularyCsv(cards: VocabularyCard[]) {
   );
 
   return `\uFEFF${[VOCABULARY_CSV_HEADER, ...rows].join("\n")}`;
+}
+
+function scoreEnglishVoice(voice: SpeechSynthesisVoice) {
+  const lang = voice.lang.toLowerCase();
+  const name = voice.name.toLowerCase();
+  if (!lang.startsWith("en")) return -1;
+
+  let score = 10;
+  if (lang === "en-us") score += 28;
+  else if (lang === "en-gb") score += 24;
+  else if (lang === "en-au" || lang === "en-ca") score += 20;
+  else if (lang.startsWith("en-")) score += 14;
+
+  const hintIndex = HIGH_QUALITY_ENGLISH_VOICE_HINTS.findIndex((hint) => name.includes(hint));
+  if (hintIndex >= 0) score += 50 - hintIndex;
+  if (voice.localService) score += 4;
+  if (voice.default) score += 2;
+  if (name.includes("compact")) score -= 16;
+
+  return score;
+}
+
+function getPreferredEnglishVoice(voices: SpeechSynthesisVoice[]) {
+  return (
+    voices
+      .map((voice) => ({ voice, score: scoreEnglishVoice(voice) }))
+      .filter(({ score }) => score >= 0)
+      .sort((a, b) => b.score - a.score)[0]?.voice ?? null
+  );
 }
 
 function formatCardBack(card: VocabularyCard) {
@@ -305,6 +352,7 @@ export default function StudyCardsTool() {
   const [reviewQueue, setReviewQueue] = useState<number[]>([]);
   const [reviewTurn, setReviewTurn] = useState(0);
   const [mobilePracticeActive, setMobilePracticeActive] = useState(false);
+  const [speechVoices, setSpeechVoices] = useState<SpeechSynthesisVoice[]>([]);
   const transitionTimerRef = useRef<number | null>(null);
   const pointerStartXRef = useRef<number | null>(null);
   const draggingPointerIdRef = useRef<number | null>(null);
@@ -384,6 +432,18 @@ export default function StudyCardsTool() {
         window.clearTimeout(transitionTimerRef.current);
       }
     };
+  }, []);
+
+  useEffect(() => {
+    if (!("speechSynthesis" in window)) return undefined;
+
+    const syncVoices = () => {
+      setSpeechVoices(window.speechSynthesis.getVoices());
+    };
+
+    syncVoices();
+    window.speechSynthesis.addEventListener("voiceschanged", syncVoices);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", syncVoices);
   }, []);
 
   useEffect(() => {
@@ -510,9 +570,16 @@ export default function StudyCardsTool() {
     if (!activeCard || !("speechSynthesis" in window)) return;
 
     window.speechSynthesis.cancel();
+    const voicePool = speechVoices.length > 0 ? speechVoices : window.speechSynthesis.getVoices();
+    const preferredVoice = getPreferredEnglishVoice(voicePool);
     const utterance = new SpeechSynthesisUtterance(activeCard.word);
-    utterance.lang = "en-US";
-    utterance.rate = 0.88;
+    utterance.lang = preferredVoice?.lang || "en-US";
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+    utterance.rate = 0.82;
+    utterance.pitch = 1.02;
+    utterance.volume = 1;
     window.speechSynthesis.speak(utterance);
   }
 

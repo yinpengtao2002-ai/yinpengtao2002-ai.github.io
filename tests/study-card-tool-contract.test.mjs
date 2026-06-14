@@ -136,6 +136,12 @@ test("AI vocabulary card results use a one-card spaced-memory flow", async () =>
   assert.match(client, /playActiveCardPronunciation/);
   assert.match(client, /speechSynthesis/);
   assert.match(client, /SpeechSynthesisUtterance/);
+  assert.match(client, /HIGH_QUALITY_ENGLISH_VOICE_HINTS/);
+  assert.match(client, /getPreferredEnglishVoice/);
+  assert.match(client, /voiceschanged/);
+  assert.match(client, /utterance\.voice = preferredVoice/);
+  assert.match(client, /utterance\.rate = 0\.82/);
+  assert.match(client, /utterance\.pitch = 1\.02/);
   assert.match(client, /朗读单词/);
   assert.match(client, /study-cards-speak-label/);
   assert.doesNotMatch(client, /compactText\(activeCard\.source,\s*160\)/);
