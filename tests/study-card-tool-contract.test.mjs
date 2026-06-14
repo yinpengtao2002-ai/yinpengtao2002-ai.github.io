@@ -291,6 +291,9 @@ test("AI vocabulary card pronunciation uses server-side high quality audio first
   assert.match(route, /WIKIMEDIA_COMMONS_API_URL/);
   assert.match(route, /fetchWikimediaCommonsPronunciation/);
   assert.match(route, /selectWikimediaAudio/);
+  assert.match(route, /buildWikimediaTitleQuery/);
+  assert.match(route, /fetchWikimediaPages/);
+  assert.match(route, /titles:/);
   assert.match(route, /En-us-/);
   assert.match(route, /LL-Q1860/);
   assert.match(route, /Content-Type":\s*contentType/);

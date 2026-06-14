@@ -135,32 +135,60 @@ function selectWikimediaAudio(pages: WikimediaPage[], word: string) {
   );
 }
 
-async function fetchWikimediaCommonsPronunciation(word: string): Promise<PronunciationAudio | null> {
-  if (word.includes(" ")) return null;
+function buildWikimediaTitleQuery(word: string) {
+  const normalizedWord = word.toLowerCase().replace(/\s+/g, "_");
+  return new URLSearchParams({
+    action: "query",
+    format: "json",
+    titles: [
+      `File:En-us-${normalizedWord}.oga`,
+      `File:En-us-${normalizedWord}.ogg`,
+      `File:En-us-${normalizedWord}.mp3`,
+      `File:En-us-${normalizedWord}.wav`,
+    ].join("|"),
+    prop: "imageinfo",
+    iiprop: "url",
+    origin: "*",
+  });
+}
 
-  const query = new URLSearchParams({
+function buildWikimediaSearchQuery(word: string) {
+  const normalizedWord = word.toLowerCase().replace(/\s+/g, "_");
+  return new URLSearchParams({
     action: "query",
     format: "json",
     generator: "search",
     gsrnamespace: "6",
     gsrlimit: "12",
-    gsrsearch: `File:En-us-${word.toLowerCase()}.oga OR File:En-us-${word.toLowerCase()}.ogg OR LL-Q1860 eng ${word.toLowerCase()}`,
+    gsrsearch: `File:En-us-${normalizedWord}.oga OR File:En-us-${normalizedWord}.ogg OR LL-Q1860 eng ${word.toLowerCase()}`,
     prop: "imageinfo",
     iiprop: "url",
     origin: "*",
   });
+}
 
+async function fetchWikimediaPages(query: URLSearchParams) {
   const response = await fetch(`${WIKIMEDIA_COMMONS_API_URL}?${query.toString()}`, {
     headers: { Accept: "application/json" },
   });
-  if (!response.ok) return null;
+  if (!response.ok) return [];
 
   const payload = (await response.json().catch(() => null)) as { query?: { pages?: Record<string, WikimediaPage> } } | null;
-  const pages = Object.values(payload?.query?.pages ?? {});
-  const audioUrl = selectWikimediaAudio(pages, word);
-  if (!audioUrl) return null;
+  return Object.values(payload?.query?.pages ?? {});
+}
 
-  return fetchAudioUrl(audioUrl);
+async function fetchWikimediaCommonsPronunciation(word: string): Promise<PronunciationAudio | null> {
+  if (word.includes(" ")) return null;
+
+  const exactTitlePages = await fetchWikimediaPages(buildWikimediaTitleQuery(word));
+  const exactTitleAudioUrl = selectWikimediaAudio(exactTitlePages, word);
+  if (exactTitleAudioUrl) return fetchAudioUrl(exactTitleAudioUrl);
+
+  const searchPages = await fetchWikimediaPages(buildWikimediaSearchQuery(word));
+  const searchAudioUrl = selectWikimediaAudio(searchPages, word);
+  if (!searchAudioUrl) return null;
+
+  return fetchAudioUrl(searchAudioUrl);
 }
 
 async function callSpeechProvider(provider: SpeechProvider, word: string) {
