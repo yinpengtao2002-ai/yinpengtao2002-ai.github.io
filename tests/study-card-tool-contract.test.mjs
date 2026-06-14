@@ -134,6 +134,12 @@ test("AI vocabulary card results use a one-card spaced-memory flow", async () =>
   assert.match(client, /text\/csv;charset=utf-8/);
   assert.match(client, /URL\.createObjectURL/);
   assert.match(client, /playActiveCardPronunciation/);
+  assert.match(client, /\/api\/tools\/study-cards\/pronunciation/);
+  assert.match(client, /audioObjectUrlCacheRef/);
+  assert.match(client, /fallbackToBrowserPronunciation/);
+  assert.match(client, /new Audio/);
+  assert.match(client, /response\.blob\(\)/);
+  assert.match(client, /audio\.play\(\)/);
   assert.match(client, /speechSynthesis/);
   assert.match(client, /SpeechSynthesisUtterance/);
   assert.match(client, /HIGH_QUALITY_ENGLISH_VOICE_HINTS/);
@@ -252,4 +258,38 @@ test("AI vocabulary card endpoint asks for article extraction and word-list enri
   assert.doesNotMatch(route, /概念之间的关系/);
   assert.doesNotMatch(route, /因果链/);
   assert.doesNotMatch(route, /front 可以是一句具体问题/);
+});
+
+test("AI vocabulary card pronunciation uses server-side high quality audio first", async () => {
+  const client = await readProjectFile("src/app/tools/study-cards/StudyCardsTool.tsx");
+  const route = await readProjectFile("src/app/api/tools/study-cards/pronunciation/route.ts");
+  const providers = await readProjectFile("src/lib/ai/providers.ts");
+
+  assert.match(providers, /type SpeechProvider/);
+  assert.match(providers, /AI_PRIMARY_TTS_MODEL/);
+  assert.match(providers, /AI_PRIMARY_TTS_VOICE/);
+  assert.match(providers, /normalizeSpeechUrl/);
+  assert.match(providers, /getSpeechProvider/);
+  assert.match(providers, /\/v1\/audio\/speech/);
+
+  assert.match(route, /getSpeechProvider/);
+  assert.match(route, /PUBLIC_STUDY_CARDS_PRONUNCIATION_API_URL/);
+  assert.match(route, /export async function POST/);
+  assert.match(route, /sanitizePronunciationInput/);
+  assert.match(route, /response_format:\s*"mp3"/);
+  assert.match(route, /Accept:\s*"audio\/mpeg"/);
+  assert.match(route, /"Content-Type":\s*"audio\/mpeg"/);
+  assert.match(route, /errorCode:\s*"TTS_NOT_CONFIGURED"/);
+  assert.match(route, /errorCode:\s*"TTS_UPSTREAM_FAILED"/);
+  assert.doesNotMatch(route, /CHAT_API_KEY/);
+  assert.doesNotMatch(route, /CHAT_API_URL/);
+
+  assert.match(client, /\/api\/tools\/study-cards\/pronunciation/);
+  assert.match(client, /audioObjectUrlCacheRef/);
+  assert.match(client, /currentPronunciationAudioRef/);
+  assert.match(client, /playServerPronunciation/);
+  assert.match(client, /fallbackToBrowserPronunciation/);
+  assert.match(client, /response\.blob\(\)/);
+  assert.match(client, /new Audio\(audioUrl\)/);
+  assert.match(client, /audio\.play\(\)/);
 });

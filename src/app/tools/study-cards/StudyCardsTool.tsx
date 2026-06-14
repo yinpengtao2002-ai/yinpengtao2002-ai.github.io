@@ -359,6 +359,8 @@ export default function StudyCardsTool() {
   const dragOffsetRef = useRef(0);
   const wasDraggingRef = useRef(false);
   const outputPanelRef = useRef<HTMLElement | null>(null);
+  const audioObjectUrlCacheRef = useRef<Record<string, string>>({});
+  const currentPronunciationAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const contentLength = useMemo(() => getReadableInputLength(content), [content]);
   const wordCount = useMemo(() => countEnglishWords(content), [content]);
@@ -431,6 +433,9 @@ export default function StudyCardsTool() {
       if (transitionTimerRef.current !== null) {
         window.clearTimeout(transitionTimerRef.current);
       }
+      currentPronunciationAudioRef.current?.pause();
+      Object.values(audioObjectUrlCacheRef.current).forEach((url) => URL.revokeObjectURL(url));
+      audioObjectUrlCacheRef.current = {};
     };
   }, []);
 
@@ -566,13 +571,13 @@ export default function StudyCardsTool() {
     URL.revokeObjectURL(url);
   }
 
-  function playActiveCardPronunciation() {
-    if (!activeCard || !("speechSynthesis" in window)) return;
+  function fallbackToBrowserPronunciation(word: string) {
+    if (!("speechSynthesis" in window)) return;
 
     window.speechSynthesis.cancel();
     const voicePool = speechVoices.length > 0 ? speechVoices : window.speechSynthesis.getVoices();
     const preferredVoice = getPreferredEnglishVoice(voicePool);
-    const utterance = new SpeechSynthesisUtterance(activeCard.word);
+    const utterance = new SpeechSynthesisUtterance(word);
     utterance.lang = preferredVoice?.lang || "en-US";
     if (preferredVoice) {
       utterance.voice = preferredVoice;
@@ -581,6 +586,52 @@ export default function StudyCardsTool() {
     utterance.pitch = 1.02;
     utterance.volume = 1;
     window.speechSynthesis.speak(utterance);
+  }
+
+  async function playServerPronunciation(word: string) {
+    const cacheKey = word.toLowerCase();
+    let audioUrl = audioObjectUrlCacheRef.current[cacheKey];
+
+    if (!audioUrl) {
+      const response = await fetch("/api/tools/study-cards/pronunciation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "audio/mpeg",
+        },
+        body: JSON.stringify({ word }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Pronunciation API failed");
+      }
+
+      const blob = await response.blob();
+      if (!blob.type.startsWith("audio/")) {
+        throw new Error("Pronunciation API returned non-audio content");
+      }
+
+      audioUrl = URL.createObjectURL(blob);
+      audioObjectUrlCacheRef.current[cacheKey] = audioUrl;
+    }
+
+    currentPronunciationAudioRef.current?.pause();
+    const audio = new Audio(audioUrl);
+    currentPronunciationAudioRef.current = audio;
+    audio.playbackRate = 0.96;
+    await audio.play();
+  }
+
+  async function playActiveCardPronunciation() {
+    if (!activeCard) return;
+
+    window.speechSynthesis?.cancel();
+
+    try {
+      await playServerPronunciation(activeCard.word);
+    } catch {
+      fallbackToBrowserPronunciation(activeCard.word);
+    }
   }
 
   function loadSampleContent() {
