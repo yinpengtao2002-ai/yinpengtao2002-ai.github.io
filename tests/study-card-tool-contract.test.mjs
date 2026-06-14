@@ -51,6 +51,7 @@ test("AI vocabulary card results use a one-card spaced-memory flow", async () =>
   assert.match(client, /phonetic\?: string/);
   assert.match(client, /translation: string/);
   assert.match(client, /example: string/);
+  assert.match(client, /exampleTranslation\?: string/);
   assert.match(client, /source\?: string/);
   assert.match(client, /level\?: string/);
   assert.match(client, /StudyCardResult/);
@@ -80,12 +81,22 @@ test("AI vocabulary card results use a one-card spaced-memory flow", async () =>
   assert.match(client, /study-cards-empty-preview/);
   assert.match(client, /试试看单词卡/);
   assert.match(client, /先看英文，再翻中文/);
+  assert.match(client, /study-cards-empty-word-row/);
+  assert.match(client, /study-cards-empty-speak/);
+  assert.match(client, /study-cards-empty-example/);
+  assert.match(client, /study-cards-empty-speak-label/);
+  assert.match(client, /Smartphones have become ubiquitous in modern classrooms\./);
+  assert.match(client, /智能手机在现代课堂里已经无处不在。/);
   assert.match(client, /答完后点这里看释义/);
   assert.match(client, /cardMotion/);
   assert.match(client, /dragOffset/);
   assert.match(client, /handleCardPointerDown/);
   assert.match(client, /handleCardPointerMove/);
   assert.match(client, /handleCardPointerUp/);
+  assert.match(client, /handleAnswerPanelKeyDown/);
+  assert.match(client, /role="button"/);
+  assert.match(client, /tabIndex=\{0\}/);
+  assert.doesNotMatch(client, /<button\s+type="button"\s+className=\{`study-cards-answer-panel/);
   assert.match(client, /outputPanelRef/);
   assert.match(client, /focusCardsOnMobile/);
   assert.match(client, /mobilePracticeActive/);
@@ -103,13 +114,37 @@ test("AI vocabulary card results use a one-card spaced-memory flow", async () =>
   assert.match(client, /memoryStats/);
   assert.match(client, /reviewQueue/);
   assert.match(client, /rateActiveCard/);
+  assert.match(client, /rating === "remembered" && currentMemory\.remembered >= 2/);
+  assert.match(client, /return queueWithoutCurrent;/);
+  assert.match(client, /isSessionComplete/);
+  assert.match(client, /hasCompletedCheckRound/);
+  assert.match(client, /BINGO/);
+  assert.match(client, /这组单词通关了/);
+  assert.match(client, /再复习一轮/);
   assert.match(client, /再记一次/);
   assert.match(client, /认识就继续下一张/);
   assert.match(client, /右滑回看上一张/);
+  assert.match(client, /Download/);
+  assert.match(client, /Volume2/);
+  assert.match(client, /Trophy/);
+  assert.match(client, /导出词表/);
+  assert.match(client, /downloadVocabularyList/);
+  assert.match(client, /buildVocabularyCsv/);
+  assert.match(client, /单词,音标,中文释义,英文例句,例句中文,来源,难度/);
+  assert.match(client, /text\/csv;charset=utf-8/);
+  assert.match(client, /URL\.createObjectURL/);
+  assert.match(client, /playActiveCardPronunciation/);
+  assert.match(client, /speechSynthesis/);
+  assert.match(client, /SpeechSynthesisUtterance/);
+  assert.match(client, /朗读单词/);
+  assert.match(client, /study-cards-speak-label/);
+  assert.doesNotMatch(client, /compactText\(activeCard\.source,\s*160\)/);
+  assert.match(client, /study-cards-example-line/);
+  assert.match(client, /study-cards-example-translation/);
   assert.match(client, /formatCardBack/);
   assert.match(client, /compactText\(activeCard\.word,\s*48\)/);
   assert.match(client, /compactText\(activeCard\.translation,\s*120\)/);
-  assert.match(client, /compactText\(activeCard\.example,\s*180\)/);
+  assert.doesNotMatch(client, /compactText\(activeCard\.example,\s*180\)/);
   assert.match(client, /正在补充中文释义/);
   assert.doesNotMatch(client, /AI 学习卡片生成器/);
   assert.doesNotMatch(client, /输入知识内容/);
@@ -126,6 +161,16 @@ test("AI vocabulary card results use a one-card spaced-memory flow", async () =>
   assert.match(styles, /\.study-cards-practice-card/);
   assert.match(styles, /\.study-cards-answer-panel/);
   assert.match(styles, /\.study-cards-memory-actions/);
+  assert.match(styles, /\.study-cards-empty-word-row/);
+  assert.match(styles, /\.study-cards-empty-speak/);
+  assert.match(styles, /\.study-cards-empty-speak-label/);
+  assert.match(styles, /\.study-cards-empty-example/);
+  assert.match(styles, /\.study-cards-result-actions/);
+  assert.match(styles, /\.study-cards-speak-button/);
+  assert.match(styles, /\.study-cards-speak-label/);
+  assert.match(styles, /\.study-cards-bingo/);
+  assert.match(styles, /\.study-cards-example-line/);
+  assert.match(styles, /\.study-cards-example-translation/);
   assert.match(styles, /aspect-ratio:\s*3\s*\/\s*4/);
   assert.match(styles, /cursor: grab/);
   assert.match(styles, /\.study-cards-page\.is-mobile-practice/);
@@ -133,8 +178,16 @@ test("AI vocabulary card results use a one-card spaced-memory flow", async () =>
   assert.match(styles, /@keyframes study-cards-answer-reveal/);
 
   const sampleCards = Array.from(
-    client.matchAll(/word: "([^"]+)",\s+phonetic: "([^"]*)",\s+translation: "([^"]+)",\s+example: "([^"]+)",\s+source: "([^"]+)",\s+level: "([^"]+)"/g),
-    ([, word, phonetic, translation, example, source, level]) => ({ word, phonetic, translation, example, source, level }),
+    client.matchAll(/word: "([^"]+)",\s+phonetic: "([^"]*)",\s+translation: "([^"]+)",\s+example: "([^"]+)",\s+exampleTranslation: "([^"]+)",\s+source: "([^"]+)",\s+level: "([^"]+)"/g),
+    ([, word, phonetic, translation, example, exampleTranslation, source, level]) => ({
+      word,
+      phonetic,
+      translation,
+      example,
+      exampleTranslation,
+      source,
+      level,
+    }),
   );
   assert.equal(sampleCards.length, 10);
   for (const card of sampleCards) {
@@ -142,6 +195,7 @@ test("AI vocabulary card results use a one-card spaced-memory flow", async () =>
     assert.ok(card.phonetic.length > 0, `sample phonetic is missing: ${card.word}`);
     assert.ok(card.translation.length <= 80, `sample translation is too long: ${card.translation}`);
     assert.ok(card.example.length <= 180, `sample example is too long: ${card.example}`);
+    assert.ok(card.exampleTranslation.length <= 120, `sample example translation is too long: ${card.exampleTranslation}`);
     assert.ok(card.source.length <= 180, `sample source is too long: ${card.source}`);
     assert.match(card.level, /CET-6|雅思|托福|GRE|学术|高阶/);
   }
@@ -172,10 +226,12 @@ test("AI vocabulary card endpoint asks for article extraction and word-list enri
   assert.match(route, /phonetic/);
   assert.match(route, /translation/);
   assert.match(route, /example/);
+  assert.match(route, /exampleTranslation/);
   assert.match(route, /source/);
   assert.match(route, /level/);
   assert.match(route, /中文释义/);
   assert.match(route, /英文例句/);
+  assert.match(route, /例句中文翻译/);
   assert.match(route, /如果用户每行基本是一个英文单词/);
   assert.match(route, /保留用户给出的单词/);
   assert.match(route, /如果用户输入的是英文文章/);

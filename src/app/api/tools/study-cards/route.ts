@@ -9,6 +9,7 @@ type VocabularyCard = {
   phonetic?: string;
   translation: string;
   example: string;
+  exampleTranslation?: string;
   source?: string;
   level?: string;
 };
@@ -63,13 +64,14 @@ function hasEnoughVocabularyInput(content: string) {
 
 const VOCABULARY_CARD_RULES = [
   "目标：生成英文单词卡，帮助用户背英文单词，而不是总结文章观点或出阅读理解题。",
-  "逐行单词模式：如果用户每行基本是一个英文单词或短语，保留用户给出的单词，不要替换成别的词；只补充中文释义、音标、英文例句、记忆提示和难度标签。",
+  "逐行单词模式：如果用户每行基本是一个英文单词或短语，保留用户给出的单词，不要替换成别的词；只补充中文释义、音标、英文例句、例句中文翻译和难度标签。",
   "英文文章模式：如果用户输入的是英文文章，从原文中挑选难度最高且值得记忆的单词；只从原文中出现过的单词里选择，不要发明文章外单词。",
   "文章抽词优先级：优先选择抽象名词、学术词、表达力强的动词/形容词、考试高频词、影响理解的关键词。",
   "不要选择专有名词、数字、缩写、过于常见的基础词、语气词、冠词、普通代词或只在原文里无意义重复的词。",
   "同一个词只出现一次；如果原文有不同词形，优先输出最常见的词典原形，但 source 里保留原文句子。",
   "translation 必须是中文释义，简洁准确，可以包含 1 到 3 个常见义项，避免长篇百科解释。",
-  "example 必须是英文例句。逐行单词模式可以自行造一个自然例句；英文文章模式优先改写或引用原文语境，不能捏造原文没有的事实。",
+  "example 必须是完整英文例句，不要为了凑短而截断句子。逐行单词模式可以自行造一个自然例句；英文文章模式优先改写或引用原文语境，不能捏造原文没有的事实。",
+  "exampleTranslation 必须是 example 的中文翻译，忠于英文例句，不要额外发挥。",
   "source 是来源线索。文章模式写包含该词的原文短句；逐行单词模式写“来自单词清单”。",
   "level 写可感知的难度标签，例如 CET-6、雅思、托福、GRE、学术、高阶表达。",
 ];
@@ -113,13 +115,14 @@ function buildStudyCardPrompt({
     "- word 只写英文单词或短语，不要写中文，不要加序号",
     "- phonetic 尽量给英式或美式音标；不确定时可以为空字符串",
     "- translation 用中文释义，建议 6 到 40 个中文字符",
-    "- example 用英文例句，建议 8 到 24 个英文单词，句子自然、可背",
+    "- example 用完整英文例句，句子自然、可背，不要截断，不设置固定字数上限",
+    "- exampleTranslation 用中文翻译对应英文例句",
     "- source 用原文短句或“来自单词清单”，不要超过 120 个字符",
     "- level 用 CET-6、雅思、托福、GRE、学术、高阶表达等标签",
     "- summary 不超过 24 个中文字符，只概括这组词的来源或难度",
     "- 只输出 JSON，不要输出 Markdown、解释文字或代码块",
     "JSON 结构必须是：",
-    `{"summary":"...","mode":"${expectedMode}","cards":[{"word":"...","phonetic":"...","translation":"...","example":"...","source":"...","level":"..."}]}`,
+    `{"summary":"...","mode":"${expectedMode}","cards":[{"word":"...","phonetic":"...","translation":"...","example":"...","exampleTranslation":"...","source":"...","level":"..."}]}`,
     "用户内容：",
     content,
   ].join("\n");
@@ -146,6 +149,7 @@ function normalizeStudyCardResult(value: unknown, cardCount: number, expectedMod
           phonetic: normalizeText((item as VocabularyCard).phonetic),
           translation: normalizeText((item as VocabularyCard).translation),
           example: normalizeText((item as VocabularyCard).example),
+          exampleTranslation: normalizeText((item as VocabularyCard).exampleTranslation),
           source: normalizeText((item as VocabularyCard).source),
           level: normalizeText((item as VocabularyCard).level),
         }))

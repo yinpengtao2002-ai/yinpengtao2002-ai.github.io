@@ -1,17 +1,20 @@
 "use client";
 
-import { type CSSProperties, type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type KeyboardEvent, type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
   BookOpen,
   ChevronLeft,
   ChevronRight,
+  Download,
   Eye,
   Layers,
   Loader2,
   RotateCcw,
+  Trophy,
   Trash2,
+  Volume2,
   WandSparkles,
 } from "lucide-react";
 
@@ -20,6 +23,7 @@ type VocabularyCard = {
   phonetic?: string;
   translation: string;
   example: string;
+  exampleTranslation?: string;
   source?: string;
   level?: string;
 };
@@ -59,6 +63,7 @@ const SAMPLE_RESULT: StudyCardResult = {
       phonetic: "/juːˈbɪkwɪtəs/",
       translation: "无处不在的，普遍存在的",
       example: "Smartphones have become ubiquitous in modern classrooms.",
+      exampleTranslation: "智能手机在现代课堂里已经无处不在。",
       source: "information feels ubiquitous but attention becomes fragmented",
       level: "雅思 / 托福",
     },
@@ -67,6 +72,7 @@ const SAMPLE_RESULT: StudyCardResult = {
       phonetic: "/fræɡˈmentɪd/",
       translation: "碎片化的，支离破碎的",
       example: "A fragmented schedule makes deep work difficult.",
+      exampleTranslation: "碎片化的日程会让深度工作变得困难。",
       source: "attention becomes fragmented",
       level: "CET-6",
     },
@@ -75,6 +81,7 @@ const SAMPLE_RESULT: StudyCardResult = {
       phonetic: "/ˈdjʊərəbl/",
       translation: "持久的，耐用的",
       example: "Durable habits are built through repeated practice.",
+      exampleTranslation: "持久的习惯是在反复练习中建立起来的。",
       source: "without building durable understanding",
       level: "CET-6",
     },
@@ -83,6 +90,7 @@ const SAMPLE_RESULT: StudyCardResult = {
       phonetic: "/dɪˈlɪbərət/",
       translation: "有意的，审慎的",
       example: "She made a deliberate choice to slow down and read carefully.",
+      exampleTranslation: "她有意识地选择放慢速度，认真阅读。",
       source: "A deliberate reading habit changes that",
       level: "雅思",
     },
@@ -91,6 +99,7 @@ const SAMPLE_RESULT: StudyCardResult = {
       phonetic: "/ˈnjuːɑːns/",
       translation: "细微差别，微妙含义",
       example: "The translation missed the nuance of the original sentence.",
+      exampleTranslation: "这段翻译漏掉了原句中的微妙含义。",
       source: "words that carry nuance, ambiguity, or analytical weight",
       level: "托福 / 高阶表达",
     },
@@ -99,6 +108,7 @@ const SAMPLE_RESULT: StudyCardResult = {
       phonetic: "/ˌæmbɪˈɡjuːəti/",
       translation: "模糊性，歧义",
       example: "The policy left too much ambiguity for teachers.",
+      exampleTranslation: "这项政策给教师留下了太多模糊空间。",
       source: "words that carry nuance, ambiguity, or analytical weight",
       level: "雅思 / 托福",
     },
@@ -107,6 +117,7 @@ const SAMPLE_RESULT: StudyCardResult = {
       phonetic: "/əbˈskjʊə(r)/",
       translation: "晦涩的，不知名的",
       example: "The article uses obscure terms without explaining them.",
+      exampleTranslation: "这篇文章使用了晦涩术语，却没有解释。",
       source: "collecting obscure words for display",
       level: "CET-6 / 雅思",
     },
@@ -115,6 +126,7 @@ const SAMPLE_RESULT: StudyCardResult = {
       phonetic: "/rɪˈzɪliəns/",
       translation: "韧性，恢复力",
       example: "Resilience helps students recover from setbacks.",
+      exampleTranslation: "韧性帮助学生从挫折中恢复过来。",
       source: "a word like resilience, agency, or distortion",
       level: "托福 / 学术",
     },
@@ -123,6 +135,7 @@ const SAMPLE_RESULT: StudyCardResult = {
       phonetic: "/ˈeɪdʒənsi/",
       translation: "主动性，行动能力",
       example: "Learners need agency to choose better strategies.",
+      exampleTranslation: "学习者需要主动性，才能选择更好的策略。",
       source: "a word like resilience, agency, or distortion",
       level: "学术 / 高阶表达",
     },
@@ -131,6 +144,7 @@ const SAMPLE_RESULT: StudyCardResult = {
       phonetic: "/dɪˈstɔːʃn/",
       translation: "扭曲，失真",
       example: "The chart created a distortion of the real trend.",
+      exampleTranslation: "这张图扭曲了真实趋势。",
       source: "a word like resilience, agency, or distortion",
       level: "CET-6 / 学术",
     },
@@ -150,6 +164,8 @@ const PROGRESS_STEPS = [
   { threshold: 100, label: "正在校验输出格式" },
 ];
 
+const VOCABULARY_CSV_HEADER = "单词,音标,中文释义,英文例句,例句中文,来源,难度";
+
 function countEnglishWords(text: string) {
   return text.match(/[A-Za-z][A-Za-z'-]*/g)?.length ?? 0;
 }
@@ -168,10 +184,38 @@ function compactText(text: string, maxLength: number) {
   return `${normalized.slice(0, maxLength).replace(/[，。；、：,.:\s]+$/, "")}...`;
 }
 
+function normalizeDisplayText(text = "") {
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function escapeCsvValue(value = "") {
+  const normalized = normalizeDisplayText(value);
+  return `"${normalized.replace(/"/g, '""')}"`;
+}
+
+function buildVocabularyCsv(cards: VocabularyCard[]) {
+  const rows = cards.map((card) =>
+    [
+      card.word,
+      card.phonetic || "",
+      card.translation,
+      card.example,
+      card.exampleTranslation || "",
+      card.source || "",
+      card.level || "",
+    ]
+      .map(escapeCsvValue)
+      .join(","),
+  );
+
+  return `\uFEFF${[VOCABULARY_CSV_HEADER, ...rows].join("\n")}`;
+}
+
 function formatCardBack(card: VocabularyCard) {
   const parts = [
     card.translation,
     card.example ? `例句：${card.example}` : "",
+    card.exampleTranslation ? `例句中文：${card.exampleTranslation}` : "",
     card.source ? `来源：${card.source}` : "",
   ];
 
@@ -183,8 +227,8 @@ function getCardTextDensity(card: VocabularyCard | null): CardTextDensity {
 
   const wordLength = compactText(card.word, 48).length;
   const translationLength = compactText(card.translation, 120).length;
-  const exampleLength = compactText(card.example, 180).length;
-  const backLength = compactText(formatCardBack(card), 260).length;
+  const exampleLength = normalizeDisplayText(card.example).length + normalizeDisplayText(card.exampleTranslation).length;
+  const backLength = normalizeDisplayText(formatCardBack(card)).length;
 
   if (wordLength > 28 || translationLength > 62 || exampleLength > 120 || backLength > 210) {
     return "compact";
@@ -211,6 +255,16 @@ function hasCardBeenRemembered(memoryStats: Record<number, CardMemoryState>, car
 
 function hasCompletedLearningRound(memoryStats: Record<number, CardMemoryState>, totalCards: number) {
   return totalCards > 0 && Array.from({ length: totalCards }, (_, index) => index).every((index) => hasCardBeenRemembered(memoryStats, index));
+}
+
+function hasCompletedCheckRound(memoryStats: Record<number, CardMemoryState>, totalCards: number) {
+  return (
+    totalCards > 0 &&
+    Array.from({ length: totalCards }, (_, index) => index).every((index) => {
+      const memory = memoryStats[index];
+      return memory?.lastRating === "remembered" && memory.remembered >= 2;
+    })
+  );
 }
 
 function buildLearningQueue(
@@ -276,6 +330,7 @@ export default function StudyCardsTool() {
         : ((activeCardIndex + 1) / totalCards) * 100
       : 0;
   const activeMemory = memoryStats[activeCardIndex];
+  const isSessionComplete = practiceMode === "check" && hasCompletedCheckRound(memoryStats, totalCards);
   const practiceModeLabel = practiceMode === "learn" ? "先认词" : "回忆检查";
   const swipeHelp =
     practiceMode === "learn"
@@ -411,6 +466,56 @@ export default function StudyCardsTool() {
     settleCardMotion();
   }
 
+  function restartCheckRound() {
+    if (!result) return;
+
+    const nextMemoryStats = Object.fromEntries(
+      result.cards.map((_, index) => [
+        index,
+        {
+          remembered: 1,
+          shaky: memoryStats[index]?.shaky ?? 0,
+          lastRating: "remembered" as const,
+          lastReviewedTurn: reviewTurn,
+        },
+      ]),
+    );
+
+    clearCardTimer();
+    resetCardDrag();
+    setPracticeMode("check");
+    setActiveCardIndex(0);
+    setAnswerRevealed(false);
+    setMemoryStats(nextMemoryStats);
+    setReviewQueue(buildReviewQueue(result.cards.length, 0));
+    setCardMotion("enter-prev");
+    settleCardMotion();
+  }
+
+  function downloadVocabularyList() {
+    if (!result?.cards.length) return;
+
+    const blob = new Blob([buildVocabularyCsv(result.cards)], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `ai-vocabulary-cards-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function playActiveCardPronunciation() {
+    if (!activeCard || !("speechSynthesis" in window)) return;
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(activeCard.word);
+    utterance.lang = "en-US";
+    utterance.rate = 0.88;
+    window.speechSynthesis.speak(utterance);
+  }
+
   function loadSampleContent() {
     setContent(SAMPLE_CONTENT);
     setDifficulty(DIFFICULTY_OPTIONS[2]);
@@ -471,6 +576,8 @@ export default function StudyCardsTool() {
   function scheduleRatedCard(rating: CardMemoryRating, nextMemoryStats: Record<number, CardMemoryState>) {
     const currentMemory = nextMemoryStats[activeCardIndex] ?? { remembered: 0, shaky: 0 };
     const queueWithoutCurrent = reviewQueue.filter((index) => index !== activeCardIndex);
+    if (rating === "remembered" && currentMemory.remembered >= 2) return queueWithoutCurrent;
+
     const insertAt =
       rating === "shaky"
         ? Math.min(1, queueWithoutCurrent.length)
@@ -555,6 +662,12 @@ export default function StudyCardsTool() {
     }
 
     const scheduledQueue = scheduleRatedCard("remembered", nextMemoryStats);
+    if (hasCompletedCheckRound(nextMemoryStats, totalCards)) {
+      setReviewQueue([]);
+      setAnswerRevealed(true);
+      return;
+    }
+
     if (totalCards <= 1) {
       setReviewQueue(scheduledQueue);
       setAnswerRevealed(false);
@@ -589,6 +702,11 @@ export default function StudyCardsTool() {
     }
 
     const scheduledQueue = scheduleRatedCard(rating, nextMemoryStats);
+    if (rating === "remembered" && hasCompletedCheckRound(nextMemoryStats, totalCards)) {
+      setReviewQueue([]);
+      setAnswerRevealed(true);
+      return;
+    }
 
     if (totalCards <= 1) {
       setReviewQueue(scheduledQueue);
@@ -602,6 +720,13 @@ export default function StudyCardsTool() {
   function revealAnswer() {
     if (wasDraggingRef.current) return;
     setAnswerRevealed(true);
+  }
+
+  function handleAnswerPanelKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+
+    event.preventDefault();
+    revealAnswer();
   }
 
   function handleCardPointerDown(event: PointerEvent<HTMLDivElement>) {
@@ -837,10 +962,23 @@ export default function StudyCardsTool() {
                 <div className="study-cards-empty-preview" aria-hidden="true">
                   <div className="study-cards-empty-card">
                     <span>01</span>
-                    <strong>ubiquitous</strong>
-                    <p>音标 · /juːˈbɪkwɪtəs/</p>
+                    <div className="study-cards-empty-word-row">
+                      <strong>ubiquitous</strong>
+                      <span className="study-cards-empty-speak">
+                        <Volume2 aria-hidden="true" />
+                        <span className="study-cards-empty-speak-label">朗读</span>
+                      </span>
+                    </div>
+                    <p>
+                      <b>音标</b>
+                      /juːˈbɪkwɪtəs/
+                    </p>
                     <div className="study-cards-empty-answer">
-                      无处不在的，普遍存在的
+                      <strong>无处不在的，普遍存在的</strong>
+                      <span className="study-cards-empty-example">
+                        Smartphones have become ubiquitous in modern classrooms.
+                      </span>
+                      <small>智能手机在现代课堂里已经无处不在。</small>
                     </div>
                   </div>
                 </div>
@@ -856,103 +994,163 @@ export default function StudyCardsTool() {
                     <p>{practiceModeLabel}</p>
                     <h2>{result.summary || "先想，再翻面"}</h2>
                   </div>
-                  <span>
-                    {practiceMode === "learn" ? `已认识 ${learnedCardCount} / ${totalCards}` : `第 ${activeCardIndex + 1} / ${totalCards} 张`}
-                  </span>
+                  <div className="study-cards-result-actions">
+                    <button type="button" onClick={downloadVocabularyList}>
+                      <Download aria-hidden="true" />
+                      导出词表
+                    </button>
+                    <span className="study-cards-result-count">
+                      {practiceMode === "learn" ? `已认识 ${learnedCardCount} / ${totalCards}` : `第 ${activeCardIndex + 1} / ${totalCards} 张`}
+                    </span>
+                  </div>
                 </div>
 
-                <p className="study-cards-swipe-help">{swipeHelp}</p>
-
-                <div className="study-cards-card-progress" aria-hidden="true">
-                  <span style={{ width: `${cardProgress}%` }} />
-                </div>
-
-                <div className="study-cards-deck-shell">
-                  <button
-                    type="button"
-                    className="study-cards-nav-arrow is-prev"
-                    onClick={goToPreviousCard}
-                    disabled={cardMotion !== "idle" || totalCards <= 1}
-                    aria-label="上一张卡片"
-                  >
-                    <ChevronLeft aria-hidden="true" />
-                  </button>
-
-                  <div className="study-cards-deck" aria-live="polite">
-                    <div
-                      className={cardStageClassName}
-                      style={cardStageStyle}
-                      onPointerDown={handleCardPointerDown}
-                      onPointerMove={handleCardPointerMove}
-                      onPointerUp={handleCardPointerUp}
-                      onPointerCancel={handleCardPointerCancel}
-                    >
-                      <article
-                        key={activeCardIndex}
-                        className={`study-cards-practice-card is-${cardMotion} is-density-${activeCardDensity}`}
-                        aria-label="当前单词卡片"
-                      >
-                        <div className="study-cards-question-block">
-                          <div className="study-cards-practice-kicker">
-                            <span>{String(activeCardIndex + 1).padStart(2, "0")}</span>
-                            <span>{practiceModeLabel}</span>
-                          </div>
-                          <h3>{compactText(activeCard.word, 48)}</h3>
-                        </div>
-                        <p className="study-cards-recall-hint">
-                          <span>{activeCard.phonetic ? "音标" : "难度"}</span>
-                          {compactText(activeCard.phonetic || activeCard.level || "先回忆中文释义", 96)}
-                        </p>
-                        <button
-                          type="button"
-                          className={`study-cards-answer-panel${answerRevealed ? " is-revealed" : " is-hidden"}`}
-                          onClick={revealAnswer}
-                          aria-expanded={answerRevealed}
-                          aria-label={answerRevealed ? "释义已显示" : "显示释义"}
-                        >
-                          {answerRevealed ? (
-                            <span className="study-cards-answer-copy">
-                              <strong>{compactText(activeCard.translation, 120)}</strong>
-                              <span>{compactText(activeCard.example, 180)}</span>
-                              {activeCard.source && <small>{compactText(activeCard.source, 160)}</small>}
-                              {activeCard.level && <small>{compactText(activeCard.level, 48)}</small>}
-                            </span>
-                          ) : (
-                            <span className="study-cards-answer-placeholder">
-                              <span className="study-cards-answer-placeholder-icon">
-                                <Eye aria-hidden="true" />
-                              </span>
-                              <span>先在心里说中文释义</span>
-                              <small>答完后点这里看释义</small>
-                            </span>
-                          )}
-                        </button>
-                        <div className="study-cards-memory-actions" aria-label="记忆反馈">
-                          <button
-                            type="button"
-                            className="is-shaky"
-                            onClick={() => rateActiveCard("shaky")}
-                            disabled={cardMotion !== "idle"}
-                          >
-                            <RotateCcw aria-hidden="true" />
-                            再记一次
-                          </button>
-                          <small>{memoryPrompt}</small>
-                        </div>
-                      </article>
+                {isSessionComplete ? (
+                  <div className="study-cards-bingo" role="status" aria-live="polite">
+                    <span className="study-cards-bingo-icon">
+                      <Trophy aria-hidden="true" />
+                    </span>
+                    <p>BINGO</p>
+                    <h3>这组单词通关了</h3>
+                    <span>所有单词都完成了先认词和回忆检查，可以导出词表留作复习。</span>
+                    <div className="study-cards-bingo-actions">
+                      <button type="button" onClick={restartCheckRound}>
+                        <RotateCcw aria-hidden="true" />
+                        再复习一轮
+                      </button>
+                      <button type="button" onClick={downloadVocabularyList}>
+                        <Download aria-hidden="true" />
+                        导出词表
+                      </button>
                     </div>
                   </div>
+                ) : (
+                  <>
+                    <p className="study-cards-swipe-help">{swipeHelp}</p>
 
-                  <button
-                    type="button"
-                    className="study-cards-nav-arrow is-next"
-                    onClick={goToNextCard}
-                    disabled={cardMotion !== "idle" || totalCards <= 1}
-                    aria-label="下一张卡片"
-                  >
-                    <ChevronRight aria-hidden="true" />
-                  </button>
-                </div>
+                    <div className="study-cards-card-progress" aria-hidden="true">
+                      <span style={{ width: `${cardProgress}%` }} />
+                    </div>
+
+                    <div className="study-cards-deck-shell">
+                      <button
+                        type="button"
+                        className="study-cards-nav-arrow is-prev"
+                        onClick={goToPreviousCard}
+                        disabled={cardMotion !== "idle" || totalCards <= 1}
+                        aria-label="上一张卡片"
+                      >
+                        <ChevronLeft aria-hidden="true" />
+                      </button>
+
+                      <div className="study-cards-deck" aria-live="polite">
+                        <div
+                          className={cardStageClassName}
+                          style={cardStageStyle}
+                          onPointerDown={handleCardPointerDown}
+                          onPointerMove={handleCardPointerMove}
+                          onPointerUp={handleCardPointerUp}
+                          onPointerCancel={handleCardPointerCancel}
+                        >
+                          <article
+                            key={activeCardIndex}
+                            className={`study-cards-practice-card is-${cardMotion} is-density-${activeCardDensity}`}
+                            aria-label="当前单词卡片"
+                          >
+                            <div className="study-cards-question-block">
+                              <div className="study-cards-practice-kicker">
+                                <span>{String(activeCardIndex + 1).padStart(2, "0")}</span>
+                                <span>{practiceModeLabel}</span>
+                              </div>
+                              <div className="study-cards-word-row">
+                                <h3>{compactText(activeCard.word, 48)}</h3>
+                                <button
+                                  type="button"
+                                  className="study-cards-speak-button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    playActiveCardPronunciation();
+                                  }}
+                                  aria-label="朗读单词"
+                                >
+                                  <Volume2 aria-hidden="true" />
+                                  <span className="study-cards-speak-label">朗读</span>
+                                </button>
+                              </div>
+                            </div>
+                            <p className="study-cards-recall-hint">
+                              <span>{activeCard.phonetic ? "音标" : "难度"}</span>
+                              {compactText(activeCard.phonetic || activeCard.level || "先回忆中文释义", 96)}
+                            </p>
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              className={`study-cards-answer-panel${answerRevealed ? " is-revealed" : " is-hidden"}`}
+                              onClick={revealAnswer}
+                              onKeyDown={handleAnswerPanelKeyDown}
+                              aria-expanded={answerRevealed}
+                              aria-label={answerRevealed ? "释义已显示" : "显示释义"}
+                            >
+                              {answerRevealed ? (
+                                <span className="study-cards-answer-copy">
+                                  <strong>{compactText(activeCard.translation, 120)}</strong>
+                                  {activeCard.example && (
+                                    <span className="study-cards-example-line">
+                                      {normalizeDisplayText(activeCard.example)}
+                                    </span>
+                                  )}
+                                  {activeCard.exampleTranslation && (
+                                    <span className="study-cards-example-translation">
+                                      {normalizeDisplayText(activeCard.exampleTranslation)}
+                                    </span>
+                                  )}
+                                  {activeCard.level && (
+                                    <span className="study-cards-answer-meta">
+                                      <small>
+                                        <b>难度</b>
+                                        {compactText(activeCard.level, 48)}
+                                      </small>
+                                    </span>
+                                  )}
+                                </span>
+                              ) : (
+                                <span className="study-cards-answer-placeholder">
+                                  <span className="study-cards-answer-placeholder-icon">
+                                    <Eye aria-hidden="true" />
+                                  </span>
+                                  <span>先在心里说中文释义</span>
+                                  <small>答完后点这里看释义</small>
+                                </span>
+                              )}
+                            </div>
+                            <div className="study-cards-memory-actions" aria-label="记忆反馈">
+                              <button
+                                type="button"
+                                className="is-shaky"
+                                onClick={() => rateActiveCard("shaky")}
+                                disabled={cardMotion !== "idle"}
+                              >
+                                <RotateCcw aria-hidden="true" />
+                                再记一次
+                              </button>
+                              <small>{memoryPrompt}</small>
+                            </div>
+                          </article>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="study-cards-nav-arrow is-next"
+                        onClick={goToNextCard}
+                        disabled={cardMotion !== "idle" || totalCards <= 1}
+                        aria-label="下一张卡片"
+                      >
+                        <ChevronRight aria-hidden="true" />
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </section>
