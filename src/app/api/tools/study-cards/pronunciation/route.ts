@@ -4,11 +4,24 @@ import { getSpeechProvider, type SpeechProvider } from "@/lib/ai/providers";
 const SPEECH_TIMEOUT_MS = 20000;
 const PUBLIC_STUDY_CARDS_PRONUNCIATION_API_URL = "https://yinpengtao.cn/api/tools/study-cards/pronunciation/";
 const DICTIONARY_API_URL = "https://api.dictionaryapi.dev/api/v2/entries/en";
+const WIKIMEDIA_COMMONS_API_URL = "https://commons.wikimedia.org/w/api.php";
 const TTS_FALLBACK_MODELS = ["tts-1", "gpt-4o-mini-tts"];
 
 type DictionaryEntry = {
   phonetics?: Array<{
     audio?: string;
+  }>;
+};
+
+type PronunciationAudio = {
+  audio: ArrayBuffer;
+  contentType: string;
+};
+
+type WikimediaPage = {
+  title?: string;
+  imageinfo?: Array<{
+    url?: string;
   }>;
 };
 
@@ -36,7 +49,7 @@ async function proxyToPublicPronunciationApi(word: string) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Accept: "audio/mpeg",
+      Accept: "audio/*",
     },
     body: JSON.stringify({ word }),
   });
@@ -52,9 +65,10 @@ async function proxyToPublicPronunciationApi(word: string) {
     );
   }
 
+  const contentType = response.headers.get("content-type") || "audio/mpeg";
   return new Response(await response.arrayBuffer(), {
     headers: {
-      "Content-Type": "audio/mpeg",
+      "Content-Type": contentType,
       "Cache-Control": "public, max-age=86400",
     },
   });
@@ -74,7 +88,20 @@ function selectDictionaryAudio(entries: DictionaryEntry[]) {
   );
 }
 
-async function fetchDictionaryPronunciation(word: string) {
+async function fetchAudioUrl(audioUrl: string): Promise<PronunciationAudio | null> {
+  const audioResponse = await fetch(audioUrl, { headers: { Accept: "audio/*" } });
+  if (!audioResponse.ok) return null;
+
+  const contentType = audioResponse.headers.get("content-type") || "";
+  if (!contentType.includes("audio/")) return null;
+
+  return {
+    audio: await audioResponse.arrayBuffer(),
+    contentType,
+  };
+}
+
+async function fetchDictionaryPronunciation(word: string): Promise<PronunciationAudio | null> {
   if (word.includes(" ")) return null;
 
   const lookupResponse = await fetch(`${DICTIONARY_API_URL}/${encodeURIComponent(word.toLowerCase())}`, {
@@ -86,12 +113,54 @@ async function fetchDictionaryPronunciation(word: string) {
   const audioUrl = Array.isArray(entries) ? selectDictionaryAudio(entries) : "";
   if (!audioUrl) return null;
 
-  const audioResponse = await fetch(audioUrl, { headers: { Accept: "audio/mpeg" } });
-  if (!audioResponse.ok) return null;
+  return fetchAudioUrl(audioUrl);
+}
 
-  const contentType = audioResponse.headers.get("content-type") || "";
-  if (!contentType.includes("audio/")) return null;
-  return audioResponse.arrayBuffer();
+function selectWikimediaAudio(pages: WikimediaPage[], word: string) {
+  const normalizedWord = word.toLowerCase().replace(/\s+/g, "_");
+  const candidates = pages
+    .map((page) => ({
+      title: page.title || "",
+      url: page.imageinfo?.[0]?.url || "",
+    }))
+    .filter((item) => item.url && /\.(?:oga|ogg|mp3|wav)(?:$|\?)/i.test(item.url));
+
+  return (
+    candidates.find((item) => item.title.toLowerCase() === `file:en-us-${normalizedWord}.oga`)?.url ||
+    candidates.find((item) => item.title.toLowerCase() === `file:en-us-${normalizedWord}.ogg`)?.url ||
+    candidates.find((item) => item.title.toLowerCase().startsWith("file:en-us-"))?.url ||
+    candidates.find((item) => item.title.includes("LL-Q1860") && item.title.toLowerCase().includes(normalizedWord))?.url ||
+    candidates.find((item) => item.title.toLowerCase().includes(normalizedWord))?.url ||
+    ""
+  );
+}
+
+async function fetchWikimediaCommonsPronunciation(word: string): Promise<PronunciationAudio | null> {
+  if (word.includes(" ")) return null;
+
+  const query = new URLSearchParams({
+    action: "query",
+    format: "json",
+    generator: "search",
+    gsrnamespace: "6",
+    gsrlimit: "12",
+    gsrsearch: `File:En-us-${word.toLowerCase()}.oga OR File:En-us-${word.toLowerCase()}.ogg OR LL-Q1860 eng ${word.toLowerCase()}`,
+    prop: "imageinfo",
+    iiprop: "url",
+    origin: "*",
+  });
+
+  const response = await fetch(`${WIKIMEDIA_COMMONS_API_URL}?${query.toString()}`, {
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) return null;
+
+  const payload = (await response.json().catch(() => null)) as { query?: { pages?: Record<string, WikimediaPage> } } | null;
+  const pages = Object.values(payload?.query?.pages ?? {});
+  const audioUrl = selectWikimediaAudio(pages, word);
+  if (!audioUrl) return null;
+
+  return fetchAudioUrl(audioUrl);
 }
 
 async function callSpeechProvider(provider: SpeechProvider, word: string) {
@@ -121,7 +190,10 @@ async function callSpeechProvider(provider: SpeechProvider, word: string) {
       throw new Error(detail.slice(0, 500) || `Upstream responded with ${response.status}`);
     }
 
-    return response.arrayBuffer();
+    return {
+      audio: await response.arrayBuffer(),
+      contentType: response.headers.get("content-type") || "audio/mpeg",
+    };
   } finally {
     clearTimeout(timeoutId);
   }
@@ -156,9 +228,19 @@ export async function POST(req: NextRequest) {
 
   const dictionaryAudio = await fetchDictionaryPronunciation(word);
   if (dictionaryAudio) {
-    return new Response(dictionaryAudio, {
+    return new Response(dictionaryAudio.audio, {
       headers: {
-        "Content-Type": "audio/mpeg",
+        "Content-Type": dictionaryAudio.contentType,
+        "Cache-Control": "public, max-age=86400",
+      },
+    });
+  }
+
+  const wikimediaAudio = await fetchWikimediaCommonsPronunciation(word);
+  if (wikimediaAudio) {
+    return new Response(wikimediaAudio.audio, {
+      headers: {
+        "Content-Type": wikimediaAudio.contentType,
         "Cache-Control": "public, max-age=86400",
       },
     });
@@ -170,9 +252,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const audio = await callSpeechProviderWithFallbackModels(provider, word);
-    return new Response(audio, {
+    const contentType = audio.contentType;
+    return new Response(audio.audio, {
       headers: {
-        "Content-Type": "audio/mpeg",
+        "Content-Type": contentType,
         "Cache-Control": "public, max-age=86400",
       },
     });

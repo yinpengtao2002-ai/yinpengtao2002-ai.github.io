@@ -1,6 +1,6 @@
 "use client";
 
-import { type CSSProperties, type KeyboardEvent, type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -50,7 +50,7 @@ type CardMemoryState = {
 const DRAG_THRESHOLD = 90;
 const MAX_DRAG_OFFSET = 150;
 
-const SAMPLE_CONTENT = `In an age of algorithmic feeds, information feels ubiquitous but attention becomes fragmented. Students may skim dozens of articles without building durable understanding, because the most important ideas are often hidden inside unfamiliar vocabulary. A deliberate reading habit changes that: instead of rushing through every sentence, a reader pauses at words that carry nuance, ambiguity, or analytical weight.
+const SAMPLE_CONTENT = `In an age of algorithmic feeds, information feels ubiquitous but attention becomes fragmented. Students may skim dozens of articles without doing deep work or building durable understanding, because the most important ideas are often hidden inside unfamiliar vocabulary. A deliberate reading habit changes that: instead of rushing through every sentence, a reader pauses at words that carry nuance, ambiguity, or analytical weight.
 
 Good vocabulary study is not about collecting obscure words for display. It is about noticing which words unlock the argument of a text. When a word like resilience, agency, or distortion appears in a paragraph, it often signals how the author frames a problem. Learning those words in context makes reading less mechanical and writing more precise.`;
 
@@ -77,13 +77,13 @@ const SAMPLE_RESULT: StudyCardResult = {
       level: "CET-6",
     },
     {
-      word: "durable",
-      phonetic: "/ˈdjʊərəbl/",
-      translation: "持久的，耐用的",
-      example: "Durable habits are built through repeated practice.",
-      exampleTranslation: "持久的习惯是在反复练习中建立起来的。",
-      source: "without building durable understanding",
-      level: "CET-6",
+      word: "deep work",
+      phonetic: "/diːp wɜːrk/",
+      translation: "深度工作，专注完成高价值任务",
+      example: "A fragmented schedule makes deep work difficult.",
+      exampleTranslation: "碎片化的日程会让深度工作变得困难。",
+      source: "without doing deep work or building durable understanding",
+      level: "高阶表达",
     },
     {
       word: "deliberate",
@@ -131,12 +131,12 @@ const SAMPLE_RESULT: StudyCardResult = {
       level: "托福 / 学术",
     },
     {
-      word: "agency",
-      phonetic: "/ˈeɪdʒənsi/",
-      translation: "主动性，行动能力",
-      example: "Learners need agency to choose better strategies.",
-      exampleTranslation: "学习者需要主动性，才能选择更好的策略。",
-      source: "a word like resilience, agency, or distortion",
+      word: "analytical weight",
+      phonetic: "/ˌænəˈlɪtɪkəl weɪt/",
+      translation: "分析分量，论证中的关键意义",
+      example: "The phrase carries analytical weight in the author's argument.",
+      exampleTranslation: "这个短语在作者的论证中承载着关键分析意义。",
+      source: "words that carry nuance, ambiguity, or analytical weight",
       level: "学术 / 高阶表达",
     },
     {
@@ -164,7 +164,7 @@ const PROGRESS_STEPS = [
   { threshold: 100, label: "正在校验输出格式" },
 ];
 
-const VOCABULARY_CSV_HEADER = "单词,音标,中文释义,英文例句,例句中文,来源,难度";
+const VOCABULARY_CSV_HEADER = "单词/短语,音标,中文释义,英文例句,例句中文,来源,难度";
 const HIGH_QUALITY_ENGLISH_VOICE_HINTS = [
   "samantha",
   "daniel",
@@ -206,6 +206,10 @@ function normalizeDisplayText(text = "") {
   return text.replace(/\s+/g, " ").trim();
 }
 
+function escapeRegExp(text: string) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function escapeCsvValue(value = "") {
   const normalized = normalizeDisplayText(value);
   return `"${normalized.replace(/"/g, '""')}"`;
@@ -227,6 +231,43 @@ function buildVocabularyCsv(cards: VocabularyCard[]) {
   );
 
   return `\uFEFF${[VOCABULARY_CSV_HEADER, ...rows].join("\n")}`;
+}
+
+function renderHighlightedExample(example: string, target: string) {
+  const normalizedExample = normalizeDisplayText(example);
+  const normalizedTarget = normalizeDisplayText(target);
+  if (!normalizedExample || !normalizedTarget) return normalizedExample;
+
+  const targetPattern = normalizedTarget.split(/\s+/).map(escapeRegExp).join("\\s+");
+  const matcher = new RegExp(`(^|[^A-Za-z])(${targetPattern})(?=$|[^A-Za-z])`, "gi");
+  const parts: ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = matcher.exec(normalizedExample)) !== null) {
+    const prefix = match[1] ?? "";
+    const matchedText = match[2] ?? "";
+    const targetStart = match.index + prefix.length;
+    const targetEnd = targetStart + matchedText.length;
+
+    if (targetStart > lastIndex) {
+      parts.push(normalizedExample.slice(lastIndex, targetStart));
+    }
+
+    parts.push(
+      <strong className="study-cards-example-highlight" key={`${targetStart}-${matchedText}`}>
+        {normalizedExample.slice(targetStart, targetEnd)}
+      </strong>,
+    );
+    lastIndex = targetEnd;
+  }
+
+  if (parts.length === 0) return normalizedExample;
+  if (lastIndex < normalizedExample.length) {
+    parts.push(normalizedExample.slice(lastIndex));
+  }
+
+  return parts;
 }
 
 function scoreEnglishVoice(voice: SpeechSynthesisVoice) {
@@ -597,7 +638,7 @@ export default function StudyCardsTool() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Accept: "audio/mpeg",
+          Accept: "audio/*",
         },
         body: JSON.stringify({ word }),
       });
@@ -906,7 +947,7 @@ export default function StudyCardsTool() {
 
   async function generateCards() {
     if (!canSubmit) {
-      setError("请先输入至少 3 个英文单词，或一段 80 字以上英文文章。");
+      setError("请先输入至少 3 个英文单词/短语，或一段 80 字以上英文文章。");
       return;
     }
 
@@ -959,7 +1000,7 @@ export default function StudyCardsTool() {
 
       <section className="study-cards-shell" aria-label="AI 单词卡">
         <div className="study-cards-workspace">
-          <section className="study-cards-input-panel" aria-label="输入英文文章或单词清单">
+          <section className="study-cards-input-panel" aria-label="输入英文文章或单词/短语清单">
             <div className="study-cards-title-row">
               <div>
                 <p>AI Vocabulary Cards</p>
@@ -976,13 +1017,13 @@ export default function StudyCardsTool() {
             )}
 
             <label className="study-cards-textarea-label" htmlFor="study-card-source">
-              输入英文文章或逐行单词
+              输入英文文章或逐行单词/短语
             </label>
             <textarea
               id="study-card-source"
               value={content}
               onChange={(event) => setContent(event.target.value)}
-              placeholder="粘贴英文文章，AI 会挑出值得背的难词；也可以每行输入一个单词，AI 会补中文释义和例句。"
+              placeholder="粘贴英文文章，AI 会挑出值得背的难词和短语；也可以每行输入一个单词或短语，AI 会补中文释义和例句。"
               className="study-cards-textarea"
             />
 
@@ -1214,7 +1255,7 @@ export default function StudyCardsTool() {
                                   <strong>{compactText(activeCard.translation, 120)}</strong>
                                   {activeCard.example && (
                                     <span className="study-cards-example-line">
-                                      {normalizeDisplayText(activeCard.example)}
+                                      {renderHighlightedExample(activeCard.example, activeCard.word)}
                                     </span>
                                   )}
                                   {activeCard.exampleTranslation && (

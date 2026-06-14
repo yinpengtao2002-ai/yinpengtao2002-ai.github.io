@@ -130,7 +130,7 @@ test("AI vocabulary card results use a one-card spaced-memory flow", async () =>
   assert.match(client, /导出词表/);
   assert.match(client, /downloadVocabularyList/);
   assert.match(client, /buildVocabularyCsv/);
-  assert.match(client, /单词,音标,中文释义,英文例句,例句中文,来源,难度/);
+  assert.match(client, /单词\/短语,音标,中文释义,英文例句,例句中文,来源,难度/);
   assert.match(client, /text\/csv;charset=utf-8/);
   assert.match(client, /URL\.createObjectURL/);
   assert.match(client, /playActiveCardPronunciation/);
@@ -140,6 +140,9 @@ test("AI vocabulary card results use a one-card spaced-memory flow", async () =>
   assert.match(client, /new Audio/);
   assert.match(client, /response\.blob\(\)/);
   assert.match(client, /audio\.play\(\)/);
+  assert.match(client, /renderHighlightedExample/);
+  assert.match(client, /escapeRegExp/);
+  assert.match(client, /study-cards-example-highlight/);
   assert.match(client, /speechSynthesis/);
   assert.match(client, /SpeechSynthesisUtterance/);
   assert.match(client, /HIGH_QUALITY_ENGLISH_VOICE_HINTS/);
@@ -152,6 +155,8 @@ test("AI vocabulary card results use a one-card spaced-memory flow", async () =>
   assert.match(client, /study-cards-speak-label/);
   assert.doesNotMatch(client, /compactText\(activeCard\.source,\s*160\)/);
   assert.match(client, /study-cards-example-line/);
+  assert.match(client, /deep work/);
+  assert.match(client, /analytical weight/);
   assert.match(client, /study-cards-example-translation/);
   assert.match(client, /formatCardBack/);
   assert.match(client, /compactText\(activeCard\.word,\s*48\)/);
@@ -182,6 +187,7 @@ test("AI vocabulary card results use a one-card spaced-memory flow", async () =>
   assert.match(styles, /\.study-cards-speak-label/);
   assert.match(styles, /\.study-cards-bingo/);
   assert.match(styles, /\.study-cards-example-line/);
+  assert.match(styles, /\.study-cards-example-highlight/);
   assert.match(styles, /\.study-cards-example-translation/);
   assert.match(styles, /aspect-ratio:\s*3\s*\/\s*4/);
   assert.match(styles, /cursor: grab/);
@@ -203,7 +209,7 @@ test("AI vocabulary card results use a one-card spaced-memory flow", async () =>
   );
   assert.equal(sampleCards.length, 10);
   for (const card of sampleCards) {
-    assert.match(card.word, /^[A-Za-z][A-Za-z'-]*$/);
+    assert.match(card.word, /^[A-Za-z][A-Za-z' -]*$/);
     assert.ok(card.phonetic.length > 0, `sample phonetic is missing: ${card.word}`);
     assert.ok(card.translation.length <= 80, `sample translation is too long: ${card.translation}`);
     assert.ok(card.example.length <= 180, `sample example is too long: ${card.example}`);
@@ -229,10 +235,11 @@ test("AI vocabulary card endpoint asks for article extraction and word-list enri
   assert.match(route, /60000/);
   assert.match(route, /errorCode/);
   assert.match(route, /API_NOT_CONFIGURED/);
-  assert.match(route, /英文单词卡/);
+  assert.match(route, /英文单词或短语卡/);
+  assert.match(route, /英文单词或短语卡/);
   assert.match(route, /逐行单词模式/);
   assert.match(route, /英文文章模式/);
-  assert.match(route, /挑选难度最高且值得记忆的单词/);
+  assert.match(route, /挑选难度最高且值得记忆的单词或短语/);
   assert.match(route, /不要选择专有名词、数字、缩写、过于常见的基础词/);
   assert.match(route, /word/);
   assert.match(route, /phonetic/);
@@ -247,7 +254,9 @@ test("AI vocabulary card endpoint asks for article extraction and word-list enri
   assert.match(route, /如果用户每行基本是一个英文单词/);
   assert.match(route, /保留用户给出的单词/);
   assert.match(route, /如果用户输入的是英文文章/);
-  assert.match(route, /只从原文中出现过的单词里选择/);
+  assert.match(route, /只从原文中出现过的单词或短语里选择/);
+  assert.match(route, /高价值短语/);
+  assert.match(route, /2 到 4 个英文词/);
   assert.match(route, /type StudyCardMode = "article" \| "word-list"/);
   assert.match(route, /expectedMode: StudyCardMode/);
   assert.match(route, /mode: expectedMode/);
@@ -279,13 +288,19 @@ test("AI vocabulary card pronunciation uses server-side high quality audio first
   assert.match(route, /DICTIONARY_API_URL/);
   assert.match(route, /fetchDictionaryPronunciation/);
   assert.match(route, /selectDictionaryAudio/);
+  assert.match(route, /WIKIMEDIA_COMMONS_API_URL/);
+  assert.match(route, /fetchWikimediaCommonsPronunciation/);
+  assert.match(route, /selectWikimediaAudio/);
+  assert.match(route, /En-us-/);
+  assert.match(route, /LL-Q1860/);
+  assert.match(route, /Content-Type":\s*contentType/);
   assert.match(route, /api\.dictionaryapi\.dev/);
   assert.match(route, /media\/pronunciations/);
   assert.match(route, /callSpeechProviderWithFallbackModels/);
   assert.match(route, /TTS_FALLBACK_MODELS/);
   assert.match(route, /response_format:\s*"mp3"/);
-  assert.match(route, /Accept:\s*"audio\/mpeg"/);
-  assert.match(route, /"Content-Type":\s*"audio\/mpeg"/);
+  assert.match(route, /Accept:\s*"audio\/\*"/);
+  assert.match(route, /"Content-Type":\s*contentType/);
   assert.match(route, /errorCode:\s*"TTS_NOT_CONFIGURED"/);
   assert.match(route, /errorCode:\s*"TTS_UPSTREAM_FAILED"/);
   assert.doesNotMatch(route, /CHAT_API_KEY/);

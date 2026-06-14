@@ -5038,6 +5038,11 @@ h6 {
   overflow-wrap: anywhere;
 }
 
+.study-cards-example-highlight {
+  color: color-mix(in srgb, var(--accent-secondary) 78%, var(--foreground));
+  font-weight: 950;
+}
+
 .study-cards-example-translation {
   display: block;
   margin-top: 8px;
