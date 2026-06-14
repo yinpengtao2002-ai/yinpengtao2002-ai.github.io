@@ -1047,7 +1047,7 @@ function getAPIErrorMessage(payload: APIResponse, fallback: string) {
   }
 
   if (payload.errorCode === "provider_invalid_plan" && payload.errors?.length) {
-    return `AI 计划没有通过校验：${payload.errors.join(" ")}`;
+    return getPlanClarificationMessage(payload.errors);
   }
 
   if (payload.errorCode === "provider_invalid_json") {
@@ -1059,6 +1059,21 @@ function getAPIErrorMessage(payload: APIResponse, fallback: string) {
   }
 
   return payload.error || fallback;
+}
+
+function getPlanClarificationMessage(errors: string[]) {
+  const errorText = errors.join(" ");
+  const needsMetric = /指标不存在|指标.*未填写|需要至少 1 个指标|明细表需要/.test(errorText);
+  const needsDimension = /需要.*维度字段|维度不存在|筛选字段不存在/.test(errorText);
+  const needsPeriod = /期间不存在|需要指定期间|开始期间|结束期间|排名环比需要/.test(errorText);
+  const hints = [
+    needsMetric ? "指标" : "",
+    needsDimension ? "拆分维度" : "",
+    needsPeriod ? "期间" : "",
+  ].filter(Boolean);
+  const hintText = hints.length ? hints.join("、") : "分析口径";
+
+  return `我还需要确认一个口径：这次问题里的${hintText}还不够明确。你可以补一句类似“看最新月份，按国家/车型拆，指标看销量和单车边际”；如果你想问某个国家，也可以直接说“5月巴西销量和单车边际，按车型拆”。`;
 }
 
 function AssistantAvatar({ compact = false }: { compact?: boolean }) {
@@ -1332,7 +1347,7 @@ export default function FinanceAIAssistantTool() {
       }
 
       const rows = getRowsForSchema(workbook, schema);
-      const filterResolution = resolveFinanceActionFilterMembers(rows, schema, plan.modules);
+      const filterResolution = resolveFinanceActionFilterMembers(rows, schema, plan.modules, question);
       if (!filterResolution.ok) {
         throw new Error(filterResolution.message);
       }

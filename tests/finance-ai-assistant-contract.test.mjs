@@ -425,6 +425,23 @@ test("finance AI assistant API validates provider action plans before returning 
   }));
 });
 
+test("finance AI assistant plan mode repairs missing dimensions before surfacing validation errors", async () => {
+  await withMockedProvider(async () => {
+    const response = await POST(makeRequest({
+      mode: "plan",
+      question: "巴西销量和单车边际怎么样？",
+      schema: makeSchema(),
+    }));
+    const payload = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.modules[0].dimension, "国家");
+    assert.equal(payload.modules[0].period, "2026-03");
+  }, JSON.stringify({
+    modules: [{ type: "bar_rank", metric: "边际", limit: 10 }],
+  }));
+});
+
 test("finance AI assistant plan mode aligns explicit rank directions before returning modules", async () => {
   const schema = {
     headers: ["Month", "Country", "Sales Volume", "Total Margin"],
@@ -1590,7 +1607,10 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(client, /computedModules/);
   assert.match(client, /chartCards/);
   assert.match(client, /resolveFinanceActionFilterMembers/);
+  assert.match(client, /resolveFinanceActionFilterMembers\(rows, schema, plan\.modules, question\)/);
   assert.match(client, /filterResolution\.ok/);
+  assert.doesNotMatch(client, /AI 计划没有通过校验/);
+  assert.match(client, /我还需要确认一个口径/);
   assert.doesNotMatch(client, /<p>\{message\.text\}<\/p>/);
   assert.match(styles, /\.finance-ai-page\s*\{[\s\S]*background:\s*var\(--finance-ai-page-surface\)/s);
   assert.doesNotMatch(styles, /\.finance-ai-access-gate/);

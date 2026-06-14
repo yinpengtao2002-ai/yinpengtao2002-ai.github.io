@@ -768,14 +768,29 @@ function alignPrimaryDimensionWithQuestion(
   }
 
   const dimension = getDimensionIntent(schema, userQuestion);
-  if (!dimension) {
+  if (dimension) {
+    return {
+      ...module,
+      dimension,
+    } as FinanceActionModule;
+  }
+
+  const fallbackDimension = getDefaultPrimaryDimension(schema);
+  if (!fallbackDimension) {
     return module;
   }
 
   return {
     ...module,
-    dimension,
+    dimension: fallbackDimension,
   } as FinanceActionModule;
+}
+
+function getDefaultPrimaryDimension(schema: FinanceSchema) {
+  const scenarioDimension = getScenarioDimension(schema);
+  return schema.dimensionColumns.find((dimension) => dimension === "国家" && dimension !== scenarioDimension) ??
+    schema.dimensionColumns.find((dimension) => dimension !== scenarioDimension) ??
+    "";
 }
 
 function alignExplicitDimensionMemberWithQuestion(

@@ -645,6 +645,50 @@ test("finance AI action filters move fuzzy dimension members to the only matchin
   assert.deepEqual(resolved.modules[0].filters, { "大区": ["右舵地区部"] });
 });
 
+test("finance AI action filters infer unique dimension members from the question", () => {
+  const filterRows = [
+    { "月份": "5月", "国家": "巴西", "车型": "S56EV", "销量": 10, "边际": 100 },
+    { "月份": "5月", "国家": "泰国", "车型": "S56EV", "销量": 12, "边际": 150 },
+    { "月份": "5月", "国家": "泰国", "车型": "T1D", "销量": 8, "边际": 80 },
+  ];
+  const schema = inferFinanceSchema(filterRows);
+  const resolved = resolveFinanceActionFilterMembers(filterRows, schema, [
+    {
+      type: "metric_snapshot",
+      metric: "销量",
+      period: "M05",
+    },
+    {
+      type: "trend_chart",
+      metric: "单车边际",
+    },
+  ], "泰国有没有卖 S56EV？单车边际是多少？");
+
+  assert.equal(resolved.ok, true);
+  assert.deepEqual(resolved.modules[0].filters, { "国家": ["泰国"], "车型": ["S56EV"] });
+  assert.deepEqual(resolved.modules[1].filters, { "国家": ["泰国"], "车型": ["S56EV"] });
+});
+
+test("finance AI action filters ask for dimension clarification when question members are ambiguous", () => {
+  const filterRows = [
+    { "月份": "5月", "大区": "右舵地区部", "品牌": "右舵品牌", "车型": "T1", "销量": 10, "边际": 100 },
+  ];
+  const schema = inferFinanceSchema(filterRows);
+  const resolved = resolveFinanceActionFilterMembers(filterRows, schema, [
+    {
+      type: "metric_snapshot",
+      metric: "销量",
+      period: "M05",
+    },
+  ], "右舵5月环比情况咋样？");
+
+  assert.equal(resolved.ok, false);
+  assert.match(resolved.message, /右舵/);
+  assert.match(resolved.message, /大区/);
+  assert.match(resolved.message, /品牌/);
+  assert.match(resolved.message, /哪个维度/);
+});
+
 test("finance AI action filters ask for dimension clarification when fuzzy members are ambiguous", () => {
   const filterRows = [
     { "月份": "5月", "大区": "右舵地区部", "品牌": "右舵品牌", "车型": "T1", "销量": 10, "边际": 100 },
@@ -1219,6 +1263,34 @@ test("action plan normalization fills missing primary dimensions from the questi
   assert.equal(normalized.modules[0].dimension, "国家");
   assert.equal(normalized.modules[1].dimension, "国家");
   assert.equal(normalized.modules[1].limit, 25);
+  assert.equal(validated.ok, true);
+});
+
+test("action plan normalization falls back to a business dimension when provider omits one", () => {
+  const schema = inferFinanceSchema([
+    { "月份": "2026-03", "国家": "巴西", "车型": "T1D", "销量": 100, "边际": 3000 },
+    { "月份": "2026-04", "国家": "巴西", "车型": "T1E", "销量": 80, "边际": 1600 },
+    { "月份": "2026-04", "国家": "西班牙", "车型": "T1D", "销量": 60, "边际": 900 },
+  ]);
+  const normalized = normalizeFinanceActionPlanForQuestion(schema, {
+    modules: [
+      {
+        type: "bar_rank",
+        metric: "销量",
+        period: "2026-04",
+        limit: 10,
+      },
+      {
+        type: "detail_table",
+        metrics: ["销量", "单车边际"],
+        period: "2026-04",
+      },
+    ],
+  }, "巴西销量和单车边际怎么样？");
+  const validated = validateFinanceActionPlan(schema, normalized);
+
+  assert.equal(normalized.modules[0].dimension, "国家");
+  assert.equal(normalized.modules[1].dimension, "国家");
   assert.equal(validated.ok, true);
 });
 
