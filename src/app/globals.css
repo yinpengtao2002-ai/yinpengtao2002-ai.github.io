@@ -1233,7 +1233,7 @@ h6 {
   min-width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
-  will-change: transform, opacity;
+  will-change: opacity;
 }
 
 .home-nav-active-pill {

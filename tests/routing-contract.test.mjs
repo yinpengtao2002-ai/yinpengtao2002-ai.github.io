@@ -33,6 +33,10 @@ test("route transition shell keeps fixed finance tool pages full height", () => 
   assert.match(globals, /\.page-transition-shell\s*\{[^}]*min-height:\s*100vh[^}]*min-height:\s*100dvh/s);
 });
 
+test("route transition shell does not trap fixed finance tool controls", () => {
+  assert.doesNotMatch(globals, /\.page-transition-shell\s*\{[^}]*will-change:\s*transform/s);
+});
+
 test("subtitle workbench is embedded as a seamless hosted tool", () => {
   assert.match(subtitleWorkbenchPage, /https:\/\/yptt-subtitle-workbench\.hf\.space\//);
   assert.match(subtitleWorkbenchPage, /<iframe/);
