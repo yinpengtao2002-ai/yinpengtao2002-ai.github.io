@@ -276,6 +276,13 @@ test("AI vocabulary card pronunciation uses server-side high quality audio first
   assert.match(route, /PUBLIC_STUDY_CARDS_PRONUNCIATION_API_URL/);
   assert.match(route, /export async function POST/);
   assert.match(route, /sanitizePronunciationInput/);
+  assert.match(route, /DICTIONARY_API_URL/);
+  assert.match(route, /fetchDictionaryPronunciation/);
+  assert.match(route, /selectDictionaryAudio/);
+  assert.match(route, /api\.dictionaryapi\.dev/);
+  assert.match(route, /media\/pronunciations/);
+  assert.match(route, /callSpeechProviderWithFallbackModels/);
+  assert.match(route, /TTS_FALLBACK_MODELS/);
   assert.match(route, /response_format:\s*"mp3"/);
   assert.match(route, /Accept:\s*"audio\/mpeg"/);
   assert.match(route, /"Content-Type":\s*"audio\/mpeg"/);

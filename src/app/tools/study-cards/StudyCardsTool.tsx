@@ -593,7 +593,7 @@ export default function StudyCardsTool() {
     let audioUrl = audioObjectUrlCacheRef.current[cacheKey];
 
     if (!audioUrl) {
-      const response = await fetch("/api/tools/study-cards/pronunciation", {
+      const response = await fetch("/api/tools/study-cards/pronunciation/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

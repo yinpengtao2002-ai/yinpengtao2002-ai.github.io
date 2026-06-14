@@ -2,7 +2,15 @@ import { NextRequest } from "next/server";
 import { getSpeechProvider, type SpeechProvider } from "@/lib/ai/providers";
 
 const SPEECH_TIMEOUT_MS = 20000;
-const PUBLIC_STUDY_CARDS_PRONUNCIATION_API_URL = "https://yinpengtao.cn/api/tools/study-cards/pronunciation";
+const PUBLIC_STUDY_CARDS_PRONUNCIATION_API_URL = "https://yinpengtao.cn/api/tools/study-cards/pronunciation/";
+const DICTIONARY_API_URL = "https://api.dictionaryapi.dev/api/v2/entries/en";
+const TTS_FALLBACK_MODELS = ["tts-1", "gpt-4o-mini-tts"];
+
+type DictionaryEntry = {
+  phonetics?: Array<{
+    audio?: string;
+  }>;
+};
 
 function hasConfiguredSpeechProvider(provider: SpeechProvider) {
   return Boolean(provider.apiKey && provider.apiUrl);
@@ -52,6 +60,40 @@ async function proxyToPublicPronunciationApi(word: string) {
   });
 }
 
+function selectDictionaryAudio(entries: DictionaryEntry[]) {
+  const audioUrls = entries
+    .flatMap((entry) => entry.phonetics ?? [])
+    .map((phonetic) => phonetic.audio?.trim() || "")
+    .filter((url) => url.includes("media/pronunciations") && /\.mp3(?:$|\?)/i.test(url));
+
+  return (
+    audioUrls.find((url) => /-us\.mp3(?:$|\?)/i.test(url)) ||
+    audioUrls.find((url) => /-uk\.mp3(?:$|\?)/i.test(url)) ||
+    audioUrls[0] ||
+    ""
+  );
+}
+
+async function fetchDictionaryPronunciation(word: string) {
+  if (word.includes(" ")) return null;
+
+  const lookupResponse = await fetch(`${DICTIONARY_API_URL}/${encodeURIComponent(word.toLowerCase())}`, {
+    headers: { Accept: "application/json" },
+  });
+  if (!lookupResponse.ok) return null;
+
+  const entries = (await lookupResponse.json().catch(() => null)) as DictionaryEntry[] | null;
+  const audioUrl = Array.isArray(entries) ? selectDictionaryAudio(entries) : "";
+  if (!audioUrl) return null;
+
+  const audioResponse = await fetch(audioUrl, { headers: { Accept: "audio/mpeg" } });
+  if (!audioResponse.ok) return null;
+
+  const contentType = audioResponse.headers.get("content-type") || "";
+  if (!contentType.includes("audio/")) return null;
+  return audioResponse.arrayBuffer();
+}
+
 async function callSpeechProvider(provider: SpeechProvider, word: string) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), provider.timeoutMs);
@@ -85,6 +127,21 @@ async function callSpeechProvider(provider: SpeechProvider, word: string) {
   }
 }
 
+async function callSpeechProviderWithFallbackModels(provider: SpeechProvider, word: string) {
+  const models = Array.from(new Set([provider.model, ...TTS_FALLBACK_MODELS].filter(Boolean)));
+  let lastError: unknown = null;
+
+  for (const model of models) {
+    try {
+      return await callSpeechProvider({ ...provider, model }, word);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("发音服务暂时不可用。");
+}
+
 export async function POST(req: NextRequest) {
   const payload = (await req.json().catch(() => null)) as { word?: unknown } | null;
   const word = sanitizePronunciationInput(payload?.word);
@@ -97,12 +154,22 @@ export async function POST(req: NextRequest) {
     return proxyToPublicPronunciationApi(word);
   }
 
+  const dictionaryAudio = await fetchDictionaryPronunciation(word);
+  if (dictionaryAudio) {
+    return new Response(dictionaryAudio, {
+      headers: {
+        "Content-Type": "audio/mpeg",
+        "Cache-Control": "public, max-age=86400",
+      },
+    });
+  }
+
   if (!hasConfiguredSpeechProvider(provider)) {
     return Response.json({ error: "当前环境没有配置发音服务。", errorCode: "TTS_NOT_CONFIGURED" }, { status: 503 });
   }
 
   try {
-    const audio = await callSpeechProvider(provider, word);
+    const audio = await callSpeechProviderWithFallbackModels(provider, word);
     return new Response(audio, {
       headers: {
         "Content-Type": "audio/mpeg",
