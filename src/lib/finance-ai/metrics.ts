@@ -13,6 +13,7 @@ import type {
   MetricValueBase,
   TrendRequest,
   TrendResult,
+  WaterfallBridgeEvidence,
   WaterfallBridgeRequest,
   WaterfallBridgeResult,
 } from "./types.ts";
@@ -61,6 +62,7 @@ type BridgeItem = {
   value: number;
   mixEffect?: number;
   rateEffect?: number;
+  evidence?: WaterfallBridgeEvidence;
   order: number;
 };
 
@@ -240,7 +242,11 @@ export function buildWaterfallBridge(
     endValue,
     changeValue: endValue - startValue,
     basis: "total_metric",
-    items: limitedItems.map(({ label, value }) => ({ label, value })),
+    items: limitedItems.map(({ label, value, evidence }) => ({
+      label,
+      value,
+      ...(evidence ? { evidence } : {}),
+    })),
     filters,
   };
 }
@@ -286,11 +292,12 @@ function buildScenarioWaterfallBridge(
     endValue,
     changeValue: endValue - startValue,
     basis: metric.kind === "unit" ? "unit_metric_mix_rate" : "total_metric",
-    items: limitedItems.map(({ label, value, mixEffect, rateEffect }) => ({
+    items: limitedItems.map(({ label, value, mixEffect, rateEffect, evidence }) => ({
       label,
       value,
       ...(mixEffect !== undefined ? { mixEffect } : {}),
       ...(rateEffect !== undefined ? { rateEffect } : {}),
+      ...(evidence ? { evidence } : {}),
     })),
     filters,
   };
@@ -327,7 +334,13 @@ function buildUnitMetricWaterfallBridge(
     endValue,
     changeValue: endValue - startValue,
     basis: "unit_metric_mix_rate",
-    items: limitedItems.map(({ label, value, mixEffect, rateEffect }) => ({ label, value, mixEffect, rateEffect })),
+    items: limitedItems.map(({ label, value, mixEffect, rateEffect, evidence }) => ({
+      label,
+      value,
+      mixEffect,
+      rateEffect,
+      ...(evidence ? { evidence } : {}),
+    })),
     filters,
   };
 }
@@ -340,12 +353,24 @@ function buildTotalBridgeItems(
 ): BridgeItem[] {
   return labels
     .map((label) => {
-      const toValue = valueOrZero(getMetricValue(metric, toGroups.get(label) ?? makeAccumulator(0)));
-      const fromValue = valueOrZero(getMetricValue(metric, fromGroups.get(label) ?? makeAccumulator(0)));
+      const toAccumulator = toGroups.get(label) ?? makeAccumulator(0);
+      const fromAccumulator = fromGroups.get(label) ?? makeAccumulator(0);
+      const toValue = valueOrZero(getMetricValue(metric, toAccumulator));
+      const fromValue = valueOrZero(getMetricValue(metric, fromAccumulator));
 
       return {
         label,
         value: toValue - fromValue,
+        evidence: {
+          baseValue: fromValue,
+          currentValue: toValue,
+          baseTotalValue: fromAccumulator.totalValue,
+          currentTotalValue: toAccumulator.totalValue,
+          baseSalesValue: fromAccumulator.salesValue,
+          currentSalesValue: toAccumulator.salesValue,
+          baseRowCount: fromAccumulator.rowCount,
+          currentRowCount: toAccumulator.rowCount,
+        },
         order: toGroups.get(label)?.order ?? fromGroups.get(label)?.order ?? 0,
       };
     })
@@ -383,6 +408,18 @@ function buildUnitBridgeItems(
         value: mixEffect + rateEffect,
         mixEffect,
         rateEffect,
+        evidence: {
+          baseTotalValue: baseAccumulator?.totalValue ?? 0,
+          currentTotalValue: currentAccumulator?.totalValue ?? 0,
+          baseSalesValue: baseAccumulator?.salesValue ?? 0,
+          currentSalesValue: currentAccumulator?.salesValue ?? 0,
+          baseShare,
+          currentShare,
+          baseUnitValue: baseUnit,
+          currentUnitValue: currentUnit,
+          baseRowCount: baseAccumulator?.rowCount ?? 0,
+          currentRowCount: currentAccumulator?.rowCount ?? 0,
+        },
         order: currentAccumulator?.order ?? baseAccumulator?.order ?? 0,
       };
     })
@@ -843,6 +880,7 @@ function limitBridgeItems(items: BridgeItem[], changeValue: number, limit: numbe
   }
 
   const visibleItems = items.slice(0, limit);
+  const hiddenItems = items.slice(limit);
   const visibleValue = visibleItems.reduce((sum, item) => sum + item.value, 0);
   const residualValue = changeValue - visibleValue;
 
@@ -861,6 +899,7 @@ function limitBridgeItems(items: BridgeItem[], changeValue: number, limit: numbe
     ? items.reduce((sum, item) => sum + (item.rateEffect ?? 0), 0) -
       visibleItems.reduce((sum, item) => sum + (item.rateEffect ?? 0), 0)
     : undefined;
+  const residualEvidence = combineBridgeEvidence(hiddenItems);
 
   return [
     ...visibleItems,
@@ -869,9 +908,54 @@ function limitBridgeItems(items: BridgeItem[], changeValue: number, limit: numbe
       value: residualValue,
       ...(residualMixEffect !== undefined ? { mixEffect: residualMixEffect } : {}),
       ...(residualRateEffect !== undefined ? { rateEffect: residualRateEffect } : {}),
+      ...(residualEvidence ? { evidence: residualEvidence } : {}),
       order: items.length,
     },
   ];
+}
+
+function combineBridgeEvidence(items: BridgeItem[]): WaterfallBridgeEvidence | undefined {
+  const evidences = items
+    .map((item) => item.evidence)
+    .filter((evidence): evidence is WaterfallBridgeEvidence => Boolean(evidence));
+
+  if (!evidences.length) {
+    return undefined;
+  }
+
+  const sum = (field: keyof WaterfallBridgeEvidence) => {
+    const values = evidences
+      .map((evidence) => evidence[field])
+      .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+
+    return values.length ? values.reduce((total, value) => total + value, 0) : undefined;
+  };
+  const baseValue = sum("baseValue");
+  const currentValue = sum("currentValue");
+  const baseTotalValue = sum("baseTotalValue");
+  const currentTotalValue = sum("currentTotalValue");
+  const baseSalesValue = sum("baseSalesValue");
+  const currentSalesValue = sum("currentSalesValue");
+  const baseShare = sum("baseShare");
+  const currentShare = sum("currentShare");
+  const baseRowCount = sum("baseRowCount");
+  const currentRowCount = sum("currentRowCount");
+  const combined: WaterfallBridgeEvidence = {
+    ...(baseValue !== undefined ? { baseValue } : {}),
+    ...(currentValue !== undefined ? { currentValue } : {}),
+    ...(baseTotalValue !== undefined ? { baseTotalValue } : {}),
+    ...(currentTotalValue !== undefined ? { currentTotalValue } : {}),
+    ...(baseSalesValue !== undefined ? { baseSalesValue } : {}),
+    ...(currentSalesValue !== undefined ? { currentSalesValue } : {}),
+    ...(baseShare !== undefined ? { baseShare } : {}),
+    ...(currentShare !== undefined ? { currentShare } : {}),
+    ...(baseTotalValue !== undefined && baseSalesValue ? { baseUnitValue: baseTotalValue / baseSalesValue } : {}),
+    ...(currentTotalValue !== undefined && currentSalesValue ? { currentUnitValue: currentTotalValue / currentSalesValue } : {}),
+    ...(baseRowCount !== undefined ? { baseRowCount } : {}),
+    ...(currentRowCount !== undefined ? { currentRowCount } : {}),
+  };
+
+  return Object.keys(combined).length ? combined : undefined;
 }
 
 function getLimit(limit: number | undefined): number {

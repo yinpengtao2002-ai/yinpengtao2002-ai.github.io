@@ -109,6 +109,28 @@ export type FinanceChartWaterfallBridgeItem = {
   value: number;
   mixEffect?: number;
   rateEffect?: number;
+  evidence?: FinanceChartWaterfallBridgeEvidence;
+};
+
+export type FinanceChartWaterfallBridgeEvidence = {
+  baseValue?: number | null;
+  currentValue?: number | null;
+  baseTotalValue?: number;
+  currentTotalValue?: number;
+  baseSalesValue?: number;
+  currentSalesValue?: number;
+  baseShare?: number;
+  currentShare?: number;
+  baseUnitValue?: number | null;
+  currentUnitValue?: number | null;
+  baseRowCount?: number;
+  currentRowCount?: number;
+};
+
+export type FinanceChartEvidenceItem = {
+  label: string;
+  value: string | number | null;
+  format?: "number" | "compact" | "share";
 };
 
 export type FinanceChartWaterfallBridgeResult = {
@@ -189,7 +211,7 @@ export type FinanceAIDirectSeriesChart = {
   yLabel?: string;
   series: Array<{
     name: string;
-    items: Array<{ label: string; value: number }>;
+    items: Array<{ label: string; value: number; evidence?: FinanceChartEvidenceItem[] }>;
   }>;
   note?: string;
 };

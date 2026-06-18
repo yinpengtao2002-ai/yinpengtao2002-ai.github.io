@@ -398,6 +398,14 @@ test("waterfall bridge supports unit metrics through mix and rate attribution", 
     "unit bridge item sum reconciles",
   );
   assert.equal(bridge.items.some((item) => typeof item.mixEffect === "number" && typeof item.rateEffect === "number"), true);
+  const brazil = bridge.items.find((item) => item.label === "巴西");
+  assert.ok(brazil?.evidence, "unit bridge items should carry hover evidence for review");
+  assert.equal(brazil.evidence.baseSalesValue, 120);
+  assert.equal(brazil.evidence.currentSalesValue, 100);
+  assert.equal(brazil.evidence.baseUnitValue, 20);
+  assert.equal(brazil.evidence.currentUnitValue, 35);
+  assert.equal(brazil.evidence.baseShare, 1);
+  assert.equal(brazil.evidence.currentShare, 100 / 180);
 });
 
 test("metric snapshot treats missing periods as not computable instead of zero comparisons", () => {
@@ -941,10 +949,12 @@ test("budget actual scenario comparisons can use waterfall bridges for the same 
   assert.equal(bridge.startValue, 190);
   assert.equal(bridge.endValue, 200);
   assert.equal(bridge.changeValue, 10);
-  assert.deepEqual(bridge.items, [
+  assert.deepEqual(bridge.items.map((item) => ({ label: item.label, value: item.value })), [
     { label: "西班牙", value: -10 },
     { label: "巴西", value: 20 },
   ]);
+  assert.equal(bridge.items[0].evidence.baseValue, 90);
+  assert.equal(bridge.items[0].evidence.currentValue, 80);
   assert.equal(bridge.comparison, "scenario");
   assert.equal(bridge.fromScenario, "预算");
   assert.equal(bridge.toScenario, "实际");
@@ -1651,6 +1661,9 @@ test("waterfall chart spec labels unit-metric bridges as mix and rate attributio
   assert.doesNotMatch(spec.note, /仅用于可加总指标/);
   assert.ok(Array.isArray(spec.data[0].customdata));
   assert.match(spec.data[0].hovertemplate, /结构效应/);
+  assert.match(spec.data[0].hovertemplate, /复核明细/);
+  assert.match(String(spec.data[0].customdata[1][2]), /基期销量/);
+  assert.match(String(spec.data[0].customdata[1][2]), /本期单车/);
 });
 
 test("finance AI chart demo specs cover every supported chart style", () => {
@@ -1865,6 +1878,33 @@ test("direct AI chart payloads support the approved expanded chart set", () => {
     ["6.0%"],
     ["-4.76亿"],
   ]);
+});
+
+test("direct structure charts can show raw denominator evidence in hover cards", () => {
+  const spec = buildDirectChartSpec({
+    type: "percent_stacked_bar",
+    title: "车型销量占比",
+    series: [
+      {
+        name: "T1D",
+        items: [{
+          label: "泰国",
+          value: 0.33,
+          evidence: [
+            { label: "车型销量", value: 330 },
+            { label: "国家销量", value: 1000 },
+            { label: "销量占比", value: 0.33, format: "share" },
+          ],
+        }],
+      },
+    ],
+  });
+
+  assert.equal(spec.kind, "percent_stacked_bar");
+  assert.ok(Array.isArray(spec.data[0].customdata));
+  assert.match(spec.data[0].hovertemplate, /车型销量/);
+  assert.match(String(spec.data[0].customdata[0][0]), /国家销量/);
+  assert.match(String(spec.data[0].customdata[0][0]), /33.0%/);
 });
 
 test("chart demo specs avoid white Plotly details on warm finance AI surfaces", () => {

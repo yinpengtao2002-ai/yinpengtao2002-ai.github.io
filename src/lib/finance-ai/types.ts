@@ -198,6 +198,22 @@ export type WaterfallBridgeItem = {
   value: number;
   mixEffect?: number;
   rateEffect?: number;
+  evidence?: WaterfallBridgeEvidence;
+};
+
+export type WaterfallBridgeEvidence = {
+  baseValue?: number | null;
+  currentValue?: number | null;
+  baseTotalValue?: number;
+  currentTotalValue?: number;
+  baseSalesValue?: number;
+  currentSalesValue?: number;
+  baseShare?: number;
+  currentShare?: number;
+  baseUnitValue?: number | null;
+  currentUnitValue?: number | null;
+  baseRowCount?: number;
+  currentRowCount?: number;
 };
 
 export type WaterfallBridgeResult = {

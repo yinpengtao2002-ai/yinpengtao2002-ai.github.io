@@ -8,11 +8,13 @@ import type {
   FinanceAIDirectSeriesChart,
   FinanceAIDirectTrendChart,
   FinanceAIDirectWaterfallChart,
+  FinanceChartEvidenceItem,
   FinanceChartBarRankResult as BarRankResult,
   FinanceChartBuildInput,
   FinanceChartSpec,
   FinanceChartMetricSnapshotResult as MetricSnapshotResult,
   FinanceChartTrendResult as TrendResult,
+  FinanceChartWaterfallBridgeEvidence,
   FinanceChartWaterfallBridgeResult as WaterfallBridgeResult,
 } from "./types.ts";
 
@@ -175,11 +177,74 @@ function formatCompactNumber(value: number, scale = getChineseUnitScale(value), 
   return `${sign}${formatted}${scale.suffix}`;
 }
 
+function formatEvidenceValue(item: FinanceChartEvidenceItem) {
+  const value = item.value;
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return String(value);
+  }
+
+  if (item.format === "share" || (/占比|比例|率|share|percent/i.test(item.label) && Math.abs(value) <= 1)) {
+    return formatShare(value);
+  }
+
+  if (item.format === "compact") {
+    return formatCompactNumber(value, getChineseUnitScale(value, item.label));
+  }
+
+  return formatNumber(value, Number.isInteger(value) ? 0 : 2);
+}
+
+function formatEvidenceItems(items: FinanceChartEvidenceItem[]) {
+  return items
+    .filter((item) => item.label.trim())
+    .map((item) => `<span style="color:${COLORS.muted}">${item.label}</span> ${formatEvidenceValue(item)}`)
+    .join("<br>");
+}
+
+function buildWaterfallEvidenceItems(
+  evidence: FinanceChartWaterfallBridgeEvidence | undefined,
+  isUnitMetricBridge: boolean,
+) {
+  if (!evidence) {
+    return [];
+  }
+
+  if (isUnitMetricBridge) {
+    return [
+      { label: "基期销量", value: evidence.baseSalesValue ?? null, format: "compact" },
+      { label: "本期销量", value: evidence.currentSalesValue ?? null, format: "compact" },
+      { label: "基期销量占比", value: evidence.baseShare ?? null, format: "share" },
+      { label: "本期销量占比", value: evidence.currentShare ?? null, format: "share" },
+      { label: "基期单车", value: evidence.baseUnitValue ?? null, format: "number" },
+      { label: "本期单车", value: evidence.currentUnitValue ?? null, format: "number" },
+    ] satisfies FinanceChartEvidenceItem[];
+  }
+
+  return [
+    { label: "基期值", value: evidence.baseValue ?? null, format: "compact" },
+    { label: "本期值", value: evidence.currentValue ?? null, format: "compact" },
+    { label: "基期销量", value: evidence.baseSalesValue ?? null, format: "compact" },
+    { label: "本期销量", value: evidence.currentSalesValue ?? null, format: "compact" },
+  ] satisfies FinanceChartEvidenceItem[];
+}
+
+const softHoverLabel = {
+  bgcolor: "#fffaf0",
+  bordercolor: "#d8cdb8",
+  font: { color: COLORS.text, size: 12 },
+  align: "left",
+};
+
 type WaterfallDisplayItem = {
   label: string;
   value: number;
   mixEffect?: number;
   rateEffect?: number;
+  evidence?: FinanceChartWaterfallBridgeEvidence;
 };
 
 function mergeWaterfallItems<T extends WaterfallDisplayItem>(items: T[]): T[] {
@@ -200,9 +265,50 @@ function mergeWaterfallItems<T extends WaterfallDisplayItem>(items: T[]): T[] {
     if (typeof item.rateEffect === "number" || typeof current.rateEffect === "number") {
       current.rateEffect = (current.rateEffect ?? 0) + (item.rateEffect ?? 0);
     }
+    current.evidence = mergeWaterfallEvidence([current.evidence, item.evidence]);
   }
 
   return Array.from(merged.values()) as T[];
+}
+
+function mergeWaterfallEvidence(evidences: Array<FinanceChartWaterfallBridgeEvidence | undefined>) {
+  const existing = evidences.filter((evidence): evidence is FinanceChartWaterfallBridgeEvidence => Boolean(evidence));
+  if (!existing.length) {
+    return undefined;
+  }
+
+  const sum = (field: keyof FinanceChartWaterfallBridgeEvidence) => {
+    const values = existing
+      .map((evidence) => evidence[field])
+      .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+
+    return values.length ? values.reduce((total, value) => total + value, 0) : undefined;
+  };
+  const baseValue = sum("baseValue");
+  const currentValue = sum("currentValue");
+  const baseTotalValue = sum("baseTotalValue");
+  const currentTotalValue = sum("currentTotalValue");
+  const baseSalesValue = sum("baseSalesValue");
+  const currentSalesValue = sum("currentSalesValue");
+  const baseShare = sum("baseShare");
+  const currentShare = sum("currentShare");
+  const baseRowCount = sum("baseRowCount");
+  const currentRowCount = sum("currentRowCount");
+
+  return {
+    ...(baseValue !== undefined ? { baseValue } : {}),
+    ...(currentValue !== undefined ? { currentValue } : {}),
+    ...(baseTotalValue !== undefined ? { baseTotalValue } : {}),
+    ...(currentTotalValue !== undefined ? { currentTotalValue } : {}),
+    ...(baseSalesValue !== undefined ? { baseSalesValue } : {}),
+    ...(currentSalesValue !== undefined ? { currentSalesValue } : {}),
+    ...(baseShare !== undefined ? { baseShare } : {}),
+    ...(currentShare !== undefined ? { currentShare } : {}),
+    ...(baseTotalValue !== undefined && baseSalesValue ? { baseUnitValue: baseTotalValue / baseSalesValue } : {}),
+    ...(currentTotalValue !== undefined && currentSalesValue ? { currentUnitValue: currentTotalValue / currentSalesValue } : {}),
+    ...(baseRowCount !== undefined ? { baseRowCount } : {}),
+    ...(currentRowCount !== undefined ? { currentRowCount } : {}),
+  } satisfies FinanceChartWaterfallBridgeEvidence;
 }
 
 function buildWaterfallTrace({
@@ -221,7 +327,7 @@ function buildWaterfallTrace({
   endValue: number;
   scale: ReturnType<typeof getChineseUnitScale>;
   title: string;
-  customdata?: Array<Array<number | null>>;
+  customdata?: Array<Array<string | number | null>>;
   hovertemplate: string;
 }) {
   const scaledStartValue = scaledChineseUnit(startValue, scale);
@@ -247,6 +353,7 @@ function buildWaterfallTrace({
       decreasing: { marker: { color: COLORS.red } },
       totals: { marker: { color: COLORS.blue } },
       ...(customdata ? { customdata } : {}),
+      hoverlabel: softHoverLabel,
       hovertemplate,
     },
     scaledStartValue,
@@ -263,15 +370,19 @@ function normalizeWaterfallItems<T extends WaterfallDisplayItem>(items: T[]): T[
   const otherMixEffect = hidden.reduce((sum, item) => sum + (item.mixEffect ?? 0), 0);
   const otherRateEffect = hidden.reduce((sum, item) => sum + (item.rateEffect ?? 0), 0);
   const withOther = hidden.length > 0 && Math.abs(otherValue) > 1e-9
-    ? [
-        ...visible,
-        {
-          label: "其他",
-          value: otherValue,
-          ...(hidden.some((item) => typeof item.mixEffect === "number") ? { mixEffect: otherMixEffect } : {}),
-          ...(hidden.some((item) => typeof item.rateEffect === "number") ? { rateEffect: otherRateEffect } : {}),
-        } as T,
-      ]
+    ? (() => {
+        const otherEvidence = mergeWaterfallEvidence(hidden.map((item) => item.evidence));
+        return [
+          ...visible,
+          {
+            label: "其他",
+            value: otherValue,
+            ...(hidden.some((item) => typeof item.mixEffect === "number") ? { mixEffect: otherMixEffect } : {}),
+            ...(hidden.some((item) => typeof item.rateEffect === "number") ? { rateEffect: otherRateEffect } : {}),
+            ...(otherEvidence ? { evidence: otherEvidence } : {}),
+          } as T,
+        ];
+      })()
     : visible;
   const merged = mergeWaterfallItems(withOther);
   const negatives = merged
@@ -648,16 +759,24 @@ function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): 
   const itemValues = items.map((item) => item.value);
   const scale = getScaleForValues([result.startValue, result.endValue, ...itemValues], title);
   const isUnitMetricBridge = result.basis === "unit_metric_mix_rate";
+  const evidenceTexts = items.map((item) => formatEvidenceItems(buildWaterfallEvidenceItems(item.evidence, isUnitMetricBridge)));
   const customdata = isUnitMetricBridge
     ? [
-        [null, null],
-        ...items.map((item) => [
+        [null, null, ""],
+        ...items.map((item, itemIndex) => [
           scaledChineseUnit(item.mixEffect ?? 0, scale),
           scaledChineseUnit(item.rateEffect ?? 0, scale),
+          evidenceTexts[itemIndex] ?? "",
         ]),
-        [null, null],
+        [null, null, ""],
       ]
-    : undefined;
+    : evidenceTexts.some(Boolean)
+      ? [
+          [""],
+          ...evidenceTexts.map((evidenceText) => [evidenceText]),
+          [""],
+        ]
+      : undefined;
   const labels = [
     getWaterfallStartLabel(result),
     ...items.map((item) => item.label),
@@ -672,8 +791,10 @@ function buildWaterfallChartSpec(title: string, result: WaterfallBridgeResult): 
     title,
     customdata,
     hovertemplate: isUnitMetricBridge
-      ? `%{x}<br>%{text}<br>结构效应 %{customdata[0]:,.2f}${scale.suffix}<br>费率效应 %{customdata[1]:,.2f}${scale.suffix}<extra></extra>`
-      : `%{x}<br>%{text}<extra></extra>`,
+      ? `<b>%{x}</b><br>%{text}<br>结构效应 %{customdata[0]:,.2f}${scale.suffix}<br>费率效应 %{customdata[1]:,.2f}${scale.suffix}<br><span style="font-weight:600">复核明细</span><br>%{customdata[2]}<extra></extra>`
+      : customdata
+        ? `<b>%{x}</b><br>%{text}<br><span style="font-weight:600">复核明细</span><br>%{customdata[0]}<extra></extra>`
+        : `<b>%{x}</b><br>%{text}<extra></extra>`,
   });
 
   return {
@@ -793,6 +914,13 @@ function buildDirectSeriesChartSpec(input: FinanceAIDirectSeriesChart): FinanceC
     title: input.title,
     data: input.series.map((series, index) => {
       const valueByLabel = new Map(series.items.map((item) => [item.label, item.value]));
+      const evidenceByLabel = new Map(series.items.map((item) => [item.label, item.evidence ?? []]));
+      const evidenceTexts = labels.map((label) => formatEvidenceItems(evidenceByLabel.get(label) ?? []));
+      const hasEvidence = evidenceTexts.some(Boolean);
+      const evidenceLabelSummary = Array.from(new Set(series.items.flatMap((item) => (
+        item.evidence?.map((evidence) => evidence.label) ?? []
+      )))).slice(0, 4).join(" / ");
+
       return {
         type: "bar",
         name: series.name,
@@ -806,7 +934,11 @@ function buildDirectSeriesChartSpec(input: FinanceAIDirectSeriesChart): FinanceC
         )),
         textposition: input.type === "percent_stacked_bar" ? "inside" : "outside",
         cliponaxis: false,
-        hovertemplate: `%{x}<br>${series.name} %{text}<extra></extra>`,
+        ...(hasEvidence ? { customdata: evidenceTexts.map((evidenceText) => [evidenceText]) } : {}),
+        hoverlabel: softHoverLabel,
+        hovertemplate: hasEvidence
+          ? `%{x}<br>${series.name} %{text}<br><span style="font-weight:600">${evidenceLabelSummary}</span><br>%{customdata[0]}<extra></extra>`
+          : `%{x}<br>${series.name} %{text}<extra></extra>`,
       };
     }),
     layout: {

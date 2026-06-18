@@ -584,7 +584,16 @@ function buildStackedPlanChart(rows: FinanceRow[], schema: FinanceSchema, module
         ...series,
         items: series.items.map((item, itemIndex) => {
           const total = rawMatrix.reduce((sum, currentSeries) => sum + currentSeries.items[itemIndex].value, 0);
-          return { ...item, value: total === 0 ? 0 : item.value / total };
+          const share = total === 0 ? 0 : item.value / total;
+          return {
+            ...item,
+            value: share,
+            evidence: [
+              { label: `${module.seriesDimension}值`, value: item.value, format: "compact" as const },
+              { label: `${module.dimension}合计`, value: total, format: "compact" as const },
+              { label: "结构占比", value: share, format: "share" as const },
+            ],
+          };
         }),
       }))
     : rawMatrix;
