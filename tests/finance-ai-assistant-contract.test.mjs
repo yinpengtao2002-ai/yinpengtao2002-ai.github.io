@@ -1657,8 +1657,19 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(styles, /\.finance-ai-message\.is-user\s+\.finance-ai-message-bubble\s*\{[\s\S]*width:\s*fit-content/s);
   assert.match(styles, /\.finance-ai-message\.is-user\s+\.finance-ai-message-bubble\s*\{[\s\S]*max-width:\s*min\(620px,\s*82%\)/s);
   assert.doesNotMatch(styles, /\.finance-ai-message\.is-user\s+\.finance-ai-message-bubble\s*\{[^}]*\n\s*width:\s*min\(620px,\s*82%\)/s);
-  assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*\.finance-ai-message\.is-user\s+\.finance-ai-message-bubble\s*\{[\s\S]*max-width:\s*calc\(100%\s*-\s*38px\)/s);
+  assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*\.finance-ai-message\.is-user\s+\.finance-ai-message-bubble\s*\{[\s\S]*max-width:\s*calc\(100%\s*-\s*var\(--finance-ai-mobile-avatar-gutter\)\)/s);
   assert.match(styles, /\.finance-ai-empty-state\s*\{[\s\S]*place-items:\s*center/s);
   assert.match(styles, /\.finance-ai-empty-card/);
   assert.match(styles, /\.finance-ai-composer\s*\{[\s\S]*border-radius:\s*26px/s);
+});
+
+test("finance AI assistant mobile chat balances assistant avatar and user bubble gutters", async () => {
+  const styles = await readProjectFile("src/app/globals.css");
+
+  assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*--finance-ai-mobile-avatar-gutter:\s*41px/s);
+  assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*\.finance-ai-message\.is-user::after\s*\{[\s\S]*content:\s*""/s);
+  assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*\.finance-ai-message\.is-user::after\s*\{[\s\S]*flex:\s*0\s+0\s+32px/s);
+  assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*\.finance-ai-message\.is-user\s+\.finance-ai-message-bubble\s*\{[\s\S]*max-width:\s*calc\(100%\s*-\s*var\(--finance-ai-mobile-avatar-gutter\)\)/s);
+  assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*\.finance-ai-message\.is-assistant\s+\.finance-ai-message-bubble\s*\{[\s\S]*width:\s*calc\(100%\s*-\s*var\(--finance-ai-mobile-avatar-gutter\)\)/s);
+  assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*\.finance-ai-assistant-panel:not\(\.is-ready\)\s+\.finance-ai-chat-header\s*\{[\s\S]*padding-top:\s*58px/s);
 });

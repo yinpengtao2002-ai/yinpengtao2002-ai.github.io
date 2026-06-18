@@ -1097,6 +1097,7 @@ body {
 
 @media (max-width: 760px) {
   .finance-ai-page {
+    --finance-ai-mobile-avatar-gutter: 41px;
     padding: 0;
   }
 
@@ -1109,6 +1110,10 @@ body {
     width: calc(100% - 24px);
     align-items: flex-start;
     padding: 12px 0 10px;
+  }
+
+  .finance-ai-assistant-panel:not(.is-ready) .finance-ai-chat-header {
+    padding-top: 58px;
   }
 
   .finance-ai-avatar {
@@ -1153,16 +1158,30 @@ body {
 
   .finance-ai-chat {
     width: 100%;
+    gap: 16px;
     padding: 14px 12px 12px;
+  }
+
+  .finance-ai-message {
+    align-items: flex-start;
   }
 
   .finance-ai-message-bubble,
   .finance-ai-message.is-assistant .finance-ai-message-bubble {
-    width: calc(100% - 38px);
+    width: calc(100% - var(--finance-ai-mobile-avatar-gutter));
+  }
+
+  .finance-ai-message.is-user::after {
+    content: "";
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
   }
 
   .finance-ai-message.is-user .finance-ai-message-bubble {
-    max-width: calc(100% - 38px);
+    max-width: calc(100% - var(--finance-ai-mobile-avatar-gutter));
+    border-radius: 18px 18px 7px 18px;
+    padding: 11px 14px;
   }
 
   .finance-ai-chart-grid {
