@@ -23,6 +23,7 @@ import {
   buildTrendSeries,
   buildWaterfallBridge,
 } from "@/lib/finance-ai/metrics";
+import { buildMomComparisonDetailRows } from "@/lib/finance-ai/detail-table";
 import { inferFinanceSchema, normalizePeriodValue } from "@/lib/finance-ai/schema";
 import { normalizeChatMathMarkdown } from "@/lib/markdown/normalizeChatMathMarkdown";
 import { normalizeMarkdownStrongEmphasis } from "@/lib/markdown/normalizeStrongEmphasis";
@@ -692,7 +693,22 @@ function buildDetailTablePlanChart(rows: FinanceRow[], schema: FinanceSchema, mo
         .filter((period) => period.sort < currentPeriodSort)
         .at(-1)
     : undefined;
-  const columns = shouldCompareMom && previousPeriod
+  const comparisonDetail = shouldCompareMom && previousPeriod && module.metrics.length > 1
+    ? buildMomComparisonDetailRows({
+        dimension: module.dimension,
+        labels,
+        metrics: module.metrics,
+        getValues: (label, metric) => {
+          const filters = mergeFilters(module.filters, { [module.dimension]: [label] });
+
+          return {
+            previous: getTableComparisonMetricValue(rows, schema, metric, previousPeriod.key, filters),
+            current: getTableComparisonMetricValue(rows, schema, metric, module.period, filters),
+          };
+        },
+      })
+    : null;
+  const columns = comparisonDetail?.columns ?? (shouldCompareMom && previousPeriod
     ? [
         module.dimension,
         ...module.metrics.flatMap((metric) => [
@@ -702,8 +718,8 @@ function buildDetailTablePlanChart(rows: FinanceRow[], schema: FinanceSchema, mo
           `${metric}环比变化率`,
         ]),
       ]
-    : [module.dimension, ...module.metrics];
-  const rowsData = labels.map((label) => {
+    : [module.dimension, ...module.metrics]);
+  const rowsData = comparisonDetail?.rows ?? labels.map((label) => {
     const filters = mergeFilters(module.filters, { [module.dimension]: [label] });
 
     if (!shouldCompareMom || !previousPeriod) {

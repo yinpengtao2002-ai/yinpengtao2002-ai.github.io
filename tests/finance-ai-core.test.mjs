@@ -24,6 +24,7 @@ import {
   buildFinanceRawWorkbookSheetFromRows,
   normalizeFinanceWorkbookSheets,
 } from "../src/lib/finance-ai/workbook.ts";
+import { buildMomComparisonDetailRows } from "../src/lib/finance-ai/detail-table.ts";
 
 const rows = [
   { "月份": "2025-03", "大区": "拉美", "国家": "巴西", "车型": "T1D", "销量": 100, "净收入": 9000, "成本": -7000, "边际": 2000 },
@@ -56,6 +57,42 @@ test("finance AI schema infers month, sales, dimensions, total metrics, and unit
   assert.equal(schema.requiredIssues.length, 0);
   assert.equal(schema.profile.rowCount, 2);
   assert.deepEqual(schema.profile.periods.map((period) => period.key), ["2025-03", "2025-04"]);
+});
+
+test("mom comparison detail rows pivot multiple metrics into compact project rows", () => {
+  const singleCountry = buildMomComparisonDetailRows({
+    dimension: "国家",
+    labels: ["意大利"],
+    metrics: ["销量", "净收入", "单车边际"],
+    getValues: (label, metric) => {
+      assert.equal(label, "意大利");
+      return {
+        "销量": { previous: 9965, current: 12930 },
+        "净收入": { previous: 12.23, current: 15.08 },
+        "单车边际": { previous: 1825, current: 1750 },
+      }[metric];
+    },
+  });
+
+  assert.deepEqual(singleCountry.columns, ["项目", "上期", "本期", "变化", "变化率"]);
+  assert.deepEqual(singleCountry.rows, [
+    ["销量", 9965, 12930, 2965, 0.297541394882],
+    ["净收入", 12.23, 15.08, 2.85, 0.233033524121],
+    ["单车边际", 1825, 1750, -75, -0.041095890411],
+  ]);
+
+  const multiCountry = buildMomComparisonDetailRows({
+    dimension: "国家",
+    labels: ["意大利", "法国"],
+    metrics: ["销量", "净收入"],
+    getValues: (label, metric) => ({
+      previous: label === "意大利" ? (metric === "销量" ? 9965 : 12.23) : 100,
+      current: label === "意大利" ? (metric === "销量" ? 12930 : 15.08) : 120,
+    }),
+  });
+
+  assert.deepEqual(multiCountry.columns, ["国家", "项目", "上期", "本期", "变化", "变化率"]);
+  assert.deepEqual(multiCountry.rows[0], ["意大利", "销量", 9965, 12930, 2965, 0.297541394882]);
 });
 
 test("finance AI schema treats rate-like columns as non-default metrics", () => {

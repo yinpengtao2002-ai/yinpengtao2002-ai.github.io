@@ -1450,6 +1450,19 @@ test("finance AI prompts ask detail tables to include useful comparison columns"
   assert.match(directPrompt, /不要只返回一两列/);
 });
 
+test("finance AI assistant pivots multi-metric mom detail tables into compact project rows", async () => {
+  const client = await readProjectFile("src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
+  const detailTable = await readProjectFile("src/lib/finance-ai/detail-table.ts");
+
+  assert.match(client, /buildMomComparisonDetailRows/);
+  assert.match(client, /module\.comparison === "mom"/);
+  assert.match(client, /module\.metrics\.length > 1/);
+  assert.match(detailTable, /项目/);
+  assert.match(detailTable, /上期/);
+  assert.match(detailTable, /本期/);
+  assert.match(detailTable, /变化率/);
+});
+
 test("finance AI assistant supports conjunctive multi-metric growth questions", async () => {
   const schema = makeSchema({
     totalMetrics: [
