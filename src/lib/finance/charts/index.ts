@@ -907,6 +907,9 @@ function buildDirectSeriesChartSpec(input: FinanceAIDirectSeriesChart): FinanceC
   const scale = input.type === "percent_stacked_bar"
     ? { divisor: 1, suffix: "", digits: 0 }
     : getScaleForValues(rawValues, `${input.title}${input.yLabel ?? ""}`);
+  const singleCategoryBarWidth = labels.length === 1 && input.type !== "grouped_bar"
+    ? [0.36]
+    : undefined;
 
   return {
     kind,
@@ -934,6 +937,7 @@ function buildDirectSeriesChartSpec(input: FinanceAIDirectSeriesChart): FinanceC
         )),
         textposition: input.type === "percent_stacked_bar" ? "inside" : "outside",
         cliponaxis: false,
+        ...(singleCategoryBarWidth ? { width: singleCategoryBarWidth } : {}),
         ...(hasEvidence ? { customdata: evidenceTexts.map((evidenceText) => [evidenceText]) } : {}),
         hoverlabel: softHoverLabel,
         hovertemplate: hasEvidence

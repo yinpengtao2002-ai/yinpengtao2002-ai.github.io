@@ -1944,6 +1944,34 @@ test("direct structure charts can show raw denominator evidence in hover cards",
   assert.match(String(spec.data[0].customdata[0][0]), /33.0%/);
 });
 
+test("single-category stacked charts keep a narrow graceful bar", () => {
+  const spec = buildDirectChartSpec({
+    type: "percent_stacked_bar",
+    title: "5月车型销量占比",
+    series: [
+      { name: "T19C", items: [{ label: "实际", value: 0.275 }] },
+      { name: "T13J", items: [{ label: "实际", value: 0.224 }] },
+      { name: "T1EJ", items: [{ label: "实际", value: 0.223 }] },
+    ],
+  });
+  const multiSpec = buildDirectChartSpec({
+    type: "percent_stacked_bar",
+    title: "4月车型销量占比",
+    series: [
+      { name: "T19C", items: [{ label: "泰国", value: 0.275 }, { label: "巴西", value: 0.18 }] },
+      { name: "T13J", items: [{ label: "泰国", value: 0.224 }, { label: "巴西", value: 0.21 }] },
+    ],
+  });
+
+  assert.equal(spec.kind, "percent_stacked_bar");
+  spec.data.forEach((trace) => {
+    assert.deepEqual(trace.width, [0.36]);
+  });
+  multiSpec.data.forEach((trace) => {
+    assert.equal(trace.width, undefined);
+  });
+});
+
 test("chart demo specs avoid white Plotly details on warm finance AI surfaces", () => {
   const demoSpecs = buildFinanceAIChartDemoSpecs();
   const bubbleSpec = demoSpecs.find((spec) => spec.kind === "scatter_bubble");
