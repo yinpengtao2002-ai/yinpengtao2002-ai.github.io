@@ -16,6 +16,7 @@
 - `src/lib/finance/charts/types.ts` 已承接 `FinanceChartSpec`、图表类型、明细表 variant/meta、直接图表输入和中心 builder 输入类型。
 - `src/lib/finance/charts/index.ts` 已承接 `buildChartSpec`、`buildDirectChartSpec`、Plotly 主题、瀑布桥、趋势图、排名图、热力图、气泡散点和明细表规格。
 - `src/lib/finance-ai/charts.ts` 只保留兼容转发，旧 import 不再拥有单独图表实现。
+- `src/lib/finance-ai/chart-demo.ts` 的能力展示只维护 `FinanceAIDirectChart` 示例输入，并统一通过 `buildDirectChartSpec` 生成，避免示例页和真实对话图表样式分叉。
 - `src/lib/finance-ai/metrics.ts` 仍是待迁移的通用聚合、趋势、排名、期间桥和单车结构/费率效应种子。
 
 ## 模型依赖地图
