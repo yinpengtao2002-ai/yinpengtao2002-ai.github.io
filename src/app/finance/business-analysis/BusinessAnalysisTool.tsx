@@ -189,7 +189,6 @@ export default function BusinessAnalysisTool() {
                     <div>
                         <p className="eyebrow">Financial Modeling</p>
                         <h1>预算实际对比模型</h1>
-                        <p className="model-subtitle">以总部经营明细为主表，核心看销量、净收入总额、单车净收入、边际总额、单车边际和利润总额；预算口径用于判断偏离，并通过维度归因回答差在哪个国家、业务单元或车型。</p>
                     </div>
                 </header>
 
