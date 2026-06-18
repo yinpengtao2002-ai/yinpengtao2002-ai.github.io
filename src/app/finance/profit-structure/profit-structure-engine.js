@@ -1049,6 +1049,33 @@ function bindOnce(target, eventName, handler, key = eventName) {
     if (target.dataset) target.dataset[bindKey] = "true";
 }
 
+function resizePlotlyCharts() {
+    if (typeof Plotly === "undefined") return;
+    document.querySelectorAll(".profit-structure-tool .js-plotly-plot").forEach((plot) => {
+        Plotly.Plots.resize(plot);
+    });
+}
+
+function schedulePlotResize() {
+    if (typeof window === "undefined") return;
+    window.requestAnimationFrame(resizePlotlyCharts);
+    window.setTimeout(resizePlotlyCharts, 320);
+}
+
+function initChartResizeObserver() {
+    if (typeof window === "undefined") return;
+    const root = byId("profit-structure-root");
+    if (root?.dataset.plotResizeObserverBound === "true") return;
+
+    const mainContent = document.querySelector(".profit-structure-tool .main-content");
+    if (mainContent && typeof ResizeObserver !== "undefined") {
+        const observer = new ResizeObserver(schedulePlotResize);
+        observer.observe(mainContent);
+    }
+    window.addEventListener("resize", schedulePlotResize);
+    if (root) root.dataset.plotResizeObserverBound = "true";
+}
+
 function initSidebar() {
     const sidebar = byId("profit-structure-sidebar");
     const toggle = byId("profit-structure-sidebar-toggle");
@@ -1060,12 +1087,14 @@ function initSidebar() {
         sidebar?.classList.add("collapsed");
         if (expand) expand.style.display = "inline-flex";
         backdrop?.classList.remove("visible");
+        schedulePlotResize();
     }
 
     function expandSidebar() {
         sidebar?.classList.remove("collapsed");
         if (expand) expand.style.display = "none";
         if (backdrop && isMobile()) backdrop.classList.add("visible");
+        schedulePlotResize();
     }
 
     bindOnce(toggle, "click", collapse);
@@ -1130,6 +1159,7 @@ function bindControls() {
 
 function initApp() {
     initSidebar();
+    initChartResizeObserver();
     bindControls();
 
     if (state.initialized) {

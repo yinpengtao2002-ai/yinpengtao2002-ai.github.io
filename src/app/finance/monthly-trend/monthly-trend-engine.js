@@ -731,7 +731,8 @@
             return;
         }
 
-        grid.innerHTML = dimensions.map((dimension) => {
+        const filterDimensions = drillFilterDimensions();
+        const filterCards = filterDimensions.map((dimension) => {
             const values = distinctDimensionValues(dimension);
             return `
                 <div class="filter-card excel-filter-shell" data-filter-dimension="${escapeHtml(dimension)}">
@@ -747,6 +748,8 @@
                 </div>
             `;
         }).join("");
+        grid.innerHTML = renderDrillPathControls(dimensions)
+            + (filterCards || `<p class="empty-note">当前只有一层维度，主画布直接展示该层级。</p>`);
 
         grid.querySelectorAll(".excel-filter-shell").forEach((container) => {
             const dimension = container.dataset.filterDimension;
@@ -760,6 +763,37 @@
             });
             menu?.addEventListener("click", (event) => event.stopPropagation());
         });
+    }
+
+    function renderDrillPathControls(dimensions = drillDimensions()) {
+        if (!dimensions.length) return "";
+
+        const activeIndex = activeDrillLevelIndex(dimensions);
+        const activeDimension = dimensions[activeIndex] || dimensions[0];
+        const items = dimensions.map((dimension, index) => {
+            const filtered = isActiveFilter(dimension);
+            const active = index === activeIndex;
+            const stateText = filtered ? "已选" : active ? "当前" : `${index + 1}`;
+            return `
+                <div class="dimension-train-car ${filtered ? "filtered" : ""} ${active ? "active" : ""}" data-drill-dimension="${escapeHtml(dimension)}">
+                    <span>${escapeHtml(stateText)}</span>
+                    <strong>${escapeHtml(dimension)}</strong>
+                </div>
+            `;
+        }).join("");
+
+        return `
+            <div class="drill-path-panel">
+                <div class="drill-train-head">
+                    <span>维度路径</span>
+                    <strong>当前层：${escapeHtml(activeDimension)}</strong>
+                </div>
+                <div class="dimension-train monthly-dimension-train" aria-label="下钻维度路径">
+                    ${items}
+                </div>
+                <p class="dimension-train-hint">筛选上级维度后，图表自动进入下一层级。</p>
+            </div>
+        `;
     }
 
     function getExcelSelectedValues(dimension, availableValues) {
@@ -1000,9 +1034,14 @@
     }
 
     function candidateRowsForDimension(dimension) {
-        const otherFilters = Object.entries(state.filters).filter(([filterDimension]) => filterDimension !== dimension);
+        const dimensions = drillDimensions();
+        const dimensionIndex = dimensions.indexOf(dimension);
+        const priorFilters = Object.entries(state.filters).filter(([filterDimension]) => {
+            const filterIndex = dimensions.indexOf(filterDimension);
+            return filterIndex >= 0 && filterIndex < dimensionIndex;
+        });
         return parseRows().filter((row) => {
-            return otherFilters.every(([filterDimension, selectedValues]) => {
+            return priorFilters.every(([filterDimension, selectedValues]) => {
                 return rowMatchesFilter(row, filterDimension, selectedValues);
             });
         });
@@ -1042,6 +1081,17 @@
         return (state.selectedDimensions.length ? state.selectedDimensions : state.dimensionColumns).filter(Boolean);
     }
 
+    function drillFilterDimensions() {
+        const dimensions = drillDimensions();
+        return dimensions.length > 1 ? dimensions.slice(0, -1) : [];
+    }
+
+    function activeDrillLevelIndex(dimensions = drillDimensions()) {
+        const firstOpenIndex = dimensions.findIndex((dimension) => !isActiveFilter(dimension));
+        if (firstOpenIndex >= 0) return firstOpenIndex;
+        return Math.max(0, dimensions.length - 1);
+    }
+
     function autoStructureDimension() {
         const dimensions = drillDimensions();
         if (!dimensions.length) return "";
@@ -1062,7 +1112,6 @@
         renderMomChart();
         renderYearComparisonChart();
         renderStructureChart();
-        renderConcentrationChart();
         renderHeatmapChart();
         renderMomHeatmapChart();
     }
@@ -1799,86 +1848,6 @@
         }), chartConfig());
     }
 
-    function categoryShares(monthKey, dimension) {
-        const rows = currentRows().filter((row) => row.period.key === monthKey);
-        const totals = new Map();
-        rows.forEach((row) => {
-            const category = row.dimensions[dimension] || "未分类";
-            totals.set(category, (totals.get(category) || 0) + Math.max(0, aggregateRows([row])));
-        });
-        const total = Array.from(totals.values()).reduce((sum, value) => sum + value, 0);
-        if (!total) return null;
-        return Array.from(totals.entries())
-            .map(([category, value]) => ({ category, share: value / total }))
-            .sort((a, b) => b.share - a.share);
-    }
-
-    function renderConcentrationChart() {
-        const dimension = autoStructureDimension();
-        const { months } = monthSeries();
-        const caption = byId("monthly-concentration-caption");
-        if (!dimension || !months.length) return renderEmptyChart("monthly-concentration-chart", "暂无结构集中度数据");
-
-        const points = months.map((month) => {
-            const shares = categoryShares(month.key, dimension);
-            if (!shares?.length) return { month, topShare: null, concentration: null, topCategory: "-" };
-            const concentration = shares.reduce((sum, item) => sum + item.share * item.share, 0) * 100;
-            return {
-                month,
-                topShare: shares[0].share * 100,
-                concentration,
-                topCategory: shares[0].category
-            };
-        });
-
-        if (!points.some((point) => Number.isFinite(point.topShare))) {
-            return renderEmptyChart("monthly-concentration-chart", "暂无结构集中度数据");
-        }
-        if (caption) caption.textContent = `${dimension}头部占比和集中度变化，数值越高代表结构越集中。`;
-        const monthAxis = groupedMonthAxis(points.map((point) => point.month));
-
-        const layoutMargins = { l: 58, r: 58, t: 52, b: 74 };
-        window.Plotly.react("monthly-concentration-chart", [
-            {
-                type: "bar",
-                name: "头部占比",
-                x: monthAxis.x,
-                y: points.map((point) => point.topShare),
-                customdata: points.map((point) => [point.month.label, point.topCategory]),
-                marker: { color: withAlpha(COLORS.blue, 0.46), line: { color: COLORS.blue, width: 1 } },
-                hovertemplate: `%{customdata[0]}<br>头部分类：%{customdata[1]}<br>头部占比：%{y:.1f}%<extra></extra>`
-            },
-            {
-                type: "scatter",
-                mode: "lines+markers",
-                name: "集中度指数",
-                x: monthAxis.x,
-                y: points.map((point) => point.concentration),
-                customdata: points.map((point) => point.month.label),
-                yaxis: "y2",
-                line: { color: COLORS.orange, width: 3, shape: "spline" },
-                marker: { size: 6 },
-                hovertemplate: `%{customdata}<br>集中度指数：%{y:.1f}<extra></extra>`
-            }
-        ], chartLayout({
-            margin: layoutMargins,
-            xaxis: monthAxis.axis,
-            yaxis: numericAxis({ title: "头部占比", ticksuffix: "%", tickfont: { color: COLORS.blue }, gridcolor: COLORS.grid, zerolinecolor: COLORS.grid }),
-            yaxis2: numericAxis({
-                title: "集中度指数",
-                tickfont: { color: COLORS.orange },
-                titlefont: { color: COLORS.orange },
-                overlaying: "y",
-                side: "right",
-                showgrid: false,
-                zeroline: false
-            }),
-            annotations: monthAxis.annotations,
-            shapes: monthAxis.shapes,
-            legend: { orientation: "h", y: 1.14, x: 0, yanchor: "bottom", font: { color: COLORS.muted } }
-        }), chartConfig()).then(() => syncYearAxisOverlay("monthly-concentration-chart", points.map((point) => point.month), layoutMargins));
-    }
-
     function palette(index) {
         const colors = ["#5c8fba", "#d97757", "#788c5d", "#b98524", "#8f7ab8", "#6e9c8b", "#b65f55"];
         return colors[index % colors.length];
@@ -2076,6 +2045,33 @@
         }, "monthAxisResize");
     }
 
+    function resizePlotlyCharts() {
+        if (typeof Plotly === "undefined") return;
+        document.querySelectorAll(".monthly-trend-tool .js-plotly-plot").forEach((plot) => {
+            Plotly.Plots.resize(plot);
+        });
+    }
+
+    function schedulePlotResize() {
+        if (typeof window === "undefined") return;
+        window.requestAnimationFrame(resizePlotlyCharts);
+        window.setTimeout(resizePlotlyCharts, 320);
+    }
+
+    function initChartResizeObserver() {
+        if (typeof window === "undefined") return;
+        const root = byId("monthly-trend-root");
+        if (root?.dataset.plotResizeObserverBound === "true") return;
+
+        const mainContent = document.querySelector(".monthly-trend-tool .main-content");
+        if (mainContent && typeof ResizeObserver !== "undefined") {
+            const observer = new ResizeObserver(schedulePlotResize);
+            observer.observe(mainContent);
+        }
+        window.addEventListener("resize", schedulePlotResize);
+        if (root) root.dataset.plotResizeObserverBound = "true";
+    }
+
     function initSidebar() {
         const sidebar = byId("monthly-sidebar");
         const toggle = byId("monthly-sidebar-toggle");
@@ -2087,12 +2083,14 @@
             sidebar?.classList.add("collapsed");
             if (expand) expand.style.display = "inline-flex";
             if (backdrop) backdrop.classList.remove("visible");
+            schedulePlotResize();
         }
 
         function expandSidebar() {
             sidebar?.classList.remove("collapsed");
             if (expand) expand.style.display = "none";
             if (backdrop && isMobile()) backdrop.classList.add("visible");
+            schedulePlotResize();
         }
 
         bindOnce(toggle, "click", collapse);
@@ -2140,6 +2138,7 @@
     function initApp() {
         initSidebar();
         initResponsiveMonthAxis();
+        initChartResizeObserver();
         bindControls();
 
         if (state.initialized) {

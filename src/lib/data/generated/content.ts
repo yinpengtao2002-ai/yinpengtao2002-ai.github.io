@@ -1,5 +1,5 @@
 // Auto-generated content data from markdown + Notion
-// Generated at: 2026-06-07T16:28:31.927Z
+// Generated at: 2026-06-18T12:33:07.707Z
 // DO NOT EDIT MANUALLY - run 'npm run prebuild' to regenerate
 
 export interface ContentItem {
@@ -59,11 +59,11 @@ export const financeContent: ContentItem[] = [
   },
   {
     "slug": "profit-structure",
-    "title": "多维结构关系分析模型",
-    "description": "上传通用经营明细底表，按任意维度路径查看用户上传指标在多层维度之间的结构关系。",
+    "title": "多维利润质量诊断模型",
+    "description": "上传通用经营明细底表，判断先看哪个维度，并定位拖累整体利润质量的组合。",
     "date": "2026-05-31",
     "href": "/finance/profit-structure",
-    "content": "用于多维结构关系分析，把通用经营明细按用户选择的任意维度路径汇总，跟随用户上传的指标生成维度流向、交叉切分、组合分布和定位散点。\n\n使用步骤：\n1. 打开模型后先查看自动加载的示例数据。\n2. 上传包含月份、维度、销量和任意指标的 Excel 或 CSV。\n3. 选择第一层、第二层和第三层维度，再选择权重指标和坐标指标查看结构关系。",
+    "content": "用于多维利润质量诊断，把通用经营明细按用户选择的诊断粒度汇总，判断哪个维度最值得优先下钻，并识别拖累整体单位质量的组合。\n\n使用步骤：\n1. 打开模型后先查看自动加载的示例数据。\n2. 上传包含月份、维度、销量和任意指标的 Excel 或 CSV。\n3. 选择质量指标和诊断粒度，查看维度解释力、结构质量地图和拖累贡献。",
     "source": "registry",
     "id": 5
   },

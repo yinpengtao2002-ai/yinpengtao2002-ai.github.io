@@ -25,7 +25,7 @@
 | business-analysis | KPI、维度预算实际瀑布、单车净收入 x 单车边际气泡图、利润变动桥、利润桥 | metric-card、waterfall-bridge、scatter-bubble | FBP 利润链、预算实际差异、维度下钻聚合 |
 | margin-analysis | 多层级单车指标归因瀑布、归因明细表 | waterfall-bridge、detail-table | PVM 结构效应、PVM 费率效应、Top N + 其他 |
 | finance-ai-assistant | 趋势、横向排名、瀑布桥、分组/堆叠柱、热力图、气泡散点、明细表 | 全部中枢图表族的当前种子 | schema 推断、聚合、趋势、排名、期间桥、PVM |
-| monthly-trend | 多指标趋势、同期对比、环比/同比线、结构趋势、结构集中度、同比/环比热力图 | trend-line、series-share、heatmap、combo-bar-line | 月份识别、跨年月份轴、环比/同比、Top N + 其他 |
+| monthly-trend | 多指标趋势、同期对比、环比/同比线、结构趋势、同比/环比热力图 | trend-line、series-share、heatmap | 月份识别、跨年月份轴、环比/同比、Top N + 其他 |
 | profit-structure | KPI、诊断结论、维度解释力横向条、结构质量气泡图、拖累贡献清单 | metric-card、bar-rank、scatter-bubble、detail-table | 单位质量、维度解释力、拖累贡献、组合粒度聚合 |
 | sensitivity-analysis | KPI、Tornado 条形图、目标利润曲线、双变量热力图、边际瀑布、利润瀑布 | metric-card、tornado-bar、target-line、heatmap、waterfall-bridge | FBP 利润链、目标利润倒推、双变量矩阵 |
 | perspective-bi | Perspective 原生表格、柱状图、折线图、热力图、散点图 | 不强行替换原生 viewer；只复用字段治理和中枢说明 | 字段角色识别、派生指标建议、上传预检 |

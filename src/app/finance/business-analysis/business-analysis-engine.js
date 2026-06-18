@@ -298,6 +298,11 @@
             "预算单车边际": "预算单车<br>边际",
             "实际单车边际": "实际单车<br>边际",
             "实际利润总额": "实际利润<br>总额",
+            "销量影响": "销量<br>影响",
+            "单车净收入影响": "单车净收入<br>影响",
+            "单车材料成本影响": "单车材料<br>影响",
+            "单车变动制造费用影响": "单车变动<br>制造影响",
+            "单车变动销售费用影响": "单车变动<br>销售影响",
             "净收入差异": "净收入<br>差异",
             "材料成本影响": "材料成本<br>影响",
             "变动制造费用影响": "变动制造<br>影响",
@@ -334,6 +339,11 @@
             "实际边际总额": "实际边际",
             "预算利润": "预算利润",
             "实际利润总额": "实际利润",
+            "销量影响": "销量",
+            "单车净收入影响": "单车收入",
+            "单车材料成本影响": "单车材料",
+            "单车变动制造费用影响": "单车制造",
+            "单车变动销售费用影响": "单车销售",
             "净收入差异": "净收入",
             "材料成本影响": "材料成本",
             "变动制造费用影响": "变动制造",
@@ -371,10 +381,6 @@
 
     function driverByKey(key, fallback = "profitGap") {
         return VARIANCE_DRIVER_BY_KEY[key] || VARIANCE_DRIVER_BY_KEY[fallback];
-    }
-
-    function driverGapLabel(driver) {
-        return driver.gapLabel || `${driver.label}差异`;
     }
 
     function formatDriverValue(value, driver, digits = 2) {
@@ -468,10 +474,11 @@
 
     function profitVarianceBridgeRows(summary, { includeFixed = true } = {}) {
         const variableRows = [
-            { key: "netRevenue", name: "净收入差异", group: "variable", value: summary.revenueGap },
-            { key: "materialCost", name: "材料成本影响", group: "variable", value: summary.materialCostImpact },
-            { key: "variableManufacturingCost", name: "变动制造费用影响", group: "variable", value: summary.variableManufacturingCostImpact },
-            { key: "variableSalesCost", name: "变动销售费用影响", group: "variable", value: summary.variableSalesCostImpact }
+            { key: "volumeImpact", name: "销量影响", group: "variable", value: summary.volumeImpact },
+            { key: "unitNetRevenueImpact", name: "单车净收入影响", group: "variable", value: summary.unitNetRevenueImpact },
+            { key: "unitMaterialCostImpact", name: "单车材料成本影响", group: "variable", value: summary.unitMaterialCostImpact },
+            { key: "unitVariableManufacturingCostImpact", name: "单车变动制造费用影响", group: "variable", value: summary.unitVariableManufacturingCostImpact },
+            { key: "unitVariableSalesCostImpact", name: "单车变动销售费用影响", group: "variable", value: summary.unitVariableSalesCostImpact }
         ];
         const variableImpact = variableRows.reduce((sum, row) => sum + row.value, 0);
         const marginResidual = summary.contributionMarginGap - variableImpact;
@@ -618,6 +625,11 @@
     function enrichSummary(actualInput, budgetInput) {
         const actual = finalizePnl(actualInput);
         const budget = finalizePnl(budgetInput);
+        const volumeImpact = (actual.salesVolume - budget.salesVolume) * budget.unitContributionMargin;
+        const unitNetRevenueImpact = actual.salesVolume * (actual.unitNetRevenue - budget.unitNetRevenue);
+        const unitMaterialCostImpact = -actual.salesVolume * (actual.unitMaterialCost - budget.unitMaterialCost);
+        const unitVariableManufacturingCostImpact = -actual.salesVolume * (actual.unitVariableManufacturingCost - budget.unitVariableManufacturingCost);
+        const unitVariableSalesCostImpact = -actual.salesVolume * (actual.unitVariableSalesCost - budget.unitVariableSalesCost);
         return {
             actual,
             budget,
@@ -630,6 +642,11 @@
             variableManufacturingCostImpact: -(actual.variableManufacturingCost - budget.variableManufacturingCost),
             variableSalesCostImpact: -(actual.variableSalesCost - budget.variableSalesCost),
             variableCostImpact: -(actual.variableCostTotal - budget.variableCostTotal),
+            volumeImpact,
+            unitNetRevenueImpact,
+            unitMaterialCostImpact,
+            unitVariableManufacturingCostImpact,
+            unitVariableSalesCostImpact,
             contributionMarginGap: actual.contributionMargin - budget.contributionMargin,
             fixedSubjectImpact: -(actual.fixedSubjectTotal - budget.fixedSubjectTotal),
             profitGap: actual.profit - budget.profit,
@@ -1591,8 +1608,8 @@
         if (varianceTitle) varianceTitle.textContent = isMarginScope ? "利润变动桥（边际口径）" : "利润变动桥";
         if (varianceSubtitle) {
             varianceSubtitle.textContent = isMarginScope
-                ? "当前筛选为维度口径，固定科目不分摊，仅桥接预算边际到实际边际。"
-                : "从预算利润出发，按收入、变动成本和固定科目差异桥接到实际利润。";
+                ? "当前筛选为维度口径，固定科目不分摊，仅按销量和单车经营因素桥接预算边际到实际边际。"
+                : "从预算利润出发，按销量、单车收入、单车成本和固定科目桥接到实际利润。";
         }
         if (profitTitle) profitTitle.textContent = isMarginScope ? "利润桥（边际口径）" : "利润桥";
         if (profitSubtitle) {
@@ -2652,9 +2669,9 @@
         if (!state.lastSummary) return;
         const summary = state.lastSummary;
         const driver = currentVarianceDriver();
-        const varianceLines = VARIANCE_DRIVERS
-            .filter((item) => !["salesVolume", "unitContributionMargin"].includes(item.key))
-            .map((item) => [driverGapLabel(item), "", "", formatDriverGap(driverValue(summary, item), item)]);
+        const isMarginScope = hasActiveDimensionFilter();
+        const varianceLines = profitVarianceBridgeRows(summary, { includeFixed: !isMarginScope })
+            .map((row) => [row.name, "", "", formatGap(row.value)]);
         const filters = currentDimensions()
             .map((dimension) => `${dimensionLabel(dimension)}=${byId(dimensionFilterId(dimension))?.value || "全部"}`)
             .join("；");
@@ -2670,7 +2687,7 @@
             ["筛选口径", "维度", filters, ""],
             ["对照指标", driver.label, formatDriverValue(driverActual(summary, driver), driver), formatDriverGap(driverValue(summary, driver), driver)],
             [],
-            ["损益科目差异", "", "", ""],
+            [isMarginScope ? "利润变动桥（边际口径）" : "利润变动桥", "", "", ""],
             ...varianceLines
         ];
         const csv = lines.map((line) => line.map((cell) => `"${String(cell || "").replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -2771,6 +2788,33 @@
         return typeof window !== "undefined" && window.matchMedia("(max-width: 820px)").matches;
     }
 
+    function resizePlotlyCharts() {
+        if (typeof Plotly === "undefined") return;
+        document.querySelectorAll(".business-tool .js-plotly-plot").forEach((plot) => {
+            Plotly.Plots.resize(plot);
+        });
+    }
+
+    function schedulePlotResize() {
+        if (typeof window === "undefined") return;
+        window.requestAnimationFrame(resizePlotlyCharts);
+        window.setTimeout(resizePlotlyCharts, 320);
+    }
+
+    function initChartResizeObserver() {
+        if (typeof window === "undefined") return;
+        const root = byId("business-analysis-root");
+        if (root?.dataset.plotResizeObserverBound === "true") return;
+
+        const mainContent = document.querySelector(".business-tool .main-content");
+        if (mainContent && typeof ResizeObserver !== "undefined") {
+            const observer = new ResizeObserver(schedulePlotResize);
+            observer.observe(mainContent);
+        }
+        window.addEventListener("resize", schedulePlotResize);
+        if (root) root.dataset.plotResizeObserverBound = "true";
+    }
+
     function setSidebarOpen(open) {
         const root = byId("business-analysis-root");
         const sidebar = byId("business-sidebar");
@@ -2783,6 +2827,7 @@
         expand.style.display = open ? "none" : "inline-flex";
         expand.setAttribute("aria-expanded", String(open));
         toggle?.setAttribute("aria-expanded", String(open));
+        schedulePlotResize();
     }
 
     function closeSidebarOnMobile() {
@@ -2895,6 +2940,7 @@
         const root = byId("business-analysis-root");
         if (!root || typeof Plotly === "undefined") return;
         if (root.dataset.initialized === "true") {
+            initChartResizeObserver();
             bindSidebar();
             renderManualSubjectRows();
             bindManualPasteBox();
@@ -2905,6 +2951,7 @@
         }
 
         root.dataset.initialized = "true";
+        initChartResizeObserver();
         bindSidebar();
         renderManualSubjectRows();
         bindManualPasteBox();

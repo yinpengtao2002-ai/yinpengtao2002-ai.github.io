@@ -111,7 +111,7 @@ export default function MonthlyTrendTool() {
                 </section>
 
                 <section className="sidebar-block">
-                    <h2 className="sidebar-title">筛选条件</h2>
+                    <h2 className="sidebar-title">下钻筛选</h2>
                     <div className="form-grid filter-grid" id="monthly-filter-grid" />
                 </section>
 
@@ -172,7 +172,7 @@ export default function MonthlyTrendTool() {
                     </article>
                 </section>
 
-                <section className="workspace-grid bottom-grid">
+                <section className="workspace-grid single-grid">
                     <article className="panel panel-large">
                         <div className="panel-header">
                             <div>
@@ -181,16 +181,6 @@ export default function MonthlyTrendTool() {
                             </div>
                         </div>
                         <div id="monthly-structure-chart" className="chart" />
-                    </article>
-
-                    <article className="panel panel-large">
-                        <div className="panel-header">
-                            <div>
-                                <h2>结构集中度</h2>
-                                <p id="monthly-concentration-caption">当前层级的头部占比和集中度。</p>
-                            </div>
-                        </div>
-                        <div id="monthly-concentration-chart" className="chart" />
                     </article>
                 </section>
 

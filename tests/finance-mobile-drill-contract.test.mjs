@@ -23,6 +23,22 @@ const monthlyTool = await readFile(
   new URL("../src/app/finance/monthly-trend/MonthlyTrendTool.tsx", import.meta.url),
   "utf8"
 );
+const monthlyPage = await readFile(
+  new URL("../src/app/finance/monthly-trend/page.tsx", import.meta.url),
+  "utf8"
+);
+const financeModelInventory = await readFile(
+  new URL("../docs/finance-model-inventory.md", import.meta.url),
+  "utf8"
+);
+const financeChartSystem = await readFile(
+  new URL("../docs/finance-chart-system.md", import.meta.url),
+  "utf8"
+);
+const profitStructureEngine = await readFile(
+  new URL("../src/app/finance/profit-structure/profit-structure-engine.js", import.meta.url),
+  "utf8"
+);
 const perspectiveTool = await readFile(
   new URL("../src/app/finance/perspective-bi/PerspectiveBITool.tsx", import.meta.url),
   "utf8"
@@ -72,6 +88,45 @@ test("finance tool workbench titles share the generous margin-analysis title rhy
   assert.match(monthlyCss, /\.monthly-trend-tool \.model-subtitle\s*\{[^}]*margin-top:\s*0\.55rem[\s\S]*font-size:\s*0\.92rem[\s\S]*line-height:\s*1\.7/s);
   assert.match(marginCss, /\.main-header\s*\{[^}]*font-size:\s*1\.4rem/s);
   assert.match(monthlyCss, /\.monthly-trend-tool \.model-header h1\s*\{[^}]*font-size:\s*1\.4rem/s);
+});
+
+test("Plotly finance workbenches resize charts after the control console changes width", () => {
+  [
+    ["margin analysis", marginApp],
+    ["business analysis", businessEngine],
+    ["sensitivity analysis", sensitivityEngine],
+    ["monthly trend", monthlyEngine],
+    ["profit structure", profitStructureEngine],
+  ].forEach(([label, source]) => {
+    assert.match(source, /function resizePlotlyCharts\(\)\s*\{[\s\S]*Plotly\.Plots\.resize\(plot\)/, `${label} should resize rendered Plotly charts`);
+    assert.match(source, /function schedulePlotResize\(\)\s*\{[\s\S]*requestAnimationFrame\(resizePlotlyCharts\)[\s\S]*setTimeout\(resizePlotlyCharts,\s*\d+\)/, `${label} should schedule an immediate and delayed resize`);
+  });
+
+  const businessToggle = businessEngine.match(/function setSidebarOpen\(open\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(businessToggle, "business sidebar toggle should be declared");
+  assert.match(businessToggle[1], /schedulePlotResize\(\)/);
+
+  const sensitivityToggle = sensitivityEngine.match(/function toggleSidebar\(open\)\s*\{([\s\S]*?)\n\}/);
+  assert.ok(sensitivityToggle, "sensitivity sidebar toggle should be declared");
+  assert.match(sensitivityToggle[1], /schedulePlotResize\(\)/);
+
+  const marginToggle = marginApp.match(/const setSidebarOpen = \(open\) => \{([\s\S]*?)\n    \};/);
+  assert.ok(marginToggle, "margin sidebar toggle should be declared");
+  assert.match(marginToggle[1], /schedulePlotResize\(\)/);
+
+  const monthlyCollapse = monthlyEngine.match(/function collapse\(\)\s*\{([\s\S]*?)\n        \}/);
+  const monthlyExpand = monthlyEngine.match(/function expandSidebar\(\)\s*\{([\s\S]*?)\n        \}/);
+  assert.ok(monthlyCollapse, "monthly sidebar collapse should be declared");
+  assert.ok(monthlyExpand, "monthly sidebar expand should be declared");
+  assert.match(monthlyCollapse[1], /schedulePlotResize\(\)/);
+  assert.match(monthlyExpand[1], /schedulePlotResize\(\)/);
+
+  const profitCollapse = profitStructureEngine.match(/function collapse\(\)\s*\{([\s\S]*?)\n    \}/);
+  const profitExpand = profitStructureEngine.match(/function expandSidebar\(\)\s*\{([\s\S]*?)\n    \}/);
+  assert.ok(profitCollapse, "profit structure sidebar collapse should be declared");
+  assert.ok(profitExpand, "profit structure sidebar expand should be declared");
+  assert.match(profitCollapse[1], /schedulePlotResize\(\)/);
+  assert.match(profitExpand[1], /schedulePlotResize\(\)/);
 });
 
 test("Perspective BI follows the finance workbench shell and upload controls", () => {
@@ -449,26 +504,39 @@ test("finance model charts are locked against accidental zoom and drag by defaul
 });
 
 test("monthly trend rebinds sidebar controls when the route remounts", () => {
-  assert.match(monthlyEngine, /function initApp\(\)\s*\{\s*initSidebar\(\);\s*initResponsiveMonthAxis\(\);\s*bindControls\(\);\s*if \(state\.initialized\)/s);
+  assert.match(monthlyEngine, /function initApp\(\)\s*\{\s*initSidebar\(\);\s*initResponsiveMonthAxis\(\);\s*initChartResizeObserver\(\);\s*bindControls\(\);\s*if \(state\.initialized\)/s);
   assert.doesNotMatch(monthlyEngine, /if \(state\.initialized\)\s*\{[\s\S]*?return;\s*\}[\s\S]*?bindControls\(\);/s);
 });
 
-test("monthly trend uses uploaded dimensions directly as filter cards", () => {
+test("monthly trend uses uploaded dimensions as a drill path with upper-level filters", () => {
   assert.doesNotMatch(monthlyTool, /monthly-filter-summary|monthly-dimension-picker/);
   assert.doesNotMatch(monthlyEngine, /function renderFilterSummary\(\)/);
   assert.doesNotMatch(monthlyEngine, /check-pill/);
   assert.match(monthlyEngine, /excel-filter-shell/);
   assert.match(monthlyEngine, /function renderExcelFilterMenu\(/);
+  assert.match(monthlyEngine, /function renderDrillPathControls\(/);
+  assert.match(monthlyEngine, /class="dimension-train monthly-dimension-train"/);
+  assert.match(monthlyEngine, /function drillFilterDimensions\(\)[\s\S]*slice\(0,\s*-1\)/);
   assert.match(monthlyCss, /\.monthly-trend-tool \.excel-filter-trigger\s*\{/);
   assert.match(monthlyCss, /\.monthly-trend-tool \.excel-filter-footer-actions\s*\{/);
+  assert.match(monthlyCss, /\.monthly-trend-tool \.monthly-dimension-train\s*\{/);
   assert.doesNotMatch(monthlyCss, /\.monthly-trend-tool \.(filter-summary|dimension-picker|check-pill)\b/);
 });
 
-test("monthly trend narrows filter candidates by the other active dimensions", () => {
-  assert.match(monthlyEngine, /function candidateRowsForDimension\(dimension\)\s*\{[\s\S]*Object\.entries\(state\.filters\)[\s\S]*filterDimension !== dimension/s);
+test("monthly trend narrows filter candidates by earlier drill levels", () => {
+  assert.match(monthlyEngine, /function candidateRowsForDimension\(dimension\)\s*\{[\s\S]*const dimensions = drillDimensions\(\)[\s\S]*const dimensionIndex = dimensions\.indexOf\(dimension\)[\s\S]*filterIndex < dimensionIndex/s);
   assert.match(monthlyEngine, /function distinctDimensionValues\(dimension\)\s*\{[\s\S]*candidateRowsForDimension\(dimension\)/s);
   assert.match(monthlyEngine, /function pruneLinkedFilters\(changedDimension\)\s*\{[\s\S]*const changedIndex[\s\S]*index <= changedIndex[\s\S]*distinctDimensionValues\(dimension\)[\s\S]*delete state\.filters\[dimension\]/s);
   assert.match(monthlyEngine, /function applyExcelFilterSelection\(dimension,[\s\S]*pruneLinkedFilters\(dimension\)/s);
+  assert.doesNotMatch(monthlyEngine, /filterDimension !== dimension/);
+});
+
+test("monthly trend removes the concentration chart from the workbench", () => {
+  assert.doesNotMatch(monthlyTool, /monthly-concentration|结构集中度|头部占比/);
+  assert.doesNotMatch(monthlyPage, /结构集中度|集中度/);
+  assert.doesNotMatch(monthlyEngine, /renderConcentrationChart|categoryShares|monthly-concentration|集中度指数|头部占比/);
+  assert.doesNotMatch(financeModelInventory, /结构集中度|集中度/);
+  assert.doesNotMatch(financeChartSystem, /monthly-trend \|[^\n]*结构集中度/);
 });
 
 test("monthly trend keeps the base table schema business-facing", () => {

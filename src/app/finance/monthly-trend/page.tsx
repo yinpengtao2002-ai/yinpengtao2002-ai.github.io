@@ -4,7 +4,7 @@ import MonthlyTrendTool from "./MonthlyTrendTool";
 
 export const metadata: Metadata = {
     title: "分月指标趋势分析模型｜多期间分析工具｜Lucas Yin",
-    description: "上传连续月份数据，按自定义维度分析销量、单车质量、环比同比、同期对比、结构占比和结构集中度。",
+    description: "上传连续月份数据，按自定义维度分析销量、单车质量、环比同比、同期对比和结构占比。",
 };
 
 function ProjectDescription({ className = "" }: { className?: string }) {
@@ -13,13 +13,13 @@ function ProjectDescription({ className = "" }: { className?: string }) {
             <h1>分月指标趋势分析模型</h1>
             <p>
                 这是一个通用的多期间指标分析模型。上传带有月份、维度和数值指标的数据后，
-                可以查看连续月份走势、单车质量、环比同比、同期对比、结构占比和结构集中度。
+                可以查看连续月份走势、单车质量、环比同比、同期对比和结构占比。
             </p>
             <h2>适用场景</h2>
             <ul>
                 <li>复盘连续多个月的销量、收入、边际、利润、费用或其他业务指标。</li>
                 <li>把销量、单车净收入和单车边际放在同一张趋势图里，分段观察规模和单车质量。</li>
-                <li>观察多个月份中维度结构占比和集中度变化，定位更值得下钻的区域。</li>
+                <li>观察多个月份中维度结构占比变化，定位更值得下钻的区域。</li>
             </ul>
             <h2>输入数据</h2>
             <ul>
@@ -30,7 +30,7 @@ function ProjectDescription({ className = "" }: { className?: string }) {
             <h2>输出结果</h2>
             <ul>
                 <li>多指标趋势图、环比同比图、同期月度对比和维度结构趋势。</li>
-                <li>同比热力图、环比热力图和结构集中度。</li>
+                <li>同比热力图和环比热力图。</li>
             </ul>
         </section>
     );

@@ -337,6 +337,111 @@
     padding-top: 0.05rem;
 }
 
+.monthly-trend-tool .drill-path-panel {
+    display: grid;
+    gap: 0.48rem;
+    border: 1px solid rgba(232, 230, 220, 0.95);
+    border-radius: 8px;
+    background: linear-gradient(180deg, #ffffff, #faf9f5);
+    padding: 0.56rem;
+}
+
+.monthly-trend-tool .drill-train-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.55rem;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.monthly-trend-tool .drill-train-head strong {
+    min-width: 0;
+    color: var(--accent-blue);
+    font-size: 0.7rem;
+    font-weight: 850;
+    overflow: hidden;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.monthly-trend-tool .monthly-dimension-train {
+    display: grid;
+    gap: 0.42rem;
+}
+
+.monthly-trend-tool .dimension-train-car {
+    display: inline-flex;
+    width: 100%;
+    min-height: 34px;
+    align-items: center;
+    gap: 0.42rem;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: linear-gradient(180deg, #ffffff, #faf9f5);
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    padding: 0.36rem 0.42rem;
+}
+
+.monthly-trend-tool .dimension-train-car span {
+    display: inline-flex;
+    min-width: 32px;
+    height: 20px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: rgba(116, 113, 104, 0.1);
+    color: var(--text-muted);
+    font-size: 0.58rem;
+    font-weight: 850;
+    line-height: 1;
+}
+
+.monthly-trend-tool .dimension-train-car strong {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    color: var(--text-primary);
+    font-size: 0.76rem;
+    font-weight: 850;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.monthly-trend-tool .dimension-train-car.filtered,
+.monthly-trend-tool .dimension-train-car.active {
+    border-color: rgba(106, 155, 204, 0.42);
+    box-shadow: 0 0 0 3px rgba(106, 155, 204, 0.1);
+}
+
+.monthly-trend-tool .dimension-train-car.filtered {
+    border-color: rgba(120, 140, 93, 0.36);
+    box-shadow: 0 0 0 3px rgba(120, 140, 93, 0.08);
+}
+
+.monthly-trend-tool .dimension-train-car.filtered span {
+    background: rgba(120, 140, 93, 0.14);
+    color: var(--accent-green);
+}
+
+.monthly-trend-tool .dimension-train-car.active span {
+    background: rgba(106, 155, 204, 0.15);
+    color: var(--accent-blue);
+}
+
+.monthly-trend-tool .dimension-train-hint {
+    margin: 0;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 0.68rem;
+    line-height: 1.45;
+}
+
 .monthly-trend-tool .filter-card {
     border: 1px solid rgba(232, 230, 220, 0.95);
     border-radius: 8px;
