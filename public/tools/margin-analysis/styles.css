@@ -1501,43 +1501,6 @@ details[open] > .usage-summary::after {
     }
 }
 
-.chart-interaction-guide {
-    display: grid;
-    gap: 0.45rem;
-    margin: 0 0 1.2rem;
-    padding: 0.78rem 0.9rem;
-    border: 1px solid rgba(106, 155, 204, 0.24);
-    border-radius: 8px;
-    background: linear-gradient(135deg, rgba(106, 155, 204, 0.08), rgba(250, 249, 245, 0.92));
-    color: var(--text-secondary);
-    font-family: var(--font-sans);
-    font-size: 0.82rem;
-}
-
-.chart-interaction-title {
-    display: block;
-    color: var(--accent-blue);
-    font-weight: 800;
-    line-height: 1.2;
-}
-
-.chart-interaction-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.35rem;
-    line-height: 1.55;
-}
-
-.chart-interaction-item::before {
-    content: '';
-    flex: 0 0 auto;
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--accent-orange);
-    margin-top: 0.6em;
-}
-
 .drill-info-badge {
     display: inline-block;
     background: linear-gradient(135deg, rgba(106, 155, 204, 0.12), rgba(217, 119, 87, 0.08));
@@ -1839,11 +1802,6 @@ details[open] > .usage-summary::after {
         color: var(--accent-blue);
     }
 
-    .chart-interaction-guide {
-        gap: 0.42rem;
-        margin-bottom: 1rem;
-        font-size: 0.78rem;
-    }
 }
 
 .chart-detail-table {

@@ -804,6 +804,24 @@ test("analysis footer explains the difference between attribution modes in a col
     assert.match(marginAnalysisSource, /document\.getElementById\('attribution-mode-guide'\)/);
 });
 
+test("chart interaction guidance is a bottom collapsible section instead of a top chart banner", () => {
+    assert.match(marginAnalysisHtml, /<details id="chart-interaction-guide" class="usage-details" style="display:none;">/);
+    assert.match(marginAnalysisHtml, /<summary class="usage-summary">.*图表交互.*<\/summary>/);
+    assert.match(marginAnalysisHtml, /电脑端：悬停查看拆解卡片，点击柱子下钻/);
+    assert.match(marginAnalysisHtml, /手机端：点击柱子看明细卡片，在卡片里进入下一层/);
+    assert.match(marginAnalysisHtml, /下钻后：在图表标题右侧切换/);
+
+    const attributionGuideIndex = marginAnalysisHtml.indexOf('id="attribution-mode-guide"');
+    const interactionGuideIndex = marginAnalysisHtml.indexOf('id="chart-interaction-guide"');
+    const footerIndex = marginAnalysisHtml.indexOf('<div class="footer">');
+    assert.ok(attributionGuideIndex > 0, "attribution mode guide should exist before the interaction guide");
+    assert.ok(interactionGuideIndex > attributionGuideIndex, "interaction guide should sit below the other analysis notes");
+    assert.ok(footerIndex > interactionGuideIndex, "interaction guide should sit at the bottom before the footer");
+
+    assert.match(marginAnalysisSource, /document\.getElementById\('chart-interaction-guide'\)/);
+    assert.doesNotMatch(marginAnalysisSource, /container\.appendChild\(buildChartInteractionGuide\(\)\)/);
+});
+
 test("demo data gives revenue, cost, and margin distinct unit-metric movements", () => {
     assert.equal(typeof generateDemoData, "function");
     const normalized = normalizeUploadedRows(generateDemoData());

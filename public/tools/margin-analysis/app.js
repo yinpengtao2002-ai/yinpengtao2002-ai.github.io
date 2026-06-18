@@ -2343,8 +2343,8 @@ function renderCharts() {
     if (pvmAssumptions) pvmAssumptions.style.display = '';
     const attributionModeGuide = document.getElementById('attribution-mode-guide');
     if (attributionModeGuide) attributionModeGuide.style.display = '';
-
-    container.appendChild(buildChartInteractionGuide());
+    const chartInteractionGuide = document.getElementById('chart-interaction-guide');
+    if (chartInteractionGuide) chartInteractionGuide.style.display = '';
 
     const colorSchemes = ['claude', 'warm', 'soft'];
     const dimNames = AppState.customDimNames;
@@ -2427,34 +2427,6 @@ function renderCharts() {
     });
 
     console.log('[renderCharts] 渲染完成，层级数:', levelResults.length);
-}
-
-function buildChartInteractionGuide() {
-    const guide = document.createElement('div');
-    guide.className = 'chart-interaction-guide';
-    const unitMetricLabel = getUnitMetricLabel();
-
-    const title = document.createElement('span');
-    title.className = 'chart-interaction-title';
-    title.textContent = '图表交互';
-
-    const desktop = document.createElement('span');
-    desktop.className = 'chart-interaction-item';
-    desktop.textContent = '电脑端：悬停查看拆解卡片，点击柱子下钻';
-
-    const mobile = document.createElement('span');
-    mobile.className = 'chart-interaction-item';
-    mobile.textContent = '手机端：点击柱子看明细卡片，在卡片里进入下一层';
-
-    const viewSwitch = document.createElement('span');
-    viewSwitch.className = 'chart-interaction-item';
-    viewSwitch.textContent = `下钻后：在图表标题右侧切换“自身${unitMetricLabel}变动 / 对影响基准影响”`;
-
-    guide.appendChild(title);
-    guide.appendChild(desktop);
-    guide.appendChild(mobile);
-    guide.appendChild(viewSwitch);
-    return guide;
 }
 
 function canUseGlobalImpactView(levelResult) {
