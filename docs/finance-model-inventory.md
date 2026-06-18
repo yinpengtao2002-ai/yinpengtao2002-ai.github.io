@@ -12,12 +12,15 @@
 - `public/tools/margin-analysis/*`：单车指标变动归因模型的静态工具文件，由 `/finance/margin-analysis` 路由通过 iframe 加载。
 - `src/app/tools/finance-ai-assistant/*` 和 `src/lib/finance-ai/*`：财务分析 AI 助手的共享实现。
 - `src/lib/finance/charts/*`：财务模型共用图表协议、Plotly 主题、图表 builder 和明细表 spec。
+- `src/lib/finance/filters/*`：财务模型共用筛选状态、搜索、include/exclude 判断和级联筛选修剪。
 - `docs/finance-chart-system.md`：财务图表中枢、共享算法边界和模型依赖地图；改图表中枢或共享计算口径时要先核对这里。
+- `docs/finance-interaction-system.md`：财务交互中枢、筛选器/下钻/明细表筛选依赖地图；改筛选和下钻交互时要先核对这里。
 
 同步要求：
 
 - 改单个模型的图表、交互、上传模板或说明时，更新本文件。
 - 改中枢图表、Plotly 主题、`FinanceChartSpec`、PVM、FBP 利润链、字段识别或上传解析时，同时更新 `docs/finance-chart-system.md`，并检查依赖地图里受影响的模型。
+- 改中枢筛选、级联筛选、维度下钻、明细表列筛选或字段治理时，同时更新 `docs/finance-interaction-system.md`，并检查依赖地图里受影响的模型。
 
 ## 当前财务模型目录
 
@@ -56,6 +59,7 @@
 - 支持示例数据和 CSV/XLSX 模板下载。
 - 拖动维度胶囊调整下钻顺序。
 - 选择当前维度成员，点击瀑布柱下钻，用「退一层」返回上级。
+- 当前层筛选的值清洗、搜索、反选、筛选命中和级联修剪复用 `src/lib/finance/filters/`。
 - 桌面端瀑布图支持悬停查看实际、预算、差异，并点击下钻。
 - 移动端瀑布图支持点击柱子进入明细层，并通过触控返回卡回到图表。
 - 支持重置筛选和导出摘要。
@@ -82,6 +86,7 @@
 - 拖动维度卡片调整或移除下钻层级。
 - 桌面端拖动绿色「基准」条切换影响基准；移动端点击路径卡片切换影响基准。
 - 维度筛选使用类似 Excel 的多选筛选器。
+- 维度 Excel-style 筛选器是 `docs/finance-interaction-system.md` 的当前行为参考源。
 - 瀑布图支持悬停卡片、点击/触控下钻、触控明细卡和空白处关闭。
 - 图表交互说明位于底部折叠区，和归因口径、模式说明并列。
 - 明细表支持列筛选、排序、复制当前表格和导出当前表格。

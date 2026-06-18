@@ -40,6 +40,7 @@ git restore --worktree -- src/lib/data/generated/content.ts
 - `content/`: local Markdown content sources used by `scripts/generate-content.js`.
 - `docs/finance-model-inventory.md`: 财务模型清单，记录模型路由、源码、图表和交互模式。每次财务模型内容变化都要同步更新。
 - `docs/finance-chart-system.md`: 财务图表中枢和模型依赖地图。改中枢图表、财务算法或模型图表组合时，必须先查这里并同步受影响模型。
+- `docs/finance-interaction-system.md`: 财务交互中枢和模型依赖地图。改筛选器、级联筛选、下钻路径或明细表筛选时，必须先查这里并同步受影响模型。
 - `public/vendor/`: local browser copies of Plotly and SheetJS.
 
 ## Finance Models
@@ -56,6 +57,8 @@ Finance tools are first-class site pages under `/finance`. Each model should hav
 每次财务模型内容变化，都要同步更新 `docs/finance-model-inventory.md`。包括新增、删除、重命名财务模型，新增、删除或调整图表，改变交互模式，改变内测门禁，改变上传/模板行为，或修改模型库元数据。
 
 每次触碰财务图表中枢或共享计算口径，都要先查看 `docs/finance-chart-system.md` 的模型依赖地图。不要只改一个页面里的图表实现；命中同一图表族或同一算法的模型都要同步检查文档、测试和可视行为。
+
+每次触碰财务交互中枢、筛选器、级联筛选、维度下钻、明细表列筛选或上传后的字段治理，都要先查看 `docs/finance-interaction-system.md` 的模型依赖地图。不要在单个模型里重新手写筛选状态逻辑；优先复用 `src/lib/finance/filters/`。
 
 Current models:
 
@@ -115,6 +118,7 @@ Current models:
 
 - Prefer the FBP chain: sales volume -> net revenue -> contribution margin -> fixed deductions -> profit total. Add non-P&L modules only when the model explicitly asks for them.
 - Treat the finance chart system as the shared source of truth for reusable chart specs, Plotly theme/config, PVM attribution, and FBP bridge logic. Local per-model chart code should move toward this center instead of growing new one-off implementations.
+- Treat the finance interaction system as the shared source of truth for reusable filter state, cascading filter pruning, drill paths, and detail-table filters. Model-local UI shells can remain, but state logic should move toward `src/lib/finance/filters/`.
 - Keep dimensions business-readable: region, country, model/product, channel, customer/store where relevant.
 - Use upload, template download, demo data, filters, KPI cards, tables, and charts as real controls, not decorative controls.
 - Use a left control console plus a scrollable analysis workspace for full-screen tools.
@@ -147,6 +151,7 @@ Current models:
 - `agent.md`: this handoff file.
 - `docs/finance-model-inventory.md`: 当前财务模型清单，包含路由、图表和交互模式。任何财务模型内容变化都要同步更新。
 - `docs/finance-chart-system.md`: 财务图表中枢、共享算法边界和模型依赖地图。任何中枢图表或共享口径变化都要同步核对。
+- `docs/finance-interaction-system.md`: 财务交互中枢、筛选器/下钻/明细表筛选依赖地图。任何共享交互或模型筛选变化都要同步核对。
 - `content/finance/*.md`: active finance model listing sources. Do not delete casually.
 - `website-changelog.md`: useful history of the website rebuild. Not used at runtime.
 - `README.md`: currently outdated create-next-app-style project notes. Candidate for replacement.

@@ -152,22 +152,29 @@ export default function BusinessAnalysisTool() {
 
                 <section className="sidebar-block">
                     <h2 className="sidebar-title">维度操作台</h2>
-                    <div className="sidebar-dimension-console">
-                        <div className="sidebar-console-head">
-                            <span>维度顺序</span>
-                            <strong id="sidebar-dimension-train-summary" data-dimension-train-summary />
-                        </div>
-                        <div id="sidebar-dimension-train" className="dimension-train sidebar-dimension-train" data-dimension-train aria-label="左侧维度下钻顺序" />
-                        <p className="dimension-train-hint">拖动后续胶囊调整顺序，已下钻层级会保留。</p>
-                        <label className="sidebar-entry-filter" aria-label="左侧当前维度筛选">
-                            <span>进入当前维度</span>
-                            <select id="sidebar-ranking-dimension-filter" className="input" data-ranking-dimension-filter />
-                        </label>
-                        <div className="sidebar-console-actions">
-                            <span>指标：边际总额</span>
-                            <button type="button" className="btn btn-secondary" id="btn-sidebar-ranking-clear" data-ranking-clear>退一层</button>
-                        </div>
-                        <div id="drill-path" className="drill-path" />
+                    <div className="sidebar-dimension-stack">
+                        <details className="sidebar-details" open>
+                            <summary className="sidebar-summary">下钻顺序</summary>
+                            <div className="details-content">
+                                <div className="drill-train-head">
+                                    <span>维度路径</span>
+                                    <strong id="sidebar-dimension-train-summary" data-dimension-train-summary />
+                                </div>
+                                <div id="sidebar-dimension-train" className="dimension-train sidebar-dimension-train" data-dimension-train aria-label="左侧维度下钻顺序" />
+                                <p className="dimension-train-hint">拖动维度卡片调整顺序，已下钻层级会保留。</p>
+                            </div>
+                        </details>
+
+                        <details className="sidebar-details" open>
+                            <summary className="sidebar-summary">维度钻取</summary>
+                            <div className="details-content">
+                                <div className="current-layer-filter sidebar-layer-filter" data-current-layer-filter="sidebar" aria-label="左侧当前层筛选">
+                                    <span data-current-layer-label>筛选当前层</span>
+                                    <button type="button" className="current-layer-filter-trigger" data-current-layer-trigger aria-haspopup="menu" aria-expanded="false" />
+                                    <div className="business-excel-filter-menu" data-current-layer-menu hidden />
+                                </div>
+                            </div>
+                        </details>
                     </div>
                     <div id="dimension-filter-grid" className="form-grid dimension-filter-grid-hidden" aria-hidden="true" />
                 </section>
@@ -202,21 +209,22 @@ export default function BusinessAnalysisTool() {
                                 <p>从预算边际总额出发，按当前维度桥接到实际边际总额，并逐层定位预算缺口来源。</p>
                             </div>
                         </div>
-                        <div className="ranking-toolbar" aria-label="维度经营实绩筛选">
-                            <div className="dimension-train-panel">
+                        <div className="ranking-toolbar" aria-label="维度经营实绩操作台">
+                            <div className="drill-path-panel">
                                 <div className="toolbar-label-row">
-                                    <span>维度顺序</span>
+                                    <span>下钻路径</span>
                                     <strong id="dimension-train-summary" data-dimension-train-summary />
                                 </div>
-                                <div id="dimension-train" className="dimension-train" data-dimension-train aria-label="维度下钻顺序" />
-                                <p className="dimension-train-hint">拖动后续胶囊调整顺序，已下钻层级会保留。</p>
+                                <div id="ranking-drill-path" className="drill-path-rail" data-ranking-drill-path aria-label="维度下钻路径" />
                             </div>
-                            <label className="waterfall-entry-filter" aria-label="当前维度筛选">
-                                <span>进入当前维度</span>
-                                <select id="ranking-dimension-filter" className="input" data-ranking-dimension-filter />
-                            </label>
+                            <div className="current-layer-filter" data-current-layer-filter="main" aria-label="当前层筛选">
+                                <span id="ranking-current-filter-label" data-current-layer-label>筛选当前层</span>
+                                <button type="button" id="ranking-current-filter-trigger" className="current-layer-filter-trigger" data-current-layer-trigger aria-haspopup="menu" aria-expanded="false" />
+                                <div id="ranking-current-filter-menu" className="business-excel-filter-menu" data-current-layer-menu hidden />
+                            </div>
                             <div className="waterfall-metric-pill">指标：边际总额</div>
                             <button type="button" className="btn btn-secondary ranking-clear" id="btn-ranking-clear" data-ranking-clear>退一层</button>
+                            <button type="button" className="btn btn-secondary ranking-reset" id="btn-ranking-reset-path" data-ranking-reset-path>清空下钻</button>
                         </div>
                         <div id="ranking-filter-status" className="ranking-filter-status" />
                         <div className="waterfall-interaction-note" aria-label="维度瀑布图交互方式">

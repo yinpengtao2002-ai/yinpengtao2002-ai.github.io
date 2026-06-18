@@ -1,6 +1,7 @@
 /**
  * 单车指标变动归因模型 - Unit Metric Attribution Model
  * HTML/JS 版本
+ * finance filter system behavior source: see docs/finance-interaction-system.md and src/lib/finance/filters/ before changing Excel-style filters.
  */
 
 // ==================== 全局状态 ====================

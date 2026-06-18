@@ -1,5 +1,14 @@
 /* global Plotly, XLSX */
 
+import {
+    invertFilterSelection,
+    matchesIncludeExcludeFilter,
+    normalizeFilterValues,
+    pruneCascadingSelections,
+    resolveAppliedFilterValues,
+    searchFilterOptions
+} from "@/lib/finance/filters";
+
 (function () {
     const DEFAULT_DIMENSIONS = ["大区", "国家", "品牌市场", "经营模式", "业务单元", "车型"];
     const RESERVED_LONG_TABLE_COLUMNS = [
@@ -88,6 +97,9 @@
         manualSubjectDrafts: [],
         availableDimensions: DEFAULT_DIMENSIONS.slice(),
         selectedDimensions: DEFAULT_DIMENSIONS.slice(),
+        dimensionFilters: {},
+        currentFilterSearch: "",
+        currentFilterMenuOpen: "",
         lastSummary: null,
         activeVarianceKey: "contributionMargin",
         waterfallTouchGesture: null
@@ -370,7 +382,7 @@
         const dimensions = currentDimensions();
         const filters = currentControlValues().dimensionFilters;
         const deepestFilteredIndex = dimensions.reduce((deepest, dimension, index) => {
-            return filters[dimension] ? Math.max(deepest, index) : deepest;
+            return safeArray(filters[dimension]).length ? Math.max(deepest, index) : deepest;
         }, -1);
         if (deepestFilteredIndex >= 0 && dimensions[deepestFilteredIndex + 1]) {
             return dimensions[deepestFilteredIndex + 1];
@@ -1028,9 +1040,31 @@
         }
     }
 
+    function dimensionSelection(dimension) {
+        return normalizeFilterValues(state.dimensionFilters?.[dimension]);
+    }
+
+    function syncHiddenDimensionSelect(dimension) {
+        const select = byId(dimensionFilterId(dimension));
+        if (!select) return;
+        const selected = dimensionSelection(dimension);
+        select.value = selected.length === 1 ? selected[0] : "";
+    }
+
+    function setDimensionSelection(dimension, values) {
+        if (!dimension) return;
+        const selected = normalizeFilterValues(values);
+        if (selected.length) {
+            state.dimensionFilters[dimension] = selected;
+        } else {
+            delete state.dimensionFilters[dimension];
+        }
+        syncHiddenDimensionSelect(dimension);
+    }
+
     function currentControlValues() {
         const dimensionFilters = currentDimensions().reduce((filters, dimension) => {
-            filters[dimension] = byId(dimensionFilterId(dimension))?.value || "";
+            filters[dimension] = dimensionSelection(dimension);
             return filters;
         }, {});
         return {
@@ -1039,7 +1073,7 @@
     }
 
     function hasActiveDimensionFilter() {
-        return Object.values(currentControlValues().dimensionFilters).some(Boolean);
+        return Object.values(currentControlValues().dimensionFilters).some((values) => safeArray(values).length);
     }
 
     function applyTimeFilters(rows) {
@@ -1052,8 +1086,12 @@
 
         currentDimensions().forEach((dimension) => {
             if (dimension === ignoreDimension) return;
-            const selected = controls.dimensionFilters[dimension];
-            if (selected) rows = rows.filter((row) => row.dimensions?.[dimension] === selected);
+            const selected = safeArray(controls.dimensionFilters[dimension]);
+            if (selected.length) {
+                rows = rows.filter((row) => matchesIncludeExcludeFilter(row.dimensions?.[dimension], {
+                    includeValues: selected
+                }));
+            }
         });
 
         return rows;
@@ -1090,14 +1128,12 @@
         Array.from(container.querySelectorAll("[data-dimension-filter]")).forEach((select) => {
             const dimension = select.getAttribute("data-dimension-filter");
             if (dimension && controls.dimensionFilters[dimension]) {
-                select.value = controls.dimensionFilters[dimension];
+                select.value = safeArray(controls.dimensionFilters[dimension])[0] || "";
             }
             select.addEventListener("change", () => {
                 if (dimension) {
-                    downstreamDimensions(dimension).forEach((nextDimension) => {
-                        const nextSelect = byId(dimensionFilterId(nextDimension));
-                        if (nextSelect) nextSelect.value = "";
-                    });
+                    setDimensionSelection(dimension, select.value ? [select.value] : []);
+                    pruneCascadingDimensionSelections(dimension);
                 }
                 updateAll();
             });
@@ -1106,8 +1142,11 @@
 
     function selectedDimensionItems() {
         return currentDimensions()
-            .map((dimension) => ({ dimension, value: byId(dimensionFilterId(dimension))?.value || "" }))
-            .filter((item) => item.value);
+            .map((dimension) => {
+                const values = dimensionSelection(dimension);
+                return { dimension, values, value: values.join("、") };
+            })
+            .filter((item) => item.values.length);
     }
 
     function moveDimensionInOrder(fromIndex, toIndex) {
@@ -1142,13 +1181,13 @@
         const markup = dimensions.map((dimension, index) => `
             <button
                 type="button"
-                class="dimension-train-car ${filters[dimension] ? "filtered" : ""} ${dimension === activeDimension ? "active" : ""} ${lockThroughIndex >= 0 && index <= lockThroughIndex ? "locked" : ""}"
+                class="dimension-train-car ${safeArray(filters[dimension]).length ? "filtered" : ""} ${dimension === activeDimension ? "active" : ""} ${lockThroughIndex >= 0 && index <= lockThroughIndex ? "locked" : ""}"
                 draggable="${lockThroughIndex < 0 || index > lockThroughIndex ? "true" : "false"}"
                 data-dimension-index="${index}"
                 title="${lockThroughIndex >= 0 && index <= lockThroughIndex ? "已下钻层级已锁定" : "拖动调整后续顺序"}"
                 aria-current="${dimension === activeDimension ? "step" : "false"}"
             >
-                <span>${filters[dimension] ? "已选" : dimension === activeDimension ? "当前" : `${index + 1}`}</span>
+                <span>${safeArray(filters[dimension]).length ? "已选" : dimension === activeDimension ? "当前" : `${index + 1}`}</span>
                 <strong>${escapeHtml(dimensionLabel(dimension))}</strong>
             </button>
         `).join("");
@@ -1184,6 +1223,175 @@
         });
     }
 
+    function candidateRowsForDimension(dimension) {
+        const dimensions = currentDimensions();
+        const dimensionIndex = dimensions.indexOf(dimension);
+        let rows = applyTimeFilters(state.rawData.slice());
+
+        dimensions.forEach((filterDimension, filterIndex) => {
+            if (filterDimension === dimension || filterIndex > dimensionIndex) return;
+            const selected = dimensionSelection(filterDimension);
+            if (selected.length) {
+                rows = rows.filter((row) => matchesIncludeExcludeFilter(row.dimensions?.[filterDimension], {
+                    includeValues: selected
+                }));
+            }
+        });
+
+        return rows;
+    }
+
+    function distinctDimensionValues(dimension) {
+        return Array.from(new Set(rowsForDimension(candidateRowsForDimension(dimension), dimension)
+            .map((row) => row.dimensions[dimension])
+            .filter(Boolean))).sort((a, b) => String(a).localeCompare(String(b), "zh-CN"));
+    }
+
+    function renderRankingPathControls() {
+        const containers = Array.from(document.querySelectorAll("[data-ranking-drill-path]"));
+        if (!containers.length) return;
+
+        const dimensions = currentDimensions();
+        const activeDimension = currentAnalysisDimension();
+        const selectedItems = selectedDimensionItems();
+        const selectedByDimension = selectedItems.reduce((map, item) => {
+            map[item.dimension] = item;
+            return map;
+        }, {});
+
+        const nodes = [
+            `<button type="button" class="path-node root-node" data-clear-all-dimensions="true">
+                <span>起点</span>
+                <strong>全部</strong>
+            </button>`,
+            ...dimensions.map((dimension, index) => {
+                const item = selectedByDimension[dimension];
+                const isActive = dimension === activeDimension;
+                const valueLabel = item ? item.value : "";
+                return `
+                    <button
+                        type="button"
+                        class="path-node ${item ? "filtered" : ""} ${isActive ? "active" : ""}"
+                        data-path-dimension="${escapeHtml(dimension)}"
+                        title="${item ? `清除 ${dimensionLabel(dimension)} 筛选` : dimension === activeDimension ? "当前展示层" : "后续下钻层级"}"
+                    >
+                        <span>${item ? dimensionLabel(dimension) : isActive ? "当前层" : `${index + 1}`}</span>
+                        <strong>${escapeHtml(item ? valueLabel : dimensionLabel(dimension))}</strong>
+                        ${item ? '<b aria-hidden="true">×</b>' : ""}
+                    </button>
+                `;
+            })
+        ].join('<i aria-hidden="true">›</i>');
+
+        containers.forEach((container) => {
+            container.innerHTML = nodes;
+            container.querySelector("[data-clear-all-dimensions]")?.addEventListener("click", clearAllDimensionFilters);
+            Array.from(container.querySelectorAll("[data-path-dimension]")).forEach((button) => {
+                const dimension = button.getAttribute("data-path-dimension") || "";
+                button.addEventListener("click", () => {
+                    if (dimensionSelection(dimension).length) clearDimensionFilter(dimension);
+                });
+            });
+        });
+
+        const sidebarSummary = byId("sidebar-current-layer-summary");
+        if (sidebarSummary) sidebarSummary.textContent = `当前层：${dimensionLabel(activeDimension)} ｜ 指标：边际总额`;
+    }
+
+    function currentLayerFilterText(dimension, availableValues) {
+        const selected = dimensionSelection(dimension);
+        if (!selected.length) return `全部${dimensionLabel(dimension)}（${availableValues.length} 项）`;
+        if (selected.length <= 2) return selected.join("、");
+        return `已选 ${selected.length} 项`;
+    }
+
+    function resolveFilterSearchValues(values, keyword) {
+        return searchFilterOptions(values, keyword);
+    }
+
+    function renderCurrentLayerFilterMenu(menu, dimension, availableValues) {
+        const selected = new Set(dimensionSelection(dimension));
+        const searchValues = resolveFilterSearchValues(availableValues, state.currentFilterSearch);
+        menu.innerHTML = `
+            <div class="excel-filter-search-row">
+                <input class="excel-filter-search" data-filter-search value="${escapeHtml(state.currentFilterSearch)}" placeholder="搜索${escapeHtml(dimensionLabel(dimension))}" />
+            </div>
+            <div class="excel-filter-actions">
+                <button type="button" data-filter-action="all">全选</button>
+                <button type="button" data-filter-action="invert">反选</button>
+                <button type="button" data-filter-action="clear">清空</button>
+            </div>
+            <div class="excel-filter-option-list">
+                ${searchValues.length ? searchValues.map((value) => `
+                    <label class="excel-filter-option">
+                        <input type="checkbox" value="${escapeHtml(value)}" ${selected.has(value) ? "checked" : ""} />
+                        <span>${escapeHtml(value)}</span>
+                    </label>
+                `).join("") : '<div class="excel-filter-empty">没有匹配项</div>'}
+            </div>
+            <div class="excel-filter-footer">
+                <span>${availableValues.length} 项可选</span>
+                <button type="button" class="btn btn-primary" data-filter-action="apply">应用</button>
+            </div>
+        `;
+
+        const search = menu.querySelector("[data-filter-search]");
+        search?.addEventListener("input", (event) => {
+            state.currentFilterSearch = event.target?.value || "";
+            renderCurrentLayerFilterMenu(menu, dimension, availableValues);
+            menu.querySelector("[data-filter-search]")?.focus();
+        });
+
+        menu.querySelector('[data-filter-action="all"]')?.addEventListener("click", () => {
+            Array.from(menu.querySelectorAll('input[type="checkbox"]')).forEach((input) => {
+                input.checked = true;
+            });
+        });
+        menu.querySelector('[data-filter-action="clear"]')?.addEventListener("click", () => {
+            Array.from(menu.querySelectorAll('input[type="checkbox"]')).forEach((input) => {
+                input.checked = false;
+            });
+        });
+        menu.querySelector('[data-filter-action="invert"]')?.addEventListener("click", () => {
+            const selectedValues = Array.from(menu.querySelectorAll('input[type="checkbox"]:checked')).map((input) => input.value);
+            const inverted = new Set(invertFilterSelection(searchValues, selectedValues));
+            Array.from(menu.querySelectorAll('input[type="checkbox"]')).forEach((input) => {
+                input.checked = inverted.has(input.value);
+            });
+        });
+        menu.querySelector('[data-filter-action="apply"]')?.addEventListener("click", () => {
+            const selectedValues = Array.from(menu.querySelectorAll('input[type="checkbox"]:checked')).map((input) => input.value);
+            applyCurrentLayerFilterSelection(dimension, selectedValues);
+        });
+    }
+
+    function currentLayerFilterInstanceKey(instance, index) {
+        return instance.getAttribute("data-current-layer-filter") || `filter-${index}`;
+    }
+
+    function renderCurrentLayerFilter() {
+        const dimension = currentAnalysisDimension();
+        const instances = Array.from(document.querySelectorAll("[data-current-layer-filter]"));
+        if (!instances.length || !dimension) return;
+
+        const availableValues = distinctDimensionValues(dimension);
+        instances.forEach((instance, index) => {
+            const key = currentLayerFilterInstanceKey(instance, index);
+            const trigger = instance.querySelector("[data-current-layer-trigger]");
+            const menu = instance.querySelector("[data-current-layer-menu]");
+            const label = instance.querySelector("[data-current-layer-label]");
+            if (!trigger || !menu || !label) return;
+
+            const isOpen = state.currentFilterMenuOpen === key;
+            label.textContent = `筛选当前层：${dimensionLabel(dimension)}`;
+            trigger.innerHTML = `<span>${escapeHtml(currentLayerFilterText(dimension, availableValues))}</span><b aria-hidden="true">⌄</b>`;
+            trigger.disabled = !availableValues.length;
+            trigger.setAttribute("aria-expanded", String(isOpen));
+            menu.hidden = !isOpen;
+            renderCurrentLayerFilterMenu(menu, dimension, availableValues);
+        });
+    }
+
     function refreshCascadingFilters() {
         if (!state.rawData.length) return;
         const controls = currentControlValues();
@@ -1192,10 +1400,11 @@
         renderDimensionFilterControls(controls);
 
         currentDimensions().forEach((dimension) => {
-            const rows = filterRowsForControls({ ignoreDimension: dimension });
-            const values = Array.from(new Set(rowsForDimension(rows, dimension).map((row) => row.dimensions[dimension]))).sort();
-            initSelectOptions(byId(dimensionFilterId(dimension)), values, `全部${dimensionLabel(dimension)}`, controls.dimensionFilters[dimension]);
+            const values = distinctDimensionValues(dimension);
+            initSelectOptions(byId(dimensionFilterId(dimension)), values, `全部${dimensionLabel(dimension)}`, safeArray(controls.dimensionFilters[dimension])[0] || "");
         });
+        renderRankingPathControls();
+        renderCurrentLayerFilter();
     }
 
     function initFilterOptions() {
@@ -1338,33 +1547,65 @@
         return index >= 0 ? dimensions.slice(index + 1) : [];
     }
 
+    function pruneCascadingDimensionSelections(changedDimension) {
+        const dimensions = currentDimensions();
+        const pruned = pruneCascadingSelections({
+            dimensions,
+            changedDimension,
+            rows: applyTimeFilters(state.rawData.slice()),
+            includeSelections: currentControlValues().dimensionFilters,
+            getRowValue: (row, dimension) => row.dimensions?.[dimension]
+        });
+
+        dimensions.forEach((dimension) => {
+            setDimensionSelection(dimension, resolveAppliedFilterValues(
+                distinctDimensionValues(dimension),
+                pruned.includeSelections[dimension] || []
+            ));
+        });
+    }
+
+    function applyCurrentLayerFilterSelection(dimension, values) {
+        if (!dimension || !currentDimensions().includes(dimension)) return;
+        setDimensionSelection(dimension, values);
+        pruneCascadingDimensionSelections(dimension);
+        state.currentFilterMenuOpen = "";
+        state.currentFilterSearch = "";
+        updateAll();
+    }
+
     function drillToDimensionValue(dimension, value) {
         if (!dimension || !value || !currentDimensions().includes(dimension)) return;
-        const target = byId(dimensionFilterId(dimension));
-        if (!target) return;
-
-        const isSameSelection = target.value === value;
-        target.value = isSameSelection ? "" : value;
-        downstreamDimensions(dimension).forEach((nextDimension) => {
-            const nextFilter = byId(dimensionFilterId(nextDimension));
-            if (nextFilter) nextFilter.value = "";
-        });
+        const selected = dimensionSelection(dimension);
+        const isSameSelection = selected.length === 1 && selected[0] === value;
+        setDimensionSelection(dimension, isSameSelection ? [] : [value]);
+        pruneCascadingDimensionSelections(dimension);
 
         const nextDimension = isSameSelection ? dimension : downstreamDimensions(dimension)[0];
         const dimensionSelect = byId("dimension-select");
         if (dimensionSelect) dimensionSelect.value = nextDimension || dimension;
 
+        state.currentFilterMenuOpen = "";
+        state.currentFilterSearch = "";
         updateAll();
     }
 
     function clearDimensionFilter(dimension) {
         if (!currentDimensions().includes(dimension)) return;
         [dimension, ...downstreamDimensions(dimension)].forEach((item) => {
-            const select = byId(dimensionFilterId(item));
-            if (select) select.value = "";
+            setDimensionSelection(item, []);
         });
         const dimensionSelect = byId("dimension-select");
         if (dimensionSelect) dimensionSelect.value = dimension;
+        state.currentFilterMenuOpen = "";
+        state.currentFilterSearch = "";
+        updateAll();
+    }
+
+    function clearAllDimensionFilters() {
+        currentDimensions().forEach((dimension) => setDimensionSelection(dimension, []));
+        state.currentFilterMenuOpen = "";
+        state.currentFilterSearch = "";
         updateAll();
     }
 
@@ -1375,35 +1616,7 @@
     }
 
     function renderDrillPath() {
-        const container = byId("drill-path");
-        if (!container) return;
-
-        const activeDimension = currentAnalysisDimension();
-        const selectedItems = selectedDimensionItems();
-
-        const chips = selectedItems.map((item) => `
-            <button type="button" class="drill-chip" data-clear-dimension="${item.dimension}">
-                <span>${dimensionLabel(item.dimension)}</span>
-                <strong>${item.value}</strong>
-                <b aria-hidden="true">×</b>
-            </button>
-        `).join("");
-
-        container.innerHTML = `
-            <div class="drill-path-meta">
-                <span>当前维度：${dimensionLabel(activeDimension)}</span>
-                <span>指标：边际总额</span>
-            </div>
-            <div class="drill-chip-row">
-                ${chips || '<span class="drill-empty">未选择维度筛选</span>'}
-                ${selectedItems.length ? '<button type="button" class="drill-clear" data-clear-last="true">退一层</button>' : ""}
-            </div>
-        `;
-
-        Array.from(container.querySelectorAll("[data-clear-dimension]")).forEach((button) => {
-            button.addEventListener("click", () => clearDimensionFilter(button.getAttribute("data-clear-dimension")));
-        });
-        container.querySelector("[data-clear-last]")?.addEventListener("click", clearLastDimensionFilter);
+        renderRankingPathControls();
     }
 
     function budgetGapLine(actual, budget, driver) {
@@ -2127,21 +2340,8 @@
         });
     }
 
-    function renderRankingDimensionFilter(dimension, rows) {
-        const selects = Array.from(document.querySelectorAll("[data-ranking-dimension-filter]"));
-        if (!selects.length) return;
-        const selected = byId(dimensionFilterId(dimension))?.value || "";
-        const sortedRows = sortDimensionContributionRows(rows);
-        const options = [
-            `<option value="">选择${escapeHtml(dimensionLabel(dimension))}</option>`,
-            ...sortedRows.map((item) => `<option value="${escapeHtml(item.name)}">${escapeHtml(item.name)} ｜ ${formatGap(item.contributionMarginGap)}</option>`)
-        ].join("");
-
-        selects.forEach((select) => {
-            select.innerHTML = options;
-            select.value = selected;
-            select.disabled = !sortedRows.length;
-        });
+    function renderRankingDimensionFilter() {
+        renderCurrentLayerFilter();
     }
 
     function renderRankingTable(rows) {
@@ -2150,7 +2350,7 @@
         const allDimRows = buildDimensionRows(rows);
         const limited = dimensionRowsWithLimit(allDimRows);
         const summary = summarize(rows);
-        renderRankingDimensionFilter(dimension, allDimRows);
+        renderRankingDimensionFilter();
 
         if (rankingStatus) {
             const selectedItems = selectedDimensionItems();
@@ -2250,7 +2450,7 @@
                 }]
             }), plotConfig());
         });
-        renderRankingDimensionFilter(currentAnalysisDimension(), []);
+        renderRankingDimensionFilter();
         const visual = byId("ranking-visual");
         if (visual) visual.innerHTML = `<div class="waterfall-empty">当前筛选无数据。</div>`;
         renderDrillPath();
@@ -2284,6 +2484,9 @@
         state.rawData = buildSampleData();
         state.availableDimensions = inferAvailableDimensions(state.rawData);
         state.selectedDimensions = defaultSelectedDimensions(state.availableDimensions);
+        state.dimensionFilters = {};
+        state.currentFilterMenuOpen = "";
+        state.currentFilterSearch = "";
         initFilterOptions();
         updateAll();
         showMessage("success", "已加载预算实际对比示例数据。");
@@ -2660,6 +2863,9 @@
         state.rawData = parsed;
         state.availableDimensions = parsed.availableDimensions || inferAvailableDimensions(parsed);
         state.selectedDimensions = defaultSelectedDimensions(state.availableDimensions);
+        state.dimensionFilters = {};
+        state.currentFilterMenuOpen = "";
+        state.currentFilterSearch = "";
         initFilterOptions();
         updateAll();
         showMessage("success", message || `已导入 ${parsed.length} 行预算实际数据。`);
@@ -2673,7 +2879,10 @@
         const varianceLines = profitVarianceBridgeRows(summary, { includeFixed: !isMarginScope })
             .map((row) => [row.name, "", "", formatGap(row.value)]);
         const filters = currentDimensions()
-            .map((dimension) => `${dimensionLabel(dimension)}=${byId(dimensionFilterId(dimension))?.value || "全部"}`)
+            .map((dimension) => {
+                const selected = dimensionSelection(dimension);
+                return `${dimensionLabel(dimension)}=${selected.length ? selected.join("、") : "全部"}`;
+            })
             .join("；");
         const lines = [
             ["指标", "实际", "预算", "差异/达成"],
@@ -2776,11 +2985,10 @@
             const el = byId(id);
             if (el) el.value = value;
         });
-        currentDimensions().forEach((dimension) => {
-            const el = byId(dimensionFilterId(dimension));
-            if (el) el.value = "";
-        });
+        currentDimensions().forEach((dimension) => setDimensionSelection(dimension, []));
         state.activeVarianceKey = "contributionMargin";
+        state.currentFilterMenuOpen = "";
+        state.currentFilterSearch = "";
         updateAll();
     }
 
@@ -2884,6 +3092,32 @@
         });
     }
 
+    function bindCurrentLayerFilterMenu() {
+        const root = byId("business-analysis-root");
+        Array.from(document.querySelectorAll("[data-current-layer-filter]")).forEach((instance, index) => {
+            const key = currentLayerFilterInstanceKey(instance, index);
+            const trigger = instance.querySelector("[data-current-layer-trigger]");
+            const menu = instance.querySelector("[data-current-layer-menu]");
+
+            bindOnce(trigger, "click", (event) => {
+                event.stopPropagation();
+                state.currentFilterMenuOpen = state.currentFilterMenuOpen === key ? "" : key;
+                renderCurrentLayerFilter();
+            }, `current-layer-filter-trigger-${key}`);
+            bindOnce(menu, "click", (event) => event.stopPropagation(), `current-layer-filter-menu-${key}`);
+        });
+
+        if (root && root.dataset.currentLayerFilterDismissBound !== "true") {
+            document.addEventListener("click", (event) => {
+                if (!state.currentFilterMenuOpen) return;
+                if (event.target?.closest?.(".current-layer-filter")) return;
+                state.currentFilterMenuOpen = "";
+                renderCurrentLayerFilter();
+            });
+            root.dataset.currentLayerFilterDismissBound = "true";
+        }
+    }
+
     function bindControls() {
         [
             "dimension-select",
@@ -2900,19 +3134,7 @@
             }, `control-${id}`);
         });
 
-        Array.from(document.querySelectorAll("[data-ranking-dimension-filter]")).forEach((select) => {
-            bindOnce(select, "change", (event) => {
-                const dimension = currentAnalysisDimension();
-                const value = event.target?.value || "";
-                if (value) {
-                    drillToDimensionValue(dimension, value);
-                    if (event.target?.closest?.("#business-sidebar")) closeSidebarOnMobile();
-                    return;
-                }
-                clearDimensionFilter(dimension);
-                if (event.target?.closest?.("#business-sidebar")) closeSidebarOnMobile();
-            }, `ranking-dimension-filter-${select.id || "inline"}`);
-        });
+        bindCurrentLayerFilterMenu();
 
         bindOnce(byId("btn-demo"), "click", loadDemoData, "btn-demo");
         bindOnce(byId("btn-csv-template"), "click", downloadCsvTemplate, "btn-csv-template");
@@ -2924,6 +3146,12 @@
                 clearLastDimensionFilter();
                 if (button.closest?.("#business-sidebar")) closeSidebarOnMobile();
             }, `ranking-clear-${button.id || "inline"}`);
+        });
+        Array.from(document.querySelectorAll("[data-ranking-reset-path]")).forEach((button) => {
+            bindOnce(button, "click", () => {
+                clearAllDimensionFilters();
+                if (button.closest?.("#business-sidebar")) closeSidebarOnMobile();
+            }, `ranking-reset-path-${button.id || "inline"}`);
         });
         bindOnce(byId("btn-add-subject-row"), "click", () => {
             syncManualDrafts();
