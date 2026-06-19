@@ -382,7 +382,7 @@ export default function FinanceAIConversationDemo() {
         </section>
 
         <div className="finance-ai-composer-dock">
-          <div className="finance-ai-composer" aria-label="只读示例输入框">
+          <div className="finance-ai-composer finance-ai-readonly-composer" aria-label="只读示例输入框">
             <input value="只读示例，不能追问或编辑" disabled readOnly />
             <button type="button" disabled aria-label="只读示例不可发送">
               <Loader2 aria-hidden="true" />

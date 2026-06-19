@@ -1571,6 +1571,7 @@ test("finance AI assistant public demo is a read-only simulated chat", async () 
   assert.doesNotMatch(client, /3月 vs 4月车型单车边际/);
   assert.doesNotMatch(client, /国家经营定位气泡图/);
   assert.match(client, /finance-ai-composer/);
+  assert.match(client, /finance-ai-readonly-composer/);
   assert.match(client, /disabled/);
   assert.match(client, /只读示例，不能追问或编辑/);
   assert.match(client, /进入正式助手/);
@@ -1581,6 +1582,8 @@ test("finance AI assistant public demo is a read-only simulated chat", async () 
   assert.doesNotMatch(client, /onChange/);
   assert.match(styles, /\.finance-ai-conversation-demo/);
   assert.match(styles, /\.finance-ai-readonly-pill/);
+  assert.match(styles, /\.finance-ai-readonly-composer\s*\{[\s\S]*align-items:\s*center/s);
+  assert.match(styles, /\.finance-ai-readonly-composer\s+input\s*\{[\s\S]*height:\s*40px/s);
 });
 
 test("finance AI assistant is styled and isolated from global assistant", async () => {
