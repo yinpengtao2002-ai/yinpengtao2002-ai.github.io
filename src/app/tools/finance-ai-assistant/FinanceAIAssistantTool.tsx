@@ -108,6 +108,7 @@ type PlotlyModule = {
 };
 
 const ASSISTANT_AVATAR_IMAGE = "/images/product-stage/finance-ai-assistant-avatar.webp";
+const FINANCE_AI_QUESTION_INPUT_MAX_HEIGHT = 128;
 const SAMPLE_TEMPLATE_HEADERS = ["Month", "Dim_A", "Dim_B", "Dim_C", "Dim_D", "Dim_E", "Sales Volume", "Total Margin"];
 const ACTUAL_SAMPLE_TEMPLATE_ROWS = [
   { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 100000, "Total Margin": 3000000 },
@@ -188,6 +189,17 @@ function getDefaultQuestion(schema: FinanceSchema | null) {
     : businessDimensions[0] ?? "国家";
 
   return `${period} ${dimension}表现怎么看？${metric}环比同比如何？`;
+}
+
+function resizeFinanceAIQuestionInput(element: HTMLTextAreaElement | null) {
+  if (!element) {
+    return;
+  }
+
+  element.style.height = "auto";
+  const nextHeight = Math.min(element.scrollHeight, FINANCE_AI_QUESTION_INPUT_MAX_HEIGHT);
+  element.style.height = `${nextHeight}px`;
+  element.style.overflowY = element.scrollHeight > FINANCE_AI_QUESTION_INPUT_MAX_HEIGHT ? "auto" : "hidden";
 }
 
 function getRowsForSchema(workbook: FinanceRawWorkbook, schema: FinanceSchema): FinanceRow[] {
@@ -1382,6 +1394,7 @@ export default function FinanceAIAssistantTool() {
   const [error, setError] = useState("");
   const [fileName, setFileName] = useState("");
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const questionInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const dataSummary = useMemo(() => summarizeSchema(schema), [schema]);
   const canAsk = Boolean(workbook) && !busy;
@@ -1417,6 +1430,10 @@ export default function FinanceAIAssistantTool() {
 
     return () => window.cancelAnimationFrame(frame);
   }, [messages, busy, workbook]);
+
+  useLayoutEffect(() => {
+    resizeFinanceAIQuestionInput(questionInputRef.current);
+  }, [input, busy, workbook]);
 
   async function handleFile(file: File) {
     setBusy(true);
@@ -1467,6 +1484,7 @@ export default function FinanceAIAssistantTool() {
     setBusy(true);
     setError("");
     setInput("");
+    window.requestAnimationFrame(() => resizeFinanceAIQuestionInput(questionInputRef.current));
     setMessages((current) => [...current, { id: `user-${Date.now()}`, role: "user", text: question }]);
 
     try {
@@ -1696,10 +1714,24 @@ export default function FinanceAIAssistantTool() {
               void handleSubmit();
             }}
           >
-            <input
+            <textarea
+              ref={questionInputRef}
+              className="finance-ai-question-input"
               value={input}
               onChange={(event) => setInput(event.target.value)}
+              onInput={(event) => resizeFinanceAIQuestionInput(event.currentTarget)}
+              onKeyDown={(event) => {
+                if (event.nativeEvent.isComposing) {
+                  return;
+                }
+
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  void handleSubmit();
+                }
+              }}
               placeholder={workbook ? getDefaultQuestion(schema) : "先上传经营明细，再开始提问"}
+              rows={1}
               disabled={busy || !canAsk}
             />
             <button type="submit" disabled={!input.trim() || !canAsk} aria-label="发送问题">

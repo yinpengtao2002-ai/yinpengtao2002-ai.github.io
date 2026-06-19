@@ -1679,7 +1679,7 @@ test("finance AI assistant composer accepts long multi-line questions gracefully
   assert.match(client, /const questionInputRef = useRef<HTMLTextAreaElement \| null>\(null\)/);
   assert.match(client, /<textarea[\s\S]*className="finance-ai-question-input"[\s\S]*rows=\{1\}/);
   assert.match(client, /onKeyDown=\{\(event\) => \{[\s\S]*event\.key === "Enter" && !event\.shiftKey[\s\S]*void handleSubmit\(\)/);
-  assert.doesNotMatch(client, /<input[\s\S]*placeholder=\{workbook \? getDefaultQuestion\(schema\)/);
+  assert.doesNotMatch(client, /<input[\s\S]{0,240}value=\{input\}/);
   assert.match(styles, /\.finance-ai-question-input\s*\{[\s\S]*min-height:\s*26px/s);
   assert.match(styles, /\.finance-ai-question-input\s*\{[\s\S]*max-height:\s*128px/s);
   assert.match(styles, /\.finance-ai-question-input\s*\{[\s\S]*overflow-y:\s*auto/s);

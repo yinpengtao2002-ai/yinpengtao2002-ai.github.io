@@ -1014,6 +1014,7 @@ body {
   width: min(880px, 100%);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
   gap: 10px;
   margin: 0 auto;
   border: 1px solid color-mix(in srgb, var(--border) 80%, var(--accent-secondary));
@@ -1023,17 +1024,39 @@ body {
   padding: 8px;
 }
 
-.finance-ai-composer input {
+.finance-ai-question-input {
   min-width: 0;
+  min-height: 26px;
+  max-height: 128px;
   border: 0;
   background: transparent;
   color: var(--foreground);
   font: inherit;
+  line-height: 1.55;
   outline: none;
-  padding: 0 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 7px 10px;
+  resize: none;
+  scrollbar-width: thin;
+}
+
+.finance-ai-question-input::placeholder {
+  color: color-mix(in srgb, var(--muted) 86%, transparent);
+}
+
+.finance-ai-question-input:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
 }
 
 .finance-ai-composer button {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: end;
   border-radius: 20px;
   border-color: color-mix(in srgb, var(--accent) 60%, #fff);
   background: color-mix(in srgb, var(--accent) 76%, #fff);
