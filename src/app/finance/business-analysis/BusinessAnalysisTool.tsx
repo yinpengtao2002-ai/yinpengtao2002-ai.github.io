@@ -150,31 +150,23 @@ export default function BusinessAnalysisTool() {
                     </div>
                 </section>
 
-                <section className="sidebar-block">
-                    <h2 className="sidebar-title">维度操作台</h2>
-                    <div className="sidebar-dimension-stack">
-                        <details className="sidebar-details" open>
-                            <summary className="sidebar-summary">下钻顺序</summary>
-                            <div className="details-content">
-                                <div className="drill-train-head">
-                                    <span>维度路径</span>
-                                    <strong id="sidebar-dimension-train-summary" data-dimension-train-summary />
-                                </div>
-                                <div id="sidebar-dimension-train" className="dimension-train sidebar-dimension-train" data-dimension-train aria-label="左侧维度下钻顺序" />
-                                <p className="dimension-train-hint">拖动维度卡片调整顺序，已下钻层级会保留。</p>
-                            </div>
-                        </details>
+                <section className="sidebar-block sidebar-dimension-order-block">
+                    <h2 className="sidebar-title">下钻顺序</h2>
+                    <div className="drill-train-head">
+                        <span>维度路径</span>
+                        <strong id="sidebar-dimension-train-summary" data-dimension-train-summary />
+                    </div>
+                    <div id="sidebar-dimension-train" className="dimension-train sidebar-dimension-train" data-dimension-train aria-label="左侧维度下钻顺序" />
+                    <p className="dimension-train-hint">拖动维度卡片调整顺序，已下钻层级会保留。</p>
+                </section>
 
-                        <details className="sidebar-details" open>
-                            <summary className="sidebar-summary">维度钻取</summary>
-                            <div className="details-content">
-                                <div className="current-layer-filter sidebar-layer-filter" data-current-layer-filter="sidebar" aria-label="左侧当前层筛选">
-                                    <span data-current-layer-label>筛选当前层</span>
-                                    <button type="button" className="current-layer-filter-trigger" data-current-layer-trigger aria-haspopup="menu" aria-expanded="false" />
-                                    <div className="business-excel-filter-menu" data-current-layer-menu hidden />
-                                </div>
-                            </div>
-                        </details>
+                <section className="sidebar-block sidebar-dimension-drill-block">
+                    <h2 className="sidebar-title">维度钻取</h2>
+                    <p id="sidebar-current-layer-summary" className="sidebar-filter-note">当前层：未配置</p>
+                    <div className="current-layer-filter sidebar-layer-filter" data-current-layer-filter="sidebar" aria-label="左侧当前层筛选">
+                        <span data-current-layer-label>筛选当前层</span>
+                        <button type="button" className="current-layer-filter-trigger" data-current-layer-trigger aria-haspopup="menu" aria-expanded="false" />
+                        <div className="business-excel-filter-menu" data-current-layer-menu hidden />
                     </div>
                     <div id="dimension-filter-grid" className="form-grid dimension-filter-grid-hidden" aria-hidden="true" />
                 </section>
@@ -217,14 +209,16 @@ export default function BusinessAnalysisTool() {
                                 </div>
                                 <div id="ranking-drill-path" className="drill-path-rail" data-ranking-drill-path aria-label="维度下钻路径" />
                             </div>
-                            <div className="current-layer-filter" data-current-layer-filter="main" aria-label="当前层筛选">
-                                <span id="ranking-current-filter-label" data-current-layer-label>筛选当前层</span>
-                                <button type="button" id="ranking-current-filter-trigger" className="current-layer-filter-trigger" data-current-layer-trigger aria-haspopup="menu" aria-expanded="false" />
-                                <div id="ranking-current-filter-menu" className="business-excel-filter-menu" data-current-layer-menu hidden />
+                            <div className="ranking-toolbar-actions">
+                                <div className="current-layer-filter" data-current-layer-filter="main" aria-label="当前层筛选">
+                                    <span id="ranking-current-filter-label" data-current-layer-label>筛选当前层</span>
+                                    <button type="button" id="ranking-current-filter-trigger" className="current-layer-filter-trigger" data-current-layer-trigger aria-haspopup="menu" aria-expanded="false" />
+                                    <div id="ranking-current-filter-menu" className="business-excel-filter-menu" data-current-layer-menu hidden />
+                                </div>
+                                <div className="waterfall-metric-pill">指标：边际总额</div>
+                                <button type="button" className="btn btn-secondary ranking-clear" id="btn-ranking-clear" data-ranking-clear>退一层</button>
+                                <button type="button" className="btn btn-secondary ranking-reset" id="btn-ranking-reset-path" data-ranking-reset-path>清空下钻</button>
                             </div>
-                            <div className="waterfall-metric-pill">指标：边际总额</div>
-                            <button type="button" className="btn btn-secondary ranking-clear" id="btn-ranking-clear" data-ranking-clear>退一层</button>
-                            <button type="button" className="btn btn-secondary ranking-reset" id="btn-ranking-reset-path" data-ranking-reset-path>清空下钻</button>
                         </div>
                         <div id="ranking-filter-status" className="ranking-filter-status" />
                         <div className="waterfall-interaction-note" aria-label="维度瀑布图交互方式">

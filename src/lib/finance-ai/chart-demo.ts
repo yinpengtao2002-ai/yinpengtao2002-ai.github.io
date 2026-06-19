@@ -33,6 +33,66 @@ const DEMO_CHARTS: FinanceAIDirectChart[] = [
     note: "用于 Top、Bottom、环比增减和全量维度扫描。",
   },
   {
+    type: "pareto_rank",
+    title: "4月国家销量 Pareto",
+    xLabel: "国家",
+    yLabel: "销量",
+    items: [
+      { label: "巴西", value: 30680, share: 0.214 },
+      { label: "KM", value: 21970, share: 0.154 },
+      { label: "英国", value: 13665, share: 0.096 },
+      { label: "澳大利亚", value: 10317, share: 0.072 },
+      { label: "意大利", value: 7872, share: 0.055 },
+      { label: "其他国家", value: 58625, share: 0.409 },
+    ],
+    note: "用于集中度、二八判断和累计贡献分析。",
+  },
+  {
+    type: "small_multiples_trend",
+    title: "重点国家单车边际小多图",
+    xLabel: "月份",
+    yLabel: "单车边际",
+    series: [
+      {
+        name: "巴西",
+        points: [
+          { label: "1月", value: 27.8 },
+          { label: "2月", value: 28.4 },
+          { label: "3月", value: 29.1 },
+          { label: "4月", value: 28.7 },
+        ],
+      },
+      {
+        name: "英国",
+        points: [
+          { label: "1月", value: 25.2 },
+          { label: "2月", value: 24.9 },
+          { label: "3月", value: 26.0 },
+          { label: "4月", value: 24.6 },
+        ],
+      },
+      {
+        name: "澳大利亚",
+        points: [
+          { label: "1月", value: 33.6 },
+          { label: "2月", value: 34.1 },
+          { label: "3月", value: 34.8 },
+          { label: "4月", value: 35.1 },
+        ],
+      },
+      {
+        name: "意大利",
+        points: [
+          { label: "1月", value: 29.3 },
+          { label: "2月", value: 29.7 },
+          { label: "3月", value: 29.6 },
+          { label: "4月", value: 30.2 },
+        ],
+      },
+    ],
+    note: "用于多个维度成员分别看趋势，避免把太多线挤在同一张图里。",
+  },
+  {
     type: "waterfall",
     title: "4月边际总额变化桥",
     startLabel: "3月",

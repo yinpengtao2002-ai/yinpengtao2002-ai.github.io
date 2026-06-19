@@ -1774,11 +1774,19 @@ import {
                 },
                 customdata: dimRows.map((item) => [
                     formatVolume(item.actual.salesVolume),
+                    formatVolume(item.budget.salesVolume),
+                    formatSignedValue(item.actual.salesVolume - item.budget.salesVolume, formatVolume),
+                    formatUnitAmount(item.actual.unitNetRevenue),
+                    formatUnitAmount(item.budget.unitNetRevenue),
+                    formatSignedValue(item.actual.unitNetRevenue - item.budget.unitNetRevenue, formatUnitAmount),
+                    formatUnitAmount(item.actual.unitContributionMargin),
+                    formatUnitAmount(item.budget.unitContributionMargin),
+                    formatSignedValue(item.actual.unitContributionMargin - item.budget.unitContributionMargin, formatUnitAmount),
                     formatAmount(item.actual.netRevenue),
                     formatAmount(item.actual.contributionMargin),
                     formatGap(item.contributionMarginGap)
                 ]),
-                hovertemplate: `${dimension}：%{text}<br>单车净收入：%{x:.2f} 万元/辆<br>单车边际：%{y:.2f} 万元/辆<br>销量规模：%{customdata[0]}<br>净收入总额：%{customdata[1]}<br>边际总额：%{customdata[2]}<br>边际差异：%{customdata[3]}<extra></extra>`
+                hovertemplate: `${dimension}：%{text}<br><br>实际销量：%{customdata[0]}<br>预算销量：%{customdata[1]}<br>销量差异：%{customdata[2]}<br><br>实际单车净收入：%{customdata[3]}<br>预算单车净收入：%{customdata[4]}<br>单车净收入差异：%{customdata[5]}<br><br>实际单车边际：%{customdata[6]}<br>预算单车边际：%{customdata[7]}<br>单车边际差异：%{customdata[8]}<br><br>实际净收入总额：%{customdata[9]}<br>实际边际总额：%{customdata[10]}<br>边际差异：%{customdata[11]}<extra></extra>`
             }
         ], plotLayout({
             showlegend: false,

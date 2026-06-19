@@ -189,6 +189,7 @@
 }
 
 .business-tool .sidebar-title {
+    display: block;
     margin-bottom: 0.75rem;
     border-left: 3px solid var(--accent-orange);
     padding-left: 0.65rem;
@@ -196,58 +197,23 @@
     font-family: var(--font-sans);
     font-size: 0.95rem;
     font-weight: 700;
+    white-space: nowrap;
+    word-break: keep-all;
+    writing-mode: horizontal-tb;
 }
 
-.business-tool .sidebar-details {
-    position: relative;
-    overflow: visible;
-    border: 1px solid var(--border-light);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.72);
-}
-
-.business-tool .sidebar-summary {
-    display: flex;
-    min-height: 40px;
-    cursor: pointer;
-    align-items: center;
-    gap: 0.4rem;
-    list-style: none;
-    border-bottom: 1px solid transparent;
-    background: var(--bg-soft);
-    color: var(--text-primary);
-    font-family: var(--font-sans);
-    font-size: 0.82rem;
-    font-weight: 800;
-    padding: 0.58rem 0.72rem;
-    user-select: none;
-}
-
-.business-tool .sidebar-summary::-webkit-details-marker {
-    display: none;
-}
-
-.business-tool .sidebar-summary::after {
-    content: "›";
-    margin-left: auto;
-    color: var(--text-muted);
-    font-size: 0.92rem;
-    font-weight: 900;
-    transition: transform 0.16s ease;
-}
-
-.business-tool .sidebar-details[open] > .sidebar-summary {
-    border-bottom-color: rgba(232, 230, 220, 0.82);
-}
-
-.business-tool .sidebar-details[open] > .sidebar-summary::after {
-    transform: rotate(90deg);
-}
-
-.business-tool .details-content {
+.business-tool .sidebar-dimension-order-block,
+.business-tool .sidebar-dimension-drill-block {
     display: grid;
     gap: 0.58rem;
-    padding: 0.7rem;
+}
+
+.business-tool .sidebar-filter-note {
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: 800;
+    line-height: 1.4;
 }
 
 .business-tool .message-area {
@@ -640,11 +606,6 @@
         linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(250, 249, 245, 0.78)),
         var(--bg-soft);
     padding: 0.7rem;
-}
-
-.business-tool .sidebar-dimension-stack {
-    display: grid;
-    gap: 0.58rem;
 }
 
 .business-tool .sidebar-console-head {
@@ -1135,23 +1096,36 @@
 
 .business-tool .ranking-toolbar {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(210px, 250px) auto auto auto;
-    grid-template-areas: "path filter metric clear reset";
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "path actions";
     gap: 0.75rem;
     align-items: end;
     border-bottom: 1px solid var(--border-light);
     padding: 0.85rem 0 0.75rem;
 }
 
+.business-tool .ranking-toolbar-actions {
+    grid-area: actions;
+    display: flex;
+    min-width: 0;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: flex-end;
+    gap: 0.55rem;
+}
+
+.business-tool .ranking-toolbar-actions .current-layer-filter,
+.business-tool .ranking-toolbar-actions .waterfall-metric-pill {
+    grid-area: auto;
+}
+
 .business-tool .ranking-clear {
-    grid-area: clear;
     min-height: 34px;
     padding: 0 0.78rem;
     white-space: nowrap;
 }
 
 .business-tool .ranking-reset {
-    grid-area: reset;
     min-height: 34px;
     padding: 0 0.78rem;
     white-space: nowrap;
@@ -2080,10 +2054,15 @@
     }
 
     .business-tool .ranking-toolbar {
-        grid-template-columns: minmax(0, 1fr) minmax(210px, 260px) auto auto;
+        grid-template-columns: 1fr;
         grid-template-areas:
-            "path path path path"
-            "filter metric clear reset";
+            "path"
+            "actions";
+        align-items: stretch;
+    }
+
+    .business-tool .ranking-toolbar-actions {
+        justify-content: flex-start;
     }
 }
 
@@ -2156,10 +2135,13 @@
         grid-template-columns: 1fr;
         grid-template-areas:
             "path"
-            "filter"
-            "metric"
-            "clear"
-            "reset";
+            "actions";
+    }
+
+    .business-tool .ranking-toolbar-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        align-items: stretch;
     }
 
     .business-tool .current-layer-filter,
@@ -2171,7 +2153,7 @@
     .business-tool .waterfall-metric-pill,
     .business-tool .ranking-clear,
     .business-tool .ranking-reset {
-        justify-self: start;
+        justify-self: stretch;
     }
 
     .business-tool .waterfall-interaction-note {

@@ -19,3 +19,30 @@ test("business analysis profit variance bridge explains margin above fixed costs
   assert.match(engine, /unitNetRevenueImpact/);
   assert.match(engine, /volumeImpact/);
 });
+
+test("business analysis unit margin bubble hover exposes volume and unit economics details", () => {
+  const chartRenderer = engine.match(/function renderUnitMarginChart\(rows\)[\s\S]*?\n    \}/);
+  assert.ok(chartRenderer, "unit margin bubble chart renderer should exist");
+
+  [
+    "实际销量",
+    "预算销量",
+    "销量差异",
+    "实际单车净收入",
+    "预算单车净收入",
+    "单车净收入差异",
+    "实际单车边际",
+    "预算单车边际",
+    "单车边际差异"
+  ].forEach((label) => {
+    assert.match(chartRenderer[0], new RegExp(label), `${label} should be visible in the bubble hover`);
+  });
+
+  assert.match(chartRenderer[0], /customdata:\s*dimRows\.map/);
+  assert.match(chartRenderer[0], /formatVolume\(item\.actual\.salesVolume\)/);
+  assert.match(chartRenderer[0], /formatVolume\(item\.budget\.salesVolume\)/);
+  assert.match(chartRenderer[0], /formatUnitAmount\(item\.actual\.unitNetRevenue\)/);
+  assert.match(chartRenderer[0], /formatUnitAmount\(item\.budget\.unitNetRevenue\)/);
+  assert.match(chartRenderer[0], /formatUnitAmount\(item\.actual\.unitContributionMargin\)/);
+  assert.match(chartRenderer[0], /formatUnitAmount\(item\.budget\.unitContributionMargin\)/);
+});

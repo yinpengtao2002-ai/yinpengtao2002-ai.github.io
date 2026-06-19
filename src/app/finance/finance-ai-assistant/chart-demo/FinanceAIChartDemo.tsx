@@ -21,6 +21,8 @@ const KIND_LABELS: Record<FinanceChartSpec["kind"], string> = {
   metric_card: "指标卡",
   trend_chart: "趋势图",
   bar_rank: "横向排名",
+  pareto_rank: "帕累托排名",
+  small_multiples_trend: "小多图趋势",
   waterfall_bridge: "瀑布桥",
   grouped_bar: "分组柱状图",
   stacked_bar: "堆叠柱状图",

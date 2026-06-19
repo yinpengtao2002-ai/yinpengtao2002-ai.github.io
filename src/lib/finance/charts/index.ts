@@ -4,8 +4,10 @@ import type {
   FinanceAIDirectDetailTableChart,
   FinanceAIDirectHeatmapChart,
   FinanceAIDirectMetricCardChart,
+  FinanceAIDirectParetoRankChart,
   FinanceAIDirectScatterBubbleChart,
   FinanceAIDirectSeriesChart,
+  FinanceAIDirectSmallMultiplesTrendChart,
   FinanceAIDirectTrendChart,
   FinanceAIDirectWaterfallChart,
   FinanceChartEvidenceItem,
@@ -80,6 +82,14 @@ export function buildDirectChartSpec(input: FinanceAIDirectChart): FinanceChartS
 
   if (input.type === "bar_rank") {
     return buildDirectBarRankChartSpec(input);
+  }
+
+  if (input.type === "pareto_rank") {
+    return buildDirectParetoRankChartSpec(input);
+  }
+
+  if (input.type === "small_multiples_trend") {
+    return buildDirectSmallMultiplesTrendChartSpec(input);
   }
 
   if (input.type === "waterfall") {
@@ -751,6 +761,188 @@ function buildDirectBarRankChartSpec(input: FinanceAIDirectBarRankChart): Financ
     },
     config: baseConfig,
     note: input.note || "AI 基于上传底稿生成排名数据，前端按横向柱状图协议渲染。",
+  };
+}
+
+function buildDirectParetoRankChartSpec(input: FinanceAIDirectParetoRankChart): FinanceChartSpec {
+  const items = input.items.slice(0, 10);
+  const values = items.map((item) => item.value);
+  const scale = getScaleForValues(values, `${input.title}${input.yLabel ?? ""}`);
+  const scaledValues = values.map((value) => scaledChineseUnit(value, scale));
+  const absoluteTotal = values.reduce((sum, value) => sum + Math.abs(value), 0);
+  let runningAbsoluteValue = 0;
+  const cumulativeShares = items.map((item) => {
+    runningAbsoluteValue += Math.abs(item.value);
+    return item.cumulativeShare ?? (absoluteTotal === 0 ? 0 : runningAbsoluteValue / absoluteTotal);
+  });
+
+  return {
+    kind: "pareto_rank",
+    size: "large",
+    title: input.title,
+    data: [
+      {
+        type: "bar",
+        name: input.yLabel ?? "当前值",
+        x: items.map((item) => item.label),
+        y: scaledValues,
+        text: values.map((value) => formatCompactNumber(value, scale)),
+        textposition: "outside",
+        cliponaxis: false,
+        marker: {
+          color: items.map((_, index) => (
+            index < 3 ? COLORS.orange : index < 5 ? COLORS.yellow : "#c7c1b7"
+          )),
+          line: { color: "rgba(64, 58, 51, 0.18)", width: 1 },
+        },
+        customdata: items.map((item, index) => [
+          formatShare(item.share ?? null),
+          formatShare(cumulativeShares[index] ?? null),
+          item.changeValue !== null && item.changeValue !== undefined
+            ? formatCompactNumber(item.changeValue, scale, true)
+            : "",
+          item.detail ?? "",
+        ]),
+        hovertemplate: `<b>%{x}</b><br>${input.yLabel ?? "当前值"} %{text}<br>占比 %{customdata[0]}<br>累计占比 %{customdata[1]}<br>%{customdata[2]} %{customdata[3]}<extra></extra>`,
+      },
+      {
+        type: "scatter",
+        mode: "lines+markers",
+        name: "累计占比",
+        x: items.map((item) => item.label),
+        y: cumulativeShares.map((share) => share * 100),
+        yaxis: "y2",
+        line: { color: "#315f85", width: 2.5 },
+        marker: { color: "#315f85", size: 7 },
+        hovertemplate: "<b>%{x}</b><br>累计占比 %{y:.1f}%<extra></extra>",
+      },
+    ],
+    layout: {
+      ...baseLayout,
+      showlegend: true,
+      margin: { t: 36, r: 58, b: 68, l: 56 },
+      legend: { orientation: "h", x: 0, y: 1.12, font: { size: 11, color: COLORS.muted } },
+      xaxis: {
+        title: input.xLabel,
+        gridcolor: COLORS.grid,
+        zeroline: false,
+        tickfont: { color: COLORS.muted },
+        tickangle: -24,
+        fixedrange: true,
+      },
+      yaxis: {
+        title: input.yLabel,
+        gridcolor: COLORS.grid,
+        zeroline: true,
+        zerolinecolor: COLORS.grid,
+        tickfont: { color: COLORS.muted },
+        range: paddedRange([0, ...scaledValues]),
+        tickformat: `,.${scale.digits}f`,
+        ticksuffix: scale.suffix,
+        fixedrange: true,
+      },
+      yaxis2: {
+        overlaying: "y",
+        side: "right",
+        range: [0, 105],
+        ticksuffix: "%",
+        showgrid: false,
+        zeroline: false,
+        tickfont: { color: COLORS.muted },
+        fixedrange: true,
+      },
+    },
+    config: baseConfig,
+    note: input.note || "Pareto 图按维度排序并叠加累计占比，用于判断少数关键项是否解释了大部分差异或贡献。",
+  };
+}
+
+function buildDirectSmallMultiplesTrendChartSpec(input: FinanceAIDirectSmallMultiplesTrendChart): FinanceChartSpec {
+  const series = input.series.slice(0, 6);
+  const allValues = series
+    .flatMap((item) => item.points.map((point) => point.value))
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  const scale = getScaleForValues(allValues, `${input.title}${input.yLabel ?? ""}`);
+  const cols = Math.min(3, Math.max(series.length, 1));
+  const rows = Math.ceil(series.length / cols) || 1;
+  const axisLayout: Record<string, unknown> = {};
+  const annotations: Array<Record<string, unknown>> = [];
+  const xPadding = 0.035;
+  const yPadding = 0.075;
+  const valueRange = paddedRange(allValues.map((value) => scaledChineseUnit(value, scale)));
+
+  series.forEach((item, index) => {
+    const axisSuffix = index === 0 ? "" : String(index + 1);
+    const col = index % cols;
+    const row = Math.floor(index / cols);
+    const xStart = col / cols + xPadding;
+    const xEnd = (col + 1) / cols - xPadding;
+    const yStart = 1 - (row + 1) / rows + yPadding;
+    const yEnd = 1 - row / rows - yPadding;
+
+    axisLayout[`xaxis${axisSuffix}`] = {
+      domain: [xStart, xEnd],
+      anchor: `y${axisSuffix}`,
+      showgrid: false,
+      zeroline: false,
+      tickfont: { color: COLORS.muted, size: 10 },
+      fixedrange: true,
+    };
+    axisLayout[`yaxis${axisSuffix}`] = {
+      domain: [yStart, yEnd],
+      anchor: `x${axisSuffix}`,
+      gridcolor: COLORS.grid,
+      zeroline: false,
+      showticklabels: col === 0,
+      tickfont: { color: COLORS.muted, size: 10 },
+      tickformat: `,.${scale.digits}f`,
+      ticksuffix: scale.suffix,
+      fixedrange: true,
+      ...(valueRange ? { range: valueRange } : {}),
+    };
+    annotations.push({
+      text: item.name,
+      xref: "paper",
+      yref: "paper",
+      x: xStart,
+      y: Math.min(yEnd + 0.035, 1),
+      xanchor: "left",
+      yanchor: "bottom",
+      showarrow: false,
+      font: { color: COLORS.text, size: 12 },
+    });
+  });
+
+  return {
+    kind: "small_multiples_trend",
+    size: "large",
+    title: input.title,
+    data: series.map((item, index) => {
+      const axisSuffix = index === 0 ? "" : String(index + 1);
+      return {
+        type: "scatter",
+        mode: "lines+markers",
+        name: item.name,
+        x: item.points.map((point) => point.label),
+        y: item.points.map((point) => (
+          point.value === null || point.value === undefined ? null : scaledChineseUnit(point.value, scale)
+        )),
+        xaxis: `x${axisSuffix}`,
+        yaxis: `y${axisSuffix}`,
+        line: { color: SERIES_COLORS[index % SERIES_COLORS.length], width: 2.4 },
+        marker: { color: SERIES_COLORS[index % SERIES_COLORS.length], size: 6 },
+        hovertemplate: `<b>${item.name}</b><br>%{x}<br>${input.yLabel ?? "值"} %{y:,.2f}${scale.suffix}<extra></extra>`,
+      };
+    }),
+    layout: {
+      ...baseLayout,
+      showlegend: false,
+      margin: { t: 42, r: 20, b: 38, l: 46 },
+      annotations,
+      ...axisLayout,
+    },
+    config: baseConfig,
+    note: input.note || "小多图按同一指标和同一尺度展示多个维度成员趋势，适合替代拥挤的多线趋势图。",
   };
 }
 

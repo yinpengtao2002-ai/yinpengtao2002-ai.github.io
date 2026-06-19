@@ -4,6 +4,8 @@ export type FinanceChartKind =
   | "metric_card"
   | "trend_chart"
   | "bar_rank"
+  | "pareto_rank"
+  | "small_multiples_trend"
   | "waterfall_bridge"
   | "grouped_bar"
   | "stacked_bar"
@@ -193,6 +195,34 @@ export type FinanceAIDirectBarRankChart = {
   note?: string;
 };
 
+export type FinanceAIDirectParetoRankChart = {
+  type: "pareto_rank";
+  title: string;
+  xLabel?: string;
+  yLabel?: string;
+  items: Array<{
+    label: string;
+    value: number;
+    share?: number | null;
+    cumulativeShare?: number | null;
+    changeValue?: number | null;
+    detail?: string;
+  }>;
+  note?: string;
+};
+
+export type FinanceAIDirectSmallMultiplesTrendChart = {
+  type: "small_multiples_trend";
+  title: string;
+  xLabel?: string;
+  yLabel?: string;
+  series: Array<{
+    name: string;
+    points: Array<{ label: string; value: number | null }>;
+  }>;
+  note?: string;
+};
+
 export type FinanceAIDirectWaterfallChart = {
   type: "waterfall";
   title: string;
@@ -253,6 +283,8 @@ export type FinanceAIDirectChart =
   | FinanceAIDirectMetricCardChart
   | FinanceAIDirectTrendChart
   | FinanceAIDirectBarRankChart
+  | FinanceAIDirectParetoRankChart
+  | FinanceAIDirectSmallMultiplesTrendChart
   | FinanceAIDirectWaterfallChart
   | FinanceAIDirectSeriesChart
   | FinanceAIDirectHeatmapChart

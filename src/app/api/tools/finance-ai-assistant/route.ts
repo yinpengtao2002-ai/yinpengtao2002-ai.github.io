@@ -11,8 +11,10 @@ import type {
   FinanceAIDirectChart,
   FinanceAIDirectDetailTableChart,
   FinanceAIDirectHeatmapChart,
+  FinanceAIDirectParetoRankChart,
   FinanceAIDirectScatterBubbleChart,
   FinanceAIDirectSeriesChart,
+  FinanceAIDirectSmallMultiplesTrendChart,
   FinanceAIDirectTrendChart,
   FinanceAIDirectWaterfallChart,
   FinanceActionPlan,
@@ -345,6 +347,42 @@ function normalizeDirectBarRankChart(record: Record<string, unknown>): FinanceAI
   };
 }
 
+function normalizeDirectParetoRankChart(record: Record<string, unknown>): FinanceAIDirectParetoRankChart | null {
+  const title = typeof record.title === "string" ? record.title.trim() : "";
+  const items = Array.isArray(record.items)
+    ? record.items.flatMap((item) => {
+        const rankItem = asRecord(item);
+        const label = typeof rankItem.label === "string" ? rankItem.label.trim() : "";
+        const value = finiteNumber(rankItem.value);
+        if (!label || value === null) {
+          return [];
+        }
+
+        return [{
+          label,
+          value,
+          ...(finiteNumber(rankItem.share) !== null ? { share: finiteNumber(rankItem.share) } : {}),
+          ...(finiteNumber(rankItem.cumulativeShare) !== null ? { cumulativeShare: finiteNumber(rankItem.cumulativeShare) } : {}),
+          ...(finiteNumber(rankItem.changeValue) !== null ? { changeValue: finiteNumber(rankItem.changeValue) } : {}),
+          ...(typeof rankItem.detail === "string" && rankItem.detail.trim() ? { detail: rankItem.detail.trim() } : {}),
+        }];
+      }).slice(0, MAX_DIRECT_RANK_ITEMS)
+    : [];
+
+  if (!title || items.length === 0) {
+    return null;
+  }
+
+  return {
+    type: "pareto_rank",
+    title,
+    ...(typeof record.xLabel === "string" && record.xLabel.trim() ? { xLabel: record.xLabel.trim() } : {}),
+    ...(typeof record.yLabel === "string" && record.yLabel.trim() ? { yLabel: record.yLabel.trim() } : {}),
+    items,
+    ...(typeof record.note === "string" && record.note.trim() ? { note: record.note.trim() } : {}),
+  };
+}
+
 function normalizeDirectWaterfallChart(record: Record<string, unknown>): FinanceAIDirectWaterfallChart | null {
   const title = typeof record.title === "string" ? record.title.trim() : "";
   const startLabel = typeof record.startLabel === "string" ? record.startLabel.trim() : "";
@@ -372,6 +410,39 @@ function normalizeDirectWaterfallChart(record: Record<string, unknown>): Finance
     endLabel,
     endValue,
     items,
+    ...(typeof record.note === "string" && record.note.trim() ? { note: record.note.trim() } : {}),
+  };
+}
+
+function normalizeDirectSmallMultiplesTrendChart(record: Record<string, unknown>): FinanceAIDirectSmallMultiplesTrendChart | null {
+  const title = typeof record.title === "string" ? record.title.trim() : "";
+  const series = Array.isArray(record.series)
+    ? record.series.flatMap((item) => {
+        const seriesRecord = asRecord(item);
+        const name = typeof seriesRecord.name === "string" ? seriesRecord.name.trim() : "";
+        const points = Array.isArray(seriesRecord.points)
+          ? seriesRecord.points.flatMap((pointItem) => {
+              const point = asRecord(pointItem);
+              const label = typeof point.label === "string" ? point.label.trim() : "";
+              const value = point.value === null ? null : finiteNumber(point.value);
+              return label && (value !== null || point.value === null) ? [{ label, value }] : [];
+            }).slice(0, MAX_DIRECT_TREND_POINTS)
+          : [];
+
+        return name && points.length > 0 ? [{ name, points }] : [];
+      }).slice(0, MAX_DIRECT_SERIES)
+    : [];
+
+  if (!title || series.length === 0) {
+    return null;
+  }
+
+  return {
+    type: "small_multiples_trend",
+    title,
+    ...(typeof record.xLabel === "string" && record.xLabel.trim() ? { xLabel: record.xLabel.trim() } : {}),
+    ...(typeof record.yLabel === "string" && record.yLabel.trim() ? { yLabel: record.yLabel.trim() } : {}),
+    series,
     ...(typeof record.note === "string" && record.note.trim() ? { note: record.note.trim() } : {}),
   };
 }
@@ -561,6 +632,14 @@ function normalizeDirectChart(value: unknown): FinanceAIDirectChart | null {
 
   if (record.type === "bar_rank") {
     return normalizeDirectBarRankChart(record);
+  }
+
+  if (record.type === "pareto_rank") {
+    return normalizeDirectParetoRankChart(record);
+  }
+
+  if (record.type === "small_multiples_trend") {
+    return normalizeDirectSmallMultiplesTrendChart(record);
   }
 
   if (record.type === "waterfall") {

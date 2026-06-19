@@ -532,10 +532,12 @@ test("monthly trend narrows filter candidates by earlier drill levels", () => {
 });
 
 test("monthly trend removes the concentration chart from the workbench", () => {
+  const monthlyTrendInventorySection = financeModelInventory.match(/### 分月指标趋势分析模型[\s\S]*?(?=\n### |\n## |$)/)?.[0] || "";
+
   assert.doesNotMatch(monthlyTool, /monthly-concentration|结构集中度|头部占比/);
   assert.doesNotMatch(monthlyPage, /结构集中度|集中度/);
   assert.doesNotMatch(monthlyEngine, /renderConcentrationChart|categoryShares|monthly-concentration|集中度指数|头部占比/);
-  assert.doesNotMatch(financeModelInventory, /结构集中度|集中度/);
+  assert.doesNotMatch(monthlyTrendInventorySection, /结构集中度|集中度/);
   assert.doesNotMatch(financeChartSystem, /monthly-trend \|[^\n]*结构集中度/);
 });
 

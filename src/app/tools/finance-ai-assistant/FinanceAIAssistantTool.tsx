@@ -78,6 +78,18 @@ type ComputedModule = {
 
 type AnalysisContextItem = NonNullable<FinanceAIChatState["analysisContext"]>[number];
 
+type SmallMultiplesTrendResult = {
+  metric: string;
+  dimension: string;
+  labels: string[];
+  filters: FinanceFilter;
+  selectionPeriod?: string;
+  series: Array<{
+    name: string;
+    points: Array<{ label: string; value: number | null }>;
+  }>;
+};
+
 type AssistantMessageSection = {
   text: string;
   chartCards: ChartCard[];
@@ -213,6 +225,14 @@ function getModuleTitle(module: FinanceActionModule, schema: FinanceSchema) {
 
   if (module.type === "bar_rank") {
     return `${module.period ? `${getPeriodDisplayLabel(schema, module.period)} ` : ""}${module.dimension}${module.metric}排名`;
+  }
+
+  if (module.type === "pareto_rank") {
+    return `${module.period ? `${getPeriodDisplayLabel(schema, module.period)} ` : ""}${module.dimension}${module.metric} Pareto`;
+  }
+
+  if (module.type === "small_multiples_trend") {
+    return `${module.dimension}${module.metric}小多图趋势`;
   }
 
   if (module.type === "waterfall_bridge") {
@@ -546,6 +566,90 @@ function buildGroupedPlanChart(rows: FinanceRow[], schema: FinanceSchema, module
   };
 }
 
+function buildParetoPlanChart(rows: FinanceRow[], schema: FinanceSchema, module: FinanceActionModule, title: string) {
+  if (module.type !== "pareto_rank") {
+    return null;
+  }
+
+  const result = buildBarRank(rows, schema, {
+    metric: module.metric,
+    dimension: module.dimension,
+    period: module.period,
+    filters: module.filters,
+    comparison: module.comparison,
+    sort: module.sort ?? "value_desc",
+    limit: clampChartLimit(module.limit, 10, 10),
+  });
+  const spec = buildDirectChartSpec({
+    type: "pareto_rank",
+    title,
+    xLabel: result.dimension,
+    yLabel: result.metric,
+    items: result.items.map((item) => ({
+      label: item.label,
+      value: item.value ?? 0,
+      share: item.valueShare,
+      changeValue: item.changeValue,
+      detail: item.rowCount ? `${item.rowCount} 行明细` : "",
+    })),
+    note: "按维度排序并叠加累计占比，用于判断少数关键项是否解释了大部分贡献。",
+  });
+
+  return { result, spec };
+}
+
+function buildSmallMultiplesTrendPlanChart(rows: FinanceRow[], schema: FinanceSchema, module: FinanceActionModule, title: string) {
+  if (module.type !== "small_multiples_trend") {
+    return null;
+  }
+
+  const selectionPeriod = module.highlightPeriod ?? schema.profile.periods.at(-1)?.key ?? "";
+  const labels = selectionPeriod
+    ? getRankLabels(
+        rows,
+        schema,
+        module.metric,
+        module.dimension,
+        selectionPeriod,
+        module.filters,
+        clampChartLimit(module.limit, 6, 6),
+      )
+    : getAllDimensionLabels(rows, module.dimension, module.filters).slice(0, clampChartLimit(module.limit, 6, 6));
+  const series = labels.map((label) => {
+    const trend = buildTrendSeries(rows, schema, {
+      metric: module.metric,
+      filters: mergeFilters(module.filters, { [module.dimension]: [label] }),
+      highlightPeriod: module.highlightPeriod,
+    });
+
+    return {
+      name: label,
+      points: trend.points.map((point) => ({
+        label: point.periodLabel,
+        value: point.value,
+      })),
+    };
+  });
+  const result: SmallMultiplesTrendResult = {
+    metric: module.metric,
+    dimension: module.dimension,
+    labels,
+    filters: module.filters ?? {},
+    ...(selectionPeriod ? { selectionPeriod } : {}),
+    series,
+  };
+  const spec = buildDirectChartSpec({
+    type: "small_multiples_trend",
+    title,
+    xLabel: schema.monthColumn || "月份",
+    yLabel: module.metric,
+    series,
+    note: "按同一指标和同一尺度拆成多个小趋势面板，适合比较多个维度成员的走势。",
+  });
+
+  return { result, spec };
+}
+
 function buildStackedPlanChart(rows: FinanceRow[], schema: FinanceSchema, module: FinanceActionModule, title: string): FinanceChartSpec | null {
   if (module.type !== "stacked_bar" && module.type !== "percent_stacked_bar") {
     return null;
@@ -865,6 +969,24 @@ function executeFinancePlan(
       return;
     }
 
+    if (module.type === "pareto_rank") {
+      const pareto = buildParetoPlanChart(rows, schema, module, title);
+      if (pareto) {
+        computedModules.push({ type: "pareto_rank", title, request: module, result: pareto.result, chartSpec: pareto.spec });
+        chartCards.push({ id: `chart-${Date.now()}-${index}`, title, spec: pareto.spec, note: pareto.spec.note });
+      }
+      return;
+    }
+
+    if (module.type === "small_multiples_trend") {
+      const smallMultiples = buildSmallMultiplesTrendPlanChart(rows, schema, module, title);
+      if (smallMultiples) {
+        computedModules.push({ type: "small_multiples_trend", title, request: module, result: smallMultiples.result, chartSpec: smallMultiples.spec });
+        chartCards.push({ id: `chart-${Date.now()}-${index}`, title, spec: smallMultiples.spec, note: smallMultiples.spec.note });
+      }
+      return;
+    }
+
     if (module.type === "waterfall_bridge") {
       const result = buildWaterfallBridge(rows, schema, module);
       const spec = buildChartSpec({ type: "waterfall_bridge", title, result });
@@ -904,7 +1026,7 @@ function buildComputedSummary(question: string, schema: FinanceSchema, computedM
       unitMetrics: schema.unitMetrics,
     },
     modules: computedModules.map((module) => {
-      if (module.type !== "bar_rank") {
+      if (module.type !== "bar_rank" && module.type !== "pareto_rank") {
         return module;
       }
 
@@ -920,7 +1042,7 @@ function buildComputedSummary(question: string, schema: FinanceSchema, computedM
           totalItemCount: result.totalItemCount,
           hasCompleteDetailTable: Boolean(result.allItems?.length),
           answerItemCount: Math.min(answerLimit, allRankItems.length),
-          instruction: "用 answerItems 回答用户要的排名；visibleItemCount 只解释图表展示，不要说结果只返回了可见 Top N。",
+          instruction: "用 answerItems 回答用户要的排名或 Pareto 集中度；visibleItemCount 只解释图表展示，不要说结果只返回了可见 Top N。",
         },
         answerItems: allRankItems.slice(0, answerLimit),
       };
@@ -1003,13 +1125,23 @@ function getModuleFocusValues(module: ComputedModule): AnalysisContextItem["focu
   const filterFocusValues = Object.entries(getRequestFilters(module.request) ?? {})
     .flatMap(([dimension, values]) => values.slice(0, 4).map((value) => ({ dimension, value })));
 
-  if (module.type === "bar_rank" && requestDimension) {
+  if ((module.type === "bar_rank" || module.type === "pareto_rank") && requestDimension) {
     const result = module.result as BarRankResult;
     return [
       ...filterFocusValues,
       ...(result.allItems ?? result.items)
         .slice(0, 5)
         .map((item) => ({ dimension: requestDimension, value: item.label })),
+    ];
+  }
+
+  if (module.type === "small_multiples_trend" && requestDimension) {
+    const result = module.result as SmallMultiplesTrendResult;
+    return [
+      ...filterFocusValues,
+      ...result.labels
+        .slice(0, 5)
+        .map((value) => ({ dimension: requestDimension, value })),
     ];
   }
 

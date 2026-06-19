@@ -151,6 +151,8 @@ test("finance AI assistant API exposes planning and explanation responsibilities
   assert.match(context, /metric_snapshot/);
   assert.match(context, /trend_chart/);
   assert.match(context, /bar_rank/);
+  assert.match(context, /pareto_rank/);
+  assert.match(context, /small_multiples_trend/);
   assert.match(context, /grouped_bar/);
   assert.match(context, /stacked_bar/);
   assert.match(context, /percent_stacked_bar/);
@@ -161,6 +163,8 @@ test("finance AI assistant API exposes planning and explanation responsibilities
   assert.match(context, /detail_table/);
   assert.match(context, /完整明细表/);
   assert.match(context, /超过 10 的 limit/);
+  assert.match(context, /集中度|累计贡献|二八|Pareto/);
+  assert.match(context, /小多图|分别趋势/);
   assert.match(context, /waterfall_bridge/);
   assert.match(context, /维度成员 \+ 维度字段/);
 
@@ -202,6 +206,8 @@ test("finance AI direct prompt includes uploaded workbook rows for provider anal
   assert.doesNotMatch(prompt, /metric_card/);
   assert.match(prompt, /trend/);
   assert.match(prompt, /bar_rank/);
+  assert.match(prompt, /pareto_rank/);
+  assert.match(prompt, /small_multiples_trend/);
   assert.match(prompt, /waterfall/);
   assert.match(prompt, /grouped_bar/);
   assert.match(prompt, /stacked_bar/);
@@ -1497,6 +1503,8 @@ test("finance AI chart demo page renders all demo chart styles", async () => {
   assert.match(client, /FinanceAIDetailTable/);
   assert.match(client, /finance-ai-demo-grid/);
   assert.match(demoSpecs, /percent_stacked_bar/);
+  assert.match(demoSpecs, /pareto_rank/);
+  assert.match(demoSpecs, /small_multiples_trend/);
   assert.match(demoSpecs, /scatter_bubble/);
   assert.match(demoSpecs, /detail_table/);
   assert.match(demoSpecs, /13665/);

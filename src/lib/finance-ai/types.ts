@@ -6,8 +6,10 @@ export type {
   FinanceAIDirectDetailTableChart,
   FinanceAIDirectHeatmapChart,
   FinanceAIDirectMetricCardChart,
+  FinanceAIDirectParetoRankChart,
   FinanceAIDirectScatterBubbleChart,
   FinanceAIDirectSeriesChart,
+  FinanceAIDirectSmallMultiplesTrendChart,
   FinanceAIDirectTrendChart,
   FinanceAIDirectWaterfallChart,
   FinanceChartKind,
@@ -146,6 +148,14 @@ export type BarRankRequest = {
 
 export type BarRankSort = NonNullable<BarRankRequest["sort"]>;
 
+export type SmallMultiplesTrendRequest = {
+  metric: string;
+  dimension: string;
+  filters?: FinanceFilter;
+  limit?: number;
+  highlightPeriod?: string;
+};
+
 export type BarRankItem = {
   label: string;
   value: number | null;
@@ -240,6 +250,8 @@ export type FinanceActionModule =
   | ({ type: "metric_snapshot"; chart?: { type: "metric_card" | "trend_chart"; highlightPeriod?: string } } & MetricSnapshotRequest)
   | ({ type: "trend_chart" } & TrendRequest)
   | ({ type: "bar_rank" } & BarRankRequest)
+  | ({ type: "pareto_rank" } & BarRankRequest)
+  | ({ type: "small_multiples_trend" } & SmallMultiplesTrendRequest)
   | ({ type: "waterfall_bridge" } & WaterfallBridgeRequest)
   | ({ type: "grouped_bar"; comparison?: "mom"; seriesDimension?: string; seriesLimit?: number } & Pick<BarRankRequest, "metric" | "dimension" | "period" | "filters" | "limit">)
   | ({ type: "stacked_bar" | "percent_stacked_bar"; metric: string; dimension: string; seriesDimension: string; period: string; filters?: FinanceFilter; limit?: number; seriesLimit?: number })

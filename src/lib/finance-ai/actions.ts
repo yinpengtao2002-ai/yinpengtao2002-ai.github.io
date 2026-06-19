@@ -15,6 +15,8 @@ const ACTION_TYPES = new Set([
   "metric_snapshot",
   "trend_chart",
   "bar_rank",
+  "pareto_rank",
+  "small_multiples_trend",
   "waterfall_bridge",
   "grouped_bar",
   "stacked_bar",
@@ -41,9 +43,13 @@ const CONJUNCTIVE_CHANGE_TOKENS = ["都增长", "均增长", "同时增长", "�
 const SCENARIO_COMPARE_TOKENS = ["预算", "目标", "实际", "预测", "计划", "达成", "target", "budget", "actual", "forecast", "plan"];
 const WATERFALL_ATTRIBUTION_TOKENS = ["变化来源", "差异来源", "贡献拆解", "归因", "瀑布", "桥", "贡献", "拆解", "影响", "原因"];
 const UNIT_COMPOSITION_SUPPORT_TOKENS = ["构成分析", "构成", "组成", "结构", "量比较", "销量比较", "收入比较", "收入对比", "影响", "原因"];
+const PARETO_RANK_TOKENS = ["pareto", "帕累托", "二八", "80/20", "8020", "集中度", "累计贡献", "累计占比", "主要贡献集中"];
+const SMALL_MULTIPLES_TREND_TOKENS = ["小多图", "分面趋势", "分别趋势", "分别看趋势", "各自趋势", "多个对象趋势", "small multiples", "smallmultiple"];
 const SCENARIO_DIMENSION_ALIASES = ["数据口径", "口径", "场景", "scenario", "scenarios"];
 const PRIMARY_DIMENSION_MODULE_TYPES = new Set<ActionType>([
   "bar_rank",
+  "pareto_rank",
+  "small_multiples_trend",
   "waterfall_bridge",
   "grouped_bar",
   "scatter_bubble",
@@ -52,6 +58,7 @@ const PRIMARY_DIMENSION_MODULE_TYPES = new Set<ActionType>([
 const PERIOD_DEFAULTABLE_MODULE_TYPES = new Set<ActionType>([
   "metric_snapshot",
   "bar_rank",
+  "pareto_rank",
   "grouped_bar",
   "stacked_bar",
   "percent_stacked_bar",
@@ -241,7 +248,7 @@ export function validateFinanceActionPlan(
     validateFilters(schema, module, errors);
     validatePeriods(schema, module, errors);
 
-    if (module.type === "bar_rank" || module.type === "waterfall_bridge" || module.type === "grouped_bar" || module.type === "scatter_bubble" || module.type === "detail_table") {
+    if (module.type === "bar_rank" || module.type === "pareto_rank" || module.type === "small_multiples_trend" || module.type === "waterfall_bridge" || module.type === "grouped_bar" || module.type === "scatter_bubble" || module.type === "detail_table") {
       validateDimension(schema, module.dimension, errors, "维度字段");
     }
 
@@ -295,6 +302,12 @@ export function alignFinanceActionPlanWithQuestion(
     module = alignScenarioComparisonChartWithQuestion(schema, module, userQuestion);
     module = alignDefaultPeriodWithQuestion(schema, module, userQuestion, context);
 
+    const approvedAddition = alignApprovedChartAdditionWithQuestion(schema, module, userQuestion);
+    if (approvedAddition.type !== module.type) {
+      return approvedAddition;
+    }
+    module = approvedAddition;
+
     if (module.type === "grouped_bar") {
       const changeRankSort = getChangeRankSortIntent(userQuestion);
       if (changeRankSort) {
@@ -318,7 +331,7 @@ export function alignFinanceActionPlanWithQuestion(
       return alignDetailTableLimitWithQuestion(schema, module, userQuestion);
     }
 
-    if (module.type !== "bar_rank") {
+    if (module.type !== "bar_rank" && module.type !== "pareto_rank") {
       return module;
     }
 
@@ -428,6 +441,57 @@ function alignScenarioComparisonChartWithQuestion(
       ...withoutGroupedComparison(module),
       seriesDimension: scenarioDimension,
     };
+  }
+
+  return module;
+}
+
+function alignApprovedChartAdditionWithQuestion(
+  schema: FinanceSchema,
+  module: FinanceActionModule,
+  userQuestion: string,
+): FinanceActionModule {
+  const record = module as Record<string, unknown>;
+  const metric = typeof record.metric === "string" ? record.metric : "";
+  const dimension = typeof record.dimension === "string" && schema.dimensionColumns.includes(record.dimension)
+    ? record.dimension
+    : getDimensionIntent(schema, userQuestion) || getDefaultPrimaryDimension(schema);
+
+  if (
+    hasParetoRankIntent(userQuestion) &&
+    module.type === "bar_rank" &&
+    metric &&
+    dimension
+  ) {
+    return {
+      type: "pareto_rank",
+      metric,
+      dimension,
+      ...(typeof record.period === "string" ? { period: record.period } : {}),
+      ...(module.filters ? { filters: module.filters } : {}),
+      sort: typeof record.sort === "string" ? module.sort : "value_desc",
+      ...(typeof record.limit === "number" ? { limit: record.limit } : {}),
+    } satisfies FinanceActionModule;
+  }
+
+  if (
+    hasSmallMultiplesTrendIntent(schema, userQuestion) &&
+    (module.type === "trend_chart" ||
+      module.type === "bar_rank" ||
+      module.type === "grouped_bar" ||
+      module.type === "pareto_rank") &&
+    metric &&
+    dimension
+  ) {
+    return {
+      type: "small_multiples_trend",
+      metric,
+      dimension,
+      ...("filters" in module && module.filters ? { filters: module.filters } : {}),
+      ...(typeof record.limit === "number" ? { limit: record.limit } : {}),
+      ...(typeof record.highlightPeriod === "string" ? { highlightPeriod: record.highlightPeriod } : {}),
+      ...(typeof record.period === "string" ? { highlightPeriod: record.period } : {}),
+    } satisfies FinanceActionModule;
   }
 
   return module;
@@ -1069,6 +1133,30 @@ function hasUnitCompositionSupportIntent(question: string) {
     .some((token) => normalizedQuestion.includes(token));
 }
 
+function hasParetoRankIntent(question: string) {
+  const normalizedQuestion = normalizeIntentText(question);
+
+  return PARETO_RANK_TOKENS
+    .map(normalizeIntentText)
+    .some((token) => normalizedQuestion.includes(token));
+}
+
+function hasSmallMultiplesTrendIntent(schema: FinanceSchema, question: string) {
+  const normalizedQuestion = normalizeIntentText(question);
+  const hasNamedIntent = SMALL_MULTIPLES_TREND_TOKENS
+    .map(normalizeIntentText)
+    .some((token) => normalizedQuestion.includes(token));
+  if (hasNamedIntent) {
+    return true;
+  }
+
+  return schema.dimensionColumns.some((dimension) => {
+    const normalizedDimension = normalizeIntentText(dimension);
+    return normalizedQuestion.includes(`各${normalizedDimension}`) &&
+      (normalizedQuestion.includes("趋势") || normalizedQuestion.includes("走势"));
+  });
+}
+
 function getScenarioComparisonSides(question: string) {
   const normalizedQuestion = normalizeIntentText(question);
   const toScenario = normalizedQuestion.includes(normalizeIntentText("目标")) ||
@@ -1384,7 +1472,8 @@ function validateRequiredFields(module: FinanceActionModule, errors: string[]) {
   }
 
   if (
-    (module.type === "grouped_bar" ||
+    (module.type === "pareto_rank" ||
+      module.type === "grouped_bar" ||
       module.type === "stacked_bar" ||
       module.type === "percent_stacked_bar" ||
       module.type === "heatmap" ||
@@ -1423,7 +1512,7 @@ function validateRequiredFields(module: FinanceActionModule, errors: string[]) {
 }
 
 function validateActionOptions(schema: FinanceSchema, module: FinanceActionModule, errors: string[]) {
-  if (module.type === "bar_rank") {
+  if (module.type === "bar_rank" || module.type === "pareto_rank") {
     validateBarRankOptions(module, errors);
   }
 
@@ -1444,14 +1533,18 @@ function validateActionOptions(schema: FinanceSchema, module: FinanceActionModul
     }
   }
 
-  if (module.type === "bar_rank" || module.type === "waterfall_bridge") {
+  if (module.type === "bar_rank" || module.type === "pareto_rank" || module.type === "waterfall_bridge") {
     validateLimit(
       module,
       errors,
-      module.type === "bar_rank"
+      module.type === "bar_rank" || module.type === "pareto_rank"
         ? "排名数量"
         : "瀑布桥维度项",
     );
+  }
+
+  if (module.type === "small_multiples_trend") {
+    normalizeChartLimit(module, 6);
   }
 
   if (

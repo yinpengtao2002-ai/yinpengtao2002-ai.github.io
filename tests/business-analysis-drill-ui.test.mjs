@@ -19,11 +19,16 @@ test("business analysis dimension drill UI uses a path rail with Excel-style cur
   assert.match(tool, /data-ranking-drill-path/);
   assert.match(tool, /ranking-current-filter-trigger/);
   assert.match(tool, /ranking-current-filter-menu/);
-  assert.match(tool, /sidebar-dimension-stack/);
+  assert.match(tool, /sidebar-dimension-order-block/);
+  assert.match(tool, /sidebar-dimension-drill-block/);
   assert.match(tool, /sidebar-dimension-train/);
+  assert.match(tool, /sidebar-current-layer-summary/);
+  assert.match(tool, /ranking-toolbar-actions/);
   assert.match(tool, /data-current-layer-filter="sidebar"/);
+  assert.doesNotMatch(tool, /sidebar-details/);
   assert.doesNotMatch(tool, /dimension-order-disclosure/);
   assert.doesNotMatch(tool, /<summary>调整顺序<\/summary>/);
+  assert.doesNotMatch(tool, /<details/);
   assert.doesNotMatch(tool, /id="btn-sidebar-ranking-clear"/);
   assert.doesNotMatch(tool, /id="btn-sidebar-ranking-reset"/);
   assert.doesNotMatch(tool, /进入当前维度/);
@@ -39,9 +44,14 @@ test("business analysis dimension drill UI uses a path rail with Excel-style cur
 
   assert.match(css, /\.business-tool \.drill-path-rail/);
   assert.match(css, /\.business-tool \.business-excel-filter-menu/);
-  assert.match(css, /\.business-tool \.sidebar-details/);
-  assert.match(css, /\.business-tool \.sidebar-dimension-stack/);
+  assert.match(css, /\.business-tool \.sidebar-dimension-order-block/);
+  assert.match(css, /\.business-tool \.sidebar-dimension-drill-block/);
+  assert.match(css, /\.business-tool \.ranking-toolbar-actions/);
   assert.match(css, /\.business-tool \.sidebar-layer-filter/);
+  assert.match(css, /\.business-tool \.sidebar-title\s*{[\s\S]*?white-space:\s*nowrap;/);
+  assert.match(css, /\.business-tool \.sidebar-title\s*{[\s\S]*?word-break:\s*keep-all;/);
+  assert.match(css, /\.business-tool \.sidebar-title\s*{[\s\S]*?writing-mode:\s*horizontal-tb;/);
+  assert.doesNotMatch(css, /\.business-tool \.sidebar-details/);
   assert.doesNotMatch(css, /\.business-tool \.sidebar-filter-actions/);
   assert.doesNotMatch(css, /\.business-tool \.dimension-order-disclosure/);
 });

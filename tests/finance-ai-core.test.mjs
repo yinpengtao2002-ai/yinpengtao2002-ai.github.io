@@ -938,6 +938,53 @@ test("action validator accepts expanded chart plan modules for deterministic fro
   assert.deepEqual(validStructure.modules.map((module) => module.type), ["stacked_bar", "percent_stacked_bar", "detail_table"]);
 });
 
+test("action validator accepts approved AI assistant additions for Pareto and small multiples", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const valid = validateFinanceActionPlan(schema, {
+    modules: [
+      { type: "pareto_rank", metric: "边际", dimension: "国家", period: "2026-03", sort: "value_desc", limit: 99 },
+      { type: "small_multiples_trend", metric: "单车边际", dimension: "国家", limit: 99 },
+    ],
+  });
+
+  assert.equal(valid.ok, true);
+  assert.deepEqual(valid.modules.map((module) => module.type), ["pareto_rank", "small_multiples_trend"]);
+  assert.equal(valid.modules[0].limit, 10);
+  assert.equal(valid.modules[1].limit, 6);
+});
+
+test("action plan normalization routes concentration and split-trend questions to the approved additions", () => {
+  const schema = inferFinanceSchema(metricRows);
+  const pareto = normalizeFinanceActionPlanForQuestion(schema, {
+    modules: [
+      {
+        type: "bar_rank",
+        metric: "边际",
+        dimension: "国家",
+        period: "2026-03",
+        sort: "value_desc",
+      },
+    ],
+  }, "2026-03 国家边际二八集中度怎么看？用 Pareto 图看累计贡献。");
+  const smallMultiples = normalizeFinanceActionPlanForQuestion(schema, {
+    modules: [
+      {
+        type: "trend_chart",
+        metric: "单车边际",
+      },
+    ],
+  }, "各国家单车边际趋势分别看，做一个小多图。");
+
+  assert.equal(pareto.modules[0].type, "pareto_rank");
+  assert.equal(pareto.modules[0].dimension, "国家");
+  assert.equal(pareto.modules[0].period, "2026-03");
+  assert.equal(validateFinanceActionPlan(schema, pareto).ok, true);
+  assert.equal(smallMultiples.modules[0].type, "small_multiples_trend");
+  assert.equal(smallMultiples.modules[0].dimension, "国家");
+  assert.equal(smallMultiples.modules[0].period, undefined);
+  assert.equal(validateFinanceActionPlan(schema, smallMultiples).ok, true);
+});
+
 test("budget target comparison plans use grouped bars instead of stacked bars", () => {
   const schema = inferFinanceSchema([
     { "月份": "5月", "国家": "巴西", "数据口径": "实际", "销量": 120 },
@@ -1707,14 +1754,16 @@ test("finance AI chart demo specs cover every supported chart style", () => {
   const specs = buildFinanceAIChartDemoSpecs();
   const kinds = new Set(specs.map((spec) => spec.kind));
 
-  assert.equal(specs.length, 10);
+  assert.equal(specs.length, 12);
   assert.deepEqual([...kinds].sort(), [
     "bar_rank",
     "detail_table",
     "grouped_bar",
     "heatmap",
+    "pareto_rank",
     "percent_stacked_bar",
     "scatter_bubble",
+    "small_multiples_trend",
     "stacked_bar",
     "trend_chart",
     "waterfall_bridge",
@@ -1743,6 +1792,25 @@ test("direct AI chart payloads render through the supported chart specs", () => 
       { label: "墨西哥", value: 1650, share: 0.3, changeValue: -150 },
     ],
   });
+  const paretoSpec = buildDirectChartSpec({
+    type: "pareto_rank",
+    title: "国家边际 Pareto",
+    xLabel: "国家",
+    yLabel: "边际",
+    items: [
+      { label: "巴西", value: 3900, share: 0.7 },
+      { label: "墨西哥", value: 1650, share: 0.3 },
+    ],
+  });
+  const smallMultiplesSpec = buildDirectChartSpec({
+    type: "small_multiples_trend",
+    title: "国家单车边际小多图",
+    yLabel: "单车边际",
+    series: [
+      { name: "巴西", points: [{ label: "3月", value: 30 }, { label: "4月", value: 35 }] },
+      { name: "墨西哥", points: [{ label: "3月", value: 22 }, { label: "4月", value: 21 }] },
+    ],
+  });
   const waterfallSpec = buildDirectChartSpec({
     type: "waterfall",
     title: "边际变化桥",
@@ -1764,6 +1832,15 @@ test("direct AI chart payloads render through the supported chart specs", () => 
   assert.equal(rankSpec.data[0].orientation, "h");
   assert.match(rankSpec.data[0].text.at(-1), /70\.0%/);
   assert.equal(rankSpec.layout.xaxis.fixedrange, true);
+  assert.equal(paretoSpec.kind, "pareto_rank");
+  assert.equal(paretoSpec.size, "large");
+  assert.equal(paretoSpec.data.length, 2);
+  assert.equal(paretoSpec.data[1].yaxis, "y2");
+  assert.equal(smallMultiplesSpec.kind, "small_multiples_trend");
+  assert.equal(smallMultiplesSpec.size, "large");
+  assert.equal(smallMultiplesSpec.data.length, 2);
+  assert.ok(smallMultiplesSpec.layout.xaxis2);
+  assert.ok(Array.isArray(smallMultiplesSpec.layout.annotations));
   assert.equal(waterfallSpec.kind, "waterfall_bridge");
   assert.deepEqual(waterfallSpec.data[0].measure, ["absolute", "relative", "relative", "total"]);
   assert.deepEqual(waterfallSpec.data[0].y, [4800, -150, 900, 0]);

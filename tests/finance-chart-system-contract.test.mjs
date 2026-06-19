@@ -73,4 +73,26 @@ test("central chart library builds reusable direct chart specs", async () => {
   assert.equal(spec.title, "利润变化桥");
   assert.equal(spec.config.displayModeBar, false);
   assert.equal(spec.data[0].type, "waterfall");
+
+  const paretoSpec = buildDirectChartSpec({
+    type: "pareto_rank",
+    title: "国家销量 Pareto",
+    items: [
+      { label: "巴西", value: 120, share: 0.6 },
+      { label: "西班牙", value: 80, share: 0.4 },
+    ],
+  });
+  const smallMultiplesSpec = buildDirectChartSpec({
+    type: "small_multiples_trend",
+    title: "国家销量小多图",
+    series: [
+      { name: "巴西", points: [{ label: "4月", value: 100 }, { label: "5月", value: 120 }] },
+      { name: "西班牙", points: [{ label: "4月", value: 90 }, { label: "5月", value: 80 }] },
+    ],
+  });
+
+  assert.equal(paretoSpec.kind, "pareto_rank");
+  assert.equal(paretoSpec.data[1].name, "累计占比");
+  assert.equal(smallMultiplesSpec.kind, "small_multiples_trend");
+  assert.ok(smallMultiplesSpec.layout.xaxis2);
 });
