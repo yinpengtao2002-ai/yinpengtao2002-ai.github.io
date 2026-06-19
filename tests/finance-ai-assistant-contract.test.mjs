@@ -1690,6 +1690,8 @@ test("finance AI assistant mobile chat balances assistant avatar and user bubble
   const styles = await readProjectFile("src/app/globals.css");
 
   assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*--finance-ai-mobile-avatar-gutter:\s*41px/s);
+  assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*--finance-ai-mobile-assistant-right-gutter:\s*24px/s);
+  assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*\.finance-ai-message\.is-assistant\s*\{[\s\S]*padding-right:\s*var\(--finance-ai-mobile-assistant-right-gutter\)/s);
   assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*\.finance-ai-message\.is-user::after\s*\{[\s\S]*content:\s*""/s);
   assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*\.finance-ai-message\.is-user::after\s*\{[\s\S]*flex:\s*0\s+0\s+32px/s);
   assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*\.finance-ai-message\.is-user\s+\.finance-ai-message-bubble\s*\{[\s\S]*max-width:\s*min\(calc\(100%\s*-\s*var\(--finance-ai-mobile-avatar-gutter\)\s*-\s*32px\),\s*78%\)/s);

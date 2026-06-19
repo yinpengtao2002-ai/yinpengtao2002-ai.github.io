@@ -1121,6 +1121,7 @@ body {
 @media (max-width: 760px) {
   .finance-ai-page {
     --finance-ai-mobile-avatar-gutter: 41px;
+    --finance-ai-mobile-assistant-right-gutter: 24px;
     padding: 0;
   }
 
@@ -1187,6 +1188,10 @@ body {
 
   .finance-ai-message {
     align-items: flex-start;
+  }
+
+  .finance-ai-message.is-assistant {
+    padding-right: var(--finance-ai-mobile-assistant-right-gutter);
   }
 
   .finance-ai-message-bubble,
