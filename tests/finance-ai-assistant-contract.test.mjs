@@ -1205,7 +1205,7 @@ test("finance AI assistant page is an independent chat workbench", async () => {
   assert.match(client, /normalizeChatMathMarkdown/);
   assert.match(client, /normalizeMarkdownStrongEmphasis/);
   assert.match(client, /数据仅保留在当前页面会话中，刷新后清空/);
-  assert.match(client, /已识别/);
+  assert.match(client, /上传一张经营明细后，可以直接问单车边际/);
   assert.match(client, /inferFinanceSchema/);
   assert.match(client, /FinanceRawWorkbook/);
   assert.match(client, /buildChartSpec/);
@@ -1620,10 +1620,16 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(client, /finance-ai-upload-workbench/);
   assert.match(client, /finance-ai-upload-dropzone/);
   assert.match(client, /finance-ai-upload-preview-list/);
+  assert.match(client, /finance-ai-upload-footnote/);
   assert.match(client, /EMPTY_STATE_PREVIEW_CHARTS/);
   assert.match(client, /makeEmptyStatePreviewSpec/);
   assert.match(client, /showticklabels:\s*false/);
   assert.match(client, /annotations:\s*\[\]/);
+  assert.doesNotMatch(client, /finance-ai-data-status/);
+  assert.doesNotMatch(client, /等待上传经营明细/);
+  assert.match(client, /finance-ai-composer-status/);
+  assert.match(client, />等待上传</);
+  assert.match(client, /上传后可以问：哪些国家拉低了单车边际/);
   assert.match(client, /5月各大区销量预算实际对比/);
   assert.match(client, /巴西单车边际变化归因桥/);
   assert.match(client, /5月边际总额环比变化桥/);
@@ -1634,6 +1640,7 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(client, /handleWorkbookDrop/);
   assert.match(client, /onDrop=\{handleWorkbookDrop\}/);
   assert.match(client, /onDragOver=\{handleWorkbookDragOver\}/);
+  assert.match(client, /\{workbook \? \(\s*<section className="finance-ai-chat"/);
   assert.doesNotMatch(client, /EXAMPLE_CONVERSATION/);
   assert.doesNotMatch(client, /finance-ai-example-dialogue/);
   assert.doesNotMatch(client, /泰国有没有卖 S56EV/);
@@ -1689,10 +1696,15 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(styles, /\.finance-ai-empty-state\s*\{[\s\S]*place-items:\s*center/s);
   assert.match(styles, /\.finance-ai-upload-workbench\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1\.35fr\)\s+minmax\(320px,\s*0\.8fr\)/s);
   assert.match(styles, /\.finance-ai-upload-dropzone/);
+  assert.match(styles, /\.finance-ai-upload-main\s*\{[\s\S]*display:\s*grid/s);
+  assert.match(styles, /\.finance-ai-upload-footnote\s*\{[\s\S]*justify-content:\s*center/s);
   assert.match(styles, /\.finance-ai-upload-preview-list/);
+  assert.match(styles, /\.finance-ai-composer\.has-upload-status\s*\{[\s\S]*grid-template-columns:\s*auto\s+auto\s+minmax\(0,\s*1fr\)\s+auto/s);
+  assert.match(styles, /\.finance-ai-composer-status\s*\{[\s\S]*border-radius:\s*999px/s);
   assert.match(financeAIMobileUploadPreviewBlock, /display:\s*none/);
   assert.match(styles, /\.finance-ai-empty-preview-card/);
   assert.match(styles, /\.finance-ai-empty-preview-chart/);
+  assert.doesNotMatch(styles, /finance-ai-data-status/);
   assert.match(styles, /\.finance-ai-composer\s*\{[\s\S]*border-radius:\s*26px/s);
 });
 

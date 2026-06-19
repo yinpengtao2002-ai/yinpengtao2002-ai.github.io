@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type DragEvent } from "react";
 import Link from "next/link";
-import { ArrowUp, Download, Eye, FileSpreadsheet, Loader2, RotateCcw, Trash2, UploadCloud } from "lucide-react";
+import { ArrowUp, Clock3, Download, Eye, Loader2, LockKeyhole, RotateCcw, Trash2, UploadCloud } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -281,14 +281,6 @@ const EMPTY_STATE_PREVIEW_CHARTS = [
     })),
   },
 ];
-
-function summarizeSchema(schema: FinanceSchema | null) {
-  if (!schema) {
-    return "等待上传经营明细";
-  }
-
-  return `已识别：${schema.profile.rowCount.toLocaleString("zh-CN")} 行 / ${schema.profile.periods.length} 个期间 / ${schema.dimensionColumns.length} 个维度 / ${schema.totalMetrics.length} 个可分析指标 / ${schema.unitMetrics.length} 个单车指标`;
-}
 
 function getSchemaIssueText(schema: FinanceSchema) {
   return schema.requiredIssues.map((issue) => issue.message).join(" ");
@@ -1543,12 +1535,10 @@ export default function FinanceAIAssistantTool() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [fileName, setFileName] = useState("");
   const [isDropActive, setIsDropActive] = useState(false);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const questionInputRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const dataSummary = useMemo(() => summarizeSchema(schema), [schema]);
   const canAsk = Boolean(workbook) && !busy;
 
   useLayoutEffect(() => {
@@ -1596,7 +1586,6 @@ export default function FinanceAIAssistantTool() {
       const nextSchema = inferFinanceSchema(parsed.previewRows);
       setWorkbook(parsed.workbook);
       setSchema(nextSchema);
-      setFileName(file.name);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "文件读取失败，请换一个 CSV/XLS/XLSX 文件。");
     } finally {
@@ -1774,7 +1763,6 @@ export default function FinanceAIAssistantTool() {
   function resetData() {
     setWorkbook(null);
     setSchema(null);
-    setFileName("");
     setInput("");
     setError("");
     setMessages([{
@@ -1808,63 +1796,65 @@ export default function FinanceAIAssistantTool() {
         </header>
 
         {!workbook ? (
-        <section className="finance-ai-empty-state" aria-label="数据上传和识别状态">
-          <div className="finance-ai-upload-workbench">
-            <div
-              className={`finance-ai-upload-dropzone ${isDropActive ? "is-dragging" : ""}`}
-              onDragOver={handleWorkbookDragOver}
-              onDragLeave={handleWorkbookDragLeave}
-              onDrop={handleWorkbookDrop}
-            >
-              <AssistantAvatar />
-              <p className="finance-ai-kicker">Upload Workbook</p>
-              <h2>拖拽经营明细到这里</h2>
-              <p>支持 CSV、XLS、XLSX。上传后进入对话分析，直接追问单车边际、环比变化、利润来源与维度排名。</p>
-              <div className="finance-ai-upload-row">
-                <label className="finance-ai-upload-chip">
-                  <input
-                    type="file"
-                    accept=".csv,.xls,.xlsx"
-                    hidden
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) {
-                        void handleFile(file);
-                      }
-                      event.currentTarget.value = "";
-                    }}
-                  />
-                  <UploadCloud aria-hidden="true" />
-                  <span>上传数据</span>
-                </label>
-                <button type="button" className="finance-ai-template-button" onClick={downloadSampleTemplate}>
-                  <Download aria-hidden="true" />
-                  <span>下载示例格式</span>
-                </button>
-              </div>
-              <Link href="/finance/finance-ai-assistant/demo" className="finance-ai-demo-effect-button finance-ai-upload-demo-link">
-                <Eye aria-hidden="true" />
-                <span>查看示例效果</span>
-              </Link>
-              <div className="finance-ai-data-status">
-                <FileSpreadsheet aria-hidden="true" />
-                <span>{fileName ? `${fileName} · ${dataSummary}` : dataSummary}</span>
-              </div>
-            </div>
-
-            <div className="finance-ai-upload-preview-list" aria-label="示例图表预览">
-              {EMPTY_STATE_PREVIEW_CHARTS.map((chart) => (
-                <article className="finance-ai-empty-preview-card" key={chart.title}>
-                  <div className="finance-ai-empty-preview-copy">
-                    <span>{chart.note}</span>
-                    <h3>{chart.title}</h3>
+          <section className="finance-ai-empty-state" aria-label="数据上传和识别状态">
+            <div className="finance-ai-upload-workbench">
+              <div className="finance-ai-upload-main">
+                <div
+                  className={`finance-ai-upload-dropzone ${isDropActive ? "is-dragging" : ""}`}
+                  onDragOver={handleWorkbookDragOver}
+                  onDragLeave={handleWorkbookDragLeave}
+                  onDrop={handleWorkbookDrop}
+                >
+                  <AssistantAvatar />
+                  <p className="finance-ai-kicker">Upload Workbook</p>
+                  <h2>拖拽经营明细到这里</h2>
+                  <p>支持 CSV、XLS、XLSX。数据仅保留在当前页面会话中。</p>
+                  <div className="finance-ai-upload-row">
+                    <label className="finance-ai-upload-chip">
+                      <input
+                        type="file"
+                        accept=".csv,.xls,.xlsx"
+                        hidden
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (file) {
+                            void handleFile(file);
+                          }
+                          event.currentTarget.value = "";
+                        }}
+                      />
+                      <UploadCloud aria-hidden="true" />
+                      <span>上传数据</span>
+                    </label>
+                    <button type="button" className="finance-ai-template-button" onClick={downloadSampleTemplate}>
+                      <Download aria-hidden="true" />
+                      <span>下载示例格式</span>
+                    </button>
                   </div>
-                  <PlotlyChart spec={chart.spec} className="finance-ai-empty-preview-chart" />
-                </article>
-              ))}
+                  <Link href="/finance/finance-ai-assistant/demo" className="finance-ai-demo-effect-button finance-ai-upload-demo-link">
+                    <Eye aria-hidden="true" />
+                    <span>查看示例效果</span>
+                  </Link>
+                </div>
+                <p className="finance-ai-upload-footnote">
+                  <LockKeyhole aria-hidden="true" />
+                  <span>当前为会话内分析，刷新页面后数据清空。</span>
+                </p>
+              </div>
+
+              <div className="finance-ai-upload-preview-list" aria-label="示例图表预览">
+                {EMPTY_STATE_PREVIEW_CHARTS.map((chart) => (
+                  <article className="finance-ai-empty-preview-card" key={chart.title}>
+                    <div className="finance-ai-empty-preview-copy">
+                      <span>{chart.note}</span>
+                      <h3>{chart.title}</h3>
+                    </div>
+                    <PlotlyChart spec={chart.spec} className="finance-ai-empty-preview-chart" />
+                  </article>
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
         ) : null}
 
         {schema?.requiredIssues.length ? (
@@ -1872,50 +1862,61 @@ export default function FinanceAIAssistantTool() {
         ) : null}
         {error ? <p className="finance-ai-error">{error}</p> : null}
 
-        <section className="finance-ai-chat" aria-label="财务分析聊天流">
-          {messages.map((message) => {
-            const messageSections = buildAssistantMessageSections(message);
+        {workbook ? (
+          <section className="finance-ai-chat" aria-label="财务分析聊天流">
+            {messages.map((message) => {
+              const messageSections = buildAssistantMessageSections(message);
 
-            return (
-              <article key={message.id} className={`finance-ai-message is-${message.role}`}>
-                {message.role === "assistant" ? (
-                  <AssistantAvatar compact />
-                ) : null}
+              return (
+                <article key={message.id} className={`finance-ai-message is-${message.role}`}>
+                  {message.role === "assistant" ? (
+                    <AssistantAvatar compact />
+                  ) : null}
+                  <div className="finance-ai-message-bubble">
+                    {messageSections.map((section, sectionIndex) => (
+                      <div className="finance-ai-message-section" key={`${message.id}-${sectionIndex}`}>
+                        {section.text ? <FinanceAIMessageContent text={section.text} /> : null}
+                        <FinanceAIChartGrid cards={section.chartCards} />
+                      </div>
+                    ))}
+                    {message.meta ? <small>{message.meta}</small> : null}
+                  </div>
+                </article>
+              );
+            })}
+            {busy ? (
+              <article className="finance-ai-message is-assistant">
+                <AssistantAvatar compact />
                 <div className="finance-ai-message-bubble">
-                  {messageSections.map((section, sectionIndex) => (
-                    <div className="finance-ai-message-section" key={`${message.id}-${sectionIndex}`}>
-                      {section.text ? <FinanceAIMessageContent text={section.text} /> : null}
-                      <FinanceAIChartGrid cards={section.chartCards} />
-                    </div>
-                  ))}
-                  {message.meta ? <small>{message.meta}</small> : null}
+                  <div className="finance-ai-thinking" aria-label="分析过程">
+                    <span><Loader2 className="finance-ai-spin" aria-hidden="true" /> 理解问题</span>
+                    <span>匹配字段</span>
+                    <span>生成图表</span>
+                  </div>
                 </div>
               </article>
-            );
-          })}
-          {busy ? (
-            <article className="finance-ai-message is-assistant">
-              <AssistantAvatar compact />
-              <div className="finance-ai-message-bubble">
-                <div className="finance-ai-thinking" aria-label="分析过程">
-                  <span><Loader2 className="finance-ai-spin" aria-hidden="true" /> 理解问题</span>
-                  <span>匹配字段</span>
-                  <span>生成图表</span>
-                </div>
-              </div>
-            </article>
-          ) : null}
-          <div ref={chatEndRef} aria-hidden="true" />
-        </section>
+            ) : null}
+            <div ref={chatEndRef} aria-hidden="true" />
+          </section>
+        ) : null}
 
         <div className="finance-ai-composer-dock">
           <form
-            className="finance-ai-composer"
+            className={`finance-ai-composer ${workbook ? "" : "has-upload-status"}`}
             onSubmit={(event) => {
               event.preventDefault();
               void handleSubmit();
             }}
           >
+            {!workbook ? (
+              <>
+                <span className="finance-ai-composer-status">
+                  <Clock3 aria-hidden="true" />
+                  <span>等待上传</span>
+                </span>
+                <span className="finance-ai-composer-divider" aria-hidden="true" />
+              </>
+            ) : null}
             <textarea
               ref={questionInputRef}
               className="finance-ai-question-input"
@@ -1932,7 +1933,7 @@ export default function FinanceAIAssistantTool() {
                   void handleSubmit();
                 }
               }}
-              placeholder={workbook ? getDefaultQuestion(schema) : "先上传经营明细，再开始提问"}
+              placeholder={workbook ? getDefaultQuestion(schema) : "上传后可以问：哪些国家拉低了单车边际？"}
               rows={1}
               disabled={busy || !canAsk}
             />
@@ -1941,9 +1942,9 @@ export default function FinanceAIAssistantTool() {
             </button>
           </form>
 
-          {!canAsk && schema && schema.requiredIssues.length === 0 ? null : (
+          {workbook && (!canAsk && schema && schema.requiredIssues.length === 0 ? null : (
             <p className="finance-ai-session-note">数据仅保留在当前页面会话中，刷新后清空。</p>
-          )}
+          ))}
         </div>
       </section>
     </main>
