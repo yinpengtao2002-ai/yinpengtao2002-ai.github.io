@@ -1612,6 +1612,7 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   const financeAIPageBlock = styles.match(/(?:^|\n)\.finance-ai-page\s*\{(?<block>[^}]*)\}/)?.groups?.block ?? "";
   const financeAIChatBlock = styles.match(/(?:^|\n)\.finance-ai-chat\s*\{(?<block>[^}]*)\}/)?.groups?.block ?? "";
   const financeAIComposerDockBlock = styles.match(/(?:^|\n)\.finance-ai-composer-dock\s*\{(?<block>[^}]*)\}/)?.groups?.block ?? "";
+  const financeAIMobileUploadPreviewBlock = styles.match(/@media \(max-width:\s*760px\)[\s\S]*?\.finance-ai-upload-preview-list\s*\{(?<block>[^}]*)\}/)?.groups?.block ?? "";
 
   assert.match(client, /finance-ai-avatar/);
   assert.doesNotMatch(client, /finance-ai-access-gate/);
@@ -1689,6 +1690,7 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(styles, /\.finance-ai-upload-workbench\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1\.35fr\)\s+minmax\(320px,\s*0\.8fr\)/s);
   assert.match(styles, /\.finance-ai-upload-dropzone/);
   assert.match(styles, /\.finance-ai-upload-preview-list/);
+  assert.match(financeAIMobileUploadPreviewBlock, /display:\s*none/);
   assert.match(styles, /\.finance-ai-empty-preview-card/);
   assert.match(styles, /\.finance-ai-empty-preview-chart/);
   assert.match(styles, /\.finance-ai-composer\s*\{[\s\S]*border-radius:\s*26px/s);

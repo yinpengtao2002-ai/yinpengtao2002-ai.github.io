@@ -1333,6 +1333,7 @@ body {
   .finance-ai-upload-preview-list {
     border-left: 0;
     border-top: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+    display: none;
     gap: 12px;
     padding: 18px 0 0;
   }
