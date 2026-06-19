@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, type CSSProperties } from "react";
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, type CSSProperties } from "react";
 import { motion, AnimatePresence, useDragControls, type PanInfo } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
 import { MessageCircle, X, ArrowUp, ExternalLink } from "lucide-react";
@@ -65,6 +65,15 @@ const AI_ASSISTANT_SCOPE = "模型选择、使用说明、图表阅读和文章�
 
 const CHAT_UI_FONT =
     'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
+
+function resizeChatInput(element: HTMLTextAreaElement | null, maxHeight: number) {
+    if (!element) return;
+
+    element.style.height = "auto";
+    const nextHeight = Math.min(element.scrollHeight, maxHeight);
+    element.style.height = `${nextHeight}px`;
+    element.style.overflowY = element.scrollHeight > maxHeight ? "auto" : "hidden";
+}
 
 function getCurrentFinanceModelSlug(pathname: string) {
     const normalizedPathname = normalizeInternalHref(pathname);
@@ -571,7 +580,7 @@ export default function ChatWidget() {
         setMessages(updatedMessages);
         setInputValue("");
         setIsProcessing(true);
-        if (inputRef.current) inputRef.current.style.height = "24px";
+        window.requestAnimationFrame(() => resizeChatInput(inputRef.current, inputMaxHeight));
         setMessages((prev) => [...prev, { id: "typing", role: "assistant", content: "", isTyping: true }]);
         const assistantMsgId = `assistant-${Date.now()}`;
         let includeOfflineNotice = false;
@@ -609,9 +618,7 @@ export default function ChatWidget() {
 
     const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setInputValue(e.target.value);
-        const el = e.target;
-        el.style.height = "24px";
-        el.style.height = Math.min(el.scrollHeight, 100) + "px";
+        resizeChatInput(e.target, inputMaxHeight);
     };
 
     const handleOpen = () => {
@@ -653,10 +660,15 @@ export default function ChatWidget() {
             : "12px 16px calc(12px + env(safe-area-inset-bottom, 0px))"
         : "12px 16px";
     const inputWrapperPadding = compactMobileChat ? "8px 8px 8px 12px" : "10px 10px 10px 16px";
-    const inputMaxHeight = compactMobileChat ? 72 : 100;
+    const inputMaxHeight = compactMobileChat ? 96 : isMobileLike ? 128 : 120;
     const inputFontSize = isMobileLike ? 16 : 14;
     const inputLineHeight = isMobileLike ? "26px" : "24px";
     const introState = messages.length === 1 && messages[0]?.id === "greeting" && !isProcessing;
+
+    useLayoutEffect(() => {
+        resizeChatInput(inputRef.current, inputMaxHeight);
+    }, [inputValue, inputMaxHeight, isOpen]);
+
     const mobileLauncherHeight = 48;
     const mobileLauncherStyle = isMobileLike
         ? {
@@ -1125,11 +1137,16 @@ export default function ChatWidget() {
                                             outline: "none",
                                             fontSize: inputFontSize,
                                             lineHeight: inputLineHeight,
-                                            height: 24,
+                                            minHeight: inputLineHeight,
                                             maxHeight: inputMaxHeight,
+                                            overflowY: "hidden",
+                                            overscrollBehavior: "contain",
+                                            scrollbarWidth: "thin",
                                             color: "var(--foreground)",
                                             resize: "none",
                                             fontFamily: "inherit",
+                                            display: "block",
+                                            padding: 0,
                                         }}
                                     />
                                     <button

@@ -3,146 +3,23 @@ import perspectiveViewer from "@perspective-dev/viewer";
 import "@perspective-dev/viewer-datagrid";
 import "@perspective-dev/viewer-d3fc";
 import * as XLSX from "xlsx";
+import financeTemplates from "../../../lib/finance/templates.js";
 
-const SAMPLE_ROW_TARGET = 5184;
-const SAMPLE_MONTHS = [
-    "2025-01",
-    "2025-02",
-    "2025-03",
-    "2025-04",
-    "2025-05",
-    "2025-06",
-    "2025-07",
-    "2025-08",
-    "2025-09",
-    "2025-10",
-    "2025-11",
-    "2025-12",
-    "2026-01",
-    "2026-02",
-    "2026-03",
-    "2026-04",
-    "2026-05",
-    "2026-06",
-    "2026-07",
-    "2026-08",
-    "2026-09",
-    "2026-10",
-    "2026-11",
-    "2026-12",
-];
-const SAMPLE_MARKETS = [
-    { 大区: "欧洲", countries: ["德国", "法国", "西班牙"] },
-    { 大区: "拉美", countries: ["巴西", "墨西哥", "智利"] },
-    { 大区: "中东", countries: ["阿联酋", "沙特", "科威特"] },
-    { 大区: "东盟", countries: ["泰国", "马来西亚", "印尼"] },
-    { 大区: "非洲", countries: ["南非", "埃及", "摩洛哥"] },
-    { 大区: "独联体", countries: ["哈萨克斯坦", "乌兹别克斯坦", "格鲁吉亚"] },
-];
-const SAMPLE_MODELS = ["Alpha", "Beta", "Gamma", "Delta"];
-const SAMPLE_CHANNELS = ["经销", "直营", "集团客户"];
-const SAMPLE_PRICE_BANDS = ["入门", "主销", "高配", "豪华"];
-const SAMPLE_CUSTOMER_TYPES = ["个人", "企业", "租赁"];
+const {
+    OPERATING_DETAIL_HEADERS,
+    createOperatingDetailSampleRows,
+    getOperatingDetailTemplateRows
+} = financeTemplates;
 
-function buildSampleRows() {
-    const rows = [];
-    const modelScale = [1.06, 0.92, 1.18, 0.98];
-    const channelScale = [1.04, 0.94, 1.16];
-    const customerScale = [1.02, 1.12, 0.9];
-    const businessUnits = ["燃油车", "新能源", "混动"];
-    const powertrains = ["燃油", "纯电", "插混", "增程"];
-    const brandMarketTiers = ["核心市场", "成长市场", "机会市场"];
-
-    SAMPLE_MONTHS.forEach((month, monthIndex) => {
-        const yearIndex = Math.floor(monthIndex / 12);
-        const monthOfYear = monthIndex % 12;
-        SAMPLE_MARKETS.forEach((market, marketIndex) => {
-            market.countries.forEach((country, countryIndex) => {
-                SAMPLE_MODELS.forEach((model, modelIndex) => {
-                    SAMPLE_CHANNELS.forEach((channel, channelIndex) => {
-                        const customerTypeIndex = (countryIndex + modelIndex + channelIndex) % SAMPLE_CUSTOMER_TYPES.length;
-                        const seasonLift = Math.sin((monthOfYear + 1) / 12 * Math.PI * 2) * 42;
-                        const marketLift = 1 + marketIndex * 0.052;
-                        const countryLift = 1 + countryIndex * 0.026 + ((countryIndex + marketIndex) % 2) * 0.018;
-                        const baseVolume = 280
-                            + yearIndex * 44
-                            + monthOfYear * 11
-                            + marketIndex * 31
-                            + countryIndex * 18
-                            + modelIndex * 27
-                            + channelIndex * 21;
-                        const salesVolume = Math.max(40, Math.round(
-                            (baseVolume + seasonLift)
-                            * marketLift
-                            * countryLift
-                            * modelScale[modelIndex]
-                            * channelScale[channelIndex]
-                            * customerScale[customerTypeIndex]
-                        ));
-                        const orders = Math.round(salesVolume * (1.04 + countryIndex * 0.012 + channelIndex * 0.028) + 18 + yearIndex * 6);
-                        const unitRevenue = 10.8
-                            + modelIndex * 0.74
-                            + marketIndex * 0.29
-                            + countryIndex * 0.18
-                            + monthOfYear * 0.08
-                            + yearIndex * 0.52
-                            + channelIndex * 0.34;
-                        const netRevenue = Math.round(salesVolume * unitRevenue);
-                        const discount = Math.round(netRevenue * (0.014 + countryIndex * 0.003 + channelIndex * 0.004));
-                        const costRatio = 0.61 + ((marketIndex + modelIndex + countryIndex) % 6) * 0.018 + channelIndex * 0.006;
-                        const cost = Math.round(netRevenue * costRatio);
-                        const margin = netRevenue - cost - discount;
-                        const marketingExpense = Math.round(netRevenue * (0.031 + channelIndex * 0.006 + marketIndex * 0.0018));
-                        const logisticsExpense = Math.round(salesVolume * (0.24 + marketIndex * 0.018 + countryIndex * 0.012));
-                        const contributionProfit = margin - marketingExpense - logisticsExpense;
-                        const collectedRevenue = Math.round(netRevenue * (0.84 + ((monthOfYear + countryIndex + channelIndex) % 7) * 0.021));
-                        const openingInventory = Math.round(salesVolume * (1.18 + (marketIndex % 3) * 0.09 + countryIndex * 0.035) + modelIndex * 33);
-                        const endingInventory = Math.max(0, Math.round(openingInventory + orders - salesVolume));
-                        const highestInventory = Math.max(openingInventory, endingInventory) + Math.round(salesVolume * (0.15 + countryIndex * 0.018 + channelIndex * 0.022));
-                        const lowestInventory = Math.max(0, Math.min(openingInventory, endingInventory) - Math.round(salesVolume * (0.1 + modelIndex * 0.014)));
-
-                        rows.push({
-                            月份: `${month}月`,
-                            年度: `${month.slice(0, 4)}年`,
-                            大区: market.大区,
-                            国家: country,
-                            品牌市场: brandMarketTiers[(marketIndex + countryIndex) % brandMarketTiers.length],
-                            业务单元: businessUnits[(marketIndex + modelIndex) % businessUnits.length],
-                            动力类型: powertrains[(modelIndex + channelIndex) % powertrains.length],
-                            车型: model,
-                            价格带: SAMPLE_PRICE_BANDS[(modelIndex + countryIndex) % SAMPLE_PRICE_BANDS.length],
-                            渠道: channel,
-                            客户类型: SAMPLE_CUSTOMER_TYPES[customerTypeIndex],
-                            销量: salesVolume,
-                            订单量: orders,
-                            净收入: netRevenue,
-                            折扣金额: discount,
-                            成本: cost,
-                            边际总额: margin,
-                            市场费用: marketingExpense,
-                            物流费用: logisticsExpense,
-                            利润贡献: contributionProfit,
-                            回款金额: collectedRevenue,
-                            期初库存: openingInventory,
-                            期末库存: endingInventory,
-                            最高库存: highestInventory,
-                            最低库存: lowestInventory,
-                        });
-                    });
-                });
-            });
-        });
-    });
-
-    return rows.slice(0, SAMPLE_ROW_TARGET);
+function orderOperatingDetailRow(row) {
+    return OPERATING_DETAIL_HEADERS.reduce((ordered, header) => {
+        ordered[header] = row[header];
+        return ordered;
+    }, {});
 }
 
-const SAMPLE_ROWS = buildSampleRows();
-
-const TEMPLATE_ROWS = [
-    { 月份: "2026-01", 大区: "欧洲", 国家: "德国", 车型: "Alpha", 渠道: "经销", 销量: 1000, 净收入: 12000, 边际总额: 3200 },
-    { 月份: "2026-02", 大区: "拉美", 国家: "巴西", 车型: "Beta", 渠道: "直营", 销量: 900, 净收入: 10350, 边际总额: 2520 },
-];
+const SAMPLE_ROWS = createOperatingDetailSampleRows().map(orderOperatingDetailRow);
+const TEMPLATE_ROWS = getOperatingDetailTemplateRows().map(orderOperatingDetailRow);
 
 const FIELD_ROLE_OPTIONS = ["dimension", "metric", "ignore"];
 const AGGREGATION_OPTIONS = ["sum", "avg", "count", "min", "max"];

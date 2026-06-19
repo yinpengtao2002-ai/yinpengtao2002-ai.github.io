@@ -1179,7 +1179,7 @@ body {
   }
 
   .finance-ai-message.is-user .finance-ai-message-bubble {
-    max-width: calc(100% - var(--finance-ai-mobile-avatar-gutter));
+    max-width: min(calc(100% - var(--finance-ai-mobile-avatar-gutter) - 32px), 78%);
     border-radius: 18px 18px 7px 18px;
     padding: 11px 14px;
   }

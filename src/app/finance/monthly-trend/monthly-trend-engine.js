@@ -1,3 +1,10 @@
+const {
+    OPERATING_DETAIL_HEADERS,
+    OPERATING_DETAIL_TEMPLATE_NOTE,
+    createOperatingDetailSampleRows,
+    getOperatingDetailTemplateRows
+} = require("../../../lib/finance/templates.js");
+
 (function () {
     const COLORS = {
         orange: "#d97757",
@@ -17,9 +24,9 @@
     const VOLUME_COLUMN_ALIASES = ["销量", "销售量", "发车量", "台数", "数量", "volume", "qty", "quantity", "units"];
     const PREFERRED_METRICS = ["利润", "毛利", "边际", "净收入", "收入"];
     const NON_DIMENSION_COLUMNS = ["备注", "说明", "单位", "口径", "版本", "数据类型", "类型", "scenario"];
-    const TEMPLATE_HEADERS = ["月份", "大区", "国家", "车型", "燃油品类", "品牌", "销量", "净收入", "成本", "边际"];
-    const TEMPLATE_HEADER_NOTE = "可直接修改标题行；请保留“月份”和“销量”（月份列不许动，销量是分母口径）。销量列之前会按表头自动识别为维度，可新增或删除维度列；销量列之后的数值列会识别为可分析总额指标，例如净收入、成本、边际。";
-    const TEMPLATE_ROWS = createSampleRows().slice(0, 18);
+    const TEMPLATE_HEADERS = OPERATING_DETAIL_HEADERS;
+    const TEMPLATE_HEADER_NOTE = OPERATING_DETAIL_TEMPLATE_NOTE;
+    const TEMPLATE_ROWS = getOperatingDetailTemplateRows();
 
     const state = {
         initialized: false,
@@ -84,135 +91,7 @@
     }
 
     function createSampleRows() {
-        const months = buildMonthKeys(2025, 1, 20);
-        const markets = [
-            { region: "欧洲", country: "德国", brandMarket: "主品牌", mode: "经销", businessUnit: "燃油乘用车", model: "T1D", baseVolume: 620, unitRevenue: 126000, costRate: 0.70, volumeLift: 1.10, priceLift: 1.03 },
-            { region: "欧洲", country: "英国", brandMarket: "高端品牌", mode: "经销", businessUnit: "燃油乘用车", model: "T1E", baseVolume: 510, unitRevenue: 121000, costRate: 0.72, volumeLift: 0.94, priceLift: 0.98 },
-            { region: "拉美", country: "巴西", brandMarket: "主品牌", mode: "批售", businessUnit: "燃油乘用车", model: "T1D", baseVolume: 690, unitRevenue: 108000, costRate: 0.69, volumeLift: 1.08, priceLift: 1.01 },
-            { region: "拉美", country: "墨西哥", brandMarket: "新能源品牌", mode: "经销", businessUnit: "插混业务", model: "PHEV", baseVolume: 470, unitRevenue: 132000, costRate: 0.73, volumeLift: 0.88, priceLift: 0.96 },
-            { region: "中东非", country: "阿联酋", brandMarket: "高端品牌", mode: "直营", businessUnit: "SUV 业务", model: "SUV", baseVolume: 390, unitRevenue: 145000, costRate: 0.67, volumeLift: 1.04, priceLift: 1.04 },
-            { region: "中东非", country: "南非", brandMarket: "经济型品牌", mode: "经销", businessUnit: "燃油乘用车", model: "T1E", baseVolume: 430, unitRevenue: 99000, costRate: 0.74, volumeLift: 0.90, priceLift: 0.94 },
-            { region: "亚太", country: "澳大利亚", brandMarket: "SUV 品牌", mode: "直营", businessUnit: "SUV 业务", model: "SUV", baseVolume: 360, unitRevenue: 138000, costRate: 0.68, volumeLift: 1.18, priceLift: 1.05 },
-            { region: "亚太", country: "泰国", brandMarket: "新能源品牌", mode: "经销", businessUnit: "纯电业务", model: "EV", baseVolume: 560, unitRevenue: 114000, costRate: 0.71, volumeLift: 0.92, priceLift: 0.97 }
-        ];
-        const rows = [];
-        const seasonCurve = [0.98, 1, 1.02, 1.01, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.1];
-        const priceCurve = [1.025, 1.018, 1.01, 1.015, 1.012, 1.006, 1, 0.998, 1.004, 1.008, 1.012, 1.016];
-        const marginQualityCurve = [0.008, 0.007, 0.005, 0.006, 0.006, 0.004, 0.003, 0.004, 0.004, 0.005, 0.006, 0.006];
-        const currentYearVolumeCurve = [0.98, 1, 1.02, 1.035, 1.05, 1.062, 1.074, 1.086, 1.098, 1.108, 1.118, 1.128];
-        const currentYearPriceCurve = [1.04, 1.034, 1.028, 1.022, 1.016, 1.01, 1.004, 0.998, 0.994, 0.99, 0.986, 0.982];
-        const currentYearMarginCurve = [0.011, 0.009, 0.007, 0.006, 0.005, 0.004, 0.003, 0.003, 0.001, 0, -0.001, -0.002];
-
-        months.forEach((month) => {
-            const year = Number(month.slice(0, 4));
-            const [, monthPart] = month.split("-").map(Number);
-            markets.forEach((market, marketIndex) => {
-                const yearLift = year >= 2026 ? market.volumeLift * currentYearVolumeCurve[monthPart - 1] : 1;
-                const priceLift = year >= 2026 ? market.priceLift * currentYearPriceCurve[monthPart - 1] : 1;
-                const marketWave = 1 + Math.sin((monthPart + marketIndex * 1.7) / 1.6) * 0.035;
-                const launchPulse = 1 + Math.cos((monthPart * (marketIndex + 2)) / 2.4) * 0.018;
-                const event = sampleMarketEvent(market, year, monthPart);
-                const volume = Math.round(market.baseVolume * seasonCurve[monthPart - 1] * yearLift * marketWave * launchPulse * event.volume);
-                const revenue = Math.round((volume * market.unitRevenue * priceLift * priceCurve[monthPart - 1] * event.price) / 10000);
-                const cost = Math.round(revenue * market.costRate * event.cost);
-                const yearMargin = year >= 2026 ? currentYearMarginCurve[monthPart - 1] : 0;
-                const margin = revenue - cost + Math.round(revenue * (event.margin + marginQualityCurve[monthPart - 1] + yearMargin));
-
-                rows.push({
-                    "月份": formatMonthKey(month),
-                    "大区": market.region,
-                    "国家": market.country,
-                    "车型": market.model,
-                    "燃油品类": fuelCategoryForMarket(market),
-                    "品牌": market.brandMarket,
-                    "销量": volume,
-                    "净收入": revenue,
-                    "成本": cost,
-                    "边际": margin
-                });
-            });
-        });
-
-        return rows;
-    }
-
-    function fuelCategoryForMarket(market) {
-        const businessUnit = String(market?.businessUnit || "");
-        if (businessUnit.includes("纯电")) return "纯电";
-        if (businessUnit.includes("插混")) return "插混";
-        return "燃油";
-    }
-
-    function sampleMarketEvent(market, year, month) {
-        const event = { volume: 1, price: 1, cost: 1, margin: 0 };
-
-        if (year === 2025 && month === 6 && market.region === "欧洲") {
-            event.volume *= 1.08;
-            event.price *= 0.98;
-            event.cost *= 1.01;
-            event.margin -= 0.004;
-        }
-        if (year === 2025 && month === 8 && market.region === "拉美") {
-            event.volume *= 0.92;
-            event.price *= 1.02;
-            event.margin += 0.004;
-        }
-        if (year === 2025 && month === 12 && market.region === "中东非") {
-            event.volume *= 1.08;
-            event.price *= 0.98;
-            event.cost *= 1.02;
-            event.margin -= 0.004;
-        }
-        if (year === 2026 && month === 1 && market.region === "欧洲") {
-            event.volume *= 0.98;
-            event.price *= 1.01;
-            event.margin += 0.002;
-        }
-        if (year === 2026 && month === 3 && market.businessUnit === "纯电业务") {
-            event.volume *= 1.05;
-            event.price *= 0.99;
-            event.cost *= 1.004;
-            event.margin -= 0.002;
-        }
-        if (year === 2026 && month === 4 && market.country === "墨西哥") {
-            event.volume *= 0.97;
-            event.price *= 1.015;
-            event.cost *= 1.004;
-            event.margin += 0.002;
-        }
-        if (year === 2026 && month === 6 && market.region === "中东非") {
-            event.price *= 1.01;
-            event.cost *= 1.005;
-            event.margin -= 0.001;
-        }
-        if (year === 2026 && month === 7 && market.country === "澳大利亚") {
-            event.volume *= 1.02;
-            event.price *= 0.992;
-            event.cost *= 1.003;
-            event.margin -= 0.001;
-        }
-        if (year === 2026 && month === 8 && market.region === "拉美") {
-            event.volume *= 0.99;
-            event.price *= 1.01;
-            event.margin += 0.002;
-        }
-
-        return event;
-    }
-
-    function buildMonthKeys(startYear, startMonth, count) {
-        return Array.from({ length: count }, (_, index) => {
-            const zeroBased = startMonth - 1 + index;
-            const year = startYear + Math.floor(zeroBased / 12);
-            const month = zeroBased % 12 + 1;
-            return `${year}-${String(month).padStart(2, "0")}`;
-        });
-    }
-
-    function formatMonthKey(monthKey) {
-        const [year, month] = String(monthKey || "").split("-").map(Number);
-        if (!Number.isFinite(year) || !Number.isFinite(month)) return String(monthKey || "");
-        return `${year}年${month}月`;
+        return createOperatingDetailSampleRows();
     }
 
     function formatMonthShort(monthKey) {

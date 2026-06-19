@@ -13,14 +13,17 @@
 - `src/app/tools/finance-ai-assistant/*` 和 `src/lib/finance-ai/*`：财务分析 AI 助手的共享实现。
 - `src/lib/finance/charts/*`：财务模型共用图表协议、Plotly 主题、图表 builder 和明细表 spec。
 - `src/lib/finance/filters/*`：财务模型共用筛选状态、搜索、include/exclude 判断和级联筛选修剪。
+- `src/lib/finance/templates.js`：财务模型共用模板族登记、经营明细通用表头和共享示例数据生成器。
 - `docs/finance-chart-system.md`：财务图表中枢、共享算法边界和模型依赖地图；改图表中枢或共享计算口径时要先核对这里。
 - `docs/finance-interaction-system.md`：财务交互中枢、筛选器/下钻/明细表筛选依赖地图；改筛选和下钻交互时要先核对这里。
+- `docs/finance-template-system.md`：财务模板中枢、上传模板和示例数据依赖地图；改模板族、示例数据或默认加载数据时要先核对这里。
 
 同步要求：
 
 - 改单个模型的图表、交互、上传模板或说明时，更新本文件。
 - 改中枢图表、Plotly 主题、`FinanceChartSpec`、PVM、FBP 利润链、字段识别或上传解析时，同时更新 `docs/finance-chart-system.md`，并检查依赖地图里受影响的模型。
 - 改中枢筛选、级联筛选、维度下钻、明细表列筛选或字段治理时，同时更新 `docs/finance-interaction-system.md`，并检查依赖地图里受影响的模型。
+- 改中枢模板族、经营明细通用表头、示例数据或默认加载数据时，同时更新 `docs/finance-template-system.md`，并检查同模板族模型。
 
 ## 当前财务模型目录
 
@@ -151,7 +154,7 @@
 
 - 左侧控制台 + 右侧分析画布。
 - 上传 CSV/XLS/XLSX 分月明细数据。
-- 支持 CSV/XLSX 模板下载。
+- 支持 CSV/XLSX 模板下载；模板族为 `operating-detail`，表头和示例数据来自 `src/lib/finance/templates.js`。
 - 选择关注指标。
 - 引擎会自动识别月份列、指标列和维度列。
 - 根据识别出的维度生成下钻路径和上级筛选控件。
@@ -177,7 +180,7 @@
 交互模式：
 
 - 通过共享财务内测访问接口进行密钥校验。
-- 支持上传 CSV/XLS/XLSX 经营明细、加载示例数据、下载 CSV/XLSX 模板。
+- 支持上传 CSV/XLS/XLSX 经营明细、加载示例数据、下载 CSV/XLSX 模板；模板族为 `operating-detail`，表头和示例数据来自 `src/lib/finance/templates.js`。
 - 支持选择最多五个诊断维度作为组合粒度。
 - 支持选择质量指标、参考指标和期间范围。
 - 支持自动生成维度筛选器并重置筛选。
@@ -228,8 +231,8 @@
 交互模式：
 
 - 通过共享财务内测访问接口进行密钥校验。
-- 支持上传 CSV/XLS/XLSX 和下载 CSV/XLSX 模板。
-- 默认示例数据覆盖 2025-2026 两年、6 个大区、18 个国家、4 个车型和 3 类渠道，便于直接体验图表切换、交叉分组、热力图、散点图和蜡烛图。
+- 支持上传 CSV/XLS/XLSX 和下载 CSV/XLSX 模板；模板族为 `operating-detail`，表头和示例数据来自 `src/lib/finance/templates.js`。
+- 默认示例数据和分月趋势、利润质量诊断共用同一套经营明细，便于在不同模型之间保持字段和业务样本一致。
 - 上传后进入字段治理：按时间维度、业务维度、金额指标三类展示识别依据，并支持一键采用系统建议、单位/比率设平均、金额/规模设求和。
 - 支持用 `[字段名]` 公式新增计算指标。
 - 在 Perspective 原生 viewer 中拖拽字段、分组、拆分、筛选、排序和切换图表类型。

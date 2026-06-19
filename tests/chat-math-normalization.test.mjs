@@ -171,6 +171,16 @@ test("mobile chat launcher avoids reserving a large bottom blank before it is op
   assert.doesNotMatch(chatWidget, /bottom:\s*`calc\(env\(safe-area-inset-bottom, 0px\) \+ \$\{mobileBrowserChromeGap\}px\)`/);
 });
 
+test("chat composer textarea grows with long drafts and scrolls after a graceful cap", () => {
+  assert.match(chatWidget, /function resizeChatInput\(/);
+  assert.match(chatWidget, /resizeChatInput\(inputRef\.current,\s*inputMaxHeight\)/);
+  assert.match(chatWidget, /Math\.min\(element\.scrollHeight,\s*maxHeight\)/);
+  assert.match(chatWidget, /element\.style\.overflowY\s*=\s*element\.scrollHeight\s*>\s*maxHeight\s*\?\s*"auto"\s*:\s*"hidden"/);
+  assert.match(chatWidget, /minHeight:\s*inputLineHeight/);
+  assert.doesNotMatch(chatWidget, /height:\s*24,/);
+  assert.doesNotMatch(chatWidget, /style\.height\s*=\s*"24px"/);
+});
+
 test("chat renderer turns bare internal routes into clickable markdown links", () => {
   const input = "财务模型库（/finance）和工具与思考（/thinking-lab）都可以看，也可以直接进 /finance/business-analysis。";
 

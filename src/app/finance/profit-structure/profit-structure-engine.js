@@ -1,5 +1,12 @@
-const TEMPLATE_HEADERS = ["月份", "大区", "国家", "品牌", "品牌市场", "经营模式", "业务单元", "车型", "燃油品类", "销量", "净收入", "成本", "边际"];
-const TEMPLATE_HEADER_NOTE = "可直接修改标题行；请保留“月份”和“销量”。销量列之前会按表头自动识别为维度，可新增、删除或改名；销量列之后的数值列会识别为上传指标。模板提供净收入、成本、边际作为示例，也可以替换成任意质量指标，页面会按单位质量差和拖累贡献诊断。";
+const {
+    OPERATING_DETAIL_HEADERS,
+    OPERATING_DETAIL_TEMPLATE_NOTE,
+    createOperatingDetailSampleRows,
+    getOperatingDetailTemplateRows
+} = require("../../../lib/finance/templates.js");
+
+const TEMPLATE_HEADERS = OPERATING_DETAIL_HEADERS;
+const TEMPLATE_HEADER_NOTE = OPERATING_DETAIL_TEMPLATE_NOTE;
 
 const MONTH_ALIASES = ["月份", "年月", "期间", "日期", "month", "period", "date"];
 const VOLUME_ALIASES = ["销量", "销售量", "发车量", "台数", "数量", "volume", "qty", "quantity", "units"];
@@ -336,98 +343,7 @@ function summarizeProfitStructure(rows, schema, options = {}) {
 }
 
 function createSampleRows() {
-    const rows = [];
-    const countries = [
-        ["欧洲", "德国", 1.08],
-        ["欧洲", "法国", 0.92],
-        ["欧洲", "英国", 0.84],
-        ["拉美", "墨西哥", 1.22],
-        ["拉美", "巴西", 1.04],
-        ["中东", "沙特", 0.72],
-        ["亚太", "澳大利亚", 0.68],
-        ["亚太", "泰国", 0.88]
-    ];
-    const brands = [
-        {
-            brand: "品牌A",
-            brandMarket: "主品牌",
-            mode: "经销",
-            unit: "全球主销",
-            variants: [
-                ["Atlas", "燃油", 0.94, 12.4, -8.6],
-                ["Atlas", "插混", 0.36, 15.8, -11.2]
-            ]
-        },
-        {
-            brand: "品牌B",
-            brandMarket: "新能源品牌",
-            mode: "直营",
-            unit: "新能源业务",
-            variants: [
-                ["Nova", "纯电", 0.44, 17.6, -13.4],
-                ["Nova", "插混", 0.28, 15.1, -11.1]
-            ]
-        },
-        {
-            brand: "品牌C",
-            brandMarket: "高端品牌",
-            mode: "大客户",
-            unit: "高端 SUV",
-            variants: [
-                ["Summit", "燃油", 0.22, 21.5, -15.7],
-                ["Summit", "纯电", 0.12, 24.8, -20.4]
-            ]
-        },
-        {
-            brand: "品牌D",
-            brandMarket: "商用品牌",
-            mode: "经销",
-            unit: "商用车业务",
-            variants: [
-                ["Cargo", "燃油", 0.31, 10.4, -9.2],
-                ["Cargo", "纯电", 0.16, 13.2, -12.1]
-            ]
-        }
-    ];
-    const months = ["2026-01", "2026-02", "2026-03"];
-
-    months.forEach((month, monthIndex) => {
-        countries.forEach(([region, country, countryFactor], countryIndex) => {
-            brands.forEach((brandConfig, brandIndex) => {
-                brandConfig.variants.forEach(([model, fuel, baseVolume, baseRevenue, baseCost], variantIndex) => {
-                    const channelFactor = brandConfig.mode === "直营" ? 0.94 : brandConfig.mode === "大客户" ? 0.72 : 1;
-                    const seasonal = 1 + monthIndex * 0.035 + (countryIndex % 3) * 0.018 + variantIndex * 0.026;
-                    const mixShift = 1 + (brandIndex - 1.5) * 0.04 + (countryIndex % 2 ? -0.025 : 0.025);
-                    const volume = round(baseVolume * countryFactor * channelFactor * seasonal * mixShift, 3);
-                    const revenue = round(volume * baseRevenue * (1 + countryIndex * 0.012 + monthIndex * 0.01), 3);
-                    const costDrag = country === "巴西" || country === "沙特" ? 1.08 : country === "德国" ? 0.96 : 1;
-                    const cost = round(volume * baseCost * costDrag * (1 + variantIndex * 0.018), 3);
-                    rows.push({
-                        "月份": month,
-                        "大区": region,
-                        "国家": country,
-                        "品牌": brandConfig.brand,
-                        "品牌市场": brandConfig.brandMarket,
-                        "经营模式": brandConfig.mode,
-                        "业务单元": brandConfig.unit,
-                        "车型": model,
-                        "燃油品类": fuel,
-                        "销量": volume,
-                        "净收入": revenue,
-                        "成本": cost,
-                        "边际": round(revenue + cost, 3)
-                    });
-                });
-            });
-        });
-    });
-
-    return rows;
-}
-
-function round(value, digits = 2) {
-    const factor = 10 ** digits;
-    return Math.round(value * factor) / factor;
+    return createOperatingDetailSampleRows();
 }
 
 function formatNumber(value, digits = 2) {
@@ -1010,7 +926,7 @@ function downloadBlob(blob, filename) {
 }
 
 function templateRows() {
-    return createSampleRows().slice(0, 16);
+    return getOperatingDetailTemplateRows(24);
 }
 
 function downloadCsv() {
@@ -1174,21 +1090,19 @@ if (typeof window !== "undefined") {
     window.ProfitStructureModel = { initApp };
 }
 
-if (typeof module !== "undefined" && module.exports) {
-    module.exports = {
-        TEMPLATE_HEADERS,
-        TEMPLATE_HEADER_NOTE,
-        normalizeUploadedRows,
-        buildDimensionOptions,
-        buildMetricOptions,
-        buildSummaryCards,
-        buildStructureBlueprints,
-        buildDimensionDiagnostics,
-        buildQualityMapItems,
-        buildDragContributionItems,
-        defaultDimensionPath,
-        summarizeProfitStructure,
-        createSampleRows,
-        initApp
-    };
-}
+module.exports = {
+    TEMPLATE_HEADERS,
+    TEMPLATE_HEADER_NOTE,
+    normalizeUploadedRows,
+    buildDimensionOptions,
+    buildMetricOptions,
+    buildSummaryCards,
+    buildStructureBlueprints,
+    buildDimensionDiagnostics,
+    buildQualityMapItems,
+    buildDragContributionItems,
+    defaultDimensionPath,
+    summarizeProfitStructure,
+    createSampleRows,
+    initApp
+};
