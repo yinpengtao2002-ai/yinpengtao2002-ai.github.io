@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import Link from "next/link";
 import { ArrowUp, Download, Eye, FileSpreadsheet, Loader2, RotateCcw, Trash2, UploadCloud } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -122,6 +122,164 @@ const SAMPLE_TEMPLATE_README_ROWS = [
   ["维度", "大区、国家、品牌、品牌市场、经营模式、业务单元、车型、燃油品类都可以替换为真实业务维度。"],
   ["指标", "销量是体量分母；净收入、成本、边际、利润等总额指标可以继续向右新增。"],
   ["口径识别", "上传后页面会根据 sheet 名自动生成“数据口径”维度，AI 可用它区分实际、预算、目标或预测。"],
+];
+
+const EMPTY_STATE_PREVIEW_AXIS = {
+  visible: false,
+  showticklabels: false,
+  showgrid: false,
+  zeroline: false,
+  ticks: "",
+  title: { text: "" },
+  fixedrange: true,
+};
+
+function asLayoutObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function makeEmptyStatePreviewTrace(trace: Record<string, unknown>): Record<string, unknown> {
+  const type = trace.type;
+
+  if (type === "bar") {
+    return {
+      ...trace,
+      text: [],
+      textposition: "none",
+      cliponaxis: true,
+      hoverinfo: "skip",
+      hovertemplate: undefined,
+      marker: {
+        ...asLayoutObject(trace.marker),
+        line: { width: 0 },
+      },
+    };
+  }
+
+  if (type === "waterfall") {
+    return {
+      ...trace,
+      text: [],
+      textposition: "none",
+      cliponaxis: true,
+      hoverinfo: "skip",
+      hovertemplate: undefined,
+      connector: { line: { color: "rgba(172, 158, 132, 0.62)", width: 1.2 } },
+    };
+  }
+
+  return {
+    ...trace,
+    hoverinfo: "skip",
+    hovertemplate: undefined,
+  };
+}
+
+function makeEmptyStatePreviewSpec(spec: FinanceChartSpec): FinanceChartSpec {
+  const layout = spec.layout;
+
+  return {
+    ...spec,
+    data: spec.data.map(makeEmptyStatePreviewTrace),
+    layout: {
+      ...layout,
+      height: 104,
+      margin: { t: 4, r: 4, b: 4, l: 4 },
+      showlegend: false,
+      bargap: spec.kind === "grouped_bar" ? 0.42 : 0.24,
+      xaxis: {
+        ...asLayoutObject(layout.xaxis),
+        ...EMPTY_STATE_PREVIEW_AXIS,
+      },
+      yaxis: {
+        ...asLayoutObject(layout.yaxis),
+        ...EMPTY_STATE_PREVIEW_AXIS,
+      },
+      annotations: [],
+      hovermode: false,
+      paper_bgcolor: "rgba(0,0,0,0)",
+      plot_bgcolor: "rgba(0,0,0,0)",
+    },
+    config: {
+      ...spec.config,
+      displayModeBar: false,
+      staticPlot: true,
+      responsive: true,
+    },
+  };
+}
+
+const EMPTY_STATE_PREVIEW_CHARTS = [
+  {
+    title: "5月各大区销量预算实际对比",
+    note: "预算 / 实际",
+    spec: makeEmptyStatePreviewSpec(buildDirectChartSpec({
+      type: "grouped_bar",
+      title: "5月各大区销量预算实际对比",
+      xLabel: "大区",
+      yLabel: "销量",
+      series: [
+        {
+          name: "预算",
+          items: [
+            { label: "拉美", value: 42100 },
+            { label: "右舵", value: 35600 },
+            { label: "欧洲", value: 31800 },
+            { label: "亚太", value: 16200 },
+          ],
+        },
+        {
+          name: "实际",
+          items: [
+            { label: "拉美", value: 45620 },
+            { label: "右舵", value: 37180 },
+            { label: "欧洲", value: 30940 },
+            { label: "亚太", value: 16880 },
+          ],
+        },
+      ],
+    })),
+  },
+  {
+    title: "巴西单车边际变化归因桥",
+    note: "车型贡献",
+    spec: makeEmptyStatePreviewSpec(buildDirectChartSpec({
+      type: "waterfall",
+      title: "巴西单车边际变化归因桥",
+      startLabel: "4月",
+      startValue: 31.2,
+      endLabel: "5月",
+      endValue: 28.7,
+      items: [
+        { label: "S56 EV", value: -0.9 },
+        { label: "Tiggo 8", value: -0.65 },
+        { label: "Arrizo 5", value: -0.45 },
+        { label: "T18 HEV", value: 0.25 },
+        { label: "其他", value: -0.75 },
+      ],
+    })),
+  },
+  {
+    title: "5月边际总额环比变化桥",
+    note: "国家贡献",
+    spec: makeEmptyStatePreviewSpec(buildDirectChartSpec({
+      type: "waterfall",
+      title: "5月边际总额环比变化桥",
+      startLabel: "4月",
+      startValue: 48000000,
+      endLabel: "5月",
+      endValue: 57800000,
+      items: [
+        { label: "巴西", value: 4200000 },
+        { label: "泰国", value: 2100000 },
+        { label: "墨西哥", value: 1650000 },
+        { label: "西班牙", value: -1250000 },
+        { label: "其他", value: 3100000 },
+      ],
+    })),
+  },
 ];
 
 function summarizeSchema(schema: FinanceSchema | null) {
@@ -1386,6 +1544,7 @@ export default function FinanceAIAssistantTool() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [fileName, setFileName] = useState("");
+  const [isDropActive, setIsDropActive] = useState(false);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const questionInputRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -1443,6 +1602,37 @@ export default function FinanceAIAssistantTool() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function handleWorkbookDragOver(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+    setIsDropActive(true);
+  }
+
+  function handleWorkbookDragLeave(event: DragEvent<HTMLDivElement>) {
+    const nextTarget = event.relatedTarget;
+    if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) {
+      return;
+    }
+
+    setIsDropActive(false);
+  }
+
+  function handleWorkbookDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setIsDropActive(false);
+
+    const file = Array.from(event.dataTransfer.files).find((item) => (
+      /\.(csv|xls|xlsx)$/i.test(item.name)
+    ));
+
+    if (file) {
+      void handleFile(file);
+      return;
+    }
+
+    setError("请拖入 CSV、XLS 或 XLSX 格式的经营明细。");
   }
 
   async function callAI(mode: "plan" | "explain", body: Record<string, unknown>): Promise<APIResponse> {
@@ -1619,40 +1809,59 @@ export default function FinanceAIAssistantTool() {
 
         {!workbook ? (
         <section className="finance-ai-empty-state" aria-label="数据上传和识别状态">
-          <div className="finance-ai-empty-card">
-            <AssistantAvatar />
-            <p className="finance-ai-kicker">Upload Workbook</p>
-            <h2>先上传一份经营明细</h2>
-            <p>支持 CSV、XLS、XLSX。上传后会直接进入对话分析，可以继续追问、生成图表和核对明细。</p>
-            <div className="finance-ai-upload-row">
-              <label className="finance-ai-upload-chip">
-                <input
-                  type="file"
-                  accept=".csv,.xls,.xlsx"
-                  hidden
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (file) {
-                      void handleFile(file);
-                    }
-                    event.currentTarget.value = "";
-                  }}
-                />
-                <UploadCloud aria-hidden="true" />
-                <span>上传数据</span>
-              </label>
-              <button type="button" className="finance-ai-template-button" onClick={downloadSampleTemplate}>
-                <Download aria-hidden="true" />
-                <span>下载示例格式</span>
-              </button>
-              <Link href="/finance/finance-ai-assistant/demo" className="finance-ai-template-button finance-ai-demo-effect-button">
+          <div className="finance-ai-upload-workbench">
+            <div
+              className={`finance-ai-upload-dropzone ${isDropActive ? "is-dragging" : ""}`}
+              onDragOver={handleWorkbookDragOver}
+              onDragLeave={handleWorkbookDragLeave}
+              onDrop={handleWorkbookDrop}
+            >
+              <AssistantAvatar />
+              <p className="finance-ai-kicker">Upload Workbook</p>
+              <h2>拖拽经营明细到这里</h2>
+              <p>支持 CSV、XLS、XLSX。上传后进入对话分析，直接追问单车边际、环比变化、利润来源与维度排名。</p>
+              <div className="finance-ai-upload-row">
+                <label className="finance-ai-upload-chip">
+                  <input
+                    type="file"
+                    accept=".csv,.xls,.xlsx"
+                    hidden
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) {
+                        void handleFile(file);
+                      }
+                      event.currentTarget.value = "";
+                    }}
+                  />
+                  <UploadCloud aria-hidden="true" />
+                  <span>上传数据</span>
+                </label>
+                <button type="button" className="finance-ai-template-button" onClick={downloadSampleTemplate}>
+                  <Download aria-hidden="true" />
+                  <span>下载示例格式</span>
+                </button>
+              </div>
+              <Link href="/finance/finance-ai-assistant/demo" className="finance-ai-demo-effect-button finance-ai-upload-demo-link">
                 <Eye aria-hidden="true" />
                 <span>查看示例效果</span>
               </Link>
+              <div className="finance-ai-data-status">
+                <FileSpreadsheet aria-hidden="true" />
+                <span>{fileName ? `${fileName} · ${dataSummary}` : dataSummary}</span>
+              </div>
             </div>
-            <div className="finance-ai-data-status">
-              <FileSpreadsheet aria-hidden="true" />
-              <span>{fileName ? `${fileName} · ${dataSummary}` : dataSummary}</span>
+
+            <div className="finance-ai-upload-preview-list" aria-label="示例图表预览">
+              {EMPTY_STATE_PREVIEW_CHARTS.map((chart) => (
+                <article className="finance-ai-empty-preview-card" key={chart.title}>
+                  <div className="finance-ai-empty-preview-copy">
+                    <span>{chart.note}</span>
+                    <h3>{chart.title}</h3>
+                  </div>
+                  <PlotlyChart spec={chart.spec} className="finance-ai-empty-preview-chart" />
+                </article>
+              ))}
             </div>
           </div>
         </section>

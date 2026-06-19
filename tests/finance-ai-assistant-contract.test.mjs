@@ -1616,10 +1616,23 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(client, /finance-ai-avatar/);
   assert.doesNotMatch(client, /finance-ai-access-gate/);
   assert.match(client, /finance-ai-upload-chip/);
+  assert.match(client, /finance-ai-upload-workbench/);
+  assert.match(client, /finance-ai-upload-dropzone/);
+  assert.match(client, /finance-ai-upload-preview-list/);
+  assert.match(client, /EMPTY_STATE_PREVIEW_CHARTS/);
+  assert.match(client, /makeEmptyStatePreviewSpec/);
+  assert.match(client, /showticklabels:\s*false/);
+  assert.match(client, /annotations:\s*\[\]/);
+  assert.match(client, /5月各大区销量预算实际对比/);
+  assert.match(client, /巴西单车边际变化归因桥/);
+  assert.match(client, /5月边际总额环比变化桥/);
   assert.match(client, /finance-ai-demo-effect-button/);
   assert.match(client, /查看示例效果/);
   assert.match(client, /href="\/finance\/finance-ai-assistant\/demo"/);
-  assert.match(client, /finance-ai-empty-card/);
+  assert.match(client, /finance-ai-empty-preview-chart/);
+  assert.match(client, /handleWorkbookDrop/);
+  assert.match(client, /onDrop=\{handleWorkbookDrop\}/);
+  assert.match(client, /onDragOver=\{handleWorkbookDragOver\}/);
   assert.doesNotMatch(client, /EXAMPLE_CONVERSATION/);
   assert.doesNotMatch(client, /finance-ai-example-dialogue/);
   assert.doesNotMatch(client, /泰国有没有卖 S56EV/);
@@ -1673,7 +1686,11 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.doesNotMatch(styles, /\.finance-ai-message\.is-user\s+\.finance-ai-message-bubble\s*\{[^}]*\n\s*width:\s*min\(620px,\s*82%\)/s);
   assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*\.finance-ai-message\.is-user\s+\.finance-ai-message-bubble\s*\{[\s\S]*max-width:\s*min\(calc\(100%\s*-\s*var\(--finance-ai-mobile-avatar-gutter\)\s*-\s*32px\),\s*78%\)/s);
   assert.match(styles, /\.finance-ai-empty-state\s*\{[\s\S]*place-items:\s*center/s);
-  assert.match(styles, /\.finance-ai-empty-card/);
+  assert.match(styles, /\.finance-ai-upload-workbench\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1\.35fr\)\s+minmax\(320px,\s*0\.8fr\)/s);
+  assert.match(styles, /\.finance-ai-upload-dropzone/);
+  assert.match(styles, /\.finance-ai-upload-preview-list/);
+  assert.match(styles, /\.finance-ai-empty-preview-card/);
+  assert.match(styles, /\.finance-ai-empty-preview-chart/);
   assert.match(styles, /\.finance-ai-composer\s*\{[\s\S]*border-radius:\s*26px/s);
 });
 
