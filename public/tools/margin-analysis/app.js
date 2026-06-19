@@ -6,10 +6,12 @@
 
 // ==================== 全局状态 ====================
 const DEFAULT_DIMENSION_NAMES = {
-    Dim_A: '大区', Dim_B: '国家', Dim_C: '车型',
-    Dim_D: '燃油品类', Dim_E: '品牌'
+    Dim_A: '大区', Dim_B: '国家', Dim_C: '品牌',
+    Dim_D: '品牌市场', Dim_E: '经营模式', Dim_F: '业务单元',
+    Dim_G: '车型', Dim_H: '燃油品类'
 };
-const TEMPLATE_DIMENSION_HEADERS = ['大区', '国家', '车型', '燃油品类', '品牌'];
+const TEMPLATE_DIMENSION_HEADERS = ['大区', '国家', '品牌', '品牌市场', '经营模式', '业务单元', '车型', '燃油品类'];
+const NON_ANALYSIS_DIMENSION_HEADERS = ['数据口径', '口径', '版本', '备注', '说明', '单位'];
 const ALL_DIMENSIONS = Array.from({ length: 20 }, (_, index) => `Dim_${String.fromCharCode(65 + index)}`);
 const ATTRIBUTION_METHOD_LAYERED = 'layered';
 const ATTRIBUTION_METHOD_BOTTOM_UP = 'bottom-up';
@@ -54,9 +56,9 @@ const DIM_ICONS = {
 };
 
 const TEMPLATE_HEADERS = [
-    '月份', ...TEMPLATE_DIMENSION_HEADERS, '销量', '净收入', '成本', '边际'
+    '月份', '数据口径', ...TEMPLATE_DIMENSION_HEADERS, '备注', '销量', '净收入', '成本', '边际'
 ];
-const TEMPLATE_HEADER_NOTE = '可直接修改标题行；请保留“月份”和“销量”。销量列之前会按表头自动识别为维度，可新增或删除维度列，直接插入或删除即可；销量列之后的数值列会识别为可分析指标，例如净收入、成本、边际。成本等扣减项建议按负数填写。';
+const TEMPLATE_HEADER_NOTE = '可直接修改标题行；请保留“月份”和“销量”。“数据口径”用于区分实际、预算、目标或预测；单车归因通常只填“实际”。“备注”用于记录业务解释，不参与默认归因下钻。销量列之前的业务字段会按表头自动识别为维度，可新增或删除维度列，直接插入或删除即可；销量列之后的数值列会识别为可分析指标，例如净收入、成本、边际。成本等扣减项建议按负数填写。';
 
 
 // ==================== DOM Ready ====================
@@ -240,12 +242,7 @@ function initTemplateDownloads() {
 }
 
 function getTemplateRows() {
-    return [
-        { '月份': '2025-01', '大区': '亚太区', '国家': '中国', '车型': 'SUV-旗舰', '燃油品类': '燃油', '品牌': '品牌A', '销量': 5000, '净收入': 42000000, '成本': -27000000, '边际': 15000000 },
-        { '月份': '2025-01', '大区': '欧洲区', '国家': '德国', '车型': 'Sedan-经典', '燃油品类': '混动', '品牌': '品牌B', '销量': 2500, '净收入': 20500000, '成本': -15000000, '边际': 5500000 },
-        { '月份': '2025-02', '大区': '亚太区', '国家': '中国', '车型': 'SUV-旗舰', '燃油品类': '燃油', '品牌': '品牌A', '销量': 6200, '净收入': 52080000, '成本': -32240000, '边际': 19840000 },
-        { '月份': '2025-02', '大区': '欧洲区', '国家': '德国', '车型': 'Sedan-经典', '燃油品类': '混动', '品牌': '品牌B', '销量': 2200, '净收入': 17600000, '成本': -12980000, '边际': 4620000 }
-    ];
+    return generateDemoData().slice(0, 8);
 }
 
 function downloadTemplate(format) {
@@ -786,6 +783,7 @@ function analyzeUploadHeaders(sourceHeaders) {
 
     sourceHeaders.forEach((sourceHeader, index) => {
         if (columnKeyBySource[sourceHeader]) return;
+        if (isNonAnalysisDimensionHeader(sourceHeader)) return;
 
         const mappedColumn = getMappedColumnName(sourceHeader, columnMapping);
         const isLegacyMetric = mappedColumn === 'Total Margin';
@@ -824,6 +822,11 @@ function analyzeUploadHeaders(sourceHeaders) {
         hasMonth,
         hasSalesVolume
     };
+}
+
+function isNonAnalysisDimensionHeader(sourceHeader) {
+    const normalized = normalizeHeaderAlias(sourceHeader);
+    return NON_ANALYSIS_DIMENSION_HEADERS.some(header => normalizeHeaderAlias(header) === normalized);
 }
 
 function deriveMetricTypeFromHeader(sourceHeader) {
@@ -953,11 +956,16 @@ function generateDemoData() {
         const cost = -Math.round(period.volume * period.unitCost);
         return {
             '月份': period.month,
+            '数据口径': '实际',
             '大区': item.region,
             '国家': item.country,
+            '品牌': item.brand,
+            '品牌市场': item.brand,
+            '经营模式': item.country === '中国' || item.country === '日本' ? '直营' : '经销',
+            '业务单元': `${item.energy}业务`,
             '车型': item.model,
             '燃油品类': item.energy,
-            '品牌': item.brand,
+            '备注': '',
             '销量': period.volume,
             '净收入': netRevenue,
             '成本': cost,

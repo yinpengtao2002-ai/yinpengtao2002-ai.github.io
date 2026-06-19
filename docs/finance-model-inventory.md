@@ -13,7 +13,7 @@
 - `src/app/tools/finance-ai-assistant/*` 和 `src/lib/finance-ai/*`：财务分析 AI 助手的共享实现。
 - `src/lib/finance/charts/*`：财务模型共用图表协议、Plotly 主题、图表 builder 和明细表 spec。
 - `src/lib/finance/filters/*`：财务模型共用筛选状态、搜索、include/exclude 判断和级联筛选修剪。
-- `src/lib/finance/templates.js`：财务模型共用模板族登记、经营明细通用表头和共享示例数据生成器。
+- `src/lib/finance/templates.js`：财务模型共用模板族登记、经营明细事实表通用表头和共享示例数据生成器；除敏感性分析之外，当前模型默认复用 `operating-detail`。
 - `docs/finance-chart-system.md`：财务图表中枢、共享算法边界和模型依赖地图；改图表中枢或共享计算口径时要先核对这里。
 - `docs/finance-interaction-system.md`：财务交互中枢、筛选器/下钻/明细表筛选依赖地图；改筛选和下钻交互时要先核对这里。
 - `docs/finance-template-system.md`：财务模板中枢、上传模板和示例数据依赖地图；改模板族、示例数据或默认加载数据时要先核对这里。
@@ -24,6 +24,7 @@
 - 改中枢图表、Plotly 主题、`FinanceChartSpec`、PVM、FBP 利润链、字段识别或上传解析时，同时更新 `docs/finance-chart-system.md`，并检查依赖地图里受影响的模型。
 - 改中枢筛选、级联筛选、维度下钻、明细表列筛选或字段治理时，同时更新 `docs/finance-interaction-system.md`，并检查依赖地图里受影响的模型。
 - 改中枢模板族、经营明细通用表头、示例数据或默认加载数据时，同时更新 `docs/finance-template-system.md`，并检查同模板族模型。
+- 模板归属以 `docs/finance-template-system.md` 为准：预算实际、单车归因、月度趋势、利润质量、Perspective BI 和财务分析 AI 助手共用 `operating-detail`；利润敏感性分析使用 `profit-sensitivity-assumptions`。
 
 ## 当前财务模型目录
 
@@ -59,6 +60,7 @@
 
 - 左侧控制台 + 右侧滚动分析画布。
 - 上传经营明细 CSV/XLS/XLSX，并在页面内维护边际以下固定科目和利润贡献科目。
+- 模板族为 `operating-detail`，通过 `数据口径` 区分实际、预算、目标或预测；固定科目仍由本模型的科目区维护。
 - 支持示例数据和 CSV/XLSX 模板下载。
 - 左侧将「下钻顺序」和「维度钻取」拆成两个轻量控制块；拖动维度胶囊调整下钻顺序。
 - 维度经营实绩正文操作台只保留路径、当前层筛选、指标提示、退一层和清空下钻，避免重复的排序入口。
@@ -84,7 +86,7 @@
 
 - 静态工具通过 `public/tools/margin-analysis/index.html` iframe 加载。
 - 支持上传 CSV/XLS/XLSX 或加载示例数据。
-- 支持 CSV/XLSX 示例格式下载。
+- 支持 CSV/XLSX 示例格式下载；模板族为 `operating-detail`，用同一经营明细事实表选择基期和当期做归因。
 - 选择基期和当期。
 - 选择单位名称、指标类型、分析指标和归因模式。
 - 拖动维度卡片调整或移除下钻层级。
@@ -120,6 +122,7 @@
 交互模式：
 
 - 公开访问，进入页面后可直接上传 CSV/XLS/XLSX；助手上传界面提供只读示例入口，示例页只展示模拟对话和图表，不支持追问、编辑、上传或模型调用。
+- 模板族为 `operating-detail`，与趋势、利润质量、BI 和预算实际共用经营明细事实表；`数据口径` 用于解析实际、预算、目标或预测类问题。
 - 上传前仅保留上传、下载示例格式和查看只读示例三个入口；模拟对话只在只读示例页展示。
 - 上传数据只保存在当前浏览器页面会话中，刷新后清空。
 - 用户在聊天输入框中直接用自然语言提问。
@@ -204,7 +207,7 @@
 
 交互模式：
 
-- 支持上传 CSV/XLS/XLSX 假设表、加载示例数据、下载 CSV/XLSX 模板。
+- 支持上传 CSV/XLS/XLSX 假设表、加载示例数据、下载 CSV/XLSX 模板；模板族为 `profit-sensitivity-assumptions`。
 - 选择关注指标和显示单位。
 - 输入目标利润。
 - 选择双变量分析的横轴变量、纵轴变量和矩阵步数。

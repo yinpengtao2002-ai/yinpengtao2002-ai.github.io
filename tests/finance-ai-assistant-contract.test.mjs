@@ -1622,8 +1622,11 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.doesNotMatch(client, /泰国有没有卖 S56EV/);
   assert.match(client, /if \(!workbook\) \{[\s\S]*window\.scrollTo\(\{ top: 0, left: 0, behavior: "auto" \}\)/);
   assert.match(client, /downloadSampleTemplate/);
-  assert.match(client, /"Sales Volume": 123456/);
-  assert.match(client, /"Total Margin": 3703680/);
+  assert.match(client, /finance\/templates\.js/);
+  assert.match(client, /OPERATING_DETAIL_HEADERS/);
+  assert.match(client, /getBudgetOperatingDetailTemplateRows/);
+  assert.match(client, /"数据口径"\] === "实际"/);
+  assert.match(client, /"数据口径"\] === "预算"/);
   assert.match(client, /book_append_sheet\(workbook,\s*actualWorksheet,\s*"实际"\)/);
   assert.match(client, /book_append_sheet\(workbook,\s*budgetWorksheet,\s*"预算"\)/);
   assert.match(client, /book_append_sheet\(workbook,\s*readmeWorksheet,\s*"填表说明"\)/);

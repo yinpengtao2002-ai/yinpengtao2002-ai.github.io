@@ -467,7 +467,7 @@ test("impact baseline at model level uses the intersection of all filters up to 
         Dim_C: ["T19C", "T1E"],
     };
 
-    const modelContext = getImpactBaselineContext(data, drillOrder, 4, "Dim_C", "base", "curr", selectedDims, {});
+    const modelContext = getImpactBaselineContext(data, drillOrder, 4, "Dim_C", "base", "curr", selectedDims, {}, { Dim_C: "车型" });
 
     assert.equal(modelContext.targetLabel, "车型");
     assert.equal(modelContext.base.totalVol, 140);
@@ -616,10 +616,12 @@ test("spreadsheet template can carry a visible note above the detected header ro
     assert.match(TEMPLATE_HEADER_NOTE, /新增或删除维度列/);
     assert.match(TEMPLATE_HEADER_NOTE, /插入或删除/);
     assert.match(TEMPLATE_HEADER_NOTE, /销量列之后的数值列/);
+    assert.match(TEMPLATE_HEADER_NOTE, /数据口径/);
+    assert.match(TEMPLATE_HEADER_NOTE, /备注/);
     assert.match(TEMPLATE_HEADER_NOTE, /扣减项建议按负数填写/);
     assert.match(buildTemplateStylesXml(), /fgColor rgb="FFFFF7CC"/);
     assert.match(buildTemplateWorksheetXml(), /<c r="A1" s="1" t="inlineStr">/);
-    assert.match(buildTemplateWorksheetXml(), /<mergeCell ref="A1:J1"\/>/);
+    assert.match(buildTemplateWorksheetXml(), /<mergeCell ref="A1:O1"\/>/);
     const zippedTemplate = new TextDecoder().decode(createStoredZip(buildXlsxTemplateEntries()));
     assert.match(zippedTemplate, /fgColor rgb="FFFFF7CC"/);
     assert.match(zippedTemplate, /<c r="A1" s="1" t="inlineStr">/);
@@ -717,7 +719,7 @@ test("detail table copy uses the current filtered and sorted view", () => {
 });
 
 test("upload template and sidebar use business dimension headers instead of Dim labels", () => {
-    assert.deepEqual(TEMPLATE_HEADERS, ["月份", "大区", "国家", "车型", "燃油品类", "品牌", "销量", "净收入", "成本", "边际"]);
+    assert.deepEqual(TEMPLATE_HEADERS, ["月份", "数据口径", "大区", "国家", "品牌", "品牌市场", "经营模式", "业务单元", "车型", "燃油品类", "备注", "销量", "净收入", "成本", "边际"]);
     assert.ok(!TEMPLATE_HEADERS.some(header => /^Dim_/i.test(header)));
     assert.doesNotMatch(marginAnalysisHtml, /维度配置|dim-config-section/);
     assert.doesNotMatch(marginAnalysisHtml, /id="user-settings-section"/);
@@ -848,11 +850,14 @@ test("demo data provides a richer drill path for first-time exploration", () => 
     const normalized = normalizeUploadedRows(demoRows);
 
     assert.ok(demoRows.length >= 40, "demo data should include enough rows to make filters and drilldown meaningful");
-    assert.deepEqual(normalized.dimCols, ["Dim_A", "Dim_B", "Dim_C", "Dim_D", "Dim_E"]);
+    assert.deepEqual(normalized.dimCols, ["Dim_A", "Dim_B", "Dim_C", "Dim_D", "Dim_E", "Dim_F", "Dim_G", "Dim_H"]);
 
     const uniqueCount = (field) => new Set(demoRows.map(row => row[field])).size;
     assert.ok(uniqueCount("大区") >= 4, "demo should span multiple regions");
     assert.ok(uniqueCount("国家") >= 10, "demo should span many countries");
+    assert.ok(uniqueCount("品牌市场") >= 3, "demo should include brand-market drilldown");
+    assert.ok(uniqueCount("经营模式") >= 2, "demo should include operating modes");
+    assert.ok(uniqueCount("业务单元") >= 3, "demo should include business units");
     assert.ok(uniqueCount("车型") >= 5, "demo should span several model families");
     assert.ok(uniqueCount("燃油品类") >= 3, "demo should include fuel or energy categories");
     assert.ok(uniqueCount("品牌") >= 3, "demo should include brand-level drilldown");

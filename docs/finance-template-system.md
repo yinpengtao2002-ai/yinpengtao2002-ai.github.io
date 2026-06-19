@@ -6,25 +6,40 @@
 
 | 模板族 | 适用场景 | 维护位置 |
 | --- | --- | --- |
-| operating-detail | 月份 + 业务维度 + 销量 + 财务指标，适合趋势、质量诊断、BI 探索和 AI 会话分析。 | `src/lib/finance/templates.js` |
-| budget-actual | 实际/预算经营明细 + 固定科目，适合预算实际对比。 | `src/app/finance/business-analysis/` |
-| unit-attribution | 两期单车归因明细，适合结构效应和费率效应拆解。 | `public/tools/margin-analysis/` |
-| profit-sensitivity | 利润敏感性假设行，适合利润情景推演。 | `src/app/finance/sensitivity-analysis/` |
+| operating-detail | 经营明细事实表：月份 + 数据口径 + 业务维度 + 销量 + 财务指标。除敏感性分析之外，预算实际、单车归因、趋势、利润质量、BI 探索和 AI 会话都优先复用这一套。 | `src/lib/finance/templates.js` |
+| profit-sensitivity-assumptions | 利润敏感性假设表：按科目假设行表达销量、收入、成本、固定扣减和利润贡献，用于情景推演。 | `src/app/finance/sensitivity-analysis/` |
+
+## 经营明细事实表
+
+通用表头按这个顺序维护：
+
+`月份`、`数据口径`、业务维度、`备注`、`销量`、财务指标。
+
+- `月份` 用于连续趋势、两期归因和预算实际桥；模型也可识别 `期间`、`年月` 等别名。
+- `数据口径` 用于区分 `实际`、`预算`、`目标`、`预测` 或 `计划`。只做趋势、利润质量或 BI 探索时填 `实际` 即可。
+- 业务维度默认包括大区、国家、品牌、品牌市场、经营模式、业务单元、车型、燃油品类；上传时可以新增、删除或改名。
+- `备注` 用于记录业务解释，不参与固定模型的默认下钻；AI 和 BI 可按需要展示或忽略。
+- `销量` 是体量分母；`销量` 后面的数值列会作为财务指标，例如净收入、成本、边际，也可以替换为质量、费用或单车指标。
 
 ## 模型依赖
 
 | 模型 | 模板族 | 说明 |
 | --- | --- | --- |
-| monthly-trend | operating-detail | 使用共享经营明细表头和示例数据生成模板。 |
-| profit-structure | operating-detail | 使用共享经营明细表头和示例数据做利润质量诊断。 |
-| perspective-bi | operating-detail | 使用共享经营明细模板作为 BI 探索入口。 |
-| finance-ai-assistant | operating-detail | 上传经营明细后由 AI 规划图表，确定性代码计算结果。 |
-| business-analysis | budget-actual | 使用预算和实际双口径数据构建预算对比与利润桥。 |
-| margin-analysis | unit-attribution | 使用两期单车明细拆分量、结构和单车影响。 |
-| sensitivity-analysis | profit-sensitivity | 使用假设行驱动利润敏感性测算。 |
+| business-analysis | operating-detail | 使用 `数据口径` 区分实际、预算、目标或预测，并围绕同一经营明细事实表做预算对比与利润桥。 |
+| margin-analysis | operating-detail | 使用同一事实表的两个期间做单车指标归因；备注可补充归因口径或业务解释。 |
+| monthly-trend | operating-detail | 使用共享经营明细表头和示例数据生成趋势模板；通常只填 `实际` 口径。 |
+| profit-structure | operating-detail | 使用共享经营明细表头和示例数据做利润质量诊断；`备注` 保留在底稿但不进入默认维度。 |
+| perspective-bi | operating-detail | 使用共享经营明细事实表作为 BI 探索入口。 |
+| finance-ai-assistant | operating-detail | 上传经营明细后由 AI 规划图表，确定性代码计算结果；预算、目标、实际等问题通过 `数据口径` 解析。 |
+| sensitivity-analysis | profit-sensitivity-assumptions | 使用假设行驱动利润敏感性测算。 |
+
+## 示例数据
+
+`createOperatingDetailSampleRows()` 生成所有 operating-detail 模型共用的经营明细示例数据。默认示例只填 `数据口径 = 实际`，以免趋势、BI 和利润质量页面默认展示被预算行重复放大；预算实际或 AI 场景可以在上传数据中加入 `预算`、`目标` 或 `预测` 行。
 
 ## 维护规则
 
 - 改经营明细通用表头、示例数据、模板说明时，先改 `src/lib/finance/templates.js`。
 - 改模板族和模型映射时，同时更新本文档、`docs/finance-model-inventory.md` 和相关合同测试。
-- 模板字段应保持业务可读：月份、维度、销量、净收入、成本、边际等，不暴露内部实现键名。
+- 除敏感性分析之外，新财务模型默认先尝试复用 `operating-detail`；只有输入形态无法表达为经营明细事实表时，再新增模板族。
+- 模板字段应保持业务可读：月份、数据口径、维度、备注、销量、净收入、成本、边际等，不暴露内部实现键名。

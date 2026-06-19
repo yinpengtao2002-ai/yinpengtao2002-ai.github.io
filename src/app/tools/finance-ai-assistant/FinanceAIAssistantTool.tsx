@@ -10,6 +10,7 @@ import rehypeKatex from "rehype-katex";
 import * as XLSX from "xlsx";
 import "katex/dist/katex.min.css";
 import { buildChartSpec, buildDirectChartSpec } from "@/lib/finance/charts";
+import financeTemplates from "@/lib/finance/templates.js";
 import { resolveFinanceActionFilterMembers } from "@/lib/finance-ai/filter-resolution";
 import {
   FINANCE_SCENARIO_COLUMN,
@@ -109,25 +110,17 @@ type PlotlyModule = {
 
 const ASSISTANT_AVATAR_IMAGE = "/images/product-stage/finance-ai-assistant-avatar.webp";
 const FINANCE_AI_QUESTION_INPUT_MAX_HEIGHT = 128;
-const SAMPLE_TEMPLATE_HEADERS = ["Month", "Dim_A", "Dim_B", "Dim_C", "Dim_D", "Dim_E", "Sales Volume", "Total Margin"];
-const ACTUAL_SAMPLE_TEMPLATE_ROWS = [
-  { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 100000, "Total Margin": 3000000 },
-  { "Month": "4月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 123456, "Total Margin": 3703680 },
-  { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "墨西哥", "Dim_C": "T1E", "Dim_D": "EV", "Dim_E": "墨西哥-T1E", "Sales Volume": 80000, "Total Margin": 1800000 },
-  { "Month": "4月", "Dim_A": "拉美大区", "Dim_B": "墨西哥", "Dim_C": "T1E", "Dim_D": "EV", "Dim_E": "墨西哥-T1E", "Sales Volume": 72000, "Total Margin": 1650000 },
-];
-const BUDGET_SAMPLE_TEMPLATE_ROWS = [
-  { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 105000, "Total Margin": 3200000 },
-  { "Month": "4月", "Dim_A": "拉美大区", "Dim_B": "巴西", "Dim_C": "T1D", "Dim_D": "ICE", "Dim_E": "巴西-T1D", "Sales Volume": 130000, "Total Margin": 4200000 },
-  { "Month": "3月", "Dim_A": "拉美大区", "Dim_B": "墨西哥", "Dim_C": "T1E", "Dim_D": "EV", "Dim_E": "墨西哥-T1E", "Sales Volume": 78000, "Total Margin": 1850000 },
-  { "Month": "4月", "Dim_A": "拉美大区", "Dim_B": "墨西哥", "Dim_C": "T1E", "Dim_D": "EV", "Dim_E": "墨西哥-T1E", "Sales Volume": 85000, "Total Margin": 2100000 },
-];
+const { OPERATING_DETAIL_HEADERS, getBudgetOperatingDetailTemplateRows } = financeTemplates;
+const SAMPLE_TEMPLATE_HEADERS = OPERATING_DETAIL_HEADERS;
+const SAMPLE_TEMPLATE_ROWS = getBudgetOperatingDetailTemplateRows(24);
+const ACTUAL_SAMPLE_TEMPLATE_ROWS = SAMPLE_TEMPLATE_ROWS.filter((row) => row["数据口径"] === "实际");
+const BUDGET_SAMPLE_TEMPLATE_ROWS = SAMPLE_TEMPLATE_ROWS.filter((row) => row["数据口径"] === "预算");
 const SAMPLE_TEMPLATE_README_ROWS = [
   ["项目", "说明"],
-  ["推荐格式", "将实际和预算分别放在名为“实际”“预算”的工作表中；也可以使用 Actual、Budget 等英文 sheet 名。"],
-  ["月份", "Month/月份列只填写纯月份，例如 3月、4月、2026-04；不要写 4月实际、5月预算。"],
-  ["维度", "Dim_A 至 Dim_E 可替换为大区、国家、车型、渠道、业务单元等真实维度名称。"],
-  ["指标", "Sales Volume 是销量列；Total Margin、净收入、成本、利润等总额指标可以继续向右新增。"],
+  ["推荐格式", "实际和预算可以分别放在名为“实际”“预算”的工作表中，也可以放在同一张表里用“数据口径”区分。"],
+  ["月份", "月份列只填写纯月份，例如 2026-04；不要写 4月实际、5月预算。"],
+  ["维度", "大区、国家、品牌、品牌市场、经营模式、业务单元、车型、燃油品类都可以替换为真实业务维度。"],
+  ["指标", "销量是体量分母；净收入、成本、边际、利润等总额指标可以继续向右新增。"],
   ["口径识别", "上传后页面会根据 sheet 名自动生成“数据口径”维度，AI 可用它区分实际、预算、目标或预测。"],
 ];
 

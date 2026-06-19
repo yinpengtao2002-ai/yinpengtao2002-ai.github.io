@@ -8,11 +8,18 @@ import {
     resolveAppliedFilterValues,
     searchFilterOptions
 } from "@/lib/finance/filters";
+import {
+    OPERATING_DETAIL_HEADERS,
+    buildMonthKeys,
+    createBudgetOperatingDetailRows,
+    createOperatingDetailSampleRows,
+    getBudgetOperatingDetailTemplateRows
+} from "../../../lib/finance/templates.js";
 
 (function () {
-    const DEFAULT_DIMENSIONS = ["大区", "国家", "品牌市场", "经营模式", "业务单元", "车型"];
+    const DEFAULT_DIMENSIONS = ["大区", "国家", "品牌", "品牌市场", "经营模式", "业务单元", "车型", "燃油品类"];
     const RESERVED_LONG_TABLE_COLUMNS = [
-        "年度", "year", "Year",
+        "月份", "年月", "期间", "日期", "年度", "year", "Year",
         "数据口径", "口径", "版本", "scenario", "Scenario",
         "数据类型", "类型", "dataType",
         "科目", "项目", "指标", "subject", "lineItem",
@@ -74,18 +81,9 @@ import {
         return map;
     }, {});
 
-    const TEMPLATE_HEADERS = [
-        "科目",
-        "大区",
-        "国家",
-        "品牌市场",
-        "经营模式",
-        "业务单元",
-        "车型",
-        "金额",
-        "单位",
-        "说明"
-    ];
+    const TEMPLATE_HEADERS = OPERATING_DETAIL_HEADERS;
+    const WIDE_VOLUME_ALIASES = ["发车量", "发车", "销量", "销售量", "Sales Volume", "volume"];
+    const WIDE_NON_DIMENSION_COLUMNS = ["月份", "年月", "期间", "日期", "数据口径", "口径", "版本", "scenario", "Scenario", "备注", "说明", "单位", "unit"];
     const MANUAL_SUBJECT_FIELDS = ["subject", "actual", "budget"];
 
     const state = {
@@ -238,6 +236,29 @@ import {
 
     function reservedColumnSet() {
         return new Set(RESERVED_LONG_TABLE_COLUMNS.map(normalizeToken));
+    }
+
+    function aliasSet(values) {
+        return new Set(values.map(normalizeToken));
+    }
+
+    function collectHeaders(rows) {
+        const seen = new Set();
+        const headers = [];
+        safeArray(rows).forEach((row) => {
+            Object.keys(row || {}).forEach((column) => {
+                const header = String(column || "").trim();
+                if (!header || seen.has(header)) return;
+                seen.add(header);
+                headers.push(header);
+            });
+        });
+        return headers;
+    }
+
+    function findHeaderByAliases(headers, aliases) {
+        const aliasesNormalized = aliasSet(aliases);
+        return safeArray(headers).find((header) => aliasesNormalized.has(normalizeToken(header))) || "";
     }
 
     function groupBy(rows, keyFn) {
@@ -775,11 +796,6 @@ import {
         });
     }
 
-    function dimensionValue(row, aliases, fallback) {
-        const value = pick(row, aliases);
-        return String(value || fallback);
-    }
-
     function inferDimensionColumns(rows) {
         const reserved = reservedColumnSet();
         const columns = [];
@@ -854,6 +870,36 @@ import {
         return "";
     }
 
+    function inferWideDimensionColumns(rows) {
+        const headers = collectHeaders(rows);
+        const salesColumn = findHeaderByAliases(headers, WIDE_VOLUME_ALIASES);
+        const salesIndex = salesColumn ? headers.indexOf(salesColumn) : -1;
+        const nonDimensionColumns = aliasSet(WIDE_NON_DIMENSION_COLUMNS);
+        const candidates = (salesIndex >= 0 ? headers.slice(0, salesIndex) : headers)
+            .filter((header) => header && !nonDimensionColumns.has(normalizeToken(header)));
+        return orderedDimensions(candidates.length ? candidates : DEFAULT_DIMENSIONS);
+    }
+
+    function operatingDetailScenarioKey(row, dimensionColumns) {
+        const period = pick(row, ["月份", "年月", "期间", "日期", "Month", "month", "period"]) || "";
+        const dimensionValues = dimensionColumns.map((dimension) => String(row[dimension] || "未分类"));
+        return [period, ...dimensionValues].join("||");
+    }
+
+    function mergeAssumptions(target, source) {
+        Object.entries(source || {}).forEach(([key, value]) => {
+            if (key === "fixedSubjects") {
+                Object.entries(value || {}).forEach(([subject, amount]) => {
+                    target.fixedSubjects = target.fixedSubjects || {};
+                    target.fixedSubjects[subject] = Number(target.fixedSubjects[subject] || 0) + Number(amount || 0);
+                });
+                return;
+            }
+            target[key] = Number(target[key] || 0) + Number(value || 0);
+        });
+        return target;
+    }
+
     function valuesFromLongRow(row) {
         const actualValue = pick(row, ["实际", "实际值", "实际数据", "actual", "Actual"]);
         const budgetValue = pick(row, ["预算", "预算值", "budget", "Budget"]);
@@ -908,24 +954,16 @@ import {
 
     function parseWideRows(rows) {
         const parsed = [];
+        const normalizedRows = safeArray(rows).map(normalizeRowKeys);
+        const dimensionColumns = inferWideDimensionColumns(normalizedRows);
 
-        safeArray(rows).forEach((sourceRow) => {
-            const row = normalizeRowKeys(sourceRow);
+        normalizedRows.forEach((row) => {
             const actualAssumptions = applyAggregateFallback(row, buildAssumptions(row), "");
             const budgetAssumptions = applyAggregateFallback(row, buildAssumptions(row, "预算"), "预算");
             if (!hasMeaningfulAssumptions(actualAssumptions) && !hasMeaningfulAssumptions(budgetAssumptions)) return;
 
             const isDetail = hasOperatingAssumptions(actualAssumptions) || hasOperatingAssumptions(budgetAssumptions);
-            const dimensions = isDetail
-                ? {
-                    "大区": dimensionValue(row, ["大区", "区域", "region", "Region"], "未分类"),
-                    "国家": dimensionValue(row, ["国家", "市场国家", "国家品牌", "country", "Country"], "未分类"),
-                    "品牌市场": dimensionValue(row, ["品牌市场", "品牌", "品牌类型", "市场品牌", "brandMarket", "Brand Market", "brand", "Brand"], "未分类"),
-                    "经营模式": dimensionValue(row, ["经营模式", "渠道", "channel", "Channel"], "未分类"),
-                    "业务单元": dimensionValue(row, ["业务单元", "事业部", "BU", "businessUnit"], "未分类"),
-                    "车型": dimensionValue(row, ["车型", "model", "Model"], "未分类")
-                }
-                : {};
+            const dimensions = isDetail ? dimensionsFromRow(row, dimensionColumns, "未分类") : {};
 
             parsed.push(assignDimensions({
                 actual: computePnl(actualAssumptions),
@@ -936,88 +974,60 @@ import {
         return parsed.sort((a, b) => Object.values(a.dimensions || {}).join("").localeCompare(Object.values(b.dimensions || {}).join(""), "zh-CN"));
     }
 
+    function hasOperatingDetailScenarioRows(rows) {
+        return safeArray(rows).some((sourceRow) => {
+            const row = normalizeRowKeys(sourceRow);
+            return Boolean(scenarioFromRow(row)) && !subjectDefinition(row);
+        });
+    }
+
+    function parseOperatingDetailScenarioRows(rows) {
+        const normalizedRows = safeArray(rows).map(normalizeRowKeys);
+        const dimensionColumns = inferWideDimensionColumns(normalizedRows);
+        const groups = new Map();
+
+        normalizedRows.forEach((row) => {
+            const scenario = scenarioFromRow(row);
+            if (!scenario) return;
+
+            const assumptions = applyAggregateFallback(row, buildAssumptions(row), "");
+            if (!hasMeaningfulAssumptions(assumptions)) return;
+
+            const dimensions = dimensionsFromRow(row, dimensionColumns, "未分类");
+            const key = operatingDetailScenarioKey(row, dimensionColumns);
+            if (!groups.has(key)) {
+                groups.set(key, {
+                    dimensions,
+                    actualAssumptions: { fixedSubjects: {} },
+                    budgetAssumptions: { fixedSubjects: {} }
+                });
+            }
+
+            const group = groups.get(key);
+            mergeAssumptions(scenario === "budget" ? group.budgetAssumptions : group.actualAssumptions, assumptions);
+        });
+
+        return Array.from(groups.values())
+            .filter((group) => hasMeaningfulAssumptions(group.actualAssumptions) || hasMeaningfulAssumptions(group.budgetAssumptions))
+            .map((group) => assignDimensions({
+                actual: computePnl(applyAggregateAssumptions(group.actualAssumptions)),
+                budget: computePnl(applyAggregateAssumptions(group.budgetAssumptions))
+            }, group.dimensions))
+            .sort((a, b) => Object.values(a.dimensions || {}).join("").localeCompare(Object.values(b.dimensions || {}).join(""), "zh-CN"));
+    }
+
     function parseRows(rows) {
-        const parsed = hasLongFormat(rows) ? parseLongRows(rows, inferDimensionColumns(rows.map(normalizeRowKeys))) : parseWideRows(rows);
+        const parsed = hasLongFormat(rows)
+            ? parseLongRows(rows, inferDimensionColumns(rows.map(normalizeRowKeys)))
+            : hasOperatingDetailScenarioRows(rows)
+                ? parseOperatingDetailScenarioRows(rows)
+                : parseWideRows(rows);
         parsed.availableDimensions = inferAvailableDimensions(parsed);
         return parsed;
     }
 
     function buildSampleData() {
-        const templates = [
-            { region: "欧洲", mode: "经销", country: "德国", brandMarket: "主品牌", businessUnit: "燃油乘用车", model: "T1D", volume: 0.68, unitRevenue: 12.6, material: 7.45, manufacturing: 0.72, sales: 0.55, fixed: 0.29, growth: 0.018, volumeFactor: 1.08, revenueFactor: 1.03, costFactor: 0.98, fixedFactor: 0.90 },
-            { region: "欧洲", mode: "经销", country: "英国", brandMarket: "高端品牌", businessUnit: "燃油乘用车", model: "T1E", volume: 0.56, unitRevenue: 12.1, material: 7.4, manufacturing: 0.78, sales: 0.58, fixed: 0.24, growth: 0.016, volumeFactor: 0.86, revenueFactor: 0.96, costFactor: 1.07, fixedFactor: 0.97 },
-            { region: "拉美", mode: "批售", country: "巴西", brandMarket: "主品牌", businessUnit: "燃油乘用车", model: "T1D", volume: 0.76, unitRevenue: 10.8, material: 6.85, manufacturing: 0.66, sales: 0.50, fixed: 0.22, growth: 0.021, volumeFactor: 1.04, revenueFactor: 1.01, costFactor: 1.02, fixedFactor: 0.95 },
-            { region: "拉美", mode: "经销", country: "墨西哥", brandMarket: "新能源品牌", businessUnit: "插混业务", model: "PHEV", volume: 0.52, unitRevenue: 13.2, material: 7.9, manufacturing: 0.82, sales: 0.63, fixed: 0.23, growth: 0.019, volumeFactor: 0.74, revenueFactor: 0.93, costFactor: 1.13, fixedFactor: 1.00 },
-            { region: "中东非", mode: "直营", country: "阿联酋", brandMarket: "高端品牌", businessUnit: "SUV 业务", model: "SUV", volume: 0.43, unitRevenue: 14.5, material: 8.15, manufacturing: 0.86, sales: 0.72, fixed: 0.26, growth: 0.024, volumeFactor: 0.97, revenueFactor: 1.04, costFactor: 1.00, fixedFactor: 0.97 },
-            { region: "中东非", mode: "经销", country: "南非", brandMarket: "经济型品牌", businessUnit: "燃油乘用车", model: "T1E", volume: 0.47, unitRevenue: 9.9, material: 6.55, manufacturing: 0.72, sales: 0.54, fixed: 0.18, growth: 0.014, volumeFactor: 0.78, revenueFactor: 0.91, costFactor: 1.10, fixedFactor: 0.98 },
-            { region: "亚太", mode: "直营", country: "澳大利亚", brandMarket: "SUV 品牌", businessUnit: "SUV 业务", model: "SUV", volume: 0.39, unitRevenue: 13.8, material: 8.05, manufacturing: 0.81, sales: 0.63, fixed: 0.21, growth: 0.017, volumeFactor: 1.14, revenueFactor: 1.05, costFactor: 0.96, fixedFactor: 0.90 },
-            { region: "亚太", mode: "经销", country: "泰国", brandMarket: "新能源品牌", businessUnit: "纯电业务", model: "EV", volume: 0.61, unitRevenue: 11.4, material: 7.15, manufacturing: 0.70, sales: 0.56, fixed: 0.20, growth: 0.026, volumeFactor: 0.82, revenueFactor: 0.95, costFactor: 1.12, fixedFactor: 1.00 }
-        ];
-
-        const rows = [];
-        const actualFixedSubjects = {};
-        const budgetFixedSubjects = {};
-
-        templates.forEach((tpl, index) => {
-            const actualGrowth = 1 + tpl.growth;
-            const budgetGrowth = 1 + tpl.growth * 1.05;
-            const mixPulse = 1 + ((index % 3) - 1) * 0.015;
-            const salesVolume = tpl.volume * actualGrowth * mixPulse * tpl.volumeFactor;
-            const budgetSalesVolume = tpl.volume * budgetGrowth * 1.02;
-            const actualUnitRevenue = tpl.unitRevenue * (1.018 + (index % 2 ? -0.006 : 0.004)) * tpl.revenueFactor;
-            const budgetUnitRevenue = tpl.unitRevenue * 1.016 * 1.015;
-            const actualMaterial = tpl.material * 1.012 * tpl.costFactor;
-            const budgetMaterial = tpl.material * 1.010 * 0.99;
-            const actualManufacturing = tpl.manufacturing * 1.011 * tpl.costFactor;
-            const budgetManufacturing = tpl.manufacturing * 1.007;
-            const actualSales = tpl.sales * (1.010 + (index % 2 ? 0.01 : 0)) * tpl.costFactor;
-            const budgetSales = tpl.sales * 1.007;
-            const actualFixed = tpl.fixed * 1.03 * tpl.fixedFactor;
-            const budgetFixed = tpl.fixed * 1.025;
-            [
-                ["国际固定费用", 0.58],
-                ["折旧加摊销", 0.27],
-                ["技术开发费", 0.15]
-            ].forEach(([subject, weight]) => {
-                actualFixedSubjects[subject] = Number(actualFixedSubjects[subject] || 0) + actualFixed * weight;
-                budgetFixedSubjects[subject] = Number(budgetFixedSubjects[subject] || 0) + budgetFixed * weight;
-            });
-
-            rows.push(assignDimensions({
-                actual: computePnl({
-                    salesVolume,
-                    unitNetRevenue: actualUnitRevenue,
-                    unitMaterialCost: actualMaterial,
-                    unitVariableManufacturingCost: actualManufacturing,
-                    unitVariableSalesCost: actualSales
-                }),
-                budget: computePnl({
-                    salesVolume: budgetSalesVolume,
-                    unitNetRevenue: budgetUnitRevenue,
-                    unitMaterialCost: budgetMaterial,
-                    unitVariableManufacturingCost: budgetManufacturing,
-                    unitVariableSalesCost: budgetSales
-                })
-            }, {
-                "大区": tpl.region,
-                "国家": tpl.country,
-                "品牌市场": tpl.brandMarket,
-                "经营模式": tpl.mode,
-                "业务单元": tpl.businessUnit,
-                "车型": tpl.model
-            }));
-        });
-
-        rows.push(assignDimensions({
-            actual: computePnl({
-                fixedSubjects: actualFixedSubjects
-            }),
-            budget: computePnl({
-                fixedSubjects: budgetFixedSubjects
-            })
-        }, {}));
-
-        return rows;
+        return parseRows(createBudgetOperatingDetailRows(createOperatingDetailSampleRows({ months: buildMonthKeys(2026, 1, 4) })));
     }
 
     function initSelectOptions(select, values, allLabel, selectedValue) {
@@ -2500,43 +2510,14 @@ import {
         showMessage("success", "已加载预算实际对比示例数据。");
     }
 
-    function templateAmount(actual, budget, scenario) {
-        return scenario === "actual" ? actual : budget;
-    }
-
     function buildScenarioTemplateRows(scenario = "actual") {
-        const operationRows = [
-            ["发车量", "欧洲", "德国", "主品牌", "经销", "燃油乘用车", "T1D", 0.68, 0.66, "万辆", "经营明细只放边际以上科目，科目放在行上。"],
-            ["净收入", "欧洲", "德国", "主品牌", "经销", "燃油乘用车", "T1D", 8.57, 8.32, "亿元", "如果已有总额，直接填总额。"],
-            ["材料成本", "欧洲", "德国", "主品牌", "经销", "燃油乘用车", "T1D", 5.07, 4.88, "亿元", ""],
-            ["变动制造费用", "欧洲", "德国", "主品牌", "经销", "燃油乘用车", "T1D", 0.49, 0.48, "亿元", ""],
-            ["变动销售费用", "欧洲", "德国", "主品牌", "经销", "燃油乘用车", "T1D", 0.37, 0.36, "亿元", ""],
-            ["发车量", "拉美", "墨西哥", "新能源品牌", "直营", "插混业务", "PHEV", 0.31, 0.42, "万辆", "用户可少填或新增维度列，但国家和品牌市场建议分列。"],
-            ["净收入", "拉美", "墨西哥", "新能源品牌", "直营", "插混业务", "PHEV", 4.02, 5.58, "亿元", ""],
-            ["材料成本", "拉美", "墨西哥", "新能源品牌", "直营", "插混业务", "PHEV", 2.71, 3.45, "亿元", ""],
-            ["变动制造费用", "拉美", "墨西哥", "新能源品牌", "直营", "插混业务", "PHEV", 0.28, 0.32, "亿元", ""],
-            ["变动销售费用", "拉美", "墨西哥", "新能源品牌", "直营", "插混业务", "PHEV", 0.21, 0.24, "亿元", ""]
-        ];
-
-        return operationRows.map(([subject, region, country, brandMarket, mode, businessUnit, model, actual, budget, unit, note]) => ({
-            "科目": subject,
-            "大区": region,
-            "国家": country,
-            "品牌市场": brandMarket,
-            "经营模式": mode,
-            "业务单元": businessUnit,
-            "车型": model,
-            "金额": templateAmount(actual, budget, scenario),
-            "单位": unit,
-            "说明": note
-        }));
+        const rows = getBudgetOperatingDetailTemplateRows(24);
+        const scenarioLabel = scenario === "budget" ? "预算" : "实际";
+        return rows.filter((row) => row["数据口径"] === scenarioLabel);
     }
 
     function buildTemplateRows() {
-        return [
-            ...buildScenarioTemplateRows("actual").map((row) => ({ "数据口径": "实际", ...row })),
-            ...buildScenarioTemplateRows("budget").map((row) => ({ "数据口径": "预算", ...row }))
-        ];
+        return getBudgetOperatingDetailTemplateRows(24);
     }
 
     function downloadBlob(filename, content, type) {
@@ -2559,16 +2540,16 @@ import {
     function buildTemplateRules() {
         return [
             ["模块", "规则"],
-            ["模板结构", "Excel 模板拆成“实际”和“预算”两张子表；每张子表只填经营明细口径的金额/数量。CSV 模板用“数据口径”列区分实际和预算。"],
-            ["上传区", "经营明细（边际以上）：发车量、净收入、材料成本、变动制造费用、变动销售费用、边际等；需要保留可下钻维度。"],
+            ["模板结构", "使用同一张经营明细事实表；CSV 用“数据口径”列区分实际、预算、目标或预测，Excel 也保留同样表头。"],
+            ["上传区", "经营明细（边际以上）：月份、数据口径、业务维度、销量、净收入、成本、边际等；需要保留可下钻维度。"],
             ["固定科目", "固定科目不放在上传模板内，在页面左侧固定科目表格中粘贴或手工维护。"],
-            ["必填字段", "科目、金额。经营明细建议填写大区、国家、品牌市场、经营模式、业务单元、车型。"],
-            ["维度字段", "国家和品牌市场已经拆成两个字段；用户可以少填、改名或新增维度列，但不要把科目塞进维度列。"],
-            ["维度识别", "模型会把非保留字段识别为维度。保留字段包括数据口径、科目、金额、实际、预算、单位、说明。"],
+            ["必填字段", "月份、数据口径、销量。净收入、成本、边际至少保留一个可分析金额指标。"],
+            ["维度字段", "大区、国家、品牌、品牌市场、经营模式、业务单元、车型、燃油品类都是示例维度；用户可以少填、改名或新增维度列。"],
+            ["维度识别", "模型会把销量列之前的业务字段识别为维度。月份、数据口径、备注、说明等字段不会作为预算差异下钻维度。"],
             ["维度展示", "模型会默认展示并纳入下钻所有可识别维度，用户只需要在页面左侧调整维度顺序。"],
-            ["总额优先", "默认按总额填报：净收入、材料成本、变动制造费用、变动销售费用均直接填金额。"],
-            ["单车可选", "如果用户只有单车口径，可以填发车量 + 单车净收入/单车成本，模型会换算总额；默认模板不强制展示单车字段。"],
-            ["单位建议", "发车量用万辆；金额项目用亿元；可选单车项目用万元/辆。"]
+            ["总额优先", "默认按总额填报：净收入、成本、边际均直接填金额；成本等扣减项建议按负数填写。"],
+            ["单车可选", "如果用户只有单车口径，可以填销量 + 单车净收入/单车成本，模型会换算总额；默认模板不强制展示单车字段。"],
+            ["单位建议", "销量和金额单位保持同一口径即可；备注列可写业务解释或口径说明。"]
         ];
     }
 
@@ -2594,10 +2575,12 @@ import {
             ["维度列", "是否示例默认列", "建议用途", "能否改名/删除"],
             ["大区", "是", "第一层经营区域下钻。", "可以"],
             ["国家", "是", "国家/市场层级下钻。", "可以"],
+            ["品牌", "是", "品牌或品牌线层级对比。", "可以"],
             ["品牌市场", "是", "品牌、品牌层级或品牌市场定位。", "可以"],
             ["经营模式", "是", "经销、直营、批售等模式对比。", "可以"],
             ["业务单元", "是", "燃油、纯电、插混、SUV 等业务线。", "可以"],
             ["车型", "是", "车型/平台级分析。", "可以"],
+            ["燃油品类", "是", "燃油、插混、纯电等能源结构对比。", "可以"],
             ["自定义维度", "否", "可新增如销售公司、订单类型、动力类型、价格带、客户类型、项目阶段等。", "可以新增任意列"]
         ];
     }
@@ -2609,7 +2592,7 @@ import {
 
     function downloadCsvTemplate() {
         const rows = buildTemplateRows();
-        const headers = ["数据口径", ...TEMPLATE_HEADERS];
+        const headers = TEMPLATE_HEADERS;
         const csv = [
             headers.map(csvCell).join(","),
             ...rows.map((row) => headers.map((header) => csvCell(row[header])).join(","))
@@ -2625,11 +2608,11 @@ import {
         const workbook = XLSX.utils.book_new();
         const actualSheet = setWorksheetWidths(
             XLSX.utils.json_to_sheet(buildScenarioTemplateRows("actual"), { header: TEMPLATE_HEADERS }),
-            [18, 12, 12, 14, 12, 14, 12, 12, 10, 44]
+            TEMPLATE_HEADERS.map((header) => Math.max(12, String(header).length + 8))
         );
         const budgetSheet = setWorksheetWidths(
             XLSX.utils.json_to_sheet(buildScenarioTemplateRows("budget"), { header: TEMPLATE_HEADERS }),
-            [18, 12, 12, 14, 12, 14, 12, 12, 10, 44]
+            TEMPLATE_HEADERS.map((header) => Math.max(12, String(header).length + 8))
         );
         XLSX.utils.book_append_sheet(workbook, actualSheet, "实际");
         XLSX.utils.book_append_sheet(workbook, budgetSheet, "预算");

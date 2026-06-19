@@ -1,5 +1,6 @@
 const OPERATING_DETAIL_HEADERS = [
   "月份",
+  "数据口径",
   "大区",
   "国家",
   "品牌",
@@ -8,6 +9,7 @@ const OPERATING_DETAIL_HEADERS = [
   "业务单元",
   "车型",
   "燃油品类",
+  "备注",
   "销量",
   "净收入",
   "成本",
@@ -15,32 +17,18 @@ const OPERATING_DETAIL_HEADERS = [
 ];
 
 const OPERATING_DETAIL_TEMPLATE_NOTE =
-  "可直接修改标题行；请保留“月份”和“销量”。销量列之前会按表头自动识别为维度，可新增、删除或改名；销量列之后的数值列会识别为上传指标。模板提供净收入、成本、边际作为示例，也可以替换成任意质量指标。成本等扣减项建议按负数填写。";
+  "可直接修改标题行；请保留“月份”和“销量”。“数据口径”用于区分实际、预算、目标或预测；只做趋势或质量诊断时填“实际”即可。“备注”用于记录业务解释，不参与默认下钻。销量列之前的业务字段会按表头自动识别为维度，可新增、删除或改名；销量列之后的数值列会识别为上传指标。模板提供净收入、成本、边际作为示例，也可以替换成任意质量指标。成本等扣减项建议按负数填写。";
 
 const FINANCE_TEMPLATE_FAMILIES = [
   {
     slug: "operating-detail",
-    title: "经营明细通用模板",
-    description: "月份 + 业务维度 + 销量 + 财务指标，适合连续趋势、利润质量诊断、BI 探索和 AI 会话分析。",
-    modelSlugs: ["monthly-trend", "profit-structure", "perspective-bi", "finance-ai-assistant"],
+    title: "经营明细事实表",
+    description: "月份 + 数据口径 + 业务维度 + 销量 + 财务指标，适合预算实际、单车归因、连续趋势、利润质量诊断、BI 探索和 AI 会话分析。",
+    modelSlugs: ["business-analysis", "margin-analysis", "monthly-trend", "profit-structure", "perspective-bi", "finance-ai-assistant"],
     defaultSample: "shared-operating-detail",
   },
   {
-    slug: "budget-actual",
-    title: "预算实际双口径模板",
-    description: "实际/预算经营明细 + 边际以下固定科目，服务预算实际对比和利润桥。",
-    modelSlugs: ["business-analysis"],
-    defaultSample: "budget-actual-demo",
-  },
-  {
-    slug: "unit-attribution",
-    title: "两期单车归因模板",
-    description: "两期经营明细按销量权重拆结构效应和费率效应，服务单车指标变动归因。",
-    modelSlugs: ["margin-analysis"],
-    defaultSample: "unit-attribution-demo",
-  },
-  {
-    slug: "profit-sensitivity",
+    slug: "profit-sensitivity-assumptions",
     title: "利润敏感性假设模板",
     description: "以科目假设行表达销量、收入、成本、固定扣减和利润贡献，用于情景推演。",
     modelSlugs: ["sensitivity-analysis"],
@@ -107,6 +95,23 @@ function round(value, digits = 3) {
   return Math.round(value * factor) / factor;
 }
 
+function createBudgetOperatingDetailRow(row, index = 0) {
+  const volumeFactor = 0.94 + (index % 5) * 0.018;
+  const revenueFactor = 0.96 + (index % 4) * 0.016;
+  const costFactor = 0.95 + (index % 3) * 0.022;
+  const revenue = round(Number(row["净收入"] || 0) * revenueFactor);
+  const cost = round(Number(row["成本"] || 0) * costFactor);
+  return {
+    ...row,
+    "数据口径": "预算",
+    "备注": "预算口径，可替换为目标或预测",
+    "销量": round(Number(row["销量"] || 0) * volumeFactor),
+    "净收入": revenue,
+    "成本": cost,
+    "边际": round(revenue + cost),
+  };
+}
+
 function buildMonthKeys(startYear, startMonth, count) {
   return Array.from({ length: count }, (_, index) => {
     const monthIndex = startMonth - 1 + index;
@@ -138,6 +143,7 @@ function createOperatingDetailSampleRows(options = {}) {
 
           rows.push({
             "月份": month,
+            "数据口径": "实际",
             "大区": region,
             "国家": country,
             "品牌": brandConfig.brand,
@@ -146,6 +152,7 @@ function createOperatingDetailSampleRows(options = {}) {
             "业务单元": brandConfig.unit,
             "车型": model,
             "燃油品类": fuel,
+            "备注": "",
             "销量": volume,
             "净收入": revenue,
             "成本": cost,
@@ -159,8 +166,23 @@ function createOperatingDetailSampleRows(options = {}) {
   return rows;
 }
 
+function createBudgetOperatingDetailRows(actualRows = []) {
+  return actualRows.flatMap((row, index) => {
+    const actual = {
+      ...row,
+      "数据口径": "实际",
+      "备注": row["备注"] || "",
+    };
+    return [actual, createBudgetOperatingDetailRow(actual, index)];
+  });
+}
+
 function getOperatingDetailTemplateRows(limit = 24) {
   return createOperatingDetailSampleRows().slice(0, limit);
+}
+
+function getBudgetOperatingDetailTemplateRows(limit = 24) {
+  return createBudgetOperatingDetailRows(getOperatingDetailTemplateRows(limit));
 }
 
 function getFinanceTemplateFamilies() {
@@ -184,8 +206,10 @@ module.exports = {
   OPERATING_DETAIL_HEADERS,
   OPERATING_DETAIL_TEMPLATE_NOTE,
   buildMonthKeys,
+  createBudgetOperatingDetailRows,
   createOperatingDetailSampleRows,
   getFinanceTemplateFamilies,
   getFinanceTemplateFamilyForModel,
+  getBudgetOperatingDetailTemplateRows,
   getOperatingDetailTemplateRows,
 };

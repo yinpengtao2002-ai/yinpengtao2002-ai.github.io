@@ -38,8 +38,28 @@ test("profit structure model is registered as a profit quality diagnostic model"
 test("template keeps the shared month-dimension-volume-metric shape", () => {
   assert.deepEqual(
     TEMPLATE_HEADERS,
-    ["月份", "大区", "国家", "品牌", "品牌市场", "经营模式", "业务单元", "车型", "燃油品类", "销量", "净收入", "成本", "边际"]
+    ["月份", "数据口径", "大区", "国家", "品牌", "品牌市场", "经营模式", "业务单元", "车型", "燃油品类", "备注", "销量", "净收入", "成本", "边际"]
   );
+});
+
+test("profit structure keeps scenario as a selectable dimension and ignores remark metadata", () => {
+  const { rows, schema } = normalizeUploadedRows([
+    {
+      月份: "2026-01",
+      数据口径: "实际",
+      大区: "欧洲",
+      国家: "德国",
+      备注: "只填实际，用于趋势和利润质量诊断",
+      销量: 100,
+      净收入: 1000,
+      边际: 300,
+    },
+  ]);
+
+  assert.deepEqual(schema.dimensions, ["数据口径", "大区", "国家"]);
+  assert.ok(!schema.dimensions.includes("备注"));
+  assert.equal(rows[0].dimensionValues.数据口径, "实际");
+  assert.equal(rows[0].raw.备注, "只填实际，用于趋势和利润质量诊断");
 });
 
 test("sample data keeps countries in one region while brands cross most countries", () => {

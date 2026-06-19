@@ -13,6 +13,7 @@ const VOLUME_ALIASES = ["销量", "销售量", "发车量", "台数", "数量", 
 const REVENUE_ALIASES = ["净收入", "营业收入", "收入", "净收入总额", "收入总额", "revenue", "netrevenue", "sales", "gmv"];
 const PRIMARY_VALUE_ALIASES = ["边际", "边际总额", "贡献边际", "毛利", "毛利额", "利润贡献", "利润", "margin", "grossmargin", "contributionmargin", "profit"];
 const DEFAULT_DIMENSION_PATH_CANDIDATES = ["大区", "国家", "品牌", "车型", "燃油品类"];
+const NON_ANALYSIS_DIMENSION_COLUMNS = ["备注", "说明", "单位", "版本", "数据类型", "类型", "note", "notes", "remark", "remarks", "comment", "comments"];
 const DIMENSION_SELECT_IDS = [
     "profit-structure-primary-dimension",
     "profit-structure-secondary-dimension",
@@ -126,9 +127,10 @@ function normalizeUploadedRows(inputRows = []) {
     const monthColumn = findHeader(sourceHeaders, MONTH_ALIASES);
     const volumeColumn = findHeader(sourceHeaders, VOLUME_ALIASES);
     const volumeIndex = volumeColumn ? sourceHeaders.indexOf(volumeColumn) : -1;
+    const nonAnalysisDimensionSet = addAliasSet(NON_ANALYSIS_DIMENSION_COLUMNS);
     const dimensions = sourceHeaders
         .slice(0, volumeIndex >= 0 ? volumeIndex : sourceHeaders.length)
-        .filter((header) => header && header !== monthColumn);
+        .filter((header) => header && header !== monthColumn && !nonAnalysisDimensionSet.has(normalizeToken(header)));
     const metricColumns = volumeIndex >= 0
         ? sourceHeaders.slice(volumeIndex + 1).filter((header) => header && header !== monthColumn)
         : [];

@@ -61,7 +61,7 @@ Finance tools are first-class site pages under `/finance`. Each model should hav
 
 每次触碰财务交互中枢、筛选器、级联筛选、维度下钻、明细表列筛选或上传后的字段治理，都要先查看 `docs/finance-interaction-system.md` 的模型依赖地图。不要在单个模型里重新手写筛选状态逻辑；优先复用 `src/lib/finance/filters/`。
 
-每次触碰财务上传模板、模板按钮、示例数据、默认加载数据或上传说明，都要先查看 `docs/finance-template-system.md` 的模型依赖地图。同一模板族优先共享 `src/lib/finance/templates.js`；不同业务输入形态不要为了视觉一致强行合并。
+每次触碰财务上传模板、模板按钮、示例数据、默认加载数据或上传说明，都要先查看 `docs/finance-template-system.md` 的模型依赖地图。同一模板族优先共享 `src/lib/finance/templates.js`；除敏感性分析之外，新财务模型默认先判断能否落在 `operating-detail` 经营明细事实表。
 
 Current models:
 
@@ -122,7 +122,7 @@ Current models:
 - Prefer the FBP chain: sales volume -> net revenue -> contribution margin -> fixed deductions -> profit total. Add non-P&L modules only when the model explicitly asks for them.
 - Treat the finance chart system as the shared source of truth for reusable chart specs, Plotly theme/config, PVM attribution, and FBP bridge logic. Local per-model chart code should move toward this center instead of growing new one-off implementations.
 - Treat the finance interaction system as the shared source of truth for reusable filter state, cascading filter pruning, drill paths, and detail-table filters. Model-local UI shells can remain, but state logic should move toward `src/lib/finance/filters/`.
-- Treat the finance template system as the shared source of truth for upload templates and demo data. `monthly-trend`, `profit-structure`, `perspective-bi`, and the finance AI assistant belong to the operating-detail family; budget actual, unit attribution, and sensitivity remain separate template families.
+- Treat the finance template system as the shared source of truth for upload templates and demo data. 除敏感性分析之外，`business-analysis`, `margin-analysis`, `monthly-trend`, `profit-structure`, `perspective-bi`, and the finance AI assistant belong to the `operating-detail` family; sensitivity uses `profit-sensitivity-assumptions`.
 - Keep dimensions business-readable: region, country, model/product, channel, customer/store where relevant.
 - Use upload, template download, demo data, filters, KPI cards, tables, and charts as real controls, not decorative controls.
 - Use a left control console plus a scrollable analysis workspace for full-screen tools.
