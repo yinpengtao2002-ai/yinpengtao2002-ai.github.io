@@ -1,9 +1,9 @@
-const {
+import {
     OPERATING_DETAIL_HEADERS,
     OPERATING_DETAIL_TEMPLATE_NOTE,
     createOperatingDetailSampleRows,
     getOperatingDetailTemplateRows
-} = require("../../../lib/finance/templates.js");
+} from "../../../lib/finance/templates.js";
 
 const TEMPLATE_HEADERS = OPERATING_DETAIL_HEADERS;
 const TEMPLATE_HEADER_NOTE = OPERATING_DETAIL_TEMPLATE_NOTE;
@@ -1090,7 +1090,7 @@ if (typeof window !== "undefined") {
     window.ProfitStructureModel = { initApp };
 }
 
-module.exports = {
+const profitStructureModelApi = {
     TEMPLATE_HEADERS,
     TEMPLATE_HEADER_NOTE,
     normalizeUploadedRows,
@@ -1106,3 +1106,5 @@ module.exports = {
     createSampleRows,
     initApp
 };
+
+export default profitStructureModelApi;

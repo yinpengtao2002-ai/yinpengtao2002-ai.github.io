@@ -1,9 +1,9 @@
-const {
+import {
     OPERATING_DETAIL_HEADERS,
     OPERATING_DETAIL_TEMPLATE_NOTE,
     createOperatingDetailSampleRows,
     getOperatingDetailTemplateRows
-} = require("../../../lib/finance/templates.js");
+} from "../../../lib/finance/templates.js";
 
 (function () {
     const COLORS = {

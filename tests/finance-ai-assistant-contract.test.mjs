@@ -1671,6 +1671,21 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(styles, /\.finance-ai-composer\s*\{[\s\S]*border-radius:\s*26px/s);
 });
 
+test("finance AI assistant composer accepts long multi-line questions gracefully", async () => {
+  const client = await readProjectFile("src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
+  const styles = await readProjectFile("src/app/globals.css");
+
+  assert.match(client, /function resizeFinanceAIQuestionInput\(/);
+  assert.match(client, /const questionInputRef = useRef<HTMLTextAreaElement \| null>\(null\)/);
+  assert.match(client, /<textarea[\s\S]*className="finance-ai-question-input"[\s\S]*rows=\{1\}/);
+  assert.match(client, /onKeyDown=\{\(event\) => \{[\s\S]*event\.key === "Enter" && !event\.shiftKey[\s\S]*void handleSubmit\(\)/);
+  assert.doesNotMatch(client, /<input[\s\S]*placeholder=\{workbook \? getDefaultQuestion\(schema\)/);
+  assert.match(styles, /\.finance-ai-question-input\s*\{[\s\S]*min-height:\s*26px/s);
+  assert.match(styles, /\.finance-ai-question-input\s*\{[\s\S]*max-height:\s*128px/s);
+  assert.match(styles, /\.finance-ai-question-input\s*\{[\s\S]*overflow-y:\s*auto/s);
+  assert.match(styles, /\.finance-ai-question-input\s*\{[\s\S]*resize:\s*none/s);
+});
+
 test("finance AI assistant mobile chat balances assistant avatar and user bubble gutters", async () => {
   const styles = await readProjectFile("src/app/globals.css");
 
