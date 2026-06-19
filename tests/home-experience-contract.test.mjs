@@ -234,7 +234,12 @@ test("home hero uses an interactive model stage instead of a static question gri
   assert.match(heroModelStage, /单车为什么变了/);
   assert.match(heroModelStage, /预算偏在哪里/);
   assert.match(heroModelStage, /趋势哪里异常/);
-  assert.match(heroModelStage, /哪个变量最影响利润/);
+  assert.match(heroModelStage, /让 AI 直接分析/);
+  assert.match(heroModelStage, /财务分析 AI 助手/);
+  assert.match(heroModelStage, /\/finance\/finance-ai-assistant/);
+  assert.match(heroModelStage, /finance-ai-assistant-preview\.webp/);
+  assert.doesNotMatch(heroModelStage, /哪个变量最影响利润/);
+  assert.doesNotMatch(heroModelStage, /\/finance\/sensitivity-analysis/);
   assert.doesNotMatch(heroModelStage, /校对模型口径/);
   assert.doesNotMatch(heroModelStage, /home-hero-stage-glass/);
   const mobileStageNote = mobileCssRule(".home-hero-stage-float-note");
@@ -311,11 +316,14 @@ test("home hero stages business-question controls without changing the finance s
   assert.match(heroModelStage, /单车为什么变了/);
   assert.match(heroModelStage, /预算偏在哪里/);
   assert.match(heroModelStage, /趋势哪里异常/);
-  assert.match(heroModelStage, /哪个变量最影响利润/);
+  assert.match(heroModelStage, /让 AI 直接分析/);
+  assert.match(heroModelStage, /财务分析 AI 助手/);
   assert.match(heroModelStage, /\/finance\/margin-analysis/);
   assert.match(heroModelStage, /\/finance\/business-analysis/);
   assert.match(heroModelStage, /\/finance\/monthly-trend/);
-  assert.match(heroModelStage, /\/finance\/sensitivity-analysis/);
+  assert.match(heroModelStage, /\/finance\/finance-ai-assistant/);
+  assert.doesNotMatch(heroModelStage, /哪个变量最影响利润/);
+  assert.doesNotMatch(heroModelStage, /\/finance\/sensitivity-analysis/);
   assert.match(hero, /href="\/finance"/);
   assert.doesNotMatch(hero, /href="#finance"/);
   assert.match(hero, /handleBrowseMore/);
@@ -324,6 +332,7 @@ test("home hero stages business-question controls without changing the finance s
   assert.doesNotMatch(financeSection, /预算偏在哪里/);
   assert.doesNotMatch(financeSection, /趋势哪里异常/);
   assert.doesNotMatch(financeSection, /哪个变量最影响利润/);
+  assert.doesNotMatch(financeSection, /让 AI 直接分析/);
 });
 
 test("visitor-facing copy avoids redesign-process language", () => {
