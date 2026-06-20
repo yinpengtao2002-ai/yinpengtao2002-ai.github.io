@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>凯利仓位分析｜股票分析模型</title>
+    <meta
+      name="description"
+      content="根据预期收益、预期亏损和胜率计算凯利仓位，并提供折扣凯利和胜率敏感性分析。"
+    />
+    <link
+      rel="icon"
+      href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="%23faf9f5"/><path d="M14 42h36" stroke="%23141413" stroke-width="4" stroke-linecap="round"/><path d="M18 38l10-12 8 7 12-16" fill="none" stroke="%23d97757" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    />
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [["\\(", "\\)"]],
+          displayMath: [["\\[", "\\]"]],
+          processEscapes: true,
+        },
+        chtml: {
+          linebreaks: { automatic: true },
+        },
+        options: {
+          skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"],
+        },
+      };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+    <link rel="stylesheet" href="./src/styles.css?v=202606201335" />
+  </head>
+  <body>
+    <div id="kelly-app" class="kelly-app">
+      <aside class="control-panel" aria-label="凯利仓位分析输入区">
+        <section class="panel-section">
+          <p class="panel-kicker">Stock Analysis</p>
+          <h1>凯利仓位分析</h1>
+          <div id="message-area" class="message-area" aria-live="polite"></div>
+        </section>
+
+        <section class="panel-section">
+          <h2>价格推导</h2>
+          <div class="field-grid">
+            <label class="field">
+              <span>当前价格</span>
+              <input id="current-price-input" class="input" type="number" step="0.01" min="0" value="9" />
+            </label>
+            <label class="field">
+              <span>止盈价格</span>
+              <input id="target-price-input" class="input" type="number" step="0.01" min="0" value="15" />
+            </label>
+            <label class="field">
+              <span>止损价格</span>
+              <input id="failure-price-input" class="input" type="number" step="0.01" min="0" value="6" />
+            </label>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2>胜率与折扣</h2>
+          <div class="field-grid">
+            <label class="field range-field adjustment-field">
+              <span class="range-label adjustment-head">胜率 <output id="probability-output">40.0%</output></span>
+              <input id="probability-slider" class="slider" type="range" step="0.1" min="0" max="100" value="40" />
+            </label>
+            <label class="field range-field adjustment-field">
+              <span class="range-label adjustment-head">自定义凯利折扣 <output id="custom-fraction-output">0.20x</output></span>
+              <input id="custom-fraction-slider" class="slider" type="range" step="0.01" min="0.05" max="1" value="0.2" />
+            </label>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2>敏感性参数</h2>
+          <div class="field-grid two-columns">
+            <label class="field range-field adjustment-field">
+              <span class="range-label adjustment-head">上下浮动 <output id="range-output">±15pp</output></span>
+              <input id="range-slider" class="slider" type="range" step="1" min="1" max="30" value="15" />
+            </label>
+            <label class="field range-field adjustment-field">
+              <span class="range-label adjustment-head">步长 <output id="step-output">5.0pp</output></span>
+              <input id="step-slider" class="slider" type="range" step="0.5" min="0.5" max="5" value="5" />
+            </label>
+          </div>
+        </section>
+      </aside>
+
+      <main class="analysis-workspace">
+        <header class="model-header">
+          <div>
+            <p class="eyebrow">Position Sizing</p>
+            <h2>股票分析模型 · 凯利仓位</h2>
+          </div>
+          <button id="reset-button" class="button secondary" type="button">恢复默认</button>
+        </header>
+
+        <section id="result-grid" class="result-grid" aria-live="polite"></section>
+
+        <section class="workspace-grid">
+          <article class="panel table-panel">
+            <div class="panel-heading">
+              <h2>凯利杠杆矩阵</h2>
+            </div>
+            <div class="matrix-wrap">
+              <table class="kelly-matrix">
+                <thead id="kelly-matrix-head"></thead>
+                <tbody id="kelly-matrix-body"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="panel chart-panel">
+            <div class="panel-heading">
+              <h2>胜率敏感性图</h2>
+            </div>
+            <div id="sensitivity-chart" class="chart" role="img" aria-label="胜率敏感性分析图"></div>
+            <div id="chart-tooltip" class="chart-tooltip hidden" role="status" aria-live="polite"></div>
+            <div class="chart-legend" aria-label="图例">
+              <span><i class="legend-line full"></i>全凯利</span>
+              <span><i class="legend-line half"></i>半凯利</span>
+              <span><i class="legend-line third"></i>1/3 凯利</span>
+              <span><i class="legend-line quarter"></i>1/4 凯利</span>
+            </div>
+          </article>
+        </section>
+
+        <details class="panel formula-proof">
+          <summary>
+            <span>新旧凯利公式推导</span>
+            <i aria-hidden="true"></i>
+          </summary>
+
+          <div class="formula-body">
+            <section class="formula-section">
+              <h3>旧公式：赔率版凯利</h3>
+              <p>适用场景：每次投入总资产比例 \(f\)，成功时每 1 元投注净赚 \(b\) 元，失败时这 1 元投注全部亏掉。</p>
+
+              \[
+              \begin{aligned}
+              p &amp;= \text{胜率} \\[0.45em]
+              q &amp;= 1 - p \\[0.45em]
+              b &amp;= \text{净赔率} \\[0.45em]
+              f &amp;= \text{投入总资产的比例}
+              \end{aligned}
+              \]
+
+              <p>胜利后的资产倍数为：</p>
+
+              \[
+              1 + f b
+              \]
+
+              <p>失败后的资产倍数为：</p>
+
+              \[
+              1 - f
+              \]
+
+              <p>长期增长率为：</p>
+
+              \[
+              g(f) = p \ln\left(1 + f b\right) + q \ln\left(1 - f\right)
+              \]
+
+              <p>对 \(f\) 求导：</p>
+
+              \[
+              g'(f) =
+              \frac{p b}{1 + f b}
+              -
+              \frac{q}{1 - f}
+              \]
+
+              <p>令 \(g'(f) = 0\)：</p>
+
+              \[
+              \begin{aligned}
+              \frac{p b}{1 + f b}
+              &amp;=
+              \frac{q}{1 - f} \\[0.45em]
+              p b(1 - f)
+              &amp;=
+              q(1 + f b) \\[0.45em]
+              p b - p b f
+              &amp;=
+              q + q f b \\[0.45em]
+              p b - q
+              &amp;=
+              f b(p + q)
+              \end{aligned}
+              \]
+
+              <p>因为 \(p + q = 1\)，所以：</p>
+
+              \[
+              \begin{aligned}
+              f^*
+              &amp;=
+              \frac{b p - q}{b} \\[0.45em]
+              &amp;=
+              p - \frac{q}{b}
+              \end{aligned}
+              \]
+
+              <p>因此，旧赔率版凯利公式为：</p>
+
+              \[
+              f^* = p - \frac{q}{b}
+              \]
+            </section>
+
+            <section class="formula-section">
+              <h3>新公式：收益幅度版凯利</h3>
+              <p>适用场景：股票交易中，失败通常不是归零，而是下跌到止损线。设成功收益幅度为 \(r_{\text{win}}\)，失败亏损幅度为 \(r_{\text{loss}}\)。</p>
+
+              \[
+              \begin{aligned}
+              p &amp;= \text{胜率} \\[0.45em]
+              q &amp;= 1 - p \\[0.45em]
+              r_{\text{win}} &amp;= \text{成功时收益幅度} \\[0.45em]
+              r_{\text{loss}} &amp;= \text{失败时亏损幅度} \\[0.45em]
+              f &amp;= \text{投入总资产的比例}
+              \end{aligned}
+              \]
+
+              <p>胜利后的资产倍数为：</p>
+
+              \[
+              1 + f \cdot r_{\text{win}}
+              \]
+
+              <p>失败后的资产倍数为：</p>
+
+              \[
+              1 - f \cdot r_{\text{loss}}
+              \]
+
+              <p>长期增长率为：</p>
+
+              \[
+              g(f) =
+              p \ln\left(1 + f r_{\text{win}}\right)
+              +
+              q \ln\left(1 - f r_{\text{loss}}\right)
+              \]
+
+              <p>对 \(f\) 求导：</p>
+
+              \[
+              g'(f) =
+              \frac{p r_{\text{win}}}{1 + f r_{\text{win}}}
+              -
+              \frac{q r_{\text{loss}}}{1 - f r_{\text{loss}}}
+              \]
+
+              <p>令 \(g'(f) = 0\)：</p>
+
+              \[
+              \begin{aligned}
+              \frac{p r_{\text{win}}}{1 + f r_{\text{win}}}
+              &amp;=
+              \frac{q r_{\text{loss}}}{1 - f r_{\text{loss}}} \\[0.45em]
+              p r_{\text{win}}(1 - f r_{\text{loss}})
+              &amp;=
+              q r_{\text{loss}}(1 + f r_{\text{win}}) \\[0.45em]
+              p r_{\text{win}} - p f r_{\text{win}} r_{\text{loss}}
+              &amp;=
+              q r_{\text{loss}} + q f r_{\text{win}} r_{\text{loss}} \\[0.45em]
+              p r_{\text{win}} - q r_{\text{loss}}
+              &amp;=
+              f r_{\text{win}} r_{\text{loss}}(p + q)
+              \end{aligned}
+              \]
+
+              <p>因为 \(p + q = 1\)，所以：</p>
+
+              \[
+              \begin{aligned}
+              f^*
+              &amp;=
+              \frac{p r_{\text{win}} - q r_{\text{loss}}}{r_{\text{win}} r_{\text{loss}}} \\[0.45em]
+              &amp;=
+              \frac{p}{r_{\text{loss}}} - \frac{q}{r_{\text{win}}}
+              \end{aligned}
+              \]
+
+              <p>因此，收益幅度版凯利公式为：</p>
+
+              \[
+              f^* = \frac{p}{r_{\text{loss}}} - \frac{q}{r_{\text{win}}}
+              \]
+            </section>
+
+            <section class="formula-section">
+              <h3>两个公式的关系</h3>
+              <p>旧公式是新公式在 \(r_{\text{loss}} = 1\)、\(r_{\text{win}} = b\) 时的特殊情况：</p>
+
+              \[
+              \begin{aligned}
+              f^*
+              &amp;=
+              \frac{p}{r_{\text{loss}}} - \frac{q}{r_{\text{win}}} \\[0.45em]
+              &amp;=
+              \frac{p}{1} - \frac{q}{b} \\[0.45em]
+              &amp;=
+              p - \frac{q}{b}
+              \end{aligned}
+              \]
+
+              <div class="formula-conclusion">
+                \[
+                \boxed{
+                \text{赔率下注使用 } f^* = p - \frac{q}{b}
+                }
+                \]
+
+                \[
+                \boxed{
+                \text{股票涨跌幅使用 } f^* = \frac{p}{r_{\text{loss}}} - \frac{q}{r_{\text{win}}}
+                }
+                \]
+              </div>
+            </section>
+          </div>
+        </details>
+      </main>
+    </div>
+
+    <script type="module" src="./src/kelly-module.js?v=202606201335"></script>
+  </body>
+</html>

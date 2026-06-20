@@ -74,7 +74,7 @@ export default function LucasAccessGate() {
           </main>
         }
       >
-        <LucasPrivateWorkbench />
+        <LucasPrivateWorkbench accessToken={accessToken} />
       </Suspense>
     );
   }

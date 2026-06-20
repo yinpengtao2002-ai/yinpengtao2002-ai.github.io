@@ -1,256 +1,102 @@
 "use client";
 
-import { Calculator, Gauge, ShieldCheck, TrendingUp } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
 import styles from "./Lucas.module.css";
 
-type NumericState = {
-  accountCapital: number;
-  price: number;
-  winProbability: number;
-  upside: number;
-  downside: number;
-  kellyScale: number;
-  maxPosition: number;
-  riskBudget: number;
+const FINANCE_AI_ACCESS_HEADER = "X-Finance-AI-Access";
+
+type LucasPrivateWorkbenchProps = {
+  accessToken: string;
 };
 
-const defaultState: NumericState = {
-  accountCapital: 100000,
-  price: 20,
-  winProbability: 52,
-  upside: 18,
-  downside: 8,
-  kellyScale: 0.5,
-  maxPosition: 20,
-  riskBudget: 2,
-};
+export default function LucasPrivateWorkbench({ accessToken }: LucasPrivateWorkbenchProps) {
+  const [stockDecisionHtml, setStockDecisionHtml] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
-function clampNumber(value: number, min: number, max: number) {
-  if (!Number.isFinite(value)) return min;
-  return Math.min(max, Math.max(min, value));
-}
+  useEffect(() => {
+    let cancelled = false;
 
-function formatPercent(value: number) {
-  return `${(value * 100).toFixed(1)}%`;
-}
+    async function loadStockDecisionSystem() {
+      setIsLoading(true);
+      setErrorMessage("");
 
-function formatMoney(value: number) {
-  return new Intl.NumberFormat("zh-CN", {
-    style: "currency",
-    currency: "CNY",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
+      try {
+        const response = await fetch("/api/lucas/stock-decision", {
+          method: "GET",
+          headers: {
+            [FINANCE_AI_ACCESS_HEADER]: accessToken,
+          },
+          cache: "no-store",
+        });
 
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("zh-CN", {
-    maximumFractionDigits: 0,
-  }).format(value);
-}
+        if (!response.ok) {
+          throw new Error(response.status === 401 ? "访问已过期，请刷新后重新输入访问码。" : "股票决策系统加载失败。");
+        }
 
-export default function LucasPrivateWorkbench() {
-  const [inputs, setInputs] = useState<NumericState>(defaultState);
+        const html = await response.text();
 
-  const result = useMemo(() => {
-    const capital = Math.max(0, inputs.accountCapital);
-    const price = Math.max(0.01, inputs.price);
-    const p = clampNumber(inputs.winProbability / 100, 0, 1);
-    const upside = Math.max(0.01, inputs.upside / 100);
-    const downside = Math.max(0.01, inputs.downside / 100);
-    const odds = upside / downside;
-    const rawKelly = Math.max(0, p - (1 - p) / odds);
-    const scaledKelly = rawKelly * inputs.kellyScale;
-    const maxPositionValue = capital * clampNumber(inputs.maxPosition / 100, 0, 1);
-    const kellyValue = capital * scaledKelly;
-    const riskCapValue = (capital * clampNumber(inputs.riskBudget / 100, 0, 1)) / downside;
-    const suggestedValue = Math.max(0, Math.min(kellyValue, maxPositionValue, riskCapValue));
-    const suggestedShares = Math.floor(suggestedValue / price / 100) * 100;
-    const roundedValue = suggestedShares * price;
-    const expectedReturn = p * upside - (1 - p) * downside;
+        if (!cancelled) {
+          setStockDecisionHtml(html);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setErrorMessage(error instanceof Error ? error.message : "股票决策系统加载失败。");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
 
-    return {
-      odds,
-      rawKelly,
-      scaledKelly,
-      suggestedShares,
-      roundedValue,
-      positionRatio: capital > 0 ? roundedValue / capital : 0,
-      maxLoss: roundedValue * downside,
-      expectedReturn,
-      riskReward: upside / downside,
+    void loadStockDecisionSystem();
+
+    return () => {
+      cancelled = true;
     };
-  }, [inputs]);
-
-  function updateField(field: keyof NumericState, value: number) {
-    setInputs((current) => ({ ...current, [field]: value }));
-  }
+  }, [accessToken]);
 
   return (
-    <main className={styles.page}>
-      <section className={styles.hero} aria-labelledby="lucas-title">
+    <main className={styles.framePage}>
+      <header className={styles.frameHeader}>
         <div>
           <p className={styles.eyebrow}>Lucas Lab</p>
-          <h1 id="lucas-title">股票决策与仓位分析</h1>
+          <h1>股票决策系统</h1>
         </div>
-        <div className={styles.heroBadge}>
+        <span className={styles.heroBadge}>
           <ShieldCheck aria-hidden="true" />
           <span>Private Route</span>
-        </div>
-      </section>
+        </span>
+      </header>
 
-      <section className={styles.workspace} aria-label="凯利仓位分析">
-        <aside className={styles.controlPanel}>
-          <div className={styles.panelTitle}>
-            <Calculator aria-hidden="true" />
-            <h2>凯利仓位分析</h2>
+      <section className={styles.frameShell} aria-label="股票决策系统">
+        {isLoading ? (
+          <div className={styles.frameState} aria-live="polite">
+            <Loader2 className={styles.spin} aria-hidden="true" />
+            <span>正在加载股票决策系统</span>
           </div>
+        ) : null}
 
-          <div className={styles.fieldGrid}>
-            <label className={styles.field}>
-              <span>账户资金</span>
-              <input
-                type="number"
-                min="0"
-                step="1000"
-                value={inputs.accountCapital}
-                onChange={(event) => updateField("accountCapital", Number(event.target.value))}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>买入价格</span>
-              <input
-                type="number"
-                min="0.01"
-                step="0.01"
-                value={inputs.price}
-                onChange={(event) => updateField("price", Number(event.target.value))}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>胜率</span>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                step="1"
-                value={inputs.winProbability}
-                onChange={(event) => updateField("winProbability", Number(event.target.value))}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>目标涨幅</span>
-              <input
-                type="number"
-                min="0.1"
-                step="0.5"
-                value={inputs.upside}
-                onChange={(event) => updateField("upside", Number(event.target.value))}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>止损跌幅</span>
-              <input
-                type="number"
-                min="0.1"
-                step="0.5"
-                value={inputs.downside}
-                onChange={(event) => updateField("downside", Number(event.target.value))}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>最大仓位</span>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                step="1"
-                value={inputs.maxPosition}
-                onChange={(event) => updateField("maxPosition", Number(event.target.value))}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>单笔风险</span>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                step="0.1"
-                value={inputs.riskBudget}
-                onChange={(event) => updateField("riskBudget", Number(event.target.value))}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>凯利折扣</span>
-              <select
-                value={inputs.kellyScale}
-                onChange={(event) => updateField("kellyScale", Number(event.target.value))}
-              >
-                <option value={1}>全 Kelly</option>
-                <option value={0.5}>半 Kelly</option>
-                <option value={0.25}>四分之一 Kelly</option>
-              </select>
-            </label>
+        {errorMessage ? (
+          <div className={styles.frameError} aria-live="assertive">
+            <p>{errorMessage}</p>
+            <button type="button" onClick={() => window.location.reload()}>
+              <RefreshCw aria-hidden="true" />
+              <span>重新进入</span>
+            </button>
           </div>
-        </aside>
+        ) : null}
 
-        <section className={styles.resultPanel}>
-          <div className={styles.metricGrid}>
-            <article className={styles.metricCard}>
-              <span className={styles.metricIcon}>
-                <Gauge aria-hidden="true" />
-              </span>
-              <p>建议仓位</p>
-              <strong>{formatPercent(result.positionRatio)}</strong>
-              <small>{formatMoney(result.roundedValue)}</small>
-            </article>
-            <article className={styles.metricCard}>
-              <span className={styles.metricIcon}>
-                <Calculator aria-hidden="true" />
-              </span>
-              <p>建议股数</p>
-              <strong>{formatNumber(result.suggestedShares)}</strong>
-              <small>按 100 股取整</small>
-            </article>
-            <article className={styles.metricCard}>
-              <span className={styles.metricIcon}>
-                <ShieldCheck aria-hidden="true" />
-              </span>
-              <p>最大亏损</p>
-              <strong>{formatMoney(result.maxLoss)}</strong>
-              <small>触发止损口径</small>
-            </article>
-            <article className={styles.metricCard}>
-              <span className={styles.metricIcon}>
-                <TrendingUp aria-hidden="true" />
-              </span>
-              <p>期望收益</p>
-              <strong>{formatPercent(result.expectedReturn)}</strong>
-              <small>盈亏比 {result.riskReward.toFixed(2)}</small>
-            </article>
-          </div>
-
-          <div className={styles.detailTable}>
-            <div>
-              <span>原始 Kelly</span>
-              <strong>{formatPercent(result.rawKelly)}</strong>
-            </div>
-            <div>
-              <span>折扣后 Kelly</span>
-              <strong>{formatPercent(result.scaledKelly)}</strong>
-            </div>
-            <div>
-              <span>赔率</span>
-              <strong>{result.odds.toFixed(2)}</strong>
-            </div>
-            <div>
-              <span>风险约束</span>
-              <strong>{inputs.riskBudget.toFixed(1)}%</strong>
-            </div>
-          </div>
-
-          <p className={styles.privateNote}>仅作个人测算，不构成投资建议。</p>
-        </section>
+        {stockDecisionHtml && !errorMessage ? (
+          <iframe
+            className={styles.stockFrame}
+            title="股票决策系统"
+            srcDoc={stockDecisionHtml}
+            sandbox="allow-scripts allow-same-origin"
+          />
+        ) : null}
       </section>
     </main>
   );

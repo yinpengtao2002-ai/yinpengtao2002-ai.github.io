@@ -1,5 +1,6 @@
 .gatePage,
-.page {
+.page,
+.framePage {
   min-height: 100vh;
   min-height: 100dvh;
   background:
@@ -146,6 +147,93 @@
 
 .page {
   padding: 28px;
+}
+
+.framePage {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+}
+
+.frameHeader {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.frameHeader h1 {
+  margin: 4px 0 0;
+  color: #171512;
+  font-size: clamp(1.25rem, 2vw, 1.8rem);
+  line-height: 1.1;
+}
+
+.frameShell {
+  position: relative;
+  min-height: calc(100vh - 102px);
+  min-height: calc(100dvh - 102px);
+  overflow: hidden;
+  border: 1px solid rgba(23, 21, 18, 0.1);
+  border-radius: 8px;
+  background: #faf9f5;
+  box-shadow: 0 18px 48px rgba(47, 42, 32, 0.1);
+}
+
+.stockFrame {
+  width: 100%;
+  height: calc(100vh - 102px);
+  height: calc(100dvh - 102px);
+  display: block;
+  border: 0;
+  background: #faf9f5;
+}
+
+.frameState,
+.frameError {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #faf9f5;
+  color: #4b463e;
+  font-weight: 700;
+}
+
+.frameError {
+  flex-direction: column;
+  padding: 24px;
+  text-align: center;
+}
+
+.frameError p {
+  margin: 0;
+}
+
+.frameError button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: #171512;
+  color: #fffdfa;
+  font: inherit;
+  font-weight: 700;
+  padding: 0 14px;
+  cursor: pointer;
+}
+
+.frameError button svg {
+  width: 16px;
+  height: 16px;
 }
 
 .hero {
@@ -333,8 +421,24 @@
 }
 
 @media (max-width: 640px) {
-  .page {
+  .page,
+  .framePage {
     padding: 18px;
+  }
+
+  .frameHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .frameShell {
+    min-height: calc(100vh - 134px);
+    min-height: calc(100dvh - 134px);
+  }
+
+  .stockFrame {
+    height: calc(100vh - 134px);
+    height: calc(100dvh - 134px);
   }
 
   .hero {
