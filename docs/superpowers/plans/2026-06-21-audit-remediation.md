@@ -635,3 +635,59 @@ Started `npx next start -p 3026`.
 Run: Playwright open/snapshot/click/press for `http://localhost:3026/` on desktop width, then resized to `390×844` for the mobile panel-focused edge case.
 
 Observed: opening the launcher exposed `dialog "Lucas AI"` with the desktop textbox focused; pressing Escape closed the dialog and restored focus to the launcher; pressing Tab from the textbox wrapped focus to the close button, and Shift+Tab from the close button wrapped back to the textbox. On mobile `390×844`, opening the launcher focused the dialog container, Shift+Tab wrapped to the textbox instead of escaping to the backdrop or navigation, and Escape restored focus to the AI launcher. Console error count stayed 0.
+
+### Task 14: Keep Finance Testing Ribbon Anchored on Mobile Cards
+
+**Files:**
+- Modified in commit `8e7320e`: `src/app/globals.css`
+- Modified in commit `8e7320e`: `tests/finance-model-registry.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Re-check the in-progress change**
+
+Confirmed `main` already contained commit `8e7320e Fix mobile finance testing ribbon position`, which changed the mobile `.finance-model-status-ribbon` rule from the previous left-side anchor back to a card top-right anchor.
+
+- [x] **Step 2: Confirm the regression contract**
+
+The new contract in `tests/finance-model-registry.test.mjs` parses all `@media (max-width: 768px)` CSS blocks and requires the mobile `.finance-model-status-ribbon` rule to keep `top: 8px`, `right: -26px`, `left: auto`, and `width: 92px`, while rejecting the old `left: 22px` anchor.
+
+- [x] **Step 3: Verify the old baseline would fail**
+
+Earlier local diff showed the old mobile rule used `right: auto` and `left: 22px`, which would fail the new contract. After the code commit landed in `HEAD`, `git show HEAD:src/app/globals.css` confirmed the fixed rule is already present in `main`.
+
+- [x] **Step 4: Record completion**
+
+Updated `docs/project-audit-report.md` with `UI P1-6` status, the mobile testing-ribbon scope, and the verification command list.
+
+- [x] **Step 5: Run targeted and full verification**
+
+Run: `node --test tests/finance-model-registry.test.mjs`
+
+Observed: PASS, 15/15 tests.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 304/304 tests. Existing Node module-type warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 35 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 6: Verify mobile finance page in a browser**
+
+Started `npx next start -p 3027`, opened `http://localhost:3027/finance` at `390×844`, and captured Playwright snapshot plus bounding boxes for `.finance-model-status-ribbon`.
+
+Observed: both visible `测试中` ribbons stayed anchored near the card top-right edge (`anchoredNearRight: true` for both), without moving to the left side of the mobile card. Console error count stayed 0.
