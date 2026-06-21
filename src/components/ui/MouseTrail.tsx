@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useReducedMotion } from "framer-motion";
 
 const PARTICLE_COLORS = [
     "217, 119, 87",
     "106, 155, 204",
     "120, 140, 93",
 ];
+const PARTICLES_PER_EMIT = 2;
+const PARTICLE_SPAWN_INTERVAL_MS = 32;
 
 class TrailParticle {
     x: number;
@@ -47,13 +50,18 @@ class TrailParticle {
 
 export default function MouseTrail() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const prefersReducedMotion = useReducedMotion();
     const [isTouchDevice] = useState(() => {
         if (typeof window === "undefined") return false;
-        return window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
+        return (
+            window.matchMedia("(pointer: coarse), (hover: none)").matches ||
+            "ontouchstart" in window
+        );
     });
+    const shouldDisableTrail = isTouchDevice || prefersReducedMotion;
 
     useEffect(() => {
-        if (isTouchDevice) return;
+        if (shouldDisableTrail) return;
         const canvas = canvasRef.current;
         if (!canvas) return;
 
@@ -66,6 +74,7 @@ export default function MouseTrail() {
         const particles: TrailParticle[] = [];
         const maxParticles = 50;
         let animationFrame = 0;
+        let lastParticleEmitTime = 0;
 
         // Mouse state
         const mouse = { x: width / 2, y: height / 2 };
@@ -83,8 +92,15 @@ export default function MouseTrail() {
             mouse.x = e.clientX;
             mouse.y = e.clientY;
 
-            // Add particles on move
-            for (let i = 0; i < 3; i++) {
+            const eventTime = e.timeStamp || performance.now();
+            if (eventTime - lastParticleEmitTime < PARTICLE_SPAWN_INTERVAL_MS) return;
+            if (particles.length >= maxParticles) return;
+
+            lastParticleEmitTime = eventTime;
+            const availableSlots = maxParticles - particles.length;
+            const particlesToAdd = Math.min(PARTICLES_PER_EMIT, availableSlots);
+
+            for (let i = 0; i < particlesToAdd; i++) {
                 particles.push(new TrailParticle(mouse.x, mouse.y));
             }
         };
@@ -123,14 +139,14 @@ export default function MouseTrail() {
             window.removeEventListener("mousemove", onMouseMove);
             cancelAnimationFrame(animationFrame);
         };
-    }, [isTouchDevice]);
+    }, [shouldDisableTrail]);
 
-    if (isTouchDevice) return null;
+    if (shouldDisableTrail) return null;
 
     return (
         <canvas
             ref={canvasRef}
-            className="fixed inset-0 pointer-events-none z-50 mix-blend-multiply"
+            className="fixed inset-0 pointer-events-none z-50 opacity-70"
         />
     );
 }

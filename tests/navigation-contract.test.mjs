@@ -18,6 +18,10 @@ const clientShell = await readFile(
   new URL("../src/components/ClientShell.tsx", import.meta.url),
   "utf8"
 );
+const mouseTrail = await readFile(
+  new URL("../src/components/ui/MouseTrail.tsx", import.meta.url),
+  "utf8"
+);
 const globals = await readFile(
   new URL("../src/app/globals.css", import.meta.url),
   "utf8"
@@ -75,4 +79,19 @@ test("site keeps a single light theme without a dark-mode toggle", () => {
   assert.doesNotMatch(clientShell, /theme/i);
   assert.doesNotMatch(globals, /\[data-theme="dark"\]/);
   assert.doesNotMatch(globals, /Dark Theme/);
+});
+
+test("decorative mouse trail respects reduced motion and avoids expensive blend mode", () => {
+  assert.match(mouseTrail, /import \{ useReducedMotion \} from "framer-motion"/);
+  assert.match(mouseTrail, /const prefersReducedMotion = useReducedMotion\(\)/);
+  assert.match(mouseTrail, /const shouldDisableTrail = isTouchDevice \|\| prefersReducedMotion/);
+  assert.match(mouseTrail, /if \(shouldDisableTrail\) return/);
+  assert.match(mouseTrail, /if \(shouldDisableTrail\) return null/);
+  assert.match(mouseTrail, /const PARTICLE_SPAWN_INTERVAL_MS = 32/);
+  assert.match(mouseTrail, /let lastParticleEmitTime = 0/);
+  assert.match(mouseTrail, /if \(eventTime - lastParticleEmitTime < PARTICLE_SPAWN_INTERVAL_MS\) return/);
+  assert.match(mouseTrail, /if \(particles\.length >= maxParticles\) return/);
+  assert.match(mouseTrail, /Math\.min\(PARTICLES_PER_EMIT, availableSlots\)/);
+  assert.doesNotMatch(mouseTrail, /for \(let i = 0; i < 3; i\+\+\)/);
+  assert.doesNotMatch(mouseTrail, /mix-blend-multiply/);
 });

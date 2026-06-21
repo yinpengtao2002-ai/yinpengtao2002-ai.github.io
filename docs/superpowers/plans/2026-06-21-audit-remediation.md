@@ -401,3 +401,75 @@ Observed: PASS.
 - [x] **Step 7: Record completion**
 
 Updated `docs/project-audit-report.md` with `UI P0-2` status, the render-path caveat, and the browser verification summary.
+
+### Task 11: Make MouseTrail Respect Reduced Motion
+
+**Files:**
+- Modify: `src/components/ui/MouseTrail.tsx`
+- Modify: `tests/navigation-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Re-check the audit item**
+
+Confirmed `MouseTrail` is still on the real shell path through `ClientShell` when decorative extras are enabled. It skipped touch devices, but did not read system reduced-motion and used `mix-blend-multiply` on a full-screen canvas.
+
+- [x] **Step 2: Write the failing contract**
+
+Added a `tests/navigation-contract.test.mjs` assertion requiring `MouseTrail` to import and call `useReducedMotion`, derive `shouldDisableTrail = isTouchDevice || prefersReducedMotion`, avoid binding canvas work when disabled, return `null` when disabled, and omit `mix-blend-multiply`.
+
+- [x] **Step 3: Run test to verify it fails**
+
+Run: `node --test tests/navigation-contract.test.mjs`
+
+Observed: FAIL because `MouseTrail` did not import `useReducedMotion` and still rendered the blended canvas.
+
+- [x] **Step 4: Implement the reduced-motion guard**
+
+Changed `MouseTrail` to call `useReducedMotion()`, treat coarse pointer / no-hover / touch as disabled, and skip both canvas rendering and `mousemove`/animation setup when disabled.
+
+- [x] **Step 5: Remove expensive blend mode**
+
+Replaced the full-screen canvas class `mix-blend-multiply` with a simple opacity class to keep the subtle effect without blend-mode repaint overhead.
+
+- [x] **Step 6: Add the missing mousemove allocation guard**
+
+After re-reading the audit item, tightened the contract to also require a particle spawn interval, a no-allocation path once `maxParticles` is reached, and removal of the old `for (let i = 0; i < 3; i++)` per-event allocation loop.
+
+Run: `node --test tests/navigation-contract.test.mjs`
+
+Observed: FAIL on the new `PARTICLE_SPAWN_INTERVAL_MS` assertion, confirming the allocation guard was not yet implemented.
+
+Implemented a small 32ms particle spawn throttle, limited each emit to the remaining available particle slots, and returned early when the active particle list is already at `maxParticles`.
+
+- [x] **Step 7: Run targeted verification**
+
+Run: `node --test tests/navigation-contract.test.mjs`
+
+Observed: PASS.
+
+- [x] **Step 8: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 300/300 tests. Existing Node module-type warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 35 static pages.
+
+- [x] **Step 9: Record completion**
+
+Updated `docs/project-audit-report.md` with `UI P1-4` status, the reduced-motion/performance scope, and the full verification command list.
