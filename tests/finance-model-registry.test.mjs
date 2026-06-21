@@ -15,6 +15,49 @@ function assertCssRuleHas(css, selector, declarations) {
   }
 }
 
+function readCssBlockAt(css, blockStart, blockStartIndex) {
+  assert.notEqual(blockStartIndex, -1, `${blockStart} block should exist`);
+
+  const openBraceIndex = css.indexOf("{", blockStartIndex);
+  assert.notEqual(openBraceIndex, -1, `${blockStart} block should open`);
+
+  let depth = 0;
+  for (let index = openBraceIndex; index < css.length; index += 1) {
+    if (css[index] === "{") depth += 1;
+    if (css[index] === "}") depth -= 1;
+    if (depth === 0) {
+      return css.slice(openBraceIndex + 1, index);
+    }
+  }
+
+  assert.fail(`${blockStart} block should close`);
+}
+
+function readCssBlocks(css, blockStart) {
+  const blocks = [];
+  let searchIndex = 0;
+
+  while (searchIndex < css.length) {
+    const blockStartIndex = css.indexOf(blockStart, searchIndex);
+    if (blockStartIndex === -1) break;
+    blocks.push(readCssBlockAt(css, blockStart, blockStartIndex));
+    searchIndex = blockStartIndex + blockStart.length;
+  }
+
+  assert.ok(blocks.length > 0, `${blockStart} block should exist`);
+  return blocks;
+}
+
+function assertCssRuleInBlockHas(css, blockStart, selector, declarations) {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const block = readCssBlocks(css, blockStart).find((candidate) => {
+    return new RegExp(`(^|\\n)\\s*${escapedSelector}\\s*\\{`).test(candidate);
+  });
+
+  assert.ok(block, `${selector} rule should exist inside ${blockStart}`);
+  assertCssRuleHas(block, selector, declarations);
+}
+
 function readWebpDimensions(buffer) {
   assert.equal(buffer.toString("ascii", 0, 4), "RIFF", "asset should be a RIFF container");
   assert.equal(buffer.toString("ascii", 8, 12), "WEBP", "asset should be a WebP image");
@@ -260,6 +303,22 @@ test("finance compact library uses one-row three-up product cards on desktop", a
     globals,
     /\.finance-model-library-grid\.compact\s*\{[^}]*auto-fit/s,
     "compact finance grid should not auto-fit into uneven desktop columns"
+  );
+});
+
+test("finance testing ribbon stays pinned to the card top-right corner on mobile", async () => {
+  const globals = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
+
+  assertCssRuleInBlockHas(globals, "@media (max-width: 768px)", ".finance-model-status-ribbon", [
+    "top: 8px",
+    "right: -26px",
+    "left: auto",
+    "width: 92px",
+  ]);
+  assert.doesNotMatch(
+    readCssBlocks(globals, "@media (max-width: 768px)").join("\n"),
+    /\.finance-model-status-ribbon\s*\{[^}]*left:\s*22px/s,
+    "mobile testing ribbon should not be anchored from the left edge"
   );
 });
 
