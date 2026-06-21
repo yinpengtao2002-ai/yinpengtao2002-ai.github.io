@@ -43,17 +43,21 @@ test("Lucas route loads the copied stock decision system after access instead of
   assert.match(apiRoute, /status:\s*401/);
 });
 
-test("copied stock decision system source is bundled for the private Lucas route", async () => {
+test("local stock decision app is bundled for the private Lucas route", async () => {
   const sourceIndex = await readFile(
-    new URL("../src/lib/lucas/stock-decision/source/index.html", import.meta.url),
+    new URL("../src/lib/lucas/stock-decision/app/index.html", import.meta.url),
     "utf8",
   );
   const sourceScript = await readFile(
-    new URL("../src/lib/lucas/stock-decision/source/src/kelly-module.js", import.meta.url),
+    new URL("../src/lib/lucas/stock-decision/app/src/kelly-module.js", import.meta.url),
     "utf8",
   );
   const sourceKelly = await readFile(
-    new URL("../src/lib/lucas/stock-decision/source/src/lib/kelly.js", import.meta.url),
+    new URL("../src/lib/lucas/stock-decision/app/src/lib/kelly.js", import.meta.url),
+    "utf8",
+  );
+  const sourcePackage = await readFile(
+    new URL("../src/lib/lucas/stock-decision/app/package.json", import.meta.url),
     "utf8",
   );
   const bundledHtml = await readFile(
@@ -69,9 +73,11 @@ test("copied stock decision system source is bundled for the private Lucas route
   assert.match(sourceScript, /from "\.\/lib\/kelly\.js\?v=\d+"/);
   assert.match(sourceKelly, /calculateKellyMetrics/);
   assert.match(sourceKelly, /deriveWinLossFromPrices/);
+  assert.match(sourcePackage, /stock-kelly-position-analysis/);
   assert.match(bundledHtml, /kelly-app/);
   assert.match(bundledHtml, /凯利杠杆矩阵/);
   assert.match(bundledHtml, /胜率敏感性图/);
+  assert.doesNotMatch(bundledHtml, /ORICO|\/Volumes/);
 });
 
 test("private stock decision system does not get a public discovery route", async () => {
