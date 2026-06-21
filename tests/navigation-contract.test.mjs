@@ -42,6 +42,11 @@ test("root layout wraps pages with a restrained route transition", () => {
   assert.doesNotMatch(pageTransition, /x:\s*["'{-]/);
 });
 
+test("root layout lets Framer Motion follow the user reduced-motion preference globally", () => {
+  assert.match(layout, /import \{ MotionConfig \} from "framer-motion"/);
+  assert.match(layout, /<MotionConfig\s+reducedMotion="user">[\s\S]*<PageTransition>\{children\}<\/PageTransition>[\s\S]*<\/MotionConfig>/);
+});
+
 test("site navigation uses page links instead of scroll-tracked homepage sections", () => {
   assert.match(navigation, /sectionId:\s*"home"/);
   assert.match(navigation, /href:\s*"\/finance"[\s\S]*activePath:\s*"\/finance"/);

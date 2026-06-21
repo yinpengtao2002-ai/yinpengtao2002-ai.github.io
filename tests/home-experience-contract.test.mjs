@@ -36,6 +36,39 @@ function shortDesktopCssRule(selector) {
   return cssRule(selector, globals, mediaIndex);
 }
 
+function rootHexToken(tokenName) {
+  const tokenPattern = new RegExp(`${tokenName}:\\s*(#[0-9a-fA-F]{6})`);
+  const match = globals.match(tokenPattern);
+  assert.ok(match, `Missing root color token: ${tokenName}`);
+  return match[1];
+}
+
+function relativeLuminance(hexColor) {
+  const rgb = hexColor
+    .slice(1)
+    .match(/../g)
+    .map((channel) => {
+      const value = Number.parseInt(channel, 16) / 255;
+      return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+    });
+
+  return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+}
+
+function contrastRatio(foreground, background) {
+  const foregroundLuminance = relativeLuminance(foreground);
+  const backgroundLuminance = relativeLuminance(background);
+  const lighter = Math.max(foregroundLuminance, backgroundLuminance);
+  const darker = Math.min(foregroundLuminance, backgroundLuminance);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+test("global muted text color meets AA contrast on warm and card backgrounds", () => {
+  const muted = rootHexToken("--muted");
+  assert.ok(contrastRatio(muted, rootHexToken("--background")) >= 4.5);
+  assert.ok(contrastRatio(muted, rootHexToken("--card")) >= 4.5);
+});
+
 test("home hero does not split AI workflow and thinking judgment into separate proof cards", () => {
   assert.doesNotMatch(hero, /title:\s*"AI 工作流"/);
   assert.doesNotMatch(hero, /title:\s*"思考判断"/);
@@ -154,8 +187,12 @@ test("home hero mobile intro moves Lucas upward before revealing the product sta
   assert.match(hero, /prefersReducedMotion/);
   assert.match(hero, /y: "20svh"/);
   assert.match(hero, /key=\{`hero-left-\$\{isMobileLike \? "mobile" : "desktop"\}`\}/);
-  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-hero-slogan\s*\{[\s\S]*display:\s*none/s);
-  assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-hero-lede\s*\{[\s\S]*display:\s*none/s);
+  const mobileSlogan = mobileCssRule(".home-hero-slogan");
+  const mobileLede = mobileCssRule(".home-hero-lede");
+  assert.doesNotMatch(mobileSlogan, /display:\s*none/);
+  assert.match(mobileSlogan, /font-size:\s*clamp/);
+  assert.doesNotMatch(mobileLede, /display:\s*none/);
+  assert.match(mobileLede, /-webkit-line-clamp:\s*2/);
   assert.match(mobileCssRule(".home-hero-copy-card"), /display:\s*block/);
   assert.match(globals, /@media\s*\(max-width:\s*768px\)[\s\S]*\.home-hero-stage-shell\s*\{[\s\S]*display:\s*grid/s);
 }
@@ -369,10 +406,14 @@ test("home continue cue stays in normal layout flow", () => {
 
 test("mobile hero continue cue stays in normal flow below model cards", () => {
   const mobileContinueRow = mobileCssRule(".home-hero-continue-row");
+  const mobileStagePreview = mobileCssRule(".home-hero-stage-preview");
+  const mobileStageTab = mobileCssRule(".home-hero-stage-tab");
 
   assert.match(mobileContinueRow, /margin-top:\s*clamp\(0\.8rem,\s*2\.4svh,\s*1\.2rem\)/);
   assert.match(mobileContinueRow, /padding-bottom:\s*max\(1rem,\s*env\(safe-area-inset-bottom,\s*0px\)\)/);
   assert.doesNotMatch(mobileContinueRow, /transform:/);
+  assert.match(mobileStagePreview, /min-height:\s*clamp\(124px,\s*18svh,\s*154px\)/);
+  assert.match(mobileStageTab, /min-height:\s*44px/);
 });
 
 test("homepage finance section previews models as a composed showcase", () => {
@@ -446,6 +487,8 @@ test("homepage finance section uses an automatic mobile preview carousel with fo
   assert.match(financeSection, /home-finance-mobile-rise/);
   assert.match(financeSection, /home-finance-mobile-track/);
   assert.match(financeSection, /home-finance-mobile-slide/);
+  assert.match(financeSection, /home-finance-mobile-guide/);
+  assert.match(financeSection, /怎么看/);
   assert.match(financeSection, /home-finance-mobile-dots/);
   assert.match(financeSection, /aria-label=\{`查看\$\{model\.title\}`\}/);
   assert.match(financeSection, /translateX\(\-\$\{mobileCarouselVisualIndex \* 100\}%\)/);
@@ -470,6 +513,8 @@ test("homepage finance section uses an automatic mobile preview carousel with fo
   assert.match(mobileCssRule(".home-finance-mobile-track"), /display:\s*flex[\s\S]*height:\s*100%[\s\S]*transition:\s*transform/);
   assert.match(mobileCssRule(".home-finance-mobile-slide"), /flex:\s*0 0 100%/);
   assert.match(mobileCssRule(".home-finance-mobile-slide .finance-model-preview"), /aspect-ratio:\s*auto/);
+  assert.match(mobileCssRule(".home-finance-mobile-guide"), /display:\s*grid/);
+  assert.match(mobileCssRule(".home-finance-mobile-guide p"), /-webkit-line-clamp:\s*2/);
   assert.match(mobileCssRule(".home-finance-mobile-dots"), /display:\s*flex/);
   assert.match(mobileCssRule(".home-finance-mobile-dots button"), /flex:\s*0 0 6px/);
   assert.match(mobileCssRule(".home-finance-mobile-dots button"), /inline-size:\s*6px/);
@@ -492,6 +537,9 @@ test("homepage finance section uses an automatic mobile preview carousel with fo
 
 test("homepage finance section compresses in short desktop viewports", () => {
   const shortFinanceSection = shortDesktopCssRule(".home-section.home-finance-section");
+  const shortFinanceGuide = shortDesktopCssRule(".home-finance-stage-guide");
+  const shortFinanceDetail = shortDesktopCssRule(".home-finance-detail");
+  const shortFinancePoints = shortDesktopCssRule(".home-finance-point-row");
   assert.match(shortFinanceSection, /height:\s*100dvh/);
   assert.match(shortFinanceSection, /overflow:\s*visible/);
   assert.match(shortFinanceSection, /padding-bottom:\s*clamp\(1\.75rem,\s*4\.4vh,\s*2\.25rem\)/);
@@ -499,10 +547,14 @@ test("homepage finance section compresses in short desktop viewports", () => {
   assert.doesNotMatch(shortFinanceSection, /padding-bottom:\s*0\.8rem/);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-showcase\s*\{[\s\S]*height:\s*clamp\(456px,\s*calc\(100dvh - 160px\),\s*540px\)/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage-motion\s*\{[\s\S]*grid-template-rows:\s*auto minmax\(0,\s*1fr\)/s);
-  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage-guide\s*\{[\s\S]*display:\s*none/s);
+  assert.match(shortFinanceGuide, /display:\s*grid/);
+  assert.doesNotMatch(shortFinanceGuide, /display:\s*none/);
+  assert.match(shortFinanceDetail, /display:\s*-webkit-box/);
+  assert.doesNotMatch(shortFinanceDetail, /display:\s*none/);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage-motion \.finance-model-preview\s*\{[\s\S]*height:\s*100%/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage \.finance-model-preview\s*\{[\s\S]*aspect-ratio:\s*1\.8/s);
-  assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-point-row\s*\{[\s\S]*display:\s*none/s);
+  assert.match(shortFinancePoints, /display:\s*flex/);
+  assert.doesNotMatch(shortFinancePoints, /display:\s*none/);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-stage,\s*\.home-finance-stage-frame,\s*\.home-finance-switcher\s*\{[\s\S]*height:\s*100%/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-switcher\s*\{[\s\S]*grid-template-rows:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
   assert.match(globals, /@media\s*\(max-height:\s*820px\)\s*and\s*\(min-width:\s*769px\)[\s\S]*\.home-finance-switch-card \.finance-model-preview\.compact\s*\{[\s\S]*aspect-ratio:\s*1\.9/s);

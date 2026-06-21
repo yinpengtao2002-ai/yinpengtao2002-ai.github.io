@@ -332,6 +332,12 @@ export default function HomeFinanceSection() {
                     <div className="home-finance-mobile-copy">
                       <h3>{model.title}</h3>
                       <p>{detail?.focus ?? model.summary}</p>
+                      {detail?.guide ? (
+                        <div className="home-finance-mobile-guide">
+                          <span>怎么看</span>
+                          <p>{detail.guide}</p>
+                        </div>
+                      ) : null}
                     </div>
                     <FinanceModelPreview
                       src={model.previewImage}

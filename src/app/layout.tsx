@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { MotionConfig } from "framer-motion";
 import "./globals.css";
 import ClientShell from "@/components/ClientShell";
 import PageTransition from "@/components/layout/PageTransition";
@@ -65,10 +66,12 @@ export default function RootLayout({
       <body
         className="antialiased gradient-bg overflow-x-hidden selection:bg-[#d97757] selection:text-white"
       >
-        <ClientShell />
-        <main style={{ width: "100%", minWidth: 0, display: "block" }}>
-          <PageTransition>{children}</PageTransition>
-        </main>
+        <MotionConfig reducedMotion="user">
+          <ClientShell />
+          <main style={{ width: "100%", minWidth: 0, display: "block" }}>
+            <PageTransition>{children}</PageTransition>
+          </main>
+        </MotionConfig>
       </body>
     </html>
   );

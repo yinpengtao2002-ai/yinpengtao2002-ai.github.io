@@ -7,7 +7,7 @@
   --accent: #d97757;
   --accent-secondary: #6a9bcc;
   --accent-tertiary: #788c5d;
-  --muted: #b0aea5;
+  --muted: #737169;
   --card: #ffffff;
   --border: #e8e6dc;
   --finance-ai-page-surface: #f7f5ef;
@@ -6461,15 +6461,27 @@ h6 {
   }
 
   .home-finance-stage-guide {
-    display: none;
+    display: grid;
+    gap: 2px;
+    margin-bottom: 5px;
+    padding: 5px 7px;
   }
 
   .home-finance-detail {
-    display: none;
+    display: -webkit-box;
+    font-size: 10.5px;
+    line-height: 1.32;
+    margin-bottom: 5px;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
   }
 
   .home-finance-point-row {
-    display: none;
+    display: flex;
+    gap: 4px;
+    margin-bottom: 6px;
+    overflow: hidden;
   }
 
   .home-finance-point-row span {
@@ -6623,11 +6635,21 @@ h6 {
   }
 
   .home-hero-slogan {
-    display: none;
+    max-width: min(100%, 360px);
+    margin-top: 8px;
+    font-size: clamp(1rem, 5vw, 1.24rem);
+    line-height: 1.18;
   }
 
   .home-hero-lede {
-    display: none;
+    display: -webkit-box;
+    max-width: min(100%, 360px);
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.42;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
   }
 
   .home-hero-proof-list {
@@ -6767,7 +6789,7 @@ h6 {
   }
 
   .home-hero-stage-preview {
-    min-height: clamp(134px, 20svh, 176px);
+    min-height: clamp(124px, 18svh, 154px);
     margin: 0 8px 8px;
   }
 
@@ -6803,7 +6825,7 @@ h6 {
   }
 
   .home-hero-stage-tab {
-    min-height: 50px;
+    min-height: 44px;
     gap: 2px;
     padding: 8px 9px;
   }
@@ -7017,6 +7039,33 @@ h6 {
     line-height: 1.45;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 1;
+    overflow: hidden;
+  }
+
+  .home-finance-mobile-guide {
+    display: grid;
+    gap: 2px;
+    margin-top: 7px;
+    border: 1px solid color-mix(in srgb, var(--accent-secondary) 18%, var(--border));
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--card) 74%, transparent);
+    padding: 6px 8px;
+  }
+
+  .home-finance-mobile-guide span {
+    color: color-mix(in srgb, var(--accent-secondary) 78%, var(--foreground));
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .home-finance-mobile-guide p {
+    display: -webkit-box;
+    color: color-mix(in srgb, var(--foreground) 74%, var(--muted));
+    font-size: 10.5px;
+    line-height: 1.4;
+    margin: 0;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
     overflow: hidden;
   }
 

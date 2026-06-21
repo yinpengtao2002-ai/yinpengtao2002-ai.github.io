@@ -284,3 +284,120 @@ Left `/api/chat` streaming SSE provider logic and `study-cards/pronunciation` TT
 - [x] **Step 7: Record completion**
 
 Updated `docs/project-audit-report.md` with the adjusted scope and targeted verification command.
+
+### Task 8: Add Global Framer Motion Reduced-Motion Config
+
+**Files:**
+- Modify: `src/app/layout.tsx`
+- Modify: `tests/navigation-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Re-check the audit item**
+
+Confirmed the site already has local `useLowMotionMode` handling in several components and CSS `prefers-reduced-motion` rules, but the root layout did not provide Framer Motion's global `MotionConfig`.
+
+- [x] **Step 2: Write the failing layout contract**
+
+Added a `tests/navigation-contract.test.mjs` assertion requiring the root layout to import `MotionConfig` and wrap the page transition area with `reducedMotion="user"`.
+
+- [x] **Step 3: Run test to verify it fails**
+
+Run: `node --test tests/navigation-contract.test.mjs`
+
+Observed: FAIL because `src/app/layout.tsx` did not import or render `MotionConfig`.
+
+- [x] **Step 4: Add the global MotionConfig wrapper**
+
+Wrapped `ClientShell` and the main `PageTransition` tree in `<MotionConfig reducedMotion="user">`, so global navigation, chat overlays, and route transitions inherit the user's system-level reduced-motion preference.
+
+- [x] **Step 5: Run verification**
+
+Run: `node --test tests/navigation-contract.test.mjs`, `npx tsc --noEmit`, `npm run lint`, `git diff --check`, `npm run test:site`, and `npm run build:vercel`
+
+Observed: PASS.
+
+- [x] **Step 6: Record completion**
+
+Updated `docs/project-audit-report.md` with `UI P0-3` status, scope, and verification commands.
+
+### Task 9: Raise Global Muted Text Contrast
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/home-experience-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Re-check the audit item**
+
+Confirmed `--muted` was `#b0aea5`, which computes to about 2.11:1 against `--background: #faf9f5` and about 2.22:1 against `--card: #ffffff`.
+
+- [x] **Step 2: Verify the suggested color before adopting it**
+
+Calculated that the audit-suggested `#8a887e` is still below AA contrast, about 3.38:1 on the warm background and 3.56:1 on white cards, so it was not adopted.
+
+- [x] **Step 3: Write the failing contrast contract**
+
+Added a `tests/home-experience-contract.test.mjs` test that extracts root hex color tokens and computes WCAG relative luminance / contrast ratio, requiring `--muted` to reach 4.5:1 on both `--background` and `--card`.
+
+- [x] **Step 4: Run test to verify it fails**
+
+Run: `node --test tests/home-experience-contract.test.mjs`
+
+Observed: FAIL because the existing `#b0aea5` token did not meet the 4.5:1 threshold.
+
+- [x] **Step 5: Adjust the token**
+
+Changed `--muted` to `#737169`, preserving the warm restrained palette while reaching AA contrast on the site's main warm and white surfaces.
+
+- [x] **Step 6: Run verification**
+
+Run: `node --test tests/home-experience-contract.test.mjs`, `npx tsc --noEmit`, `npm run lint`, `git diff --check`, `npm run test:site`, and `npm run build:vercel`
+
+Observed: PASS.
+
+- [x] **Step 7: Record completion**
+
+Updated `docs/project-audit-report.md` with `UI P0-1` status, the actual chosen token, and the reason the original suggested color was rejected.
+
+### Task 10: Stop Hiding Substantive Mobile Home Copy
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `src/components/home/HomeFinanceSection.tsx`
+- Modify: `tests/home-experience-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Re-check the audit item and current render path**
+
+Confirmed mobile CSS hid `.home-hero-slogan` and `.home-hero-lede` with `display:none`. Also confirmed `src/app/page.tsx` currently renders `CapabilityHero`, `HomeThinkingSection`, and `HomeContactSection`, but not `HomeFinanceSection` / `#finance`; the finance-section part of the audit does not hit the current homepage render path.
+
+- [x] **Step 2: Write the failing home experience contract**
+
+Changed `tests/home-experience-contract.test.mjs` so mobile hero slogan / lede must not be `display:none`, mobile finance carousel must include a compact `home-finance-mobile-guide`, and short desktop finance guide/detail/points must be compressed instead of hidden.
+
+- [x] **Step 3: Run test to verify it fails**
+
+Run: `node --test tests/home-experience-contract.test.mjs`
+
+Observed: FAIL because the current mobile hero rules hid the slogan and lede, `HomeFinanceSection` did not render a mobile guide, and short-desktop finance rules hid guide/detail/points.
+
+- [x] **Step 4: Implement compact content display**
+
+Changed mobile hero slogan / lede to compact visible text, added a mobile `怎么看` guide block to the dormant `HomeFinanceSection` carousel, and changed short-desktop finance guide/detail/points from hidden to clamped compact display.
+
+- [x] **Step 5: Verify mobile hero fit after browser QA**
+
+Playwright at `390×844` showed the added hero copy was visible, then revealed the continue CTA was close to the viewport edge. Added a failing contract for compact mobile model-stage dimensions, then reduced the mobile preview and stage tab heights so the final CTA bottom stays inside the viewport.
+
+- [x] **Step 6: Run verification**
+
+Run: `node --test tests/home-experience-contract.test.mjs`; Playwright checked `/` at `390×844` and `1280×820`, with console error count 0; then ran `npx tsc --noEmit`, `npm run lint`, `git diff --check`, `npm run test:site`, and `npm run build:vercel`. Current homepage still has no rendered `#finance` section, as expected.
+
+Observed: PASS.
+
+- [x] **Step 7: Record completion**
+
+Updated `docs/project-audit-report.md` with `UI P0-2` status, the render-path caveat, and the browser verification summary.
