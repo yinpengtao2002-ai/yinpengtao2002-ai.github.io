@@ -1,4 +1,4 @@
-import type { FinanceAIDataSelection, FinanceRawWorkbook, FinanceSchema } from "./types";
+import type { FinanceSchema } from "./types";
 
 export type FinanceAIChatState = {
   recentQuestions?: string[];
@@ -31,25 +31,6 @@ type ExplanationPromptInput = {
   computedSummary: unknown;
 };
 
-type DirectAnalyzePromptInput = {
-  userQuestion: string;
-  workbook: FinanceRawWorkbook;
-  state?: FinanceAIChatState;
-};
-
-type DataRequestPromptInput = {
-  userQuestion: string;
-  workbook: FinanceRawWorkbook;
-  state?: FinanceAIChatState;
-};
-
-type SelectedRowsAnalyzePromptInput = {
-  userQuestion: string;
-  workbook: FinanceRawWorkbook;
-  selection: FinanceAIDataSelection;
-  state?: FinanceAIChatState;
-};
-
 const MAX_LIST_ITEMS = 24;
 const MAX_RECENT_QUESTIONS = 4;
 const MAX_RECENT_ASSISTANT_MESSAGES = 2;
@@ -63,28 +44,7 @@ const MAX_SUMMARY_OBJECT_KEYS = 28;
 const MAX_SUMMARY_DEPTH = 8;
 const MAX_STRING_CHARS = 240;
 const MAX_SUMMARY_JSON_CHARS = 16000;
-const MAX_WORKBOOK_CELL_CHARS = 180;
-const MAX_CATALOG_SAMPLE_ROWS = 3;
-const MAX_CATALOG_VALUE_SAMPLES = 16;
 const OMIT_PROMPT_VALUE = Symbol("omit-prompt-value");
-const DIRECT_CHART_PROTOCOL_LINES = [
-  "charts 最多 3 个，可使用以下图表类型：",
-  "1. trend: {type,title,xLabel,yLabel,points:[{label,value}],note}",
-  "2. bar_rank: {type,title,xLabel,yLabel,items:[{label,value,share,changeValue,detail}],note}",
-  "3. pareto_rank: {type,title,xLabel,yLabel,items:[{label,value,share,cumulativeShare,changeValue,detail}],note}",
-  "4. small_multiples_trend: {type,title,xLabel,yLabel,series:[{name,points:[{label,value}]}],note}",
-  "5. waterfall: {type,title,startLabel,startValue,endLabel,endValue,items:[{label,value}],note}",
-  "6. grouped_bar: {type,title,xLabel,yLabel,series:[{name,items:[{label,value}]}],note}",
-  "7. stacked_bar: {type,title,xLabel,yLabel,series:[{name,items:[{label,value}]}],note}",
-  "8. percent_stacked_bar: {type,title,xLabel,yLabel,series:[{name,items:[{label,value}]}],note}",
-  "9. heatmap: {type,title,xLabels,yLabels,values,note}",
-  "10. scatter_bubble: {type,title,xLabel,yLabel,items:[{label,x,y,size}],note}",
-  "11. detail_table: {type,title,variant,meta,columns,rows,note}，variant 可用 rank、comparison、budget_actual、attribution_detail、exception_list、generic；meta 可写 primaryDimension、metrics、period、periods、comparison、filters、focusValues；适合承接用户要求全量列出的明细，最多约 120 行；表格至少 4 列，优先包含关键维度、当前值、对比值、变化值、变化率、占比或口径，不要只返回一两列",
-  "单点纯数字不要生成图表卡，直接写在 answer 文字里。",
-  "用户问集中度、累计贡献、累计占比、二八或 Pareto 时，用 pareto_rank；用户要各国家/车型/维度成员分别趋势、小多图或分面趋势时，用 small_multiples_trend。",
-  "预算、目标、实际、预测、计划、达成率或同一指标不同口径的并列对比，优先用 grouped_bar；差异来源、贡献拆解或归因可用 waterfall；不要用 stacked_bar 或 percent_stacked_bar，因为这些口径不能相加。",
-  "单车指标构成、原因或变化来源可以同时返回 2-3 张图：单车指标 waterfall + 销量 grouped_bar + 净收入/收入 grouped_bar；除非底稿缺少销量或收入字段，不要因为已有瀑布图就省略有助解释的量、收入对比。",
-];
 const UNIT_ASSUMPTION_RULE_LINES = [
   "不要根据国家、市场或地区推断币种；底稿字段或用户没有明确单位时，只称为原始单位或省略单位。",
   "没有明确单位时，答案和图表标题不要写人民币、元、美元、欧元等币种；图表数值只使用原始单位、万、亿、万亿这类数量级缩放。",
@@ -239,98 +199,6 @@ function safeBoundedJson(value: unknown) {
     : json;
 }
 
-function normalizeWorkbookCell(value: unknown): unknown {
-  if (typeof value === "string") {
-    return truncateText(value, MAX_WORKBOOK_CELL_CHARS);
-  }
-
-  if (
-    value === null ||
-    typeof value === "number" ||
-    typeof value === "boolean"
-  ) {
-    return value;
-  }
-
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-
-  return String(value ?? "");
-}
-
-function safeWorkbookJson(workbook: FinanceRawWorkbook) {
-  return JSON.stringify({
-    format: "compact_workbook_v1",
-    note: "Each sheet.rows item is an array of cell values in the same order as sheet.headers.",
-    fileName: workbook.fileName,
-    totalRowCount: workbook.totalRowCount,
-    sheets: workbook.sheets.map((sheet) => ({
-      name: sheet.name,
-      headers: sheet.headers,
-      rowCount: sheet.rowCount,
-      rows: sheet.rows.map((row) => (
-        sheet.headers.map((header) => normalizeWorkbookCell(row[header]))
-      )),
-    })),
-  });
-}
-
-function uniqueSamples(values: unknown[]) {
-  const seen = new Set<string>();
-  const samples: string[] = [];
-
-  for (const value of values) {
-    const text = String(normalizeWorkbookCell(value) ?? "").trim();
-    if (!text || seen.has(text)) {
-      continue;
-    }
-
-    seen.add(text);
-    samples.push(text);
-    if (samples.length >= MAX_CATALOG_VALUE_SAMPLES) {
-      break;
-    }
-  }
-
-  return samples;
-}
-
-function buildWorkbookCatalog(workbook: FinanceRawWorkbook) {
-  return JSON.stringify({
-    fileName: workbook.fileName,
-    totalRowCount: workbook.totalRowCount,
-    sheets: workbook.sheets.map((sheet) => ({
-      name: sheet.name,
-      headers: sheet.headers,
-      rowCount: sheet.rowCount,
-      sampleRows: sheet.rows.slice(0, MAX_CATALOG_SAMPLE_ROWS).map((row) => (
-        sheet.headers.map((header) => normalizeWorkbookCell(row[header]))
-      )),
-      valueSamples: Object.fromEntries(sheet.headers.map((header) => [
-        header,
-        uniqueSamples(sheet.rows.slice(0, MAX_CATALOG_SAMPLE_ROWS).map((row) => row[header])),
-      ])),
-    })),
-  });
-}
-
-function safeSelectionJson(selection: FinanceAIDataSelection) {
-  return JSON.stringify({
-    format: "selected_raw_rows_v1",
-    note: "Rows are raw uploaded detail rows selected by the AI data request. Each row is an array in headers order. The client did not aggregate, rank, or calculate metrics.",
-    request: selection.request,
-    sheetName: selection.sheetName,
-    headers: selection.headers,
-    rowCount: selection.rowCount,
-    totalMatchedRowCount: selection.totalMatchedRowCount,
-    omittedRowCount: selection.omittedRowCount,
-    rows: selection.rows.map((row) => (
-      selection.headers.map((header) => normalizeWorkbookCell(row[header]))
-    )),
-  });
-}
-
 export function buildFinanceAIPlanningContext(
   schema: FinanceSchema,
   state: FinanceAIChatState = {},
@@ -359,7 +227,7 @@ export function buildFinanceAIPlanningContext(
     "图表模块会渲染在聊天消息内部，所以模块标题要像对话回复的一部分。",
     "如果用户要求可视化、图表、占比、结构、构成、变化来源，必须生成至少一个图表模块，不要只返回 metric_snapshot。",
     "用户问集中度、累计贡献、累计占比、二八或 Pareto 时，优先用 pareto_rank，按维度排序并叠加累计占比。",
-    "用户要各国家、各车型或多个维度成员分别看趋势时，优先用 small_multiples_trend，不要把太多对象挤进一张多线 trend_chart。",
+    "用户要各国家、各车型或多个维度成员分别看趋势或小多图时，优先用 small_multiples_trend，不要把太多对象挤进一张多线 trend_chart。",
     "用户问所有维度成员的环比情况时，优先用 grouped_bar 搭配 comparison:\"mom\"，展示上期和本期两组柱，不要用单柱后面写环比数字。",
     "用户问预算、目标、实际、预测、计划、达成率或同一指标不同口径的并列对比时，优先用 grouped_bar，dimension 放业务维度，seriesDimension 放数据口径；不要用 stacked_bar 或 percent_stacked_bar，因为实际和预算不能相加。",
     "用户问占比、结构或构成时，可用 stacked_bar 或 percent_stacked_bar；但预算、目标、实际、预测、计划这类口径对比不是结构构成。用户问二维交叉高低表现时用 heatmap；用户问规模和质量关系时用 scatter_bubble；用户要求全部列出时用 detail_table。",
@@ -419,96 +287,6 @@ export function buildFinanceAIPlanningContext(
     "- 同一句里要求多个排名时，分别为每个指标生成独立 bar_rank 模块，不要把销量 Top 和单车指标最低混成一个模块。",
     "JSON 结构示例：",
     '{"modules":[{"type":"metric_snapshot","metric":"单车边际","period":"2026-03","filters":{"国家":["巴西"]},"comparisons":["mom","yoy"]},{"type":"grouped_bar","metric":"净收入总额","dimension":"大区","period":"M04","comparison":"mom","limit":10},{"type":"heatmap","metric":"单车净收入","xDimension":"车型","yDimension":"国家","period":"M04","limit":8}]}',
-  ].join("\n");
-}
-
-export function buildFinanceAIDirectAnalyzePrompt(input: DirectAnalyzePromptInput) {
-  const recentQuestions = (input.state?.recentQuestions ?? [])
-    .slice(-MAX_RECENT_QUESTIONS)
-    .map((question) => question.trim())
-    .filter(Boolean);
-  const chartHistory = (input.state?.chartHistory ?? [])
-    .slice(-MAX_CHART_HISTORY)
-    .map((chart) => `${chart.type}:${chart.title}`)
-    .filter(Boolean);
-
-  return [
-    "你是财务分析 AI 助手。用户已经上传底稿，你需要直接基于底稿回答问题并在适合时生成图表数据。",
-    "底稿会以紧凑 JSON 形式提供，包含 sheet 名、原始表头和数据行；每一行是按 headers 顺序排列的单元格数组。你负责识别字段含义、判断口径、计算数值，并说明必要假设。",
-    "如果 sheet 名为实际、预算、目标、预测或英文 Actual/Budget/Target/Forecast，优先把 sheet 名当作数据口径；月份字段只代表月份，不要把实际/预算/目标拼进月份。",
-    "只输出严格 JSON，不要输出 Markdown 代码块，不要在 JSON 外写任何文字。",
-    "返回结构必须是：",
-    '{"answer":"给用户看的中文分析结论，可包含 Markdown 加粗","assumptions":["字段、口径或计算假设"],"charts":[]}',
-    ...UNIT_ASSUMPTION_RULE_LINES,
-    ...PERIOD_LABEL_RULE_LINES,
-    ...DIRECT_CHART_PROTOCOL_LINES,
-    "图表规则：value/startValue/endValue/changeValue/share/x/y/size/values 必须是数字，不要写成带逗号或单位的字符串；share 和 percent_stacked_bar 的 value 使用 0 到 1 的小数；detail_table 要给关键维度、当前值、对比值、变化值/变化率等可核对列，不要只返回一两列；不确定时少出图，不要硬造图。",
-    "分析规则：不要声称看不到底稿；如果字段口径不明确，先说明你的假设，再给结论；计算过程要和 answer、charts 保持一致。",
-    "用户只给出维度成员简称但没有说明维度时，不要强行猜成品牌、车型或大区；无法唯一确定时要追问用户它属于哪个维度。",
-    "用户问多个指标是否都增长或同时变化时，要按当前期和上期分别计算每个指标的变化，再回答同时满足条件的维度成员；不要只看当前期明细列。",
-    `最近问题：${compactList(recentQuestions)}`,
-    `最近图表：${compactList(chartHistory)}`,
-    `用户问题：${input.userQuestion.trim() || "无"}`,
-    "上传底稿：",
-    safeWorkbookJson(input.workbook),
-  ].join("\n");
-}
-
-export function buildFinanceAIDataRequestPrompt(input: DataRequestPromptInput) {
-  const recentQuestions = (input.state?.recentQuestions ?? [])
-    .slice(-MAX_RECENT_QUESTIONS)
-    .map((question) => question.trim())
-    .filter(Boolean);
-
-  return [
-    "你是财务分析 AI 助手。你现在不是回答问题，而是先决定需要读取哪些上传底稿原始明细行。",
-    "客户端只能按你的请求筛选原始行和列；客户端不会汇总、排名、计算环比或生成任何分析结论。",
-    "请根据用户问题和数据目录，返回一个 JSON 取数请求。优先选择最少必要列、必要期间和必要维度，避免要求整张表。",
-    "如果用户问环比、同比、Top、排名、变化来源，要包含当前期和对比期所需原始行。",
-    ...UNIT_ASSUMPTION_RULE_LINES,
-    ...PERIOD_LABEL_RULE_LINES,
-    "返回结构必须是：",
-    '{"sheetName":"可选工作表名","columns":["需要的原始列"],"filters":{"列名":["原始值"]},"rowLimit":10000,"reason":"为什么需要这些原始行"}',
-    "规则：",
-    "- 只输出 JSON，不输出 Markdown。",
-    "- columns 必须来自数据目录的 headers。",
-    "- filters 的字段必须来自 headers，值必须尽量使用 valueSamples 或 sampleRows 里出现的原始值。",
-    "- 不确定 sheetName 时可省略；不确定筛选值时可以省略 filters，但不要编造字段。",
-    "- rowLimit 默认 10000，除非用户问题明显只需要更少行。",
-    `最近问题：${compactList(recentQuestions)}`,
-    `用户问题：${input.userQuestion.trim() || "无"}`,
-    "数据目录：",
-    buildWorkbookCatalog(input.workbook),
-  ].join("\n");
-}
-
-export function buildFinanceAISelectedRowsAnalyzePrompt(input: SelectedRowsAnalyzePromptInput) {
-  const recentQuestions = (input.state?.recentQuestions ?? [])
-    .slice(-MAX_RECENT_QUESTIONS)
-    .map((question) => question.trim())
-    .filter(Boolean);
-  const chartHistory = (input.state?.chartHistory ?? [])
-    .slice(-MAX_CHART_HISTORY)
-    .map((chart) => `${chart.type}:${chart.title}`)
-    .filter(Boolean);
-
-  return [
-    "你是财务分析 AI 助手。你需要基于客户端按你的取数请求返回的原始明细行，完成计算、分析和图表数据生成。",
-    "客户端没有做汇总、排名、环比或指标计算；下面的数据切片仍是上传底稿的原始明细行。",
-    "只输出严格 JSON，不要输出 Markdown 代码块，不要在 JSON 外写任何文字。",
-    "返回结构必须是：",
-    '{"answer":"给用户看的中文分析结论，可包含 Markdown 加粗","assumptions":["字段、口径或计算假设"],"charts":[]}',
-    ...UNIT_ASSUMPTION_RULE_LINES,
-    ...PERIOD_LABEL_RULE_LINES,
-    ...DIRECT_CHART_PROTOCOL_LINES,
-    "图表规则：value/startValue/endValue/changeValue/share/x/y/size/values 必须是数字，不要写成带逗号或单位的字符串；share 和 percent_stacked_bar 的 value 使用 0 到 1 的小数。",
-    "如果 omittedRowCount 大于 0，必须在 assumptions 里说明本次只收到部分匹配明细，不能把结果说成全量。",
-    `最近问题：${compactList(recentQuestions)}`,
-    `最近图表：${compactList(chartHistory)}`,
-    `用户问题：${input.userQuestion.trim() || "无"}`,
-    `底稿文件：${input.workbook.fileName}，总行数：${input.workbook.totalRowCount}`,
-    "AI 请求的数据切片：",
-    safeSelectionJson(input.selection),
   ].join("\n");
 }
 

@@ -3,8 +3,10 @@ import { buildActiveThinkingArticlePrompt } from "@/lib/chatArticleContext";
 import { thinkingLabContent } from "@/lib/data/thinkingLabContent";
 import { getChatProviders, type ChatProvider } from "@/lib/ai/providers";
 import { financeModels, getFinanceModelBySlug, type FinanceModelItem } from "@/lib/finance/modelRegistry";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 
 const CHAT_PRIMARY_TIMEOUT_MS = 18000;
+const CHAT_RATE_LIMIT = { keyPrefix: "api-chat", limit: 30, windowMs: 60_000 };
 
 function buildActiveFinanceModelPrompt(activeFinanceModel?: FinanceModelItem) {
   if (!activeFinanceModel) {
@@ -114,6 +116,12 @@ ${thinkingArticles}
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimitError = enforceRateLimit(req, CHAT_RATE_LIMIT);
+
+  if (rateLimitError) {
+    return rateLimitError;
+  }
+
   try {
     const { messages, currentFinanceModelSlug, currentThinkingArticleHref } = await req.json();
     const activeFinanceModel =

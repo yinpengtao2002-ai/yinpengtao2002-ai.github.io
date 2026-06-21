@@ -221,6 +221,7 @@ test("AI vocabulary card results use a one-card spaced-memory flow", async () =>
 
 test("AI vocabulary card endpoint asks for article extraction and word-list enrichment", async () => {
   const route = await readProjectFile("src/app/api/tools/study-cards/route.ts");
+  const providerHelper = await readProjectFile("src/lib/ai/callProvider.ts");
 
   assert.match(route, /cards/);
   assert.match(route, /JSON/);
@@ -231,7 +232,8 @@ test("AI vocabulary card endpoint asks for article extraction and word-list enri
   assert.doesNotMatch(route, /gpt-5\.2/);
   assert.doesNotMatch(route, /gpt-5\.4/);
   assert.doesNotMatch(route, /884819/);
-  assert.match(route, /response_format/);
+  assert.match(providerHelper, /response_format/);
+  assert.match(route, /callFirstConfiguredProvider/);
   assert.match(route, /60000/);
   assert.match(route, /errorCode/);
   assert.match(route, /API_NOT_CONFIGURED/);

@@ -1,7 +1,9 @@
 import { NextRequest } from "next/server";
 import { getSpeechProvider, type SpeechProvider } from "@/lib/ai/providers";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 
 const SPEECH_TIMEOUT_MS = 20000;
+const PRONUNCIATION_RATE_LIMIT = { keyPrefix: "api-study-cards-pronunciation", limit: 30, windowMs: 60_000 };
 const PUBLIC_STUDY_CARDS_PRONUNCIATION_API_URL = "https://yinpengtao.cn/api/tools/study-cards/pronunciation/";
 const DICTIONARY_API_URL = "https://api.dictionaryapi.dev/api/v2/entries/en";
 const WIKIMEDIA_COMMONS_API_URL = "https://commons.wikimedia.org/w/api.php";
@@ -243,6 +245,12 @@ async function callSpeechProviderWithFallbackModels(provider: SpeechProvider, wo
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimitError = enforceRateLimit(req, PRONUNCIATION_RATE_LIMIT);
+
+  if (rateLimitError) {
+    return rateLimitError;
+  }
+
   const payload = (await req.json().catch(() => null)) as { word?: unknown } | null;
   const word = sanitizePronunciationInput(payload?.word);
   if (!word) {

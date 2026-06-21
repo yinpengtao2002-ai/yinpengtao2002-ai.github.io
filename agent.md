@@ -142,6 +142,7 @@ Current models:
 ## AI Assistant Configuration
 
 - `/api/chat`, `/api/tools/finance-ai-assistant`, and `/api/tools/study-cards` share `src/lib/ai/providers.ts`.
+- The formal finance AI assistant must preserve the `plan -> deterministic browser compute -> explain` chain. Do not add API modes that send uploaded workbook rows directly to a provider for calculation.
 - The primary provider is GPT (`gpt-5.5`) through `AI_PRIMARY_API_KEY`, `AI_PRIMARY_API_URL`, and optional `AI_PRIMARY_MODEL`; the default URL is `https://api.dstopology.com`, normalized to `/v1/chat/completions`.
 - DeepSeek (`deepseek-v4-pro`) stays as the fallback model. If `DEEPSEEK_API_KEY` is absent, fallback reuses the primary NewAPI key and URL; if `DEEPSEEK_API_KEY` is present, it uses `DEEPSEEK_API_URL`, defaulting to `https://api.deepseek.com/chat/completions`.
 - Do not hard-code real AI secrets in the repo. Configure production keys in Vercel environment variables.

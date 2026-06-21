@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const FINANCE_AI_ACCESS_HEADER = "X-Finance-AI-Access";
 
-const TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
+const TOKEN_TTL_MS = 2 * 60 * 60 * 1000;
 
 function readAccessKey() {
   return process.env.FINANCE_AI_ACCESS_KEY?.trim() || "";

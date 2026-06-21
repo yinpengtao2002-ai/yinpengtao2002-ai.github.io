@@ -1,8 +1,11 @@
 import { NextRequest } from "next/server";
 import { getChatProviders, type ChatProvider } from "@/lib/ai/providers";
+import { callFirstConfiguredProvider, extractJsonObject, hasConfiguredProvider } from "@/lib/ai/callProvider";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 
 const CHAT_PRIMARY_TIMEOUT_MS = 60000;
 const PUBLIC_STUDY_CARDS_API_URL = "https://yinpengtao.cn/api/tools/study-cards";
+const STUDY_CARDS_RATE_LIMIT = { keyPrefix: "api-study-cards", limit: 12, windowMs: 60_000 };
 
 type VocabularyCard = {
   word: string;
@@ -21,10 +24,6 @@ type StudyCardResult = {
 };
 
 type StudyCardMode = "article" | "word-list";
-
-function hasConfiguredProvider(providers: ChatProvider[]) {
-  return providers.some((provider) => Boolean(provider.apiKey && provider.apiUrl));
-}
 
 function shouldUsePublicDevProxy(req: NextRequest, providers: ChatProvider[]) {
   const host = req.headers.get("host") || "";
@@ -129,18 +128,6 @@ function buildStudyCardPrompt({
   ].join("\n");
 }
 
-function extractJsonObject(text: string) {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1]?.trim();
-  const candidate = fenced || text.trim();
-  const firstBrace = candidate.indexOf("{");
-  const lastBrace = candidate.lastIndexOf("}");
-  if (firstBrace < 0 || lastBrace <= firstBrace) {
-    throw new Error("AI response did not contain JSON");
-  }
-
-  return JSON.parse(candidate.slice(firstBrace, lastBrace + 1));
-}
-
 function normalizeStudyCardResult(value: unknown, cardCount: number, expectedMode: StudyCardMode): StudyCardResult {
   const raw = value as Partial<StudyCardResult>;
   const cards = Array.isArray(raw.cards)
@@ -167,49 +154,6 @@ function normalizeStudyCardResult(value: unknown, cardCount: number, expectedMod
     mode: expectedMode,
     cards,
   };
-}
-
-async function callProvider(provider: ChatProvider, prompt: string) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), provider.timeoutMs);
-
-  try {
-    const response = await fetch(provider.apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${provider.apiKey}`,
-        "User-Agent": "Mozilla/5.0 (compatible; YinPengtaoWebsite/1.0)",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        model: provider.model,
-        max_tokens: 3200,
-        stream: false,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: "你只输出严格 JSON，用中文回答。" },
-          { role: "user", content: prompt },
-        ],
-      }),
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      const detail = await response.text().catch(() => "");
-      throw new Error(detail.slice(0, 500) || `Upstream responded with ${response.status}`);
-    }
-
-    const payload = await response.json();
-    const content = payload?.choices?.[0]?.message?.content;
-    if (typeof content !== "string" || !content.trim()) {
-      throw new Error("AI response was empty");
-    }
-
-    return content;
-  } finally {
-    clearTimeout(timeoutId);
-  }
 }
 
 async function proxyToPublicStudyCardsApi(body: {
@@ -242,6 +186,12 @@ async function proxyToPublicStudyCardsApi(body: {
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimitError = enforceRateLimit(req, STUDY_CARDS_RATE_LIMIT);
+
+  if (rateLimitError) {
+    return rateLimitError;
+  }
+
   try {
     const body = await req.json().catch(() => null);
     const content = normalizeText(body?.content);
@@ -269,29 +219,29 @@ export async function POST(req: NextRequest) {
 
     const prompt = buildStudyCardPrompt({ content, difficulty, cardCount });
     const expectedMode = isLikelyWordList(content) ? "word-list" : "article";
-    let lastError = "API not configured";
-    let lastModel = providers[0]?.model ?? "unknown";
+    const providerResult = await callFirstConfiguredProvider(
+      providers,
+      [
+        { role: "system", content: "你只输出严格 JSON，用中文回答。" },
+        { role: "user", content: prompt },
+      ],
+      {
+        jsonMode: true,
+        maxTokens: 3200,
+        contentValidator: (aiText) => {
+          normalizeStudyCardResult(extractJsonObject(aiText), cardCount, expectedMode);
+        },
+      },
+    );
 
-    for (const provider of providers) {
-      lastModel = provider.model;
-
-      if (!provider.apiKey || !provider.apiUrl) {
-        lastError = `${provider.model} API not configured`;
-        continue;
-      }
-
-      try {
-        const aiText = await callProvider(provider, prompt);
-        const parsed = extractJsonObject(aiText);
-        return Response.json(normalizeStudyCardResult(parsed, cardCount, expectedMode));
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
-          lastError = "AI generation timed out";
-        } else {
-          lastError = error instanceof Error ? error.message : "AI generation failed";
-        }
-      }
+    if (providerResult.ok) {
+      const parsed = extractJsonObject(providerResult.content);
+      return Response.json(normalizeStudyCardResult(parsed, cardCount, expectedMode));
     }
+
+    const lastAttempt = providerResult.attempts.at(-1);
+    const lastError = providerResult.error || lastAttempt?.error || "API not configured";
+    const lastModel = lastAttempt?.model ?? providers[0]?.model ?? "unknown";
 
     if (!hasConfiguredProvider(providers)) {
       return Response.json(

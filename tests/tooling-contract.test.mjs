@@ -5,12 +5,16 @@ import { readFile, stat } from "node:fs/promises";
 const eslintConfig = await readFile(new URL("../eslint.config.mjs", import.meta.url), "utf8");
 const nextConfig = await readFile(new URL("../next.config.ts", import.meta.url), "utf8");
 const packageJson = await readFile(new URL("../package.json", import.meta.url), "utf8");
+const packageLockJson = await readFile(new URL("../package-lock.json", import.meta.url), "utf8");
 const vendorScript = await readFile(new URL("../scripts/prepare-vendor-assets.mjs", import.meta.url), "utf8");
+const xlsxVendorBundle = await readFile(new URL("../public/vendor/xlsx/xlsx.full.min.js", import.meta.url), "utf8");
 const perspectiveShim = await readFile(
   new URL("../src/app/finance/perspective-bi/perspective-extensions-shim.js", import.meta.url),
   "utf8"
 ).catch(() => "");
 const notionSyncScript = await readFile(new URL("../scripts/sync-notion-content.mjs", import.meta.url), "utf8").catch(() => "");
+const packageData = JSON.parse(packageJson);
+const packageLockData = JSON.parse(packageLockJson);
 
 async function readRequiredProjectFile(path) {
   try {
@@ -84,6 +88,20 @@ test("Perspective BI dependencies and local browser assets are wired", () => {
   assert.match(nextConfig, /perspective-extensions-shim\.js/);
   assert.match(perspectiveShim, /class PerspectiveSelectDetail/);
   assert.match(perspectiveShim, /removeFilters/);
+});
+
+test("spreadsheet parser uses the patched SheetJS npm alias and matching browser asset", () => {
+  assert.match(packageData.dependencies?.xlsx ?? "", /^npm:@e965\/xlsx@\^?0\.20\./);
+
+  const installedPackage = packageLockData.packages?.["node_modules/xlsx"];
+  assert.ok(installedPackage, "xlsx alias should be installed at node_modules/xlsx for existing imports");
+  assert.notEqual(installedPackage.version, "0.18.5");
+  assert.match(installedPackage.resolved ?? "", /@e965\/xlsx\/-\/xlsx-0\.20\./);
+
+  assert.doesNotMatch(packageLockJson, /registry\.npmjs\.org\/xlsx\/-\/xlsx-0\.18\.5\.tgz/);
+  assert.doesNotMatch(xlsxVendorBundle, /version="0\.18\.5"/);
+  assert.match(xlsxVendorBundle, /version="0\.20\./);
+  assert.match(vendorScript, /node_modules\/xlsx\/dist\/xlsx\.full\.min\.js/);
 });
 
 test("Perspective BI requires the existing finance access key before booting", async () => {
