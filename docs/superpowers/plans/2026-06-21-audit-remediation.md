@@ -628,6 +628,18 @@ Run: `npm run build:vercel`
 
 Observed: PASS, Next production build compiled and generated 35 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
 
+- [x] **Step 7: Verify the affected pages in a production browser**
+
+Started `npx next start -p 3028`.
+
+Run: Playwright opened `http://localhost:3028/finance/chart-candidates-demo` at `1280×900` and read computed SVG colors for the Pareto line, Pareto dot, and the first small-multiple polyline.
+
+Observed: all three resolved to the same site-token-derived blue (`color(srgb 0.334745 0.480784 0.625882)`), replacing the old hard-coded `#315f85`.
+
+Run: Playwright opened `http://localhost:3028/Lucas`, focused the access-code input, and read computed focus styles.
+
+Observed: the input focus border resolved to `rgb(217, 119, 87)` and the focus ring used the same accent with alpha. Console error count stayed 0.
+
 - [x] **Step 9: Verify local production keyboard behavior**
 
 Started `npx next start -p 3026`.
@@ -694,3 +706,62 @@ Observed: PASS, Next production build compiled and generated 35 static pages. Ex
 Started `npx next start -p 3027`, opened `http://localhost:3027/finance` at `390×844`, and captured Playwright snapshot, computed styles, bounding boxes, and `output/playwright/finance-ribbon-mobile-390x844.png`.
 
 Observed: both visible `测试中` ribbons render inside `.finance-model-preview-frame`, keep `top: 8px`, `right: -26px`, `width: 92px`, and the frame clips them with `overflow: hidden`; `centerNearFrameTopRight: true` for both, without moving to the left side of the mobile card or into the title area. Console error count stayed 0.
+
+### Task 15: Bring Local CSS Module Accent Blues Back Into The Site Palette
+
+**Files:**
+- Modify: `src/app/Lucas/Lucas.module.css`
+- Modify: `src/app/finance/chart-candidates-demo/ChartCandidatesDemo.module.css`
+- Modify: `src/app/finance/chart-candidates-demo/ChartCandidatesDemo.tsx`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `package.json`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Confirmed the narrow remaining P1 UI item was the CSS Module off-palette color finding. The actionable cold blues were `#2f76b7` and `#174d7a` in `src/app/Lucas/Lucas.module.css`, plus `#315f85` in `src/app/finance/chart-candidates-demo/ChartCandidatesDemo.module.css` and the chart demo TSX inline small-multiple colors.
+
+- [x] **Step 2: Add a regression contract**
+
+Added `tests/design-token-contract.test.mjs` and included it in `npm run test:site`. The contract checks `Lucas.module.css`, `ChartCandidatesDemo.module.css`, and `ChartCandidatesDemo.tsx`, rejects `#2f76b7`, `#315f85`, and `#174d7a`, and requires the replacements to use site accent tokens or `color-mix()` derived from them.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL because `src/app/Lucas/Lucas.module.css` still used the off-palette focus blue `#2f76b7`.
+
+- [x] **Step 4: Replace the local off-palette blues**
+
+Changed Lucas focus borders to `var(--accent)` plus an accent `color-mix()` focus ring; changed Lucas detail-table emphasized values to a `var(--accent-secondary)` mix. Changed the chart candidate Pareto line/dot to the same accent-secondary mix, and changed the TSX small-multiple blue series to a shared `financeBlue` token-derived value.
+
+- [x] **Step 5: Record completion**
+
+Updated `docs/project-audit-report.md` with `UI P1-7` status, scope, and verification commands.
+
+- [x] **Step 6: Run verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 1/1 test.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 305/305 tests. Existing Node module-type warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 35 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.

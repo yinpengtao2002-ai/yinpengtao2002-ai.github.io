@@ -103,8 +103,8 @@
 .gateField input:focus,
 .field input:focus,
 .field select:focus {
-  border-color: #2f76b7;
-  box-shadow: 0 0 0 3px rgba(47, 118, 183, 0.16);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .gateForm button {
@@ -377,7 +377,7 @@
 }
 
 .detailTable strong {
-  color: #174d7a;
+  color: color-mix(in srgb, var(--accent-secondary) 76%, var(--foreground));
   font-size: 1rem;
 }
 

@@ -122,13 +122,15 @@ function MiniTrend({ title, values, color }: { title: string; values: number[]; 
 }
 
 function SmallMultiplesChart() {
+  const financeBlue = "color-mix(in srgb, var(--accent-secondary) 76%, var(--foreground))";
+
   return (
     <div className={styles.multiples}>
-      <MiniTrend title="德国｜BEV" values={[2.4, 2.6, 2.8, 2.7, 3.1, 3.4]} color="#315f85" />
+      <MiniTrend title="德国｜BEV" values={[2.4, 2.6, 2.8, 2.7, 3.1, 3.4]} color={financeBlue} />
       <MiniTrend title="英国｜PHEV" values={[2.2, 2.0, 1.8, 1.9, 2.4, 2.6]} color="#d97757" />
       <MiniTrend title="巴西｜SUV" values={[1.2, 1.4, 1.5, 1.7, 1.9, 2.3]} color="#788c5d" />
       <MiniTrend title="墨西哥｜ICE" values={[2.8, 2.7, 2.6, 2.3, 2.0, 1.8]} color="#c97991" />
-      <MiniTrend title="泰国｜Pickup" values={[1.4, 1.3, 1.6, 1.8, 2.1, 2.0]} color="#315f85" />
+      <MiniTrend title="泰国｜Pickup" values={[1.4, 1.3, 1.6, 1.8, 2.1, 2.0]} color={financeBlue} />
       <MiniTrend title="中东｜SUV" values={[3.2, 3.4, 3.1, 3.0, 3.3, 3.8]} color="#788c5d" />
     </div>
   );

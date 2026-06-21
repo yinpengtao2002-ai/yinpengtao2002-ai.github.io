@@ -183,14 +183,14 @@
 
 .paretoLine {
   fill: none;
-  stroke: #315f85;
+  stroke: color-mix(in srgb, var(--accent-secondary) 76%, var(--foreground));
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 3;
 }
 
 .paretoDot {
-  fill: #315f85;
+  fill: color-mix(in srgb, var(--accent-secondary) 76%, var(--foreground));
   stroke: #fffdf9;
   stroke-width: 2;
 }
