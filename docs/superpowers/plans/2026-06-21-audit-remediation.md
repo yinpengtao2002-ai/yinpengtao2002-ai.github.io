@@ -473,3 +473,79 @@ Observed: PASS, Next production build compiled and generated 35 static pages.
 - [x] **Step 9: Record completion**
 
 Updated `docs/project-audit-report.md` with `UI P1-4` status, the reduced-motion/performance scope, and the full verification command list.
+
+### Task 12: Fix Security Header Regression for Margin Analysis Iframe
+
+**Files:**
+- Modify: `next.config.ts`
+- Modify: `tests/security-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Confirm the regression**
+
+Verified the live static tool URL `https://yinpengtao.cn/tools/margin-analysis/index.html` returned `200` but also carried `Content-Security-Policy: ... frame-ancestors 'none'` and `X-Frame-Options: DENY`. That makes the static tool refuse being embedded by the first-party `/finance/margin-analysis` page.
+
+- [x] **Step 2: Identify root cause**
+
+Traced the regression to the P0-2 security hardening in `next.config.ts`: the global `source: "/(.*)"` header rule applied the anti-framing headers to every path, including the same-origin static finance tool intended for iframe embedding.
+
+- [x] **Step 3: Write the failing contract**
+
+Added a `tests/security-contract.test.mjs` assertion requiring a `sameOriginFrameContentSecurityPolicy`, `frame-ancestors 'self'`, a `/tools/margin-analysis/:path*` header rule, and `X-Frame-Options: SAMEORIGIN`.
+
+Run: `node --test tests/security-contract.test.mjs`
+
+Observed: FAIL because `next.config.ts` had no same-origin iframe exception.
+
+- [x] **Step 4: Implement the scoped header exception**
+
+Kept the global anti-framing default as `frame-ancestors 'none'` / `X-Frame-Options: DENY`, then added a later `/tools/margin-analysis/:path*` header override with `frame-ancestors 'self'` / `X-Frame-Options: SAMEORIGIN`.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/security-contract.test.mjs`
+
+Observed: PASS.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 301/301 tests. Existing Node module-type warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 35 static pages.
+
+- [x] **Step 7: Verify local production headers and iframe rendering**
+
+Started `npx next start -p 3024`.
+
+Run: `curl -I -L http://localhost:3024/tools/margin-analysis/index.html`
+
+Observed: `Content-Security-Policy` includes `frame-ancestors 'self'` and `X-Frame-Options: SAMEORIGIN`.
+
+Run: `curl -I -L http://localhost:3024/finance/margin-analysis`
+
+Observed: the first-party finance page still keeps `frame-ancestors 'none'` and `X-Frame-Options: DENY`.
+
+Run: Playwright open/snapshot for `http://localhost:3024/finance/margin-analysis`
+
+Observed: iframe content renders the margin-analysis controls and charts; console only showed the tool's normal render/calculation logs.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` with a `安全 P0-2 回归` entry documenting the iframe regression and scoped same-origin fix.

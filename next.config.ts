@@ -4,7 +4,7 @@ import type { NextConfig } from "next";
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 
-const contentSecurityPolicy = [
+const baseContentSecurityPolicyDirectives = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:",
   "style-src 'self' 'unsafe-inline'",
@@ -16,7 +16,17 @@ const contentSecurityPolicy = [
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
+];
+
+const contentSecurityPolicy = [
+  ...baseContentSecurityPolicyDirectives,
   "frame-ancestors 'none'",
+  "upgrade-insecure-requests",
+].join("; ");
+
+const sameOriginFrameContentSecurityPolicy = [
+  ...baseContentSecurityPolicyDirectives,
+  "frame-ancestors 'self'",
   "upgrade-insecure-requests",
 ].join("; ");
 
@@ -66,6 +76,19 @@ const nextConfig: NextConfig = {
           {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=(), payment=()",
+          },
+        ],
+      },
+      {
+        source: "/tools/margin-analysis/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: sameOriginFrameContentSecurityPolicy,
+          },
+          {
+            key: "X-Frame-Options",
+            value: "SAMEORIGIN",
           },
         ],
       },

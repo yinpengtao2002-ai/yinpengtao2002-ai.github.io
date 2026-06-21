@@ -22,6 +22,15 @@ test("global security headers are configured in Next", async () => {
   assert.match(nextConfig, /Permissions-Policy/);
 });
 
+test("same-origin static finance tools remain embeddable by their finance pages", async () => {
+  const nextConfig = await readProjectFile("next.config.ts");
+
+  assert.match(nextConfig, /sameOriginFrameContentSecurityPolicy/);
+  assert.match(nextConfig, /frame-ancestors 'self'/);
+  assert.match(nextConfig, /source:\s*"\/tools\/margin-analysis\/:path\*"/);
+  assert.match(nextConfig, /value:\s*"SAMEORIGIN"/);
+});
+
 test("AI-facing API routes apply abuse-control rate limits before provider calls", async () => {
   const routeFiles = [
     "src/app/api/chat/route.ts",
