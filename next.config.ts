@@ -18,6 +18,12 @@ const baseContentSecurityPolicyDirectives = [
   "form-action 'self'",
 ];
 
+const subtitleWorkbenchContentSecurityPolicyDirectives = baseContentSecurityPolicyDirectives.map((directive) =>
+  directive === "frame-src 'self'"
+    ? "frame-src 'self' https://yptt-subtitle-workbench.hf.space"
+    : directive,
+);
+
 const contentSecurityPolicy = [
   ...baseContentSecurityPolicyDirectives,
   "frame-ancestors 'none'",
@@ -27,6 +33,12 @@ const contentSecurityPolicy = [
 const sameOriginFrameContentSecurityPolicy = [
   ...baseContentSecurityPolicyDirectives,
   "frame-ancestors 'self'",
+  "upgrade-insecure-requests",
+].join("; ");
+
+const subtitleWorkbenchContentSecurityPolicy = [
+  ...subtitleWorkbenchContentSecurityPolicyDirectives,
+  "frame-ancestors 'none'",
   "upgrade-insecure-requests",
 ].join("; ");
 
@@ -89,6 +101,15 @@ const nextConfig: NextConfig = {
           {
             key: "X-Frame-Options",
             value: "SAMEORIGIN",
+          },
+        ],
+      },
+      {
+        source: "/tools/subtitle-workbench/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: subtitleWorkbenchContentSecurityPolicy,
           },
         ],
       },

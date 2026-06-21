@@ -474,7 +474,7 @@ Observed: PASS, Next production build compiled and generated 35 static pages.
 
 Updated `docs/project-audit-report.md` with `UI P1-4` status, the reduced-motion/performance scope, and the full verification command list.
 
-### Task 12: Fix Security Header Regression for Margin Analysis Iframe
+### Task 12: Fix Security Header Regression for Iframe Tools
 
 **Files:**
 - Modify: `next.config.ts`
@@ -490,6 +490,8 @@ Verified the live static tool URL `https://yinpengtao.cn/tools/margin-analysis/i
 
 Traced the regression to the P0-2 security hardening in `next.config.ts`: the global `source: "/(.*)"` header rule applied the anti-framing headers to every path, including the same-origin static finance tool intended for iframe embedding.
 
+After the user pointed out the subtitle summary tool, confirmed the same hardening also affected `/tools/subtitle-workbench`: that page embeds `https://yptt-subtitle-workbench.hf.space/`, but the parent page CSP still had `frame-src 'self'`. A direct header check of the Hugging Face app did not show an anti-framing header, so the blocker was our parent CSP.
+
 - [x] **Step 3: Write the failing contract**
 
 Added a `tests/security-contract.test.mjs` assertion requiring a `sameOriginFrameContentSecurityPolicy`, `frame-ancestors 'self'`, a `/tools/margin-analysis/:path*` header rule, and `X-Frame-Options: SAMEORIGIN`.
@@ -498,9 +500,17 @@ Run: `node --test tests/security-contract.test.mjs`
 
 Observed: FAIL because `next.config.ts` had no same-origin iframe exception.
 
+Added a second assertion requiring `subtitleWorkbenchContentSecurityPolicy`, a `/tools/subtitle-workbench/:path*` header rule, and `frame-src 'self' https://yptt-subtitle-workbench.hf.space`.
+
+Run: `node --test tests/security-contract.test.mjs`
+
+Observed: FAIL because `next.config.ts` had no subtitle workbench iframe exception.
+
 - [x] **Step 4: Implement the scoped header exception**
 
 Kept the global anti-framing default as `frame-ancestors 'none'` / `X-Frame-Options: DENY`, then added a later `/tools/margin-analysis/:path*` header override with `frame-ancestors 'self'` / `X-Frame-Options: SAMEORIGIN`.
+
+Added a `/tools/subtitle-workbench/:path*` CSP override that keeps `frame-ancestors 'none'` but expands `frame-src` to include `https://yptt-subtitle-workbench.hf.space`.
 
 - [x] **Step 5: Run targeted verification**
 
@@ -542,10 +552,14 @@ Run: `curl -I -L http://localhost:3024/finance/margin-analysis`
 
 Observed: the first-party finance page still keeps `frame-ancestors 'none'` and `X-Frame-Options: DENY`.
 
-Run: Playwright open/snapshot for `http://localhost:3024/finance/margin-analysis`
+Run: `curl -I -L http://localhost:3024/tools/subtitle-workbench/`
 
-Observed: iframe content renders the margin-analysis controls and charts; console only showed the tool's normal render/calculation logs.
+Observed: `Content-Security-Policy` keeps `frame-ancestors 'none'` and includes `frame-src 'self' https://yptt-subtitle-workbench.hf.space`.
+
+Run: Playwright open/snapshot for `http://localhost:3024/finance/margin-analysis` and `http://localhost:3024/tools/subtitle-workbench`
+
+Observed: both iframe contents render. Margin analysis shows its controls and charts; subtitle workbench shows the hosted "视频字幕提取与总结" interface. Margin console only showed the tool's normal render/calculation logs.
 
 - [x] **Step 8: Record completion**
 
-Updated `docs/project-audit-report.md` with a `安全 P0-2 回归` entry documenting the iframe regression and scoped same-origin fix.
+Updated `docs/project-audit-report.md` with a `安全 P0-2 回归` entry documenting the iframe regressions and scoped fixes for both `margin-analysis` and the subtitle workbench.

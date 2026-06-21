@@ -31,6 +31,14 @@ test("same-origin static finance tools remain embeddable by their finance pages"
   assert.match(nextConfig, /value:\s*"SAMEORIGIN"/);
 });
 
+test("subtitle workbench page allows its external hosted iframe", async () => {
+  const nextConfig = await readProjectFile("next.config.ts");
+
+  assert.match(nextConfig, /subtitleWorkbenchContentSecurityPolicy/);
+  assert.match(nextConfig, /frame-src 'self' https:\/\/yptt-subtitle-workbench\.hf\.space/);
+  assert.match(nextConfig, /source:\s*"\/tools\/subtitle-workbench\/:path\*"/);
+});
+
 test("AI-facing API routes apply abuse-control rate limits before provider calls", async () => {
   const routeFiles = [
     "src/app/api/chat/route.ts",
