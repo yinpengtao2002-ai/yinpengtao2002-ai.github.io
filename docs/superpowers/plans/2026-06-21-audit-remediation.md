@@ -563,3 +563,75 @@ Observed: both iframe contents render. Margin analysis shows its controls and ch
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` with a `安全 P0-2 回归` entry documenting the iframe regressions and scoped fixes for both `margin-analysis` and the subtitle workbench.
+
+### Task 13: Make ChatWidget Behave as an Accessible Modal Dialog
+
+**Files:**
+- Modify: `src/components/ChatWidget.tsx`
+- Modify: `tests/chat-math-normalization.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Re-check the audit item**
+
+Confirmed `ChatWidget` rendered the assistant panel as a fixed visual layer without `role="dialog"` / `aria-modal`, without a stable label/description pair, without Escape close or Tab focus containment, and without live-region status on the message stream.
+
+- [x] **Step 2: Write the failing contract**
+
+Added a `tests/chat-math-normalization.test.mjs` assertion requiring launcher/panel refs, `focusableSelectors`, dialog semantics, labelled/described ids, `onKeyDown={handlePanelKeyDown}`, Escape handling, Tab / Shift+Tab focus wrapping including the panel-focused mobile edge case, focus restoration to the launcher, and `aria-live` / `aria-busy` on the message container.
+
+- [x] **Step 3: Run test to verify it fails**
+
+Run: `node --test tests/chat-math-normalization.test.mjs`
+
+Observed: FAIL because `ChatWidget` did not have `launcherButtonRef`, confirming the new contract caught the missing modal accessibility implementation.
+
+- [x] **Step 4: Implement the modal accessibility behavior**
+
+Changed `ChatWidget` to keep refs for the launcher and panel, focus the input on desktop open while focusing the panel itself on mobile open, and restore focus to the launcher after closing.
+
+Added `handlePanelKeyDown` so Escape closes the panel and Tab / Shift+Tab cycle through focusable controls inside the panel, including when the panel itself holds focus on mobile open. Added `role="dialog"`, `aria-modal="true"`, stable title and description ids, and `tabIndex={-1}` to the panel.
+
+- [x] **Step 5: Add live status and button naming**
+
+Added `aria-live="polite"`, `aria-relevant="additions text"`, and `aria-busy={isProcessing}` to the message container. Also made the send control an explicit `type="button"` with `aria-label="发送消息"`.
+
+- [x] **Step 6: Run targeted verification**
+
+Run: `node --test tests/chat-math-normalization.test.mjs`
+
+Observed: PASS. Existing Node module-type warning remains unrelated.
+
+- [x] **Step 7: Record completion**
+
+Updated `docs/project-audit-report.md` with `UI P1-5` status, the modal accessibility scope, and the verification command list.
+
+- [x] **Step 8: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 303/303 tests. Existing Node module-type warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 35 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 9: Verify local production keyboard behavior**
+
+Started `npx next start -p 3026`.
+
+Run: Playwright open/snapshot/click/press for `http://localhost:3026/` on desktop width, then resized to `390×844` for the mobile panel-focused edge case.
+
+Observed: opening the launcher exposed `dialog "Lucas AI"` with the desktop textbox focused; pressing Escape closed the dialog and restored focus to the launcher; pressing Tab from the textbox wrapped focus to the close button, and Shift+Tab from the close button wrapped back to the textbox. On mobile `390×844`, opening the launcher focused the dialog container, Shift+Tab wrapped to the textbox instead of escaping to the backdrop or navigation, and Escape restored focus to the AI launcher. Console error count stayed 0.

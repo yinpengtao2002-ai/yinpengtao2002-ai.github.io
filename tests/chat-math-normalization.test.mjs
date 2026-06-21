@@ -161,6 +161,24 @@ test("mobile chat panel exposes a clear Lucas AI close control", () => {
   assert.match(chatWidget, /zIndex:\s*3/);
 });
 
+test("chat panel behaves as an accessible modal dialog", () => {
+  assert.match(chatWidget, /const launcherButtonRef = useRef<HTMLButtonElement>\(null\)/);
+  assert.match(chatWidget, /const chatPanelRef = useRef<HTMLDivElement>\(null\)/);
+  assert.match(chatWidget, /const focusableSelectors = /);
+  assert.match(chatWidget, /role="dialog"/);
+  assert.match(chatWidget, /aria-modal="true"/);
+  assert.match(chatWidget, /aria-labelledby="chat-panel-title"/);
+  assert.match(chatWidget, /aria-describedby="chat-panel-description"/);
+  assert.match(chatWidget, /onKeyDown=\{handlePanelKeyDown\}/);
+  assert.match(chatWidget, /if \(event\.key === "Escape"\)/);
+  assert.match(chatWidget, /if \(event\.key !== "Tab"\)/);
+  assert.match(chatWidget, /event\.shiftKey/);
+  assert.match(chatWidget, /activeElement === panel/);
+  assert.match(chatWidget, /launcherButtonRef\.current\?\.focus\(\)/);
+  assert.match(chatWidget, /aria-live="polite"/);
+  assert.match(chatWidget, /aria-busy=\{isProcessing\}/);
+});
+
 test("mobile chat launcher avoids reserving a large bottom blank before it is opened", () => {
   assert.doesNotMatch(chatWidget, /if \(!isOpen \|\| !isMobileLike/);
   assert.match(chatWidget, /const mobileLauncherStyle/);

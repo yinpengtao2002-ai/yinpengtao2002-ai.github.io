@@ -66,6 +66,15 @@ const AI_ASSISTANT_SCOPE = "模型选择、使用说明、图表阅读和文章�
 const CHAT_UI_FONT =
     'var(--font-poppins), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif';
 
+const focusableSelectors = [
+    "a[href]",
+    "button:not([disabled])",
+    "textarea:not([disabled])",
+    "input:not([disabled])",
+    "select:not([disabled])",
+    "[tabindex]:not([tabindex='-1'])",
+].join(",");
+
 function resizeChatInput(element: HTMLTextAreaElement | null, maxHeight: number) {
     if (!element) return;
 
@@ -366,6 +375,8 @@ export default function ChatWidget() {
     const [mobileExpanded, setMobileExpanded] = useState(false);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const launcherButtonRef = useRef<HTMLButtonElement>(null);
+    const chatPanelRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const currentFinanceModelSlugRef = useRef<string | null>(null);
     const currentThinkingArticleHrefRef = useRef<string | null>(null);
@@ -439,7 +450,16 @@ export default function ChatWidget() {
     }, [messages]);
 
     useEffect(() => {
-        if (isOpen && !isMobileLike) inputRef.current?.focus();
+        if (!isOpen) return;
+
+        window.requestAnimationFrame(() => {
+            if (isMobileLike) {
+                chatPanelRef.current?.focus({ preventScroll: true });
+                return;
+            }
+
+            inputRef.current?.focus({ preventScroll: true });
+        });
     }, [isMobileLike, isOpen]);
 
     useEffect(() => {
@@ -723,6 +743,61 @@ export default function ChatWidget() {
         setKeyboardOpen(false);
         setMobileExpanded(false);
         setIsOpen(false);
+        window.setTimeout(() => {
+            launcherButtonRef.current?.focus();
+        }, 0);
+    };
+
+    const handlePanelKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+        if (event.key === "Escape") {
+            event.preventDefault();
+            event.stopPropagation();
+            handleClose();
+            return;
+        }
+
+        if (event.key !== "Tab") return;
+
+        const panel = chatPanelRef.current;
+        if (!panel) return;
+
+        const focusableElements = Array.from(panel.querySelectorAll<HTMLElement>(focusableSelectors)).filter((element) => {
+            const style = window.getComputedStyle(element);
+            return style.display !== "none" && style.visibility !== "hidden";
+        });
+
+        if (focusableElements.length === 0) {
+            event.preventDefault();
+            panel.focus();
+            return;
+        }
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+        const activeElement = document.activeElement;
+
+        if (activeElement === panel) {
+            event.preventDefault();
+            (event.shiftKey ? lastElement : firstElement).focus();
+            return;
+        }
+
+        if (event.shiftKey && activeElement === firstElement) {
+            event.preventDefault();
+            lastElement.focus();
+            return;
+        }
+
+        if (!event.shiftKey && activeElement === lastElement) {
+            event.preventDefault();
+            firstElement.focus();
+            return;
+        }
+
+        if (!panel.contains(activeElement)) {
+            event.preventDefault();
+            (event.shiftKey ? lastElement : firstElement).focus();
+        }
     };
     const handlePanelDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
         if (!isMobileLike) return;
@@ -758,6 +833,8 @@ export default function ChatWidget() {
             <AnimatePresence>
                 {!isOpen && (
                     <motion.button
+                        ref={launcherButtonRef}
+                        type="button"
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0, opacity: 0 }}
@@ -816,6 +893,7 @@ export default function ChatWidget() {
                             />
                         )}
                         <motion.div
+                            ref={chatPanelRef}
                             initial={{ opacity: 0, y: isMobileLike ? 28 : 20, scale: 0.97 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 20, scale: 0.97 }}
@@ -828,6 +906,12 @@ export default function ChatWidget() {
                             dragMomentum={false}
                             onDragEnd={handlePanelDragEnd}
                             className="chat-panel"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="chat-panel-title"
+                            aria-describedby="chat-panel-description"
+                            tabIndex={-1}
+                            onKeyDown={handlePanelKeyDown}
                             style={{
                                 position: "fixed",
                                 display: "flex",
@@ -859,6 +943,9 @@ export default function ChatWidget() {
                                 ...panelStyle,
                             }}
                         >
+                            <p id="chat-panel-description" className="sr-only">
+                                Lucas AI 助手，可以帮你选择财务模型、说明模型用法、梳理图表阅读顺序和推荐文章。
+                            </p>
                             {isMobileLike && (
                                 <>
                                     <div
@@ -925,6 +1012,7 @@ export default function ChatWidget() {
                                     />
                                     <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
                                         <span
+                                            id="chat-panel-title"
                                             style={{
                                                 fontSize: headerFontSize,
                                                 fontWeight: 600,
@@ -970,6 +1058,9 @@ export default function ChatWidget() {
                             {/* Messages */}
                             <div
                                 ref={messagesContainerRef}
+                                aria-live="polite"
+                                aria-relevant="additions text"
+                                aria-busy={isProcessing}
                                 style={{
                                     flex: 1,
                                     minHeight: 0,
@@ -1150,6 +1241,8 @@ export default function ChatWidget() {
                                         }}
                                     />
                                     <button
+                                        type="button"
+                                        aria-label="发送消息"
                                         onClick={handleSend}
                                         disabled={!inputValue.trim() || isProcessing}
                                         style={{
