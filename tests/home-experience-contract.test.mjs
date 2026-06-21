@@ -729,7 +729,10 @@ test("home animation polish respects reduced-motion preferences", () => {
   assert.match(globals, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*\.home-thinking-track-card/s);
 });
 
-test("contact section includes Lucas phone number", () => {
-  assert.match(contactSection, /15140319603/);
+test("contact section reads Lucas contact details from site config", () => {
+  assert.match(contactSection, /siteConfig\.links\?\.email/);
+  assert.match(contactSection, /siteConfig\.links\?\.phone/);
+  assert.match(contactSection, /href=\{`tel:\$\{siteConfig\.links\?\.phone\}`\}/);
+  assert.doesNotMatch(contactSection, /15140319603/);
   assert.match(contactSection, /电话/);
 });

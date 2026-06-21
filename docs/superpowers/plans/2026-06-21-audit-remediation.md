@@ -628,18 +628,6 @@ Run: `npm run build:vercel`
 
 Observed: PASS, Next production build compiled and generated 35 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
 
-- [x] **Step 7: Verify the affected pages in a production browser**
-
-Started `npx next start -p 3028`.
-
-Run: Playwright opened `http://localhost:3028/finance/chart-candidates-demo` at `1280×900` and read computed SVG colors for the Pareto line, Pareto dot, and the first small-multiple polyline.
-
-Observed: all three resolved to the same site-token-derived blue (`color(srgb 0.334745 0.480784 0.625882)`), replacing the old hard-coded `#315f85`.
-
-Run: Playwright opened `http://localhost:3028/Lucas`, focused the access-code input, and read computed focus styles.
-
-Observed: the input focus border resolved to `rgb(217, 119, 87)` and the focus ring used the same accent with alpha. Console error count stayed 0.
-
 - [x] **Step 9: Verify local production keyboard behavior**
 
 Started `npx next start -p 3026`.
@@ -765,3 +753,77 @@ Observed: PASS, 305/305 tests. Existing Node module-type warnings remain unrelat
 Run: `npm run build:vercel`
 
 Observed: PASS, Next production build compiled and generated 35 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 7: Verify the affected pages in a production browser**
+
+Started `npx next start -p 3028`.
+
+Run: Playwright opened `http://localhost:3028/finance/chart-candidates-demo` at `1280×900` and read computed SVG colors for the Pareto line, Pareto dot, and the first small-multiple polyline.
+
+Observed: all three resolved to the same site-token-derived blue (`color(srgb 0.334745 0.480784 0.625882)`), replacing the old hard-coded `#315f85`.
+
+Run: Playwright opened `http://localhost:3028/Lucas`, focused the access-code input, and read computed focus styles.
+
+Observed: the input focus border resolved to `rgb(217, 119, 87)` and the focus ring used the same accent with alpha. Console error count stayed 0.
+
+### Task 16: Read The Homepage Phone Contact From Site Config
+
+**Files:**
+- Modify: `src/components/home/HomeContactSection.tsx`
+- Modify: `tests/home-experience-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Confirmed the P2 contact hardcoding item was narrow: `HomeContactSection` already reads email from `siteConfig.links?.email`, but still hard-coded the phone number in both `href="tel:..."` and visible text even though `src/lib/config/site.ts` already exposes `links.phone`.
+
+- [x] **Step 2: Add a regression contract**
+
+Changed the existing `tests/home-experience-contract.test.mjs` contact test from requiring the phone number literal in the component to requiring `siteConfig.links?.phone` for both the `tel:` href and visible phone text, while rejecting the hard-coded phone literal inside the component source.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/home-experience-contract.test.mjs`
+
+Observed: FAIL because `HomeContactSection.tsx` still used `href="tel:15140319603"` and visible `电话：15140319603`, and did not reference `siteConfig.links?.phone`.
+
+- [x] **Step 4: Replace the hard-coded phone**
+
+Changed the phone link to `href={`tel:${siteConfig.links?.phone}`}` and the visible text to `电话：{siteConfig.links?.phone}`.
+
+- [x] **Step 5: Record completion**
+
+Updated `docs/project-audit-report.md` with `UI P2-1` status, scope, and verification commands.
+
+- [x] **Step 6: Run verification**
+
+Run: `node --test tests/home-experience-contract.test.mjs`
+
+Observed: PASS, 29/29 tests.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 305/305 tests. Existing Node module-type warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 35 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 7: Verify the homepage contact link in a production browser**
+
+Started `npx next start -p 3029`, opened `http://localhost:3029/#contact` at `390×844`, and read the contact section's phone link.
+
+Observed: `#contact` existed, the phone link kept `href="tel:15140319603"`, visible text stayed `电话：15140319603`, and console error count stayed 0.

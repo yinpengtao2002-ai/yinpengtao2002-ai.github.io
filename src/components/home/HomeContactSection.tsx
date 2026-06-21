@@ -17,8 +17,8 @@ export default function HomeContactSection() {
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--muted)" }}>
             <MessageCircle style={{ width: 16, height: 16 }} /> 微信：YPT1479239526
           </span>
-          <a href="tel:15140319603" style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--muted)", textDecoration: "none" }}>
-            <Phone style={{ width: 16, height: 16 }} /> 电话：15140319603
+          <a href={`tel:${siteConfig.links?.phone}`} style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--muted)", textDecoration: "none" }}>
+            <Phone style={{ width: 16, height: 16 }} /> 电话：{siteConfig.links?.phone}
           </a>
           <a href="https://www.linkedin.com/in/lucasyin2002/" target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--muted)", textDecoration: "none" }}>
             <Linkedin style={{ width: 16, height: 16 }} /> LinkedIn
