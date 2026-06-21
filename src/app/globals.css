@@ -7522,6 +7522,12 @@ h6 {
   background-size: 28px 28px;
 }
 
+.finance-model-preview-frame {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+}
+
 .finance-model-preview.compact {
   aspect-ratio: 1.85;
 }
@@ -7548,6 +7554,11 @@ h6 {
     display: grid;
     grid-template-columns: 118px minmax(0, 1fr);
     min-height: 92px;
+  }
+
+  .finance-model-library-grid.compact .finance-model-preview-frame {
+    align-self: stretch;
+    min-height: 84px;
   }
 
   .finance-model-card-body {

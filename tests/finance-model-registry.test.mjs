@@ -306,9 +306,23 @@ test("finance compact library uses one-row three-up product cards on desktop", a
   );
 });
 
-test("finance testing ribbon stays pinned to the card top-right corner on mobile", async () => {
+test("finance testing ribbon stays pinned to the preview thumbnail corner on mobile", async () => {
+  const library = await readFile(
+    new URL("../src/components/finance/FinanceModelLibrary.tsx", import.meta.url),
+    "utf8"
+  );
   const globals = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
 
+  assert.match(library, /finance-model-preview-frame/);
+  assert.match(
+    library,
+    /<div className="finance-model-preview-frame">[\s\S]*<FinanceModelPreview[\s\S]*finance-model-status-ribbon[\s\S]*<\/div>/,
+    "testing ribbon should be rendered inside the preview frame, not as a card-level sibling"
+  );
+  assertCssRuleHas(globals, ".finance-model-preview-frame", [
+    "position: relative",
+    "overflow: hidden",
+  ]);
   assertCssRuleInBlockHas(globals, "@media (max-width: 768px)", ".finance-model-status-ribbon", [
     "top: 8px",
     "right: -26px",

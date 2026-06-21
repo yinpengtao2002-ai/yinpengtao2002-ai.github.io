@@ -29,20 +29,22 @@ export default function FinanceModelLibrary({ compact = false }: { compact?: boo
                   model.status === "testing" ? "has-status" : "",
                 ].filter(Boolean).join(" ")}
               >
-                {model.status === "testing" ? (
-                  <span
-                    className="finance-model-status-ribbon"
-                    aria-label={`${model.title}正在测试中`}
-                  >
-                    测试中
-                  </span>
-                ) : null}
-                <FinanceModelPreview
-                  src={model.previewImage}
-                  alt={model.previewAlt}
-                  compact={compact}
-                  priority={index === 0}
-                />
+                <div className="finance-model-preview-frame">
+                  <FinanceModelPreview
+                    src={model.previewImage}
+                    alt={model.previewAlt}
+                    compact={compact}
+                    priority={index === 0}
+                  />
+                  {model.status === "testing" ? (
+                    <span
+                      className="finance-model-status-ribbon"
+                      aria-label={`${model.title}正在测试中`}
+                    >
+                      测试中
+                    </span>
+                  ) : null}
+                </div>
                 <div className="finance-model-card-body">
                   <h3 className="finance-model-card-title">
                     {model.title}

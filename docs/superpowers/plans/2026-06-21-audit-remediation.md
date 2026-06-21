@@ -639,22 +639,25 @@ Observed: opening the launcher exposed `dialog "Lucas AI"` with the desktop text
 ### Task 14: Keep Finance Testing Ribbon Anchored on Mobile Cards
 
 **Files:**
-- Modified in commit `8e7320e`: `src/app/globals.css`
-- Modified in commit `8e7320e`: `tests/finance-model-registry.test.mjs`
+- Modify: `src/components/finance/FinanceModelLibrary.tsx`
+- Modify: `src/app/globals.css`
+- Modify: `tests/finance-model-registry.test.mjs`
 - Modify: `docs/project-audit-report.md`
 - Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
 
 - [x] **Step 1: Re-check the in-progress change**
 
-Confirmed `main` already contained commit `8e7320e Fix mobile finance testing ribbon position`, which changed the mobile `.finance-model-status-ribbon` rule from the previous left-side anchor back to a card top-right anchor.
+Confirmed `main` already contained commit `8e7320e Fix mobile finance testing ribbon position`, which changed the mobile `.finance-model-status-ribbon` rule from the previous left-side anchor back to a right-side anchor. A follow-up working-tree change then made the safer structural fix: render the ribbon inside a `.finance-model-preview-frame` so the badge belongs to the thumbnail instead of the whole card.
 
 - [x] **Step 2: Confirm the regression contract**
 
-The new contract in `tests/finance-model-registry.test.mjs` parses all `@media (max-width: 768px)` CSS blocks and requires the mobile `.finance-model-status-ribbon` rule to keep `top: 8px`, `right: -26px`, `left: auto`, and `width: 92px`, while rejecting the old `left: 22px` anchor.
+The new contract in `tests/finance-model-registry.test.mjs` requires `FinanceModelLibrary` to render `FinanceModelPreview` and `.finance-model-status-ribbon` inside `.finance-model-preview-frame`, requires that frame to be `position: relative` with `overflow: hidden`, parses all `@media (max-width: 768px)` CSS blocks, and requires the mobile `.finance-model-status-ribbon` rule to keep `top: 8px`, `right: -26px`, `left: auto`, and `width: 92px`, while rejecting the old `left: 22px` anchor.
 
 - [x] **Step 3: Verify the old baseline would fail**
 
-Earlier local diff showed the old mobile rule used `right: auto` and `left: 22px`, which would fail the new contract. After the code commit landed in `HEAD`, `git show HEAD:src/app/globals.css` confirmed the fixed rule is already present in `main`.
+Run: a Node assertion against `git show HEAD:src/components/finance/FinanceModelLibrary.tsx` requiring `finance-model-preview-frame`.
+
+Observed: FAIL because the baseline rendered `.finance-model-status-ribbon` as a card-level sibling before `FinanceModelPreview`, not inside a preview frame.
 
 - [x] **Step 4: Record completion**
 
@@ -688,6 +691,6 @@ Observed: PASS, Next production build compiled and generated 35 static pages. Ex
 
 - [x] **Step 6: Verify mobile finance page in a browser**
 
-Started `npx next start -p 3027`, opened `http://localhost:3027/finance` at `390×844`, and captured Playwright snapshot plus bounding boxes for `.finance-model-status-ribbon`.
+Started `npx next start -p 3027`, opened `http://localhost:3027/finance` at `390×844`, and captured Playwright snapshot, computed styles, bounding boxes, and `output/playwright/finance-ribbon-mobile-390x844.png`.
 
-Observed: both visible `测试中` ribbons stayed anchored near the card top-right edge (`anchoredNearRight: true` for both), without moving to the left side of the mobile card. Console error count stayed 0.
+Observed: both visible `测试中` ribbons render inside `.finance-model-preview-frame`, keep `top: 8px`, `right: -26px`, `width: 92px`, and the frame clips them with `overflow: hidden`; `centerNearFrameTopRight: true` for both, without moving to the left side of the mobile card or into the title area. Console error count stayed 0.
