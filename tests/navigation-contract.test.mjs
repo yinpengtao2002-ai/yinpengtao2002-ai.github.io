@@ -51,6 +51,17 @@ test("root layout lets Framer Motion follow the user reduced-motion preference g
   assert.match(layout, /<MotionConfig\s+reducedMotion="user">[\s\S]*<PageTransition>\{children\}<\/PageTransition>[\s\S]*<\/MotionConfig>/);
 });
 
+test("site navigation is SSR-capable and exposed through a header landmark", () => {
+  assert.match(clientShell, /import SiteNavigation from "@\/components\/layout\/SiteNavigation"/);
+  assert.doesNotMatch(
+    clientShell,
+    /dynamic\(\(\) => import\("@\/components\/layout\/SiteNavigation"\)[\s\S]*?ssr:\s*false/
+  );
+  assert.equal((navigation.match(/<header\s+aria-label="网站导航"/g) || []).length, 2);
+  assert.match(navigation, /<header\s+aria-label="网站导航"[\s\S]*<button/);
+  assert.match(navigation, /<header\s+aria-label="网站导航"[\s\S]*<nav\s+aria-label="网站导航"/);
+});
+
 test("site navigation uses page links instead of scroll-tracked homepage sections", () => {
   assert.match(navigation, /sectionId:\s*"home"/);
   assert.match(navigation, /href:\s*"\/finance"[\s\S]*activePath:\s*"\/finance"/);

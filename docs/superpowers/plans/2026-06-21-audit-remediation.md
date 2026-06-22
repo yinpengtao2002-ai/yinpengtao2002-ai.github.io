@@ -827,3 +827,76 @@ Observed: PASS, Next production build compiled and generated 35 static pages. Ex
 Started `npx next start -p 3029`, opened `http://localhost:3029/#contact` at `390×844`, and read the contact section's phone link.
 
 Observed: `#contact` existed, the phone link kept `href="tel:15140319603"`, visible text stayed `电话：15140319603`, and console error count stayed 0.
+
+### Task 17: Make Site Navigation SSR-Capable And Add A Header Landmark
+
+**Files:**
+- Modify: `src/components/ClientShell.tsx`
+- Modify: `src/components/layout/SiteNavigation.tsx`
+- Modify: `tests/navigation-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Confirmed the P2 navigation item had two narrow parts: `ClientShell` used `dynamic(() => import("@/components/layout/SiteNavigation"), { ssr: false })`, and the visible navigation UI exposed a `<nav>` but no surrounding `<header>` landmark.
+
+- [x] **Step 2: Add a regression contract**
+
+Added a `tests/navigation-contract.test.mjs` assertion requiring `ClientShell` to statically import `SiteNavigation`, forbidding the old no-SSR dynamic import for that component, and requiring both mobile and desktop `SiteNavigation` branches to render `header[aria-label="网站导航"]`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/navigation-contract.test.mjs`
+
+Observed: FAIL because `ClientShell.tsx` still dynamically imported `SiteNavigation` with `{ ssr: false }`, and `SiteNavigation.tsx` did not expose the required header landmarks.
+
+- [x] **Step 4: Replace the no-SSR navigation import and add landmarks**
+
+Changed `ClientShell` to statically import `SiteNavigation` while preserving the no-SSR dynamic imports for `MouseTrail` and `ChatWidget`. Changed the mobile `SiteNavigation` wrapper from a generic `<div>` to `header[aria-label="网站导航"]`, and changed the desktop top-level wrapper to `header[aria-label="网站导航"]` with an inner `nav[aria-label="网站导航"]`. The existing hidden-navigation route rules remain in `SiteNavigation`, so full-screen tool routes still return `null`.
+
+- [x] **Step 5: Record completion**
+
+Updated `docs/project-audit-report.md` with `UI P2-2` status, scope, verification commands, and browser evidence.
+
+- [x] **Step 6: Run verification**
+
+Run: `node --test tests/navigation-contract.test.mjs`
+
+Observed: PASS, 8/8 tests.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 306/306 tests. Existing Node module-type warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 35 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 7: Verify navigation landmarks in a production browser**
+
+Started `npm run start -- --port 3032`.
+
+Run: Playwright opened `http://localhost:3032/` at `1440×900` and read the navigation DOM.
+
+Observed: `header[aria-label="网站导航"]` count was 1, `nav[aria-label="网站导航"]` count was 1, navigation text was `首页财务模型工具与思考联系`, and console error count stayed 0.
+
+Run: Playwright resized the homepage to `390×844`, read the closed mobile menu state, clicked the navigation button, and read the expanded state.
+
+Observed: closed state had `header=1`, `button=1`, `aria-expanded="false"`, and `nav=0`; expanded state had `header=1`, `aria-expanded="true"`, `nav=1`, and the same navigation text. Console error count stayed 0.
+
+Run: Playwright opened `http://localhost:3032/finance/perspective-bi` and read the navigation DOM.
+
+Observed: hidden-navigation route kept `header=0` and `nav=0`, so the full-screen workbench route did not gain an empty landmark.

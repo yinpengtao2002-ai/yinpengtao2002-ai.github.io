@@ -69,7 +69,7 @@ export default function SiteNavigation() {
 
     if (isMobileLike) {
         return (
-            <div style={{ position: "fixed", top: 16, left: 16, zIndex: 45, fontFamily: NAV_FONT }}>
+            <header aria-label="网站导航" style={{ position: "fixed", top: 16, left: 16, zIndex: 45, fontFamily: NAV_FONT }}>
                 <button
                     type="button"
                     onClick={() => setOpen((value) => !value)}
@@ -143,12 +143,12 @@ export default function SiteNavigation() {
                         })}
                     </motion.nav>
                 )}
-            </div>
+            </header>
         );
     }
 
     return (
-        <nav
+        <header
             aria-label="网站导航"
             style={{
                 position: "fixed",
@@ -169,29 +169,30 @@ export default function SiteNavigation() {
                 fontFamily: NAV_FONT,
             }}
         >
-            {NAV_ITEMS.map((item) => {
-                const active = itemIsActive(item);
-                return (
-                    <Link
-                        key={item.label}
-                        href={item.href}
-                        onClick={(event) => handleClick(event, item)}
-                        style={{
-                            position: "relative",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 6,
-                            borderRadius: 999,
-                            color: active ? "var(--foreground)" : "var(--muted)",
-                            textDecoration: "none",
-                            cursor: "pointer",
-                            fontSize: 13,
-                            fontWeight: active ? 700 : 600,
-                            padding: "8px 14px",
-                            whiteSpace: "nowrap",
-                            fontFamily: NAV_FONT,
-                        }}
-                    >
+            <nav aria-label="网站导航" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                {NAV_ITEMS.map((item) => {
+                    const active = itemIsActive(item);
+                    return (
+                        <Link
+                            key={item.label}
+                            href={item.href}
+                            onClick={(event) => handleClick(event, item)}
+                            style={{
+                                position: "relative",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 6,
+                                borderRadius: 999,
+                                color: active ? "var(--foreground)" : "var(--muted)",
+                                textDecoration: "none",
+                                cursor: "pointer",
+                                fontSize: 13,
+                                fontWeight: active ? 700 : 600,
+                                padding: "8px 14px",
+                                whiteSpace: "nowrap",
+                                fontFamily: NAV_FONT,
+                            }}
+                        >
                             {active && (
                                 <motion.span
                                     layoutId="home-nav-active-pill"
@@ -199,11 +200,12 @@ export default function SiteNavigation() {
                                     transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
                                 />
                             )}
-                        {item.href === "/" && <Home style={{ position: "relative", zIndex: 1, width: 14, height: 14 }} />}
-                        <span style={{ position: "relative", zIndex: 1 }}>{item.label}</span>
-                    </Link>
-                );
-            })}
-        </nav>
+                            {item.href === "/" && <Home style={{ position: "relative", zIndex: 1, width: 14, height: 14 }} />}
+                            <span style={{ position: "relative", zIndex: 1 }}>{item.label}</span>
+                        </Link>
+                    );
+                })}
+            </nav>
+        </header>
     );
 }

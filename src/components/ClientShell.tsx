@@ -2,10 +2,10 @@
 
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
+import SiteNavigation from "@/components/layout/SiteNavigation";
 
 const MouseTrail = dynamic(() => import("@/components/ui/MouseTrail"), { ssr: false });
 const ChatWidget = dynamic(() => import("@/components/ChatWidget"), { ssr: false });
-const SiteNavigation = dynamic(() => import("@/components/layout/SiteNavigation"), { ssr: false });
 
 function shouldHideDecorativeExtras(pathname: string) {
     return (
