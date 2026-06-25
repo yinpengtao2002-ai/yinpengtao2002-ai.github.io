@@ -11,7 +11,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import mermaid from "mermaid";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Children, isValidElement, useLayoutEffect, useMemo, useState } from "react";
 import type { ContentItem } from "@/lib/data/generated/content";
 import { normalizeMarkdownStrongEmphasis } from "@/lib/markdown/normalizeStrongEmphasis";
 
@@ -28,6 +28,19 @@ type MarkdownHeadingNode = {
             line?: number | null;
         };
     };
+};
+
+type MarkdownCodeElementProps = {
+    className?: string;
+    children?: React.ReactNode;
+};
+
+type MermaidRenderState = "loading" | "ready" | "error";
+
+type MermaidRenderResult = {
+    chart: string;
+    svg: string;
+    state: MermaidRenderState;
 };
 
 function cleanHeadingText(text: string) {
@@ -69,10 +82,15 @@ function getHeadingId(node: MarkdownHeadingNode | undefined, level: 2 | 3, headi
 }
 
 function MermaidChart({ chart }: { chart: string }) {
-    const ref = useRef<HTMLDivElement>(null);
-    const [svg, setSvg] = useState("");
+    const [renderResult, setRenderResult] = useState<MermaidRenderResult>({
+        chart,
+        svg: "",
+        state: "loading",
+    });
 
     useLayoutEffect(() => {
+        let cancelled = false;
+
         mermaid.initialize({
             startOnLoad: false,
             theme: "neutral",
@@ -82,29 +100,39 @@ function MermaidChart({ chart }: { chart: string }) {
             try {
                 const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`;
                 const { svg } = await mermaid.render(id, chart);
-                setSvg(svg);
+                if (cancelled) return;
+                setRenderResult({ chart, svg, state: "ready" });
             } catch (e) {
+                if (cancelled) return;
                 console.error("Mermaid render failed:", e);
+                setRenderResult({ chart, svg: "", state: "error" });
             }
         };
         render();
+
+        return () => {
+            cancelled = true;
+        };
     }, [chart]);
 
+    const renderState = renderResult.chart === chart ? renderResult.state : "loading";
+    const svg = renderResult.chart === chart ? renderResult.svg : "";
+
     return (
-        <div
-            ref={ref}
-            style={{
-                margin: "24px 0",
-                display: "flex",
-                justifyContent: "center",
-                background: "var(--card)",
-                border: "1px solid var(--border)",
-                borderRadius: 8,
-                padding: 24,
-                overflowX: "auto",
-            }}
-            dangerouslySetInnerHTML={{ __html: svg }}
-        />
+        <div className="mermaid-chart-card" aria-live="polite">
+            {renderState === "loading" && (
+                <div className="mermaid-chart-status">图表加载中...</div>
+            )}
+            {renderState === "error" && (
+                <div className="mermaid-chart-status">无法渲染这张图</div>
+            )}
+            {renderState === "ready" && (
+                <div
+                    className="mermaid-chart-svg"
+                    dangerouslySetInnerHTML={{ __html: svg }}
+                />
+            )}
+        </div>
     );
 }
 
@@ -351,9 +379,19 @@ export default function ArticleReader({ article, sectionLabel, backHref }: Artic
                                     <code style={styles.codeInline}>{children}</code>
                                 );
                             },
-                            pre: ({ children }) => (
-                                <pre style={styles.pre}>{children}</pre>
-                            ),
+                            pre: ({ children }) => {
+                                const child = Children.toArray(children)[0];
+                                if (isValidElement(child) && child.type === MermaidChart) {
+                                    return <>{children}</>;
+                                }
+                                if (isValidElement(child)) {
+                                    const props = child.props as MarkdownCodeElementProps;
+                                    if (props.className === "language-mermaid") {
+                                        return <MermaidChart chart={String(props.children).replace(/\n$/, "")} />;
+                                    }
+                                }
+                                return <pre style={styles.pre}>{children}</pre>;
+                            },
                             table: ({ children }) => (
                                 <div style={{ overflowX: "auto", margin: "24px 0" }}>
                                     <table style={styles.table}>{children}</table>

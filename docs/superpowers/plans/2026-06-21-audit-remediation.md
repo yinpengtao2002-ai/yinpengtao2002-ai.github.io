@@ -1040,3 +1040,65 @@ Observed: PASS, 307/307 tests. Existing Node module-type warnings remain unrelat
 Run: `npm run build:vercel`
 
 Observed: PASS, Next production build compiled and generated 35 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+### Task 20: Guard Article KaTeX Overflow And Mermaid Render States
+
+**Files:**
+- Modify: `src/components/content/ArticleReader.tsx`
+- Modify: `src/app/globals.css`
+- Modify: `package.json`
+- Add: `tests/article-reader-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P2 reading-experience audit item to two concrete defects that can be fixed safely without redesigning the article template: wide KaTeX display math in article bodies had no overflow guard, and Mermaid failures only logged to the console while leaving the article area blank. Dark mode, progress bars, and scroll-spy remain separate product/design choices for later review.
+
+- [x] **Step 2: Add a regression contract**
+
+Added `tests/article-reader-contract.test.mjs` and wired it into `npm run test:site`. The test requires `.notion-article .katex-display` to stay bounded and horizontally scrollable, and requires Mermaid charts to expose explicit loading, ready, and error states with visible status copy.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/article-reader-contract.test.mjs`
+
+Observed: FAIL, 0/2 tests. The article KaTeX CSS selector was missing, and `ArticleReader.tsx` had no Mermaid render-state type or visible loading/error state.
+
+- [x] **Step 4: Implement the reading guardrails**
+
+Added article KaTeX CSS for bounded display math and no-wrap inner formulas. Reworked `MermaidChart` to use a `loading / ready / error` state, reset state when the chart changes, avoid state updates after unmount, and show `图表加载中...` / `无法渲染这张图` instead of leaving the card blank.
+
+- [x] **Step 5: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P2-3a`, noting that the KaTeX/Mermaid sub-item is fixed while dark mode, progress, and scroll-spy remain separate follow-up decisions.
+
+- [x] **Step 6: Run fresh verification**
+
+Run: `node --test tests/article-reader-contract.test.mjs`
+
+Observed: PASS, 2/2 tests.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 309/309 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 35 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+Run: local production smoke on `http://localhost:3035/thinking-lab/gold-stock-selloff-iran-war-2026`
+
+Observed: `curl -I -L` returned 200 after the trailing-slash redirect; HTML contained `mermaid-chart-card` and `图表加载中...`, and did not contain `<pre><div class="mermaid-chart-card">`.

@@ -7806,6 +7806,44 @@ h6 {
   background: var(--muted);
 }
 
+.notion-article .katex {
+  font-size: 1em;
+}
+
+.notion-article .katex-display {
+  max-width: 100%;
+  margin: 0.8em 0;
+  padding: 0.25em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.notion-article .katex-display>.katex {
+  white-space: nowrap;
+}
+
+.mermaid-chart-card {
+  display: flex;
+  justify-content: center;
+  margin: 24px 0;
+  padding: 24px;
+  overflow-x: auto;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.mermaid-chart-svg {
+  min-width: max-content;
+}
+
+.mermaid-chart-status {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+}
+
 /* Light theme text utilities */
 .text-primary {
   color: var(--foreground);
