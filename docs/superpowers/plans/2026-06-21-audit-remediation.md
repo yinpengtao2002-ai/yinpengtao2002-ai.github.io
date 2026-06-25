@@ -979,3 +979,64 @@ Observed: same-origin static tool pages still return `X-Frame-Options: SAMEORIGI
 Run: Playwright opened `http://localhost:3034/tools/subtitle-workbench/`.
 
 Observed: iframe content rendered as `视频字幕提取与总结`, and the page exposed a direct external link with accessible name `直接打开视频字幕与总结工作台`.
+
+### Task 19: Remove Legacy Animation And Hero Dead Code
+
+**Files:**
+- Delete: `src/components/ParticleField.tsx`
+- Delete: `src/components/TypewriterText.tsx`
+- Delete: `src/components/layout/Hero.tsx`
+- Delete: `src/lib/animations.ts`
+- Delete: `src/lib/config/animation.ts`
+- Modify: `src/components/layout/index.ts`
+- Modify: `tests/tooling-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Confirmed this pass should not try to solve the entire UI P1 bucket. The safe scope is the audit's concrete dead-code claim: `ParticleField`, `TypewriterText`, the legacy layout `Hero`, and the two conflicting animation config files. `rg` found no active business imports for those files; the only live code path was the stale `Hero` export in `src/components/layout/index.ts`.
+
+- [x] **Step 2: Add a regression contract**
+
+Added `tests/tooling-contract.test.mjs` coverage requiring the layout barrel to stop exporting `Hero` and requiring the five legacy files to stay removed from the repository.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/tooling-contract.test.mjs`
+
+Observed: FAIL because the layout barrel still exported `Hero` and the legacy files still existed.
+
+- [x] **Step 4: Remove the dead code**
+
+Deleted `src/components/ParticleField.tsx`, `src/components/TypewriterText.tsx`, `src/components/layout/Hero.tsx`, `src/lib/animations.ts`, and `src/lib/config/animation.ts`. Removed `export { default as Hero } from "./Hero";` from `src/components/layout/index.ts`.
+
+- [x] **Step 5: Record completion**
+
+Updated `docs/project-audit-report.md` with `UI P1-8`, marked the dead-code sub-item fixed, and clarified that design-token and `ui/` primitive adoption remain separate follow-up work inside the same broader P1 bucket.
+
+- [x] **Step 6: Run fresh verification**
+
+Run: `node --test tests/tooling-contract.test.mjs`
+
+Observed: PASS, 8/8 tests.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 307/307 tests. Existing Node module-type warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 35 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.

@@ -36,6 +36,16 @@ async function assertIconAsset(path) {
   assert.ok(fileInfo.size > 1024, `${path} should be a real icon asset`);
 }
 
+async function assertProjectFileMissing(path) {
+  try {
+    await stat(new URL(path, import.meta.url));
+  } catch {
+    return;
+  }
+
+  assert.fail(`${path} should be removed instead of kept as unreferenced legacy code`);
+}
+
 test("eslint ignores project-local worktrees", () => {
   assert.ok(eslintConfig.includes('".worktrees/**"'));
 });
@@ -72,6 +82,17 @@ test("site publishes explicit icons for mobile home-screen bookmarks", async () 
   await assertIconAsset("../src/app/apple-icon.png");
   await assertIconAsset("../public/site-icon-192.png");
   await assertIconAsset("../public/site-icon-512.png");
+});
+
+test("legacy animation and hero dead code stays out of the app surface", async () => {
+  const layoutBarrel = await readRequiredProjectFile("../src/components/layout/index.ts");
+
+  assert.doesNotMatch(layoutBarrel, /Hero/);
+  await assertProjectFileMissing("../src/components/ParticleField.tsx");
+  await assertProjectFileMissing("../src/components/TypewriterText.tsx");
+  await assertProjectFileMissing("../src/components/layout/Hero.tsx");
+  await assertProjectFileMissing("../src/lib/animations.ts");
+  await assertProjectFileMissing("../src/lib/config/animation.ts");
 });
 
 test("Perspective BI dependencies and local browser assets are wired", () => {
