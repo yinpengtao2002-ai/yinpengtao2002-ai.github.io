@@ -4219,6 +4219,44 @@ h6 {
   height: 15px;
 }
 
+.subtitle-workbench-open-link {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  box-shadow: 0 10px 28px rgba(20, 20, 19, 0.1);
+  color: color-mix(in srgb, var(--foreground) 84%, var(--muted));
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0 11px 0 12px;
+  text-decoration: none;
+  backdrop-filter: blur(14px);
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.subtitle-workbench-open-link:hover {
+  background: color-mix(in srgb, var(--card) 96%, transparent);
+  color: var(--foreground);
+  transform: translateY(-1px);
+}
+
+.subtitle-workbench-open-link svg {
+  width: 14px;
+  height: 14px;
+}
+
 .subtitle-workbench-frame-shell {
   position: relative;
   flex: 1;

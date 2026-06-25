@@ -42,6 +42,52 @@ const subtitleWorkbenchContentSecurityPolicy = [
   "upgrade-insecure-requests",
 ].join("; ");
 
+const sharedSecurityHeaders = [
+  {
+    key: "X-Content-Type-Options",
+    value: "nosniff",
+  },
+  {
+    key: "Referrer-Policy",
+    value: "strict-origin-when-cross-origin",
+  },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=(), payment=()",
+  },
+];
+
+const denyFramingHeaders = [
+  {
+    key: "Content-Security-Policy",
+    value: contentSecurityPolicy,
+  },
+  {
+    key: "X-Frame-Options",
+    value: "DENY",
+  },
+  ...sharedSecurityHeaders,
+];
+
+const sameOriginFrameHeaders = [
+  {
+    key: "Content-Security-Policy",
+    value: sameOriginFrameContentSecurityPolicy,
+  },
+  {
+    key: "X-Frame-Options",
+    value: "SAMEORIGIN",
+  },
+];
+
+const subtitleWorkbenchHeaders = [
+  {
+    key: "Content-Security-Policy",
+    value: subtitleWorkbenchContentSecurityPolicy,
+  },
+  ...sharedSecurityHeaders,
+];
+
 const nextConfig: NextConfig = {
   // Use static export only when STATIC_EXPORT=true (for GitHub Pages)
   // For Cloudflare Pages / Vercel, omit this to enable API routes
@@ -67,51 +113,20 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/(.*)",
-        headers: [
-          {
-            key: "Content-Security-Policy",
-            value: contentSecurityPolicy,
-          },
-          {
-            key: "X-Frame-Options",
-            value: "DENY",
-          },
-          {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
-          },
-          {
-            key: "Referrer-Policy",
-            value: "strict-origin-when-cross-origin",
-          },
-          {
-            key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(), payment=()",
-          },
-        ],
+        source: "/",
+        headers: denyFramingHeaders,
+      },
+      {
+        source: "/:path((?!tools/subtitle-workbench(?:/.*)?$).*)",
+        headers: denyFramingHeaders,
       },
       {
         source: "/tools/margin-analysis/:path*",
-        headers: [
-          {
-            key: "Content-Security-Policy",
-            value: sameOriginFrameContentSecurityPolicy,
-          },
-          {
-            key: "X-Frame-Options",
-            value: "SAMEORIGIN",
-          },
-        ],
+        headers: sameOriginFrameHeaders,
       },
       {
         source: "/tools/subtitle-workbench/:path*",
-        headers: [
-          {
-            key: "Content-Security-Policy",
-            value: subtitleWorkbenchContentSecurityPolicy,
-          },
-        ],
+        headers: subtitleWorkbenchHeaders,
       },
     ];
   },

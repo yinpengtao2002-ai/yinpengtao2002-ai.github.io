@@ -900,3 +900,82 @@ Observed: closed state had `header=1`, `button=1`, `aria-expanded="false"`, and 
 Run: Playwright opened `http://localhost:3032/finance/perspective-bi` and read the navigation DOM.
 
 Observed: hidden-navigation route kept `header=0` and `nav=0`, so the full-screen workbench route did not gain an empty landmark.
+
+### Task 18: Unblock The Subtitle Workbench Host Page
+
+**Files:**
+- Modify: `next.config.ts`
+- Modify: `src/app/tools/subtitle-workbench/page.tsx`
+- Modify: `src/app/globals.css`
+- Modify: `tests/security-contract.test.mjs`
+- Modify: `tests/routing-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Reproduce and inspect current behavior**
+
+Opened `https://yinpengtao.cn/tools/subtitle-workbench/` with Playwright and confirmed the iframe can render in the test browser, but the live page response still included `X-Frame-Options: DENY` from the global security-header rule. Direct `curl -I -L` checks showed the parent page CSP allowed `frame-src https://yptt-subtitle-workbench.hf.space`, and the Hugging Face app itself did not return an anti-framing header on the root page.
+
+- [x] **Step 2: Add regression contracts**
+
+Updated `tests/security-contract.test.mjs` to require the subtitle workbench host route to avoid inheriting the global `X-Frame-Options: DENY` rule while still allowing the external HF iframe through CSP. Updated `tests/routing-contract.test.mjs` to require a visible direct-open fallback link to the hosted workbench.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/security-contract.test.mjs tests/routing-contract.test.mjs`
+
+Observed: FAIL because `next.config.ts` still used the global `source: "/(.*)"` rule and the subtitle page had no `subtitle-workbench-open-link` / direct-open fallback.
+
+- [x] **Step 4: Implement the scoped fix**
+
+Refactored `next.config.ts` header groups so normal pages still receive CSP plus `X-Frame-Options: DENY`, margin static tool pages still receive `SAMEORIGIN`, and `/tools/subtitle-workbench/:path*` receives its own CSP/shared security headers without `X-Frame-Options`. Added a fixed right-side `直接打开工作台` link to `https://yptt-subtitle-workbench.hf.space/` on the subtitle workbench page.
+
+- [x] **Step 5: Record completion**
+
+Updated `docs/project-audit-report.md` with a `安全 P0-2 二次回归` entry and detailed note under the original security-header audit item.
+
+- [x] **Step 6: Run verification**
+
+Run: `node --test tests/security-contract.test.mjs tests/routing-contract.test.mjs`
+
+Observed: PASS, 12/12 tests.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 306/306 tests. Existing Node module-type warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 35 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 7: Verify local production headers and browser behavior**
+
+Started `npm run start -- --port 3034`.
+
+Run: `curl -I -L http://localhost:3034/tools/subtitle-workbench/`
+
+Observed: `Content-Security-Policy` includes `frame-src 'self' https://yptt-subtitle-workbench.hf.space`, shared security headers remain, and `X-Frame-Options` is absent.
+
+Run: `curl -I -L http://localhost:3034/`
+
+Observed: normal pages still return `X-Frame-Options: DENY`.
+
+Run: `curl -I -L http://localhost:3034/tools/margin-analysis/index.html`
+
+Observed: same-origin static tool pages still return `X-Frame-Options: SAMEORIGIN`.
+
+Run: Playwright opened `http://localhost:3034/tools/subtitle-workbench/`.
+
+Observed: iframe content rendered as `视频字幕提取与总结`, and the page exposed a direct external link with accessible name `直接打开视频字幕与总结工作台`.

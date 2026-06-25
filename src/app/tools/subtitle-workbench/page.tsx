@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 
 const SUBTITLE_WORKBENCH_URL = "https://yptt-subtitle-workbench.hf.space/";
 
@@ -16,6 +16,16 @@ export default function SubtitleWorkbenchPage() {
         <ArrowLeft aria-hidden="true" />
         <span>返回</span>
       </Link>
+      <a
+        href={SUBTITLE_WORKBENCH_URL}
+        className="subtitle-workbench-open-link"
+        target="_blank"
+        rel="noreferrer"
+        aria-label="直接打开视频字幕与总结工作台"
+      >
+        <span>直接打开工作台</span>
+        <ExternalLink aria-hidden="true" />
+      </a>
 
       <section className="subtitle-workbench-frame-shell" aria-label="视频字幕与总结工作台">
         <iframe

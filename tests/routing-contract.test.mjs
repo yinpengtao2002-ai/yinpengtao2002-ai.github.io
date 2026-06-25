@@ -37,19 +37,22 @@ test("route transition shell does not trap fixed finance tool controls", () => {
   assert.doesNotMatch(globals, /\.page-transition-shell\s*\{[^}]*will-change:\s*transform/s);
 });
 
-test("subtitle workbench is embedded as a seamless hosted tool", () => {
+test("subtitle workbench is embedded with a direct-open fallback", () => {
   assert.match(subtitleWorkbenchPage, /https:\/\/yptt-subtitle-workbench\.hf\.space\//);
   assert.match(subtitleWorkbenchPage, /<iframe/);
   assert.match(subtitleWorkbenchPage, /allow="clipboard-read; clipboard-write"/);
   assert.match(subtitleWorkbenchPage, /视频字幕与总结工作台/);
   assert.match(subtitleWorkbenchPage, /subtitle-workbench-back-link/);
   assert.match(subtitleWorkbenchPage, /href="\/thinking-lab"/);
+  assert.match(subtitleWorkbenchPage, /subtitle-workbench-open-link/);
+  assert.match(subtitleWorkbenchPage, /target="_blank"/);
+  assert.match(subtitleWorkbenchPage, /rel="noreferrer"/);
+  assert.match(subtitleWorkbenchPage, /直接打开工作台/);
   assert.doesNotMatch(subtitleWorkbenchPage, /subtitle-workbench-topbar/);
-  assert.doesNotMatch(subtitleWorkbenchPage, /subtitle-workbench-open/);
-  assert.doesNotMatch(subtitleWorkbenchPage, /新窗口打开/);
   assert.doesNotMatch(subtitleWorkbenchPage, /<h1>/);
   assert.match(globals, /\.subtitle-workbench-page\s*\{[^}]*padding:\s*0/s);
   assert.match(globals, /\.subtitle-workbench-back-link\s*\{[^}]*position:\s*fixed[^}]*z-index:\s*20/s);
+  assert.match(globals, /\.subtitle-workbench-open-link\s*\{[^}]*position:\s*fixed[^}]*z-index:\s*20/s);
   assert.match(globals, /\.subtitle-workbench-frame-shell\s*\{[^}]*width:\s*100%[^}]*border:\s*0[^}]*border-radius:\s*0[^}]*box-shadow:\s*none/s);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/subtitle-workbench/);
   assert.match(thinkingLabContent, /href:\s*"\/tools\/subtitle-workbench"/);
