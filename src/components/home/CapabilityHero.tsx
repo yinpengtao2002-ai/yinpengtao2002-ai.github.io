@@ -99,7 +99,7 @@ export default function CapabilityHero() {
                   <span className="home-hero-path-step">业务结论</span>
                 </div>
                 <Link href="/finance" className="home-model-library-entry" aria-label="查看完整财务模型库">
-                  <span>精选 4 个 · 共 6 个模型</span>
+                  <span>精选 4 个 · 共 7 个模型</span>
                   <strong>查看完整模型库</strong>
                   <ArrowRight className="home-model-library-icon" />
                 </Link>
