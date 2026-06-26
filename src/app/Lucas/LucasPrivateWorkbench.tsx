@@ -2,9 +2,8 @@
 
 import { Loader2, RefreshCw, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
+import { PRIVATE_TOOL_ACCESS_HEADER } from "@/lib/private-tool-access/constants";
 import styles from "./Lucas.module.css";
-
-const FINANCE_AI_ACCESS_HEADER = "X-Finance-AI-Access";
 
 type LucasPrivateWorkbenchProps = {
   accessToken: string;
@@ -26,7 +25,7 @@ export default function LucasPrivateWorkbench({ accessToken }: LucasPrivateWorkb
         const response = await fetch("/api/lucas/stock-decision", {
           method: "GET",
           headers: {
-            [FINANCE_AI_ACCESS_HEADER]: accessToken,
+            [PRIVATE_TOOL_ACCESS_HEADER]: accessToken,
           },
           cache: "no-store",
         });

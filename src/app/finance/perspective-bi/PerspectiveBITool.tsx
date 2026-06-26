@@ -2,6 +2,7 @@
 
 import { createElement, useEffect, useState } from "react";
 import { KeyRound, Loader2 } from "lucide-react";
+import { PRIVATE_TOOL_ACCESS_ENDPOINT } from "@/lib/private-tool-access/constants";
 
 declare global {
     interface Window {
@@ -19,7 +20,7 @@ type AccessResponse = {
 
 function getAccessErrorMessage(payload: AccessResponse, fallback: string) {
     if (payload.errorCode === "access_not_configured") {
-        return "内测密钥还没有在部署环境配置，请先配置 FINANCE_AI_ACCESS_KEY。";
+        return "内测密钥还没有在部署环境配置。";
     }
 
     if (payload.errorCode === "access_denied") {
@@ -73,7 +74,7 @@ export default function PerspectiveBITool() {
         setAccessError("");
 
         try {
-            const response = await fetch("/api/tools/finance-ai-assistant/access", {
+            const response = await fetch(PRIVATE_TOOL_ACCESS_ENDPOINT, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ key }),

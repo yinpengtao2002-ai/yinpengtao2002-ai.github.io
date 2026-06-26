@@ -16,7 +16,8 @@ test("Lucas private route is top-level, gated, and excluded from discovery surfa
   assert.match(lucasPage, /follow:\s*false/);
   assert.match(lucasPage, /noimageindex:\s*true/);
 
-  assert.match(lucasAccessGate, /\/api\/tools\/finance-ai-assistant\/access/);
+  assert.match(lucasAccessGate, /PRIVATE_TOOL_ACCESS_ENDPOINT/);
+  assert.doesNotMatch(lucasAccessGate, /\/api\/tools\/finance-ai-assistant\/access/);
   assert.match(lucasAccessGate, /type="password"/);
   assert.match(lucasAccessGate, /lazy\(\(\)\s*=>\s*import\("\.\/LucasPrivateWorkbench"\)\)/);
   assert.match(lucasAccessGate, /accessToken=\{accessToken\}/);
@@ -31,14 +32,17 @@ test("Lucas route loads the copied stock decision system after access instead of
   const apiRoute = await readFile(new URL("../src/app/api/lucas/stock-decision/route.ts", import.meta.url), "utf8");
 
   assert.match(lucasWorkbench, /\/api\/lucas\/stock-decision/);
-  assert.match(lucasWorkbench, /FINANCE_AI_ACCESS_HEADER/);
+  assert.match(lucasWorkbench, /PRIVATE_TOOL_ACCESS_HEADER/);
+  assert.doesNotMatch(lucasWorkbench, /FINANCE_AI_ACCESS_HEADER/);
   assert.match(lucasWorkbench, /srcDoc/);
   assert.doesNotMatch(lucasWorkbench, /type NumericState/);
   assert.doesNotMatch(lucasWorkbench, /rawKelly/);
   assert.doesNotMatch(lucasWorkbench, /suggestedShares/);
 
-  assert.match(apiRoute, /verifyFinanceAIAccessToken/);
-  assert.match(apiRoute, /FINANCE_AI_ACCESS_HEADER/);
+  assert.match(apiRoute, /verifyPrivateToolAccessToken/);
+  assert.match(apiRoute, /readPrivateToolAccessToken/);
+  assert.doesNotMatch(apiRoute, /verifyFinanceAIAccessToken/);
+  assert.doesNotMatch(apiRoute, /FINANCE_AI_ACCESS_HEADER/);
   assert.match(apiRoute, /stockDecisionHtml/);
   assert.match(apiRoute, /status:\s*401/);
 });

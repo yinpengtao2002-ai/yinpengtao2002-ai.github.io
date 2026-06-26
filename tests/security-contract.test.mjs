@@ -54,7 +54,7 @@ test("AI-facing API routes apply abuse-control rate limits before provider calls
   const routeFiles = [
     "src/app/api/chat/route.ts",
     "src/app/api/tools/finance-ai-assistant/route.ts",
-    "src/app/api/tools/finance-ai-assistant/access/route.ts",
+    "src/app/api/private-tool-access/route.ts",
     "src/app/api/tools/study-cards/route.ts",
     "src/app/api/tools/study-cards/pronunciation/route.ts",
   ];
@@ -64,6 +64,13 @@ test("AI-facing API routes apply abuse-control rate limits before provider calls
     assert.match(source, /enforceRateLimit/, `${path} should call enforceRateLimit`);
     assert.match(source, /rateLimitError/, `${path} should return a rate-limit response`);
   }
+});
+
+test("legacy finance AI access endpoint delegates to private tool access", async () => {
+  const legacyRoute = await readProjectFile("src/app/api/tools/finance-ai-assistant/access/route.ts");
+
+  assert.match(legacyRoute, /private-tool-access\/route/);
+  assert.match(legacyRoute, /export\s+\{\s*POST\s*\}/);
 });
 
 test("rate limiter buckets requests by route and forwarded client IP", async () => {

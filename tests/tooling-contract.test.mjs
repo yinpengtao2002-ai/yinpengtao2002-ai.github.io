@@ -185,11 +185,12 @@ test("spreadsheet parser uses the patched SheetJS npm alias and matching browser
   assert.match(vendorScript, /node_modules\/xlsx\/dist\/xlsx\.full\.min\.js/);
 });
 
-test("Perspective BI requires the existing finance access key before booting", async () => {
+test("Perspective BI requires the private tool access key before booting", async () => {
   const tool = await readRequiredProjectFile("../src/app/finance/perspective-bi/PerspectiveBITool.tsx");
   const styles = await readRequiredProjectFile("../src/app/finance/perspective-bi/tool.css");
 
-  assert.match(tool, /\/api\/tools\/finance-ai-assistant\/access/);
+  assert.match(tool, /PRIVATE_TOOL_ACCESS_ENDPOINT/);
+  assert.doesNotMatch(tool, /\/api\/tools\/finance-ai-assistant\/access/);
   assert.match(tool, /Perspective BI 分析台内测访问/);
   assert.match(tool, /type="password"/);
   assert.match(tool, /if \(!accessToken\) {\s+return;\s+}/);

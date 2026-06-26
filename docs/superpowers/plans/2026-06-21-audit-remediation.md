@@ -1310,3 +1310,78 @@ Observed: PASS, Next production build compiled and generated 35 static pages. Ex
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `架构 P2-3a`, explicitly closing the `.ts` extension import suppression sub-item while leaving broader `.js` finance engine TypeScript migration for later.
+
+### Task 24: Rename Private Tool Access Gate
+
+**Files:**
+- Add: `src/lib/private-tool-access/constants.ts`
+- Add: `src/lib/security/private-tool-access.ts`
+- Add: `src/app/api/private-tool-access/route.ts`
+- Modify: `src/app/api/tools/finance-ai-assistant/access/route.ts`
+- Modify: `src/lib/finance-ai/access.ts`
+- Modify: `src/app/Lucas/LucasAccessGate.tsx`
+- Modify: `src/app/Lucas/LucasPrivateWorkbench.tsx`
+- Modify: `src/app/api/lucas/stock-decision/route.ts`
+- Modify: `src/app/finance/profit-structure/ProfitStructureTool.tsx`
+- Modify: `src/app/finance/perspective-bi/PerspectiveBITool.tsx`
+- Modify: `tests/lucas-private-route-contract.test.mjs`
+- Modify: `tests/profit-structure-analysis.test.mjs`
+- Modify: `tests/tooling-contract.test.mjs`
+- Modify: `tests/security-contract.test.mjs`
+- Modify: `tests/finance-ai-assistant-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped architecture item `架构 P2-1` to the independently safe naming sub-item: the old `FINANCE_AI_ACCESS` name made private / beta tool gates look like the formal finance AI assistant. This pass does not reintroduce an access code to `/finance/finance-ai-assistant`, and does not claim to finish the later middleware unification item.
+
+- [x] **Step 2: Add failing regression contracts**
+
+Updated the Lucas private route, profit-structure, tooling, security, and finance-AI assistant contracts to require the new `/api/private-tool-access` endpoint, `PRIVATE_TOOL_ACCESS_ENDPOINT`, and `X-Private-Tool-Access` header in live gated clients, while keeping the old finance-AI access route only as a compatibility shim.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/lucas-private-route-contract.test.mjs tests/profit-structure-analysis.test.mjs tests/tooling-contract.test.mjs tests/security-contract.test.mjs tests/finance-ai-assistant-contract.test.mjs`
+
+Observed: FAIL before implementation. The first failure was the missing `src/app/api/private-tool-access/route.ts`, and the updated contracts also expected private-tool endpoint / header names that the old code did not expose.
+
+- [x] **Step 4: Implement private-tool access naming**
+
+Added client-safe private-tool constants, server-side `src/lib/security/private-tool-access.ts`, and the new `/api/private-tool-access` POST endpoint with its own rate limit key. The server reads `PRIVATE_TOOL_ACCESS_KEY` first and falls back to `FINANCE_AI_ACCESS_KEY` so production can migrate without an immediate secret rename.
+
+- [x] **Step 5: Preserve compatibility without changing product access**
+
+Moved Lucas, profit-structure, and Perspective BI clients to `PRIVATE_TOOL_ACCESS_ENDPOINT` / `X-Private-Tool-Access`. Kept `/api/tools/finance-ai-assistant/access` as a delegating compatibility route and kept `src/lib/finance-ai/access.ts` as aliases for old imports. Formal finance AI remains public.
+
+- [x] **Step 6: Run targeted verification**
+
+Run: `node --test tests/lucas-private-route-contract.test.mjs tests/profit-structure-analysis.test.mjs tests/tooling-contract.test.mjs tests/security-contract.test.mjs tests/finance-ai-assistant-contract.test.mjs`
+
+Observed: PASS, 73/73 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+- [x] **Step 7: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS after removing two trailing blank lines from compatibility alias files.
+
+Run: `npm run test:site`
+
+Observed: PASS, 314/314 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `架构 P2-1a`, explicitly closing the private-tool access naming sub-item while leaving middleware-based unified authorization as a later architecture item.

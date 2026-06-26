@@ -238,10 +238,11 @@ test("quality map and drag contribution cap high-cardinality combinations for re
   assert.ok(dragItems.items.every((item) => item.dragContribution <= 0));
 });
 
-test("profit structure tool requires the existing finance access key before booting charts", async () => {
+test("profit structure tool requires the private tool access key before booting charts", async () => {
   const tool = await readFile(new URL("../src/app/finance/profit-structure/ProfitStructureTool.tsx", import.meta.url), "utf8");
 
-  assert.match(tool, /\/api\/tools\/finance-ai-assistant\/access/);
+  assert.match(tool, /PRIVATE_TOOL_ACCESS_ENDPOINT/);
+  assert.doesNotMatch(tool, /\/api\/tools\/finance-ai-assistant\/access/);
   assert.match(tool, /多维利润质量诊断模型内测访问/);
   assert.match(tool, /type="password"/);
   assert.match(tool, /if \(!accessToken\) {\s+return;\s+}/);

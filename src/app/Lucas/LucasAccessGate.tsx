@@ -2,6 +2,7 @@
 
 import { Suspense, lazy, useState } from "react";
 import { KeyRound, Loader2, LockKeyhole } from "lucide-react";
+import { PRIVATE_TOOL_ACCESS_ENDPOINT } from "@/lib/private-tool-access/constants";
 import styles from "./Lucas.module.css";
 
 const LucasPrivateWorkbench = lazy(() => import("./LucasPrivateWorkbench"));
@@ -14,7 +15,7 @@ type AccessResponse = {
 
 function getAccessErrorMessage(payload: AccessResponse, fallback: string) {
   if (payload.errorCode === "access_not_configured") {
-    return "访问码还没有在部署环境配置，请先配置 FINANCE_AI_ACCESS_KEY。";
+    return "访问码还没有在部署环境配置。";
   }
 
   if (payload.errorCode === "access_denied") {
@@ -42,7 +43,7 @@ export default function LucasAccessGate() {
     setAccessError("");
 
     try {
-      const response = await fetch("/api/tools/finance-ai-assistant/access", {
+      const response = await fetch(PRIVATE_TOOL_ACCESS_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key }),

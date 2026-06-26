@@ -8,9 +8,10 @@ import {
 import { buildDirectChartSpec } from "../src/lib/finance/charts/index.ts";
 import { filterTableValueBySearchText } from "../src/components/finance/financeAIDetailTableFilters.ts";
 import { POST } from "../src/app/api/tools/finance-ai-assistant/route.ts";
-import { POST as POSTAccess } from "../src/app/api/tools/finance-ai-assistant/access/route.ts";
+import { POST as POSTAccess } from "../src/app/api/private-tool-access/route.ts";
 
-process.env.FINANCE_AI_ACCESS_KEY = "test-finance-ai-access-key";
+process.env.PRIVATE_TOOL_ACCESS_KEY = "test-private-tool-access-key";
+process.env.FINANCE_AI_ACCESS_KEY = "";
 
 async function readProjectFile(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
@@ -736,7 +737,7 @@ test("finance AI assistant reports empty provider content as a distinct diagnosi
   }, "");
 });
 
-test("finance AI assistant stays public while the shared access endpoint remains for private finance tools", async () => {
+test("finance AI assistant stays public while the private tool access endpoint remains for gated tools", async () => {
   const publicResponse = await POST(makeRequest({
     mode: "plan",
     question: "巴西 3 月边际怎么看？",
@@ -748,7 +749,7 @@ test("finance AI assistant stays public while the shared access endpoint remains
   assert.equal(publicPayload.errorCode, "invalid_schema");
 
   const accessResponse = await POSTAccess(makeRequest({
-    key: "test-finance-ai-access-key",
+    key: "test-private-tool-access-key",
   }));
   const accessPayload = await accessResponse.json();
 

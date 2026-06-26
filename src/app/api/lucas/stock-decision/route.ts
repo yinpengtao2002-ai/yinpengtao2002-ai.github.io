@@ -1,12 +1,15 @@
 import { stockDecisionHtml } from "@/lib/lucas/stock-decision/stockDecisionHtml";
-import { FINANCE_AI_ACCESS_HEADER, verifyFinanceAIAccessToken } from "@/lib/finance-ai/access";
+import {
+  readPrivateToolAccessToken,
+  verifyPrivateToolAccessToken,
+} from "@/lib/security/private-tool-access";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const accessToken = request.headers.get(FINANCE_AI_ACCESS_HEADER);
+  const accessToken = readPrivateToolAccessToken(request.headers);
 
-  if (!verifyFinanceAIAccessToken(accessToken)) {
+  if (!verifyPrivateToolAccessToken(accessToken)) {
     return Response.json({ error: "access_denied" }, { status: 401 });
   }
 
