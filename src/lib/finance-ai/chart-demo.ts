@@ -1,5 +1,4 @@
 import type { FinanceAIDirectChart, FinanceChartSpec } from "../finance/charts/types";
-// @ts-expect-error - Node's test runner imports this TypeScript module by extension.
 import { buildDirectChartSpec } from "../finance/charts/index.ts";
 
 const DEMO_CHARTS: FinanceAIDirectChart[] = [

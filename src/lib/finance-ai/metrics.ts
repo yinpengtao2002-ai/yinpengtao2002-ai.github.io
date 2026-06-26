@@ -1,4 +1,3 @@
-// @ts-expect-error - Node's test runner imports this TypeScript module by extension.
 import { normalizePeriodValue, toFinanceNumber } from "./schema.ts";
 import type {
   BarRankRequest,

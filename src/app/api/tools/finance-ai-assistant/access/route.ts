@@ -1,6 +1,4 @@
-// @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
 import { createFinanceAIAccessToken, getFinanceAIAccessTokenExpiry, isFinanceAIAccessConfigured, isFinanceAIAccessKeyValid } from "../../../../../lib/finance-ai/access.ts";
-// @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
 import { enforceRateLimit } from "../../../../../lib/security/rate-limit.ts";
 
 const FINANCE_AI_ACCESS_RATE_LIMIT = { keyPrefix: "api-finance-ai-access", limit: 8, windowMs: 5 * 60_000 };

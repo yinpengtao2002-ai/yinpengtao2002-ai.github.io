@@ -1,11 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile, stat } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 
 const eslintConfig = await readFile(new URL("../eslint.config.mjs", import.meta.url), "utf8");
 const nextConfig = await readFile(new URL("../next.config.ts", import.meta.url), "utf8");
 const packageJson = await readFile(new URL("../package.json", import.meta.url), "utf8");
 const packageLockJson = await readFile(new URL("../package-lock.json", import.meta.url), "utf8");
+const tsconfigJson = await readFile(new URL("../tsconfig.json", import.meta.url), "utf8");
 const vendorScript = await readFile(new URL("../scripts/prepare-vendor-assets.mjs", import.meta.url), "utf8");
 const xlsxVendorBundle = await readFile(new URL("../public/vendor/xlsx/xlsx.full.min.js", import.meta.url), "utf8");
 const perspectiveShim = await readFile(
@@ -44,6 +45,21 @@ async function assertProjectFileMissing(path) {
   }
 
   assert.fail(`${path} should be removed instead of kept as unreferenced legacy code`);
+}
+
+async function collectSourceFiles(directoryUrl) {
+  const entries = await readdir(directoryUrl, { withFileTypes: true });
+  const files = await Promise.all(entries.map(async (entry) => {
+    const entryUrl = new URL(`${entry.name}${entry.isDirectory() ? "/" : ""}`, directoryUrl);
+
+    if (entry.isDirectory()) {
+      return collectSourceFiles(entryUrl);
+    }
+
+    return /\.(?:ts|tsx)$/.test(entry.name) ? [entryUrl] : [];
+  }));
+
+  return files.flat();
 }
 
 test("eslint ignores project-local worktrees", () => {
@@ -119,6 +135,24 @@ test("unused legacy UI primitives and feature shells stay removed", async () => 
   assert.doesNotMatch(layoutBarrel, /PageLayout|Section/);
   assert.doesNotMatch(globals, /\.artifact-(?:card|window|code|chart|image)/);
   assert.doesNotMatch(globals, /\.card-hover/);
+});
+
+test("TypeScript extension imports are explicit without suppressing the type system", async () => {
+  const tsconfig = JSON.parse(tsconfigJson);
+  assert.equal(tsconfig.compilerOptions?.allowImportingTsExtensions, true);
+
+  const sourceFiles = await collectSourceFiles(new URL("../src/", import.meta.url));
+  const filesWithSuppressedExtensionImports = [];
+
+  await Promise.all(sourceFiles.map(async (fileUrl) => {
+    const source = await readFile(fileUrl, "utf8");
+
+    if (source.includes("@ts-expect-error - Node's test runner imports")) {
+      filesWithSuppressedExtensionImports.push(fileUrl.pathname);
+    }
+  }));
+
+  assert.deepEqual(filesWithSuppressedExtensionImports, []);
 });
 
 test("Perspective BI dependencies and local browser assets are wired", () => {

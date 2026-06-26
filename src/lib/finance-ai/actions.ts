@@ -1,6 +1,4 @@
-// @ts-expect-error - Node's test runner imports this TypeScript module by extension.
 import { normalizePeriodValue } from "./schema.ts";
-// @ts-expect-error - Node's test runner imports this TypeScript module by extension.
 import { findMetric } from "./metrics.ts";
 import type {
   FinanceActionPlan,

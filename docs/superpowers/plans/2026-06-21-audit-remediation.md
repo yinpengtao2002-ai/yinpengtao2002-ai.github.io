@@ -1242,3 +1242,71 @@ Observed: PASS, Next production build compiled and generated 35 static pages. Ex
 - [x] **Step 7: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-9`, noting that the stale primitive library was removed rather than force-adopted because it carried outdated hardcoded styling and was not part of the live site surface.
+
+### Task 23: Remove TypeScript Extension Import Suppressions
+
+**Files:**
+- Modify: `tsconfig.json`
+- Modify: `src/app/api/tools/finance-ai-assistant/route.ts`
+- Modify: `src/app/api/tools/finance-ai-assistant/access/route.ts`
+- Modify: `src/lib/finance-ai/actions.ts`
+- Modify: `src/lib/finance-ai/metrics.ts`
+- Modify: `src/lib/finance-ai/workbook.ts`
+- Modify: `src/lib/finance-ai/chart-demo.ts`
+- Modify: `tests/tooling-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the architecture P2 item to its smallest safe sub-item: remove the `@ts-expect-error` comments that existed only because source files import TypeScript modules with explicit `.ts` extensions for Node's test runner. The larger finance model `.js` engine migration remains separate because it touches several full-screen tools.
+
+- [x] **Step 2: Add a failing regression contract**
+
+Added `tests/tooling-contract.test.mjs` coverage requiring `tsconfig.json` to enable `compilerOptions.allowImportingTsExtensions` and scanning `src/**/*.ts(x)` for the old `@ts-expect-error - Node's test runner imports` suppression text.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/tooling-contract.test.mjs`
+
+Observed: FAIL, 9/10 tests passing. The new test failed because `allowImportingTsExtensions` was undefined, proving the contract caught the missing compiler rule before implementation.
+
+- [x] **Step 4: Make extension imports explicit**
+
+Added `"allowImportingTsExtensions": true` to `tsconfig.json`, which is valid with the repo's existing `noEmit: true` setup and `moduleResolution: "bundler"`.
+
+- [x] **Step 5: Remove stale suppressions**
+
+Removed the Node test runner `.ts` extension `@ts-expect-error` comments from the finance AI route, finance AI access route, action/metric/workbook helpers, and chart demo helper.
+
+- [x] **Step 6: Run targeted verification**
+
+Run: `node --test tests/tooling-contract.test.mjs`
+
+Observed: PASS, 10/10 tests.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+- [x] **Step 7: Run full verification**
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 313/313 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 35 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `架构 P2-3a`, explicitly closing the `.ts` extension import suppression sub-item while leaving broader `.js` finance engine TypeScript migration for later.

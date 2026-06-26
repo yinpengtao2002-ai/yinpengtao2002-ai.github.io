@@ -1,13 +1,8 @@
-// @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
 import { buildFinanceAIExplanationPrompt, buildFinanceAIPlanningContext } from "../../../../lib/finance-ai/context.ts";
 import type { FinanceAIChatState } from "../../../../lib/finance-ai/context.ts";
-// @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
 import { normalizeFinanceActionPlanForQuestion, validateFinanceActionPlan } from "../../../../lib/finance-ai/actions.ts";
-// @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
 import { getChatProviders } from "../../../../lib/ai/providers.ts";
-// @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
 import { callFirstConfiguredProvider as callFirstConfiguredChatProvider, extractJsonObject, type ProviderCallOptions, type ProviderChatMessage } from "../../../../lib/ai/callProvider.ts";
-// @ts-expect-error - Node's test runner imports this route with TypeScript extensions.
 import { enforceRateLimit } from "../../../../lib/security/rate-limit.ts";
 import type {
   FinanceActionPlan,
