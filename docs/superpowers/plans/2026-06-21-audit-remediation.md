@@ -1102,3 +1102,68 @@ Observed: PASS, Next production build compiled and generated 35 static pages. Ex
 Run: local production smoke on `http://localhost:3035/thinking-lab/gold-stock-selloff-iran-war-2026`
 
 Observed: `curl -I -L` returned 200 after the trailing-slash redirect; HTML contained `mermaid-chart-card` and `图表加载中...`, and did not contain `<pre><div class="mermaid-chart-card">`.
+
+### Task 21: Add Article Reading Progress And TOC Scroll Spy
+
+**Files:**
+- Modify: `src/components/content/ArticleReader.tsx`
+- Modify: `src/app/globals.css`
+- Modify: `tests/article-reader-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the remaining P2 article-reading audit item to reading progress and TOC scroll-spy. The audit also mentioned dark mode, but `agent.md` records the public site as intentionally single-theme light mode, so this pass does not introduce a dark-mode toggle or dark article theme.
+
+- [x] **Step 2: Add a failing regression contract**
+
+Extended `tests/article-reader-contract.test.mjs` to require `ArticleReader` to expose `readingProgress` and `activeHeadingId` state, render an `article-reading-progress` element with `role="progressbar"` and `aria-valuenow`, update on `scroll` and `resize`, mark the active TOC link with `aria-current="location"`, and provide reduced-motion-safe progress bar CSS.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/article-reader-contract.test.mjs`
+
+Observed: FAIL, 2/3 tests passing. The new test failed because `ArticleReader` had no `readingProgress` state, confirming the contract caught the missing reading progress / scroll-spy behavior.
+
+- [x] **Step 4: Implement the reading progress and scroll-spy**
+
+Added a requestAnimationFrame-throttled scroll/resize listener that updates document reading progress and chooses the last h2/h3 above the sticky header offset as the active TOC item. Rendered a thin sticky-header progress bar with `role="progressbar"` / `aria-valuenow`, and added `aria-current="location"` plus accent styling for the active TOC link.
+
+- [x] **Step 5: Add restrained progress styling**
+
+Added `.article-reading-progress` CSS using the existing accent tokens, a 2px track, and `prefers-reduced-motion: reduce` handling to remove progress-bar transition animation for low-motion users.
+
+- [x] **Step 6: Run verification**
+
+Run: `node --test tests/article-reader-contract.test.mjs`
+
+Observed: PASS, 3/3 tests.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 310/310 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 35 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+Run: local production Playwright on `http://localhost:3036/thinking-lab/gold-stock-selloff-iran-war-2026/`
+
+Observed: snapshot exposed `progressbar "文章阅读进度"`. DOM checks showed initial `progress=0`, `role=progressbar`, active TOC text `引言`; after scrolling to roughly 42% of document height, `progress=45`, active TOC text `欧洲央行：同样进退维谷`, active href `#section-92`, and the progress-bar transform changed to `matrix(0.454797, 0, 0, 1, 0, 0)`. Browser console errors: 0.
+
+- [x] **Step 7: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P2-3b`, noting that reading progress and TOC scroll-spy are fixed while dark article theming is not adopted under the current single-theme light product rule.

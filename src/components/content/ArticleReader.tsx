@@ -11,7 +11,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import mermaid from "mermaid";
-import { Children, isValidElement, useLayoutEffect, useMemo, useState } from "react";
+import { Children, isValidElement, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import type { ContentItem } from "@/lib/data/generated/content";
 import { normalizeMarkdownStrongEmphasis } from "@/lib/markdown/normalizeStrongEmphasis";
 
@@ -146,6 +146,8 @@ export default function ArticleReader({ article, sectionLabel, backHref }: Artic
     const router = useRouter();
     const articleContent = useMemo(() => normalizeMarkdownStrongEmphasis(article.content), [article.content]);
     const tocHeadings = useMemo(() => extractTableOfContents(articleContent), [articleContent]);
+    const [readingProgress, setReadingProgress] = useState(0);
+    const [activeHeadingId, setActiveHeadingId] = useState("");
 
     useLayoutEffect(() => {
         const previousScrollRestoration =
@@ -168,6 +170,59 @@ export default function ArticleReader({ article, sectionLabel, backHref }: Artic
             }
         };
     }, [article.slug]);
+
+    useEffect(() => {
+        let frameId: number | null = null;
+
+        const updateReadingPosition = () => {
+            frameId = null;
+
+            const scrollableHeight = Math.max(
+                document.documentElement.scrollHeight - window.innerHeight,
+                0,
+            );
+            const nextReadingProgress =
+                scrollableHeight > 0
+                    ? Math.min(100, Math.max(0, (window.scrollY / scrollableHeight) * 100))
+                    : 100;
+            setReadingProgress(nextReadingProgress);
+
+            if (tocHeadings.length === 0) {
+                setActiveHeadingId("");
+                return;
+            }
+
+            let nextActiveHeadingId = tocHeadings[0].id;
+            const activationOffset = 96;
+            for (const heading of tocHeadings) {
+                const headingElement = document.getElementById(heading.id);
+                if (!headingElement) continue;
+                if (headingElement.getBoundingClientRect().top <= activationOffset) {
+                    nextActiveHeadingId = heading.id;
+                } else {
+                    break;
+                }
+            }
+            setActiveHeadingId(nextActiveHeadingId);
+        };
+
+        const scheduleUpdate = () => {
+            if (frameId !== null) return;
+            frameId = window.requestAnimationFrame(updateReadingPosition);
+        };
+
+        updateReadingPosition();
+        window.addEventListener("scroll", scheduleUpdate, { passive: true });
+        window.addEventListener("resize", scheduleUpdate);
+
+        return () => {
+            if (frameId !== null) {
+                window.cancelAnimationFrame(frameId);
+            }
+            window.removeEventListener("scroll", scheduleUpdate);
+            window.removeEventListener("resize", scheduleUpdate);
+        };
+    }, [tocHeadings]);
 
     const handleBack = () => {
         if (typeof window !== "undefined" && window.history.length > 1) {
@@ -249,6 +304,16 @@ export default function ArticleReader({ article, sectionLabel, backHref }: Artic
                         <span>首页</span>
                     </Link>
                 </div>
+                <div
+                    className="article-reading-progress"
+                    role="progressbar"
+                    aria-label="文章阅读进度"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={Math.round(readingProgress)}
+                >
+                    <span style={{ transform: `scaleX(${readingProgress / 100})` }} />
+                </div>
             </header>
 
             {/* Article Content */}
@@ -305,18 +370,23 @@ export default function ArticleReader({ article, sectionLabel, backHref }: Artic
                     <nav aria-label="文章目录" style={styles.toc}>
                         <div style={styles.tocTitle}>目录</div>
                         <div style={styles.tocList}>
-                            {tocHeadings.map((heading) => (
-                                <a
-                                    key={heading.id}
-                                    href={`#${heading.id}`}
-                                    style={{
-                                        ...styles.tocLink,
-                                        paddingLeft: heading.level === 3 ? 18 : 0,
-                                    }}
-                                >
-                                    {heading.text}
-                                </a>
-                            ))}
+                            {tocHeadings.map((heading) => {
+                                const isActiveHeading = activeHeadingId === heading.id;
+                                return (
+                                    <a
+                                        key={heading.id}
+                                        href={`#${heading.id}`}
+                                        aria-current={isActiveHeading ? "location" : undefined}
+                                        style={{
+                                            ...styles.tocLink,
+                                            ...(isActiveHeading ? styles.tocLinkActive : {}),
+                                            paddingLeft: heading.level === 3 ? 18 : 0,
+                                        }}
+                                    >
+                                        {heading.text}
+                                    </a>
+                                );
+                            })}
                         </div>
                     </nav>
                 )}
@@ -507,6 +577,10 @@ const styles: Record<string, React.CSSProperties> = {
         fontSize: 14,
         lineHeight: 1.5,
         textDecoration: "none",
+    },
+    tocLinkActive: {
+        color: "var(--accent)",
+        fontWeight: 700,
     },
     p: {
         fontSize: 16,
