@@ -9,6 +9,7 @@ const sitemap = await readFile(new URL("../src/app/sitemap.ts", import.meta.url)
 const siteNavigation = await readFile(new URL("../src/components/layout/SiteNavigation.tsx", import.meta.url), "utf8");
 const clientShell = await readFile(new URL("../src/components/ClientShell.tsx", import.meta.url), "utf8");
 const modelRegistry = await readFile(new URL("../src/lib/finance/model-registry.json", import.meta.url), "utf8");
+const middleware = await readFile(new URL("../middleware.ts", import.meta.url), "utf8");
 
 test("Lucas private route is top-level, gated, and excluded from discovery surfaces", () => {
   assert.match(lucasPage, /title:\s*"Lucas"/);
@@ -39,12 +40,14 @@ test("Lucas route loads the copied stock decision system after access instead of
   assert.doesNotMatch(lucasWorkbench, /rawKelly/);
   assert.doesNotMatch(lucasWorkbench, /suggestedShares/);
 
-  assert.match(apiRoute, /verifyPrivateToolAccessToken/);
-  assert.match(apiRoute, /readPrivateToolAccessToken/);
+  assert.match(middleware, /\/api\/lucas\/stock-decision\/:path\*/);
+  assert.match(middleware, /verifyPrivateToolAccessTokenForMiddleware/);
+  assert.doesNotMatch(apiRoute, /verifyPrivateToolAccessToken/);
+  assert.doesNotMatch(apiRoute, /readPrivateToolAccessToken/);
   assert.doesNotMatch(apiRoute, /verifyFinanceAIAccessToken/);
   assert.doesNotMatch(apiRoute, /FINANCE_AI_ACCESS_HEADER/);
   assert.match(apiRoute, /stockDecisionHtml/);
-  assert.match(apiRoute, /status:\s*401/);
+  assert.doesNotMatch(apiRoute, /status:\s*401/);
 });
 
 test("local stock decision app is bundled for the private Lucas route", async () => {

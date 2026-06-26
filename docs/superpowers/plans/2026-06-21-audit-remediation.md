@@ -1385,3 +1385,77 @@ Observed: PASS, Next production build compiled and generated 36 static pages. Ex
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `架构 P2-1a`, explicitly closing the private-tool access naming sub-item while leaving middleware-based unified authorization as a later architecture item.
+
+### Task 25: Move Private Stock Decision Authorization To Middleware
+
+**Files:**
+- Add: `middleware.ts`
+- Add: `src/lib/security/private-tool-access-edge.ts`
+- Add: `tests/private-tool-access-middleware.test.mjs`
+- Modify: `src/app/api/lucas/stock-decision/route.ts`
+- Modify: `tests/lucas-private-route-contract.test.mjs`
+- Modify: `package.json`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the remaining `架构 P2-1` middleware sub-item to the current private business API that actually needs token enforcement: `/api/lucas/stock-decision`. This does not change the product decision that the formal finance AI assistant remains public.
+
+- [x] **Step 2: Add failing regression contracts**
+
+Updated `tests/lucas-private-route-contract.test.mjs` to require middleware-based protection instead of direct token checks inside the Lucas stock-decision route. Added `tests/private-tool-access-middleware.test.mjs` to require an Edge-compatible verifier that accepts tokens created by the existing server signer, rejects malformed / expired tokens, reads the new private-tool header before the legacy header, and protects `/api/lucas/stock-decision/:path*`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/lucas-private-route-contract.test.mjs tests/private-tool-access-middleware.test.mjs`
+
+Observed: FAIL before implementation. `tests/lucas-private-route-contract.test.mjs` failed because `middleware.ts` did not exist, and `tests/private-tool-access-middleware.test.mjs` failed because `src/lib/security/private-tool-access-edge.ts` did not exist.
+
+- [x] **Step 4: Implement middleware authorization**
+
+Added `src/lib/security/private-tool-access-edge.ts` using Web Crypto HMAC verification and base64url encoding so middleware can validate tokens signed by the existing Node-side private-tool helper. Added root `middleware.ts` with matcher `"/api/lucas/stock-decision/:path*"` and a `401 { error: "access_denied" }` response for missing / invalid tokens.
+
+- [x] **Step 5: Remove route-local token checks**
+
+Removed direct `readPrivateToolAccessToken` / `verifyPrivateToolAccessToken` usage from `src/app/api/lucas/stock-decision/route.ts`; the route now only returns the private stock-decision HTML with `Cache-Control: no-store` after middleware has admitted the request.
+
+- [x] **Step 6: Add middleware test to the site suite**
+
+Added `tests/private-tool-access-middleware.test.mjs` to `npm run test:site` so the full site contract suite exercises the middleware authorization path.
+
+- [x] **Step 7: Run targeted verification**
+
+Run: `node --test tests/lucas-private-route-contract.test.mjs tests/private-tool-access-middleware.test.mjs`
+
+Observed: PASS, 8/8 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+- [x] **Step 8: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 318/318 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages, with `Proxy (Middleware)` listed in the build output. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+Run: local production smoke with `PRIVATE_TOOL_ACCESS_KEY=local-smoke-private-tool-key npm run start -- -p 3037`
+
+Observed: unauthenticated `GET /api/lucas/stock-decision/` returned `401`; after `POST /api/private-tool-access/` returned a token, authenticated `GET /api/lucas/stock-decision/` returned `200`, preserved `Cache-Control: no-store`, and the HTML contained `kelly-app`.
+
+- [x] **Step 9: Record completion**
+
+Updated `docs/project-audit-report.md` as `架构 P2-1b`, closing the middleware authorization sub-item for the current private stock-decision API while keeping the formal finance AI assistant public.
