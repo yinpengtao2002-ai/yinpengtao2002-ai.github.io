@@ -4034,18 +4034,12 @@ h6 {
   box-shadow: 0 10px 26px rgba(33, 29, 22, 0.04);
   padding: 15px 16px;
   text-decoration: none;
+  touch-action: manipulation;
   transition:
     background 0.18s ease,
     border-color 0.18s ease,
     box-shadow 0.18s ease,
     transform 0.18s ease;
-}
-
-.thinking-article-card:hover {
-  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
-  background: #fffaf4;
-  box-shadow: 0 14px 32px rgba(33, 29, 22, 0.06);
-  transform: translateY(-2px);
 }
 
 .thinking-article-main {
@@ -4100,18 +4094,12 @@ h6 {
   background: color-mix(in srgb, var(--card) 88%, transparent);
   padding: 13px;
   text-decoration: none;
+  touch-action: manipulation;
   transition:
     background 0.18s ease,
     border-color 0.18s ease,
     box-shadow 0.18s ease,
     transform 0.18s ease;
-}
-
-.thinking-tool-card:hover {
-  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
-  background: #fffaf4;
-  box-shadow: 0 12px 28px rgba(33, 29, 22, 0.055);
-  transform: translateY(-2px);
 }
 
 .thinking-tool-icon {
@@ -7465,6 +7453,7 @@ h6 {
   flex: 1 1 auto;
   height: 100%;
   text-decoration: none;
+  touch-action: manipulation;
 }
 
 .finance-model-library-grid {
@@ -7476,12 +7465,6 @@ h6 {
 .finance-model-library-grid.compact {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
-}
-
-.finance-model-card:hover {
-  border-color: color-mix(in srgb, var(--accent) 36%, var(--border));
-  box-shadow: 0 18px 44px rgba(20, 20, 19, 0.08);
-  transform: translateY(-2px);
 }
 
 .finance-model-card-body {
@@ -7545,6 +7528,36 @@ h6 {
   width: 14px;
   height: 14px;
   flex: 0 0 auto;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .thinking-article-card:hover {
+    border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+    background: #fffaf4;
+    box-shadow: 0 14px 32px rgba(33, 29, 22, 0.06);
+    transform: translateY(-2px);
+  }
+
+  .thinking-tool-card:hover {
+    border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+    background: #fffaf4;
+    box-shadow: 0 12px 28px rgba(33, 29, 22, 0.055);
+    transform: translateY(-2px);
+  }
+
+  .finance-model-card:hover {
+    border-color: color-mix(in srgb, var(--accent) 36%, var(--border));
+    box-shadow: 0 18px 44px rgba(20, 20, 19, 0.08);
+    transform: translateY(-2px);
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .thinking-article-card:active,
+  .thinking-tool-card:active,
+  .finance-model-card-link:active .finance-model-card {
+    transform: scale(0.995);
+  }
 }
 
 .finance-model-preview {

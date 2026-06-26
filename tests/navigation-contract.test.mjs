@@ -106,3 +106,15 @@ test("decorative mouse trail respects reduced motion and avoids expensive blend 
   assert.doesNotMatch(mouseTrail, /for \(let i = 0; i < 3; i\+\+\)/);
   assert.doesNotMatch(mouseTrail, /mix-blend-multiply/);
 });
+
+test("mobile entry cards avoid hover-only tap traps", () => {
+  assert.match(globals, /\.thinking-article-card\s*\{[^}]*touch-action:\s*manipulation/s);
+  assert.match(globals, /\.thinking-tool-card\s*\{[^}]*touch-action:\s*manipulation/s);
+  assert.match(globals, /\.finance-model-card-link\s*\{[^}]*touch-action:\s*manipulation/s);
+  assert.match(globals, /@media\s*\(hover:\s*hover\)\s*and\s*\(pointer:\s*fine\)\s*\{[\s\S]*\.thinking-article-card:hover/s);
+  assert.match(globals, /@media\s*\(hover:\s*hover\)\s*and\s*\(pointer:\s*fine\)\s*\{[\s\S]*\.thinking-tool-card:hover/s);
+  assert.match(globals, /@media\s*\(hover:\s*hover\)\s*and\s*\(pointer:\s*fine\)\s*\{[\s\S]*\.finance-model-card:hover/s);
+  assert.doesNotMatch(globals, /^\.thinking-article-card:hover/m);
+  assert.doesNotMatch(globals, /^\.thinking-tool-card:hover/m);
+  assert.doesNotMatch(globals, /^\.finance-model-card:hover/m);
+});
