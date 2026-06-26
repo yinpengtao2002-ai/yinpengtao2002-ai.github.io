@@ -1167,3 +1167,78 @@ Observed: snapshot exposed `progressbar "文章阅读进度"`. DOM checks showed
 - [x] **Step 7: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P2-3b`, noting that reading progress and TOC scroll-spy are fixed while dark article theming is not adopted under the current single-theme light product rule.
+
+### Task 22: Remove Unused Legacy UI Primitives
+
+**Files:**
+- Delete: `src/components/feature/ArticleCard.tsx`
+- Delete: `src/components/feature/BackButton.tsx`
+- Delete: `src/components/feature/SectionCard.tsx`
+- Delete: `src/components/feature/index.ts`
+- Delete: `src/components/layout/PageLayout.tsx`
+- Delete: `src/components/layout/Section.tsx`
+- Modify: `src/components/layout/index.ts`
+- Delete: `src/components/ui/ArtifactCard.tsx`
+- Delete: `src/components/ui/Badge.tsx`
+- Delete: `src/components/ui/Button.tsx`
+- Delete: `src/components/ui/Card.tsx`
+- Delete: `src/components/ui/Container.tsx`
+- Delete: `src/components/ui/Icon.tsx`
+- Delete: `src/components/ui/ThinkingSubtitle.tsx`
+- Delete: `src/components/ui/index.ts`
+- Modify: `src/app/globals.css`
+- Modify: `tests/tooling-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped this pass to the remaining P1 UI governance sub-item around unused legacy primitives and feature/layout shells. This does not claim to complete every live token/button standardization concern; it closes the stale unmounted library residue that the app was not using.
+
+- [x] **Step 2: Add a failing regression contract**
+
+Added `tests/tooling-contract.test.mjs` coverage requiring the old `feature/*` shells, old `layout/PageLayout` / `layout/Section`, old `ui/*` primitives, and their barrel export to stay removed. The contract also checks `src/app/globals.css` for orphaned `.artifact-*` and `.card-hover` rules.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/tooling-contract.test.mjs`
+
+Observed: FAIL before cleanup because `src/components/feature/ArticleCard.tsx` still existed. After deleting the files, the CSS-residue assertion intentionally failed again while `.artifact-*` and `.card-hover` remained in `globals.css`.
+
+- [x] **Step 4: Remove unused files and stale exports**
+
+Deleted the unmounted `feature/*` shell components, the old `PageLayout` / `Section` layout components, and the unused `ui/Button`, `ui/Card`, `ui/Container`, `ui/Icon`, `ui/ArtifactCard`, `ui/Badge`, and `ui/ThinkingSubtitle` primitives. Updated `src/components/layout/index.ts` to export only the still-live `PageTransition` and `SiteNavigation`.
+
+- [x] **Step 5: Remove orphaned global CSS**
+
+Removed the legacy `.artifact-card`, `.artifact-card-inner`, `.artifact-window-chrome`, `.artifact-card-content`, `.artifact-code`, `.artifact-chart`, `.artifact-image`, and `.card-hover` rules from `src/app/globals.css`.
+
+- [x] **Step 6: Run verification**
+
+Run: `node --test tests/tooling-contract.test.mjs`
+
+Observed: PASS, 9/9 tests.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 312/312 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 35 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 7: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-9`, noting that the stale primitive library was removed rather than force-adopted because it carried outdated hardcoded styling and was not part of the live site surface.

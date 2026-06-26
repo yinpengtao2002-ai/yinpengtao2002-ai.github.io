@@ -3324,43 +3324,6 @@ h6 {
   }
 }
 
-.artifact-card {
-  transform-origin: center;
-}
-
-.artifact-card-inner {
-  padding: 30px 16px 14px;
-}
-
-.artifact-window-chrome {
-  height: 24px;
-  padding-inline: 10px;
-}
-
-.artifact-card-content {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-}
-
-.artifact-code {
-  width: min(100%, 118px);
-}
-
-.artifact-chart {
-  width: min(100%, 118px);
-  height: min(100%, 70px);
-}
-
-.artifact-image {
-  width: min(100%, 108px);
-}
-
 .home-section {
   display: flex;
   align-items: center;
@@ -7403,16 +7366,6 @@ h6 {
 /* Warm glow effect */
 .glow {
   box-shadow: 0 0 40px rgba(217, 119, 87, 0.1);
-}
-
-/* Card hover effect */
-.card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 40px rgba(20, 20, 19, 0.08);
 }
 
 .finance-model-card {

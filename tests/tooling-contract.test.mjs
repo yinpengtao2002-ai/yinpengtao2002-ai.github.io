@@ -95,6 +95,32 @@ test("legacy animation and hero dead code stays out of the app surface", async (
   await assertProjectFileMissing("../src/lib/config/animation.ts");
 });
 
+test("unused legacy UI primitives and feature shells stay removed", async () => {
+  const globals = await readRequiredProjectFile("../src/app/globals.css");
+
+  await assertProjectFileMissing("../src/components/feature/ArticleCard.tsx");
+  await assertProjectFileMissing("../src/components/feature/BackButton.tsx");
+  await assertProjectFileMissing("../src/components/feature/SectionCard.tsx");
+  await assertProjectFileMissing("../src/components/feature/index.ts");
+
+  await assertProjectFileMissing("../src/components/layout/PageLayout.tsx");
+  await assertProjectFileMissing("../src/components/layout/Section.tsx");
+
+  await assertProjectFileMissing("../src/components/ui/ArtifactCard.tsx");
+  await assertProjectFileMissing("../src/components/ui/Badge.tsx");
+  await assertProjectFileMissing("../src/components/ui/Button.tsx");
+  await assertProjectFileMissing("../src/components/ui/Card.tsx");
+  await assertProjectFileMissing("../src/components/ui/Container.tsx");
+  await assertProjectFileMissing("../src/components/ui/Icon.tsx");
+  await assertProjectFileMissing("../src/components/ui/ThinkingSubtitle.tsx");
+  await assertProjectFileMissing("../src/components/ui/index.ts");
+
+  const layoutBarrel = await readRequiredProjectFile("../src/components/layout/index.ts");
+  assert.doesNotMatch(layoutBarrel, /PageLayout|Section/);
+  assert.doesNotMatch(globals, /\.artifact-(?:card|window|code|chart|image)/);
+  assert.doesNotMatch(globals, /\.card-hover/);
+});
+
 test("Perspective BI dependencies and local browser assets are wired", () => {
   assert.match(packageJson, /"@perspective-dev\/client":/);
   assert.match(packageJson, /"@perspective-dev\/server":/);
