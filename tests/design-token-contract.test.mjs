@@ -52,3 +52,32 @@ test("shared finance tool back button uses site tokens instead of hardcoded colo
   assert.match(styleBlock, /var\(--accent\)/);
   assert.match(iconBlock, /var\(--accent\)/);
 });
+
+test("finance tool page wrappers use shared tokenized shell classes", async () => {
+  const pageFiles = [
+    "src/app/finance/business-analysis/page.tsx",
+    "src/app/finance/monthly-trend/page.tsx",
+    "src/app/finance/margin-analysis/page.tsx",
+    "src/app/finance/sensitivity-analysis/page.tsx",
+    "src/app/finance/profit-structure/page.tsx",
+    "src/app/finance/perspective-bi/page.tsx",
+    "src/app/finance/finance-ai-assistant/page.tsx",
+    "src/app/finance/finance-ai-assistant/demo/page.tsx",
+  ];
+
+  for (const path of pageFiles) {
+    const source = await readProjectFile(path);
+    assert.match(source, /finance-tool-page-shell/, `${path} should use the shared finance tool page shell`);
+    assert.doesNotMatch(source, /bg-\[#faf9f5\]/, `${path} should not hardcode the page background`);
+    assert.doesNotMatch(source, /text-\[#141413\]/, `${path} should not hardcode the foreground color`);
+  }
+
+  const globals = await readProjectFile("src/app/globals.css");
+  const shellBlock = globals.match(/\.finance-tool-page-shell\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+  const fallbackBlock = globals.match(/\.finance-tool-page-fallback\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+
+  assert.match(shellBlock, /background:\s*var\(--background\)/);
+  assert.match(shellBlock, /color:\s*var\(--foreground\)/);
+  assert.match(fallbackBlock, /background:\s*var\(--background\)/);
+  assert.match(fallbackBlock, /color:\s*var\(--foreground\)/);
+});

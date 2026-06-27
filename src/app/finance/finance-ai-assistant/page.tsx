@@ -33,11 +33,11 @@ function ProjectDescription({ className = "" }: { className?: string }) {
 
 export default function FinanceAIAssistantPage() {
   return (
-    <div className="min-h-screen bg-[#faf9f5]">
+    <div className="finance-tool-page-shell min-h-screen">
       <ProjectDescription className="sr-only" />
 
       <noscript>
-        <div className="relative z-[60] min-h-screen overflow-auto bg-[#faf9f5] p-6 text-[#141413]">
+        <div className="finance-tool-page-fallback relative z-[60] min-h-screen overflow-auto p-6">
           <ProjectDescription />
         </div>
       </noscript>

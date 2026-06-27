@@ -40,11 +40,11 @@ function ProjectDescription({ className = "" }: { className?: string }) {
 
 export default function PerspectiveBIPage() {
     return (
-        <div className="fixed inset-0 overflow-hidden bg-[#faf9f5]">
+        <div className="finance-tool-page-shell fixed inset-0 overflow-hidden">
             <ProjectDescription className="sr-only" />
 
             <noscript>
-                <div className="relative z-[60] min-h-screen overflow-auto bg-[#faf9f5] p-6 text-[#141413]">
+                <div className="finance-tool-page-fallback relative z-[60] min-h-screen overflow-auto p-6">
                     <ProjectDescription />
                 </div>
             </noscript>

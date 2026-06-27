@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function FinanceAIConversationDemoPage() {
   return (
-    <div className="min-h-screen bg-[#faf9f5]">
+    <div className="finance-tool-page-shell min-h-screen">
       <ToolBackButton />
       <FinanceAIConversationDemo />
     </div>

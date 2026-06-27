@@ -1846,3 +1846,77 @@ Observed: PASS. At `1440x900`, `.finance-tool-back-button` was visible at `142x4
 - [x] **Step 7: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10a`, noting that this closes only the shared finance back button token sub-item and leaves other real rendered paths for separate review.
+
+### Task 32: Tokenize Finance Tool Page Shells
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `src/app/finance/business-analysis/page.tsx`
+- Modify: `src/app/finance/monthly-trend/page.tsx`
+- Modify: `src/app/finance/margin-analysis/page.tsx`
+- Modify: `src/app/finance/sensitivity-analysis/page.tsx`
+- Modify: `src/app/finance/profit-structure/page.tsx`
+- Modify: `src/app/finance/perspective-bi/page.tsx`
+- Modify: `src/app/finance/finance-ai-assistant/page.tsx`
+- Modify: `src/app/finance/finance-ai-assistant/demo/page.tsx`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to another concrete rendered surface: finance tool page wrappers and their no-JS fallback wrappers. This pass does not attempt to migrate tool-internal CSS, Plotly palettes, or global page styling.
+
+- [x] **Step 2: Add a failing token contract**
+
+Updated `tests/design-token-contract.test.mjs` to require all finance tool page wrappers to use `finance-tool-page-shell`, reject `bg-[#faf9f5]` and `text-[#141413]` in those page files, and require global shell / fallback styles to derive from `--background` and `--foreground`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `src/app/finance/business-analysis/page.tsx` did not contain `finance-tool-page-shell` and still hardcoded `bg-[#faf9f5]` / `text-[#141413]`.
+
+- [x] **Step 4: Move page shell visuals to tokenized global CSS**
+
+Added `.finance-tool-page-shell` and `.finance-tool-page-fallback` in `src/app/globals.css`, deriving background and foreground from the site tokens. Updated `business-analysis`, `monthly-trend`, `margin-analysis`, `sensitivity-analysis`, `profit-structure`, `perspective-bi`, the formal finance AI assistant, and the finance AI read-only demo page wrappers to use those classes.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 3/3 tests.
+
+Run: `rg -n "bg-\\[#faf9f5\\]|text-\\[#141413\\]" src/app/finance/*/page.tsx src/app/finance/finance-ai-assistant/demo/page.tsx`
+
+Observed: no matches, exit code 1.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 323/323 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+Run: local production Playwright on `http://127.0.0.1:3042`
+
+Observed: PASS. At `1440x900`, `/finance/business-analysis/` and `/finance/margin-analysis/` both exposed `.finance-tool-page-shell` with `rgb(250, 249, 245)` background and `rgb(20, 20, 19)` foreground, the back button was visible at `142x44`, and the margin iframe still pointed to `/tools/margin-analysis/index.html`. At `390x844`, `/finance/finance-ai-assistant/` exposed the same shell colors, the back button was visible at `40x40`, the label was hidden, and console errors were 0.
+
+- [x] **Step 7: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10b`, noting that this closes only finance tool page wrapper tokenization and leaves tool-internal palettes plus other hardcoded surfaces for separate passes.
