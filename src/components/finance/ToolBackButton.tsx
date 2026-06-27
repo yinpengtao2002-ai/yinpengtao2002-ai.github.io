@@ -21,18 +21,18 @@ export default function ToolBackButton() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.22 }}
-            className="fixed right-16 top-4 z-50 sm:right-20"
+            className="finance-tool-back-shell"
         >
             <button
                 type="button"
                 onClick={handleBack}
-                className="group inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-[#e8e6dc]/90 bg-white/90 font-[inherit] text-sm font-semibold text-[#141413]/75 shadow-[0_14px_36px_rgba(20,20,19,0.10)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-[#d97757]/50 hover:bg-white hover:text-[#141413] hover:shadow-[0_18px_42px_rgba(217,119,87,0.16)] focus:outline-none focus:ring-2 focus:ring-[#d97757]/25 sm:h-11 sm:w-auto sm:min-w-[118px] sm:gap-2.5 sm:px-3 sm:pr-4"
+                className="finance-tool-back-button"
                 aria-label="返回上一页"
             >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff3ee] text-[#d97757] ring-1 ring-[#f2d8cd] transition-all duration-200 group-hover:bg-[#d97757] group-hover:text-white group-hover:ring-[#d97757] sm:h-8 sm:w-8">
-                    <ArrowLeft className="h-4 w-4" />
+                <span className="finance-tool-back-icon">
+                    <ArrowLeft className="finance-tool-back-icon-svg" />
                 </span>
-                <span className="hidden whitespace-nowrap sm:inline">返回上一页</span>
+                <span className="finance-tool-back-label">返回上一页</span>
             </button>
         </motion.div>
     );

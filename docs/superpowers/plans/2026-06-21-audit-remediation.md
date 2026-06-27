@@ -1779,3 +1779,70 @@ Observed: PASS.
 - [x] **Step 7: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P2-4a`, closing the finance control-console breakpoint sub-item while leaving other content-density breakpoints for separate evaluation.
+
+### Task 31: Tokenize The Shared Finance Tool Back Button
+
+**Files:**
+- Modify: `src/components/finance/ToolBackButton.tsx`
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to one real shared rendered path: `ToolBackButton`, used by the full-screen finance tools. This pass does not attempt a broad `globals.css` token migration.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added `tests/design-token-contract.test.mjs` coverage requiring `ToolBackButton` to use `finance-tool-back-*` classes, avoid TSX hardcoded hex / `rgba` color literals, and have global styles that derive button and icon color from `--accent`, `--foreground`, `--card`, and `--border`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `ToolBackButton.tsx` did not contain `finance-tool-back-button` and still used Tailwind arbitrary color utilities such as `border-[#e8e6dc]`, `text-[#141413]`, and `hover:border-[#d97757]`.
+
+- [x] **Step 4: Move button visuals to tokenized global CSS**
+
+Changed `ToolBackButton` to render semantic `finance-tool-back-shell`, `finance-tool-back-button`, `finance-tool-back-icon`, and `finance-tool-back-label` classes. Added global CSS that preserves the original fixed position, mobile circular button, desktop labeled button, hover lift, icon inversion, and focus ring while deriving color from site tokens.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 2/2 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 2/2 tests.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 322/322 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+Run: local production Playwright on `http://127.0.0.1:3041/finance/business-analysis/`
+
+Observed: PASS. At `1440x900`, `.finance-tool-back-button` was visible at `142x44`, the label displayed, and console errors were 0. At `390x844`, the button was visible at `40x40`, the label was hidden, and console errors were 0. From `/finance/`, opening the budget analysis model and clicking the back button returned to `/finance/`. Fresh direct-open sessions can still put `about:blank` in the browser history before the tool page; that is the pre-existing `router.back()` behavior and not caused by this style migration.
+
+- [x] **Step 7: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10a`, noting that this closes only the shared finance back button token sub-item and leaves other real rendered paths for separate review.

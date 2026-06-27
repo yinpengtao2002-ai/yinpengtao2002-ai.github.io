@@ -32,3 +32,23 @@ test("private Lucas and chart candidate modules stay within the site accent pale
   const chartDemo = await readProjectFile("src/app/finance/chart-candidates-demo/ChartCandidatesDemo.tsx");
   assert.match(chartDemo, /const financeBlue = "color-mix\(in srgb, var\(--accent-secondary\)/);
 });
+
+test("shared finance tool back button uses site tokens instead of hardcoded colors", async () => {
+  const button = await readProjectFile("src/components/finance/ToolBackButton.tsx");
+  const globals = await readProjectFile("src/app/globals.css");
+
+  assert.match(button, /finance-tool-back-button/);
+  assert.match(button, /finance-tool-back-icon/);
+  assert.doesNotMatch(button, /#[0-9a-fA-F]{3,8}/);
+  assert.doesNotMatch(button, /(?:border|bg|text|ring|shadow)-\[#/);
+  assert.doesNotMatch(button, /rgba\(/);
+
+  const styleBlock = globals.match(/\.finance-tool-back-button\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+  const iconBlock = globals.match(/\.finance-tool-back-icon\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+
+  assert.match(styleBlock, /var\(--border\)/);
+  assert.match(styleBlock, /var\(--card\)/);
+  assert.match(styleBlock, /var\(--foreground\)/);
+  assert.match(styleBlock, /var\(--accent\)/);
+  assert.match(iconBlock, /var\(--accent\)/);
+});
