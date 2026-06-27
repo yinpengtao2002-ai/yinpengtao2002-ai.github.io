@@ -95,6 +95,13 @@ import { FINANCE_WORKBENCH_MOBILE_QUERY } from "../../../lib/finance/workbench-b
         return createOperatingDetailSampleRows();
     }
 
+    function formatMonthKey(monthKey) {
+        const [year, month] = String(monthKey || "").split("-");
+        const numericMonth = Number(month);
+        if (!year || !Number.isFinite(numericMonth)) return String(monthKey || "");
+        return `${year}年${numericMonth}月`;
+    }
+
     function formatMonthShort(monthKey) {
         const month = Number(String(monthKey || "").split("-")[1]);
         return Number.isFinite(month) ? `${month}月` : String(monthKey || "");

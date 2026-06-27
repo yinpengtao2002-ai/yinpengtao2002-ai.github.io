@@ -111,6 +111,14 @@ test("operating detail model engines use the shared template hub", async () => {
   assert.match(financeAITool, /getBudgetOperatingDetailTemplateRows/, "finance AI template download should use shared budget operating detail rows");
 });
 
+test("monthly trend sample startup keeps its month label formatter available", async () => {
+  const monthlyEngine = await readProjectFile("../src/app/finance/monthly-trend/monthly-trend-engine.js");
+
+  assert.match(monthlyEngine, /loadRows\(createSampleRows\(\),\s*"示例数据"\)/);
+  assert.match(monthlyEngine, /function makePeriod\(year,\s*month\)[\s\S]*label:\s*formatMonthKey\(key\)/);
+  assert.match(monthlyEngine, /function formatMonthKey\(monthKey\)/);
+});
+
 test("static margin attribution tool mirrors the shared operating detail template", async () => {
   const marginApp = await readProjectFile("../public/tools/margin-analysis/app.js");
 
