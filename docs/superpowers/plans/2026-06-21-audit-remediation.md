@@ -1721,3 +1721,61 @@ Observed: PASS, Next production build compiled and generated 36 static pages. Ex
 - [x] **Step 7: Record completion**
 
 Updated `docs/project-audit-report.md` as `架构 P2-3b`, noting that the browser loader boundary is fixed while full `.js` engine TS migration remains a later split task.
+
+### Task 30: Align Finance Workbench Control Console Breakpoints
+
+**Files:**
+- Add: `src/lib/finance/workbench-breakpoints.ts`
+- Modify: `src/app/finance/business-analysis/business-analysis-engine.js`
+- Modify: `src/app/finance/business-analysis/tool.css`
+- Modify: `src/app/finance/monthly-trend/monthly-trend-engine.js`
+- Modify: `src/app/finance/profit-structure/profit-structure-engine.js`
+- Modify: `src/app/finance/sensitivity-analysis/sensitivity-engine.js`
+- Modify: `src/app/finance/sensitivity-analysis/tool.css`
+- Modify: `tests/finance-mobile-drill-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped `UI P2` breakpoint inconsistency to the independently verifiable finance workbench control-console breakpoint. Business and sensitivity switched their drawer sidebars at 820px, while monthly trend and profit structure used 900px. This pass does not flatten content-density breakpoints such as 640 / 700 / 720px that are used for chart labels.
+
+- [x] **Step 2: Add a failing breakpoint contract**
+
+Updated `tests/finance-mobile-drill-contract.test.mjs` to require a shared `src/lib/finance/workbench-breakpoints.ts` helper with `FINANCE_WORKBENCH_MOBILE_BREAKPOINT_PX = 900`, require all four Plotly finance engines to use `FINANCE_WORKBENCH_MOBILE_QUERY`, and require their sidebar CSS media blocks to switch at 900px.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/finance-mobile-drill-contract.test.mjs`
+
+Observed: FAIL before implementation because `src/lib/finance/workbench-breakpoints.ts` did not exist.
+
+- [x] **Step 4: Add the shared workbench breakpoint**
+
+Added `src/lib/finance/workbench-breakpoints.ts` with `FINANCE_WORKBENCH_MOBILE_BREAKPOINT_PX`, `FINANCE_WORKBENCH_MOBILE_QUERY`, and `isFinanceWorkbenchMobileViewport()`.
+
+- [x] **Step 5: Align the four finance workbench sidebars**
+
+Changed business-analysis, sensitivity-analysis, monthly-trend, and profit-structure engines to use the shared mobile query for control-console drawer behavior. Changed business-analysis and sensitivity-analysis CSS sidebar media blocks from 820px to 900px. Sensitivity was also given an explicit default export so its existing Node import tests continue to read the same model API after adding the ESM helper import.
+
+- [x] **Step 6: Run targeted verification**
+
+Run: `node --test tests/finance-mobile-drill-contract.test.mjs`
+
+Observed: PASS, 36/36 tests.
+
+Run: `node --test tests/sensitivity-analysis.test.mjs`
+
+Observed: PASS, 7/7 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warning remains unrelated.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+- [x] **Step 7: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P2-4a`, closing the finance control-console breakpoint sub-item while leaving other content-density breakpoints for separate evaluation.

@@ -15,6 +15,10 @@ import {
     createOperatingDetailSampleRows,
     getBudgetOperatingDetailTemplateRows
 } from "../../../lib/finance/templates.js";
+import {
+    FINANCE_WORKBENCH_MOBILE_QUERY,
+    isFinanceWorkbenchMobileViewport
+} from "../../../lib/finance/workbench-breakpoints.ts";
 
 (function () {
     const DEFAULT_DIMENSIONS = ["大区", "国家", "品牌", "品牌市场", "经营模式", "业务单元", "车型", "燃油品类"];
@@ -2984,7 +2988,7 @@ import {
     }
 
     function isMobileSidebarViewport() {
-        return typeof window !== "undefined" && window.matchMedia("(max-width: 820px)").matches;
+        return isFinanceWorkbenchMobileViewport();
     }
 
     function resizePlotlyCharts() {
@@ -3044,7 +3048,7 @@ import {
         setSidebarOpen(!isMobileSidebarViewport());
 
         if (root && root.dataset.sidebarMediaBound !== "true") {
-            window.matchMedia("(max-width: 820px)").addEventListener("change", (event) => {
+            window.matchMedia(FINANCE_WORKBENCH_MOBILE_QUERY).addEventListener("change", (event) => {
                 setSidebarOpen(!event.matches);
             });
             root.dataset.sidebarMediaBound = "true";

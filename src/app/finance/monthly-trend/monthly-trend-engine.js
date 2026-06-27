@@ -4,6 +4,7 @@ import {
     createOperatingDetailSampleRows,
     getOperatingDetailTemplateRows
 } from "../../../lib/finance/templates.js";
+import { FINANCE_WORKBENCH_MOBILE_QUERY } from "../../../lib/finance/workbench-breakpoints.ts";
 
 (function () {
     const COLORS = {
@@ -1956,7 +1957,7 @@ import {
         const toggle = byId("monthly-sidebar-toggle");
         const expand = byId("monthly-sidebar-expand");
         const backdrop = byId("monthly-sidebar-backdrop");
-        const isMobile = () => window.matchMedia("(max-width: 900px)").matches;
+        const isMobile = () => window.matchMedia(FINANCE_WORKBENCH_MOBILE_QUERY).matches;
 
         function collapse() {
             sidebar?.classList.add("collapsed");

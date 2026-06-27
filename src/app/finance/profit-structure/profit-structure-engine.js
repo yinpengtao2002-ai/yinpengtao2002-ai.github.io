@@ -4,6 +4,7 @@ import {
     createOperatingDetailSampleRows,
     getOperatingDetailTemplateRows
 } from "../../../lib/finance/templates.js";
+import { FINANCE_WORKBENCH_MOBILE_QUERY } from "../../../lib/finance/workbench-breakpoints.ts";
 
 const TEMPLATE_HEADERS = OPERATING_DETAIL_HEADERS;
 const TEMPLATE_HEADER_NOTE = OPERATING_DETAIL_TEMPLATE_NOTE;
@@ -999,7 +1000,7 @@ function initSidebar() {
     const toggle = byId("profit-structure-sidebar-toggle");
     const expand = byId("profit-structure-sidebar-expand");
     const backdrop = byId("profit-structure-sidebar-backdrop");
-    const isMobile = () => window.matchMedia("(max-width: 900px)").matches;
+    const isMobile = () => window.matchMedia(FINANCE_WORKBENCH_MOBILE_QUERY).matches;
 
     function collapse() {
         sidebar?.classList.add("collapsed");

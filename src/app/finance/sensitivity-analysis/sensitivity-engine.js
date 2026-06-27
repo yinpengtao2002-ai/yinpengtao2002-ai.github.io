@@ -3,6 +3,11 @@
  * Scope is intentionally limited to /finance/sensitivity-analysis.
  */
 
+import {
+    FINANCE_WORKBENCH_MOBILE_QUERY,
+    isFinanceWorkbenchMobileViewport
+} from "../../../lib/finance/workbench-breakpoints.ts";
+
 let DRIVER_DEFINITIONS = [
     {
         key: "salesVolume",
@@ -1561,7 +1566,7 @@ function resetModel() {
 }
 
 function isMobileSidebarViewport() {
-    return typeof window !== "undefined" && window.matchMedia("(max-width: 820px)").matches;
+    return isFinanceWorkbenchMobileViewport();
 }
 
 function toggleSidebar(open) {
@@ -1579,7 +1584,7 @@ function toggleSidebar(open) {
 
 function initResponsiveSidebar() {
     if (typeof window === "undefined") return;
-    const media = window.matchMedia("(max-width: 820px)");
+    const media = window.matchMedia(FINANCE_WORKBENCH_MOBILE_QUERY);
     toggleSidebar(!media.matches);
     media.addEventListener("change", (event) => toggleSidebar(!event.matches));
 }
@@ -1733,19 +1738,23 @@ if (typeof window !== "undefined") {
     };
 }
 
+const sensitivityModelApi = {
+    DRIVER_DEFINITIONS,
+    METRIC_DEFINITIONS,
+    getDefaultAssumptions,
+    computeModel,
+    getTemplateRows,
+    sanitizeAssumptions,
+    sequenceAround,
+    parseCsv,
+    normalizeImportedValue,
+    getPlotConfig,
+    getLockedPlotLayout,
+    initApp
+};
+
 if (typeof module !== "undefined" && module.exports) {
-    module.exports = {
-        DRIVER_DEFINITIONS,
-        METRIC_DEFINITIONS,
-        getDefaultAssumptions,
-        computeModel,
-        getTemplateRows,
-        sanitizeAssumptions,
-        sequenceAround,
-        parseCsv,
-        normalizeImportedValue,
-        getPlotConfig,
-        getLockedPlotLayout,
-        initApp
-    };
+    module.exports = sensitivityModelApi;
 }
+
+export default sensitivityModelApi;

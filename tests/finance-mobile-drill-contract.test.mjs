@@ -133,6 +133,40 @@ test("Plotly finance workbenches resize charts after the control console changes
   assert.match(profitExpand[1], /schedulePlotResize\(\)/);
 });
 
+test("Plotly finance workbenches share one control-console mobile breakpoint", async () => {
+  const breakpointSource = await readFile(
+    new URL("../src/lib/finance/workbench-breakpoints.ts", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(breakpointSource, /FINANCE_WORKBENCH_MOBILE_BREAKPOINT_PX\s*=\s*900/);
+  assert.match(breakpointSource, /FINANCE_WORKBENCH_MOBILE_QUERY/);
+  assert.match(breakpointSource, /isFinanceWorkbenchMobileViewport/);
+
+  for (const [label, source] of [
+    ["business analysis", businessEngine],
+    ["sensitivity analysis", sensitivityEngine],
+    ["monthly trend", monthlyEngine],
+    ["profit structure", profitStructureEngine],
+  ]) {
+    assert.match(source, /FINANCE_WORKBENCH_MOBILE_QUERY/, `${label} should use the shared workbench mobile query`);
+  }
+
+  for (const [label, css] of [
+    ["business analysis", businessCss],
+    ["sensitivity analysis", sensitivityCss],
+    ["monthly trend", monthlyCss],
+    ["profit structure", await readFile(new URL("../src/app/finance/profit-structure/tool.css", import.meta.url), "utf8")],
+  ]) {
+    assert.match(css, /@media \(max-width:\s*900px\)/, `${label} should switch the control console at 900px`);
+  }
+
+  assert.doesNotMatch(businessEngine, /max-width:\s*820px/);
+  assert.doesNotMatch(sensitivityEngine, /max-width:\s*820px/);
+  assert.doesNotMatch(businessCss, /@media \(max-width:\s*820px\)/);
+  assert.doesNotMatch(sensitivityCss, /@media \(max-width:\s*820px\)/);
+});
+
 test("Perspective BI follows the finance workbench shell and upload controls", () => {
   assert.match(perspectiveTool, /id="perspective-bi-root"/);
   assert.match(perspectiveTool, /Perspective BI 分析台/);
