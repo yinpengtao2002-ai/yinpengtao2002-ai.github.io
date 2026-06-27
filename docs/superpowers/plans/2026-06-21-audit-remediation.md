@@ -1459,3 +1459,72 @@ Observed: unauthenticated `GET /api/lucas/stock-decision/` returned `401`; after
 - [x] **Step 9: Record completion**
 
 Updated `docs/project-audit-report.md` as `架构 P2-1b`, closing the middleware authorization sub-item for the current private stock-decision API while keeping the formal finance AI assistant public.
+
+### Task 26: Open Subtitle Workbench Directly Instead Of Embedding An External Iframe
+
+**Files:**
+- Modify: `src/app/tools/subtitle-workbench/page.tsx`
+- Modify: `next.config.ts`
+- Modify: `src/app/globals.css`
+- Modify: `tests/routing-contract.test.mjs`
+- Modify: `tests/security-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Investigate the blocked-content report**
+
+Checked the live parent page headers with `curl -I -L https://yinpengtao.cn/tools/subtitle-workbench/`: the route had no `X-Frame-Options`, and CSP allowed `frame-src https://yptt-subtitle-workbench.hf.space`. Checked `curl -I -L https://yptt-subtitle-workbench.hf.space/`: the HF root response did not expose an obvious anti-framing header. A clean Playwright screenshot of the live route rendered the iframe successfully, so the remaining failure boundary is browser / embedded-environment instability around the third-party iframe rather than a deterministic parent CSP regression.
+
+- [x] **Step 2: Add failing regression contracts**
+
+Updated `tests/routing-contract.test.mjs` to require `/tools/subtitle-workbench/` to call `redirect(SUBTITLE_WORKBENCH_URL)` and to avoid `<iframe>`, direct-open overlay links, and old subtitle iframe CSS. Updated `tests/security-contract.test.mjs` to require the subtitle-specific external `frame-src` exception and header rule to be removed.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/routing-contract.test.mjs tests/security-contract.test.mjs`
+
+Observed: FAIL before implementation. The routing contract failed because the page still rendered the iframe, and the security contract failed because `next.config.ts` still contained `subtitleWorkbenchContentSecurityPolicy` and the HF `frame-src` exception.
+
+- [x] **Step 4: Implement direct launch**
+
+Changed `src/app/tools/subtitle-workbench/page.tsx` to use `redirect(SUBTITLE_WORKBENCH_URL)` instead of rendering an iframe wrapper. The Thinking Lab card can keep linking to the stable site route, but the route now lands directly on the hosted HF workbench.
+
+- [x] **Step 5: Remove obsolete iframe exceptions and styles**
+
+Removed the subtitle-specific CSP / header branch from `next.config.ts`; normal pages keep the default anti-framing headers, and same-origin margin static tools keep their existing `SAMEORIGIN` override. Removed the unused `.subtitle-workbench-*` iframe wrapper styles from `src/app/globals.css`.
+
+- [x] **Step 6: Run targeted verification**
+
+Run: `node --test tests/routing-contract.test.mjs tests/security-contract.test.mjs`
+
+Observed: PASS, 13/13 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+- [x] **Step 7: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 318/318 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+Run: local production smoke on `http://127.0.0.1:3038/tools/subtitle-workbench/`
+
+Observed: `curl -I` returned `307` with `location: https://yptt-subtitle-workbench.hf.space/`; `curl -I -L` followed to HF `200`; Playwright screenshot showed the hosted workbench UI directly, not the browser blocked-content page.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `安全 P0-2 三次回归`, noting that this fix removes the third-party iframe boundary rather than further relaxing CSP.

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { redirect } from "next/navigation";
 
 const SUBTITLE_WORKBENCH_URL = "https://yptt-subtitle-workbench.hf.space/";
 
@@ -10,39 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function SubtitleWorkbenchPage() {
-  return (
-    <div className="subtitle-workbench-page">
-      <Link href="/thinking-lab" className="subtitle-workbench-back-link" aria-label="返回工具与思考">
-        <ArrowLeft aria-hidden="true" />
-        <span>返回</span>
-      </Link>
-      <a
-        href={SUBTITLE_WORKBENCH_URL}
-        className="subtitle-workbench-open-link"
-        target="_blank"
-        rel="noreferrer"
-        aria-label="直接打开视频字幕与总结工作台"
-      >
-        <span>直接打开工作台</span>
-        <ExternalLink aria-hidden="true" />
-      </a>
-
-      <section className="subtitle-workbench-frame-shell" aria-label="视频字幕与总结工作台">
-        <iframe
-          src={SUBTITLE_WORKBENCH_URL}
-          title="视频字幕与总结工作台"
-          allow="clipboard-read; clipboard-write"
-          className="subtitle-workbench-frame"
-        />
-      </section>
-
-      <noscript>
-        <section className="subtitle-workbench-noscript">
-          <h2>需要启用 JavaScript</h2>
-          <p>这个工作台托管在独立页面里，启用 JavaScript 后可以直接在这里使用。</p>
-          <a href={SUBTITLE_WORKBENCH_URL}>打开视频字幕与总结工作台</a>
-        </section>
-      </noscript>
-    </div>
-  );
+  redirect(SUBTITLE_WORKBENCH_URL);
 }

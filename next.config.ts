@@ -18,12 +18,6 @@ const baseContentSecurityPolicyDirectives = [
   "form-action 'self'",
 ];
 
-const subtitleWorkbenchContentSecurityPolicyDirectives = baseContentSecurityPolicyDirectives.map((directive) =>
-  directive === "frame-src 'self'"
-    ? "frame-src 'self' https://yptt-subtitle-workbench.hf.space"
-    : directive,
-);
-
 const contentSecurityPolicy = [
   ...baseContentSecurityPolicyDirectives,
   "frame-ancestors 'none'",
@@ -33,12 +27,6 @@ const contentSecurityPolicy = [
 const sameOriginFrameContentSecurityPolicy = [
   ...baseContentSecurityPolicyDirectives,
   "frame-ancestors 'self'",
-  "upgrade-insecure-requests",
-].join("; ");
-
-const subtitleWorkbenchContentSecurityPolicy = [
-  ...subtitleWorkbenchContentSecurityPolicyDirectives,
-  "frame-ancestors 'none'",
   "upgrade-insecure-requests",
 ].join("; ");
 
@@ -80,14 +68,6 @@ const sameOriginFrameHeaders = [
   },
 ];
 
-const subtitleWorkbenchHeaders = [
-  {
-    key: "Content-Security-Policy",
-    value: subtitleWorkbenchContentSecurityPolicy,
-  },
-  ...sharedSecurityHeaders,
-];
-
 const nextConfig: NextConfig = {
   // Use static export only when STATIC_EXPORT=true (for GitHub Pages)
   // For Cloudflare Pages / Vercel, omit this to enable API routes
@@ -117,16 +97,12 @@ const nextConfig: NextConfig = {
         headers: denyFramingHeaders,
       },
       {
-        source: "/:path((?!tools/subtitle-workbench(?:/.*)?$).*)",
+        source: "/:path*",
         headers: denyFramingHeaders,
       },
       {
         source: "/tools/margin-analysis/:path*",
         headers: sameOriginFrameHeaders,
-      },
-      {
-        source: "/tools/subtitle-workbench/:path*",
-        headers: subtitleWorkbenchHeaders,
       },
     ];
   },

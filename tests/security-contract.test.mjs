@@ -7,13 +7,6 @@ async function readProjectFile(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-function extractSourceRule(source, routeSource) {
-  const start = source.indexOf(`source: "${routeSource}"`);
-  assert.notEqual(start, -1, `Expected to find header rule for ${routeSource}`);
-  const nextRuleStart = source.indexOf("\n      {\n        source:", start + 1);
-  return source.slice(start, nextRuleStart === -1 ? source.indexOf("\n    ];", start) : nextRuleStart);
-}
-
 test("global security headers are configured in Next", async () => {
   const nextConfig = await readProjectFile("next.config.ts");
 
@@ -38,16 +31,13 @@ test("same-origin static finance tools remain embeddable by their finance pages"
   assert.match(nextConfig, /value:\s*"SAMEORIGIN"/);
 });
 
-test("subtitle workbench page allows its external hosted iframe", async () => {
+test("subtitle workbench no longer needs an external iframe exception", async () => {
   const nextConfig = await readProjectFile("next.config.ts");
-  const subtitleRule = extractSourceRule(nextConfig, "/tools/subtitle-workbench/:path*");
 
-  assert.match(nextConfig, /subtitleWorkbenchContentSecurityPolicy/);
-  assert.match(nextConfig, /frame-src 'self' https:\/\/yptt-subtitle-workbench\.hf\.space/);
-  assert.match(nextConfig, /source:\s*"\/:path\(\(\?!tools\/subtitle-workbench/);
-  assert.match(nextConfig, /source:\s*"\/tools\/subtitle-workbench\/:path\*"/);
-  assert.doesNotMatch(subtitleRule, /X-Frame-Options/);
-  assert.doesNotMatch(subtitleRule, /DENY/);
+  assert.doesNotMatch(nextConfig, /subtitleWorkbenchContentSecurityPolicy/);
+  assert.doesNotMatch(nextConfig, /frame-src 'self' https:\/\/yptt-subtitle-workbench\.hf\.space/);
+  assert.doesNotMatch(nextConfig, /source:\s*"\/:path\(\(\?!tools\/subtitle-workbench/);
+  assert.doesNotMatch(nextConfig, /source:\s*"\/tools\/subtitle-workbench\/:path\*"/);
 });
 
 test("AI-facing API routes apply abuse-control rate limits before provider calls", async () => {
