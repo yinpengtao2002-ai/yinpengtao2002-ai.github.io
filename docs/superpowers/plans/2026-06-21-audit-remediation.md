@@ -1528,3 +1528,50 @@ Observed: `curl -I` returned `307` with `location: https://yptt-subtitle-workben
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `安全 P0-2 三次回归`, noting that this fix removes the third-party iframe boundary rather than further relaxing CSP.
+
+### Task 27: Add A Local Generated Artifact Cleanup Command
+
+**Files:**
+- Add: `scripts/clean-local-artifacts.mjs`
+- Modify: `package.json`
+- Modify: `tests/tooling-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped `架构 P2-4 仓库卫生` to the independently safe local-artifact cleanup sub-item: ignored generated paths `output/`, `.playwright-cli/`, and `tsconfig.tsbuildinfo` were present in the working tree. The separate `stockDecisionHtml.ts` maintainability issue remains a later architecture item.
+
+- [x] **Step 2: Add a failing cleanup contract**
+
+Updated `tests/tooling-contract.test.mjs` to require a `clean:artifacts` package script and `scripts/clean-local-artifacts.mjs`. The test runs the script against a temporary fixture and asserts that it removes only `output/`, `.playwright-cli/`, and `tsconfig.tsbuildinfo`, while preserving a normal `src/keep.txt` file.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/tooling-contract.test.mjs`
+
+Observed: FAIL before implementation because `package.json` did not expose `clean:artifacts`.
+
+- [x] **Step 4: Implement the cleanup command**
+
+Added `scripts/clean-local-artifacts.mjs` with a fixed whitelist of local generated artifact paths and a `--root` option used by the contract test. Added `clean:artifacts` to `package.json`.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/tooling-contract.test.mjs`
+
+Observed: PASS, 11/11 tests.
+
+- [x] **Step 6: Clean the current working tree artifacts**
+
+Run: `npm run clean:artifacts`
+
+Observed: removed `output`, `.playwright-cli`, and `tsconfig.tsbuildinfo`.
+
+Run: `find . -maxdepth 2 \( -name output -o -name .playwright-cli -o -name tsconfig.tsbuildinfo \) -print`
+
+Observed: no output, confirming the three ignored artifacts are no longer present.
+
+- [x] **Step 7: Record completion**
+
+Updated `docs/project-audit-report.md` as `架构 P2-4a`, closing the local-artifact cleanup sub-item while leaving `stockDecisionHtml.ts` extraction for a later pass.

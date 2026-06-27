@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readdir, readFile, stat } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { access, mkdir, mkdtemp, readdir, readFile, stat, writeFile } from "node:fs/promises";
 
 const eslintConfig = await readFile(new URL("../eslint.config.mjs", import.meta.url), "utf8");
 const nextConfig = await readFile(new URL("../next.config.ts", import.meta.url), "utf8");
@@ -16,6 +20,7 @@ const perspectiveShim = await readFile(
 const notionSyncScript = await readFile(new URL("../scripts/sync-notion-content.mjs", import.meta.url), "utf8").catch(() => "");
 const packageData = JSON.parse(packageJson);
 const packageLockData = JSON.parse(packageLockJson);
+const execFileAsync = promisify(execFile);
 
 async function readRequiredProjectFile(path) {
   try {
@@ -47,6 +52,15 @@ async function assertProjectFileMissing(path) {
   assert.fail(`${path} should be removed instead of kept as unreferenced legacy code`);
 }
 
+async function pathExists(path) {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function collectSourceFiles(directoryUrl) {
   const entries = await readdir(directoryUrl, { withFileTypes: true });
   const files = await Promise.all(entries.map(async (entry) => {
@@ -68,6 +82,38 @@ test("eslint ignores project-local worktrees", () => {
 
 test("eslint ignores local Vercel build output", () => {
   assert.ok(eslintConfig.includes('".vercel/**"'));
+});
+
+test("local generated artifact cleanup command removes only ignored work artifacts", async () => {
+  assert.match(packageJson, /"clean:artifacts":\s*"node scripts\/clean-local-artifacts\.mjs"/);
+
+  const cleanupScript = await readRequiredProjectFile("../scripts/clean-local-artifacts.mjs");
+  assert.match(cleanupScript, /output/);
+  assert.match(cleanupScript, /\.playwright-cli/);
+  assert.match(cleanupScript, /tsconfig\.tsbuildinfo/);
+
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "lucas-site-clean-"));
+  await mkdir(join(fixtureRoot, "output", "playwright"), { recursive: true });
+  await mkdir(join(fixtureRoot, ".playwright-cli", "snapshots"), { recursive: true });
+  await mkdir(join(fixtureRoot, "src"), { recursive: true });
+  await writeFile(join(fixtureRoot, "output", "playwright", "debug.txt"), "debug output");
+  await writeFile(join(fixtureRoot, ".playwright-cli", "snapshots", "trace.txt"), "trace output");
+  await writeFile(join(fixtureRoot, "tsconfig.tsbuildinfo"), "compiler cache");
+  await writeFile(join(fixtureRoot, "src", "keep.txt"), "keep me");
+
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    [new URL("../scripts/clean-local-artifacts.mjs", import.meta.url).pathname, "--root", fixtureRoot],
+    { cwd: new URL("..", import.meta.url).pathname }
+  );
+
+  assert.match(stdout, /Removed output/);
+  assert.match(stdout, /Removed \.playwright-cli/);
+  assert.match(stdout, /Removed tsconfig\.tsbuildinfo/);
+  assert.equal(await pathExists(join(fixtureRoot, "output")), false);
+  assert.equal(await pathExists(join(fixtureRoot, ".playwright-cli")), false);
+  assert.equal(await pathExists(join(fixtureRoot, "tsconfig.tsbuildinfo")), false);
+  assert.equal(await pathExists(join(fixtureRoot, "src", "keep.txt")), true);
 });
 
 test("project exposes a manual Notion content sync command", () => {
