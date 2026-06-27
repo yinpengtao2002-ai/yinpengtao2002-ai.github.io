@@ -1,0 +1,1850 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>凯利仓位分析｜股票分析模型</title>
+    <meta
+      name="description"
+      content="根据预期收益、预期亏损和胜率计算凯利仓位，并提供折扣凯利和胜率敏感性分析。"
+    />
+    <link
+      rel="icon"
+      href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="%23faf9f5"/><path d="M14 42h36" stroke="%23141413" stroke-width="4" stroke-linecap="round"/><path d="M18 38l10-12 8 7 12-16" fill="none" stroke="%23d97757" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    />
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [["\\(", "\\)"]],
+          displayMath: [["\\[", "\\]"]],
+          processEscapes: true,
+        },
+        chtml: {
+          linebreaks: { automatic: true },
+        },
+        options: {
+          skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"],
+        },
+      };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+    <style>
+:root {
+  color-scheme: light;
+  --bg-primary: #faf9f5;
+  --bg-card: #ffffff;
+  --text-primary: #141413;
+  --text-secondary: #747168;
+  --text-muted: #aaa79d;
+  --accent-orange: #d97757;
+  --accent-blue: #5c8fba;
+  --accent-green: #788c5d;
+  --accent-red: #b65f55;
+  --border-light: #e8e6dc;
+  --shadow-soft: 0 10px 28px rgba(20, 20, 19, 0.07);
+  --font-sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg-primary);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-serif);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  border: 0;
+}
+
+::selection {
+  background: rgba(217, 119, 87, 0.22);
+  color: var(--text-primary);
+}
+
+.kelly-app {
+  display: flex;
+  min-height: 100vh;
+}
+
+.control-panel {
+  position: sticky;
+  top: 0;
+  width: 340px;
+  min-width: 340px;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--border-light);
+  background: rgba(255, 255, 255, 0.96);
+  padding: 1.35rem 1.15rem 1.6rem;
+}
+
+.panel-section {
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 1rem;
+}
+
+.panel-section:last-child {
+  border-bottom: 0;
+}
+
+.panel-kicker,
+.eyebrow {
+  margin: 0;
+  color: var(--accent-orange);
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.panel-section h1 {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-sans);
+  font-size: 1.42rem;
+  line-height: 1.2;
+}
+
+.panel-section h2 {
+  margin: 0 0 0.75rem;
+  border-left: 3px solid var(--accent-orange);
+  padding-left: 0.65rem;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+}
+
+.panel-copy {
+  margin: 0.55rem 0 0;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  line-height: 1.65;
+}
+
+.message-area {
+  margin-top: 0.75rem;
+}
+
+.message {
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.message.error {
+  border: 1px solid rgba(182, 95, 85, 0.28);
+  background: rgba(182, 95, 85, 0.09);
+  color: var(--accent-red);
+}
+
+.segmented-control {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.segmented-control label {
+  cursor: pointer;
+}
+
+.segmented-control input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segmented-control span {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: #fbfaf7;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.segmented-control input:checked + span {
+  border-color: rgba(217, 119, 87, 0.55);
+  background: rgba(217, 119, 87, 0.11);
+  color: var(--text-primary);
+}
+
+.field-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.field-grid.two-columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+  font-family: var(--font-sans);
+}
+
+.field span {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.range-field {
+  gap: 0.52rem;
+}
+
+.adjustment-field {
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: #fbfaf7;
+  padding: 0.72rem;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+}
+
+.adjustment-field:focus-within {
+  border-color: rgba(217, 119, 87, 0.42);
+  background: #fffdf9;
+  box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.1);
+}
+
+.range-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.adjustment-head {
+  font-family: var(--font-sans);
+}
+
+.range-label output {
+  border-radius: 999px;
+  border: 1px solid rgba(217, 119, 87, 0.12);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  padding: 0.14rem 0.5rem;
+  box-shadow: 0 4px 12px rgba(20, 20, 19, 0.04);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.field small,
+.derived-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text-primary);
+  padding: 0.58rem 0.68rem;
+  outline: none;
+}
+
+.input:focus {
+  border-color: rgba(217, 119, 87, 0.68);
+  box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.12);
+}
+
+.slider {
+  width: 100%;
+  height: 22px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+}
+
+.slider:focus-visible {
+  outline: none;
+}
+
+.slider::-webkit-slider-runnable-track {
+  height: 5px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #e9e4d8 0%, #f4f1ea 100%);
+  box-shadow: inset 0 0 0 1px rgba(20, 20, 19, 0.08);
+}
+
+.slider::-webkit-slider-thumb {
+  width: 19px;
+  height: 19px;
+  margin-top: -7px;
+  border: 1px solid rgba(217, 119, 87, 0.38);
+  border-radius: 999px;
+  background: var(--bg-card);
+  box-shadow: 0 4px 12px rgba(20, 20, 19, 0.18), 0 0 0 5px rgba(217, 119, 87, 0.1);
+  -webkit-appearance: none;
+}
+
+.slider::-moz-range-track {
+  height: 5px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #e9e4d8 0%, #f4f1ea 100%);
+  box-shadow: inset 0 0 0 1px rgba(20, 20, 19, 0.08);
+}
+
+.slider::-moz-range-thumb {
+  width: 19px;
+  height: 19px;
+  border: 1px solid rgba(217, 119, 87, 0.38);
+  border-radius: 999px;
+  background: var(--bg-card);
+  box-shadow: 0 4px 12px rgba(20, 20, 19, 0.18), 0 0 0 5px rgba(217, 119, 87, 0.1);
+}
+
+.analysis-workspace {
+  flex: 1;
+  min-width: 0;
+  padding: 1.35rem;
+}
+
+.model-header {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 1rem;
+}
+
+.model-header h2 {
+  margin: 0.28rem 0 0;
+  font-family: var(--font-sans);
+  font-size: 1.72rem;
+  line-height: 1.16;
+}
+
+.model-subtitle {
+  max-width: 780px;
+  margin: 0.55rem 0 0;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.button {
+  display: inline-flex;
+  min-height: 40px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 0.58rem 0.9rem;
+  font-family: var(--font-sans);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.button.secondary {
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: 0 6px 18px rgba(20, 20, 19, 0.06);
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.metric-card,
+.panel {
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-soft);
+}
+
+.metric-card {
+  min-height: 104px;
+  padding: 0.85rem;
+  font-family: var(--font-sans);
+}
+
+.metric-card span {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.metric-card strong {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--text-primary);
+  font-size: 1.45rem;
+  line-height: 1.08;
+}
+
+.metric-bar {
+  display: block;
+  height: 5px;
+  margin-top: 0.72rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #efede5;
+}
+
+.metric-bar b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent-orange);
+}
+
+.metric-card.positive {
+  border-color: rgba(120, 140, 93, 0.26);
+}
+
+.metric-card.positive strong {
+  color: #607547;
+}
+
+.metric-card.positive .metric-bar b {
+  background: var(--accent-green);
+}
+
+.metric-card.danger {
+  border-color: rgba(182, 95, 85, 0.32);
+}
+
+.metric-card.danger strong {
+  color: var(--accent-red);
+}
+
+.metric-card.danger .metric-bar b {
+  background: var(--accent-red);
+}
+
+.metric-card.muted strong {
+  color: var(--text-muted);
+}
+
+.panel-heading h2 {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.panel {
+  min-width: 0;
+  padding: 1rem;
+}
+
+.chart-panel {
+  position: relative;
+}
+
+.panel-heading {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.8rem;
+}
+
+.chart {
+  width: 100%;
+  min-height: 360px;
+  cursor: crosshair;
+}
+
+.chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 300px;
+}
+
+.chart-bg {
+  fill: #fbfaf7;
+}
+
+.grid-line {
+  stroke: #e2dfd4;
+  stroke-width: 1;
+}
+
+.zero-line {
+  stroke: #141413;
+  stroke-dasharray: 5 5;
+  stroke-width: 1.2;
+}
+
+.axis-label,
+.marker-label {
+  fill: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+}
+
+.marker-line {
+  stroke-width: 1.6;
+  stroke-dasharray: 6 5;
+}
+
+.marker-line.current {
+  stroke: var(--accent-blue);
+}
+
+.marker-line.breakeven {
+  stroke: var(--accent-red);
+}
+
+.marker-label.current {
+  fill: var(--accent-blue);
+}
+
+.marker-label.breakeven {
+  fill: var(--accent-red);
+}
+
+.series-line {
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.series-line.full,
+.legend-line.full {
+  stroke: var(--accent-orange);
+  background: var(--accent-orange);
+}
+
+.series-line.half,
+.legend-line.half {
+  stroke: var(--accent-blue);
+  background: var(--accent-blue);
+}
+
+.series-line.third,
+.legend-line.third {
+  stroke: var(--accent-green);
+  background: var(--accent-green);
+}
+
+.series-line.quarter,
+.legend-line.quarter {
+  stroke: #9d8064;
+  background: #9d8064;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem 1rem;
+  margin-top: 0.55rem;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+}
+
+.chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legend-line {
+  display: inline-block;
+  width: 18px;
+  height: 3px;
+  border-radius: 999px;
+}
+
+.chart-tooltip {
+  position: absolute;
+  z-index: 5;
+  display: grid;
+  min-width: 210px;
+  gap: 0.26rem;
+  border: 1px solid rgba(20, 20, 19, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 14px 34px rgba(20, 20, 19, 0.15);
+  color: var(--text-secondary);
+  padding: 0.72rem 0.78rem;
+  pointer-events: none;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  line-height: 1.32;
+}
+
+.chart-tooltip strong {
+  color: var(--text-primary);
+  font-size: 0.84rem;
+}
+
+.chart-tooltip span {
+  display: block;
+}
+
+.matrix-wrap {
+  max-height: 460px;
+  overflow: auto;
+}
+
+.kelly-matrix {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  min-width: 700px;
+}
+
+.kelly-matrix th,
+.kelly-matrix td {
+  border-bottom: 1px solid var(--border-light);
+  padding: 0.58rem 0.45rem;
+  text-align: right;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.kelly-matrix th:first-child,
+.kelly-matrix td:first-child {
+  text-align: left;
+}
+
+.kelly-matrix thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-weight: 800;
+}
+
+.kelly-matrix tbody th {
+  color: var(--text-primary);
+  font-weight: 800;
+}
+
+.kelly-matrix em {
+  display: inline-block;
+  margin-left: 0.3rem;
+  border-radius: 999px;
+  background: rgba(92, 143, 186, 0.12);
+  color: var(--accent-blue);
+  padding: 0.08rem 0.32rem;
+  font-style: normal;
+  font-size: 0.68rem;
+}
+
+.kelly-matrix .breakeven-row em:last-child {
+  background: rgba(182, 95, 85, 0.1);
+  color: var(--accent-red);
+}
+
+.current-row {
+  background: rgba(92, 143, 186, 0.1);
+  box-shadow: inset 4px 0 0 var(--accent-blue);
+}
+
+.current-row th,
+.current-row td {
+  color: var(--text-primary);
+  font-weight: 900;
+}
+
+.current-row th {
+  box-shadow: inset 4px 0 0 var(--accent-blue);
+}
+
+.breakeven-row {
+  background: rgba(182, 95, 85, 0.04);
+}
+
+.matrix-cell {
+  min-width: 74px;
+  border-left: 3px solid #fff;
+  color: var(--text-primary);
+  font-weight: 800;
+}
+
+.matrix-cell.leveraged {
+  color: var(--accent-red);
+}
+
+.matrix-cell.none {
+  color: var(--text-muted);
+}
+
+.formula-proof {
+  margin-top: 1rem;
+  font-family: var(--font-sans);
+}
+
+.formula-proof summary {
+  display: flex;
+  min-height: 42px;
+  cursor: pointer;
+  list-style: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--text-primary);
+  font-weight: 800;
+}
+
+.formula-proof summary::-webkit-details-marker {
+  display: none;
+}
+
+.formula-proof summary i {
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: rotate(45deg);
+  transition: transform 0.16s ease;
+}
+
+.formula-proof[open] summary i {
+  transform: rotate(225deg);
+}
+
+.formula-body {
+  display: grid;
+  gap: 1.2rem;
+  margin-top: 0.9rem;
+  color: var(--text-primary);
+}
+
+.formula-section {
+  border-top: 1px solid rgba(20, 20, 19, 0.08);
+  padding-top: 1rem;
+}
+
+.formula-section:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.formula-section h3 {
+  margin: 0 0 0.7rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.formula-section p {
+  margin: 0.55rem 0;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.75;
+}
+
+.formula-body mjx-container[display="true"] {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  margin: 0.7rem 0 !important;
+  padding: 0.1rem 0;
+}
+
+.formula-body mjx-container {
+  color: var(--text-primary);
+}
+
+.formula-conclusion {
+  margin-top: 0.8rem;
+  border-left: 3px solid var(--accent-blue);
+  padding-left: 0.9rem;
+}
+
+.hidden {
+  display: none !important;
+}
+
+@media (max-width: 1180px) {
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .kelly-matrix {
+    min-width: 100%;
+    table-layout: fixed;
+    font-size: 0.72rem;
+  }
+
+  .kelly-matrix th,
+  .kelly-matrix td {
+    padding: 0.54rem 0.24rem;
+    white-space: normal;
+  }
+
+  .matrix-cell {
+    min-width: 0;
+    border-left-width: 1px;
+  }
+}
+
+@media (max-width: 860px) {
+  .kelly-app {
+    display: block;
+  }
+
+  .control-panel {
+    position: relative;
+    width: auto;
+    min-width: 0;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .analysis-workspace {
+    padding: 1rem;
+  }
+
+  .model-header {
+    display: block;
+  }
+
+  .model-header .button {
+    margin-top: 0.8rem;
+  }
+
+  .result-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .control-panel,
+  .analysis-workspace {
+    padding: 0.85rem;
+  }
+
+  .field-grid.two-columns,
+  .result-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .model-header h2 {
+    font-size: 1.32rem;
+  }
+
+  .metric-card {
+    min-height: 96px;
+  }
+
+  .chart {
+    min-height: 300px;
+  }
+
+  .matrix-wrap {
+    margin: 0 -0.25rem;
+    max-height: 420px;
+    overflow: auto;
+  }
+
+  .kelly-matrix {
+    min-width: 100%;
+    table-layout: fixed;
+    font-size: 0.64rem;
+  }
+
+  .kelly-matrix th,
+  .kelly-matrix td {
+    padding: 0.46rem 0.18rem;
+    white-space: normal;
+  }
+
+  .kelly-matrix th:first-child {
+    width: 25%;
+  }
+
+  .matrix-cell {
+    min-width: 0;
+    border-left-width: 1px;
+  }
+}
+
+    </style>
+  </head>
+  <body>
+    <div id="kelly-app" class="kelly-app">
+      <aside class="control-panel" aria-label="凯利仓位分析输入区">
+        <section class="panel-section">
+          <p class="panel-kicker">Stock Analysis</p>
+          <h1>凯利仓位分析</h1>
+          <div id="message-area" class="message-area" aria-live="polite"></div>
+        </section>
+
+        <section class="panel-section">
+          <h2>价格推导</h2>
+          <div class="field-grid">
+            <label class="field">
+              <span>当前价格</span>
+              <input id="current-price-input" class="input" type="number" step="0.01" min="0" value="9" />
+            </label>
+            <label class="field">
+              <span>止盈价格</span>
+              <input id="target-price-input" class="input" type="number" step="0.01" min="0" value="15" />
+            </label>
+            <label class="field">
+              <span>止损价格</span>
+              <input id="failure-price-input" class="input" type="number" step="0.01" min="0" value="6" />
+            </label>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2>胜率与折扣</h2>
+          <div class="field-grid">
+            <label class="field range-field adjustment-field">
+              <span class="range-label adjustment-head">胜率 <output id="probability-output">40.0%</output></span>
+              <input id="probability-slider" class="slider" type="range" step="0.1" min="0" max="100" value="40" />
+            </label>
+            <label class="field range-field adjustment-field">
+              <span class="range-label adjustment-head">自定义凯利折扣 <output id="custom-fraction-output">0.20x</output></span>
+              <input id="custom-fraction-slider" class="slider" type="range" step="0.01" min="0.05" max="1" value="0.2" />
+            </label>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2>敏感性参数</h2>
+          <div class="field-grid two-columns">
+            <label class="field range-field adjustment-field">
+              <span class="range-label adjustment-head">上下浮动 <output id="range-output">±15pp</output></span>
+              <input id="range-slider" class="slider" type="range" step="1" min="1" max="30" value="15" />
+            </label>
+            <label class="field range-field adjustment-field">
+              <span class="range-label adjustment-head">步长 <output id="step-output">5.0pp</output></span>
+              <input id="step-slider" class="slider" type="range" step="0.5" min="0.5" max="5" value="5" />
+            </label>
+          </div>
+        </section>
+      </aside>
+
+      <main class="analysis-workspace">
+        <header class="model-header">
+          <div>
+            <p class="eyebrow">Position Sizing</p>
+            <h2>股票分析模型 · 凯利仓位</h2>
+          </div>
+          <button id="reset-button" class="button secondary" type="button">恢复默认</button>
+        </header>
+
+        <section id="result-grid" class="result-grid" aria-live="polite"></section>
+
+        <section class="workspace-grid">
+          <article class="panel table-panel">
+            <div class="panel-heading">
+              <h2>凯利杠杆矩阵</h2>
+            </div>
+            <div class="matrix-wrap">
+              <table class="kelly-matrix">
+                <thead id="kelly-matrix-head"></thead>
+                <tbody id="kelly-matrix-body"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="panel chart-panel">
+            <div class="panel-heading">
+              <h2>胜率敏感性图</h2>
+            </div>
+            <div id="sensitivity-chart" class="chart" role="img" aria-label="胜率敏感性分析图"></div>
+            <div id="chart-tooltip" class="chart-tooltip hidden" role="status" aria-live="polite"></div>
+            <div class="chart-legend" aria-label="图例">
+              <span><i class="legend-line full"></i>全凯利</span>
+              <span><i class="legend-line half"></i>半凯利</span>
+              <span><i class="legend-line third"></i>1/3 凯利</span>
+              <span><i class="legend-line quarter"></i>1/4 凯利</span>
+            </div>
+          </article>
+        </section>
+
+        <details class="panel formula-proof">
+          <summary>
+            <span>新旧凯利公式推导</span>
+            <i aria-hidden="true"></i>
+          </summary>
+
+          <div class="formula-body">
+            <section class="formula-section">
+              <h3>旧公式：赔率版凯利</h3>
+              <p>适用场景：每次投入总资产比例 \(f\)，成功时每 1 元投注净赚 \(b\) 元，失败时这 1 元投注全部亏掉。</p>
+
+              \[
+              \begin{aligned}
+              p &amp;= \text{胜率} \\[0.45em]
+              q &amp;= 1 - p \\[0.45em]
+              b &amp;= \text{净赔率} \\[0.45em]
+              f &amp;= \text{投入总资产的比例}
+              \end{aligned}
+              \]
+
+              <p>胜利后的资产倍数为：</p>
+
+              \[
+              1 + f b
+              \]
+
+              <p>失败后的资产倍数为：</p>
+
+              \[
+              1 - f
+              \]
+
+              <p>长期增长率为：</p>
+
+              \[
+              g(f) = p \ln\left(1 + f b\right) + q \ln\left(1 - f\right)
+              \]
+
+              <p>对 \(f\) 求导：</p>
+
+              \[
+              g'(f) =
+              \frac{p b}{1 + f b}
+              -
+              \frac{q}{1 - f}
+              \]
+
+              <p>令 \(g'(f) = 0\)：</p>
+
+              \[
+              \begin{aligned}
+              \frac{p b}{1 + f b}
+              &amp;=
+              \frac{q}{1 - f} \\[0.45em]
+              p b(1 - f)
+              &amp;=
+              q(1 + f b) \\[0.45em]
+              p b - p b f
+              &amp;=
+              q + q f b \\[0.45em]
+              p b - q
+              &amp;=
+              f b(p + q)
+              \end{aligned}
+              \]
+
+              <p>因为 \(p + q = 1\)，所以：</p>
+
+              \[
+              \begin{aligned}
+              f^*
+              &amp;=
+              \frac{b p - q}{b} \\[0.45em]
+              &amp;=
+              p - \frac{q}{b}
+              \end{aligned}
+              \]
+
+              <p>因此，旧赔率版凯利公式为：</p>
+
+              \[
+              f^* = p - \frac{q}{b}
+              \]
+            </section>
+
+            <section class="formula-section">
+              <h3>新公式：收益幅度版凯利</h3>
+              <p>适用场景：股票交易中，失败通常不是归零，而是下跌到止损线。设成功收益幅度为 \(r_{\text{win}}\)，失败亏损幅度为 \(r_{\text{loss}}\)。</p>
+
+              \[
+              \begin{aligned}
+              p &amp;= \text{胜率} \\[0.45em]
+              q &amp;= 1 - p \\[0.45em]
+              r_{\text{win}} &amp;= \text{成功时收益幅度} \\[0.45em]
+              r_{\text{loss}} &amp;= \text{失败时亏损幅度} \\[0.45em]
+              f &amp;= \text{投入总资产的比例}
+              \end{aligned}
+              \]
+
+              <p>胜利后的资产倍数为：</p>
+
+              \[
+              1 + f \cdot r_{\text{win}}
+              \]
+
+              <p>失败后的资产倍数为：</p>
+
+              \[
+              1 - f \cdot r_{\text{loss}}
+              \]
+
+              <p>长期增长率为：</p>
+
+              \[
+              g(f) =
+              p \ln\left(1 + f r_{\text{win}}\right)
+              +
+              q \ln\left(1 - f r_{\text{loss}}\right)
+              \]
+
+              <p>对 \(f\) 求导：</p>
+
+              \[
+              g'(f) =
+              \frac{p r_{\text{win}}}{1 + f r_{\text{win}}}
+              -
+              \frac{q r_{\text{loss}}}{1 - f r_{\text{loss}}}
+              \]
+
+              <p>令 \(g'(f) = 0\)：</p>
+
+              \[
+              \begin{aligned}
+              \frac{p r_{\text{win}}}{1 + f r_{\text{win}}}
+              &amp;=
+              \frac{q r_{\text{loss}}}{1 - f r_{\text{loss}}} \\[0.45em]
+              p r_{\text{win}}(1 - f r_{\text{loss}})
+              &amp;=
+              q r_{\text{loss}}(1 + f r_{\text{win}}) \\[0.45em]
+              p r_{\text{win}} - p f r_{\text{win}} r_{\text{loss}}
+              &amp;=
+              q r_{\text{loss}} + q f r_{\text{win}} r_{\text{loss}} \\[0.45em]
+              p r_{\text{win}} - q r_{\text{loss}}
+              &amp;=
+              f r_{\text{win}} r_{\text{loss}}(p + q)
+              \end{aligned}
+              \]
+
+              <p>因为 \(p + q = 1\)，所以：</p>
+
+              \[
+              \begin{aligned}
+              f^*
+              &amp;=
+              \frac{p r_{\text{win}} - q r_{\text{loss}}}{r_{\text{win}} r_{\text{loss}}} \\[0.45em]
+              &amp;=
+              \frac{p}{r_{\text{loss}}} - \frac{q}{r_{\text{win}}}
+              \end{aligned}
+              \]
+
+              <p>因此，收益幅度版凯利公式为：</p>
+
+              \[
+              f^* = \frac{p}{r_{\text{loss}}} - \frac{q}{r_{\text{win}}}
+              \]
+            </section>
+
+            <section class="formula-section">
+              <h3>两个公式的关系</h3>
+              <p>旧公式是新公式在 \(r_{\text{loss}} = 1\)、\(r_{\text{win}} = b\) 时的特殊情况：</p>
+
+              \[
+              \begin{aligned}
+              f^*
+              &amp;=
+              \frac{p}{r_{\text{loss}}} - \frac{q}{r_{\text{win}}} \\[0.45em]
+              &amp;=
+              \frac{p}{1} - \frac{q}{b} \\[0.45em]
+              &amp;=
+              p - \frac{q}{b}
+              \end{aligned}
+              \]
+
+              <div class="formula-conclusion">
+                \[
+                \boxed{
+                \text{赔率下注使用 } f^* = p - \frac{q}{b}
+                }
+                \]
+
+                \[
+                \boxed{
+                \text{股票涨跌幅使用 } f^* = \frac{p}{r_{\text{loss}}} - \frac{q}{r_{\text{win}}}
+                }
+                \]
+              </div>
+            </section>
+          </div>
+        </details>
+      </main>
+    </div>
+    <script>
+const DEFAULT_KELLY_FRACTIONS = {
+  full: 1,
+  half: 0.5,
+  third: 1 / 3,
+  quarter: 0.25,
+};
+
+const KELLY_LABELS = {
+  full: "全凯利",
+  half: "半凯利",
+  third: "1/3 凯利",
+  quarter: "1/4 凯利",
+  custom: "自定义",
+};
+
+const toNumber = (value) => {
+  if (typeof value === "number") return value;
+  if (typeof value === "string") {
+    const normalized = value.trim().replace("%", "");
+    return normalized === "" ? Number.NaN : Number(normalized);
+  }
+  return Number.NaN;
+};
+
+function normalizePercentInput(value) {
+  const number = toNumber(value);
+  if (!Number.isFinite(number)) return Number.NaN;
+  return number / 100;
+}
+
+function assertPositive(value, message) {
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error(message);
+  }
+}
+
+function assertProbability(probability) {
+  if (!Number.isFinite(probability) || probability < 0 || probability > 1) {
+    throw new Error("胜率必须在 0% 到 100% 之间");
+  }
+}
+
+function assertKellyInputs({ win, loss, probability }) {
+  assertPositive(win, "预期收益幅度必须大于 0");
+  assertPositive(loss, "预期亏损幅度必须大于 0");
+  assertProbability(probability);
+}
+
+function calculateAdjustedKelly(fullKelly, fractions) {
+  return Object.fromEntries(
+    Object.entries(fractions).map(([key, fraction]) => [key, fullKelly * fraction]),
+  );
+}
+
+function clampRecommendedKelly(value) {
+  return value > 0 ? value : 0;
+}
+
+function getKellyRiskLevel(value) {
+  if (value <= 0) return "none";
+  if (value > 1) return "leveraged";
+  return "positive";
+}
+
+// Core Kelly math uses decimals internally: 40% is 0.4, 66.67% is 0.6667.
+function calculateKellyMetrics({
+  win,
+  loss,
+  probability,
+  fractions = DEFAULT_KELLY_FRACTIONS,
+} = {}) {
+  assertKellyInputs({ win, loss, probability });
+
+  const q = 1 - probability;
+  const expectedValue = probability * win - q * loss;
+  const breakevenProbability = loss / (win + loss);
+  const riskRewardRatio = win / loss;
+  const fullKelly = expectedValue / (win * loss);
+  const adjustedKelly = calculateAdjustedKelly(fullKelly, fractions);
+
+  return {
+    win,
+    loss,
+    probability,
+    expectedValue,
+    breakevenProbability,
+    riskRewardRatio,
+    fullKelly,
+    recommendedFullKelly: clampRecommendedKelly(fullKelly),
+    adjustedKelly,
+    recommendedAdjustedKelly: Object.fromEntries(
+      Object.entries(adjustedKelly).map(([key, value]) => [key, clampRecommendedKelly(value)]),
+    ),
+    hasPositiveEdge: fullKelly > 0,
+    riskLevel: getKellyRiskLevel(fullKelly),
+  };
+}
+
+function deriveWinLossFromPrices({ currentPrice, targetPrice, failurePrice } = {}) {
+  const current = toNumber(currentPrice);
+  const target = toNumber(targetPrice);
+  const failure = toNumber(failurePrice);
+
+  assertPositive(current, "当前价格必须大于 0");
+
+  const win = (target - current) / current;
+  const loss = (current - failure) / current;
+
+  assertPositive(win, "目标价格必须高于当前价格");
+  assertPositive(loss, "失败价格必须低于当前价格");
+
+  return { win, loss };
+}
+
+function buildProbabilitySensitivity({
+  win,
+  loss,
+  probability,
+  rangePoints = 10,
+  stepPoints = 1,
+  fractions = DEFAULT_KELLY_FRACTIONS,
+} = {}) {
+  assertKellyInputs({ win, loss, probability });
+  assertPositive(rangePoints, "敏感性分析范围必须大于 0");
+  assertPositive(stepPoints, "敏感性分析步长必须大于 0");
+
+  const range = rangePoints / 100;
+  const step = stepPoints / 100;
+  const start = Math.max(0, probability - range);
+  const end = Math.min(1, probability + range);
+  const rows = [];
+
+  for (let cursor = start; cursor <= end + step / 2; cursor += step) {
+    const rowProbability = Number(Math.min(cursor, end).toFixed(10));
+    const metrics = calculateKellyMetrics({
+      win,
+      loss,
+      probability: rowProbability,
+      fractions,
+    });
+
+    rows.push({
+      probability: rowProbability,
+      expectedValue: metrics.expectedValue,
+      fullKelly: metrics.fullKelly,
+      halfKelly: metrics.adjustedKelly.half,
+      thirdKelly: metrics.adjustedKelly.third,
+      quarterKelly: metrics.adjustedKelly.quarter,
+      recommendedFullKelly: metrics.recommendedFullKelly,
+      recommendedHalfKelly: metrics.recommendedAdjustedKelly.half,
+      recommendedThirdKelly: metrics.recommendedAdjustedKelly.third,
+      recommendedQuarterKelly: metrics.recommendedAdjustedKelly.quarter,
+      isCurrentProbability: Math.abs(rowProbability - probability) < step / 2,
+      isPositiveKelly: metrics.fullKelly > 0,
+    });
+  }
+
+  return rows;
+}
+
+function buildKellyLeverageMatrix({
+  win,
+  loss,
+  probability,
+  rangePoints = 10,
+  stepPoints = 1,
+  fractions = DEFAULT_KELLY_FRACTIONS,
+} = {}) {
+  assertKellyInputs({ win, loss, probability });
+  assertPositive(rangePoints, "敏感性分析范围必须大于 0");
+  assertPositive(stepPoints, "敏感性分析步长必须大于 0");
+
+  const columns = Object.entries(fractions).map(([key, fraction]) => ({
+    key,
+    label: KELLY_LABELS[key] || `${fraction.toFixed(2)} Kelly`,
+    fraction,
+  }));
+  const sensitivityRows = buildProbabilitySensitivity({
+    win,
+    loss,
+    probability,
+    rangePoints,
+    stepPoints,
+    fractions,
+  });
+
+  return {
+    columns,
+    rows: sensitivityRows.map((row) => {
+      const metrics = calculateKellyMetrics({
+        win,
+        loss,
+        probability: row.probability,
+        fractions,
+      });
+
+      return {
+        probability: row.probability,
+        expectedValue: metrics.expectedValue,
+        cells: Object.fromEntries(
+          columns.map((column) => {
+            const rawLeverage = metrics.adjustedKelly[column.key];
+            return [
+              column.key,
+              {
+                rawLeverage,
+                leverage: clampRecommendedKelly(rawLeverage),
+                riskLevel: getKellyRiskLevel(rawLeverage),
+              },
+            ];
+          }),
+        ),
+      };
+    }),
+  };
+}
+
+function formatPercent(value, digits = 2) {
+  if (!Number.isFinite(value)) return "--";
+  return `${(value * 100).toFixed(digits)}%`;
+}
+
+function formatRatio(value, digits = 2) {
+  if (!Number.isFinite(value)) return "--";
+  return value.toFixed(digits);
+}
+
+
+const elements = {
+  messageArea: document.querySelector("#message-area"),
+  currentPriceInput: document.querySelector("#current-price-input"),
+  targetPriceInput: document.querySelector("#target-price-input"),
+  failurePriceInput: document.querySelector("#failure-price-input"),
+  probabilitySlider: document.querySelector("#probability-slider"),
+  customFractionSlider: document.querySelector("#custom-fraction-slider"),
+  rangeSlider: document.querySelector("#range-slider"),
+  stepSlider: document.querySelector("#step-slider"),
+  probabilityOutput: document.querySelector("#probability-output"),
+  customFractionOutput: document.querySelector("#custom-fraction-output"),
+  rangeOutput: document.querySelector("#range-output"),
+  stepOutput: document.querySelector("#step-output"),
+  resultGrid: document.querySelector("#result-grid"),
+  chart: document.querySelector("#sensitivity-chart"),
+  chartTooltip: document.querySelector("#chart-tooltip"),
+  matrixHead: document.querySelector("#kelly-matrix-head"),
+  matrixBody: document.querySelector("#kelly-matrix-body"),
+  resetButton: document.querySelector("#reset-button"),
+  formulaProof: document.querySelector(".formula-proof"),
+};
+
+const defaults = {
+  probability: "40",
+  customFraction: "0.2",
+  range: "15",
+  step: "5",
+  currentPrice: "9",
+  targetPrice: "15",
+  failurePrice: "6",
+};
+
+const resultOrder = [
+  "win",
+  "loss",
+  "riskRewardRatio",
+  "expectedValue",
+  "breakevenProbability",
+];
+
+const resultLabels = {
+  win: "预期收益幅度",
+  loss: "预期亏损幅度",
+  riskRewardRatio: "盈亏比",
+  expectedValue: "期望收益 EV",
+  breakevenProbability: "盈亏平衡胜率",
+};
+
+let chartState = null;
+
+const numberFromInput = (input) => Number(input.value);
+
+function updateSliderOutputs() {
+  elements.probabilityOutput.textContent = `${numberFromInput(elements.probabilitySlider).toFixed(1)}%`;
+  elements.customFractionOutput.textContent = `${numberFromInput(elements.customFractionSlider).toFixed(2)}x`;
+  elements.rangeOutput.textContent = `±${numberFromInput(elements.rangeSlider).toFixed(0)}pp`;
+  elements.stepOutput.textContent = `${numberFromInput(elements.stepSlider).toFixed(1)}pp`;
+}
+
+function getInputs() {
+  const { win, loss } = deriveWinLossFromPrices({
+    currentPrice: elements.currentPriceInput.value,
+    targetPrice: elements.targetPriceInput.value,
+    failurePrice: elements.failurePriceInput.value,
+  });
+  const probability = numberFromInput(elements.probabilitySlider) / 100;
+  const rangePoints = numberFromInput(elements.rangeSlider);
+  const stepPoints = numberFromInput(elements.stepSlider);
+  const customFraction = numberFromInput(elements.customFractionSlider);
+
+  if (!Number.isFinite(customFraction) || customFraction <= 0) {
+    throw new Error("自定义凯利折扣必须大于 0");
+  }
+
+  return {
+    win,
+    loss,
+    probability,
+    rangePoints,
+    stepPoints,
+    customFraction,
+  };
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function setMessage(message, type = "error") {
+  if (!message) {
+    elements.messageArea.innerHTML = "";
+    return;
+  }
+
+  elements.messageArea.innerHTML = `<div class="message ${type}">${escapeHtml(message)}</div>`;
+}
+
+function clampDisplay(value) {
+  return value > 0 ? value : 0;
+}
+
+function formatLeverageX(value) {
+  const leverage = clampDisplay(value);
+  return `${leverage.toFixed(2)}x`;
+}
+
+function getMetricTone(value, kind) {
+  if (kind === "expectedValue") return value > 0 ? "positive" : "muted";
+  if (kind === "kelly") {
+    if (value <= 0) return "muted";
+    if (value > 1) return "danger";
+    return "positive";
+  }
+  return "neutral";
+}
+
+function getMetricFill(value, kind) {
+  if (kind === "ratio") return Math.min(value / 3, 1);
+  if (kind === "expectedValue") return Math.min(Math.max(value, 0) / 0.3, 1);
+  if (kind === "kelly") return Math.min(clampDisplay(value), 1);
+  return Math.min(Math.max(value, 0), 1);
+}
+
+function buildResultItems(metrics) {
+  const values = {
+    win: { value: formatPercent(metrics.win), raw: metrics.win, kind: "percent" },
+    loss: { value: formatPercent(metrics.loss), raw: metrics.loss, kind: "percent" },
+    riskRewardRatio: { value: formatRatio(metrics.riskRewardRatio), raw: metrics.riskRewardRatio, kind: "ratio" },
+    expectedValue: { value: formatPercent(metrics.expectedValue), raw: metrics.expectedValue, kind: "expectedValue" },
+    breakevenProbability: {
+      value: formatPercent(metrics.breakevenProbability),
+      raw: metrics.breakevenProbability,
+      kind: "percent",
+    },
+  };
+
+  return resultOrder.map((key) => ({
+    key,
+    label: resultLabels[key],
+    ...values[key],
+    tone: getMetricTone(values[key].raw, values[key].kind),
+    fill: getMetricFill(values[key].raw, values[key].kind),
+  }));
+}
+
+function renderResults(metrics) {
+  elements.resultGrid.innerHTML = buildResultItems(metrics)
+    .map(
+      (item) => `
+        <article class="metric-card ${item.tone}">
+          <span>${item.label}</span>
+          <strong>${item.value}</strong>
+          <i class="metric-bar" aria-hidden="true"><b style="width: ${(item.fill * 100).toFixed(1)}%"></b></i>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function linePath(rows, field, xScale, yScale) {
+  return rows
+    .map((row, index) => `${index === 0 ? "M" : "L"} ${xScale(row.probability).toFixed(2)} ${yScale(row[field]).toFixed(2)}`)
+    .join(" ");
+}
+
+function renderSensitivityChart(rows, metrics) {
+  if (!rows.length) {
+    elements.chart.innerHTML = "";
+    chartState = null;
+    return;
+  }
+
+  const width = 760;
+  const height = 360;
+  const padding = { top: 28, right: 28, bottom: 46, left: 64 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+  const allValues = rows.flatMap((row) => [row.fullKelly, row.halfKelly, row.thirdKelly, row.quarterKelly, 0]);
+  const minY = Math.min(...allValues);
+  const maxY = Math.max(...allValues);
+  const yPadding = Math.max((maxY - minY) * 0.16, 0.08);
+  const yMin = minY - yPadding;
+  const yMax = maxY + yPadding;
+  const xMin = rows[0].probability;
+  const xMax = rows[rows.length - 1].probability;
+  const xSpan = Math.max(xMax - xMin, 0.01);
+  const ySpan = Math.max(yMax - yMin, 0.01);
+  const xScale = (value) => padding.left + ((value - xMin) / xSpan) * chartWidth;
+  const yScale = (value) => padding.top + chartHeight - ((value - yMin) / ySpan) * chartHeight;
+  const zeroY = yScale(0);
+  const currentX = xScale(metrics.probability);
+  const breakevenInRange = metrics.breakevenProbability >= xMin && metrics.breakevenProbability <= xMax;
+  const breakevenX = xScale(Math.min(Math.max(metrics.breakevenProbability, xMin), xMax));
+  const breakevenLabel = breakevenInRange
+    ? "正凯利临界"
+    : metrics.breakevenProbability < xMin
+      ? `临界 ${formatPercent(metrics.breakevenProbability, 0)}`
+      : `临界 ${formatPercent(metrics.breakevenProbability, 0)}`;
+  const yTicks = [yMin, 0, yMax];
+  const xTicks = [xMin, metrics.probability, xMax];
+
+  chartState = {
+    rows,
+    width,
+    padding,
+    chartWidth,
+    xMin,
+    xSpan,
+    xScale,
+    yScale,
+    fields: ["fullKelly", "halfKelly", "thirdKelly", "quarterKelly"],
+  };
+
+  elements.chart.innerHTML = `
+    <svg viewBox="0 0 ${width} ${height}" aria-hidden="true">
+      <rect class="chart-bg" x="0" y="0" width="${width}" height="${height}" rx="8"></rect>
+      ${yTicks
+        .map(
+          (tick) => `
+            <line class="grid-line" x1="${padding.left}" x2="${width - padding.right}" y1="${yScale(tick)}" y2="${yScale(tick)}"></line>
+            <text class="axis-label" x="${padding.left - 12}" y="${yScale(tick) + 4}" text-anchor="end">${formatPercent(tick, 0)}</text>
+          `,
+        )
+        .join("")}
+      ${xTicks
+        .map(
+          (tick) => `
+            <text class="axis-label" x="${xScale(tick)}" y="${height - 16}" text-anchor="middle">${formatPercent(tick, 0)}</text>
+          `,
+        )
+        .join("")}
+      <line class="zero-line" x1="${padding.left}" x2="${width - padding.right}" y1="${zeroY}" y2="${zeroY}"></line>
+      <line class="marker-line current" x1="${currentX}" x2="${currentX}" y1="${padding.top}" y2="${height - padding.bottom}"></line>
+      <text class="marker-label current" x="${currentX + 6}" y="${padding.top + 16}">当前</text>
+      <line class="marker-line breakeven" x1="${breakevenX}" x2="${breakevenX}" y1="${padding.top}" y2="${height - padding.bottom}"></line>
+      <text class="marker-label breakeven" x="${breakevenX + 6}" y="${padding.top + 36}">${breakevenLabel}</text>
+      <path class="series-line full" d="${linePath(rows, "fullKelly", xScale, yScale)}"></path>
+      <path class="series-line half" d="${linePath(rows, "halfKelly", xScale, yScale)}"></path>
+      <path class="series-line third" d="${linePath(rows, "thirdKelly", xScale, yScale)}"></path>
+      <path class="series-line quarter" d="${linePath(rows, "quarterKelly", xScale, yScale)}"></path>
+    </svg>
+  `;
+}
+
+function findNearestChartRow(event) {
+  if (!chartState) return null;
+
+  const rect = elements.chart.getBoundingClientRect();
+  const viewX = ((event.clientX - rect.left) / rect.width) * chartState.width;
+  const probability = chartState.xMin + ((viewX - chartState.padding.left) / chartState.chartWidth) * chartState.xSpan;
+
+  return chartState.rows.reduce((best, row) =>
+    Math.abs(row.probability - probability) < Math.abs(best.probability - probability) ? row : best,
+  chartState.rows[0]);
+}
+
+function renderChartTooltip(row, event) {
+  if (!row) return;
+
+  const panelRect = elements.chart.parentElement.getBoundingClientRect();
+  const x = event.clientX - panelRect.left;
+  const y = event.clientY - panelRect.top;
+
+  elements.chartTooltip.innerHTML = `
+    <strong>${formatPercent(row.probability)} 胜率</strong>
+    <span>EV ${formatPercent(row.expectedValue)}</span>
+    <span>全凯利 ${formatLeverageX(row.fullKelly)} / ${formatPercent(clampDisplay(row.fullKelly))}</span>
+    <span>半凯利 ${formatLeverageX(row.halfKelly)} / ${formatPercent(clampDisplay(row.halfKelly))}</span>
+    <span>1/3 ${formatLeverageX(row.thirdKelly)} / ${formatPercent(clampDisplay(row.thirdKelly))}</span>
+    <span>1/4 ${formatLeverageX(row.quarterKelly)} / ${formatPercent(clampDisplay(row.quarterKelly))}</span>
+  `;
+  elements.chartTooltip.style.left = `${Math.min(Math.max(x + 14, 12), panelRect.width - 220)}px`;
+  elements.chartTooltip.style.top = `${Math.max(y - 24, 12)}px`;
+  elements.chartTooltip.classList.remove("hidden");
+}
+
+function hideChartTooltip() {
+  elements.chartTooltip.classList.add("hidden");
+}
+
+function getMatrixCellStyle(value) {
+  const leverage = clampDisplay(value);
+  if (leverage === 0) return "background-color: rgba(170, 167, 157, 0.10);";
+  if (leverage > 1) {
+    const alpha = Math.min(0.1 + (leverage - 1) * 0.28, 0.46);
+    return `background-color: rgba(182, 95, 85, ${alpha.toFixed(3)});`;
+  }
+  const alpha = Math.min(0.08 + leverage * 0.42, 0.46);
+  return `background-color: rgba(120, 140, 93, ${alpha.toFixed(3)});`;
+}
+
+function renderKellyMatrix(matrix, metrics) {
+  elements.matrixHead.innerHTML = `
+    <tr>
+      <th>胜率</th>
+      ${matrix.columns.map((column) => `<th>${column.label}</th>`).join("")}
+    </tr>
+  `;
+
+  const step = numberFromInput(elements.stepSlider) / 100;
+  elements.matrixBody.innerHTML = matrix.rows
+    .map((row) => {
+      const isCurrent = Math.abs(row.probability - metrics.probability) <= step / 2;
+      const isBreakeven = Math.abs(row.probability - metrics.breakevenProbability) <= step / 2;
+
+      return `
+        <tr class="${isCurrent ? "current-row" : ""} ${isBreakeven ? "breakeven-row" : ""}">
+          <th scope="row">
+            ${formatPercent(row.probability)}
+            ${isCurrent ? "<em>当前</em>" : ""}
+            ${isBreakeven ? "<em>临界</em>" : ""}
+          </th>
+          ${matrix.columns
+            .map((column) => {
+              const cell = row.cells[column.key];
+              return `
+                <td class="matrix-cell ${cell.riskLevel}" style="${getMatrixCellStyle(cell.rawLeverage)}">
+                  ${formatLeverageX(cell.rawLeverage)}
+                </td>
+              `;
+            })
+            .join("")}
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+function clearOutputs() {
+  elements.resultGrid.innerHTML = "";
+  elements.chart.innerHTML = "";
+  elements.matrixHead.innerHTML = "";
+  elements.matrixBody.innerHTML = "";
+  hideChartTooltip();
+}
+
+function handleInputChange() {
+  try {
+    updateSliderOutputs();
+    const inputs = getInputs();
+    const fractions = {
+      ...DEFAULT_KELLY_FRACTIONS,
+      custom: inputs.customFraction,
+    };
+    const metrics = calculateKellyMetrics({
+      win: inputs.win,
+      loss: inputs.loss,
+      probability: inputs.probability,
+      fractions,
+    });
+    const sensitivityRows = buildProbabilitySensitivity({
+      win: inputs.win,
+      loss: inputs.loss,
+      probability: inputs.probability,
+      rangePoints: inputs.rangePoints,
+      stepPoints: inputs.stepPoints,
+      fractions,
+    });
+    const leverageMatrix = buildKellyLeverageMatrix({
+      win: inputs.win,
+      loss: inputs.loss,
+      probability: inputs.probability,
+      rangePoints: inputs.rangePoints,
+      stepPoints: inputs.stepPoints,
+      fractions,
+    });
+
+    setMessage("");
+    renderResults(metrics);
+    renderSensitivityChart(sensitivityRows, metrics);
+    renderKellyMatrix(leverageMatrix, metrics);
+  } catch (error) {
+    updateSliderOutputs();
+    setMessage(error instanceof Error ? error.message : "输入参数有误，请检查后重试。");
+    clearOutputs();
+  }
+}
+
+function resetDefaults() {
+  elements.probabilitySlider.value = defaults.probability;
+  elements.customFractionSlider.value = defaults.customFraction;
+  elements.rangeSlider.value = defaults.range;
+  elements.stepSlider.value = defaults.step;
+  elements.currentPriceInput.value = defaults.currentPrice;
+  elements.targetPriceInput.value = defaults.targetPrice;
+  elements.failurePriceInput.value = defaults.failurePrice;
+  handleInputChange();
+}
+
+function typesetFormulaProof() {
+  if (!elements.formulaProof?.open || !window.MathJax?.typesetPromise) return;
+  window.MathJax.typesetPromise([elements.formulaProof]).catch(() => {});
+}
+
+function bindEvents() {
+  document.querySelectorAll("input").forEach((input) => {
+    input.addEventListener("input", handleInputChange);
+    input.addEventListener("change", handleInputChange);
+  });
+  elements.chart.addEventListener("mousemove", (event) => renderChartTooltip(findNearestChartRow(event), event));
+  elements.chart.addEventListener("mouseleave", hideChartTooltip);
+  elements.resetButton.addEventListener("click", resetDefaults);
+  elements.formulaProof?.addEventListener("toggle", typesetFormulaProof);
+}
+
+bindEvents();
+handleInputChange();
+
+    </script>
+  </body>
+</html>

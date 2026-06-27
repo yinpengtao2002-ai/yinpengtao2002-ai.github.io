@@ -1,8 +1,10 @@
-import { stockDecisionHtml } from "@/lib/lucas/stock-decision/stockDecisionHtml";
+import { getStockDecisionHtml } from "@/lib/lucas/stock-decision/stockDecisionHtml";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const stockDecisionHtml = await getStockDecisionHtml();
+
   return new Response(stockDecisionHtml, {
     status: 200,
     headers: {

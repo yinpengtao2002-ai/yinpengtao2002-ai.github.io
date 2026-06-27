@@ -87,6 +87,10 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
 
+  outputFileTracingIncludes: {
+    "/api/lucas/stock-decision": ["./src/lib/lucas/stock-decision/stockDecision.html"],
+  },
+
   // Trailing slash for compatibility
   trailingSlash: true,
 

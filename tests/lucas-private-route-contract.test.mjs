@@ -10,6 +10,7 @@ const siteNavigation = await readFile(new URL("../src/components/layout/SiteNavi
 const clientShell = await readFile(new URL("../src/components/ClientShell.tsx", import.meta.url), "utf8");
 const modelRegistry = await readFile(new URL("../src/lib/finance/model-registry.json", import.meta.url), "utf8");
 const middleware = await readFile(new URL("../middleware.ts", import.meta.url), "utf8");
+const nextConfig = await readFile(new URL("../next.config.ts", import.meta.url), "utf8");
 
 test("Lucas private route is top-level, gated, and excluded from discovery surfaces", () => {
   assert.match(lucasPage, /title:\s*"Lucas"/);
@@ -31,6 +32,10 @@ test("Lucas private route is top-level, gated, and excluded from discovery surfa
 
 test("Lucas route loads the copied stock decision system after access instead of the placeholder calculator", async () => {
   const apiRoute = await readFile(new URL("../src/app/api/lucas/stock-decision/route.ts", import.meta.url), "utf8");
+  const htmlLoader = await readFile(
+    new URL("../src/lib/lucas/stock-decision/stockDecisionHtml.ts", import.meta.url),
+    "utf8",
+  );
 
   assert.match(lucasWorkbench, /\/api\/lucas\/stock-decision/);
   assert.match(lucasWorkbench, /PRIVATE_TOOL_ACCESS_HEADER/);
@@ -46,11 +51,17 @@ test("Lucas route loads the copied stock decision system after access instead of
   assert.doesNotMatch(apiRoute, /readPrivateToolAccessToken/);
   assert.doesNotMatch(apiRoute, /verifyFinanceAIAccessToken/);
   assert.doesNotMatch(apiRoute, /FINANCE_AI_ACCESS_HEADER/);
-  assert.match(apiRoute, /stockDecisionHtml/);
+  assert.match(apiRoute, /getStockDecisionHtml/);
   assert.doesNotMatch(apiRoute, /status:\s*401/);
+
+  assert.match(htmlLoader, /readFile/);
+  assert.match(htmlLoader, /stockDecision\.html/);
+  assert.doesNotMatch(htmlLoader, /export const stockDecisionHtml = "<!doctype html>/);
+  assert.ok(htmlLoader.length < 2000, "stockDecisionHtml.ts should stay a small loader, not a bundled HTML string");
 });
 
 test("local stock decision app is bundled for the private Lucas route", async () => {
+  const buildScript = await readFile(new URL("../scripts/build-lucas-stock-decision.mjs", import.meta.url), "utf8");
   const sourceIndex = await readFile(
     new URL("../src/lib/lucas/stock-decision/app/index.html", import.meta.url),
     "utf8",
@@ -68,9 +79,13 @@ test("local stock decision app is bundled for the private Lucas route", async ()
     "utf8",
   );
   const bundledHtml = await readFile(
-    new URL("../src/lib/lucas/stock-decision/stockDecisionHtml.ts", import.meta.url),
+    new URL("../src/lib/lucas/stock-decision/stockDecision.html", import.meta.url),
     "utf8",
   );
+
+  assert.match(buildScript, /stockDecision\.html/);
+  assert.doesNotMatch(buildScript, /JSON\.stringify\(bundledHtml\)/);
+  assert.match(nextConfig, /stockDecision\.html/);
 
   assert.match(sourceIndex, /凯利仓位分析｜股票分析模型/);
   assert.match(sourceIndex, /id="kelly-app"/);

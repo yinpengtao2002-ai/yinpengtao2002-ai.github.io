@@ -1575,3 +1575,85 @@ Observed: no output, confirming the three ignored artifacts are no longer presen
 - [x] **Step 7: Record completion**
 
 Updated `docs/project-audit-report.md` as `架构 P2-4a`, closing the local-artifact cleanup sub-item while leaving `stockDecisionHtml.ts` extraction for a later pass.
+
+### Task 28: Split The Private Stock Decision HTML Generated Artifact Out Of TypeScript
+
+**Files:**
+- Modify: `scripts/build-lucas-stock-decision.mjs`
+- Modify: `src/lib/lucas/stock-decision/stockDecisionHtml.ts`
+- Add: `src/lib/lucas/stock-decision/stockDecision.html`
+- Modify: `src/app/api/lucas/stock-decision/route.ts`
+- Modify: `next.config.ts`
+- Modify: `tests/lucas-private-route-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the remaining `架构 P2-4 仓库卫生` issue to the private stock-decision generated artifact: `stockDecisionHtml.ts` contained the whole bundled app as a 50KB TypeScript string. The original maintainable source already lives under `src/lib/lucas/stock-decision/app/`, so this pass preserves that source of truth and changes only the generated serving artifact.
+
+- [x] **Step 2: Add failing route and generation contracts**
+
+Updated `tests/lucas-private-route-contract.test.mjs` to require `/api/lucas/stock-decision` to call `getStockDecisionHtml()`, require `stockDecisionHtml.ts` to be a small `readFile` loader, require a generated `stockDecision.html` file, and require `next.config.ts` to include that private HTML artifact in Vercel file tracing.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/lucas-private-route-contract.test.mjs`
+
+Observed: FAIL before implementation because the API route still imported `stockDecisionHtml` directly and `src/lib/lucas/stock-decision/stockDecision.html` did not exist.
+
+- [x] **Step 4: Split the generated artifact**
+
+Changed `scripts/build-lucas-stock-decision.mjs` to write the bundled app directly to `src/lib/lucas/stock-decision/stockDecision.html`. Replaced `stockDecisionHtml.ts` with a 331B async loader that reads and caches that HTML file.
+
+- [x] **Step 5: Keep the private route private**
+
+Changed `src/app/api/lucas/stock-decision/route.ts` to `await getStockDecisionHtml()` after middleware authorization. Added `outputFileTracingIncludes` in `next.config.ts` so the Vercel function includes the private HTML file without moving it into `public/`.
+
+- [x] **Step 6: Rebuild and run targeted verification**
+
+Run: `node scripts/build-lucas-stock-decision.mjs`
+
+Observed: generated `src/lib/lucas/stock-decision/stockDecision.html` at about 47KB while `stockDecisionHtml.ts` stayed at 331B.
+
+Run: `node --test tests/lucas-private-route-contract.test.mjs`
+
+Observed: PASS, 4/4 tests.
+
+Run: `npm test` in `src/lib/lucas/stock-decision/app`
+
+Observed: PASS, 12/12 tests.
+
+Run: `node --test tests/private-tool-access-middleware.test.mjs tests/lucas-private-route-contract.test.mjs`
+
+Observed: PASS, 8/8 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+- [x] **Step 7: Run full verification and production-route smoke**
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 319/319 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages.
+
+Run: local production smoke with `PRIVATE_TOOL_ACCESS_KEY=local-smoke-private-tool-key npm run start -- -p 3039`
+
+Observed: unauthenticated `GET /api/lucas/stock-decision/` returned `401`; after `POST /api/private-tool-access/` returned a token, authenticated `GET /api/lucas/stock-decision/` returned `200` and the HTML contained `kelly-app` and `凯利杠杆矩阵`.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `架构 P2-4b`, closing the `stockDecisionHtml.ts` generated-string sub-item and marking the broader `仓库卫生` item fixed.
