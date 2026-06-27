@@ -201,6 +201,28 @@ test("TypeScript extension imports are explicit without suppressing the type sys
   assert.deepEqual(filesWithSuppressedExtensionImports, []);
 });
 
+test("legacy finance browser engines share one typed script loader boundary", async () => {
+  const loader = await readRequiredProjectFile("../src/lib/finance/browser-tool-loader.ts");
+  const toolShells = [
+    "../src/app/finance/business-analysis/BusinessAnalysisTool.tsx",
+    "../src/app/finance/monthly-trend/MonthlyTrendTool.tsx",
+    "../src/app/finance/profit-structure/ProfitStructureTool.tsx",
+    "../src/app/finance/sensitivity-analysis/SensitivityTool.tsx",
+  ];
+
+  assert.match(loader, /export function loadBrowserScript/);
+  assert.match(loader, /__financeToolScripts/);
+  assert.match(loader, /Promise<void>/);
+
+  await Promise.all(toolShells.map(async (path) => {
+    const source = await readRequiredProjectFile(path);
+
+    assert.match(source, /@\/lib\/finance\/browser-tool-loader/, `${path} should import the shared loader`);
+    assert.doesNotMatch(source, /function loadBrowserScript/, `${path} should not keep a local script loader`);
+    assert.doesNotMatch(source, /__financeToolScripts/, `${path} should not own the browser script cache type`);
+  }));
+});
+
 test("Perspective BI dependencies and local browser assets are wired", () => {
   assert.match(packageJson, /"@perspective-dev\/client":/);
   assert.match(packageJson, /"@perspective-dev\/server":/);

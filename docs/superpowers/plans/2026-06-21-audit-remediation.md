@@ -1657,3 +1657,67 @@ Observed: unauthenticated `GET /api/lucas/stock-decision/` returned `401`; after
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `架构 P2-4b`, closing the `stockDecisionHtml.ts` generated-string sub-item and marking the broader `仓库卫生` item fixed.
+
+### Task 29: Extract The Legacy Finance Browser Script Loader Boundary
+
+**Files:**
+- Add: `src/lib/finance/browser-tool-loader.ts`
+- Modify: `src/app/finance/business-analysis/BusinessAnalysisTool.tsx`
+- Modify: `src/app/finance/monthly-trend/MonthlyTrendTool.tsx`
+- Modify: `src/app/finance/profit-structure/ProfitStructureTool.tsx`
+- Modify: `src/app/finance/sensitivity-analysis/SensitivityTool.tsx`
+- Modify: `tests/tooling-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped `架构 P2-3` to a small "clear isolation" sub-item around the legacy browser finance engines. The large `.js` calculation engines are still risky to migrate in one pass, but the TSX shells also duplicated their Plotly / XLSX script loading and global cache typing. This pass keeps engine behavior unchanged and moves that browser boundary into one TypeScript helper.
+
+- [x] **Step 2: Add a failing boundary contract**
+
+Updated `tests/tooling-contract.test.mjs` to require `src/lib/finance/browser-tool-loader.ts`, require it to export `loadBrowserScript`, and require `business-analysis`, `monthly-trend`, `profit-structure`, and `sensitivity-analysis` shells to import that helper instead of declaring local `loadBrowserScript` / `__financeToolScripts`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/tooling-contract.test.mjs`
+
+Observed: FAIL before implementation because `src/lib/finance/browser-tool-loader.ts` did not exist.
+
+- [x] **Step 4: Extract the shared loader**
+
+Added `src/lib/finance/browser-tool-loader.ts` with the existing script-cache behavior and a single `Window.__financeToolScripts` declaration.
+
+- [x] **Step 5: Move finance shells to the shared boundary**
+
+Changed the four finance TSX shells to import `loadBrowserScript` from `@/lib/finance/browser-tool-loader`; each shell now only keeps its own model-global `initApp` typing and the same dynamic import of its local `.js` engine.
+
+- [x] **Step 6: Run targeted verification**
+
+Run: `node --test tests/tooling-contract.test.mjs`
+
+Observed: PASS, 12/12 tests.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 320/320 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 7: Record completion**
+
+Updated `docs/project-audit-report.md` as `架构 P2-3b`, noting that the browser loader boundary is fixed while full `.js` engine TS migration remains a later split task.
