@@ -27,10 +27,11 @@
   --finance-ribbon-text: var(--card);
   --finance-ribbon-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 22%, transparent);
   --finance-ribbon-text-shadow: 0 1px 2px color-mix(in srgb, var(--foreground) 18%, transparent);
-  --finance-ai-page-surface: #f7f5ef;
+  --finance-ai-page-surface: color-mix(in srgb, var(--background) 86%, var(--border));
   --finance-ai-chart-surface: color-mix(in srgb, var(--finance-ai-page-surface) 88%, var(--card));
-  --finance-ai-chart-border: color-mix(in srgb, var(--border) 78%, #d7cdbc);
-  --finance-ai-chart-shadow: 0 12px 28px rgba(64, 52, 36, 0.045);
+  --finance-ai-chart-border: color-mix(in srgb, var(--border) 86%, var(--accent));
+  --finance-ai-chart-shadow: 0 12px 28px color-mix(in srgb, var(--foreground) 5%, transparent);
+  --finance-ai-inline-code-bg: color-mix(in srgb, var(--card) 72%, transparent);
   --font-poppins: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   --font-lora: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
   --font-hero-display: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
@@ -579,7 +580,7 @@ body {
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(255, 250, 243, 0.7)),
     color-mix(in srgb, var(--accent) 4%, var(--card));
-  box-shadow: 0 12px 28px rgba(64, 52, 36, 0.045);
+  box-shadow: var(--finance-ai-chart-shadow);
   overflow: hidden;
   padding: 13px 13px 13px 16px;
 }
@@ -731,7 +732,7 @@ body {
 .finance-ai-markdown code {
   border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--finance-ai-inline-code-bg);
   font-size: 0.88em;
   padding: 1px 5px;
 }
@@ -1291,7 +1292,7 @@ body {
   z-index: 30;
   flex: 0 0 auto;
   border-top: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
-  background: linear-gradient(180deg, rgba(247, 245, 239, 0.7), #f7f5ef 44%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--finance-ai-page-surface) 70%, transparent), var(--finance-ai-page-surface) 44%);
   padding: 12px 22px 14px;
 }
 

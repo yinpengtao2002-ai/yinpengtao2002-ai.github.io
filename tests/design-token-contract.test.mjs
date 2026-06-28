@@ -201,3 +201,25 @@ test("finance model testing ribbon visuals use shared design tokens", async () =
   assert.match(ribbonBlock, /color:\s*var\(--finance-ribbon-text\)/);
   assert.match(ribbonBlock, /text-shadow:\s*var\(--finance-ribbon-text-shadow\)/);
 });
+
+test("finance AI assistant surfaces derive from shared site tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const markdownCodeBlock = globals.match(/\.finance-ai-markdown code\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+
+  for (const literal of [
+    "#f7f5ef",
+    "#d7cdbc",
+    "rgba(64, 52, 36, 0.045)",
+  ]) {
+    assert.doesNotMatch(globals.toLowerCase(), new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(rootSource, /--finance-ai-page-surface:\s*color-mix\(in srgb,\s*var\(--background\) 86%,\s*var\(--border\)\)/);
+  assert.match(rootSource, /--finance-ai-chart-border:\s*color-mix\(in srgb,\s*var\(--border\) 86%,\s*var\(--accent\)\)/);
+  assert.match(rootSource, /--finance-ai-chart-shadow:\s*0 12px 28px color-mix\(in srgb,\s*var\(--foreground\) 5%,\s*transparent\)/);
+  assert.match(rootSource, /--finance-ai-inline-code-bg:\s*color-mix\(in srgb,\s*var\(--card\) 72%,\s*transparent\)/);
+  assert.match(markdownCodeBlock, /background:\s*var\(--finance-ai-inline-code-bg\)/);
+  assert.doesNotMatch(markdownCodeBlock, /rgba\(255,\s*255,\s*255,\s*0\.72\)/);
+});

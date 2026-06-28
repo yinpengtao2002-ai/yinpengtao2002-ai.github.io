@@ -2335,3 +2335,78 @@ Observed: desktop and mobile both rendered two ribbons inside `.finance-model-pr
 - [x] **Step 9: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10h`, noting that this closes only the finance model status ribbon token sub-item and leaves tool-internal chart palettes plus other hardcoded visual surfaces for later passes.
+
+### Task 39: Tokenize Finance AI Assistant Surface Tokens
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `tests/finance-ai-assistant-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the formal finance AI assistant page and chart surfaces. This pass covers `--finance-ai-page-surface`, `--finance-ai-chart-border`, `--finance-ai-chart-shadow`, the repeated empty-preview shadow, the sticky composer surface, and markdown inline code background. It does not attempt to migrate the upload workbench, detail-table filters, avatars, or every remaining finance AI internal control color.
+
+- [x] **Step 2: Add a failing token contract**
+
+Updated `tests/design-token-contract.test.mjs` to require the finance AI surface tokens to derive from shared site tokens and to reject the old `#f7f5ef`, `#d7cdbc`, and `rgba(64, 52, 36, 0.045)` literals. The same contract requires `.finance-ai-markdown code` to use `--finance-ai-inline-code-bg` instead of the old white rgba literal.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `src/app/globals.css` still defined `--finance-ai-page-surface: #f7f5ef`, mixed the chart border with `#d7cdbc`, used the old rgba chart shadow, and kept markdown inline code on a direct white rgba background.
+
+- [x] **Step 4: Move finance AI surfaces to site tokens**
+
+Changed `--finance-ai-page-surface` to derive from `--background` and `--border`, `--finance-ai-chart-border` to derive from `--border` and `--accent`, and `--finance-ai-chart-shadow` to derive from `--foreground`. Added `--finance-ai-inline-code-bg` from `--card`, changed `.finance-ai-markdown code` to read it, changed the empty preview card to use the shared chart shadow, and changed the composer dock gradient to use `--finance-ai-page-surface`.
+
+- [x] **Step 5: Align the older finance AI contract**
+
+Updated `tests/finance-ai-assistant-contract.test.mjs` so the chart-surface test now expects site-token-derived finance AI surfaces instead of the fixed `#f7f5ef` / `#d7cdbc` values, while still requiring the formal page and demo cards to use the shared finance AI surface tokens.
+
+- [x] **Step 6: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 10/10 tests.
+
+Run: `node --test tests/finance-ai-assistant-contract.test.mjs`
+
+Observed: PASS, 40/40 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warning remains unrelated.
+
+- [x] **Step 7: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 332/332 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 8: Verify finance AI surface rendering in a production browser**
+
+Started `npm run start -- --port 3048`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3048/finance/finance-ai-assistant` and `http://127.0.0.1:3048/finance/finance-ai-assistant/demo` at `1440×900`, read root `--finance-ai-*` tokens and computed page, demo-card, and inline-code styles, then closed the browser.
+
+Observed: formal and demo routes had console error count 0; page backgrounds resolved from `--finance-ai-page-surface`, the demo chart card resolved background / border / shadow from `--finance-ai-chart-*`, and markdown inline code background resolved from `--finance-ai-inline-code-bg`.
+
+- [x] **Step 9: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10i`, noting that this closes only the finance AI assistant page/chart/inline-code surface token sub-item and leaves upload-zone, detail-filter, avatar, and other internal control colors for later passes.
