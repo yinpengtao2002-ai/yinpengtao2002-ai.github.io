@@ -60,6 +60,14 @@
   --finance-ai-thinking-chip-bg: color-mix(in srgb, var(--card) 72%, transparent);
   --finance-ai-detail-filter-trigger-bg: color-mix(in srgb, var(--card) 58%, transparent);
   --finance-ai-detail-filter-trigger-active-bg: color-mix(in srgb, var(--accent) 12%, var(--card));
+  --finance-ai-detail-filter-menu-bg: color-mix(in srgb, var(--finance-ai-chart-surface) 94%, var(--card));
+  --finance-ai-detail-filter-menu-shadow: 0 18px 38px color-mix(in srgb, var(--foreground) 14%, transparent);
+  --finance-ai-detail-number-filter-bg: color-mix(in srgb, var(--finance-ai-page-surface) 72%, var(--card));
+  --finance-ai-detail-filter-field-bg: color-mix(in srgb, var(--card) 78%, transparent);
+  --finance-ai-detail-filter-button-bg: color-mix(in srgb, var(--card) 62%, transparent);
+  --finance-ai-detail-filter-primary-button-bg: color-mix(in srgb, var(--accent) 74%, var(--card));
+  --finance-ai-detail-filter-primary-button-text: var(--card);
+  --finance-ai-detail-filter-list-bg: color-mix(in srgb, var(--finance-ai-page-surface) 76%, var(--card));
   --font-poppins: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   --font-lora: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
   --font-hero-display: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
@@ -987,8 +995,8 @@ body {
   z-index: 80;
   border: 1px solid color-mix(in srgb, var(--finance-ai-chart-border) 88%, transparent);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--finance-ai-chart-surface) 94%, white);
-  box-shadow: 0 18px 38px rgba(40, 35, 25, 0.14);
+  background: var(--finance-ai-detail-filter-menu-bg);
+  box-shadow: var(--finance-ai-detail-filter-menu-shadow);
   color: var(--foreground);
   padding: 10px;
   text-align: left;
@@ -1007,7 +1015,7 @@ body {
   margin-bottom: 8px;
   border: 1px solid color-mix(in srgb, var(--border) 66%, transparent);
   border-radius: 7px;
-  background: color-mix(in srgb, var(--finance-ai-page-surface) 72%, rgba(255, 255, 255, 0.78));
+  background: var(--finance-ai-detail-number-filter-bg);
   padding: 8px;
 }
 
@@ -1025,7 +1033,7 @@ body {
   min-width: 0;
   border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--finance-ai-detail-filter-field-bg);
   color: var(--foreground);
   font: inherit;
   font-size: 0.75rem;
@@ -1062,7 +1070,7 @@ body {
   width: 100%;
   border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--finance-ai-detail-filter-field-bg);
   color: var(--foreground);
   font: inherit;
   font-size: 0.76rem;
@@ -1088,7 +1096,7 @@ body {
 .finance-ai-detail-filter-footer button {
   border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.62);
+  background: var(--finance-ai-detail-filter-button-bg);
   color: color-mix(in srgb, var(--foreground) 72%, var(--muted));
   cursor: pointer;
   font: inherit;
@@ -1107,8 +1115,8 @@ body {
 
 .finance-ai-detail-filter-footer button.primary {
   border-color: color-mix(in srgb, var(--accent) 68%, var(--border));
-  background: color-mix(in srgb, var(--accent) 74%, white);
-  color: white;
+  background: var(--finance-ai-detail-filter-primary-button-bg);
+  color: var(--finance-ai-detail-filter-primary-button-text);
 }
 
 .finance-ai-detail-filter-list {
@@ -1117,7 +1125,7 @@ body {
   margin-top: 8px;
   border: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
   border-radius: 7px;
-  background: color-mix(in srgb, var(--finance-ai-page-surface) 76%, white);
+  background: var(--finance-ai-detail-filter-list-bg);
 }
 
 .finance-ai-detail-filter-option {

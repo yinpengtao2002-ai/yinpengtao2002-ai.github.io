@@ -424,3 +424,55 @@ test("finance AI detail filter triggers derive from shared site tokens", async (
   assert.match(triggerBlock, /background:\s*var\(--finance-ai-detail-filter-trigger-bg\)/);
   assert.match(activeTriggerBlock, /background:\s*var\(--finance-ai-detail-filter-trigger-active-bg\)/);
 });
+
+test("finance AI detail filter menu surfaces derive from shared site tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const menuBlock = readCssRule(globals, ".finance-ai-detail-filter-menu");
+  const numberFilterBlock = readCssRule(globals, ".finance-ai-detail-number-filter");
+  const fieldBlock = globals.match(/\.finance-ai-detail-number-filter select,[\s\S]*?\.finance-ai-detail-number-inputs input\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+  const searchBlock = readCssRule(globals, ".finance-ai-detail-filter-search");
+  const buttonBlock = globals.match(/\.finance-ai-detail-filter-actions button,[\s\S]*?\.finance-ai-detail-filter-footer button\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+  const primaryButtonBlock = readCssRule(globals, ".finance-ai-detail-filter-footer button.primary");
+  const listBlock = readCssRule(globals, ".finance-ai-detail-filter-list");
+  assert.ok(fieldBlock, "detail filter field rule should exist");
+  assert.ok(buttonBlock, "detail filter button rule should exist");
+  const scopedSource = [
+    menuBlock,
+    numberFilterBlock,
+    fieldBlock,
+    searchBlock,
+    buttonBlock,
+    primaryButtonBlock,
+    listBlock,
+  ].join("\n");
+
+  for (const literal of [
+    "white",
+    "rgba(40, 35, 25, 0.14)",
+    "rgba(255, 255, 255, 0.78)",
+    "rgba(255, 255, 255, 0.72)",
+    "rgba(255, 255, 255, 0.62)",
+  ]) {
+    assert.doesNotMatch(scopedSource, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(rootSource, /--finance-ai-detail-filter-menu-bg:\s*color-mix\(in srgb,\s*var\(--finance-ai-chart-surface\) 94%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--finance-ai-detail-filter-menu-shadow:\s*0 18px 38px color-mix\(in srgb,\s*var\(--foreground\) 14%,\s*transparent\)/);
+  assert.match(rootSource, /--finance-ai-detail-number-filter-bg:\s*color-mix\(in srgb,\s*var\(--finance-ai-page-surface\) 72%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--finance-ai-detail-filter-field-bg:\s*color-mix\(in srgb,\s*var\(--card\) 78%,\s*transparent\)/);
+  assert.match(rootSource, /--finance-ai-detail-filter-button-bg:\s*color-mix\(in srgb,\s*var\(--card\) 62%,\s*transparent\)/);
+  assert.match(rootSource, /--finance-ai-detail-filter-primary-button-bg:\s*color-mix\(in srgb,\s*var\(--accent\) 74%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--finance-ai-detail-filter-primary-button-text:\s*var\(--card\)/);
+  assert.match(rootSource, /--finance-ai-detail-filter-list-bg:\s*color-mix\(in srgb,\s*var\(--finance-ai-page-surface\) 76%,\s*var\(--card\)\)/);
+  assert.match(menuBlock, /background:\s*var\(--finance-ai-detail-filter-menu-bg\)/);
+  assert.match(menuBlock, /box-shadow:\s*var\(--finance-ai-detail-filter-menu-shadow\)/);
+  assert.match(numberFilterBlock, /background:\s*var\(--finance-ai-detail-number-filter-bg\)/);
+  assert.match(fieldBlock, /background:\s*var\(--finance-ai-detail-filter-field-bg\)/);
+  assert.match(searchBlock, /background:\s*var\(--finance-ai-detail-filter-field-bg\)/);
+  assert.match(buttonBlock, /background:\s*var\(--finance-ai-detail-filter-button-bg\)/);
+  assert.match(primaryButtonBlock, /background:\s*var\(--finance-ai-detail-filter-primary-button-bg\)/);
+  assert.match(primaryButtonBlock, /color:\s*var\(--finance-ai-detail-filter-primary-button-text\)/);
+  assert.match(listBlock, /background:\s*var\(--finance-ai-detail-filter-list-bg\)/);
+});

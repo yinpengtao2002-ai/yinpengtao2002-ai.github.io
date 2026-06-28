@@ -2908,3 +2908,73 @@ Observed: console error count was 0 on desktop and mobile. The mobile composer r
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10p`, noting that this closes only the finance AI detail filter trigger background token sub-item while leaving filter menus, numeric inputs, checkmarks, table zebra rows, message bubbles, chart palettes, and other internal control colors for later passes.
+
+### Task 47: Tokenize Finance AI Detail Filter Menu Surfaces
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the formal finance AI assistant detail-table filter menu surfaces and basic controls. This pass covers `.finance-ai-detail-filter-menu`, `.finance-ai-detail-number-filter`, numeric select/input fields, `.finance-ai-detail-filter-search`, ordinary menu action/footer buttons, the primary apply button, and `.finance-ai-detail-filter-list`. It does not attempt to migrate the checkbox checkmark, detail-table zebra rows, message bubbles, chart palettes, or every remaining finance AI internal control color.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a new `tests/design-token-contract.test.mjs` contract requiring the menu surface, shadow, numeric filter panel, fields, buttons, primary button, and option list to use `--finance-ai-detail-filter-*` / `--finance-ai-detail-number-filter-bg` tokens. The contract rejects the old scoped `white`, `rgba(40, 35, 25, 0.14)`, `rgba(255, 255, 255, 0.78)`, `rgba(255, 255, 255, 0.72)`, and `rgba(255, 255, 255, 0.62)` literals.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the detail filter menu still used direct `white`, white `rgba(...)` backgrounds, and the old dark `rgba(...)` menu shadow.
+
+- [x] **Step 4: Move detail filter menu surfaces to site tokens**
+
+Added `--finance-ai-detail-filter-menu-bg`, `--finance-ai-detail-filter-menu-shadow`, `--finance-ai-detail-number-filter-bg`, `--finance-ai-detail-filter-field-bg`, `--finance-ai-detail-filter-button-bg`, `--finance-ai-detail-filter-primary-button-bg`, `--finance-ai-detail-filter-primary-button-text`, and `--finance-ai-detail-filter-list-bg` to `:root`, deriving from `--card`, `--foreground`, `--accent`, `--finance-ai-page-surface`, and `--finance-ai-chart-surface`. Updated the scoped menu, field, button, primary button, and list rules to read those tokens while preserving spacing, borders, typography, layout, and focus behavior.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 18/18 tests.
+
+Run: `node --test tests/finance-ai-assistant-contract.test.mjs`
+
+Observed: PASS, 40/40 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warning remains unrelated.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 340/340 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify finance AI detail-filter menu CSS in a production browser**
+
+Started `npm run start -- --port 3057`.
+
+Run: bundled Playwright CLI opened `http://127.0.0.1:3057/finance/finance-ai-assistant` at `1440×900` and `390×844`, checked console errors, read the detail-filter menu tokens, and inspected the menu, numeric filter, field, button, primary button, and list CSS rules.
+
+Observed: console error count was 0 on desktop and mobile. The mobile composer remained visible and the page had no horizontal overflow. The scoped CSS rules read `background` / `box-shadow` from the new `--finance-ai-detail-filter-*` and `--finance-ai-detail-number-filter-bg` tokens. This pass verifies the production CSS rule rather than forcing a provider-generated detail table.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10q`, noting that this closes only the finance AI detail filter menu surface and basic control background token sub-item while leaving checkmarks, table zebra rows, message bubbles, chart palettes, and other internal control colors for later passes.
