@@ -37,6 +37,11 @@
   --finance-ai-upload-dropzone-bg: radial-gradient(circle at 50% 8%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 34%), color-mix(in srgb, var(--card) 48%, transparent);
   --finance-ai-upload-dropzone-active-bg: radial-gradient(circle at 50% 8%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 34%), color-mix(in srgb, var(--accent) 8%, var(--card));
   --finance-ai-empty-preview-bg: linear-gradient(135deg, color-mix(in srgb, var(--card) 86%, transparent), color-mix(in srgb, var(--accent) 7%, var(--card))), color-mix(in srgb, var(--accent) 4%, var(--card));
+  --finance-ai-upload-chip-border: color-mix(in srgb, var(--accent) 72%, var(--card));
+  --finance-ai-upload-chip-bg: linear-gradient(180deg, color-mix(in srgb, var(--accent) 82%, var(--card)), color-mix(in srgb, var(--accent) 92%, var(--foreground)));
+  --finance-ai-upload-chip-shadow: 0 10px 22px color-mix(in srgb, var(--accent) 20%, transparent);
+  --finance-ai-upload-chip-text: var(--card);
+  --finance-ai-template-button-bg: color-mix(in srgb, var(--card) 82%, transparent);
   --font-poppins: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   --font-lora: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
   --font-hero-display: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
@@ -433,10 +438,10 @@ body {
 
 .finance-ai-upload-chip {
   flex: 0 0 auto;
-  border-color: color-mix(in srgb, var(--accent) 72%, #e9b7a6);
-  background: linear-gradient(180deg, #f05c35, #df4a24);
-  box-shadow: 0 10px 22px rgba(220, 82, 40, 0.2);
-  color: #fff;
+  border-color: var(--finance-ai-upload-chip-border);
+  background: var(--finance-ai-upload-chip-bg);
+  box-shadow: var(--finance-ai-upload-chip-shadow);
+  color: var(--finance-ai-upload-chip-text);
   cursor: pointer;
   font-weight: 800;
   padding-inline: 22px;
@@ -445,7 +450,7 @@ body {
 .finance-ai-template-button {
   width: auto;
   flex: 0 0 auto;
-  background: rgba(255, 255, 255, 0.82);
+  background: var(--finance-ai-template-button-bg);
   font: inherit;
   font-weight: 700;
   text-decoration: none;

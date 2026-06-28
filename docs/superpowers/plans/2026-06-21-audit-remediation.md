@@ -2480,3 +2480,73 @@ Observed: console error count was 0 on desktop and mobile. Desktop rendered the 
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10j`, noting that this closes only the finance AI upload workbench surface token sub-item and leaves upload buttons, template buttons, detail filters, avatars, and other internal control colors for later passes.
+
+### Task 41: Tokenize Finance AI Upload Action Buttons
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the formal finance AI assistant upload action buttons. This pass covers `.finance-ai-upload-chip` and the upload-area `.finance-ai-template-button` surface. It does not attempt to migrate avatars, error text, detail-table filters, chart palettes, or other finance AI internal control colors.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added `readLastCssRule()` to `tests/design-token-contract.test.mjs` so the test can read the upload-area `.finance-ai-template-button` rule rather than the earlier generic icon-button rule. Added a new contract requiring the upload chip and template button to use `--finance-ai-upload-chip-*` / `--finance-ai-template-button-bg` tokens, and rejecting the old scoped `#e9b7a6`, `#f05c35`, `#df4a24`, `rgba(220, 82, 40, 0.2)`, `#fff`, and `rgba(255, 255, 255, 0.82)` literals.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.finance-ai-upload-chip` still used the old warm-orange hex gradient, white text literal, and rgba shadow, and `.finance-ai-template-button` still used the old direct white rgba background.
+
+- [x] **Step 4: Move upload action buttons to site tokens**
+
+Added `--finance-ai-upload-chip-border`, `--finance-ai-upload-chip-bg`, `--finance-ai-upload-chip-shadow`, `--finance-ai-upload-chip-text`, and `--finance-ai-template-button-bg` to `:root`. The tokens derive from `--accent`, `--card`, and `--foreground`. Updated the two scoped CSS rules to read those tokens while preserving button sizing, layout, font weight, cursor, and mobile stacking behavior.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 12/12 tests.
+
+Run: `node --test tests/finance-ai-assistant-contract.test.mjs`
+
+Observed: PASS, 40/40 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warning remains unrelated.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 334/334 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 7: Verify finance AI upload action rendering in a production browser**
+
+Started `npm run start -- --port 3050`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3050/finance/finance-ai-assistant` at `1440×900` and `390×844`, read the root upload-action tokens and computed styles for `.finance-ai-upload-chip` and `.finance-ai-template-button`, then closed the browser and server.
+
+Observed: console error count was 0 on desktop and mobile. The upload chip and template button were visible in both viewports; the upload chip resolved to a token-derived gradient and shadow, and the template button resolved to a token-derived background.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10k`, noting that this closes only the finance AI upload action button token sub-item and leaves avatars, error text, detail filters, and other internal control colors for later passes.

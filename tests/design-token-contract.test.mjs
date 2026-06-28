@@ -13,6 +13,13 @@ function readCssRule(source, selector) {
   return match[0];
 }
 
+function readLastCssRule(source, selector) {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const matches = [...source.matchAll(new RegExp(`(^|\\n)\\s*${escapedSelector}\\s*\\{[\\s\\S]*?\\n\\}`, "g"))];
+  assert.ok(matches.length, `${selector} rule should exist`);
+  return matches.at(-1)[0];
+}
+
 test("private Lucas and chart candidate modules stay within the site accent palette", async () => {
   const checkedFiles = [
     "src/app/Lucas/Lucas.module.css",
@@ -265,4 +272,35 @@ test("finance AI upload workbench surfaces derive from shared site tokens", asyn
   assert.match(dropzoneBlock, /background:\s*var\(--finance-ai-upload-dropzone-bg\)/);
   assert.match(activeDropzoneBlock, /background:\s*var\(--finance-ai-upload-dropzone-active-bg\)/);
   assert.match(previewBlock, /background:\s*var\(--finance-ai-empty-preview-bg\)/);
+});
+
+test("finance AI upload action buttons derive from shared site tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const uploadChipBlock = readCssRule(globals, ".finance-ai-upload-chip");
+  const templateButtonBlock = readLastCssRule(globals, ".finance-ai-template-button");
+  const scopedSource = [uploadChipBlock, templateButtonBlock].join("\n").toLowerCase();
+
+  for (const literal of [
+    "#e9b7a6",
+    "#f05c35",
+    "#df4a24",
+    "rgba(220, 82, 40, 0.2)",
+    "#fff",
+    "rgba(255, 255, 255, 0.82)",
+  ]) {
+    assert.doesNotMatch(scopedSource, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(rootSource, /--finance-ai-upload-chip-border:\s*color-mix\(in srgb,\s*var\(--accent\) 72%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--finance-ai-upload-chip-bg:\s*linear-gradient\(180deg,\s*color-mix\(in srgb,\s*var\(--accent\) 82%,\s*var\(--card\)\),\s*color-mix\(in srgb,\s*var\(--accent\) 92%,\s*var\(--foreground\)\)\)/);
+  assert.match(rootSource, /--finance-ai-upload-chip-shadow:\s*0 10px 22px color-mix\(in srgb,\s*var\(--accent\) 20%,\s*transparent\)/);
+  assert.match(rootSource, /--finance-ai-upload-chip-text:\s*var\(--card\)/);
+  assert.match(rootSource, /--finance-ai-template-button-bg:\s*color-mix\(in srgb,\s*var\(--card\) 82%,\s*transparent\)/);
+  assert.match(uploadChipBlock, /border-color:\s*var\(--finance-ai-upload-chip-border\)/);
+  assert.match(uploadChipBlock, /background:\s*var\(--finance-ai-upload-chip-bg\)/);
+  assert.match(uploadChipBlock, /box-shadow:\s*var\(--finance-ai-upload-chip-shadow\)/);
+  assert.match(uploadChipBlock, /color:\s*var\(--finance-ai-upload-chip-text\)/);
+  assert.match(templateButtonBlock, /background:\s*var\(--finance-ai-template-button-bg\)/);
 });
