@@ -2410,3 +2410,73 @@ Observed: formal and demo routes had console error count 0; page backgrounds res
 - [x] **Step 9: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10i`, noting that this closes only the finance AI assistant page/chart/inline-code surface token sub-item and leaves upload-zone, detail-filter, avatar, and other internal control colors for later passes.
+
+### Task 40: Tokenize Finance AI Upload Workbench Surfaces
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the formal finance AI assistant upload workbench. This pass covers `.finance-ai-upload-workbench`, `.finance-ai-upload-dropzone`, `.finance-ai-upload-dropzone.is-dragging`, and `.finance-ai-empty-preview-card`. It does not attempt to migrate upload chips, template buttons, avatars, detail filters, chart palettes, or every remaining finance AI internal control color.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added `readCssRule()` to `tests/design-token-contract.test.mjs` and a new contract requiring the upload workbench surfaces to use `--finance-ai-upload-*` / `--finance-ai-empty-preview-bg` tokens. The contract rejects the old scoped `rgba(255, 255, 255, 0.9)`, `rgba(255, 255, 255, 0.72)`, `rgba(70, 48, 30, 0.08)`, `rgba(217, 119, 87, 0.08)`, `rgba(255, 255, 255, 0.48)`, `rgba(217, 119, 87, 0.14)`, `rgba(255, 250, 244, 0.68)`, `rgba(255, 255, 255, 0.86)`, and `rgba(255, 250, 243, 0.7)` literals.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.finance-ai-upload-workbench`, `.finance-ai-upload-dropzone`, `.finance-ai-upload-dropzone.is-dragging`, and `.finance-ai-empty-preview-card` still contained the old hardcoded `rgba(...)` background and shadow values.
+
+- [x] **Step 4: Move upload workbench surfaces to site tokens**
+
+Added `--finance-ai-upload-workbench-bg`, `--finance-ai-upload-workbench-shadow`, `--finance-ai-upload-dropzone-bg`, `--finance-ai-upload-dropzone-active-bg`, and `--finance-ai-empty-preview-bg` to `:root`. Each token derives from `--card`, `--accent`, `--foreground`, and the existing `--finance-ai-page-surface`. Updated the four scoped CSS rules to read those tokens while preserving layout, spacing, radius, grid, and min-height behavior.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 11/11 tests.
+
+Run: `node --test tests/finance-ai-assistant-contract.test.mjs`
+
+Observed: PASS, 40/40 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warning remains unrelated.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 333/333 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 7: Verify finance AI upload workbench rendering in a production browser**
+
+Started `npm run start -- --port 3049`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3049/finance/finance-ai-assistant` at `1440×900` and `390×844`, read the root upload tokens and computed styles for the upload workbench, dropzone, drag state, and empty preview card, then closed the browser and server.
+
+Observed: console error count was 0 on desktop and mobile. Desktop rendered the workbench, dropzone, and empty preview card with nonzero dimensions; mobile rendered the workbench and dropzone with nonzero dimensions. The drag-state dropzone background differed from the resting background, confirming the active token path was applied.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10j`, noting that this closes only the finance AI upload workbench surface token sub-item and leaves upload buttons, template buttons, detail filters, avatars, and other internal control colors for later passes.

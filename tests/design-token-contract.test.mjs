@@ -6,6 +6,13 @@ async function readProjectFile(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
+function readCssRule(source, selector) {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = source.match(new RegExp(`(^|\\n)\\s*${escapedSelector}\\s*\\{[\\s\\S]*?\\n\\}`));
+  assert.ok(match, `${selector} rule should exist`);
+  return match[0];
+}
+
 test("private Lucas and chart candidate modules stay within the site accent palette", async () => {
   const checkedFiles = [
     "src/app/Lucas/Lucas.module.css",
@@ -222,4 +229,40 @@ test("finance AI assistant surfaces derive from shared site tokens", async () =>
   assert.match(rootSource, /--finance-ai-inline-code-bg:\s*color-mix\(in srgb,\s*var\(--card\) 72%,\s*transparent\)/);
   assert.match(markdownCodeBlock, /background:\s*var\(--finance-ai-inline-code-bg\)/);
   assert.doesNotMatch(markdownCodeBlock, /rgba\(255,\s*255,\s*255,\s*0\.72\)/);
+});
+
+test("finance AI upload workbench surfaces derive from shared site tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const workbenchBlock = readCssRule(globals, ".finance-ai-upload-workbench");
+  const dropzoneBlock = readCssRule(globals, ".finance-ai-upload-dropzone");
+  const activeDropzoneBlock = readCssRule(globals, ".finance-ai-upload-dropzone.is-dragging");
+  const previewBlock = readCssRule(globals, ".finance-ai-empty-preview-card");
+  const scopedSource = [workbenchBlock, dropzoneBlock, activeDropzoneBlock, previewBlock].join("\n");
+
+  for (const literal of [
+    "rgba(255, 255, 255, 0.9)",
+    "rgba(255, 255, 255, 0.72)",
+    "rgba(70, 48, 30, 0.08)",
+    "rgba(217, 119, 87, 0.08)",
+    "rgba(255, 255, 255, 0.48)",
+    "rgba(217, 119, 87, 0.14)",
+    "rgba(255, 250, 244, 0.68)",
+    "rgba(255, 255, 255, 0.86)",
+    "rgba(255, 250, 243, 0.7)",
+  ]) {
+    assert.doesNotMatch(scopedSource, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(rootSource, /--finance-ai-upload-workbench-bg:\s*linear-gradient\(180deg,\s*color-mix\(in srgb,\s*var\(--card\) 90%,\s*transparent\),\s*color-mix\(in srgb,\s*var\(--card\) 72%,\s*transparent\)\)/);
+  assert.match(rootSource, /--finance-ai-upload-workbench-shadow:\s*0 26px 78px color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*transparent\)/);
+  assert.match(rootSource, /--finance-ai-upload-dropzone-bg:\s*radial-gradient\(circle at 50% 8%,\s*color-mix\(in srgb,\s*var\(--accent\) 8%,\s*transparent\)/);
+  assert.match(rootSource, /--finance-ai-upload-dropzone-active-bg:\s*radial-gradient\(circle at 50% 8%,\s*color-mix\(in srgb,\s*var\(--accent\) 14%,\s*transparent\)/);
+  assert.match(rootSource, /--finance-ai-empty-preview-bg:\s*linear-gradient\(135deg,\s*color-mix\(in srgb,\s*var\(--card\) 86%,\s*transparent\)/);
+  assert.match(workbenchBlock, /background:\s*var\(--finance-ai-upload-workbench-bg\)/);
+  assert.match(workbenchBlock, /box-shadow:\s*var\(--finance-ai-upload-workbench-shadow\)/);
+  assert.match(dropzoneBlock, /background:\s*var\(--finance-ai-upload-dropzone-bg\)/);
+  assert.match(activeDropzoneBlock, /background:\s*var\(--finance-ai-upload-dropzone-active-bg\)/);
+  assert.match(previewBlock, /background:\s*var\(--finance-ai-empty-preview-bg\)/);
 });
