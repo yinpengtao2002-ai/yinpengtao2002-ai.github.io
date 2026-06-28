@@ -402,3 +402,25 @@ test("finance AI thinking chips derive from shared site tokens", async () => {
   assert.match(rootSource, /--finance-ai-thinking-chip-bg:\s*color-mix\(in srgb,\s*var\(--card\) 72%,\s*transparent\)/);
   assert.match(thinkingChipBlock, /background:\s*var\(--finance-ai-thinking-chip-bg\)/);
 });
+
+test("finance AI detail filter triggers derive from shared site tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const triggerBlock = readCssRule(globals, ".finance-ai-detail-filter-trigger");
+  const activeTriggerBlock = globals.match(/\.finance-ai-detail-filter-trigger:hover,[\s\S]*?\n\}/)?.[0] ?? "";
+  assert.ok(activeTriggerBlock, "detail filter active trigger rule should exist");
+  const scopedSource = [triggerBlock, activeTriggerBlock].join("\n");
+
+  for (const literal of [
+    "rgba(255, 255, 255, 0.58)",
+    "rgba(255, 255, 255, 0.72)",
+  ]) {
+    assert.doesNotMatch(scopedSource, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(rootSource, /--finance-ai-detail-filter-trigger-bg:\s*color-mix\(in srgb,\s*var\(--card\) 58%,\s*transparent\)/);
+  assert.match(rootSource, /--finance-ai-detail-filter-trigger-active-bg:\s*color-mix\(in srgb,\s*var\(--accent\) 12%,\s*var\(--card\)\)/);
+  assert.match(triggerBlock, /background:\s*var\(--finance-ai-detail-filter-trigger-bg\)/);
+  assert.match(activeTriggerBlock, /background:\s*var\(--finance-ai-detail-filter-trigger-active-bg\)/);
+});

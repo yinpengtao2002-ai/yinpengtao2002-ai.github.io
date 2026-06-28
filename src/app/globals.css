@@ -58,6 +58,8 @@
   --finance-ai-composer-button-bg: color-mix(in srgb, var(--accent) 76%, var(--card));
   --finance-ai-composer-button-text: var(--card);
   --finance-ai-thinking-chip-bg: color-mix(in srgb, var(--card) 72%, transparent);
+  --finance-ai-detail-filter-trigger-bg: color-mix(in srgb, var(--card) 58%, transparent);
+  --finance-ai-detail-filter-trigger-active-bg: color-mix(in srgb, var(--accent) 12%, var(--card));
   --font-poppins: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   --font-lora: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
   --font-hero-display: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
@@ -952,7 +954,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0;
-  background: rgba(255, 255, 255, 0.58);
+  background: var(--finance-ai-detail-filter-trigger-bg);
   color: color-mix(in srgb, var(--foreground) 58%, var(--muted));
   cursor: pointer;
   flex: 0 0 auto;
@@ -975,7 +977,7 @@ body {
 .finance-ai-detail-filter-trigger.is-active,
 .finance-ai-detail-filter-trigger[aria-expanded="true"] {
   border-color: color-mix(in srgb, var(--accent) 62%, var(--border));
-  background: color-mix(in srgb, var(--accent) 12%, rgba(255, 255, 255, 0.72));
+  background: var(--finance-ai-detail-filter-trigger-active-bg);
   color: color-mix(in srgb, var(--accent) 82%, var(--foreground));
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
 }
