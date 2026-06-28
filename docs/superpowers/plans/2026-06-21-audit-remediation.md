@@ -1920,3 +1920,66 @@ Observed: PASS. At `1440x900`, `/finance/business-analysis/` and `/finance/margi
 - [x] **Step 7: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10b`, noting that this closes only finance tool page wrapper tokenization and leaves tool-internal palettes plus other hardcoded surfaces for separate passes.
+
+### Task 33: Tokenize Global Text Selection
+
+**Files:**
+- Modify: `src/app/layout.tsx`
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the global text selection style on the root layout. This pass does not attempt to migrate metadata colors, local shadows, or tool-internal palettes.
+
+- [x] **Step 2: Add a failing token contract**
+
+Updated `tests/design-token-contract.test.mjs` to require `src/app/layout.tsx` to avoid Tailwind arbitrary selection colors and to require `src/app/globals.css` to define `::selection` using `--accent` and `--card`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `src/app/layout.tsx` still used `selection:bg-[#d97757] selection:text-white`.
+
+- [x] **Step 4: Move selection visuals to tokenized global CSS**
+
+Removed `selection:bg-[#d97757] selection:text-white` from the root `body` className. Added global `::selection` styles in `src/app/globals.css` with `background: var(--accent)` and `color: var(--card)`.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 4/4 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `rg -n "selection:bg-\\[#|selection:text-white" src/app src/components`
+
+Observed: no matches, exit code 1.
+
+Run: `npm run test:site`
+
+Observed: PASS, 325/325 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 7: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10c`, noting that this closes only the global selection-style token sub-item and leaves other hardcoded visual surfaces for separate passes.

@@ -81,3 +81,15 @@ test("finance tool page wrappers use shared tokenized shell classes", async () =
   assert.match(fallbackBlock, /background:\s*var\(--background\)/);
   assert.match(fallbackBlock, /color:\s*var\(--foreground\)/);
 });
+
+test("global text selection colors use site tokens", async () => {
+  const layout = await readProjectFile("src/app/layout.tsx");
+  const globals = await readProjectFile("src/app/globals.css");
+
+  assert.doesNotMatch(layout, /selection:[a-z-]+-\[#/);
+  assert.doesNotMatch(layout, /selection:text-white/);
+
+  const selectionBlock = globals.match(/::selection\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+  assert.match(selectionBlock, /background:\s*var\(--accent\)/);
+  assert.match(selectionBlock, /color:\s*var\(--card\)/);
+});

@@ -64,7 +64,7 @@ export default function RootLayout({
         <meta name="baidu-site-verification" content="codeva-9201I1Yt1V" />
       </head>
       <body
-        className="antialiased gradient-bg overflow-x-hidden selection:bg-[#d97757] selection:text-white"
+        className="antialiased gradient-bg overflow-x-hidden"
       >
         <MotionConfig reducedMotion="user">
           <ClientShell />
