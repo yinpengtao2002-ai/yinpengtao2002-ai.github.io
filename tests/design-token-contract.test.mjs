@@ -93,3 +93,19 @@ test("global text selection colors use site tokens", async () => {
   assert.match(selectionBlock, /background:\s*var\(--accent\)/);
   assert.match(selectionBlock, /color:\s*var\(--card\)/);
 });
+
+test("site navigation shadows use shared design tokens", async () => {
+  const navigation = await readProjectFile("src/components/layout/SiteNavigation.tsx");
+  const globals = await readProjectFile("src/app/globals.css");
+
+  assert.doesNotMatch(navigation, /boxShadow:\s*"[^"]*rgba\(/);
+  assert.match(navigation, /boxShadow:\s*"var\(--site-nav-button-shadow\)"/);
+  assert.match(navigation, /boxShadow:\s*"var\(--site-nav-menu-shadow\)"/);
+  assert.match(navigation, /boxShadow:\s*"var\(--site-nav-shell-shadow\)"/);
+
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  assert.match(rootSource, /--site-nav-button-shadow:\s*0 8px 24px color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*transparent\)/);
+  assert.match(rootSource, /--site-nav-menu-shadow:\s*0 18px 44px color-mix\(in srgb,\s*var\(--foreground\) 12%,\s*transparent\)/);
+  assert.match(rootSource, /--site-nav-shell-shadow:\s*0 12px 32px color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*transparent\)/);
+});

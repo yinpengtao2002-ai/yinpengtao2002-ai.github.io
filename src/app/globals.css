@@ -10,6 +10,9 @@
   --muted: #737169;
   --card: #ffffff;
   --border: #e8e6dc;
+  --site-nav-button-shadow: 0 8px 24px color-mix(in srgb, var(--foreground) 8%, transparent);
+  --site-nav-menu-shadow: 0 18px 44px color-mix(in srgb, var(--foreground) 12%, transparent);
+  --site-nav-shell-shadow: 0 12px 32px color-mix(in srgb, var(--foreground) 8%, transparent);
   --finance-ai-page-surface: #f7f5ef;
   --finance-ai-chart-surface: color-mix(in srgb, var(--finance-ai-page-surface) 88%, var(--card));
   --finance-ai-chart-border: color-mix(in srgb, var(--border) 78%, #d7cdbc);

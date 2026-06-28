@@ -1983,3 +1983,70 @@ Observed: PASS, Next production build compiled and generated 36 static pages. Ex
 - [x] **Step 7: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10c`, noting that this closes only the global selection-style token sub-item and leaves other hardcoded visual surfaces for separate passes.
+
+### Task 34: Tokenize Site Navigation Shadows
+
+**Files:**
+- Modify: `src/components/layout/SiteNavigation.tsx`
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to another concrete rendered surface: the global `SiteNavigation` shadows on the desktop pill, mobile launcher, and mobile dropdown. This pass does not attempt to migrate every shadow in `globals.css`, finance tool-internal palettes, or generated private-tool CSS.
+
+- [x] **Step 2: Add a failing token contract**
+
+Updated `tests/design-token-contract.test.mjs` to require `SiteNavigation` to avoid inline `rgba()` `boxShadow` strings, to use `--site-nav-button-shadow`, `--site-nav-menu-shadow`, and `--site-nav-shell-shadow`, and to require those variables to be defined from `--foreground` via `color-mix()` in `:root`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `SiteNavigation.tsx` still contained `boxShadow: "0 8px 24px rgba(0,0,0,0.08)"`, `boxShadow: "0 18px 44px rgba(0,0,0,0.12)"`, and `boxShadow: "0 12px 32px rgba(0,0,0,0.08)"`.
+
+- [x] **Step 4: Move navigation shadows to root tokens**
+
+Added `--site-nav-button-shadow`, `--site-nav-menu-shadow`, and `--site-nav-shell-shadow` in `src/app/globals.css`, deriving each shadow from `--foreground` with `color-mix()`. Changed the three `SiteNavigation` `boxShadow` values to `var(...)` references while leaving layout, blur, spacing, and navigation behavior unchanged.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 5/5 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 326/326 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 7: Verify navigation rendering in a production browser**
+
+Started `npm run start -- --port 3043`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3043/` at `1440×900` and `390×844`, read computed navigation shadows and menu text, then closed the browser and stopped the local server.
+
+Observed: desktop navigation text stayed `首页财务模型工具与思考联系` and its shadow resolved to token-derived `color(srgb ... / 0.08)`; mobile dropdown text stayed `首页财务模型工具与思考联系` and its shadow resolved to token-derived `color(srgb ... / 0.12)`; console error count stayed 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10d`, noting that this closes only the global navigation shadow token sub-item and leaves other hardcoded visual surfaces for separate passes.
