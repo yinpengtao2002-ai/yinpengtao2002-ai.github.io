@@ -32,11 +32,14 @@
   --finance-ai-chart-border: color-mix(in srgb, var(--border) 86%, var(--accent));
   --finance-ai-chart-shadow: 0 12px 28px color-mix(in srgb, var(--foreground) 5%, transparent);
   --finance-ai-inline-code-bg: color-mix(in srgb, var(--card) 72%, transparent);
+  --finance-ai-empty-card-bg: linear-gradient(180deg, color-mix(in srgb, var(--card) 88%, transparent), color-mix(in srgb, var(--card) 68%, transparent)), color-mix(in srgb, var(--accent-secondary) 7%, var(--card));
+  --finance-ai-empty-card-shadow: 0 24px 70px color-mix(in srgb, var(--foreground) 8%, transparent);
   --finance-ai-upload-workbench-bg: linear-gradient(180deg, color-mix(in srgb, var(--card) 90%, transparent), color-mix(in srgb, var(--card) 72%, transparent)), color-mix(in srgb, var(--accent) 3%, var(--finance-ai-page-surface));
   --finance-ai-upload-workbench-shadow: 0 26px 78px color-mix(in srgb, var(--foreground) 8%, transparent);
   --finance-ai-upload-dropzone-bg: radial-gradient(circle at 50% 8%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 34%), color-mix(in srgb, var(--card) 48%, transparent);
   --finance-ai-upload-dropzone-active-bg: radial-gradient(circle at 50% 8%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 34%), color-mix(in srgb, var(--accent) 8%, var(--card));
   --finance-ai-empty-preview-bg: linear-gradient(135deg, color-mix(in srgb, var(--card) 86%, transparent), color-mix(in srgb, var(--accent) 7%, var(--card))), color-mix(in srgb, var(--accent) 4%, var(--card));
+  --finance-ai-empty-preview-label-bg: color-mix(in srgb, var(--accent) 10%, var(--card));
   --finance-ai-upload-chip-border: color-mix(in srgb, var(--accent) 72%, var(--card));
   --finance-ai-upload-chip-bg: linear-gradient(180deg, color-mix(in srgb, var(--accent) 82%, var(--card)), color-mix(in srgb, var(--accent) 92%, var(--foreground)));
   --finance-ai-upload-chip-shadow: 0 10px 22px color-mix(in srgb, var(--accent) 20%, transparent);
@@ -384,10 +387,8 @@ body {
   width: min(740px, 100%);
   border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
   border-radius: 22px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.68)),
-    color-mix(in srgb, var(--accent-secondary) 7%, #fff);
-  box-shadow: 0 24px 70px rgba(20, 20, 19, 0.08);
+  background: var(--finance-ai-empty-card-bg);
+  box-shadow: var(--finance-ai-empty-card-shadow);
   padding: clamp(24px, 4vw, 36px);
   text-align: center;
 }
@@ -597,7 +598,7 @@ body {
   display: inline-flex;
   width: fit-content;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 10%, #fff);
+  background: var(--finance-ai-empty-preview-label-bg);
   color: color-mix(in srgb, var(--accent) 82%, var(--foreground));
   font-size: 0.72rem;
   font-weight: 850;

@@ -335,3 +335,28 @@ test("finance AI avatar surfaces derive from shared site tokens", async () => {
   assert.match(miniAvatarBlock, /background:\s*var\(--finance-ai-avatar-mini-bg\)/);
   assert.match(miniAvatarBlock, /box-shadow:\s*var\(--finance-ai-avatar-mini-shadow\)/);
 });
+
+test("finance AI empty state labels derive from shared site tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const emptyCardBlock = readCssRule(globals, ".finance-ai-empty-card");
+  const emptyPreviewLabelBlock = readCssRule(globals, ".finance-ai-empty-preview-copy span");
+  const scopedSource = [emptyCardBlock, emptyPreviewLabelBlock].join("\n").toLowerCase();
+
+  for (const literal of [
+    "rgba(255, 255, 255, 0.88)",
+    "rgba(255, 255, 255, 0.68)",
+    "#fff",
+    "rgba(20, 20, 19, 0.08)",
+  ]) {
+    assert.doesNotMatch(scopedSource, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(rootSource, /--finance-ai-empty-card-bg:\s*linear-gradient\(180deg,\s*color-mix\(in srgb,\s*var\(--card\) 88%,\s*transparent\),\s*color-mix\(in srgb,\s*var\(--card\) 68%,\s*transparent\)\),\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 7%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--finance-ai-empty-card-shadow:\s*0 24px 70px color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*transparent\)/);
+  assert.match(rootSource, /--finance-ai-empty-preview-label-bg:\s*color-mix\(in srgb,\s*var\(--accent\) 10%,\s*var\(--card\)\)/);
+  assert.match(emptyCardBlock, /background:\s*var\(--finance-ai-empty-card-bg\)/);
+  assert.match(emptyCardBlock, /box-shadow:\s*var\(--finance-ai-empty-card-shadow\)/);
+  assert.match(emptyPreviewLabelBlock, /background:\s*var\(--finance-ai-empty-preview-label-bg\)/);
+});

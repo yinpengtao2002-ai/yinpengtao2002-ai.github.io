@@ -2620,3 +2620,81 @@ Observed: console error count was 0 on desktop and mobile. The large avatar and 
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10l`, noting that this closes only the finance AI avatar surface token sub-item and leaves empty-state card, error text, detail filters, and other internal control colors for later passes.
+
+### Task 43: Tokenize Finance AI Empty State Labels
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the formal finance AI assistant empty-state label surfaces. This pass covers the currently rendered desktop preview label `.finance-ai-empty-preview-copy span` and the dormant backup `.finance-ai-empty-card` style rule. It does not attempt to migrate error text, detail-table filters, composer controls, message bubbles, chart palettes, or other finance AI internal control colors.
+
+- [x] **Step 2: Add a failing token contract for the backup empty card**
+
+Added a new `tests/design-token-contract.test.mjs` contract requiring `.finance-ai-empty-card` to use `--finance-ai-empty-card-bg` and `--finance-ai-empty-card-shadow`. The contract rejects the old scoped `rgba(255, 255, 255, 0.88)`, `rgba(255, 255, 255, 0.68)`, `#fff`, and `rgba(20, 20, 19, 0.08)` literals.
+
+- [x] **Step 3: Verify the backup empty-card contract fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.finance-ai-empty-card` still used direct white `rgba(...)` gradient stops, `#fff` mixing, and a hardcoded dark `rgba(...)` shadow.
+
+- [x] **Step 4: Move the backup empty card to site tokens**
+
+Added `--finance-ai-empty-card-bg` and `--finance-ai-empty-card-shadow` to `:root`. The tokens derive from `--card`, `--accent-secondary`, and `--foreground`. Updated `.finance-ai-empty-card` to read those tokens while preserving width, border, radius, padding, and text alignment.
+
+- [x] **Step 5: Add and verify a failing contract for the rendered empty preview label**
+
+Expanded the contract to include `.finance-ai-empty-preview-copy span`, requiring `--finance-ai-empty-preview-label-bg` and rejecting the old `#fff` fallback. Re-ran `node --test tests/design-token-contract.test.mjs` and observed the expected failure because the rendered preview label still mixed against `#fff`.
+
+- [x] **Step 6: Move the rendered empty preview label to site tokens**
+
+Added `--finance-ai-empty-preview-label-bg` to `:root`, deriving from `--accent` and `--card`. Updated `.finance-ai-empty-preview-copy span` to read the token while preserving label display, sizing, typography, and padding.
+
+- [x] **Step 7: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 14/14 tests.
+
+Run: `node --test tests/finance-ai-assistant-contract.test.mjs`
+
+Observed: PASS, 40/40 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warning remains unrelated.
+
+- [x] **Step 8: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 336/336 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 9: Verify finance AI empty-state label rendering in a production browser**
+
+Started `npm run start -- --port 3053`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3053/finance/finance-ai-assistant` at `1440×900` and `390×844`, read root empty-state tokens and CSS rules for `.finance-ai-empty-preview-copy span` and `.finance-ai-empty-card`, then closed the browser and server.
+
+Observed: console error count was 0 on desktop and mobile. Desktop rendered the three empty-preview labels with nonzero dimensions and their background rule read `var(--finance-ai-empty-preview-label-bg)`. Mobile kept `.finance-ai-upload-preview-list` hidden with `display: none`, matching the existing responsive layout. The backup `.finance-ai-empty-card` was not present in the DOM on either viewport, so this pass verifies it at the style-rule level only.
+
+- [x] **Step 10: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10m`, noting that this closes the rendered finance AI empty preview label and the dormant backup empty-card style rule, while leaving error text, detail filters, composer controls, and other internal control colors for later passes.
