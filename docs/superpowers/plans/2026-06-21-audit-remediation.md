@@ -2116,3 +2116,69 @@ Observed: desktop and mobile stage content stayed readable, console error count 
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10e`, noting that this closes only the homepage model-stage accent token sub-item and leaves other hardcoded visual surfaces for separate passes.
+
+### Task 36: Tokenize Home Thinking Track Accents
+
+**Files:**
+- Modify: `src/components/home/HomeThinkingSection.tsx`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to a concrete homepage surface: `HomeThinkingSection`, the "工具与思考" section on the homepage. This pass does not attempt to migrate all homepage decorative CSS fallbacks, tool-internal palettes, or unrelated global hardcoded colors.
+
+- [x] **Step 2: Add a failing token contract**
+
+Updated `tests/design-token-contract.test.mjs` to require `HomeThinkingSection` to avoid `accent: "#..."` and `soft: "rgba(...)"` track entries, to use `var(--accent-secondary)`, `var(--accent)`, and `var(--accent-tertiary)`, and to derive soft track backgrounds with token-based `color-mix(..., transparent)`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `HomeThinkingSection.tsx` still contained `accent: "#3f8f9f"`, `accent: "#b46b8d"`, `accent: "#7d8c45"`, and the matching `rgba(...)` soft color values in the track config.
+
+- [x] **Step 4: Move track accents to site tokens**
+
+Changed the tool track to `var(--accent-secondary)`, the AI creation track to `var(--accent)`, and the thinking-record track to `var(--accent-tertiary)`. Changed the three soft values to token-derived `color-mix(in srgb, var(...) 13/14%, transparent)` values while preserving the existing `--thinking-track-accent` and `--thinking-track-soft` custom-property flow.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 7/7 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 328/328 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 7: Verify homepage thinking rendering in a production browser**
+
+Started `npm run start -- --port 3045`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3045/` at `1440×900` and `390×844`, scrolled to `#thinking`, read the section text, the active panel custom properties, the three track card custom properties and card dimensions, then closed the browser.
+
+Observed: desktop and mobile `#thinking` content stayed readable, console error count stayed 0, and the three track cards resolved their token-driven accents to the site brand palette (`#6a9bcc`, `#d97757`, `#788c5d`) with token-derived `color-mix(...)` soft backgrounds.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10f`, noting that this closes only the homepage thinking-track accent token sub-item and leaves other hardcoded visual surfaces for separate passes.

@@ -119,3 +119,16 @@ test("home hero model stage accents use site color tokens", async () => {
   assert.match(heroModelStage, /accent:\s*"var\(--accent-tertiary\)"/);
   assert.match(heroModelStage, /"--hero-stage-accent":\s*activeStage\.accent/);
 });
+
+test("home thinking track accents use site color tokens", async () => {
+  const homeThinkingSection = await readProjectFile("src/components/home/HomeThinkingSection.tsx");
+
+  assert.doesNotMatch(homeThinkingSection, /accent:\s*"#[0-9a-fA-F]{3,8}"/);
+  assert.doesNotMatch(homeThinkingSection, /soft:\s*"rgba\(/);
+  assert.match(homeThinkingSection, /accent:\s*"var\(--accent-secondary\)"/);
+  assert.match(homeThinkingSection, /accent:\s*"var\(--accent\)"/);
+  assert.match(homeThinkingSection, /accent:\s*"var\(--accent-tertiary\)"/);
+  assert.match(homeThinkingSection, /soft:\s*"color-mix\(in srgb,\s*var\(--accent-secondary\)\s+13%,\s*transparent\)"/);
+  assert.match(homeThinkingSection, /soft:\s*"color-mix\(in srgb,\s*var\(--accent\)\s+14%,\s*transparent\)"/);
+  assert.match(homeThinkingSection, /soft:\s*"color-mix\(in srgb,\s*var\(--accent-tertiary\)\s+14%,\s*transparent\)"/);
+});
