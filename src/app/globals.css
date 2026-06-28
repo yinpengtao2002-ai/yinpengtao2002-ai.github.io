@@ -57,6 +57,7 @@
   --finance-ai-composer-button-border: color-mix(in srgb, var(--accent) 60%, var(--card));
   --finance-ai-composer-button-bg: color-mix(in srgb, var(--accent) 76%, var(--card));
   --finance-ai-composer-button-text: var(--card);
+  --finance-ai-thinking-chip-bg: color-mix(in srgb, var(--card) 72%, transparent);
   --font-poppins: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   --font-lora: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
   --font-hero-display: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
@@ -1432,7 +1433,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--finance-ai-thinking-chip-bg);
   color: color-mix(in srgb, var(--foreground) 62%, var(--muted));
   font-size: 0.82rem;
   padding: 0 11px;

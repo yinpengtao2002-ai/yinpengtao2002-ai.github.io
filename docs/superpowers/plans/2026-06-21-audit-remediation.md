@@ -2768,3 +2768,73 @@ Observed: console error count was 0 on desktop and mobile. Desktop rendered the 
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10n`, noting that this closes only the finance AI composer shell, desktop status pill, and send button token sub-item while leaving thinking chips, error text, detail filters, message bubbles, chart palettes, and other internal control colors for later passes.
+
+### Task 45: Tokenize Finance AI Thinking Chips
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the formal finance AI assistant thinking chips. This pass covers only `.finance-ai-thinking span`, which is used for the analysis-process chips while the assistant is working. It does not attempt to migrate error/warning text, detail-table filters, message bubbles, chart palettes, or other internal control colors.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a new `tests/design-token-contract.test.mjs` contract requiring `.finance-ai-thinking span` to use `--finance-ai-thinking-chip-bg`. The contract rejects the old scoped `rgba(255, 255, 255, 0.72)` background.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.finance-ai-thinking span` still used the direct white rgba background.
+
+- [x] **Step 4: Move thinking chips to site tokens**
+
+Added `--finance-ai-thinking-chip-bg` to `:root`, deriving from `--card`, and updated `.finance-ai-thinking span` to read that token while preserving border, radius, display, spacing, typography, and foreground color.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 16/16 tests.
+
+Run: `node --test tests/finance-ai-assistant-contract.test.mjs`
+
+Observed: PASS, 40/40 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warning remains unrelated.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 338/338 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify finance AI thinking-chip CSS in a production browser**
+
+Started `npm run start -- --port 3055`.
+
+Run: bundled Playwright CLI opened `http://127.0.0.1:3055/finance/finance-ai-assistant` at `1440×900` and `390×844`, checked console errors, read `--finance-ai-thinking-chip-bg`, and inspected the `.finance-ai-thinking span` CSS rules.
+
+Observed: console error count was 0 on desktop and mobile. The mobile composer remained visible. The `.finance-ai-thinking span` CSS rule read `background: var(--finance-ai-thinking-chip-bg)`. The chips are transient loading-state content, so this pass verifies the production CSS rule rather than forcing a provider call.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10o`, noting that this closes only the finance AI thinking-chip background token sub-item while leaving error text, detail filters, message bubbles, chart palettes, and other internal control colors for later passes.

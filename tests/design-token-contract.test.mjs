@@ -391,3 +391,14 @@ test("finance AI composer controls derive from shared site tokens", async () => 
   assert.match(sendButtonBlock, /background:\s*var\(--finance-ai-composer-button-bg\)/);
   assert.match(sendButtonBlock, /color:\s*var\(--finance-ai-composer-button-text\)/);
 });
+
+test("finance AI thinking chips derive from shared site tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const thinkingChipBlock = readCssRule(globals, ".finance-ai-thinking span");
+
+  assert.doesNotMatch(thinkingChipBlock, /rgba\(255,\s*255,\s*255,\s*0\.72\)/);
+  assert.match(rootSource, /--finance-ai-thinking-chip-bg:\s*color-mix\(in srgb,\s*var\(--card\) 72%,\s*transparent\)/);
+  assert.match(thinkingChipBlock, /background:\s*var\(--finance-ai-thinking-chip-bg\)/);
+});
