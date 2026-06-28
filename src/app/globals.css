@@ -23,6 +23,10 @@
   --chat-status-online-shadow: 0 0 6px color-mix(in srgb, var(--accent-tertiary) 40%, transparent);
   --chat-greeting-mobile-shadow: 0 10px 24px color-mix(in srgb, var(--foreground) 5%, transparent);
   --chat-input-mobile-shadow: 0 4px 14px color-mix(in srgb, var(--foreground) 4%, transparent);
+  --finance-ribbon-bg: linear-gradient(135deg, color-mix(in srgb, var(--accent) 72%, var(--card)) 0%, var(--accent) 58%, color-mix(in srgb, var(--accent) 86%, var(--foreground)) 100%);
+  --finance-ribbon-text: var(--card);
+  --finance-ribbon-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 22%, transparent);
+  --finance-ribbon-text-shadow: 0 1px 2px color-mix(in srgb, var(--foreground) 18%, transparent);
   --finance-ai-page-surface: #f7f5ef;
   --finance-ai-chart-surface: color-mix(in srgb, var(--finance-ai-page-surface) 88%, var(--card));
   --finance-ai-chart-border: color-mix(in srgb, var(--border) 78%, #d7cdbc);
@@ -7405,16 +7409,16 @@ h6 {
   width: 150px;
   padding: 7px 0;
   transform: rotate(45deg);
-  background: linear-gradient(135deg, #ffad57 0%, #f47b35 58%, #e85f24 100%);
-  box-shadow: 0 8px 18px rgba(217, 119, 87, 0.22);
-  color: #fff;
+  background: var(--finance-ribbon-bg);
+  box-shadow: var(--finance-ribbon-shadow);
+  color: var(--finance-ribbon-text);
   font-size: 14px;
   font-weight: 850;
   letter-spacing: 0.08em;
   line-height: 1;
   pointer-events: none;
   text-align: center;
-  text-shadow: 0 1px 2px rgba(98, 48, 20, 0.18);
+  text-shadow: var(--finance-ribbon-text-shadow);
 }
 
 .finance-model-card-link {

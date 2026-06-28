@@ -248,7 +248,7 @@ test("finance model library renders the preview component", async () => {
   assertCssRuleHas(globals, ".finance-model-status-ribbon", [
     "position: absolute",
     "transform: rotate(45deg)",
-    "background: linear-gradient",
+    "background: var(--finance-ribbon-bg)",
     "pointer-events: none",
   ]);
 });

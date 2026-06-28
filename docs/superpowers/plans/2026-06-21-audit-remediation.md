@@ -2260,3 +2260,78 @@ Observed: desktop and mobile opened Lucas AI without console errors; the panel s
 - [x] **Step 9: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10g`, noting that this closes only the global assistant shell token sub-item and leaves other hardcoded visual surfaces for separate passes.
+
+### Task 38: Tokenize Finance Model Status Ribbon
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `tests/finance-model-registry.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the finance model listing "测试中" status ribbon. This pass covers only the ribbon background, text color, box shadow, and text shadow in `.finance-model-status-ribbon`; it does not change the mobile ribbon placement contract or claim tool-internal chart palettes are fully tokenized.
+
+- [x] **Step 2: Add a failing token contract**
+
+Updated `tests/design-token-contract.test.mjs` to require `--finance-ribbon-bg`, `--finance-ribbon-text`, `--finance-ribbon-shadow`, and `--finance-ribbon-text-shadow` in `:root`, require `.finance-model-status-ribbon` to read those tokens, and reject the old hardcoded `#ffad57`, `#f47b35`, `#e85f24`, `#fff`, and `rgba(...)` ribbon literals.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.finance-model-status-ribbon` still contained the hardcoded orange gradient, white text, and rgba shadow/text-shadow values.
+
+- [x] **Step 4: Move ribbon visuals to site tokens**
+
+Added `--finance-ribbon-bg`, `--finance-ribbon-text`, `--finance-ribbon-shadow`, and `--finance-ribbon-text-shadow` to `src/app/globals.css`, deriving the ribbon from `--accent`, `--card`, and `--foreground`. Changed `.finance-model-status-ribbon` to read those tokens while preserving its positioning, rotation, font, and pointer-event behavior.
+
+- [x] **Step 5: Align the older registry contract**
+
+Updated `tests/finance-model-registry.test.mjs` so the structural preview test now expects `background: var(--finance-ribbon-bg)` instead of the old inline `background: linear-gradient`. The separate mobile test still requires `top: 8px`, `right: -26px`, `left: auto`, and `width: 92px`.
+
+- [x] **Step 6: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 9/9 tests.
+
+Run: `node --test tests/finance-model-registry.test.mjs`
+
+Observed: PASS, 15/15 tests.
+
+- [x] **Step 7: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 331/331 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 8: Verify finance ribbon rendering in a production browser**
+
+Started `npm run start -- --port 3047`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3047/finance` at `1440×900` and `390×844`, read root `--finance-ribbon-*` tokens and the computed styles for both visible "测试中" ribbons, then closed the browser.
+
+Observed: desktop and mobile both rendered two ribbons inside `.finance-model-preview-frame`; the computed backgrounds were gradients, box shadow and text shadow resolved from token-derived color values, mobile CSS width stayed `92px`, and console error count stayed 0.
+
+- [x] **Step 9: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10h`, noting that this closes only the finance model status ribbon token sub-item and leaves tool-internal chart palettes plus other hardcoded visual surfaces for later passes.

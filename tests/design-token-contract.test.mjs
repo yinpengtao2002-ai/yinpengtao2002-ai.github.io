@@ -174,3 +174,30 @@ test("chat assistant shell visuals use shared design tokens", async () => {
   assert.match(rootSource, /--chat-launcher-shadow:\s*0 4px 20px color-mix\(in srgb,\s*var\(--foreground\) 15%,\s*transparent\)/);
   assert.match(rootSource, /--chat-panel-mobile-shadow:\s*0 24px 60px color-mix\(in srgb,\s*var\(--foreground\) 18%,\s*transparent\)/);
 });
+
+test("finance model testing ribbon visuals use shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const ribbonBlock = globals.match(/\.finance-model-status-ribbon\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+
+  for (const literal of [
+    "#ffad57",
+    "#f47b35",
+    "#e85f24",
+    "rgba(217, 119, 87, 0.22)",
+    "#fff",
+    "rgba(98, 48, 20, 0.18)",
+  ]) {
+    assert.doesNotMatch(ribbonBlock.toLowerCase(), new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(rootSource, /--finance-ribbon-bg:\s*linear-gradient\(135deg,\s*color-mix\(in srgb,\s*var\(--accent\)/);
+  assert.match(rootSource, /--finance-ribbon-text:\s*var\(--card\)/);
+  assert.match(rootSource, /--finance-ribbon-shadow:\s*0 8px 18px color-mix\(in srgb,\s*var\(--accent\) 22%,\s*transparent\)/);
+  assert.match(rootSource, /--finance-ribbon-text-shadow:\s*0 1px 2px color-mix\(in srgb,\s*var\(--foreground\) 18%,\s*transparent\)/);
+  assert.match(ribbonBlock, /background:\s*var\(--finance-ribbon-bg\)/);
+  assert.match(ribbonBlock, /box-shadow:\s*var\(--finance-ribbon-shadow\)/);
+  assert.match(ribbonBlock, /color:\s*var\(--finance-ribbon-text\)/);
+  assert.match(ribbonBlock, /text-shadow:\s*var\(--finance-ribbon-text-shadow\)/);
+});
