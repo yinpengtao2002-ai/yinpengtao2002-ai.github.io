@@ -2182,3 +2182,81 @@ Observed: desktop and mobile `#thinking` content stayed readable, console error 
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10f`, noting that this closes only the homepage thinking-track accent token sub-item and leaves other hardcoded visual surfaces for separate passes.
+
+### Task 37: Tokenize Chat Assistant Shell Visuals
+
+**Files:**
+- Modify: `src/components/ChatWidget.tsx`
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `tests/tooling-contract.test.mjs`
+- Modify: `eslint.config.mjs`
+- Modify: `.gitignore`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to one concrete, global rendered surface: the `ChatWidget` assistant shell. This pass covers the mobile backdrop, launcher shadow, desktop/mobile panel shadow, online status dot, mobile greeting-card shadow, and mobile input-wrapper shadow. It does not attempt to migrate message content cards, chart colors, or every inline style in the assistant.
+
+- [x] **Step 2: Add a failing token contract**
+
+Updated `tests/design-token-contract.test.mjs` to require `ChatWidget` to read `--chat-*` design tokens for the assistant shell visuals, to reject the old hardcoded shell literals such as `rgba(20,20,19,0.22)`, `0 24px 60px rgba(20,20,19,0.18)`, `#10B981`, and `rgba(16,185,129,0.4)`, and to require the new tokens to be defined in `:root`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `ChatWidget.tsx` still contained the hardcoded mobile backdrop rgba values, launcher/panel/greeting/input shadows, and the fixed green online-dot color.
+
+- [x] **Step 4: Move assistant shell visuals to site tokens**
+
+Added `--chat-mobile-backdrop-keyboard`, `--chat-mobile-backdrop-fullscreen`, `--chat-mobile-backdrop-sheet`, `--chat-launcher-shadow`, `--chat-panel-mobile-shadow`, `--chat-panel-desktop-shadow`, `--chat-status-online`, `--chat-status-online-shadow`, `--chat-greeting-mobile-shadow`, and `--chat-input-mobile-shadow` to `src/app/globals.css`. Changed `ChatWidget` to read those variables; the online status dot now derives from `--accent-tertiary`.
+
+- [x] **Step 5: Preserve local handoff artifacts without letting them break lint**
+
+`npm run lint` initially failed because untracked local `social-card-prompt-handoff*` directories contain `.cjs` helper scripts. These are local generated handoff artifacts, not site source, so this pass added `social-card-prompt-handoff*/` to `.gitignore` and `social-card-prompt-handoff*/**` to ESLint global ignores. Added `tests/tooling-contract.test.mjs` coverage so the standard lint command keeps ignoring those local handoff artifacts.
+
+- [x] **Step 6: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 8/8 tests.
+
+Run: `node --test tests/tooling-contract.test.mjs`
+
+Observed: PASS, 13/13 tests.
+
+Run: `npm run lint`
+
+Observed: PASS after the local handoff artifact ignore was added.
+
+- [x] **Step 7: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 330/330 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 8: Verify ChatWidget rendering in a production browser**
+
+Started `npm run start -- --port 3046`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3046/` at `1440×900` and `390×844`, opened Lucas AI, read root `--chat-*` tokens plus computed panel shadow, mobile backdrop background, and online status dot styles, then closed the browser.
+
+Observed: desktop and mobile opened Lucas AI without console errors; the panel shadows, mobile backdrop, and online status dot resolved from the `--chat-*` tokens, with the online dot resolving to the site tertiary accent.
+
+- [x] **Step 9: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10g`, noting that this closes only the global assistant shell token sub-item and leaves other hardcoded visual surfaces for separate passes.

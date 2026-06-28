@@ -132,3 +132,45 @@ test("home thinking track accents use site color tokens", async () => {
   assert.match(homeThinkingSection, /soft:\s*"color-mix\(in srgb,\s*var\(--accent\)\s+14%,\s*transparent\)"/);
   assert.match(homeThinkingSection, /soft:\s*"color-mix\(in srgb,\s*var\(--accent-tertiary\)\s+14%,\s*transparent\)"/);
 });
+
+test("chat assistant shell visuals use shared design tokens", async () => {
+  const chatWidget = await readProjectFile("src/components/ChatWidget.tsx");
+  const globals = await readProjectFile("src/app/globals.css");
+
+  for (const literal of [
+    "rgba(20,20,19,0.22)",
+    "rgba(20,20,19,0.12)",
+    "rgba(20,20,19,0.18)",
+    "0 4px 20px rgba(0,0,0,0.15)",
+    "0 24px 60px rgba(20,20,19,0.18)",
+    "0 8px 40px rgba(0,0,0,0.12)",
+    "0 10px 24px rgba(20,20,19,0.05)",
+    "0 4px 14px rgba(20,20,19,0.04)",
+    "#10B981",
+    "rgba(16,185,129,0.4)",
+  ]) {
+    assert.doesNotMatch(chatWidget, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  for (const token of [
+    "--chat-mobile-backdrop-keyboard",
+    "--chat-mobile-backdrop-fullscreen",
+    "--chat-mobile-backdrop-sheet",
+    "--chat-launcher-shadow",
+    "--chat-panel-mobile-shadow",
+    "--chat-panel-desktop-shadow",
+    "--chat-status-online",
+    "--chat-status-online-shadow",
+    "--chat-greeting-mobile-shadow",
+    "--chat-input-mobile-shadow",
+  ]) {
+    assert.match(chatWidget, new RegExp(`var\\(${token}\\)`), `ChatWidget should read ${token}`);
+    assert.match(globals, new RegExp(`${token}:`), `globals.css should define ${token}`);
+  }
+
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  assert.match(rootSource, /--chat-status-online:\s*var\(--accent-tertiary\)/);
+  assert.match(rootSource, /--chat-launcher-shadow:\s*0 4px 20px color-mix\(in srgb,\s*var\(--foreground\) 15%,\s*transparent\)/);
+  assert.match(rootSource, /--chat-panel-mobile-shadow:\s*0 24px 60px color-mix\(in srgb,\s*var\(--foreground\) 18%,\s*transparent\)/);
+});

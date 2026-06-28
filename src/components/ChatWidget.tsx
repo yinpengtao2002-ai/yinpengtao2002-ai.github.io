@@ -428,10 +428,10 @@ export default function ChatWidget() {
     const mobileFocusHeight = currentViewportHeight ? Math.max(currentViewportHeight - mobileFullscreenTopInset, 320) : null;
     const mobileKeyboardHeight = currentViewportHeight ? Math.max(currentViewportHeight - 18, 320) : null;
     const mobileBackdropBackground = mobileKeyboardMode
-        ? "rgba(20,20,19,0.22)"
+        ? "var(--chat-mobile-backdrop-keyboard)"
         : mobileFullscreenMode
-            ? "rgba(20,20,19,0.12)"
-            : "rgba(20,20,19,0.18)";
+            ? "var(--chat-mobile-backdrop-fullscreen)"
+            : "var(--chat-mobile-backdrop-sheet)";
 
     const scrollToBottom = (behavior: ScrollBehavior = "auto") => {
         const container = messagesContainerRef.current;
@@ -854,7 +854,7 @@ export default function ChatWidget() {
                             justifyContent: "center",
                             gap: isMobileLike ? 5 : 8,
                             padding: isMobileLike ? "0 11px" : "0 18px 0 14px",
-                            boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                            boxShadow: "var(--chat-launcher-shadow)",
                             zIndex: 9999,
                             fontSize: 14,
                             fontWeight: 600,
@@ -933,8 +933,8 @@ export default function ChatWidget() {
                                 boxShadow: isMobileLike
                                     ? mobileFullscreenMode && keyboardOpen
                                         ? "none"
-                                        : "0 24px 60px rgba(20,20,19,0.18)"
-                                    : "0 8px 40px rgba(0,0,0,0.12)",
+                                        : "var(--chat-panel-mobile-shadow)"
+                                    : "var(--chat-panel-desktop-shadow)",
                                 backdropFilter: isMobileLike && !(mobileFullscreenMode && keyboardOpen) ? "blur(18px)" : undefined,
                                 WebkitBackdropFilter: isMobileLike && !(mobileFullscreenMode && keyboardOpen) ? "blur(18px)" : undefined,
                                 transition: isMobileLike
@@ -1006,8 +1006,8 @@ export default function ChatWidget() {
                                             width: 7,
                                             height: 7,
                                             borderRadius: "50%",
-                                            background: "#10B981",
-                                            boxShadow: "0 0 6px rgba(16,185,129,0.4)",
+                                            background: "var(--chat-status-online)",
+                                            boxShadow: "var(--chat-status-online-shadow)",
                                         }}
                                     />
                                     <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
@@ -1114,7 +1114,7 @@ export default function ChatWidget() {
                                                                     border: "1px solid var(--border)",
                                                                     borderRadius: 20,
                                                                     padding: compactMobileChat ? "10px 12px" : isMobileLike ? "14px 16px" : "16px 18px",
-                                                                    boxShadow: isMobileLike ? "0 10px 24px rgba(20,20,19,0.05)" : "none",
+                                                                    boxShadow: isMobileLike ? "var(--chat-greeting-mobile-shadow)" : "none",
                                                                 } : {
                                                                     fontSize: bodyFontSize,
                                                                     lineHeight: bodyLineHeight,
@@ -1206,7 +1206,7 @@ export default function ChatWidget() {
                                         border: "1px solid var(--border)",
                                         borderRadius: isMobileLike ? 16 : 12,
                                         padding: inputWrapperPadding,
-                                        boxShadow: isMobileLike ? "0 4px 14px rgba(20,20,19,0.04)" : "none",
+                                        boxShadow: isMobileLike ? "var(--chat-input-mobile-shadow)" : "none",
                                     }}
                                 >
                                     <textarea

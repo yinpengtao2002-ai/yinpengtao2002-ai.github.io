@@ -19,6 +19,7 @@ const eslintConfig = defineConfig([
     "build/**",
     ".vercel/**",
     ".worktrees/**",
+    "social-card-prompt-handoff*/**",
     "next-env.d.ts",
     "public/vendor/**",
   ]),

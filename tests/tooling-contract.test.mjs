@@ -84,6 +84,13 @@ test("eslint ignores local Vercel build output", () => {
   assert.ok(eslintConfig.includes('".vercel/**"'));
 });
 
+test("eslint ignores local social card handoff artifacts", async () => {
+  const gitignore = await readRequiredProjectFile("../.gitignore");
+
+  assert.ok(eslintConfig.includes('"social-card-prompt-handoff*/**"'));
+  assert.match(gitignore, /social-card-prompt-handoff\*\//);
+});
+
 test("local generated artifact cleanup command removes only ignored work artifacts", async () => {
   assert.match(packageJson, /"clean:artifacts":\s*"node scripts\/clean-local-artifacts\.mjs"/);
 

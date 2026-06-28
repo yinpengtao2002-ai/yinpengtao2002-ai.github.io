@@ -16,6 +16,7 @@
 /.playwright-cli/
 /output/
 /public/vendor/
+/social-card-prompt-handoff*/
 
 # next.js
 /.next/

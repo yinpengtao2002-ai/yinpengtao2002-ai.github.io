@@ -13,6 +13,16 @@
   --site-nav-button-shadow: 0 8px 24px color-mix(in srgb, var(--foreground) 8%, transparent);
   --site-nav-menu-shadow: 0 18px 44px color-mix(in srgb, var(--foreground) 12%, transparent);
   --site-nav-shell-shadow: 0 12px 32px color-mix(in srgb, var(--foreground) 8%, transparent);
+  --chat-mobile-backdrop-keyboard: color-mix(in srgb, var(--foreground) 22%, transparent);
+  --chat-mobile-backdrop-fullscreen: color-mix(in srgb, var(--foreground) 12%, transparent);
+  --chat-mobile-backdrop-sheet: color-mix(in srgb, var(--foreground) 18%, transparent);
+  --chat-launcher-shadow: 0 4px 20px color-mix(in srgb, var(--foreground) 15%, transparent);
+  --chat-panel-mobile-shadow: 0 24px 60px color-mix(in srgb, var(--foreground) 18%, transparent);
+  --chat-panel-desktop-shadow: 0 8px 40px color-mix(in srgb, var(--foreground) 12%, transparent);
+  --chat-status-online: var(--accent-tertiary);
+  --chat-status-online-shadow: 0 0 6px color-mix(in srgb, var(--accent-tertiary) 40%, transparent);
+  --chat-greeting-mobile-shadow: 0 10px 24px color-mix(in srgb, var(--foreground) 5%, transparent);
+  --chat-input-mobile-shadow: 0 4px 14px color-mix(in srgb, var(--foreground) 4%, transparent);
   --finance-ai-page-surface: #f7f5ef;
   --finance-ai-chart-surface: color-mix(in srgb, var(--finance-ai-page-surface) 88%, var(--card));
   --finance-ai-chart-border: color-mix(in srgb, var(--border) 78%, #d7cdbc);
