@@ -26,7 +26,7 @@ const HERO_MODEL_STAGES = [
     href: "/finance/margin-analysis",
     previewImage: "/images/product-stage/unit-attribution-preview.webp",
     previewAlt: "单车指标变动归因模型的瀑布图、指标卡和维度明细预览",
-    accent: "#6a9bcc",
+    accent: "var(--accent-secondary)",
   },
   {
     slug: "business-analysis",
@@ -39,7 +39,7 @@ const HERO_MODEL_STAGES = [
     href: "/finance/business-analysis",
     previewImage: "/images/product-stage/budget-actual-preview.webp",
     previewAlt: "预算实际对比模型的差异桥、利润桥、KPI 和维度表现预览",
-    accent: "#d97757",
+    accent: "var(--accent)",
   },
   {
     slug: "monthly-trend",
@@ -52,7 +52,7 @@ const HERO_MODEL_STAGES = [
     href: "/finance/monthly-trend",
     previewImage: "/images/product-stage/monthly-trend-preview.webp",
     previewAlt: "分月指标趋势分析模型的趋势线、热力图、结构占比和月度指标预览",
-    accent: "#788c5d",
+    accent: "var(--accent-tertiary)",
   },
   {
     slug: "finance-ai-assistant",
@@ -65,7 +65,7 @@ const HERO_MODEL_STAGES = [
     href: "/finance/finance-ai-assistant",
     previewImage: "/images/product-stage/finance-ai-assistant-preview.webp",
     previewAlt: "财务分析 AI 助手的对话、趋势、排名和瀑布桥图表预览",
-    accent: "#d97757",
+    accent: "var(--accent)",
   },
 ];
 

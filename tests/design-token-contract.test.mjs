@@ -109,3 +109,13 @@ test("site navigation shadows use shared design tokens", async () => {
   assert.match(rootSource, /--site-nav-menu-shadow:\s*0 18px 44px color-mix\(in srgb,\s*var\(--foreground\) 12%,\s*transparent\)/);
   assert.match(rootSource, /--site-nav-shell-shadow:\s*0 12px 32px color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*transparent\)/);
 });
+
+test("home hero model stage accents use site color tokens", async () => {
+  const heroModelStage = await readProjectFile("src/components/home/HeroModelStage.tsx");
+
+  assert.doesNotMatch(heroModelStage, /accent:\s*"#[0-9a-fA-F]{3,8}"/);
+  assert.match(heroModelStage, /accent:\s*"var\(--accent-secondary\)"/);
+  assert.match(heroModelStage, /accent:\s*"var\(--accent\)"/);
+  assert.match(heroModelStage, /accent:\s*"var\(--accent-tertiary\)"/);
+  assert.match(heroModelStage, /"--hero-stage-accent":\s*activeStage\.accent/);
+});
