@@ -360,3 +360,34 @@ test("finance AI empty state labels derive from shared site tokens", async () =>
   assert.match(emptyCardBlock, /box-shadow:\s*var\(--finance-ai-empty-card-shadow\)/);
   assert.match(emptyPreviewLabelBlock, /background:\s*var\(--finance-ai-empty-preview-label-bg\)/);
 });
+
+test("finance AI composer controls derive from shared site tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const composerBlock = readCssRule(globals, ".finance-ai-composer");
+  const statusBlock = readCssRule(globals, ".finance-ai-composer-status");
+  const sendButtonBlock = readCssRule(globals, ".finance-ai-composer button");
+  const scopedSource = [composerBlock, statusBlock, sendButtonBlock].join("\n").toLowerCase();
+
+  for (const literal of [
+    "rgba(255, 255, 255, 0.9)",
+    "rgba(20, 20, 19, 0.07)",
+    "#fff",
+  ]) {
+    assert.doesNotMatch(scopedSource, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(rootSource, /--finance-ai-composer-bg:\s*color-mix\(in srgb,\s*var\(--card\) 90%,\s*transparent\)/);
+  assert.match(rootSource, /--finance-ai-composer-shadow:\s*0 16px 38px color-mix\(in srgb,\s*var\(--foreground\) 7%,\s*transparent\)/);
+  assert.match(rootSource, /--finance-ai-composer-status-bg:\s*color-mix\(in srgb,\s*var\(--accent\) 10%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--finance-ai-composer-button-border:\s*color-mix\(in srgb,\s*var\(--accent\) 60%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--finance-ai-composer-button-bg:\s*color-mix\(in srgb,\s*var\(--accent\) 76%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--finance-ai-composer-button-text:\s*var\(--card\)/);
+  assert.match(composerBlock, /background:\s*var\(--finance-ai-composer-bg\)/);
+  assert.match(composerBlock, /box-shadow:\s*var\(--finance-ai-composer-shadow\)/);
+  assert.match(statusBlock, /background:\s*var\(--finance-ai-composer-status-bg\)/);
+  assert.match(sendButtonBlock, /border-color:\s*var\(--finance-ai-composer-button-border\)/);
+  assert.match(sendButtonBlock, /background:\s*var\(--finance-ai-composer-button-bg\)/);
+  assert.match(sendButtonBlock, /color:\s*var\(--finance-ai-composer-button-text\)/);
+});

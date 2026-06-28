@@ -2698,3 +2698,73 @@ Observed: console error count was 0 on desktop and mobile. Desktop rendered the 
 - [x] **Step 10: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10m`, noting that this closes the rendered finance AI empty preview label and the dormant backup empty-card style rule, while leaving error text, detail filters, composer controls, and other internal control colors for later passes.
+
+### Task 44: Tokenize Finance AI Composer Controls
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the formal finance AI assistant composer controls. This pass covers `.finance-ai-composer`, `.finance-ai-composer-status`, and `.finance-ai-composer button`. It does not attempt to migrate thinking chips, error/warning text, detail-table filters, message bubbles, chart palettes, or every remaining composer disabled/thinking surface.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a new `tests/design-token-contract.test.mjs` contract requiring the composer shell, desktop status pill, and send button to use `--finance-ai-composer-*` tokens. The contract rejects the old scoped `rgba(255, 255, 255, 0.9)`, `rgba(20, 20, 19, 0.07)`, and `#fff` literals.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the composer shell still used the old direct white rgba background and dark rgba shadow, while the status pill and send button still mixed against or rendered with direct `#fff`.
+
+- [x] **Step 4: Move composer controls to site tokens**
+
+Added `--finance-ai-composer-bg`, `--finance-ai-composer-shadow`, `--finance-ai-composer-status-bg`, `--finance-ai-composer-button-border`, `--finance-ai-composer-button-bg`, and `--finance-ai-composer-button-text` to `:root`. The tokens derive from `--card`, `--foreground`, and `--accent`. Updated the scoped composer/status/button rules to read those tokens while preserving sizing, layout, border radius, typography, and responsive behavior.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 15/15 tests.
+
+Run: `node --test tests/finance-ai-assistant-contract.test.mjs`
+
+Observed: PASS, 40/40 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warning remains unrelated.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 337/337 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 7: Verify finance AI composer rendering in a production browser**
+
+Started `npm run start -- --port 3054`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3054/finance/finance-ai-assistant` at `1440×900` and `390×844`, read the root composer tokens and computed styles for `.finance-ai-composer`, `.finance-ai-composer-status`, and `.finance-ai-composer button`, then closed the browser and server.
+
+Observed: console error count was 0 on desktop and mobile. Desktop rendered the composer, status pill, and send button with token-derived styles. Mobile rendered the composer and send button with token-derived styles; the status pill remained hidden by the existing responsive rule for `.finance-ai-composer.has-upload-status .finance-ai-composer-status`.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10n`, noting that this closes only the finance AI composer shell, desktop status pill, and send button token sub-item while leaving thinking chips, error text, detail filters, message bubbles, chart palettes, and other internal control colors for later passes.

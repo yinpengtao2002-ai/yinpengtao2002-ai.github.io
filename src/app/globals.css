@@ -51,6 +51,12 @@
   --finance-ai-avatar-mini-border: color-mix(in srgb, var(--card) 80%, transparent);
   --finance-ai-avatar-mini-bg: var(--card);
   --finance-ai-avatar-mini-shadow: 0 8px 18px color-mix(in srgb, var(--accent-secondary) 14%, transparent);
+  --finance-ai-composer-bg: color-mix(in srgb, var(--card) 90%, transparent);
+  --finance-ai-composer-shadow: 0 16px 38px color-mix(in srgb, var(--foreground) 7%, transparent);
+  --finance-ai-composer-status-bg: color-mix(in srgb, var(--accent) 10%, var(--card));
+  --finance-ai-composer-button-border: color-mix(in srgb, var(--accent) 60%, var(--card));
+  --finance-ai-composer-button-bg: color-mix(in srgb, var(--accent) 76%, var(--card));
+  --finance-ai-composer-button-text: var(--card);
   --font-poppins: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   --font-lora: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
   --font-hero-display: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
@@ -1314,8 +1320,8 @@ body {
   margin: 0 auto;
   border: 1px solid color-mix(in srgb, var(--border) 80%, var(--accent-secondary));
   border-radius: 26px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 16px 38px rgba(20, 20, 19, 0.07);
+  background: var(--finance-ai-composer-bg);
+  box-shadow: var(--finance-ai-composer-shadow);
   padding: 8px;
 }
 
@@ -1330,7 +1336,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: color-mix(in srgb, var(--accent) 10%, #fff);
+  background: var(--finance-ai-composer-status-bg);
   color: color-mix(in srgb, var(--accent) 84%, var(--foreground));
   font-size: 0.86rem;
   font-weight: 850;
@@ -1408,9 +1414,9 @@ body {
   justify-content: center;
   align-self: end;
   border-radius: 20px;
-  border-color: color-mix(in srgb, var(--accent) 60%, #fff);
-  background: color-mix(in srgb, var(--accent) 76%, #fff);
-  color: #fff;
+  border-color: var(--finance-ai-composer-button-border);
+  background: var(--finance-ai-composer-button-bg);
+  color: var(--finance-ai-composer-button-text);
 }
 
 .finance-ai-thinking {
