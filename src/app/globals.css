@@ -42,6 +42,12 @@
   --finance-ai-upload-chip-shadow: 0 10px 22px color-mix(in srgb, var(--accent) 20%, transparent);
   --finance-ai-upload-chip-text: var(--card);
   --finance-ai-template-button-bg: color-mix(in srgb, var(--card) 82%, transparent);
+  --finance-ai-avatar-border: color-mix(in srgb, var(--card) 82%, transparent);
+  --finance-ai-avatar-bg: var(--card);
+  --finance-ai-avatar-shadow: 0 12px 28px color-mix(in srgb, var(--accent-secondary) 14%, transparent);
+  --finance-ai-avatar-mini-border: color-mix(in srgb, var(--card) 80%, transparent);
+  --finance-ai-avatar-mini-bg: var(--card);
+  --finance-ai-avatar-mini-shadow: 0 8px 18px color-mix(in srgb, var(--accent-secondary) 14%, transparent);
   --font-poppins: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   --font-lora: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
   --font-hero-display: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
@@ -280,12 +286,12 @@ body {
   width: 58px;
   height: 58px;
   flex: 0 0 auto;
-  border: 1px solid rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--finance-ai-avatar-border);
   border-radius: 18px;
   display: block;
   overflow: hidden;
-  background: #fff;
-  box-shadow: 0 12px 28px rgba(54, 72, 92, 0.14);
+  background: var(--finance-ai-avatar-bg);
+  box-shadow: var(--finance-ai-avatar-shadow);
 }
 
 .finance-ai-avatar img,
@@ -300,13 +306,13 @@ body {
 .finance-ai-avatar-mini {
   width: 32px;
   height: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--finance-ai-avatar-mini-border);
   border-radius: 11px;
   display: inline-block;
   flex: 0 0 auto;
   overflow: hidden;
-  background: #fff;
-  box-shadow: 0 8px 18px rgba(54, 72, 92, 0.14);
+  background: var(--finance-ai-avatar-mini-bg);
+  box-shadow: var(--finance-ai-avatar-mini-shadow);
 }
 
 .finance-ai-header-copy {

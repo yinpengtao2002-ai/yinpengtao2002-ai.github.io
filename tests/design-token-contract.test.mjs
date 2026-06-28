@@ -304,3 +304,34 @@ test("finance AI upload action buttons derive from shared site tokens", async ()
   assert.match(uploadChipBlock, /color:\s*var\(--finance-ai-upload-chip-text\)/);
   assert.match(templateButtonBlock, /background:\s*var\(--finance-ai-template-button-bg\)/);
 });
+
+test("finance AI avatar surfaces derive from shared site tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const avatarBlock = readCssRule(globals, ".finance-ai-avatar");
+  const miniAvatarBlock = readCssRule(globals, ".finance-ai-avatar-mini");
+  const scopedSource = [avatarBlock, miniAvatarBlock].join("\n").toLowerCase();
+
+  for (const literal of [
+    "rgba(255, 255, 255, 0.82)",
+    "rgba(255, 255, 255, 0.8)",
+    "rgba(54, 72, 92, 0.14)",
+    "#fff",
+  ]) {
+    assert.doesNotMatch(scopedSource, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(rootSource, /--finance-ai-avatar-border:\s*color-mix\(in srgb,\s*var\(--card\) 82%,\s*transparent\)/);
+  assert.match(rootSource, /--finance-ai-avatar-bg:\s*var\(--card\)/);
+  assert.match(rootSource, /--finance-ai-avatar-shadow:\s*0 12px 28px color-mix\(in srgb,\s*var\(--accent-secondary\) 14%,\s*transparent\)/);
+  assert.match(rootSource, /--finance-ai-avatar-mini-border:\s*color-mix\(in srgb,\s*var\(--card\) 80%,\s*transparent\)/);
+  assert.match(rootSource, /--finance-ai-avatar-mini-bg:\s*var\(--card\)/);
+  assert.match(rootSource, /--finance-ai-avatar-mini-shadow:\s*0 8px 18px color-mix\(in srgb,\s*var\(--accent-secondary\) 14%,\s*transparent\)/);
+  assert.match(avatarBlock, /border:\s*1px solid var\(--finance-ai-avatar-border\)/);
+  assert.match(avatarBlock, /background:\s*var\(--finance-ai-avatar-bg\)/);
+  assert.match(avatarBlock, /box-shadow:\s*var\(--finance-ai-avatar-shadow\)/);
+  assert.match(miniAvatarBlock, /border:\s*1px solid var\(--finance-ai-avatar-mini-border\)/);
+  assert.match(miniAvatarBlock, /background:\s*var\(--finance-ai-avatar-mini-bg\)/);
+  assert.match(miniAvatarBlock, /box-shadow:\s*var\(--finance-ai-avatar-mini-shadow\)/);
+});

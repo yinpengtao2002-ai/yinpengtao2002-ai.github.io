@@ -2550,3 +2550,73 @@ Observed: console error count was 0 on desktop and mobile. The upload chip and t
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10k`, noting that this closes only the finance AI upload action button token sub-item and leaves avatars, error text, detail filters, and other internal control colors for later passes.
+
+### Task 42: Tokenize Finance AI Avatar Surfaces
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the formal finance AI assistant avatar surfaces. This pass covers `.finance-ai-avatar` and `.finance-ai-avatar-mini`. It does not attempt to migrate the empty-state card, error text, detail-table filters, chart palettes, or other finance AI internal control colors.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a new `tests/design-token-contract.test.mjs` contract requiring the avatar surfaces to use `--finance-ai-avatar-*` and `--finance-ai-avatar-mini-*` tokens. The contract rejects the old scoped `rgba(255, 255, 255, 0.82)`, `rgba(255, 255, 255, 0.8)`, `rgba(54, 72, 92, 0.14)`, and `#fff` literals.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.finance-ai-avatar` and `.finance-ai-avatar-mini` still used direct white rgba borders, `#fff` backgrounds, and a hardcoded blue-gray rgba shadow.
+
+- [x] **Step 4: Move avatar surfaces to site tokens**
+
+Added `--finance-ai-avatar-border`, `--finance-ai-avatar-bg`, `--finance-ai-avatar-shadow`, `--finance-ai-avatar-mini-border`, `--finance-ai-avatar-mini-bg`, and `--finance-ai-avatar-mini-shadow` to `:root`. The tokens derive from `--card` and `--accent-secondary`. Updated the two scoped CSS rules to read those tokens while preserving avatar dimensions, radii, display mode, overflow behavior, and image crop behavior.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 13/13 tests.
+
+Run: `node --test tests/finance-ai-assistant-contract.test.mjs`
+
+Observed: PASS, 40/40 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warning remains unrelated.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 335/335 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Existing Node `module.register()` deprecation warnings remain unrelated.
+
+- [x] **Step 7: Verify finance AI avatar rendering in a production browser**
+
+Started `npm run start -- --port 3051`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3051/finance/finance-ai-assistant` and `http://127.0.0.1:3051/finance/finance-ai-assistant/demo` at `1440×900` and `390×844`, read the root avatar tokens and computed styles for `.finance-ai-avatar` and `.finance-ai-avatar-mini`, then closed the browser and server.
+
+Observed: console error count was 0 on desktop and mobile. The large avatar and mini avatar were visible with nonzero dimensions; their border and shadow resolved from the new token-derived values.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10l`, noting that this closes only the finance AI avatar surface token sub-item and leaves empty-state card, error text, detail filters, and other internal control colors for later passes.
