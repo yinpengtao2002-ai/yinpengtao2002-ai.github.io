@@ -476,3 +476,14 @@ test("finance AI detail filter menu surfaces derive from shared site tokens", as
   assert.match(primaryButtonBlock, /color:\s*var\(--finance-ai-detail-filter-primary-button-text\)/);
   assert.match(listBlock, /background:\s*var\(--finance-ai-detail-filter-list-bg\)/);
 });
+
+test("finance AI detail filter checkmarks derive from shared site tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const checkmarkBlock = readCssRule(globals, ".finance-ai-detail-filter-checkmark");
+
+  assert.doesNotMatch(checkmarkBlock, /rgba\(255,\s*255,\s*255,\s*0\.76\)/);
+  assert.match(rootSource, /--finance-ai-detail-filter-checkmark-bg:\s*color-mix\(in srgb,\s*var\(--card\) 76%,\s*transparent\)/);
+  assert.match(checkmarkBlock, /background:\s*var\(--finance-ai-detail-filter-checkmark-bg\)/);
+});

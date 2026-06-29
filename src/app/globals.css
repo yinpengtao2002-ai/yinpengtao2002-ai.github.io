@@ -68,6 +68,7 @@
   --finance-ai-detail-filter-primary-button-bg: color-mix(in srgb, var(--accent) 74%, var(--card));
   --finance-ai-detail-filter-primary-button-text: var(--card);
   --finance-ai-detail-filter-list-bg: color-mix(in srgb, var(--finance-ai-page-surface) 76%, var(--card));
+  --finance-ai-detail-filter-checkmark-bg: color-mix(in srgb, var(--card) 76%, transparent);
   --font-poppins: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   --font-lora: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
   --font-hero-display: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
@@ -1163,7 +1164,7 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.76);
+  background: var(--finance-ai-detail-filter-checkmark-bg);
   color: var(--accent);
   flex: 0 0 auto;
   font-size: 0.7rem;

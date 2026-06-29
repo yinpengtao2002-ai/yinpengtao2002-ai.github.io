@@ -2978,3 +2978,73 @@ Observed: console error count was 0 on desktop and mobile. The mobile composer r
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10q`, noting that this closes only the finance AI detail filter menu surface and basic control background token sub-item while leaving checkmarks, table zebra rows, message bubbles, chart palettes, and other internal control colors for later passes.
+
+### Task 48: Tokenize Finance AI Detail Filter Checkmarks
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the formal finance AI assistant detail-filter checkbox checkmark. This pass covers only `.finance-ai-detail-filter-checkmark`. It does not attempt to migrate detail-table zebra rows, message bubbles, chart palettes, or every remaining finance AI internal control color.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a new `tests/design-token-contract.test.mjs` contract requiring `.finance-ai-detail-filter-checkmark` to use `--finance-ai-detail-filter-checkmark-bg`. The contract rejects the old scoped `rgba(255, 255, 255, 0.76)` background.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.finance-ai-detail-filter-checkmark` still used the direct white rgba background.
+
+- [x] **Step 4: Move detail filter checkmarks to site tokens**
+
+Added `--finance-ai-detail-filter-checkmark-bg` to `:root`, deriving from `--card`, and updated `.finance-ai-detail-filter-checkmark` to read that token while preserving its size, border, radius, alignment, accent check color, and typography.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 19/19 tests.
+
+Run: `node --test tests/finance-ai-assistant-contract.test.mjs`
+
+Observed: PASS, 40/40 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warning remains unrelated.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 341/341 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify finance AI detail-filter checkmark CSS in a production browser**
+
+Started `npm run start -- --port 3058`.
+
+Run: bundled Playwright CLI opened `http://127.0.0.1:3058/finance/finance-ai-assistant` at `1440×900` and `390×844`, checked console errors, read `--finance-ai-detail-filter-checkmark-bg`, and inspected the `.finance-ai-detail-filter-checkmark` CSS rule.
+
+Observed: console error count was 0 on desktop and mobile. The mobile composer remained visible and the page had no horizontal overflow. The `.finance-ai-detail-filter-checkmark` rule read `background: var(--finance-ai-detail-filter-checkmark-bg)`. This pass verifies the production CSS rule rather than forcing a provider-generated detail table.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10r`, noting that this closes only the finance AI detail-filter checkmark background token sub-item while leaving table zebra rows, message bubbles, chart palettes, and other internal control colors for later passes.
