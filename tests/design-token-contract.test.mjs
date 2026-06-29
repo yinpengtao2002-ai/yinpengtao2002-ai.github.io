@@ -487,3 +487,14 @@ test("finance AI detail filter checkmarks derive from shared site tokens", async
   assert.match(rootSource, /--finance-ai-detail-filter-checkmark-bg:\s*color-mix\(in srgb,\s*var\(--card\) 76%,\s*transparent\)/);
   assert.match(checkmarkBlock, /background:\s*var\(--finance-ai-detail-filter-checkmark-bg\)/);
 });
+
+test("finance AI detail table zebra rows derive from shared site tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const zebraBlock = readCssRule(globals, ".finance-ai-detail-table tbody tr:nth-child(even)");
+
+  assert.doesNotMatch(zebraBlock, /rgba\(255,\s*255,\s*255,\s*0\.58\)/);
+  assert.match(rootSource, /--finance-ai-detail-table-zebra-bg:\s*color-mix\(in srgb,\s*var\(--finance-ai-page-surface\) 76%,\s*var\(--card\)\)/);
+  assert.match(zebraBlock, /background:\s*var\(--finance-ai-detail-table-zebra-bg\)/);
+});

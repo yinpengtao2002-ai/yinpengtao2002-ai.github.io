@@ -3048,3 +3048,73 @@ Observed: console error count was 0 on desktop and mobile. The mobile composer r
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10r`, noting that this closes only the finance AI detail-filter checkmark background token sub-item while leaving table zebra rows, message bubbles, chart palettes, and other internal control colors for later passes.
+
+### Task 49: Tokenize Finance AI Detail Table Zebra Rows
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the formal finance AI assistant detail table zebra rows. This pass covers only `.finance-ai-detail-table tbody tr:nth-child(even)`. It does not attempt to migrate message bubbles, chart palettes, or every remaining finance AI internal control color.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a new `tests/design-token-contract.test.mjs` contract requiring the zebra row rule to use `--finance-ai-detail-table-zebra-bg`. The contract rejects the old scoped `rgba(255, 255, 255, 0.58)` background mix.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.finance-ai-detail-table tbody tr:nth-child(even)` still mixed in the direct white rgba background.
+
+- [x] **Step 4: Move detail table zebra rows to site tokens**
+
+Added `--finance-ai-detail-table-zebra-bg` to `:root`, deriving from `--finance-ai-page-surface` and `--card`, and updated the zebra row rule to read that token while preserving hover behavior, table spacing, borders, and typography.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 20/20 tests.
+
+Run: `node --test tests/finance-ai-assistant-contract.test.mjs`
+
+Observed: PASS, 40/40 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warning remains unrelated.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 342/342 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify finance AI detail-table zebra CSS in a production browser**
+
+Started `npm run start -- --port 3059`.
+
+Run: bundled Playwright CLI opened `http://127.0.0.1:3059/finance/finance-ai-assistant` at `1440×900` and `390×844`, checked console errors, read `--finance-ai-detail-table-zebra-bg`, and inspected the compiled detail-table zebra rule.
+
+Observed: console error count was 0 on desktop and mobile. The mobile composer remained visible and the page had no horizontal overflow. The compiled `.finance-ai-detail-table tbody tr:nth-child(2n)` rule read `background: var(--finance-ai-detail-table-zebra-bg)`.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10s`, noting that this closes only the finance AI detail-table zebra row background token sub-item while leaving message bubbles, chart palettes, and other internal control colors for later passes.

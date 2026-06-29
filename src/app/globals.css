@@ -69,6 +69,7 @@
   --finance-ai-detail-filter-primary-button-text: var(--card);
   --finance-ai-detail-filter-list-bg: color-mix(in srgb, var(--finance-ai-page-surface) 76%, var(--card));
   --finance-ai-detail-filter-checkmark-bg: color-mix(in srgb, var(--card) 76%, transparent);
+  --finance-ai-detail-table-zebra-bg: color-mix(in srgb, var(--finance-ai-page-surface) 76%, var(--card));
   --font-poppins: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   --font-lora: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
   --font-hero-display: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
@@ -1191,7 +1192,7 @@ body {
 }
 
 .finance-ai-detail-table tbody tr:nth-child(even) {
-  background: color-mix(in srgb, var(--finance-ai-page-surface) 76%, rgba(255, 255, 255, 0.58));
+  background: var(--finance-ai-detail-table-zebra-bg);
 }
 
 .finance-ai-detail-table tbody tr:hover {
