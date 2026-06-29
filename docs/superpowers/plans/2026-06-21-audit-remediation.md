@@ -3188,3 +3188,74 @@ Observed: console error count was 0 on desktop and mobile. The mobile user bubbl
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10t`, noting that this closes only the finance AI user message bubble background token sub-item while leaving chart palettes and other internal control colors for later passes.
+
+### Task 51: Tokenize Finance AI Empty Preview Waterfall Connector
+
+**Files:**
+- Modify: `src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx`
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the formal finance AI assistant empty-state preview waterfall connector line. This pass covers only the connector line inside `makeEmptyStatePreviewTrace`. It does not attempt to migrate all Plotly chart palettes or the formal answer chart colors.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a new `tests/design-token-contract.test.mjs` contract requiring the empty preview waterfall connector to use `--finance-ai-empty-preview-waterfall-connector-line`. The contract rejects the old direct `rgba(172, 158, 132, 0.62)` literal and requires the Plotly render path to resolve CSS tokens before rendering.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `FinanceAIAssistantTool.tsx` still passed the direct connector rgba color to Plotly.
+
+- [x] **Step 4: Move the empty preview waterfall connector to site tokens**
+
+Added `--finance-ai-empty-preview-waterfall-connector-line` to `:root`, deriving from `--muted`, and updated the empty preview waterfall connector to read that token. Added a small Plotly render-time resolver that converts CSS variable colors into browser-computed `rgb/rgba` strings before calling `Plotly.react`, avoiding fragile direct `var(...)` support assumptions inside Plotly traces.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 22/22 tests.
+
+Run: `node --test tests/finance-ai-assistant-contract.test.mjs`
+
+Observed: PASS, 40/40 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warning remains unrelated.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 344/344 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify finance AI empty preview waterfall connector in a production browser**
+
+Started `npm run start -- --port 3061`.
+
+Run: bundled Playwright CLI opened `http://127.0.0.1:3061/finance/finance-ai-assistant` at `1440×900` and `390×844`, checked console errors, inspected empty preview Plotly SVG strokes, and checked mobile width/overflow.
+
+Observed: desktop and mobile console error count was 0. Desktop rendered 3 empty preview cards and 9 Plotly SVGs; the waterfall connector strokes were resolved to `rgb(115, 113, 105)` with no unresolved `var(...)` or `color-mix(...)` values. Mobile kept the composer visible, preserved the existing `display:none` preview-list behavior, and had no horizontal overflow (`clientWidth=390`, `scrollWidth=390`).
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10u`, noting that this closes only the finance AI empty preview waterfall connector token sub-item while leaving formal result chart palettes and other internal control colors for later passes.

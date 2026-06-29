@@ -40,6 +40,7 @@
   --finance-ai-upload-dropzone-active-bg: radial-gradient(circle at 50% 8%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 34%), color-mix(in srgb, var(--accent) 8%, var(--card));
   --finance-ai-empty-preview-bg: linear-gradient(135deg, color-mix(in srgb, var(--card) 86%, transparent), color-mix(in srgb, var(--accent) 7%, var(--card))), color-mix(in srgb, var(--accent) 4%, var(--card));
   --finance-ai-empty-preview-label-bg: color-mix(in srgb, var(--accent) 10%, var(--card));
+  --finance-ai-empty-preview-waterfall-connector-line: color-mix(in srgb, var(--muted) 62%, transparent);
   --finance-ai-upload-chip-border: color-mix(in srgb, var(--accent) 72%, var(--card));
   --finance-ai-upload-chip-bg: linear-gradient(180deg, color-mix(in srgb, var(--accent) 82%, var(--card)), color-mix(in srgb, var(--accent) 92%, var(--foreground)));
   --finance-ai-upload-chip-shadow: 0 10px 22px color-mix(in srgb, var(--accent) 20%, transparent);

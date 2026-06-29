@@ -509,3 +509,16 @@ test("finance AI user message bubbles derive from shared site tokens", async () 
   assert.match(rootSource, /--finance-ai-user-message-bg:\s*color-mix\(in srgb,\s*var\(--accent\) 8%,\s*var\(--finance-ai-page-surface\)\)/);
   assert.match(userBubbleBlock, /background:\s*var\(--finance-ai-user-message-bg\)/);
 });
+
+test("finance AI empty preview waterfall connectors derive from shared site tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const tool = await readProjectFile("src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+
+  assert.doesNotMatch(tool, /rgba\(172,\s*158,\s*132,\s*0\.62\)/);
+  assert.match(tool, /EMPTY_STATE_PREVIEW_WATERFALL_CONNECTOR_LINE/);
+  assert.match(tool, /var\(--finance-ai-empty-preview-waterfall-connector-line\)/);
+  assert.match(tool, /resolveFinanceAIChartSpecTokens/);
+  assert.match(rootSource, /--finance-ai-empty-preview-waterfall-connector-line:\s*color-mix\(in srgb,\s*var\(--muted\) 62%,\s*transparent\)/);
+});

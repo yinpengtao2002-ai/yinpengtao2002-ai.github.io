@@ -124,6 +124,8 @@ const SAMPLE_TEMPLATE_README_ROWS = [
   ["口径识别", "上传后页面会根据 sheet 名自动生成“数据口径”维度，AI 可用它区分实际、预算、目标或预测。"],
 ];
 
+const EMPTY_STATE_PREVIEW_WATERFALL_CONNECTOR_LINE = "var(--finance-ai-empty-preview-waterfall-connector-line)";
+
 const EMPTY_STATE_PREVIEW_AXIS = {
   visible: false,
   showticklabels: false,
@@ -166,7 +168,7 @@ function makeEmptyStatePreviewTrace(trace: Record<string, unknown>): Record<stri
       cliponaxis: true,
       hoverinfo: "skip",
       hovertemplate: undefined,
-      connector: { line: { color: "rgba(172, 158, 132, 0.62)", width: 1.2 } },
+      connector: { line: { color: EMPTY_STATE_PREVIEW_WATERFALL_CONNECTOR_LINE, width: 1.2 } },
     };
   }
 
@@ -1487,6 +1489,95 @@ function FinanceAIChartGrid({
   );
 }
 
+const CSS_VARIABLE_COLOR_PATTERN = /^var\((--[a-z0-9-]+)\)$/i;
+
+function clampCssNumber(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function parseCssAlpha(value: string | undefined) {
+  if (!value) {
+    return 1;
+  }
+
+  const trimmed = value.trim();
+  if (trimmed.endsWith("%")) {
+    return clampCssNumber(Number(trimmed.slice(0, -1)) / 100, 0, 1);
+  }
+
+  return clampCssNumber(Number(trimmed), 0, 1);
+}
+
+function normalizeCssColorForPlotly(color: string) {
+  const trimmed = color.trim();
+  const srgbMatch = trimmed.match(/^color\(srgb\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)(?:\s*\/\s*([0-9.]+%?))?\)$/i);
+  if (srgbMatch) {
+    const [, red, green, blue, alpha] = srgbMatch;
+    const rgb = [red, green, blue].map((channel) => Math.round(clampCssNumber(Number(channel), 0, 1) * 255));
+    return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${parseCssAlpha(alpha)})`;
+  }
+
+  const modernRgbMatch = trimmed.match(/^rgb\(\s*([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)(?:\s*\/\s*([0-9.]+%?))?\s*\)$/i);
+  if (modernRgbMatch) {
+    const [, red, green, blue, alpha] = modernRgbMatch;
+    if (!alpha) {
+      return `rgb(${Math.round(Number(red))}, ${Math.round(Number(green))}, ${Math.round(Number(blue))})`;
+    }
+
+    return `rgba(${Math.round(Number(red))}, ${Math.round(Number(green))}, ${Math.round(Number(blue))}, ${parseCssAlpha(alpha)})`;
+  }
+
+  return trimmed;
+}
+
+function resolveCssVariableColorForPlotly(value: string) {
+  const match = value.match(CSS_VARIABLE_COLOR_PATTERN);
+  if (!match || typeof window === "undefined" || typeof document === "undefined" || !document.body) {
+    return value;
+  }
+
+  const probe = document.createElement("span");
+  probe.style.color = value;
+  probe.style.position = "absolute";
+  probe.style.pointerEvents = "none";
+  probe.style.opacity = "0";
+  document.body.appendChild(probe);
+  const resolvedColor = window.getComputedStyle(probe).color;
+  probe.remove();
+
+  return resolvedColor ? normalizeCssColorForPlotly(resolvedColor) : value;
+}
+
+function resolveFinanceAIChartSpecValue(value: unknown): unknown {
+  if (typeof value === "string") {
+    return resolveCssVariableColorForPlotly(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(resolveFinanceAIChartSpecValue);
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, entryValue]) => [
+        key,
+        resolveFinanceAIChartSpecValue(entryValue),
+      ]),
+    );
+  }
+
+  return value;
+}
+
+function resolveFinanceAIChartSpecTokens(spec: FinanceChartSpec): FinanceChartSpec {
+  return {
+    ...spec,
+    data: resolveFinanceAIChartSpecValue(spec.data) as FinanceChartSpec["data"],
+    layout: resolveFinanceAIChartSpecValue(spec.layout) as FinanceChartSpec["layout"],
+    config: resolveFinanceAIChartSpecValue(spec.config) as FinanceChartSpec["config"],
+  };
+}
+
 function PlotlyChart({ spec, className = "finance-ai-chart-host" }: { spec: FinanceChartSpec; className?: string }) {
   const nodeRef = useRef<HTMLDivElement | null>(null);
 
@@ -1501,7 +1592,8 @@ function PlotlyChart({ spec, className = "finance-ai-chart-host" }: { spec: Fina
         return;
       }
 
-      void Plotly.default.react(chartNode, spec.data, spec.layout, spec.config);
+      const resolvedSpec = resolveFinanceAIChartSpecTokens(spec);
+      void Plotly.default.react(chartNode, resolvedSpec.data, resolvedSpec.layout, resolvedSpec.config);
     }).catch(() => {
       if (chartNode) {
         chartNode.textContent = "图表渲染失败，请稍后重试。";
