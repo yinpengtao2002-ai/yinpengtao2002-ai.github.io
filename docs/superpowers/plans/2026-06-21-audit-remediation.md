@@ -3118,3 +3118,73 @@ Observed: console error count was 0 on desktop and mobile. The mobile composer r
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10s`, noting that this closes only the finance AI detail-table zebra row background token sub-item while leaving message bubbles, chart palettes, and other internal control colors for later passes.
+
+### Task 50: Tokenize Finance AI User Message Bubble
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the formal finance AI assistant user message bubble background. This pass covers only `.finance-ai-message.is-user .finance-ai-message-bubble`. Assistant message bubbles remain transparent content wrappers for text and chart cards. This pass does not attempt to migrate chart palettes or every remaining finance AI internal control color.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a new `tests/design-token-contract.test.mjs` contract requiring the user message bubble rule to use `--finance-ai-user-message-bg`. The contract rejects the old scoped `#eee8df` background.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.finance-ai-message.is-user .finance-ai-message-bubble` still used the direct `#eee8df` background.
+
+- [x] **Step 4: Move user message bubbles to site tokens**
+
+Added `--finance-ai-user-message-bg` to `:root`, deriving from `--accent` and `--finance-ai-page-surface`, and updated the user bubble rule to read that token while preserving width, border, radius, typography, and mobile gutter behavior.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 21/21 tests.
+
+Run: `node --test tests/finance-ai-assistant-contract.test.mjs`
+
+Observed: PASS, 40/40 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warning remains unrelated.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 343/343 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify finance AI user message bubble CSS in a production browser**
+
+Started `npm run start -- --port 3060`.
+
+Run: bundled Playwright CLI opened `http://127.0.0.1:3060/finance/finance-ai-assistant/demo/` at `1440×900` and `390×844`, checked console errors, read `--finance-ai-user-message-bg`, inspected the compiled user message bubble rule, and confirmed a real demo user bubble was visible.
+
+Observed: console error count was 0 on desktop and mobile. The mobile user bubble remained visible and the page had no horizontal overflow. The compiled `.finance-ai-message.is-user .finance-ai-message-bubble` rule read `background: var(--finance-ai-user-message-bg)`.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10t`, noting that this closes only the finance AI user message bubble background token sub-item while leaving chart palettes and other internal control colors for later passes.

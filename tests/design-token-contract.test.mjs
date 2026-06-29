@@ -498,3 +498,14 @@ test("finance AI detail table zebra rows derive from shared site tokens", async 
   assert.match(rootSource, /--finance-ai-detail-table-zebra-bg:\s*color-mix\(in srgb,\s*var\(--finance-ai-page-surface\) 76%,\s*var\(--card\)\)/);
   assert.match(zebraBlock, /background:\s*var\(--finance-ai-detail-table-zebra-bg\)/);
 });
+
+test("finance AI user message bubbles derive from shared site tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const userBubbleBlock = readCssRule(globals, ".finance-ai-message.is-user .finance-ai-message-bubble");
+
+  assert.doesNotMatch(userBubbleBlock.toLowerCase(), /#eee8df/);
+  assert.match(rootSource, /--finance-ai-user-message-bg:\s*color-mix\(in srgb,\s*var\(--accent\) 8%,\s*var\(--finance-ai-page-surface\)\)/);
+  assert.match(userBubbleBlock, /background:\s*var\(--finance-ai-user-message-bg\)/);
+});
