@@ -3959,3 +3959,82 @@ Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; the visual card was vi
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10ac`, noting that this closes only the homepage thinking visual-card shadow token sub-item and leaves image overlay, preview panel, count pill, and track card shadows for separate passes.
+
+### Task 62: Tokenize Home Thinking Count Pill Shadows
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `tests/home-experience-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the two visible count pill shadows in the homepage "工具与思考" section: `.home-thinking-preview-panel .home-thinking-count-pill` on the image card and `.home-thinking-track-head .home-thinking-count-pill` on the category cards. This pass does not migrate preview panel backgrounds, image overlay colors, track card hover shadows, or other homepage decorative colors.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the two count pill rules to read `--home-thinking-preview-count-pill-shadow` and `--home-thinking-track-count-pill-shadow` from `:root`, while rejecting the old direct `0 8px 18px rgba(20, 20, 19, 0.2)` and `0 6px 16px rgba(20, 20, 19, 0.055)` literals.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the two count pill rules still used the old hardcoded `rgba(20, 20, 19, ...)` shadows.
+
+- [x] **Step 4: Move count pill shadows to shared tokens**
+
+Added `--home-thinking-preview-count-pill-shadow` and `--home-thinking-track-count-pill-shadow` to `:root`, deriving both from `--foreground`, then updated the two count pill rules to use those variables.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 31/31 tests.
+
+- [x] **Step 6: Update adjacent visual contract**
+
+The first full `npm run test:site` attempt failed because `tests/home-experience-contract.test.mjs` still asserted the old literal image-card count pill shadow as part of its legibility contract. Root cause was an outdated test expectation, not a CSS behavior regression. Updated that contract to keep checking count pill background/color and require the new shadow tokens.
+
+Run: `node --test tests/home-experience-contract.test.mjs`
+
+Observed: PASS, 29/29 tests.
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 31/31 tests.
+
+- [x] **Step 7: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 354/354 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 8: Verify homepage browser behavior**
+
+Started `npm run start -- --port 3072`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3072/`, inspected `.home-thinking-preview-panel .home-thinking-count-pill` and `.home-thinking-track-head .home-thinking-count-pill` computed styles on desktop, then resized to `390x844` and repeated the layout check.
+
+Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; both count pills were visible at `62x24` and `58x24`, and their computed shadows resolved from `--home-thinking-preview-count-pill-shadow` and `--home-thinking-track-count-pill-shadow`. Mobile `clientWidth=390`, `scrollWidth=390`; both pills remained visible at the same stable dimensions, both shadows resolved from their tokens, and console error count was 0.
+
+- [x] **Step 9: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10ad`, noting that this closes only the homepage thinking count pill shadow token sub-item and leaves preview panel backgrounds, image overlay colors, track card hover shadows, and other homepage decorative colors for separate passes.

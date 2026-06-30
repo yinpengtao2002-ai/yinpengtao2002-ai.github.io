@@ -281,6 +281,22 @@ test("home thinking visual card shadow derives from a shared design token", asyn
   assert.match(visualCardBlock, /box-shadow:\s*var\(--home-thinking-visual-card-shadow\)/);
 });
 
+test("home thinking count pill shadows derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const previewPillBlock = readCssRule(globals, ".home-thinking-preview-panel .home-thinking-count-pill");
+  const trackPillBlock = readCssRule(globals, ".home-thinking-track-head .home-thinking-count-pill");
+  const scopedSource = [previewPillBlock, trackPillBlock].join("\n");
+
+  assert.doesNotMatch(scopedSource, /0 8px 18px rgba\(20,\s*20,\s*19,\s*0\.2\)/);
+  assert.doesNotMatch(scopedSource, /0 6px 16px rgba\(20,\s*20,\s*19,\s*0\.055\)/);
+  assert.match(rootSource, /--home-thinking-preview-count-pill-shadow:\s*0 8px 18px color-mix\(in srgb,\s*var\(--foreground\) 20%,\s*transparent\)/);
+  assert.match(rootSource, /--home-thinking-track-count-pill-shadow:\s*0 6px 16px color-mix\(in srgb,\s*var\(--foreground\) 5\.5%,\s*transparent\)/);
+  assert.match(previewPillBlock, /box-shadow:\s*var\(--home-thinking-preview-count-pill-shadow\)/);
+  assert.match(trackPillBlock, /box-shadow:\s*var\(--home-thinking-track-count-pill-shadow\)/);
+});
+
 test("chat assistant shell visuals use shared design tokens", async () => {
   const chatWidget = await readProjectFile("src/components/ChatWidget.tsx");
   const globals = await readProjectFile("src/app/globals.css");

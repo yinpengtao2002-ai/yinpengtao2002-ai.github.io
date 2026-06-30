@@ -27,6 +27,8 @@
   --home-mini-widget-accent-tertiary: color-mix(in srgb, var(--accent-tertiary) 82%, var(--card));
   --home-mini-widget-accent-warm: color-mix(in srgb, var(--accent) 45%, var(--accent-tertiary));
   --home-thinking-visual-card-shadow: 0 22px 58px color-mix(in srgb, var(--foreground) 8%, transparent);
+  --home-thinking-preview-count-pill-shadow: 0 8px 18px color-mix(in srgb, var(--foreground) 20%, transparent);
+  --home-thinking-track-count-pill-shadow: 0 6px 16px color-mix(in srgb, var(--foreground) 5.5%, transparent);
   --chat-mobile-backdrop-keyboard: color-mix(in srgb, var(--foreground) 22%, transparent);
   --chat-mobile-backdrop-fullscreen: color-mix(in srgb, var(--foreground) 12%, transparent);
   --chat-mobile-backdrop-sheet: color-mix(in srgb, var(--foreground) 18%, transparent);
@@ -3832,7 +3834,7 @@ h6 {
   border-color: rgba(255, 250, 240, 0.62);
   background: rgba(255, 250, 240, 0.92);
   color: color-mix(in srgb, var(--thinking-track-accent, #fffaf0) 70%, var(--foreground));
-  box-shadow: 0 8px 18px rgba(20, 20, 19, 0.2);
+  box-shadow: var(--home-thinking-preview-count-pill-shadow);
   padding: 0 10px;
 }
 
@@ -3843,7 +3845,7 @@ h6 {
   justify-content: center;
   background: color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 16%, var(--card));
   color: color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 82%, var(--foreground));
-  box-shadow: 0 6px 16px rgba(20, 20, 19, 0.055);
+  box-shadow: var(--home-thinking-track-count-pill-shadow);
 }
 
 .home-thinking-note {
