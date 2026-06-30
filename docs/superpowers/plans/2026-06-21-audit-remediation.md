@@ -3403,3 +3403,77 @@ Observed: removed temporary `output/`, `.playwright-cli/`, and `tsconfig.tsbuild
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10v`, noting that this closes only the finance AI error text color token sub-item while leaving formal result chart palettes and other internal control colors for later passes.
+
+### Task 54: Tokenize Finance AI Detail Table Header Background
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the formal finance AI assistant detail-table sticky header background. This pass covers only `.finance-ai-detail-table th`. It does not attempt to migrate formal result chart palettes or every remaining internal control color.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `.finance-ai-detail-table th` to use `--finance-ai-detail-table-header-bg`. The contract rejects the old direct `#ebe3d5` literal inside the header background mix.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.finance-ai-detail-table th` still mixed `#ebe3d5` into its background.
+
+- [x] **Step 4: Move detail table header background to site tokens**
+
+Added `--finance-ai-detail-table-header-bg` to `:root`, deriving from `--finance-ai-chart-surface` and `--border`. Updated `.finance-ai-detail-table th` to read the token while preserving sticky positioning, z-index, foreground color, and font weight.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 24/24 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `node --test tests/design-token-contract.test.mjs tests/finance-ai-assistant-contract.test.mjs`
+
+Observed: PASS, 65/65 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warning remains unrelated.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 347/347 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify the loaded production CSS rule in a browser**
+
+Started `npm run start -- --port 3064`.
+
+Run: bundled Playwright CLI opened `http://127.0.0.1:3064/finance/finance-ai-assistant` and inspected loaded stylesheet rules.
+
+Observed: loaded `.finance-ai-detail-table th` rule used `background: var(--finance-ai-detail-table-header-bg)`; the root token resolved from `--finance-ai-chart-surface` and `--border`. Console error count was 0 and desktop had no horizontal overflow (`clientWidth=1280`, `scrollWidth=1280`).
+
+Run: `npm run clean:artifacts`
+
+Observed: removed temporary `.playwright-cli/` and `tsconfig.tsbuildinfo` artifacts created during browser verification.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10w`, noting that this closes only the finance AI detail-table header background token sub-item while leaving formal result chart palettes and other internal control colors for later passes.
