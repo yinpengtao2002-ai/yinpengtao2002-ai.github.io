@@ -206,6 +206,17 @@ test("home hero model stage controls derive shadows from shared design tokens", 
   assert.match(stageTabActiveBlock, /box-shadow:\s*var\(--home-hero-stage-tab-active-shadow\)/);
 });
 
+test("home hero floating mini widgets derive shadows from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const miniWidgetBlock = readCssRule(globals, ".home-mini-widget");
+
+  assert.doesNotMatch(miniWidgetBlock, /0 16px 34px rgba\(20,\s*20,\s*19,\s*0\.07\)/);
+  assert.match(rootSource, /--home-mini-widget-shadow:\s*0 16px 34px color-mix\(in srgb,\s*var\(--foreground\) 7%,\s*transparent\)/);
+  assert.match(miniWidgetBlock, /box-shadow:\s*var\(--home-mini-widget-shadow\)/);
+});
+
 test("home thinking track accents use site color tokens", async () => {
   const homeThinkingSection = await readProjectFile("src/components/home/HomeThinkingSection.tsx");
 

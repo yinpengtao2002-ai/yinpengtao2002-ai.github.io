@@ -3761,3 +3761,69 @@ Observed: removed temporary `.playwright-cli/` and `tsconfig.tsbuildinfo` artifa
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10z`, noting that this closes only the homepage hero model-stage control shadow token sub-item.
+
+### Task 59: Tokenize Home Hero Floating Mini Widget Shadows
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the current homepage hero floating mini widgets. This pass covers only the shared `.home-mini-widget` shadow used by the two mini widgets rendered by `CapabilityHero`; it does not attempt to migrate their internal colored dots/bars or every remaining homepage decorative color.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `.home-mini-widget` to read `--home-mini-widget-shadow` from `:root`, while rejecting the old direct `0 16px 34px rgba(20, 20, 19, 0.07)` shadow.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.home-mini-widget` still used direct `rgba(20, 20, 19, 0.07)` in `box-shadow`.
+
+- [x] **Step 4: Move mini widget shadow to a site-derived token**
+
+Added `--home-mini-widget-shadow` to `:root`, deriving it from `--foreground`, then updated `.home-mini-widget` to read that token.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 28/28 tests.
+
+- [x] **Step 6: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10aa`, noting that this closes only the homepage hero floating mini widget shadow token sub-item.
+
+- [x] **Step 7: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 351/351 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 8: Verify homepage browser behavior**
+
+Started `npm run start -- --port 3069`.
+
+Run: bundled Playwright CLI opened `http://127.0.0.1:3069/`, inspected `.home-mini-widget` computed styles on desktop, then resized to `390x844` and repeated the inspection.
+
+Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; the two mini widgets rendered by `CapabilityHero` were visible and their computed shadows resolved from `--home-mini-widget-shadow`. Mobile `clientWidth=390`, `scrollWidth=390`; the two mini widgets remained hidden under existing responsive rules, their shadow still resolved from the token, and console error count was 0. Two non-blocking browser warnings appeared during resize.

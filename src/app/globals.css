@@ -21,6 +21,7 @@
   --home-hero-stage-float-shadow: 0 16px 34px color-mix(in srgb, var(--foreground) 8%, transparent);
   --home-hero-stage-tab-shadow: 0 12px 28px color-mix(in srgb, var(--foreground) 4.5%, transparent);
   --home-hero-stage-tab-active-shadow: 0 14px 34px color-mix(in srgb, var(--foreground) 7%, transparent);
+  --home-mini-widget-shadow: 0 16px 34px color-mix(in srgb, var(--foreground) 7%, transparent);
   --chat-mobile-backdrop-keyboard: color-mix(in srgb, var(--foreground) 22%, transparent);
   --chat-mobile-backdrop-fullscreen: color-mix(in srgb, var(--foreground) 12%, transparent);
   --chat-mobile-backdrop-sheet: color-mix(in srgb, var(--foreground) 18%, transparent);
@@ -3281,7 +3282,7 @@ h6 {
   border: 1px solid color-mix(in srgb, var(--card) 72%, transparent);
   border-radius: 8px;
   background: color-mix(in srgb, var(--card) 54%, transparent);
-  box-shadow: 0 16px 34px rgba(20, 20, 19, 0.07);
+  box-shadow: var(--home-mini-widget-shadow);
   opacity: var(--widget-opacity, 0.58);
   backdrop-filter: blur(14px);
   transform: translate3d(0, 0, 0) rotate(var(--widget-rotate, 0deg));
