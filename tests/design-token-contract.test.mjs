@@ -361,6 +361,17 @@ test("finance AI empty state labels derive from shared site tokens", async () =>
   assert.match(emptyPreviewLabelBlock, /background:\s*var\(--finance-ai-empty-preview-label-bg\)/);
 });
 
+test("finance AI error text derives from shared site tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const errorBlock = readCssRule(globals, ".finance-ai-error");
+
+  assert.doesNotMatch(errorBlock.toLowerCase(), /#a84232/);
+  assert.match(rootSource, /--finance-ai-error-text:\s*color-mix\(in srgb,\s*var\(--accent\) 72%,\s*var\(--foreground\)\)/);
+  assert.match(errorBlock, /color:\s*var\(--finance-ai-error-text\)/);
+});
+
 test("finance AI composer controls derive from shared site tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];

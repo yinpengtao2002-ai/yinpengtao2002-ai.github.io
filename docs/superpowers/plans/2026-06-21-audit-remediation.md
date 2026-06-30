@@ -3329,3 +3329,77 @@ Observed: removed temporary `output/`, `.playwright-cli/`, and `tsconfig.tsbuild
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `安全 P1-5b`, noting that this closes the formal finance AI assistant browser upload byte / row-count guard while preserving the public assistant and browser-session-only workbook behavior.
+
+### Task 53: Tokenize Finance AI Error Text
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the formal finance AI assistant error text color. This pass covers only `.finance-ai-error`, the visible upload / parsing error message used by cases such as oversized workbook uploads. It does not attempt to migrate formal result chart palettes or every remaining internal control color.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `.finance-ai-error` to use `--finance-ai-error-text`. The contract rejects the old direct `#a84232` literal.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.finance-ai-error` still set `color: #a84232`.
+
+- [x] **Step 4: Move error text to a site-derived token**
+
+Added `--finance-ai-error-text` to `:root`, deriving from `--accent` and `--foreground`. Updated `.finance-ai-error` to read that token while preserving spacing, typography, and the shared warning / note text styles.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 23/23 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `node --test tests/design-token-contract.test.mjs tests/finance-ai-assistant-contract.test.mjs`
+
+Observed: PASS, 64/64 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warning remains unrelated.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 346/346 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify the visible error path in a production browser**
+
+Started `npm run start -- --port 3063`.
+
+Run: bundled Playwright CLI opened `http://127.0.0.1:3063/finance/finance-ai-assistant`, uploaded a generated oversized CSV, and read the visible `.finance-ai-error` computed style.
+
+Observed: the page displayed `文件过大，请上传不超过 10MB 的经营明细。`; `.finance-ai-error` computed to a token-derived `color(srgb 0.634667 0.357961 0.26651)`, while root `--finance-ai-error-text` resolved from `--accent` and `--foreground`. Console error count was 0 and desktop had no horizontal overflow (`clientWidth=1280`, `scrollWidth=1280`).
+
+Run: `npm run clean:artifacts`
+
+Observed: removed temporary `output/`, `.playwright-cli/`, and `tsconfig.tsbuildinfo` artifacts created during browser verification.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10v`, noting that this closes only the finance AI error text color token sub-item while leaving formal result chart palettes and other internal control colors for later passes.
