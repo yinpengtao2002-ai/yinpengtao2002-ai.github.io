@@ -3621,3 +3621,73 @@ Observed: removed temporary `.playwright-cli/` and `tsconfig.tsbuildinfo` artifa
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10x`, noting that this closes only the homepage hero intro card shadow token sub-item.
+
+### Task 57: Tokenize Home Hero Model Stage Shadows
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to three adjacent homepage hero model-stage shadow rules: `.home-hero-stage-panel`, `.home-hero-stage-preview`, and `.home-hero-stage-skeleton-window`. This pass covers only those panel / preview / loading-window shadows, not every remaining homepage decorative shadow.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the three stage-shadow rules to read shared shadow tokens from `:root`, while rejecting the old direct `rgba(20, 20, 19, ...)` shadows inside those rules.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.home-hero-stage-panel`, `.home-hero-stage-preview`, and `.home-hero-stage-skeleton-window` still used direct `rgba(20, 20, 19, ...)` shadows.
+
+- [x] **Step 4: Move model-stage shadows to site-derived tokens**
+
+Added `--home-hero-stage-panel-shadow`, `--home-hero-stage-preview-shadow`, and `--home-hero-stage-skeleton-window-shadow` to `:root`, deriving each from `--foreground`, then updated the three homepage hero stage rules to read those tokens.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 26/26 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 349/349 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify homepage browser behavior**
+
+Started `npm run start -- --port 3067`.
+
+Run: bundled Playwright CLI opened `http://127.0.0.1:3067/`, inspected `.home-hero-stage-panel`, `.home-hero-stage-preview`, and `.home-hero-stage-skeleton-window`, then resized to `390x844` and repeated the inspection.
+
+Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; the stage panel, preview, and skeleton window were visible and their computed shadows resolved from `--home-hero-stage-panel-shadow`, `--home-hero-stage-preview-shadow`, and `--home-hero-stage-skeleton-window-shadow`. Mobile `clientWidth=390`, `scrollWidth=390`; the same three elements remained visible with token-derived shadows. Console error count was 0 on both desktop and mobile; two non-blocking browser warnings appeared during resize.
+
+Run: `npm run clean:artifacts`
+
+Observed: removed temporary `.playwright-cli/` and `tsconfig.tsbuildinfo` artifacts created during browser verification.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10y`, noting that this closes only the homepage hero model-stage shadow token sub-item.

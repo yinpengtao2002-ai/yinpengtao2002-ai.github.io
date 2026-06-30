@@ -155,6 +155,31 @@ test("home hero intro card shadows derive from shared design tokens", async () =
   assert.match(modelEntryBlock, /box-shadow:\s*var\(--home-model-library-entry-shadow\)/);
 });
 
+test("home hero model stage shadows derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const stagePanelBlock = readCssRule(globals, ".home-hero-stage-panel");
+  const stagePreviewBlock = readCssRule(globals, ".home-hero-stage-preview");
+  const skeletonWindowBlock = readCssRule(globals, ".home-hero-stage-skeleton-window");
+  const scopedSource = [stagePanelBlock, stagePreviewBlock, skeletonWindowBlock].join("\n");
+
+  for (const literal of [
+    "0 24px 64px rgba(20, 20, 19, 0.09)",
+    "0 20px 50px rgba(20, 20, 19, 0.08)",
+    "0 18px 42px rgba(20, 20, 19, 0.06)",
+  ]) {
+    assert.doesNotMatch(scopedSource, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(rootSource, /--home-hero-stage-panel-shadow:\s*0 24px 64px color-mix\(in srgb,\s*var\(--foreground\) 9%,\s*transparent\)/);
+  assert.match(rootSource, /--home-hero-stage-preview-shadow:\s*0 20px 50px color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*transparent\)/);
+  assert.match(rootSource, /--home-hero-stage-skeleton-window-shadow:\s*0 18px 42px color-mix\(in srgb,\s*var\(--foreground\) 6%,\s*transparent\)/);
+  assert.match(stagePanelBlock, /box-shadow:\s*var\(--home-hero-stage-panel-shadow\)/);
+  assert.match(stagePreviewBlock, /box-shadow:\s*var\(--home-hero-stage-preview-shadow\)/);
+  assert.match(skeletonWindowBlock, /box-shadow:\s*var\(--home-hero-stage-skeleton-window-shadow\)/);
+});
+
 test("home thinking track accents use site color tokens", async () => {
   const homeThinkingSection = await readProjectFile("src/components/home/HomeThinkingSection.tsx");
 
