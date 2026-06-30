@@ -947,10 +947,12 @@ test("finance AI assistant bounds browser workbook uploads before local parsing"
 test("finance AI assistant collapses non-chat chrome after data is loaded", async () => {
   const styles = await readProjectFile("src/app/globals.css");
 
-  assert.match(styles, /\.finance-ai-assistant-panel\.is-ready\s+\.finance-ai-chat-header\s*\{[\s\S]*padding:\s*6px\s+0\s+4px/s);
+  assert.match(styles, /--finance-ai-ready-header-action-clearance:\s*156px/);
+  assert.match(styles, /\.finance-ai-assistant-panel\.is-ready\s+\.finance-ai-chat-header\s*\{[\s\S]*padding:\s*6px\s+var\(--finance-ai-ready-header-action-clearance\)\s+4px\s+0/s);
   assert.match(styles, /\.finance-ai-assistant-panel\.is-ready\s+\.finance-ai-chat-header\s+\.finance-ai-avatar/s);
   assert.doesNotMatch(styles, /\.finance-ai-empty-state\.is-loaded/);
   assert.match(styles, /\.finance-ai-assistant-panel\.is-ready\s+\.finance-ai-chat\s*\{[\s\S]*padding-top:\s*10px/s);
+  assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*--finance-ai-ready-header-action-clearance:\s*116px/s);
 });
 
 test("finance AI assistant chat styles size embedded chart cards", async () => {

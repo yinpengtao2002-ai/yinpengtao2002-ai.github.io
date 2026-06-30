@@ -74,6 +74,7 @@
   --finance-ai-detail-table-zebra-bg: color-mix(in srgb, var(--finance-ai-page-surface) 76%, var(--card));
   --finance-ai-user-message-bg: color-mix(in srgb, var(--accent) 8%, var(--finance-ai-page-surface));
   --finance-ai-error-text: color-mix(in srgb, var(--accent) 72%, var(--foreground));
+  --finance-ai-ready-header-action-clearance: 156px;
   --font-poppins: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   --font-lora: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
   --font-hero-display: "Songti SC", STSong, "Noto Serif CJK SC", Georgia, serif;
@@ -300,7 +301,7 @@ body {
 .finance-ai-assistant-panel.is-ready .finance-ai-chat-header {
   min-height: 0;
   justify-content: flex-end;
-  padding: 6px 0 4px;
+  padding: 6px var(--finance-ai-ready-header-action-clearance) 4px 0;
 }
 
 .finance-ai-assistant-panel.is-ready .finance-ai-chat-header .finance-ai-avatar,
@@ -1495,6 +1496,7 @@ body {
   .finance-ai-page {
     --finance-ai-mobile-avatar-gutter: 41px;
     --finance-ai-mobile-assistant-right-gutter: 24px;
+    --finance-ai-ready-header-action-clearance: 116px;
     padding: 0;
   }
 

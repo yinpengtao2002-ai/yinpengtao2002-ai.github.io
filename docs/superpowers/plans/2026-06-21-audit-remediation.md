@@ -3477,3 +3477,77 @@ Observed: removed temporary `.playwright-cli/` and `tsconfig.tsbuildinfo` artifa
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10w`, noting that this closes only the finance AI detail-table header background token sub-item while leaving formal result chart palettes and other internal control colors for later passes.
+
+### Task 55: Keep Finance AI Loaded Actions Clear Of Fixed Back Button
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/finance-ai-assistant-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit follow-up**
+
+Scoped a browser-smoke regression found during formal finance AI upload verification: after data is loaded, the ready-state header action buttons (`清空当前数据`, `重置对话和数据`) can sit too close to the fixed shared `ToolBackButton`, allowing the fixed back button to intercept clicks at some desktop positions. This is a concrete interaction bug, not a broad token-governance sub-item.
+
+- [x] **Step 2: Add a failing contract**
+
+Updated `tests/finance-ai-assistant-contract.test.mjs` to require a `--finance-ai-ready-header-action-clearance` token, require ready-state header padding to use it, and require a mobile override under `@media (max-width: 760px)`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/finance-ai-assistant-contract.test.mjs`
+
+Observed: FAIL before implementation because `--finance-ai-ready-header-action-clearance` did not exist and the ready header still used `padding: 6px 0 4px`.
+
+- [x] **Step 4: Reserve right-side clearance for loaded header actions**
+
+Added `--finance-ai-ready-header-action-clearance: 156px` to `:root`, changed `.finance-ai-assistant-panel.is-ready .finance-ai-chat-header` to use that value as right padding, and added a mobile `.finance-ai-page` override of `116px`.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/finance-ai-assistant-contract.test.mjs`
+
+Observed: PASS, 41/41 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `node --test tests/finance-ai-assistant-contract.test.mjs tests/design-token-contract.test.mjs`
+
+Observed: PASS, 65/65 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warning remains unrelated.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 347/347 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify desktop and mobile browser behavior**
+
+Started `npm run start -- --port 3065`.
+
+Run: bundled Playwright CLI opened `http://127.0.0.1:3065/finance/finance-ai-assistant`, uploaded `output/playwright/finance-ai-small.csv`, measured fixed back button and ready header action button rectangles, clicked both desktop actions, resized to `390x844`, uploaded again, measured mobile rectangles, checked console errors, and clicked the mobile reset action.
+
+Observed: desktop back button was `left=1058 right=1200`, ready actions ended at `994` and `1044`, `overlap=false`, and `elementFromPoint` hit `清空当前数据` / `重置对话和数据` respectively. Desktop `clientWidth=1280` and `scrollWidth=1280`. The desktop clear and reset actions both triggered their own UI state changes without navigating back. Mobile back button was `left=286 right=326`, actions ended at `218` and `262`, `overlap=false`, ready header padding was `116px`, `clientWidth=390`, `scrollWidth=390`, console error count was 0, and mobile reset stayed on `/finance/finance-ai-assistant/`.
+
+Run: `npm run clean:artifacts`
+
+Observed: removed temporary `output/`, `.playwright-cli/`, and `tsconfig.tsbuildinfo` artifacts created during browser verification.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-11`, noting that this closes the formal finance AI loaded-state action/back-button overlap only. Full local verification and browser smoke are recorded above; deploy checks follow after commit and push.
