@@ -3827,3 +3827,69 @@ Started `npm run start -- --port 3069`.
 Run: bundled Playwright CLI opened `http://127.0.0.1:3069/`, inspected `.home-mini-widget` computed styles on desktop, then resized to `390x844` and repeated the inspection.
 
 Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; the two mini widgets rendered by `CapabilityHero` were visible and their computed shadows resolved from `--home-mini-widget-shadow`. Mobile `clientWidth=390`, `scrollWidth=390`; the two mini widgets remained hidden under existing responsive rules, their shadow still resolved from the token, and console error count was 0. Two non-blocking browser warnings appeared during resize.
+
+### Task 60: Tokenize Home Hero Floating Mini Widget Accents
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the visible accent colors inside the homepage hero floating mini widgets. This pass covers `.home-mini-widget-chrome span` and `.home-mini-widget-bars span`, which are rendered by `CapabilityHero`; it does not migrate the currently unrendered `.home-mini-widget-dots` / `.home-mini-widget-status` backup styles.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the mini widget chrome dots and bars to read `--home-mini-widget-accent-*` tokens from `:root`, while rejecting the old direct `#dc7f5f`, `#e8c66d`, `#7ebc9a`, `#d9785c`, `#6f9eb8`, and `#90a675` literals.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the scoped mini widget chrome dot and bar rules still used the six direct hex colors.
+
+- [x] **Step 4: Move mini widget accents to site-derived tokens**
+
+Added `--home-mini-widget-accent-primary`, `--home-mini-widget-accent-secondary`, `--home-mini-widget-accent-tertiary`, and `--home-mini-widget-accent-warm` to `:root`, deriving each from the site accent tokens, then updated the mini widget chrome dots and bars to read those tokens.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 29/29 tests.
+
+- [x] **Step 6: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10ab`, noting that this closes only the visible homepage hero floating mini widget accent-color sub-item.
+
+- [x] **Step 7: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 352/352 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 8: Verify homepage browser behavior**
+
+Started `npm run start -- --port 3070`.
+
+Run: bundled Playwright CLI opened `http://127.0.0.1:3070/`, inspected `.home-mini-widget-chrome span` and `.home-mini-widget-bars span` computed colors on desktop, then resized to `390x844` and repeated layout checks.
+
+Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; all three chrome dots and the visible bars resolved to browser-computed colors derived from `--home-mini-widget-accent-*`, with console error count 0. Mobile `clientWidth=390`, `scrollWidth=390`; the two mini widgets remained hidden under existing responsive rules and console error count was 0. Two non-blocking browser warnings appeared during resize.

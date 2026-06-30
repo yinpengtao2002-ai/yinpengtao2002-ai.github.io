@@ -22,6 +22,10 @@
   --home-hero-stage-tab-shadow: 0 12px 28px color-mix(in srgb, var(--foreground) 4.5%, transparent);
   --home-hero-stage-tab-active-shadow: 0 14px 34px color-mix(in srgb, var(--foreground) 7%, transparent);
   --home-mini-widget-shadow: 0 16px 34px color-mix(in srgb, var(--foreground) 7%, transparent);
+  --home-mini-widget-accent-primary: color-mix(in srgb, var(--accent) 84%, var(--card));
+  --home-mini-widget-accent-secondary: color-mix(in srgb, var(--accent-secondary) 82%, var(--foreground));
+  --home-mini-widget-accent-tertiary: color-mix(in srgb, var(--accent-tertiary) 82%, var(--card));
+  --home-mini-widget-accent-warm: color-mix(in srgb, var(--accent) 45%, var(--accent-tertiary));
   --chat-mobile-backdrop-keyboard: color-mix(in srgb, var(--foreground) 22%, transparent);
   --chat-mobile-backdrop-fullscreen: color-mix(in srgb, var(--foreground) 12%, transparent);
   --chat-mobile-backdrop-sheet: color-mix(in srgb, var(--foreground) 18%, transparent);
@@ -3312,15 +3316,15 @@ h6 {
   width: 6px;
   height: 6px;
   border-radius: 999px;
-  background: #dc7f5f;
+  background: var(--home-mini-widget-accent-primary);
 }
 
 .home-mini-widget-chrome span:nth-child(2) {
-  background: #e8c66d;
+  background: var(--home-mini-widget-accent-warm);
 }
 
 .home-mini-widget-chrome span:nth-child(3) {
-  background: #7ebc9a;
+  background: var(--home-mini-widget-accent-tertiary);
 }
 
 .home-mini-widget-lines {
@@ -3360,20 +3364,20 @@ h6 {
 .home-mini-widget-bars span {
   flex: 1;
   border-radius: 999px 999px 4px 4px;
-  background: #d9785c;
+  background: var(--home-mini-widget-accent-primary);
   transform-origin: bottom;
   animation: home-bar-breathe 4.4s ease-in-out infinite;
 }
 
 .home-mini-widget-bars span:nth-child(2) {
   height: 48%;
-  background: #6f9eb8;
+  background: var(--home-mini-widget-accent-secondary);
   animation-delay: -0.8s;
 }
 
 .home-mini-widget-bars span:nth-child(3) {
   height: 72%;
-  background: #90a675;
+  background: var(--home-mini-widget-accent-tertiary);
   animation-delay: -1.5s;
 }
 

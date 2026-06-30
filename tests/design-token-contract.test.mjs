@@ -217,6 +217,46 @@ test("home hero floating mini widgets derive shadows from shared design tokens",
   assert.match(miniWidgetBlock, /box-shadow:\s*var\(--home-mini-widget-shadow\)/);
 });
 
+test("home hero floating mini widget accents derive from shared site tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const chromeDotBlock = readCssRule(globals, ".home-mini-widget-chrome span");
+  const chromeDotSecondBlock = readCssRule(globals, ".home-mini-widget-chrome span:nth-child(2)");
+  const chromeDotThirdBlock = readCssRule(globals, ".home-mini-widget-chrome span:nth-child(3)");
+  const barBlock = readCssRule(globals, ".home-mini-widget-bars span");
+  const barSecondBlock = readCssRule(globals, ".home-mini-widget-bars span:nth-child(2)");
+  const barThirdBlock = readCssRule(globals, ".home-mini-widget-bars span:nth-child(3)");
+  const scopedSource = [
+    chromeDotBlock,
+    chromeDotSecondBlock,
+    chromeDotThirdBlock,
+    barBlock,
+    barSecondBlock,
+    barThirdBlock,
+  ].join("\n").toLowerCase();
+
+  for (const literal of ["#dc7f5f", "#e8c66d", "#7ebc9a", "#d9785c", "#6f9eb8", "#90a675"]) {
+    assert.doesNotMatch(scopedSource, new RegExp(literal));
+  }
+
+  for (const token of [
+    "--home-mini-widget-accent-primary",
+    "--home-mini-widget-accent-secondary",
+    "--home-mini-widget-accent-tertiary",
+    "--home-mini-widget-accent-warm",
+  ]) {
+    assert.match(rootSource, new RegExp(`${token}:\\s*color-mix\\(in srgb,\\s*var\\(--accent`), `${token} should derive from site accent tokens`);
+  }
+
+  assert.match(chromeDotBlock, /background:\s*var\(--home-mini-widget-accent-primary\)/);
+  assert.match(chromeDotSecondBlock, /background:\s*var\(--home-mini-widget-accent-warm\)/);
+  assert.match(chromeDotThirdBlock, /background:\s*var\(--home-mini-widget-accent-tertiary\)/);
+  assert.match(barBlock, /background:\s*var\(--home-mini-widget-accent-primary\)/);
+  assert.match(barSecondBlock, /background:\s*var\(--home-mini-widget-accent-secondary\)/);
+  assert.match(barThirdBlock, /background:\s*var\(--home-mini-widget-accent-tertiary\)/);
+});
+
 test("home thinking track accents use site color tokens", async () => {
   const homeThinkingSection = await readProjectFile("src/components/home/HomeThinkingSection.tsx");
 
