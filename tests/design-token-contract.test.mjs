@@ -134,6 +134,27 @@ test("home hero model stage accents use site color tokens", async () => {
   assert.match(heroModelStage, /"--hero-stage-accent":\s*activeStage\.accent/);
 });
 
+test("home hero intro card shadows derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const copyCardBlock = readCssRule(globals, ".home-hero-copy-card");
+  const modelEntryBlock = readCssRule(globals, ".home-model-library-entry");
+  const scopedSource = [copyCardBlock, modelEntryBlock].join("\n");
+
+  for (const literal of [
+    "0 14px 38px rgba(20, 20, 19, 0.055)",
+    "0 12px 30px rgba(20, 20, 19, 0.055)",
+  ]) {
+    assert.doesNotMatch(scopedSource, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(rootSource, /--home-hero-copy-card-shadow:\s*0 14px 38px color-mix\(in srgb,\s*var\(--foreground\) 5\.5%,\s*transparent\)/);
+  assert.match(rootSource, /--home-model-library-entry-shadow:\s*0 12px 30px color-mix\(in srgb,\s*var\(--foreground\) 5\.5%,\s*transparent\)/);
+  assert.match(copyCardBlock, /box-shadow:\s*var\(--home-hero-copy-card-shadow\)/);
+  assert.match(modelEntryBlock, /box-shadow:\s*var\(--home-model-library-entry-shadow\)/);
+});
+
 test("home thinking track accents use site color tokens", async () => {
   const homeThinkingSection = await readProjectFile("src/components/home/HomeThinkingSection.tsx");
 

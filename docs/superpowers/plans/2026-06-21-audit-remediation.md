@@ -3551,3 +3551,73 @@ Observed: removed temporary `output/`, `.playwright-cli/`, and `tsconfig.tsbuild
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-11`, noting that this closes the formal finance AI loaded-state action/back-button overlap only. Full local verification and browser smoke are recorded above; deploy checks follow after commit and push.
+
+### Task 56: Tokenize Home Hero Intro Card Shadows
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to two visible homepage hero cards: `.home-hero-copy-card` and `.home-model-library-entry`. This pass covers only their direct `rgba(20, 20, 19, 0.055)` shadows, not the rest of the homepage decorative shadows or color literals.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `.home-hero-copy-card` and `.home-model-library-entry` to read shared shadow tokens from `:root`, while rejecting the old direct `rgba(20, 20, 19, 0.055)` shadows inside those two rules.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.home-hero-copy-card` still used `0 14px 38px rgba(20, 20, 19, 0.055)` and `.home-model-library-entry` still used `0 12px 30px rgba(20, 20, 19, 0.055)`.
+
+- [x] **Step 4: Move hero intro shadows to site-derived tokens**
+
+Added `--home-hero-copy-card-shadow` and `--home-model-library-entry-shadow` to `:root`, deriving both from `--foreground`, then updated the two homepage hero rules to read those tokens.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 25/25 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 348/348 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify homepage browser behavior**
+
+Started `npm run start -- --port 3066`.
+
+Run: bundled Playwright CLI opened `http://127.0.0.1:3066/`, inspected `.home-hero-copy-card` and `.home-model-library-entry`, then resized to `390x844` and repeated the inspection.
+
+Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; both target cards were visible and their computed shadows resolved from `--home-hero-copy-card-shadow` / `--home-model-library-entry-shadow`. Mobile `clientWidth=390`, `scrollWidth=390`; both target cards remained visible with the same token-derived shadow values. Console error count was 0 on both desktop and mobile; two non-blocking browser warnings appeared during resize.
+
+Run: `npm run clean:artifacts`
+
+Observed: removed temporary `.playwright-cli/` and `tsconfig.tsbuildinfo` artifacts created during browser verification.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10x`, noting that this closes only the homepage hero intro card shadow token sub-item.
