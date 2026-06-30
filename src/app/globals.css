@@ -18,6 +18,9 @@
   --home-hero-stage-panel-shadow: 0 24px 64px color-mix(in srgb, var(--foreground) 9%, transparent);
   --home-hero-stage-preview-shadow: 0 20px 50px color-mix(in srgb, var(--foreground) 8%, transparent);
   --home-hero-stage-skeleton-window-shadow: 0 18px 42px color-mix(in srgb, var(--foreground) 6%, transparent);
+  --home-hero-stage-float-shadow: 0 16px 34px color-mix(in srgb, var(--foreground) 8%, transparent);
+  --home-hero-stage-tab-shadow: 0 12px 28px color-mix(in srgb, var(--foreground) 4.5%, transparent);
+  --home-hero-stage-tab-active-shadow: 0 14px 34px color-mix(in srgb, var(--foreground) 7%, transparent);
   --chat-mobile-backdrop-keyboard: color-mix(in srgb, var(--foreground) 22%, transparent);
   --chat-mobile-backdrop-fullscreen: color-mix(in srgb, var(--foreground) 12%, transparent);
   --chat-mobile-backdrop-sheet: color-mix(in srgb, var(--foreground) 18%, transparent);
@@ -2407,7 +2410,7 @@ h6 {
   border: 1px solid color-mix(in srgb, var(--hero-stage-accent) 26%, var(--border));
   border-radius: 8px;
   background: color-mix(in srgb, var(--card) 82%, transparent);
-  box-shadow: 0 16px 34px rgba(20, 20, 19, 0.08);
+  box-shadow: var(--home-hero-stage-float-shadow);
   color: color-mix(in srgb, var(--foreground) 72%, var(--muted));
   pointer-events: none;
 }
@@ -2469,7 +2472,7 @@ h6 {
   border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
   border-radius: 8px;
   background: color-mix(in srgb, var(--card) 82%, transparent);
-  box-shadow: 0 12px 28px rgba(20, 20, 19, 0.045);
+  box-shadow: var(--home-hero-stage-tab-shadow);
   color: var(--foreground);
   cursor: pointer;
   font-family: var(--font-poppins);
@@ -2516,7 +2519,7 @@ h6 {
 .home-hero-stage-tab:focus-visible,
 .home-hero-stage-tab.is-active {
   border-color: color-mix(in srgb, var(--hero-stage-accent) 36%, var(--border));
-  box-shadow: 0 14px 34px rgba(20, 20, 19, 0.07);
+  box-shadow: var(--home-hero-stage-tab-active-shadow);
   transform: translateY(-1px);
 }
 

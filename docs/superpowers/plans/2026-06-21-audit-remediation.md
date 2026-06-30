@@ -3691,3 +3691,73 @@ Observed: removed temporary `.playwright-cli/` and `tsconfig.tsbuildinfo` artifa
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10y`, noting that this closes only the homepage hero model-stage shadow token sub-item.
+
+### Task 58: Tokenize Home Hero Model Stage Control Shadows
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to homepage hero model-stage control shadows: `.home-hero-stage-float`, `.home-hero-stage-tab`, and the tab hover / focus / active rule. This pass covers only the floating metric/note cards and tab shadow states, not every remaining homepage decorative shadow.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the three model-stage control shadow rules to read shared shadow tokens from `:root`, while rejecting the old direct `rgba(20, 20, 19, ...)` shadows inside those rules.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.home-hero-stage-float`, `.home-hero-stage-tab`, and the tab hover / focus / active rule still used direct `rgba(20, 20, 19, ...)` shadows.
+
+- [x] **Step 4: Move model-stage control shadows to site-derived tokens**
+
+Added `--home-hero-stage-float-shadow`, `--home-hero-stage-tab-shadow`, and `--home-hero-stage-tab-active-shadow` to `:root`, deriving each from `--foreground`, then updated the three homepage hero stage control rules to read those tokens.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 27/27 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 350/350 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify homepage browser behavior**
+
+Started `npm run start -- --port 3068`.
+
+Run: bundled Playwright CLI opened `http://127.0.0.1:3068/`, inspected `.home-hero-stage-float`, all `.home-hero-stage-tab` buttons, and the active tab state, then resized to `390x844` and repeated the inspection.
+
+Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; the floating card was visible, active tab used the token-derived active shadow, and non-active tabs used the token-derived default shadow. Mobile `clientWidth=390`, `scrollWidth=390`; the floating card and all four tabs remained visible with token-derived shadows. Console error count was 0 on both desktop and mobile; two non-blocking browser warnings appeared during resize.
+
+Run: `npm run clean:artifacts`
+
+Observed: removed temporary `.playwright-cli/` and `tsconfig.tsbuildinfo` artifacts created during browser verification.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10z`, noting that this closes only the homepage hero model-stage control shadow token sub-item.

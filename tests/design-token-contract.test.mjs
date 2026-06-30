@@ -180,6 +180,32 @@ test("home hero model stage shadows derive from shared design tokens", async () 
   assert.match(skeletonWindowBlock, /box-shadow:\s*var\(--home-hero-stage-skeleton-window-shadow\)/);
 });
 
+test("home hero model stage controls derive shadows from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const stageFloatBlock = readCssRule(globals, ".home-hero-stage-float");
+  const stageTabBlock = readCssRule(globals, ".home-hero-stage-tab");
+  const stageTabActiveBlock = globals.match(/\.home-hero-stage-tab:hover,\n\.home-hero-stage-tab:focus-visible,\n\.home-hero-stage-tab\.is-active\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+  assert.ok(stageTabActiveBlock, "home hero stage active tab rule should exist");
+  const scopedSource = [stageFloatBlock, stageTabBlock, stageTabActiveBlock].join("\n");
+
+  for (const literal of [
+    "0 16px 34px rgba(20, 20, 19, 0.08)",
+    "0 12px 28px rgba(20, 20, 19, 0.045)",
+    "0 14px 34px rgba(20, 20, 19, 0.07)",
+  ]) {
+    assert.doesNotMatch(scopedSource, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(rootSource, /--home-hero-stage-float-shadow:\s*0 16px 34px color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*transparent\)/);
+  assert.match(rootSource, /--home-hero-stage-tab-shadow:\s*0 12px 28px color-mix\(in srgb,\s*var\(--foreground\) 4\.5%,\s*transparent\)/);
+  assert.match(rootSource, /--home-hero-stage-tab-active-shadow:\s*0 14px 34px color-mix\(in srgb,\s*var\(--foreground\) 7%,\s*transparent\)/);
+  assert.match(stageFloatBlock, /box-shadow:\s*var\(--home-hero-stage-float-shadow\)/);
+  assert.match(stageTabBlock, /box-shadow:\s*var\(--home-hero-stage-tab-shadow\)/);
+  assert.match(stageTabActiveBlock, /box-shadow:\s*var\(--home-hero-stage-tab-active-shadow\)/);
+});
+
 test("home thinking track accents use site color tokens", async () => {
   const homeThinkingSection = await readProjectFile("src/components/home/HomeThinkingSection.tsx");
 
