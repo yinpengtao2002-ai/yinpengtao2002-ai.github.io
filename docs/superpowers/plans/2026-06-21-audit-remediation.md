@@ -4038,3 +4038,69 @@ Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; both count pills were 
 - [x] **Step 9: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10ad`, noting that this closes only the homepage thinking count pill shadow token sub-item and leaves preview panel backgrounds, image overlay colors, track card hover shadows, and other homepage decorative colors for separate passes.
+
+### Task 63: Tokenize Home Thinking Track Card Active Shadow
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `.home-thinking-track-card:hover`, `.home-thinking-track-card:focus-visible`, and `.home-thinking-track-card.is-active` shadow in the homepage "工具与思考" category cards. This pass does not migrate the track card background, orbit glow, image overlay colors, or other homepage decorative colors.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the active track card rule to read `--home-thinking-track-card-active-shadow` from `:root`, while rejecting the old direct `0 16px 42px rgba(20, 20, 19, 0.07)` literal.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the active track card rule still used the hardcoded `rgba(20, 20, 19, 0.07)` shadow.
+
+- [x] **Step 4: Move the active track card shadow to a shared token**
+
+Added `--home-thinking-track-card-active-shadow` to `:root`, deriving it from `--foreground`, then updated the active track card rule to use `box-shadow: var(--home-thinking-track-card-active-shadow)`.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 32/32 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 355/355 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify homepage browser behavior**
+
+Started `npm run start -- --port 3073`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3073/`, hovered the first `.home-thinking-track-card` on desktop, inspected the computed shadow, then resized to `390x844` and checked the mobile stacked card layout.
+
+Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; the first track card was visible at `735x154`, and its computed hover shadow resolved from `--home-thinking-track-card-active-shadow`. Mobile `clientWidth=390`, `scrollWidth=390`; 3 track cards were present, the first card was visible at `358x96`, and console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10ae`, noting that this closes only the homepage thinking track card active shadow token sub-item and leaves track card backgrounds, orbit glow, image overlays, and other homepage decorative colors for separate passes.

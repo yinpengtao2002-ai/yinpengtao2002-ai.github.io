@@ -297,6 +297,18 @@ test("home thinking count pill shadows derive from shared design tokens", async 
   assert.match(trackPillBlock, /box-shadow:\s*var\(--home-thinking-track-count-pill-shadow\)/);
 });
 
+test("home thinking track card active shadow derives from a shared design token", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const activeCardBlock = globals.match(/\.home-thinking-track-card:hover,\n\.home-thinking-track-card:focus-visible,\n\.home-thinking-track-card\.is-active\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+  assert.ok(activeCardBlock, "home thinking active track card rule should exist");
+
+  assert.doesNotMatch(activeCardBlock, /0 16px 42px rgba\(20,\s*20,\s*19,\s*0\.07\)/);
+  assert.match(rootSource, /--home-thinking-track-card-active-shadow:\s*0 16px 42px color-mix\(in srgb,\s*var\(--foreground\) 7%,\s*transparent\)/);
+  assert.match(activeCardBlock, /box-shadow:\s*var\(--home-thinking-track-card-active-shadow\)/);
+});
+
 test("chat assistant shell visuals use shared design tokens", async () => {
   const chatWidget = await readProjectFile("src/components/ChatWidget.tsx");
   const globals = await readProjectFile("src/app/globals.css");

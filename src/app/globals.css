@@ -29,6 +29,7 @@
   --home-thinking-visual-card-shadow: 0 22px 58px color-mix(in srgb, var(--foreground) 8%, transparent);
   --home-thinking-preview-count-pill-shadow: 0 8px 18px color-mix(in srgb, var(--foreground) 20%, transparent);
   --home-thinking-track-count-pill-shadow: 0 6px 16px color-mix(in srgb, var(--foreground) 5.5%, transparent);
+  --home-thinking-track-card-active-shadow: 0 16px 42px color-mix(in srgb, var(--foreground) 7%, transparent);
   --chat-mobile-backdrop-keyboard: color-mix(in srgb, var(--foreground) 22%, transparent);
   --chat-mobile-backdrop-fullscreen: color-mix(in srgb, var(--foreground) 12%, transparent);
   --chat-mobile-backdrop-sheet: color-mix(in srgb, var(--foreground) 18%, transparent);
@@ -3970,7 +3971,7 @@ h6 {
 .home-thinking-track-card:focus-visible,
 .home-thinking-track-card.is-active {
   border-color: color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 42%, var(--border));
-  box-shadow: 0 16px 42px rgba(20, 20, 19, 0.07);
+  box-shadow: var(--home-thinking-track-card-active-shadow);
   transform: translateY(-3px);
 }
 
