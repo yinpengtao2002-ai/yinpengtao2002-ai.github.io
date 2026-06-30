@@ -26,6 +26,7 @@
   --home-mini-widget-accent-secondary: color-mix(in srgb, var(--accent-secondary) 82%, var(--foreground));
   --home-mini-widget-accent-tertiary: color-mix(in srgb, var(--accent-tertiary) 82%, var(--card));
   --home-mini-widget-accent-warm: color-mix(in srgb, var(--accent) 45%, var(--accent-tertiary));
+  --home-thinking-visual-card-shadow: 0 22px 58px color-mix(in srgb, var(--foreground) 8%, transparent);
   --chat-mobile-backdrop-keyboard: color-mix(in srgb, var(--foreground) 22%, transparent);
   --chat-mobile-backdrop-fullscreen: color-mix(in srgb, var(--foreground) 12%, transparent);
   --chat-mobile-backdrop-sheet: color-mix(in srgb, var(--foreground) 18%, transparent);
@@ -3613,7 +3614,7 @@ h6 {
   position: relative;
   min-height: clamp(390px, 54vh, 540px);
   overflow: hidden;
-  box-shadow: 0 22px 58px rgba(20, 20, 19, 0.08);
+  box-shadow: var(--home-thinking-visual-card-shadow);
 }
 
 .home-thinking-visual-image {

@@ -270,6 +270,17 @@ test("home thinking track accents use site color tokens", async () => {
   assert.match(homeThinkingSection, /soft:\s*"color-mix\(in srgb,\s*var\(--accent-tertiary\)\s+14%,\s*transparent\)"/);
 });
 
+test("home thinking visual card shadow derives from a shared design token", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const visualCardBlock = readCssRule(globals, ".home-thinking-visual-card");
+
+  assert.doesNotMatch(visualCardBlock, /0 22px 58px rgba\(20,\s*20,\s*19,\s*0\.08\)/);
+  assert.match(rootSource, /--home-thinking-visual-card-shadow:\s*0 22px 58px color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*transparent\)/);
+  assert.match(visualCardBlock, /box-shadow:\s*var\(--home-thinking-visual-card-shadow\)/);
+});
+
 test("chat assistant shell visuals use shared design tokens", async () => {
   const chatWidget = await readProjectFile("src/components/ChatWidget.tsx");
   const globals = await readProjectFile("src/app/globals.css");
