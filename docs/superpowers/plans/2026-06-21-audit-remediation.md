@@ -3259,3 +3259,73 @@ Observed: desktop and mobile console error count was 0. Desktop rendered 3 empty
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10u`, noting that this closes only the finance AI empty preview waterfall connector token sub-item while leaving formal result chart palettes and other internal control colors for later passes.
+
+### Task 52: Limit Finance AI Browser Workbook Uploads
+
+**Files:**
+- Modify: `src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx`
+- Modify: `tests/finance-ai-assistant-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 workbook-size hardening item to the formal finance AI assistant browser upload path. The server-side legacy direct workbook API modes were already closed in `安全 P1-5`; this pass covers the remaining local parsing risk where an oversized CSV/XLS/XLSX could be read and expanded in the browser before the page rejects it.
+
+- [x] **Step 2: Add a failing upload-bound contract**
+
+Added a `tests/finance-ai-assistant-contract.test.mjs` contract requiring `FinanceAIAssistantTool.parseFile` to define `FINANCE_AI_UPLOAD_MAX_BYTES` and `FINANCE_AI_UPLOAD_MAX_ROWS`, reject oversized files before `file.text()` / `file.arrayBuffer()`, and reject oversized workbooks before `buildFinanceAnalysisRowsFromWorkbook`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/finance-ai-assistant-contract.test.mjs`
+
+Observed: FAIL before implementation because the client had no upload byte cap or workbook row cap. The existing 40 finance AI tests still passed. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warning remains unrelated.
+
+- [x] **Step 4: Add browser-side upload caps**
+
+Added a 10MB file-size cap and a 20,000-row workbook cap to `FinanceAIAssistantTool.tsx`. `parseFile` now rejects files over 10MB before reading content, and rejects normalized workbooks over 20,000 rows before generating preview / analysis rows. User-facing errors are Chinese and ask the user to upload a smaller or pre-filtered operating-detail file.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/finance-ai-assistant-contract.test.mjs`
+
+Observed: PASS, 41/41 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warning remains unrelated.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 345/345 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify browser upload behavior**
+
+Started `npm run start -- --port 3062`.
+
+Run: bundled Playwright CLI opened `http://127.0.0.1:3062/finance/finance-ai-assistant` at desktop width, uploaded a small CSV, reloaded, uploaded a generated 10.5MB CSV, then resized to `390×844` for mobile smoke.
+
+Observed: the small CSV loaded the page into the chat-ready state with the workbook session active. The oversized CSV was rejected in-place with `文件过大，请上传不超过 10MB 的经营明细。` before the page left the upload state. Desktop and mobile console error counts were 0. Mobile reported `clientWidth=390` and `scrollWidth=390`, with the upload workbench and composer still present. During the small-upload desktop smoke, the existing fixed back button could intercept the loaded-state reset icon at one scroll position; that was noted as a separate UI overlap, not part of this security upload-bound fix.
+
+Run: `npm run clean:artifacts`
+
+Observed: removed temporary `output/`, `.playwright-cli/`, and `tsconfig.tsbuildinfo` artifacts created during browser verification.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `安全 P1-5b`, noting that this closes the formal finance AI assistant browser upload byte / row-count guard while preserving the public assistant and browser-session-only workbook behavior.

@@ -110,6 +110,8 @@ type PlotlyModule = {
 
 const ASSISTANT_AVATAR_IMAGE = "/images/product-stage/finance-ai-assistant-avatar.webp";
 const FINANCE_AI_QUESTION_INPUT_MAX_HEIGHT = 128;
+const FINANCE_AI_UPLOAD_MAX_BYTES = 10 * 1024 * 1024;
+const FINANCE_AI_UPLOAD_MAX_ROWS = 20_000;
 const { OPERATING_DETAIL_HEADERS, getBudgetOperatingDetailTemplateRows } = financeTemplates;
 const SAMPLE_TEMPLATE_HEADERS = OPERATING_DETAIL_HEADERS;
 const SAMPLE_TEMPLATE_ROWS = getBudgetOperatingDetailTemplateRows(24);
@@ -298,7 +300,15 @@ function buildRawWorkbookSheet(name: string, sheet: XLSX.WorkSheet): FinanceRawW
   return buildFinanceRawWorkbookSheetFromRows(name, rows);
 }
 
+function formatFinanceAIUploadSize(bytes: number) {
+  return `${Math.round(bytes / 1024 / 1024)}MB`;
+}
+
 async function parseFile(file: File): Promise<ParsedWorkbook> {
+  if (file.size > FINANCE_AI_UPLOAD_MAX_BYTES) {
+    throw new Error(`文件过大，请上传不超过 ${formatFinanceAIUploadSize(FINANCE_AI_UPLOAD_MAX_BYTES)} 的经营明细。`);
+  }
+
   const name = file.name.toLowerCase();
   const xlsxWorkbook = name.endsWith(".csv")
     ? XLSX.read(await file.text(), { type: "string", cellDates: true })
@@ -317,6 +327,10 @@ async function parseFile(file: File): Promise<ParsedWorkbook> {
     sheets,
     totalRowCount: sheets.reduce((sum, sheet) => sum + sheet.rowCount, 0),
   };
+
+  if (workbook.totalRowCount > FINANCE_AI_UPLOAD_MAX_ROWS) {
+    throw new Error(`行数过多，请先筛选到 ${FINANCE_AI_UPLOAD_MAX_ROWS.toLocaleString("zh-CN")} 行以内再上传。`);
+  }
 
   return {
     workbook,

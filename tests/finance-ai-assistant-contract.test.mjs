@@ -925,6 +925,25 @@ test("finance AI assistant page is an independent chat workbench", async () => {
   assert.doesNotMatch(client, /IndexedDB/);
 });
 
+test("finance AI assistant bounds browser workbook uploads before local parsing", async () => {
+  const client = await readProjectFile("src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
+  const parseStart = client.indexOf("async function parseFile(file: File)");
+  const fileTextRead = client.indexOf("file.text()", parseStart);
+  const fileBufferRead = client.indexOf("file.arrayBuffer()", parseStart);
+  const firstFileRead = Math.min(fileTextRead, fileBufferRead);
+  const sizeCheck = client.indexOf("file.size > FINANCE_AI_UPLOAD_MAX_BYTES", parseStart);
+  const rowCountBuild = client.indexOf("totalRowCount: sheets.reduce", parseStart);
+  const rowCountCheck = client.indexOf("workbook.totalRowCount > FINANCE_AI_UPLOAD_MAX_ROWS", parseStart);
+  const previewBuild = client.indexOf("buildFinanceAnalysisRowsFromWorkbook(workbook)", parseStart);
+
+  assert.match(client, /const FINANCE_AI_UPLOAD_MAX_BYTES = 10 \* 1024 \* 1024;/);
+  assert.match(client, /const FINANCE_AI_UPLOAD_MAX_ROWS = 20_000;/);
+  assert.ok(sizeCheck > parseStart && sizeCheck < firstFileRead, "file size must be checked before reading file content");
+  assert.match(client.slice(sizeCheck, firstFileRead), /文件过大/);
+  assert.ok(rowCountCheck > rowCountBuild && rowCountCheck < previewBuild, "row count must be checked before preview row generation");
+  assert.match(client.slice(rowCountCheck, previewBuild), /行数过多/);
+});
+
 test("finance AI assistant collapses non-chat chrome after data is loaded", async () => {
   const styles = await readProjectFile("src/app/globals.css");
 
