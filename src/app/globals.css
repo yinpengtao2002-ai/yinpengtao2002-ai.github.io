@@ -76,6 +76,10 @@
   --study-cards-speak-button-hover-border: color-mix(in srgb, var(--accent-secondary) 52%, var(--border));
   --study-cards-speak-button-hover-bg: color-mix(in srgb, var(--accent-secondary) 14%, var(--card));
   --study-cards-speak-button-hover-text: var(--foreground);
+  --study-cards-recall-hint-border: color-mix(in srgb, var(--accent) 18%, var(--border));
+  --study-cards-recall-hint-bg: color-mix(in srgb, var(--accent) 7%, var(--card));
+  --study-cards-recall-hint-text: color-mix(in srgb, var(--foreground) 62%, var(--muted));
+  --study-cards-recall-hint-label-text: color-mix(in srgb, var(--accent) 84%, var(--foreground));
   --study-cards-bingo-action-button-border: color-mix(in srgb, var(--border) 78%, transparent);
   --study-cards-bingo-action-button-bg: color-mix(in srgb, var(--card) 92%, var(--background));
   --study-cards-bingo-action-button-text: color-mix(in srgb, var(--foreground) 74%, var(--muted));
@@ -5305,10 +5309,10 @@ h6 {
   align-items: flex-start;
   gap: 8px;
   margin: 0;
-  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
+  border: 1px solid var(--study-cards-recall-hint-border);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--accent) 7%, var(--card));
-  color: color-mix(in srgb, var(--foreground) 62%, var(--muted));
+  background: var(--study-cards-recall-hint-bg);
+  color: var(--study-cards-recall-hint-text);
   max-height: calc((var(--study-card-note-size) * var(--study-card-note-leading) * var(--study-card-note-lines)) + 22px);
   overflow: hidden;
   font-size: var(--study-card-note-size);
@@ -5319,7 +5323,7 @@ h6 {
 
 .study-cards-recall-hint span {
   flex: 0 0 auto;
-  color: color-mix(in srgb, var(--accent) 84%, var(--foreground));
+  color: var(--study-cards-recall-hint-label-text);
   font-weight: 900;
 }
 

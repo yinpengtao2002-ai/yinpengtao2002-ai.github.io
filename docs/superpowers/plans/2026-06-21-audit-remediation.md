@@ -5278,3 +5278,69 @@ Observed: progress text showed `正在判断输入类型8%`; CSSOM reported `.st
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10aw`, noting that this closes only the Study Cards loading progress color token sub-item while leaving hint cards and other Study Cards local colors for later passes.
+
+### Task 82: Tokenize Study Cards Recall Hint Colors
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/tools/study-cards` recall-check hint card: `.study-cards-recall-hint` and `.study-cards-recall-hint span`. This pass covers only the recall hint border, background, body text, and label text colors; answer-panel backgrounds and other Study Cards local colors remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the recall hint UI to read `--study-cards-recall-hint-*` tokens from `:root`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the recall hint color tokens did not exist and `.study-cards-recall-hint` / span still wrote border, background, and text colors directly.
+
+- [x] **Step 4: Move recall hint colors to shared tokens**
+
+Added `--study-cards-recall-hint-border`, `--study-cards-recall-hint-bg`, `--study-cards-recall-hint-text`, and `--study-cards-recall-hint-label-text` to `:root`, deriving them from the site accent/border/card/foreground/muted tokens. Updated the recall hint base rule and label span to use those tokens while preserving spacing, sizing, max-height, and typography.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 51/51 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 375/375 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards recall hint in browser**
+
+Started `npm run start -- --port 3092`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3092/tools/study-cards` at `390x844`, clicked `示例内容`, advanced through the first learning pass into `回忆检查`, and inspected `.study-cards-recall-hint` plus `.study-cards-recall-hint span` from the page CSSOM.
+
+Observed: the visible hint text was `音标/juːˈbɪkwɪtəs/`; CSSOM reported `.study-cards-recall-hint` reading `var(--study-cards-recall-hint-border)`, `var(--study-cards-recall-hint-bg)`, and `var(--study-cards-recall-hint-text)`, while the span label read `var(--study-cards-recall-hint-label-text)`. Mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10ax`, noting that this closes only the Study Cards recall-check hint color token sub-item while leaving answer-panel backgrounds and other Study Cards local colors for later passes.

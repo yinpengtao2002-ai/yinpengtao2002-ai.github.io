@@ -650,6 +650,23 @@ test("study cards pronunciation button colors derive from shared design tokens",
   assert.match(speakButtonHoverBlock, /color:\s*var\(--study-cards-speak-button-hover-text\)/);
 });
 
+test("study cards recall hint colors derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const recallHintBlock = readCssRule(globals, ".study-cards-recall-hint");
+  const recallHintLabelBlock = readCssRule(globals, ".study-cards-recall-hint span");
+
+  assert.match(rootSource, /--study-cards-recall-hint-border:\s*color-mix\(in srgb,\s*var\(--accent\) 18%,\s*var\(--border\)\)/);
+  assert.match(rootSource, /--study-cards-recall-hint-bg:\s*color-mix\(in srgb,\s*var\(--accent\) 7%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--study-cards-recall-hint-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 62%,\s*var\(--muted\)\)/);
+  assert.match(rootSource, /--study-cards-recall-hint-label-text:\s*color-mix\(in srgb,\s*var\(--accent\) 84%,\s*var\(--foreground\)\)/);
+  assert.match(recallHintBlock, /border:\s*1px solid var\(--study-cards-recall-hint-border\)/);
+  assert.match(recallHintBlock, /background:\s*var\(--study-cards-recall-hint-bg\)/);
+  assert.match(recallHintBlock, /color:\s*var\(--study-cards-recall-hint-text\)/);
+  assert.match(recallHintLabelBlock, /color:\s*var\(--study-cards-recall-hint-label-text\)/);
+});
+
 test("study cards completion action button colors derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
