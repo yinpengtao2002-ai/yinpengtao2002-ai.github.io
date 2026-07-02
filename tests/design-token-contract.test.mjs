@@ -513,6 +513,27 @@ test("study cards input action button colors derive from shared design tokens", 
   assert.match(primaryButtonBlock, /color:\s*var\(--study-cards-primary-action-text\)/);
 });
 
+test("study cards result action button colors derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const resultActionButtonBlock = readCssRule(globals, ".study-cards-result-actions button");
+  const resultActionButtonHoverBlock = readCssRule(globals, ".study-cards-result-actions button:hover");
+
+  assert.match(rootSource, /--study-cards-result-action-button-border:\s*color-mix\(in srgb,\s*var\(--border\) 82%,\s*transparent\)/);
+  assert.match(rootSource, /--study-cards-result-action-button-bg:\s*color-mix\(in srgb,\s*var\(--card\) 90%,\s*var\(--background\)\)/);
+  assert.match(rootSource, /--study-cards-result-action-button-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 68%,\s*var\(--muted\)\)/);
+  assert.match(rootSource, /--study-cards-result-action-button-hover-border:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 36%,\s*var\(--border\)\)/);
+  assert.match(rootSource, /--study-cards-result-action-button-hover-bg:\s*var\(--card\)/);
+  assert.match(rootSource, /--study-cards-result-action-button-hover-text:\s*var\(--foreground\)/);
+  assert.match(resultActionButtonBlock, /border:\s*1px solid var\(--study-cards-result-action-button-border\)/);
+  assert.match(resultActionButtonBlock, /background:\s*var\(--study-cards-result-action-button-bg\)/);
+  assert.match(resultActionButtonBlock, /color:\s*var\(--study-cards-result-action-button-text\)/);
+  assert.match(resultActionButtonHoverBlock, /border-color:\s*var\(--study-cards-result-action-button-hover-border\)/);
+  assert.match(resultActionButtonHoverBlock, /background:\s*var\(--study-cards-result-action-button-hover-bg\)/);
+  assert.match(resultActionButtonHoverBlock, /color:\s*var\(--study-cards-result-action-button-hover-text\)/);
+});
+
 test("chat assistant shell visuals use shared design tokens", async () => {
   const chatWidget = await readProjectFile("src/components/ChatWidget.tsx");
   const globals = await readProjectFile("src/app/globals.css");

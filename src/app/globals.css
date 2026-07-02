@@ -47,6 +47,12 @@
   --study-cards-primary-action-border: color-mix(in srgb, var(--foreground) 12%, var(--accent));
   --study-cards-primary-action-bg: var(--foreground);
   --study-cards-primary-action-text: var(--background);
+  --study-cards-result-action-button-border: color-mix(in srgb, var(--border) 82%, transparent);
+  --study-cards-result-action-button-bg: color-mix(in srgb, var(--card) 90%, var(--background));
+  --study-cards-result-action-button-text: color-mix(in srgb, var(--foreground) 68%, var(--muted));
+  --study-cards-result-action-button-hover-border: color-mix(in srgb, var(--accent-secondary) 36%, var(--border));
+  --study-cards-result-action-button-hover-bg: var(--card);
+  --study-cards-result-action-button-hover-text: var(--foreground);
   --study-cards-empty-preview-shadow: 0 14px 34px color-mix(in srgb, var(--foreground) 8%, transparent);
   --study-cards-empty-card-shadow: 0 24px 58px color-mix(in srgb, var(--foreground) 13%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 82%, transparent);
   --study-cards-deck-layer-shadow: 0 18px 44px color-mix(in srgb, var(--foreground) 8%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 72%, transparent);
@@ -4953,10 +4959,10 @@ h6 {
   justify-content: center;
   gap: 6px;
   white-space: nowrap;
-  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border: 1px solid var(--study-cards-result-action-button-border);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--card) 90%, var(--background));
-  color: color-mix(in srgb, var(--foreground) 68%, var(--muted));
+  background: var(--study-cards-result-action-button-bg);
+  color: var(--study-cards-result-action-button-text);
   cursor: pointer;
   font: inherit;
   font-size: 11.5px;
@@ -4971,9 +4977,9 @@ h6 {
 }
 
 .study-cards-result-actions button:hover {
-  border-color: color-mix(in srgb, var(--accent-secondary) 36%, var(--border));
-  background: var(--card);
-  color: var(--foreground);
+  border-color: var(--study-cards-result-action-button-hover-border);
+  background: var(--study-cards-result-action-button-hover-bg);
+  color: var(--study-cards-result-action-button-hover-text);
   transform: translateY(-1px);
 }
 
