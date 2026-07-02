@@ -37,6 +37,9 @@
   --study-cards-back-link-shadow: 0 12px 30px color-mix(in srgb, var(--foreground) 10%, transparent);
   --study-cards-panel-shadow: 0 18px 48px color-mix(in srgb, var(--foreground) 8%, transparent);
   --study-cards-loaded-input-panel-shadow: 0 14px 34px color-mix(in srgb, var(--foreground) 6%, transparent);
+  --study-cards-error-border: color-mix(in srgb, var(--accent) 24%, var(--border));
+  --study-cards-error-bg: color-mix(in srgb, var(--accent) 8%, var(--card));
+  --study-cards-error-text: color-mix(in srgb, var(--accent) 86%, var(--foreground));
   --study-cards-empty-preview-shadow: 0 14px 34px color-mix(in srgb, var(--foreground) 8%, transparent);
   --study-cards-empty-card-shadow: 0 24px 58px color-mix(in srgb, var(--foreground) 13%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 82%, transparent);
   --study-cards-deck-layer-shadow: 0 18px 44px color-mix(in srgb, var(--foreground) 8%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 72%, transparent);
@@ -4608,10 +4611,10 @@ h6 {
 
 .study-cards-error {
   margin-top: 12px;
-  border: 1px solid color-mix(in srgb, #c2410c 24%, var(--border));
+  border: 1px solid var(--study-cards-error-border);
   border-radius: 8px;
-  background: color-mix(in srgb, #c2410c 8%, var(--card));
-  color: color-mix(in srgb, #9a3412 86%, var(--foreground));
+  background: var(--study-cards-error-bg);
+  color: var(--study-cards-error-text);
   font-size: 13px;
   font-weight: 750;
   line-height: 1.55;

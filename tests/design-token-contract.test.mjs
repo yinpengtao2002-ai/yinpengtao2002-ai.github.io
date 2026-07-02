@@ -471,6 +471,24 @@ test("study cards loaded input panel shadow derives from shared design tokens", 
   assert.match(loadedInputPanelBlock, /box-shadow:\s*var\(--study-cards-loaded-input-panel-shadow\)/);
 });
 
+test("study cards error alert colors derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const errorBlock = readCssRule(globals, ".study-cards-error");
+
+  for (const literal of ["#c2410c", "#9a3412"]) {
+    assert.doesNotMatch(errorBlock.toLowerCase(), new RegExp(literal));
+  }
+
+  assert.match(rootSource, /--study-cards-error-border:\s*color-mix\(in srgb,\s*var\(--accent\) 24%,\s*var\(--border\)\)/);
+  assert.match(rootSource, /--study-cards-error-bg:\s*color-mix\(in srgb,\s*var\(--accent\) 8%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--study-cards-error-text:\s*color-mix\(in srgb,\s*var\(--accent\) 86%,\s*var\(--foreground\)\)/);
+  assert.match(errorBlock, /border:\s*1px solid var\(--study-cards-error-border\)/);
+  assert.match(errorBlock, /background:\s*var\(--study-cards-error-bg\)/);
+  assert.match(errorBlock, /color:\s*var\(--study-cards-error-text\)/);
+});
+
 test("chat assistant shell visuals use shared design tokens", async () => {
   const chatWidget = await readProjectFile("src/components/ChatWidget.tsx");
   const globals = await readProjectFile("src/app/globals.css");

@@ -4618,3 +4618,69 @@ Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; `.study-cards-page` en
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10am`, noting that this closes only the Study Cards generated-result desktop input panel shadow token sub-item while leaving export-area shadows and button colors for separate passes.
+
+### Task 72: Tokenize Study Cards Error Alert Colors
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/tools/study-cards` error alert colors: `.study-cards-error` border, background, and text color. This pass does not migrate export-area shadows or button colors.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `.study-cards-error` to read `--study-cards-error-border`, `--study-cards-error-bg`, and `--study-cards-error-text` from `:root`, while rejecting the old direct `#c2410c` and `#9a3412` literals.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.study-cards-error` still used `#c2410c` for border/background and `#9a3412` for text color.
+
+- [x] **Step 4: Move Study Cards error alert colors to shared tokens**
+
+Added `--study-cards-error-border`, `--study-cards-error-bg`, and `--study-cards-error-text` to `:root`, deriving them from `--accent`, `--border`, `--card`, and `--foreground`. Updated `.study-cards-error` to use those tokens while preserving its spacing, typography, border radius, and compact alert shape.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 41/41 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 365/365 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards error alert browser behavior**
+
+Started `npm run start -- --port 3082`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3082/tools/study-cards`, intercepted `POST /api/tools/study-cards` with a JSON test error, entered `alpha beta gamma delta`, clicked `生成背单词卡`, then inspected desktop and `390x844` mobile layouts.
+
+Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; `.study-cards-error` was visible with text `测试错误`; CSSOM reported `border: 1px solid var(--study-cards-error-border)`, `background: var(--study-cards-error-bg)`, and `color: var(--study-cards-error-text)`; root tokens resolved to `color-mix(...)` values. Mobile `clientWidth=390`, `scrollWidth=390`; alert was visible at about `334x42` with no horizontal overflow. The only console error was the expected 500 resource log from the deliberately intercepted API response; there were no unexpected console errors.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10an`, noting that this closes only the Study Cards error alert color token sub-item while leaving export-area shadows and button colors for separate passes.
