@@ -5146,3 +5146,69 @@ Observed: the generated-card pronunciation label was `朗读`; CSSOM reported `.
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10au`, noting that this closes only the Study Cards 发音 / 朗读 button color token sub-item while leaving nav-arrow colors and other button details for later passes.
+
+### Task 80: Tokenize Study Cards Navigation Arrow Colors
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/tools/study-cards` card navigation arrows: `.study-cards-nav-arrow` and `.study-cards-nav-arrow:hover`. This pass covers only the previous/next arrow border, background, and text colors; progress bars, hint cards, and other Study Cards local colors remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the nav arrow base and hover colors to read `--study-cards-nav-arrow-*` tokens from `:root`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the nav arrow color tokens did not exist and `.study-cards-nav-arrow` / hover still wrote their border, background, and text colors directly.
+
+- [x] **Step 4: Move nav arrow colors to shared tokens**
+
+Added `--study-cards-nav-arrow-border`, `--study-cards-nav-arrow-bg`, `--study-cards-nav-arrow-text`, `--study-cards-nav-arrow-hover-border`, `--study-cards-nav-arrow-hover-bg`, and `--study-cards-nav-arrow-hover-text` to `:root`, deriving them from the site border/card/foreground/muted/accent-secondary tokens. Updated the nav arrow base and hover rules to use those tokens while preserving position, shape, shadow, blur, sizing, and transforms.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 49/49 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 373/373 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards nav arrows in browser**
+
+Started `npm run start -- --port 3090`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3090/tools/study-cards` at `390x844`, clicked `示例内容`, waited for `.study-cards-nav-arrow`, and recursively inspected CSSOM inside stylesheets.
+
+Observed: both `上一张卡片` and `下一张卡片` arrows existed; CSSOM reported `.study-cards-nav-arrow` and `.study-cards-nav-arrow:hover` reading `var(--study-cards-nav-arrow-*)`. Mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10av`, noting that this closes only the Study Cards previous/next nav arrow color token sub-item while leaving progress bars, hint cards, and other Study Cards local colors for later passes.

@@ -87,6 +87,12 @@
   --study-cards-answer-panel-hover-shadow: 0 16px 36px color-mix(in srgb, var(--accent-secondary) 12%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 78%, transparent);
   --study-cards-answer-panel-revealed-shadow: inset 0 1px 0 color-mix(in srgb, var(--card) 82%, transparent);
   --study-cards-nav-arrow-shadow: 0 14px 30px color-mix(in srgb, var(--foreground) 12%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 86%, transparent);
+  --study-cards-nav-arrow-border: color-mix(in srgb, var(--border) 84%, transparent);
+  --study-cards-nav-arrow-bg: color-mix(in srgb, var(--card) 90%, transparent);
+  --study-cards-nav-arrow-text: color-mix(in srgb, var(--foreground) 72%, var(--muted));
+  --study-cards-nav-arrow-hover-border: color-mix(in srgb, var(--accent-secondary) 42%, var(--border));
+  --study-cards-nav-arrow-hover-bg: var(--card);
+  --study-cards-nav-arrow-hover-text: var(--foreground);
   --study-cards-bingo-shadow: 0 30px 70px color-mix(in srgb, var(--foreground) 12%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 84%, transparent);
   --study-cards-bingo-icon-shadow: 0 18px 36px color-mix(in srgb, var(--foreground) 10%, transparent);
   --chat-mobile-backdrop-keyboard: color-mix(in srgb, var(--foreground) 22%, transparent);
@@ -5667,11 +5673,11 @@ h6 {
   height: 38px;
   align-items: center;
   justify-content: center;
-  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  border: 1px solid var(--study-cards-nav-arrow-border);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--card) 90%, transparent);
+  background: var(--study-cards-nav-arrow-bg);
   box-shadow: var(--study-cards-nav-arrow-shadow);
-  color: color-mix(in srgb, var(--foreground) 72%, var(--muted));
+  color: var(--study-cards-nav-arrow-text);
   cursor: pointer;
   transform: translateY(-50%);
   transition:
@@ -5683,9 +5689,9 @@ h6 {
 }
 
 .study-cards-nav-arrow:hover {
-  border-color: color-mix(in srgb, var(--accent-secondary) 42%, var(--border));
-  background: var(--card);
-  color: var(--foreground);
+  border-color: var(--study-cards-nav-arrow-hover-border);
+  background: var(--study-cards-nav-arrow-hover-bg);
+  color: var(--study-cards-nav-arrow-hover-text);
   transform: translateY(-50%) scale(1.04);
 }
 

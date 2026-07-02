@@ -423,6 +423,27 @@ test("study cards answer and nav shadows derive from shared design tokens", asyn
   assert.match(navArrowBlock, /box-shadow:\s*var\(--study-cards-nav-arrow-shadow\)/);
 });
 
+test("study cards nav arrow colors derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const navArrowBlock = readCssRule(globals, ".study-cards-nav-arrow");
+  const navArrowHoverBlock = readCssRule(globals, ".study-cards-nav-arrow:hover");
+
+  assert.match(rootSource, /--study-cards-nav-arrow-border:\s*color-mix\(in srgb,\s*var\(--border\) 84%,\s*transparent\)/);
+  assert.match(rootSource, /--study-cards-nav-arrow-bg:\s*color-mix\(in srgb,\s*var\(--card\) 90%,\s*transparent\)/);
+  assert.match(rootSource, /--study-cards-nav-arrow-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 72%,\s*var\(--muted\)\)/);
+  assert.match(rootSource, /--study-cards-nav-arrow-hover-border:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 42%,\s*var\(--border\)\)/);
+  assert.match(rootSource, /--study-cards-nav-arrow-hover-bg:\s*var\(--card\)/);
+  assert.match(rootSource, /--study-cards-nav-arrow-hover-text:\s*var\(--foreground\)/);
+  assert.match(navArrowBlock, /border:\s*1px solid var\(--study-cards-nav-arrow-border\)/);
+  assert.match(navArrowBlock, /background:\s*var\(--study-cards-nav-arrow-bg\)/);
+  assert.match(navArrowBlock, /color:\s*var\(--study-cards-nav-arrow-text\)/);
+  assert.match(navArrowHoverBlock, /border-color:\s*var\(--study-cards-nav-arrow-hover-border\)/);
+  assert.match(navArrowHoverBlock, /background:\s*var\(--study-cards-nav-arrow-hover-bg\)/);
+  assert.match(navArrowHoverBlock, /color:\s*var\(--study-cards-nav-arrow-hover-text\)/);
+});
+
 test("study cards completion shadows derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
