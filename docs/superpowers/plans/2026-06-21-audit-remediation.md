@@ -6414,3 +6414,69 @@ Observed: all 15 track-card decorative tokens existed in the built CSS; the scop
 - [x] **Step 9: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bn`, noting that this closes only the homepage Thinking category-card/count-pill decorative color sub-item while leaving other rendered paths for later passes.
+
+### Task 99: Remove Unused Home Hero Mini Widget Fallback Styles
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the next P1 UI cleanup to the homepage hero mini widget fallback styles. `CapabilityHero` currently renders only `.home-mini-widget-window` and `.home-mini-widget-bars`; `tests/home-experience-contract.test.mjs` already requires the hero source not to include `.home-mini-widget-dots` or `.home-mini-widget-status`. This pass removes those unused CSS blocks instead of tokenizing non-rendered fallback styles.
+
+- [x] **Step 2: Add a failing dead-style contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the hero source not to use `.home-mini-widget-dots` / `.home-mini-widget-status`, and requiring `src/app/globals.css` not to retain those selector blocks.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation, 67/68 passing. The new contract failed because `src/app/globals.css` still contained `.home-mini-widget-dots` and `.home-mini-widget-status` rules.
+
+- [x] **Step 4: Remove the unused fallback styles**
+
+Deleted the `.home-mini-widget-dots` / `.home-mini-widget-status` CSS blocks and their `@media (max-width: 900px)` position overrides. Kept the currently rendered `.home-mini-widget-window` and `.home-mini-widget-bars` styles unchanged.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs tests/home-experience-contract.test.mjs`
+
+Observed: PASS, 97/97 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 392/392 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify homepage in browser**
+
+Started `npm run start -- --port 3109`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3109/?audit=ui-p1-10bo`, inspected desktop and `390x844` mobile rendering, and fetched the production CSS chunks.
+
+Observed: desktop still rendered two current mini widgets (`home-mini-widget-window` and `home-mini-widget-bars`); dots/status DOM count was 0; built CSS no longer contained `home-mini-widget-dots` or `home-mini-widget-status`; desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bo`, noting that this closes only the unused mini widget fallback CSS sub-item while keeping the current visible mini widgets unchanged.
