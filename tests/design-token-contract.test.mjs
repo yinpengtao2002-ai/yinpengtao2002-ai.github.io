@@ -534,6 +534,20 @@ test("study cards result action button colors derive from shared design tokens",
   assert.match(resultActionButtonHoverBlock, /color:\s*var\(--study-cards-result-action-button-hover-text\)/);
 });
 
+test("study cards result count colors derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const resultCountBlock = readCssRule(globals, ".study-cards-result-count");
+
+  assert.match(rootSource, /--study-cards-result-count-border:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 24%,\s*var\(--border\)\)/);
+  assert.match(rootSource, /--study-cards-result-count-bg:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 9%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--study-cards-result-count-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 74%,\s*var\(--accent-secondary\)\)/);
+  assert.match(resultCountBlock, /border:\s*1px solid var\(--study-cards-result-count-border\)/);
+  assert.match(resultCountBlock, /background:\s*var\(--study-cards-result-count-bg\)/);
+  assert.match(resultCountBlock, /color:\s*var\(--study-cards-result-count-text\)/);
+});
+
 test("study cards completion action button colors derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];

@@ -53,6 +53,9 @@
   --study-cards-result-action-button-hover-border: color-mix(in srgb, var(--accent-secondary) 36%, var(--border));
   --study-cards-result-action-button-hover-bg: var(--card);
   --study-cards-result-action-button-hover-text: var(--foreground);
+  --study-cards-result-count-border: color-mix(in srgb, var(--accent-secondary) 24%, var(--border));
+  --study-cards-result-count-bg: color-mix(in srgb, var(--accent-secondary) 9%, var(--card));
+  --study-cards-result-count-text: color-mix(in srgb, var(--foreground) 74%, var(--accent-secondary));
   --study-cards-bingo-action-button-border: color-mix(in srgb, var(--border) 78%, transparent);
   --study-cards-bingo-action-button-bg: color-mix(in srgb, var(--card) 92%, var(--background));
   --study-cards-bingo-action-button-text: color-mix(in srgb, var(--foreground) 74%, var(--muted));
@@ -5001,10 +5004,10 @@ h6 {
   justify-content: center;
   flex: 0 0 auto;
   white-space: nowrap;
-  border: 1px solid color-mix(in srgb, var(--accent-secondary) 24%, var(--border));
+  border: 1px solid var(--study-cards-result-count-border);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--accent-secondary) 9%, var(--card));
-  color: color-mix(in srgb, var(--foreground) 74%, var(--accent-secondary));
+  background: var(--study-cards-result-count-bg);
+  color: var(--study-cards-result-count-text);
   font-size: 12px;
   font-weight: 850;
   padding: 0 11px;

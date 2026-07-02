@@ -4882,3 +4882,69 @@ Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; the BINGO state was vi
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10aq`, noting that this closes only the Study Cards completion-state `再复习一轮` / `导出词表` button color token sub-item while leaving result count text, mobile edit button, memory feedback buttons, and other button color details for later passes.
+
+### Task 76: Tokenize Study Cards Result Count Colors
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/tools/study-cards` result count pill: `.study-cards-result-count`. This pass covers only the result-area `已认识 / 第几张` count pill; mobile edit button, memory feedback buttons, and other button color details remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the result count pill to read `--study-cards-result-count-*` tokens from `:root`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the result count tokens did not exist and `.study-cards-result-count` still wrote its border, background, and text colors directly.
+
+- [x] **Step 4: Move result count colors to shared tokens**
+
+Added `--study-cards-result-count-border`, `--study-cards-result-count-bg`, and `--study-cards-result-count-text` to `:root`, deriving them from the site accent-secondary/border/card/foreground tokens. Updated the result count CSS rule to use those tokens while preserving sizing, layout, radius, and typography.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 45/45 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 369/369 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards result count in browser**
+
+Started `npm run start -- --port 3086`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3086/tools/study-cards`, clicked `示例内容`, inspected the result count CSSOM, then resized to `390x844`.
+
+Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; the count text `已认识 0 / 10` was visible; CSSOM reported `.study-cards-result-count` reading `var(--study-cards-result-count-border)`, `var(--study-cards-result-count-bg)`, and `var(--study-cards-result-count-text)`. Mobile `clientWidth=390`, `scrollWidth=390`; the count pill remained visible with no horizontal overflow. Console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10ar`, noting that this closes only the Study Cards result-area `已认识 / 第几张` count pill color token sub-item while leaving mobile edit button, memory feedback buttons, and other button color details for later passes.
