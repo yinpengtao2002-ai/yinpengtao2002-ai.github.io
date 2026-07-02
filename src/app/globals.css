@@ -40,6 +40,11 @@
   --study-cards-error-border: color-mix(in srgb, var(--accent) 24%, var(--border));
   --study-cards-error-bg: color-mix(in srgb, var(--accent) 8%, var(--card));
   --study-cards-error-text: color-mix(in srgb, var(--accent) 86%, var(--foreground));
+  --study-cards-progress-border: color-mix(in srgb, var(--accent-secondary) 24%, var(--border));
+  --study-cards-progress-bg: color-mix(in srgb, var(--accent-secondary) 7%, var(--card));
+  --study-cards-progress-text: color-mix(in srgb, var(--foreground) 76%, var(--muted));
+  --study-cards-progress-track-bg: color-mix(in srgb, var(--border) 78%, var(--card));
+  --study-cards-progress-track-fill: linear-gradient(90deg, var(--accent), var(--accent-secondary), var(--accent-tertiary));
   --study-cards-action-button-border: color-mix(in srgb, var(--border) 86%, transparent);
   --study-cards-action-button-bg: var(--card);
   --study-cards-action-button-text: var(--foreground);
@@ -4666,9 +4671,9 @@ h6 {
 
 .study-cards-progress {
   margin-top: 12px;
-  border: 1px solid color-mix(in srgb, var(--accent-secondary) 24%, var(--border));
+  border: 1px solid var(--study-cards-progress-border);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--accent-secondary) 7%, var(--card));
+  background: var(--study-cards-progress-bg);
   padding: 11px 12px 12px;
 }
 
@@ -4677,7 +4682,7 @@ h6 {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  color: color-mix(in srgb, var(--foreground) 76%, var(--muted));
+  color: var(--study-cards-progress-text);
   font-size: 12px;
   font-weight: 850;
   line-height: 1.35;
@@ -4689,14 +4694,14 @@ h6 {
   height: 8px;
   overflow: hidden;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--border) 78%, var(--card));
+  background: var(--study-cards-progress-track-bg);
 }
 
 .study-cards-progress-track span {
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--accent), var(--accent-secondary), var(--accent-tertiary));
+  background: var(--study-cards-progress-track-fill);
   transition: width 0.45s ease;
 }
 

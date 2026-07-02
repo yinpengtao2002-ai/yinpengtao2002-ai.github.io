@@ -5212,3 +5212,69 @@ Observed: both `上一张卡片` and `下一张卡片` arrows existed; CSSOM rep
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10av`, noting that this closes only the Study Cards previous/next nav arrow color token sub-item while leaving progress bars, hint cards, and other Study Cards local colors for later passes.
+
+### Task 81: Tokenize Study Cards Loading Progress Colors
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/tools/study-cards` loading progress UI rendered while card generation is running: `.study-cards-progress`, `.study-cards-progress-top`, `.study-cards-progress-track`, and `.study-cards-progress-track span`. This pass covers only the progress border, background, label text, track, and fill colors; hint cards and other Study Cards local colors remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the loading progress UI to read `--study-cards-progress-*` tokens from `:root`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the progress tokens did not exist and the progress container, top label, track, and fill still wrote colors directly.
+
+- [x] **Step 4: Move progress colors to shared tokens**
+
+Added `--study-cards-progress-border`, `--study-cards-progress-bg`, `--study-cards-progress-text`, `--study-cards-progress-track-bg`, and `--study-cards-progress-track-fill` to `:root`, deriving them from the site accent-secondary/border/card/foreground/muted and accent tokens. Updated the progress CSS rules to use those tokens while preserving spacing, radius, progressbar semantics, fill width behavior, and transition.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 50/50 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 374/374 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards loading progress in browser**
+
+Started `npm run start -- --port 3091`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3091/tools/study-cards` at `390x844`, clicked `示例内容`, intercepted `/api/tools/study-cards` to keep generation pending briefly, clicked `生成背单词卡`, waited for `.study-cards-progress`, and recursively inspected CSSOM inside stylesheets.
+
+Observed: progress text showed `正在判断输入类型8%`; CSSOM reported `.study-cards-progress`, `.study-cards-progress-top`, `.study-cards-progress-track`, and `.study-cards-progress-track span` reading `var(--study-cards-progress-*)`. Mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10aw`, noting that this closes only the Study Cards loading progress color token sub-item while leaving hint cards and other Study Cards local colors for later passes.

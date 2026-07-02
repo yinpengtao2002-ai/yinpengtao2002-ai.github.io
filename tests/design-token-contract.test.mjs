@@ -510,6 +510,27 @@ test("study cards error alert colors derive from shared design tokens", async ()
   assert.match(errorBlock, /color:\s*var\(--study-cards-error-text\)/);
 });
 
+test("study cards progress colors derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const progressBlock = readCssRule(globals, ".study-cards-progress");
+  const progressTopBlock = readCssRule(globals, ".study-cards-progress-top");
+  const progressTrackBlock = readCssRule(globals, ".study-cards-progress-track");
+  const progressTrackFillBlock = readCssRule(globals, ".study-cards-progress-track span");
+
+  assert.match(rootSource, /--study-cards-progress-border:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 24%,\s*var\(--border\)\)/);
+  assert.match(rootSource, /--study-cards-progress-bg:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 7%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--study-cards-progress-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 76%,\s*var\(--muted\)\)/);
+  assert.match(rootSource, /--study-cards-progress-track-bg:\s*color-mix\(in srgb,\s*var\(--border\) 78%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--study-cards-progress-track-fill:\s*linear-gradient\(90deg,\s*var\(--accent\),\s*var\(--accent-secondary\),\s*var\(--accent-tertiary\)\)/);
+  assert.match(progressBlock, /border:\s*1px solid var\(--study-cards-progress-border\)/);
+  assert.match(progressBlock, /background:\s*var\(--study-cards-progress-bg\)/);
+  assert.match(progressTopBlock, /color:\s*var\(--study-cards-progress-text\)/);
+  assert.match(progressTrackBlock, /background:\s*var\(--study-cards-progress-track-bg\)/);
+  assert.match(progressTrackFillBlock, /background:\s*var\(--study-cards-progress-track-fill\)/);
+});
+
 test("study cards input action button colors derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
