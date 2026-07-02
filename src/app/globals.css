@@ -39,6 +39,7 @@
   --study-cards-empty-preview-shadow: 0 14px 34px color-mix(in srgb, var(--foreground) 8%, transparent);
   --study-cards-empty-card-shadow: 0 24px 58px color-mix(in srgb, var(--foreground) 13%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 82%, transparent);
   --study-cards-deck-layer-shadow: 0 18px 44px color-mix(in srgb, var(--foreground) 8%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 72%, transparent);
+  --study-cards-mobile-deck-layer-shadow: 0 14px 28px color-mix(in srgb, var(--foreground) 8%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 70%, transparent);
   --study-cards-drag-next-shadow: drop-shadow(16px 20px 24px color-mix(in srgb, var(--foreground) 12%, transparent));
   --study-cards-drag-prev-shadow: drop-shadow(-16px 20px 24px color-mix(in srgb, var(--foreground) 12%, transparent));
   --study-cards-practice-card-shadow: 0 34px 86px color-mix(in srgb, var(--foreground) 18%, transparent), 0 8px 22px color-mix(in srgb, var(--foreground) 10%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 92%, transparent);
@@ -6033,9 +6034,7 @@ h6 {
   .study-cards-page.is-mobile-practice .study-cards-deck::after {
     display: block;
     opacity: 0.34;
-    box-shadow:
-      0 14px 28px rgba(20, 20, 19, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    box-shadow: var(--study-cards-mobile-deck-layer-shadow);
   }
 
   .study-cards-page.is-mobile-practice .study-cards-deck::before {

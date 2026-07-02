@@ -8,14 +8,14 @@ async function readProjectFile(path) {
 
 function readCssRule(source, selector) {
   const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const match = source.match(new RegExp(`(^|\\n)\\s*${escapedSelector}\\s*\\{[\\s\\S]*?\\n\\}`));
+  const match = source.match(new RegExp(`(^|\\n)\\s*${escapedSelector}\\s*\\{[\\s\\S]*?\\n\\s*\\}`));
   assert.ok(match, `${selector} rule should exist`);
   return match[0];
 }
 
 function readLastCssRule(source, selector) {
   const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const matches = [...source.matchAll(new RegExp(`(^|\\n)\\s*${escapedSelector}\\s*\\{[\\s\\S]*?\\n\\}`, "g"))];
+  const matches = [...source.matchAll(new RegExp(`(^|\\n)\\s*${escapedSelector}\\s*\\{[\\s\\S]*?\\n\\s*\\}`, "g"))];
   assert.ok(matches.length, `${selector} rule should exist`);
   return matches.at(-1)[0];
 }
@@ -438,6 +438,26 @@ test("study cards completion shadows derive from shared design tokens", async ()
   assert.match(rootSource, /--study-cards-bingo-icon-shadow:\s*0 18px 36px color-mix\(in srgb,\s*var\(--foreground\) 10%,\s*transparent\)/);
   assert.match(bingoBlock, /box-shadow:\s*var\(--study-cards-bingo-shadow\)/);
   assert.match(bingoIconBlock, /box-shadow:\s*var\(--study-cards-bingo-icon-shadow\)/);
+});
+
+test("study cards mobile practice deck layer shadow derives from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const mobileDeckLayerBlock = readLastCssRule(
+    globals,
+    ".study-cards-page.is-mobile-practice .study-cards-deck::before,\n  .study-cards-page.is-mobile-practice .study-cards-deck::after",
+  );
+
+  for (const literal of [
+    "0 14px 28px rgba(20, 20, 19, 0.08)",
+    "inset 0 1px 0 rgba(255, 255, 255, 0.7)",
+  ]) {
+    assert.doesNotMatch(mobileDeckLayerBlock, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(rootSource, /--study-cards-mobile-deck-layer-shadow:\s*0 14px 28px color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*transparent\),\s*inset 0 1px 0 color-mix\(in srgb,\s*var\(--card\) 70%,\s*transparent\)/);
+  assert.match(mobileDeckLayerBlock, /box-shadow:\s*var\(--study-cards-mobile-deck-layer-shadow\)/);
 });
 
 test("chat assistant shell visuals use shared design tokens", async () => {

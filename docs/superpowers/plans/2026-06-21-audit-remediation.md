@@ -4484,3 +4484,71 @@ Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; mobile `clientWidth=39
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10ak`, noting that this closes only the Study Cards completion/BINGO shadow token sub-item while leaving export-area shadows and button colors for separate passes.
+
+### Task 70: Tokenize Study Cards Mobile Practice Deck Override Shadow
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/tools/study-cards` mobile practice override for deck layer shadows: `.study-cards-page.is-mobile-practice .study-cards-deck::before` / `::after` inside `@media (max-width: 760px) and (orientation: portrait)`. This pass does not migrate export-area shadows or button colors.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract using `readLastCssRule()` to require the last mobile practice deck layer rule to read `--study-cards-mobile-deck-layer-shadow` from `:root`, while rejecting the old direct `0 14px 28px rgba(20, 20, 19, 0.08)` and white inset shadow literal.
+
+Also tightened `readCssRule()` / `readLastCssRule()` to allow indented closing braces, so media-query-scoped rules are read as the specific rule block rather than the whole `@media` block.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the mobile practice override rule still used `0 14px 28px rgba(20, 20, 19, 0.08)` plus `inset 0 1px 0 rgba(255, 255, 255, 0.7)`.
+
+- [x] **Step 4: Move mobile practice deck override shadow to a shared token**
+
+Added `--study-cards-mobile-deck-layer-shadow` to `:root`, deriving the outer shadow from `--foreground` and the inset highlight from `--card`. Updated the mobile practice deck layer override to use that token while preserving display, opacity, transforms, and the mobile full-screen practice layout.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 39/39 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 363/363 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards mobile practice browser behavior**
+
+Started `npm run start -- --port 3080`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3080/tools/study-cards`, clicked `示例内容`, inspected desktop deck/card behavior, then resized to `390x844` and waited for `.study-cards-page.is-mobile-practice`.
+
+Observed: desktop `clientWidth=1280`, `scrollWidth=1280`, deck and practice card visible, and ordinary deck layer shadow still came from the desktop token. Mobile `clientWidth=390`, `scrollWidth=390`; `.study-cards-page` entered `is-mobile-practice`; practice card measured about `360x540`; the loaded mobile deck rule reported `box-shadow: var(--study-cards-mobile-deck-layer-shadow)`; `::before` and `::after` shadows resolved to token-derived `color(srgb ... / 0.08)` plus `color(srgb ... / 0.7)` inset. Console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10al`, noting that this closes only the Study Cards mobile practice deck override shadow token sub-item while leaving export-area shadows and button colors for separate passes.
