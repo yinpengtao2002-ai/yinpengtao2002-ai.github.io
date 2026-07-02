@@ -281,6 +281,25 @@ test("home thinking visual card shadow derives from a shared design token", asyn
   assert.match(visualCardBlock, /box-shadow:\s*var\(--home-thinking-visual-card-shadow\)/);
 });
 
+test("home thinking visual shade gradients derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const visualShadeBlock = readCssRule(globals, ".home-thinking-visual-shade");
+  const scopedSource = visualShadeBlock.toLowerCase();
+
+  for (const literal of ["rgba(20, 20, 19", "rgba(250, 249, 245"]) {
+    assert.doesNotMatch(scopedSource, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(rootSource, /--home-thinking-visual-shade-vertical-start:\s*color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*transparent\)/);
+  assert.match(rootSource, /--home-thinking-visual-shade-vertical-end:\s*color-mix\(in srgb,\s*var\(--foreground\) 58%,\s*transparent\)/);
+  assert.match(rootSource, /--home-thinking-visual-shade-horizontal-start:\s*color-mix\(in srgb,\s*var\(--background\) 6%,\s*transparent\)/);
+  assert.match(rootSource, /--home-thinking-visual-shade-horizontal-end:\s*color-mix\(in srgb,\s*var\(--foreground\) 18%,\s*transparent\)/);
+  assert.match(visualShadeBlock, /linear-gradient\(180deg,\s*var\(--home-thinking-visual-shade-vertical-start\),\s*var\(--home-thinking-visual-shade-vertical-end\)\)/);
+  assert.match(visualShadeBlock, /linear-gradient\(90deg,\s*var\(--home-thinking-visual-shade-horizontal-start\),\s*var\(--home-thinking-visual-shade-horizontal-end\)\)/);
+});
+
 test("home thinking count pill shadows derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
