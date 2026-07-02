@@ -4816,3 +4816,69 @@ Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; the result action labe
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10ap`, noting that this closes only the Study Cards result-area `导出词表` button color token sub-item while leaving completion buttons, result count text, mobile edit button, and other button color details for later passes.
+
+### Task 75: Tokenize Study Cards Completion Action Button Colors
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/tools/study-cards` completion-state action buttons: the base `.study-cards-bingo-actions button` and its hover state. This pass covers only the BINGO-state buttons `再复习一轮` and `导出词表`; result count text, mobile edit button, memory feedback buttons, and other button color details remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring completion action button colors to read `--study-cards-bingo-action-button-*` tokens from `:root`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the completion action button tokens did not exist and `.study-cards-bingo-actions button` / hover still wrote their border, background, and text colors directly.
+
+- [x] **Step 4: Move completion action button colors to shared tokens**
+
+Added `--study-cards-bingo-action-button-border`, `--study-cards-bingo-action-button-bg`, `--study-cards-bingo-action-button-text`, `--study-cards-bingo-action-button-hover-border`, `--study-cards-bingo-action-button-hover-bg`, and `--study-cards-bingo-action-button-hover-text` to `:root`, deriving them from the site border/card/background/foreground/muted/accent-secondary tokens. Updated the BINGO action button CSS rules to use those tokens while preserving sizing, layout, radius, and transitions.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 44/44 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 368/368 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards completion action buttons in browser**
+
+Started `npm run start -- --port 3085`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3085/tools/study-cards`, clicked `示例内容`, clicked `下一张卡片` 20 times until the BINGO completion state appeared, inspected the completion action button CSSOM, then resized to `390x844`.
+
+Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; the BINGO state was visible; the two completion action labels were `再复习一轮` and `导出词表`; CSSOM reported `.study-cards-bingo-actions button` reading `var(--study-cards-bingo-action-button-border)`, `var(--study-cards-bingo-action-button-bg)`, and `var(--study-cards-bingo-action-button-text)`, with hover reading the matching `--study-cards-bingo-action-button-hover-*` tokens. Mobile `clientWidth=390`, `scrollWidth=390`; both buttons were visible with no horizontal overflow. Console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10aq`, noting that this closes only the Study Cards completion-state `再复习一轮` / `导出词表` button color token sub-item while leaving result count text, mobile edit button, memory feedback buttons, and other button color details for later passes.
