@@ -80,6 +80,27 @@
   --study-cards-recall-hint-bg: color-mix(in srgb, var(--accent) 7%, var(--card));
   --study-cards-recall-hint-text: color-mix(in srgb, var(--foreground) 62%, var(--muted));
   --study-cards-recall-hint-label-text: color-mix(in srgb, var(--accent) 84%, var(--foreground));
+  --study-cards-answer-panel-border: color-mix(in srgb, var(--accent-secondary) 24%, var(--border));
+  --study-cards-answer-panel-bg:
+    linear-gradient(180deg, color-mix(in srgb, var(--background) 70%, var(--card)), color-mix(in srgb, var(--card) 94%, var(--background))),
+    var(--card);
+  --study-cards-answer-panel-text: color-mix(in srgb, var(--foreground) 74%, var(--muted));
+  --study-cards-answer-panel-hidden-border: color-mix(in srgb, var(--accent-secondary) 34%, var(--border));
+  --study-cards-answer-panel-hidden-bg:
+    radial-gradient(circle at 50% 16%, color-mix(in srgb, var(--accent-secondary) 13%, transparent), transparent 54%),
+    linear-gradient(180deg, color-mix(in srgb, var(--background) 78%, var(--card)), color-mix(in srgb, var(--card) 96%, var(--background))),
+    var(--card);
+  --study-cards-answer-panel-hidden-frame-border: color-mix(in srgb, var(--accent-secondary) 12%, transparent);
+  --study-cards-answer-panel-hover-border: color-mix(in srgb, var(--accent-secondary) 52%, var(--border));
+  --study-cards-answer-panel-hover-bg:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent-secondary) 7%, var(--card)), color-mix(in srgb, var(--card) 94%, var(--background))),
+    var(--card);
+  --study-cards-answer-panel-focus-outline: color-mix(in srgb, var(--accent-secondary) 54%, transparent);
+  --study-cards-answer-panel-revealed-border: color-mix(in srgb, var(--accent-tertiary) 28%, var(--border));
+  --study-cards-answer-panel-revealed-bg:
+    linear-gradient(color-mix(in srgb, var(--accent-tertiary) 9%, transparent) 1px, transparent 1px) 0 0 / 100% 36px,
+    linear-gradient(180deg, color-mix(in srgb, var(--accent-tertiary) 8%, var(--card)), color-mix(in srgb, var(--background) 64%, var(--card))),
+    var(--card);
   --study-cards-bingo-action-button-border: color-mix(in srgb, var(--border) 78%, transparent);
   --study-cards-bingo-action-button-bg: color-mix(in srgb, var(--card) 92%, var(--background));
   --study-cards-bingo-action-button-text: color-mix(in srgb, var(--foreground) 74%, var(--muted));
@@ -5336,12 +5357,10 @@ h6 {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--accent-secondary) 24%, var(--border));
+  border: 1px solid var(--study-cards-answer-panel-border);
   border-radius: 8px;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--background) 70%, var(--card)), color-mix(in srgb, var(--card) 94%, white)),
-    var(--card);
-  color: color-mix(in srgb, var(--foreground) 74%, var(--muted));
+  background: var(--study-cards-answer-panel-bg);
+  color: var(--study-cards-answer-panel-text);
   cursor: pointer;
   font: inherit;
   padding: clamp(16px, 2vw, 22px);
@@ -5357,34 +5376,29 @@ h6 {
 
 .study-cards-answer-panel.is-hidden {
   border-style: dashed;
-  border-color: color-mix(in srgb, var(--accent-secondary) 34%, var(--border));
-  background:
-    radial-gradient(circle at 50% 16%, color-mix(in srgb, var(--accent-secondary) 13%, transparent), transparent 54%),
-    linear-gradient(180deg, color-mix(in srgb, var(--background) 78%, var(--card)), color-mix(in srgb, var(--card) 96%, white)),
-    var(--card);
+  border-color: var(--study-cards-answer-panel-hidden-border);
+  background: var(--study-cards-answer-panel-hidden-bg);
 }
 
 .study-cards-answer-panel.is-hidden::before {
   position: absolute;
   content: "";
   inset: 16px;
-  border: 1px solid color-mix(in srgb, var(--accent-secondary) 12%, transparent);
+  border: 1px solid var(--study-cards-answer-panel-hidden-frame-border);
   border-radius: 6px;
   opacity: 0.76;
   pointer-events: none;
 }
 
 .study-cards-answer-panel:hover {
-  border-color: color-mix(in srgb, var(--accent-secondary) 52%, var(--border));
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent-secondary) 7%, var(--card)), color-mix(in srgb, var(--card) 94%, white)),
-    var(--card);
+  border-color: var(--study-cards-answer-panel-hover-border);
+  background: var(--study-cards-answer-panel-hover-bg);
   box-shadow: var(--study-cards-answer-panel-hover-shadow);
   transform: translateY(-1px);
 }
 
 .study-cards-answer-panel:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent-secondary) 54%, transparent);
+  outline: 2px solid var(--study-cards-answer-panel-focus-outline);
   outline-offset: 3px;
 }
 
@@ -5394,11 +5408,8 @@ h6 {
   overflow-y: auto;
   overscroll-behavior: contain;
   border-style: solid;
-  border-color: color-mix(in srgb, var(--accent-tertiary) 28%, var(--border));
-  background:
-    linear-gradient(color-mix(in srgb, var(--accent-tertiary) 9%, transparent) 1px, transparent 1px) 0 0 / 100% 36px,
-    linear-gradient(180deg, color-mix(in srgb, var(--accent-tertiary) 8%, var(--card)), color-mix(in srgb, var(--background) 64%, var(--card))),
-    var(--card);
+  border-color: var(--study-cards-answer-panel-revealed-border);
+  background: var(--study-cards-answer-panel-revealed-bg);
   box-shadow: var(--study-cards-answer-panel-revealed-shadow);
   cursor: default;
 }

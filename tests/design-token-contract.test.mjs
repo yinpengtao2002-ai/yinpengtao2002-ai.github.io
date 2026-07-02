@@ -667,6 +667,38 @@ test("study cards recall hint colors derive from shared design tokens", async ()
   assert.match(recallHintLabelBlock, /color:\s*var\(--study-cards-recall-hint-label-text\)/);
 });
 
+test("study cards answer panel colors derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const answerPanelBlock = readCssRule(globals, ".study-cards-answer-panel");
+  const hiddenPanelBlock = readCssRule(globals, ".study-cards-answer-panel.is-hidden");
+  const hiddenFrameBlock = readCssRule(globals, ".study-cards-answer-panel.is-hidden::before");
+  const hoverPanelBlock = readCssRule(globals, ".study-cards-answer-panel:hover");
+  const focusPanelBlock = readCssRule(globals, ".study-cards-answer-panel:focus-visible");
+  const revealedPanelBlock = readCssRule(globals, ".study-cards-answer-panel.is-revealed");
+
+  assert.match(rootSource, /--study-cards-answer-panel-border:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 24%,\s*var\(--border\)\)/);
+  assert.match(rootSource, /--study-cards-answer-panel-bg:\s*linear-gradient\(180deg,\s*color-mix\(in srgb,\s*var\(--background\) 70%,\s*var\(--card\)\),\s*color-mix\(in srgb,\s*var\(--card\) 94%,\s*var\(--background\)\)\),\s*var\(--card\)/);
+  assert.match(rootSource, /--study-cards-answer-panel-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 74%,\s*var\(--muted\)\)/);
+  assert.match(rootSource, /--study-cards-answer-panel-hidden-border:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 34%,\s*var\(--border\)\)/);
+  assert.match(rootSource, /--study-cards-answer-panel-hidden-frame-border:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 12%,\s*transparent\)/);
+  assert.match(rootSource, /--study-cards-answer-panel-hover-border:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 52%,\s*var\(--border\)\)/);
+  assert.match(rootSource, /--study-cards-answer-panel-focus-outline:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 54%,\s*transparent\)/);
+  assert.match(rootSource, /--study-cards-answer-panel-revealed-border:\s*color-mix\(in srgb,\s*var\(--accent-tertiary\) 28%,\s*var\(--border\)\)/);
+  assert.match(answerPanelBlock, /border:\s*1px solid var\(--study-cards-answer-panel-border\)/);
+  assert.match(answerPanelBlock, /background:\s*var\(--study-cards-answer-panel-bg\)/);
+  assert.match(answerPanelBlock, /color:\s*var\(--study-cards-answer-panel-text\)/);
+  assert.match(hiddenPanelBlock, /border-color:\s*var\(--study-cards-answer-panel-hidden-border\)/);
+  assert.match(hiddenPanelBlock, /background:\s*var\(--study-cards-answer-panel-hidden-bg\)/);
+  assert.match(hiddenFrameBlock, /border:\s*1px solid var\(--study-cards-answer-panel-hidden-frame-border\)/);
+  assert.match(hoverPanelBlock, /border-color:\s*var\(--study-cards-answer-panel-hover-border\)/);
+  assert.match(hoverPanelBlock, /background:\s*var\(--study-cards-answer-panel-hover-bg\)/);
+  assert.match(focusPanelBlock, /outline:\s*2px solid var\(--study-cards-answer-panel-focus-outline\)/);
+  assert.match(revealedPanelBlock, /border-color:\s*var\(--study-cards-answer-panel-revealed-border\)/);
+  assert.match(revealedPanelBlock, /background:\s*var\(--study-cards-answer-panel-revealed-bg\)/);
+});
+
 test("study cards completion action button colors derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];

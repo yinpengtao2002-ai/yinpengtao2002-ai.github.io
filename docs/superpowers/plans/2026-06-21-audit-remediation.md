@@ -5344,3 +5344,69 @@ Observed: the visible hint text was `音标/juːˈbɪkwɪtəs/`; CSSOM reported 
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10ax`, noting that this closes only the Study Cards recall-check hint color token sub-item while leaving answer-panel backgrounds and other Study Cards local colors for later passes.
+
+### Task 83: Tokenize Study Cards Answer Panel Colors
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/tools/study-cards` answer panel colors: `.study-cards-answer-panel`, `.study-cards-answer-panel.is-hidden`, `.study-cards-answer-panel.is-hidden::before`, `.study-cards-answer-panel:hover`, `.study-cards-answer-panel:focus-visible`, and `.study-cards-answer-panel.is-revealed`. This pass covers only the answer panel border, background, body text, hidden frame, hover, focus, and revealed surface colors; answer content emphasis colors and other Study Cards local colors remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the answer panel states to read `--study-cards-answer-panel-*` tokens from `:root`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `--study-cards-answer-panel-border` did not exist and the answer panel rules still wrote color-mix values directly.
+
+- [x] **Step 4: Move answer panel colors to shared tokens**
+
+Added `--study-cards-answer-panel-border`, `--study-cards-answer-panel-bg`, `--study-cards-answer-panel-text`, hidden-state tokens, hover tokens, focus outline token, and revealed-state tokens to `:root`, deriving them from the site accent-secondary/accent-tertiary/border/card/background/foreground/muted tokens. Updated the answer panel CSS rules to read those variables while preserving layout, padding, transitions, cursor behavior, and existing shadow tokens. Replaced the previous direct `white` background mixes with `--background` / `--card` derived tokens.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 52/52 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 376/376 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards answer panel in browser**
+
+Started `npm run start -- --port 3093`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3093/tools/study-cards` at `390x844`, clicked `示例内容`, inspected the revealed answer panel CSSOM and computed styles, then advanced into recall-check mode and inspected the hidden answer panel computed styles.
+
+Observed: CSSOM reported `.study-cards-answer-panel`, `.is-hidden`, `.is-hidden::before`, `:hover`, `:focus-visible`, and `.is-revealed` reading `var(--study-cards-answer-panel-*)`; learning mode showed `.study-cards-answer-panel is-revealed`, recall mode showed `.study-cards-answer-panel is-hidden` with dashed border and token-derived background. Mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; a follow-up ordered console check reported 0 errors and 0 warnings.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10ay`, noting that this closes only the Study Cards answer panel surface color token sub-item while leaving answer content emphasis colors and other Study Cards local colors for later passes.
