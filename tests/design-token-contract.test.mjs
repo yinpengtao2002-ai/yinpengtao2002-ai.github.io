@@ -562,6 +562,27 @@ test("study cards mobile edit button colors derive from shared design tokens", a
   assert.match(mobileEditButtonBlock, /color:\s*var\(--study-cards-mobile-edit-button-text\)/);
 });
 
+test("study cards memory feedback button colors derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const memoryActionButtonBlock = readCssRule(globals, ".study-cards-memory-actions button");
+  const shakyButtonBlock = readCssRule(globals, ".study-cards-memory-actions .is-shaky");
+
+  assert.match(rootSource, /--study-cards-memory-action-button-border:\s*color-mix\(in srgb,\s*var\(--border\) 84%,\s*transparent\)/);
+  assert.match(rootSource, /--study-cards-memory-action-button-bg:\s*color-mix\(in srgb,\s*var\(--card\) 90%,\s*var\(--background\)\)/);
+  assert.match(rootSource, /--study-cards-memory-action-button-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 78%,\s*var\(--muted\)\)/);
+  assert.match(rootSource, /--study-cards-memory-action-shaky-border:\s*color-mix\(in srgb,\s*var\(--accent\) 24%,\s*var\(--border\)\)/);
+  assert.match(rootSource, /--study-cards-memory-action-shaky-bg:\s*color-mix\(in srgb,\s*var\(--accent\) 7%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--study-cards-memory-action-shaky-text:\s*color-mix\(in srgb,\s*var\(--accent\) 84%,\s*var\(--foreground\)\)/);
+  assert.match(memoryActionButtonBlock, /border:\s*1px solid var\(--study-cards-memory-action-button-border\)/);
+  assert.match(memoryActionButtonBlock, /background:\s*var\(--study-cards-memory-action-button-bg\)/);
+  assert.match(memoryActionButtonBlock, /color:\s*var\(--study-cards-memory-action-button-text\)/);
+  assert.match(shakyButtonBlock, /border-color:\s*var\(--study-cards-memory-action-shaky-border\)/);
+  assert.match(shakyButtonBlock, /background:\s*var\(--study-cards-memory-action-shaky-bg\)/);
+  assert.match(shakyButtonBlock, /color:\s*var\(--study-cards-memory-action-shaky-text\)/);
+});
+
 test("study cards completion action button colors derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];

@@ -5014,3 +5014,69 @@ Observed: page class `study-cards-page has-result is-mobile-practice`; the butto
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10as`, noting that this closes only the Study Cards mobile practice `编辑内容` button color token sub-item while leaving memory feedback buttons, speak buttons, and other button color details for later passes.
+
+### Task 78: Tokenize Study Cards Memory Feedback Button Colors
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/tools/study-cards` memory feedback action: `.study-cards-memory-actions button` and the emphasized `.study-cards-memory-actions .is-shaky` state. This pass covers only the visible `再记一次` feedback button; speak/pronunciation buttons, nav-arrow colors, and other button details remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the memory feedback button base colors and `.is-shaky` colors to read `--study-cards-memory-action-*` tokens from `:root`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the memory feedback tokens did not exist and `.study-cards-memory-actions button` / `.study-cards-memory-actions .is-shaky` still wrote their border, background, and text colors directly.
+
+- [x] **Step 4: Move memory feedback colors to shared tokens**
+
+Added `--study-cards-memory-action-button-border`, `--study-cards-memory-action-button-bg`, `--study-cards-memory-action-button-text`, `--study-cards-memory-action-shaky-border`, `--study-cards-memory-action-shaky-bg`, and `--study-cards-memory-action-shaky-text` to `:root`, deriving them from the site border/card/background/foreground/muted/accent tokens. Updated the memory feedback CSS rules to use those tokens while preserving sizing, layout, radius, and transitions.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 47/47 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 371/371 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards memory feedback button in browser**
+
+Started `npm run start -- --port 3088`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3088/tools/study-cards` at `390x844`, clicked `示例内容`, waited for `.study-cards-memory-actions .is-shaky`, and recursively inspected CSSOM inside stylesheets.
+
+Observed: the visible feedback label was `再记一次`; CSSOM reported `.study-cards-memory-actions button` reading `var(--study-cards-memory-action-button-border)`, `var(--study-cards-memory-action-button-bg)`, and `var(--study-cards-memory-action-button-text)`; `.study-cards-memory-actions .is-shaky` read `var(--study-cards-memory-action-shaky-border)`, `var(--study-cards-memory-action-shaky-bg)`, and `var(--study-cards-memory-action-shaky-text)`. Mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10at`, noting that this closes only the Study Cards `再记一次` memory feedback button color token sub-item while leaving speak/pronunciation buttons, nav-arrow colors, and other button details for later passes.
