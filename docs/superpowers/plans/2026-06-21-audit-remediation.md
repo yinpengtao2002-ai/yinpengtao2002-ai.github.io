@@ -5872,3 +5872,69 @@ Observed: CSSOM contained `.thinking-article-type` reading `border: 1px solid va
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bf`, noting that this closes only the Thinking Lab article category pill and action-link color sub-item while leaving other local Thinking Lab colors for later passes.
+
+### Task 91: Tokenize Thinking Lab Border Colors
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/thinking-lab` list page border colors for panels, filter chips, article cards, tool cards, and their hover/active states. This pass covers only the main list-page borders; title, description, eyebrow, and other text colors remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `--thinking-panel-border`, `--thinking-filter-chip-border`, `--thinking-filter-chip-active-border`, `--thinking-article-card-border`, `--thinking-tool-card-border`, `--thinking-article-card-hover-border`, and `--thinking-tool-card-hover-border` to exist in `:root`, and requiring the relevant CSS rules to read those tokens.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the Thinking Lab border tokens did not exist and the panel/chip/card rules still wrote their border colors directly.
+
+- [x] **Step 4: Move Thinking Lab borders to shared tokens**
+
+Added the seven Thinking Lab border tokens to `:root`, deriving them from `--foreground`, `--border`, and `--accent`. Updated the panel, filter chip, active chip, article card, tool card, and hover rules to read those variables while preserving layout, radius, transitions, and hover behavior.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 60/60 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 384/384 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Thinking Lab in browser**
+
+Started `npm run start -- --port 3101`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3101/thinking-lab?audit=ui-p1-10bg`, inspected root border tokens and panel/chip/card CSSOM at desktop width, resized to `390x844`, checked computed border colors, and checked the browser console.
+
+Observed: root border tokens existed for panels, chips, cards, and hover states; panel/chip/card borders computed normally; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bg`, noting that this closes only the Thinking Lab main border-color sub-item while leaving title, description, eyebrow, and other local text colors for later passes.

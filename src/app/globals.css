@@ -37,6 +37,13 @@
   --thinking-filter-chip-bg: color-mix(in srgb, var(--card) 88%, var(--background));
   --thinking-filter-chip-active-bg: color-mix(in srgb, var(--accent) 9%, var(--card));
   --thinking-filter-chip-count-text: color-mix(in srgb, var(--muted) 68%, var(--card));
+  --thinking-panel-border: color-mix(in srgb, var(--foreground) 9%, var(--border));
+  --thinking-filter-chip-border: color-mix(in srgb, var(--foreground) 8%, var(--border));
+  --thinking-filter-chip-active-border: color-mix(in srgb, var(--accent) 34%, var(--border));
+  --thinking-article-card-border: color-mix(in srgb, var(--foreground) 10%, var(--border));
+  --thinking-tool-card-border: color-mix(in srgb, var(--foreground) 9%, var(--border));
+  --thinking-article-card-hover-border: color-mix(in srgb, var(--accent) 28%, var(--border));
+  --thinking-tool-card-hover-border: color-mix(in srgb, var(--accent) 30%, var(--border));
   --thinking-tool-icon-bg: var(--accent-secondary);
   --thinking-tool-icon-alt-bg: var(--accent-tertiary);
   --thinking-tool-icon-text: var(--card);
@@ -4228,7 +4235,7 @@ h6 {
 
 .thinking-content-panel,
 .thinking-tools-panel {
-  border: 1px solid color-mix(in srgb, var(--foreground) 9%, var(--border));
+  border: 1px solid var(--thinking-panel-border);
   border-radius: 8px;
   background: var(--thinking-panel-bg);
   box-shadow: var(--thinking-panel-shadow);
@@ -4275,7 +4282,7 @@ h6 {
   align-items: center;
   gap: 8px;
   min-height: 32px;
-  border: 1px solid color-mix(in srgb, var(--foreground) 8%, var(--border));
+  border: 1px solid var(--thinking-filter-chip-border);
   border-radius: 999px;
   padding: 0 12px;
   color: color-mix(in srgb, var(--foreground) 58%, var(--muted));
@@ -4292,7 +4299,7 @@ h6 {
 
 .thinking-filter-chip.active {
   color: color-mix(in srgb, var(--foreground) 86%, var(--accent));
-  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+  border-color: var(--thinking-filter-chip-active-border);
   background: var(--thinking-filter-chip-active-bg);
 }
 
@@ -4315,7 +4322,7 @@ h6 {
   align-items: center;
   min-height: 94px;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+  border: 1px solid var(--thinking-article-card-border);
   border-radius: 8px;
   background: var(--thinking-article-card-bg);
   box-shadow: var(--thinking-article-card-shadow);
@@ -4376,7 +4383,7 @@ h6 {
   align-items: center;
   min-height: 92px;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--foreground) 9%, var(--border));
+  border: 1px solid var(--thinking-tool-card-border);
   border-radius: 8px;
   background: var(--thinking-tool-card-bg);
   padding: 13px;
@@ -7662,14 +7669,14 @@ h6 {
 
 @media (hover: hover) and (pointer: fine) {
   .thinking-article-card:hover {
-    border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+    border-color: var(--thinking-article-card-hover-border);
     background: var(--thinking-card-hover-bg);
     box-shadow: var(--thinking-article-card-hover-shadow);
     transform: translateY(-2px);
   }
 
   .thinking-tool-card:hover {
-    border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+    border-color: var(--thinking-tool-card-hover-border);
     background: var(--thinking-card-hover-bg);
     box-shadow: var(--thinking-tool-card-hover-shadow);
     transform: translateY(-2px);
