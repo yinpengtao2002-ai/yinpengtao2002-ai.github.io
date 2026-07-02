@@ -489,6 +489,30 @@ test("study cards error alert colors derive from shared design tokens", async ()
   assert.match(errorBlock, /color:\s*var\(--study-cards-error-text\)/);
 });
 
+test("study cards input action button colors derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const actionButtonBlock = readCssRule(globals, ".study-cards-actions button");
+  const actionButtonHoverBlock = readCssRule(globals, ".study-cards-actions button:hover");
+  const primaryButtonBlock = readCssRule(globals, ".study-cards-actions .study-cards-primary");
+
+  assert.match(rootSource, /--study-cards-action-button-border:\s*color-mix\(in srgb,\s*var\(--border\) 86%,\s*transparent\)/);
+  assert.match(rootSource, /--study-cards-action-button-bg:\s*var\(--card\)/);
+  assert.match(rootSource, /--study-cards-action-button-text:\s*var\(--foreground\)/);
+  assert.match(rootSource, /--study-cards-action-button-hover-border:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 36%,\s*var\(--border\)\)/);
+  assert.match(rootSource, /--study-cards-primary-action-border:\s*color-mix\(in srgb,\s*var\(--foreground\) 12%,\s*var\(--accent\)\)/);
+  assert.match(rootSource, /--study-cards-primary-action-bg:\s*var\(--foreground\)/);
+  assert.match(rootSource, /--study-cards-primary-action-text:\s*var\(--background\)/);
+  assert.match(actionButtonBlock, /border:\s*1px solid var\(--study-cards-action-button-border\)/);
+  assert.match(actionButtonBlock, /background:\s*var\(--study-cards-action-button-bg\)/);
+  assert.match(actionButtonBlock, /color:\s*var\(--study-cards-action-button-text\)/);
+  assert.match(actionButtonHoverBlock, /border-color:\s*var\(--study-cards-action-button-hover-border\)/);
+  assert.match(primaryButtonBlock, /border-color:\s*var\(--study-cards-primary-action-border\)/);
+  assert.match(primaryButtonBlock, /background:\s*var\(--study-cards-primary-action-bg\)/);
+  assert.match(primaryButtonBlock, /color:\s*var\(--study-cards-primary-action-text\)/);
+});
+
 test("chat assistant shell visuals use shared design tokens", async () => {
   const chatWidget = await readProjectFile("src/components/ChatWidget.tsx");
   const globals = await readProjectFile("src/app/globals.css");

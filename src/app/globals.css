@@ -40,6 +40,13 @@
   --study-cards-error-border: color-mix(in srgb, var(--accent) 24%, var(--border));
   --study-cards-error-bg: color-mix(in srgb, var(--accent) 8%, var(--card));
   --study-cards-error-text: color-mix(in srgb, var(--accent) 86%, var(--foreground));
+  --study-cards-action-button-border: color-mix(in srgb, var(--border) 86%, transparent);
+  --study-cards-action-button-bg: var(--card);
+  --study-cards-action-button-text: var(--foreground);
+  --study-cards-action-button-hover-border: color-mix(in srgb, var(--accent-secondary) 36%, var(--border));
+  --study-cards-primary-action-border: color-mix(in srgb, var(--foreground) 12%, var(--accent));
+  --study-cards-primary-action-bg: var(--foreground);
+  --study-cards-primary-action-text: var(--background);
   --study-cards-empty-preview-shadow: 0 14px 34px color-mix(in srgb, var(--foreground) 8%, transparent);
   --study-cards-empty-card-shadow: 0 24px 58px color-mix(in srgb, var(--foreground) 13%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 82%, transparent);
   --study-cards-deck-layer-shadow: 0 18px 44px color-mix(in srgb, var(--foreground) 8%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 72%, transparent);
@@ -4567,10 +4574,10 @@ h6 {
   justify-content: center;
   gap: 7px;
   min-height: 42px;
-  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  border: 1px solid var(--study-cards-action-button-border);
   border-radius: 8px;
-  background: var(--card);
-  color: var(--foreground);
+  background: var(--study-cards-action-button-bg);
+  color: var(--study-cards-action-button-text);
   cursor: pointer;
   font: inherit;
   font-size: 13px;
@@ -4585,7 +4592,7 @@ h6 {
 }
 
 .study-cards-actions button:hover {
-  border-color: color-mix(in srgb, var(--accent-secondary) 36%, var(--border));
+  border-color: var(--study-cards-action-button-hover-border);
   transform: translateY(-1px);
 }
 
@@ -4596,9 +4603,9 @@ h6 {
 }
 
 .study-cards-actions .study-cards-primary {
-  border-color: color-mix(in srgb, var(--foreground) 12%, var(--accent));
-  background: var(--foreground);
-  color: var(--background);
+  border-color: var(--study-cards-primary-action-border);
+  background: var(--study-cards-primary-action-bg);
+  color: var(--study-cards-primary-action-text);
 }
 
 .study-cards-actions .study-cards-primary svg {

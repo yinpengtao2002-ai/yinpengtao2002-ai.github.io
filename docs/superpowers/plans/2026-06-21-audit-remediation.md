@@ -4684,3 +4684,69 @@ Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; `.study-cards-error` w
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10an`, noting that this closes only the Study Cards error alert color token sub-item while leaving export-area shadows and button colors for separate passes.
+
+### Task 73: Tokenize Study Cards Input Action Button Colors
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/tools/study-cards` input action buttons: the base `.study-cards-actions button`, its hover border, and `.study-cards-actions .study-cards-primary`. This pass covers only the input-panel buttons `生成背单词卡`, `示例内容`, and `清空`; result-area export buttons and completion buttons remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring input action button colors to read `--study-cards-action-button-*` and `--study-cards-primary-action-*` tokens from `:root`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the action button tokens did not exist and `.study-cards-actions button` / `.study-cards-primary` still wrote their border, background, and text colors directly.
+
+- [x] **Step 4: Move input action button colors to shared tokens**
+
+Added `--study-cards-action-button-border`, `--study-cards-action-button-bg`, `--study-cards-action-button-text`, `--study-cards-action-button-hover-border`, `--study-cards-primary-action-border`, `--study-cards-primary-action-bg`, and `--study-cards-primary-action-text` to `:root`, deriving them from the site border/card/foreground/background/accent tokens. Updated the input action button CSS rules to use those tokens while preserving sizing, layout, radius, and transitions.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 42/42 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 366/366 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards input action buttons in browser**
+
+Started `npm run start -- --port 3083`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3083/tools/study-cards`, inspected the input action button CSSOM, then resized to `390x844`.
+
+Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; the three button labels were visible: `生成背单词卡`, `示例内容`, and `清空`; CSSOM reported `.study-cards-actions button` reading `var(--study-cards-action-button-border)`, `var(--study-cards-action-button-bg)`, and `var(--study-cards-action-button-text)`, hover reading `var(--study-cards-action-button-hover-border)`, and primary reading `var(--study-cards-primary-action-*)`. Mobile `clientWidth=390`, `scrollWidth=390`; action area was visible at about `334x144`. Console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10ao`, noting that this closes only the Study Cards input action button color token sub-item while leaving result-area export buttons, completion buttons, and other button color details for later passes.
