@@ -297,6 +297,31 @@ test("home thinking count pill shadows derive from shared design tokens", async 
   assert.match(trackPillBlock, /box-shadow:\s*var\(--home-thinking-track-count-pill-shadow\)/);
 });
 
+test("home thinking preview list item colors derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const previewItemBlock = readCssRule(globals, ".home-thinking-preview-item");
+  const previewItemHoverBlock = readCssRule(globals, ".home-thinking-preview-item:hover");
+  const previewItemIndexBlock = readCssRule(globals, ".home-thinking-preview-item span");
+  const scopedSource = [previewItemBlock, previewItemHoverBlock, previewItemIndexBlock].join("\n").toLowerCase();
+
+  for (const literal of ["#fffaf0", "rgba(255, 250, 240"]) {
+    assert.doesNotMatch(scopedSource, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(rootSource, /--home-thinking-preview-item-border:\s*color-mix\(in srgb,\s*var\(--thinking-track-accent,\s*var\(--card\)\) 20%,/);
+  assert.match(rootSource, /--home-thinking-preview-item-bg:\s*color-mix\(in srgb,\s*var\(--thinking-track-accent,\s*var\(--card\)\) 12%,/);
+  assert.match(rootSource, /--home-thinking-preview-item-hover-bg:\s*color-mix\(in srgb,\s*var\(--thinking-track-accent,\s*var\(--card\)\) 20%,/);
+  assert.match(rootSource, /--home-thinking-preview-item-text:\s*color-mix\(in srgb,\s*var\(--card\) 90%,\s*transparent\)/);
+  assert.match(rootSource, /--home-thinking-preview-item-index-text:\s*color-mix\(in srgb,\s*var\(--thinking-track-accent,\s*var\(--card\)\) 74%,\s*var\(--card\)\)/);
+  assert.match(previewItemBlock, /border:\s*1px solid var\(--home-thinking-preview-item-border\)/);
+  assert.match(previewItemBlock, /background:\s*var\(--home-thinking-preview-item-bg\)/);
+  assert.match(previewItemBlock, /color:\s*var\(--home-thinking-preview-item-text\)/);
+  assert.match(previewItemHoverBlock, /background:\s*var\(--home-thinking-preview-item-hover-bg\)/);
+  assert.match(previewItemIndexBlock, /color:\s*var\(--home-thinking-preview-item-index-text\)/);
+});
+
 test("home thinking track card active shadow derives from a shared design token", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];

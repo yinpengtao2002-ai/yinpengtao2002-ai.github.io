@@ -30,6 +30,11 @@
   --home-thinking-preview-count-pill-shadow: 0 8px 18px color-mix(in srgb, var(--foreground) 20%, transparent);
   --home-thinking-track-count-pill-shadow: 0 6px 16px color-mix(in srgb, var(--foreground) 5.5%, transparent);
   --home-thinking-track-card-active-shadow: 0 16px 42px color-mix(in srgb, var(--foreground) 7%, transparent);
+  --home-thinking-preview-item-border: color-mix(in srgb, var(--thinking-track-accent, var(--card)) 20%, color-mix(in srgb, var(--card) 20%, transparent));
+  --home-thinking-preview-item-bg: color-mix(in srgb, var(--thinking-track-accent, var(--card)) 12%, color-mix(in srgb, var(--card) 8%, transparent));
+  --home-thinking-preview-item-hover-bg: color-mix(in srgb, var(--thinking-track-accent, var(--card)) 20%, color-mix(in srgb, var(--card) 12%, transparent));
+  --home-thinking-preview-item-text: color-mix(in srgb, var(--card) 90%, transparent);
+  --home-thinking-preview-item-index-text: color-mix(in srgb, var(--thinking-track-accent, var(--card)) 74%, var(--card));
   --thinking-page-grid-line-x: color-mix(in srgb, var(--foreground) 2%, transparent);
   --thinking-page-grid-line-y: color-mix(in srgb, var(--foreground) 1.5%, transparent);
   --thinking-page-gradient-start: color-mix(in srgb, var(--card) 78%, var(--background));
@@ -3896,10 +3901,10 @@ h6 {
   align-items: center;
   gap: 9px;
   min-height: 30px;
-  border: 1px solid color-mix(in srgb, var(--thinking-track-accent, #fffaf0) 20%, rgba(255, 250, 240, 0.2));
+  border: 1px solid var(--home-thinking-preview-item-border);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--thinking-track-accent, #fffaf0) 12%, rgba(255, 250, 240, 0.08));
-  color: rgba(255, 250, 240, 0.9);
+  background: var(--home-thinking-preview-item-bg);
+  color: var(--home-thinking-preview-item-text);
   padding: 0 9px;
   text-decoration: none;
   transition:
@@ -3908,12 +3913,12 @@ h6 {
 }
 
 .home-thinking-preview-item:hover {
-  background: color-mix(in srgb, var(--thinking-track-accent, #fffaf0) 20%, rgba(255, 250, 240, 0.12));
+  background: var(--home-thinking-preview-item-hover-bg);
   transform: translateX(2px);
 }
 
 .home-thinking-preview-item span {
-  color: color-mix(in srgb, var(--thinking-track-accent, #fffaf0) 74%, #fffaf0);
+  color: var(--home-thinking-preview-item-index-text);
   font-family: var(--font-poppins);
   font-size: 10px;
   font-variant-numeric: tabular-nums;

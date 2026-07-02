@@ -6070,3 +6070,69 @@ Observed: the four page background tokens existed and resolved; the CSSOM rule r
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bi`, noting that this closes only the Thinking Lab page background texture sub-item while leaving other non-text decorative colors for later passes.
+
+### Task 94: Tokenize Home Thinking Preview List Item Colors
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the homepage "工具与思考" preview list item colors: `.home-thinking-preview-item`, `.home-thinking-preview-item:hover`, and `.home-thinking-preview-item span`. This pass covers only the preview item border/background/text/index colors; preview panel backgrounds, image overlays, count pill backgrounds, and other homepage decorative colors remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `--home-thinking-preview-item-border`, `--home-thinking-preview-item-bg`, `--home-thinking-preview-item-hover-bg`, `--home-thinking-preview-item-text`, and `--home-thinking-preview-item-index-text` to exist in `:root`, and requiring the three scoped preview item rules to read those variables while rejecting the old `#fffaf0` / `rgba(255, 250, 240, ...)` literals.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation, 62/63 passing. The new test failed because `.home-thinking-preview-item`, hover, and span still contained `#fffaf0` and `rgba(255, 250, 240, ...)` in the scoped CSS rules.
+
+- [x] **Step 4: Move homepage preview item colors to shared tokens**
+
+Added the five preview item tokens to `:root`, deriving them from `--thinking-track-accent` with a `--card` fallback and from `--card` for the warm text surfaces. Updated `.home-thinking-preview-item`, hover, and item index `span` to read those variables.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 63/63 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 387/387 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify homepage in browser**
+
+Started `npm run start -- --port 3104`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3104/?audit=ui-p1-10bj`, inspected the five preview item tokens, the CSSOM preview item rules, and computed item/index colors at desktop width, then resized to `390x844` and repeated the overflow and console checks.
+
+Observed: the five preview item tokens existed and resolved; the CSSOM rules read `var(--home-thinking-preview-item-*)`; the scoped preview item CSSOM did not include the old warm-white literals; desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bj`, noting that this closes only the homepage Thinking preview list item color sub-item while leaving preview panel backgrounds, image overlays, count pill backgrounds, and other homepage decorative colors for later passes.
