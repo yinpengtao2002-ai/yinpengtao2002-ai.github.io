@@ -113,6 +113,17 @@
   --study-cards-answer-content-meta-bg: color-mix(in srgb, var(--background) 62%, var(--card));
   --study-cards-answer-content-meta-text: color-mix(in srgb, var(--foreground) 52%, var(--muted));
   --study-cards-answer-content-meta-label-text: color-mix(in srgb, var(--foreground) 70%, var(--muted));
+  --study-cards-bingo-border: color-mix(in srgb, var(--accent-tertiary) 28%, var(--border));
+  --study-cards-bingo-bg:
+    radial-gradient(circle at 50% 20%, color-mix(in srgb, var(--accent-tertiary) 20%, transparent), transparent 34%),
+    linear-gradient(135deg, color-mix(in srgb, var(--accent-secondary) 9%, var(--card)), color-mix(in srgb, var(--background) 62%, var(--card))),
+    var(--card);
+  --study-cards-bingo-text: var(--foreground);
+  --study-cards-bingo-icon-border: color-mix(in srgb, var(--accent-tertiary) 36%, var(--border));
+  --study-cards-bingo-icon-bg: color-mix(in srgb, var(--accent-tertiary) 14%, var(--card));
+  --study-cards-bingo-icon-text: color-mix(in srgb, var(--accent-tertiary) 78%, var(--foreground));
+  --study-cards-bingo-kicker-text: color-mix(in srgb, var(--accent-tertiary) 76%, var(--foreground));
+  --study-cards-bingo-copy-text: color-mix(in srgb, var(--foreground) 58%, var(--muted));
   --study-cards-bingo-action-button-border: color-mix(in srgb, var(--border) 78%, transparent);
   --study-cards-bingo-action-button-bg: color-mix(in srgb, var(--card) 92%, var(--background));
   --study-cards-bingo-action-button-text: color-mix(in srgb, var(--foreground) 74%, var(--muted));
@@ -5599,14 +5610,11 @@ h6 {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--accent-tertiary) 28%, var(--border));
+  border: 1px solid var(--study-cards-bingo-border);
   border-radius: 8px;
-  background:
-    radial-gradient(circle at 50% 20%, color-mix(in srgb, var(--accent-tertiary) 20%, transparent), transparent 34%),
-    linear-gradient(135deg, color-mix(in srgb, var(--accent-secondary) 9%, var(--card)), color-mix(in srgb, var(--background) 62%, var(--card))),
-    var(--card);
+  background: var(--study-cards-bingo-bg);
   box-shadow: var(--study-cards-bingo-shadow);
-  color: var(--foreground);
+  color: var(--study-cards-bingo-text);
   padding: clamp(26px, 4vw, 42px);
   text-align: center;
 }
@@ -5618,11 +5626,11 @@ h6 {
   align-items: center;
   justify-content: center;
   margin-bottom: 16px;
-  border: 1px solid color-mix(in srgb, var(--accent-tertiary) 36%, var(--border));
+  border: 1px solid var(--study-cards-bingo-icon-border);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--accent-tertiary) 14%, var(--card));
+  background: var(--study-cards-bingo-icon-bg);
   box-shadow: var(--study-cards-bingo-icon-shadow);
-  color: color-mix(in srgb, var(--accent-tertiary) 78%, var(--foreground));
+  color: var(--study-cards-bingo-icon-text);
 }
 
 .study-cards-bingo-icon svg {
@@ -5632,7 +5640,7 @@ h6 {
 
 .study-cards-bingo p {
   margin: 0 0 6px;
-  color: color-mix(in srgb, var(--accent-tertiary) 76%, var(--foreground));
+  color: var(--study-cards-bingo-kicker-text);
   font-size: 12px;
   font-weight: 950;
   letter-spacing: 0;
@@ -5647,7 +5655,7 @@ h6 {
 .study-cards-bingo > span:not(.study-cards-bingo-icon) {
   max-width: 360px;
   margin-top: 10px;
-  color: color-mix(in srgb, var(--foreground) 58%, var(--muted));
+  color: var(--study-cards-bingo-copy-text);
   font-size: 13px;
   font-weight: 760;
   line-height: 1.6;

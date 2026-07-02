@@ -5476,3 +5476,69 @@ Observed: CSSOM reported all nine answer-content selectors reading `var(--study-
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10az`, noting that this closes only the Study Cards answer content color token sub-item while leaving completion-state bingo surfaces and other Study Cards local colors for later passes.
+
+### Task 85: Tokenize Study Cards Completion Surface Colors
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/tools/study-cards` final completion state surface colors: `.study-cards-bingo`, `.study-cards-bingo-icon`, `.study-cards-bingo p`, and `.study-cards-bingo > span:not(.study-cards-bingo-icon)`. This pass covers only the BINGO container border/background/text, trophy icon border/background/text, kicker text, and completion explanation text; memory feedback helper copy and other Study Cards local colors remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the completion surface rules to read `--study-cards-bingo-*` tokens from `:root`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `--study-cards-bingo-border` did not exist and the completion surface rules still wrote their border, background, and text colors directly.
+
+- [x] **Step 4: Move BINGO surface colors to shared tokens**
+
+Added `--study-cards-bingo-border`, `--study-cards-bingo-bg`, `--study-cards-bingo-text`, trophy icon surface tokens, `--study-cards-bingo-kicker-text`, and `--study-cards-bingo-copy-text` to `:root`, deriving them from the site accent-tertiary, accent-secondary, border, card, background, foreground, and muted tokens. Updated the completion CSS rules to read those variables while preserving layout, shadows, typography, and completion actions.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 54/54 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 378/378 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards BINGO surface in browser**
+
+Started `npm run start -- --port 3095`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3095/tools/study-cards` at `390x844`, clicked `示例内容`, advanced through the learning and recall passes into BINGO, then inspected the completion container, trophy icon, kicker, and explanation from the page CSSOM and computed styles.
+
+Observed: BINGO text was visible; CSSOM reported `.study-cards-bingo`, `.study-cards-bingo-icon`, `.study-cards-bingo p`, and `.study-cards-bingo > span:not(.study-cards-bingo-icon)` reading `var(--study-cards-bingo-*)`; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10ba`, noting that this closes only the Study Cards completion surface color token sub-item while leaving memory feedback helper copy and other Study Cards local colors for later passes.

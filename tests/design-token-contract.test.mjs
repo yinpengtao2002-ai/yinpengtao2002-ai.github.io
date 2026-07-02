@@ -461,6 +461,33 @@ test("study cards completion shadows derive from shared design tokens", async ()
   assert.match(bingoIconBlock, /box-shadow:\s*var\(--study-cards-bingo-icon-shadow\)/);
 });
 
+test("study cards completion surface colors derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const bingoBlock = readCssRule(globals, ".study-cards-bingo");
+  const bingoIconBlock = readCssRule(globals, ".study-cards-bingo-icon");
+  const bingoKickerBlock = readCssRule(globals, ".study-cards-bingo p");
+  const bingoCopyBlock = readCssRule(globals, ".study-cards-bingo > span:not(.study-cards-bingo-icon)");
+
+  assert.match(rootSource, /--study-cards-bingo-border:\s*color-mix\(in srgb,\s*var\(--accent-tertiary\) 28%,\s*var\(--border\)\)/);
+  assert.match(rootSource, /--study-cards-bingo-bg:\s*radial-gradient\(circle at 50% 20%,\s*color-mix\(in srgb,\s*var\(--accent-tertiary\) 20%,\s*transparent\),\s*transparent 34%\),\s*linear-gradient\(135deg,\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 9%,\s*var\(--card\)\),\s*color-mix\(in srgb,\s*var\(--background\) 62%,\s*var\(--card\)\)\),\s*var\(--card\)/);
+  assert.match(rootSource, /--study-cards-bingo-text:\s*var\(--foreground\)/);
+  assert.match(rootSource, /--study-cards-bingo-icon-border:\s*color-mix\(in srgb,\s*var\(--accent-tertiary\) 36%,\s*var\(--border\)\)/);
+  assert.match(rootSource, /--study-cards-bingo-icon-bg:\s*color-mix\(in srgb,\s*var\(--accent-tertiary\) 14%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--study-cards-bingo-icon-text:\s*color-mix\(in srgb,\s*var\(--accent-tertiary\) 78%,\s*var\(--foreground\)\)/);
+  assert.match(rootSource, /--study-cards-bingo-kicker-text:\s*color-mix\(in srgb,\s*var\(--accent-tertiary\) 76%,\s*var\(--foreground\)\)/);
+  assert.match(rootSource, /--study-cards-bingo-copy-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 58%,\s*var\(--muted\)\)/);
+  assert.match(bingoBlock, /border:\s*1px solid var\(--study-cards-bingo-border\)/);
+  assert.match(bingoBlock, /background:\s*var\(--study-cards-bingo-bg\)/);
+  assert.match(bingoBlock, /color:\s*var\(--study-cards-bingo-text\)/);
+  assert.match(bingoIconBlock, /border:\s*1px solid var\(--study-cards-bingo-icon-border\)/);
+  assert.match(bingoIconBlock, /background:\s*var\(--study-cards-bingo-icon-bg\)/);
+  assert.match(bingoIconBlock, /color:\s*var\(--study-cards-bingo-icon-text\)/);
+  assert.match(bingoKickerBlock, /color:\s*var\(--study-cards-bingo-kicker-text\)/);
+  assert.match(bingoCopyBlock, /color:\s*var\(--study-cards-bingo-copy-text\)/);
+});
+
 test("study cards mobile practice deck layer shadow derives from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
