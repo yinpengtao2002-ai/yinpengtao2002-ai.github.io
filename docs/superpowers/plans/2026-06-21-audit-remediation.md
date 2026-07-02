@@ -4236,3 +4236,69 @@ Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; the back link, input p
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10ag`, noting that this closes only the Study Cards page shell/input-output-panel shadow token sub-item and leaves practice-card, empty-preview, and button color details for separate passes.
+
+### Task 66: Tokenize Study Cards Empty Preview Shadows
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/tools/study-cards` initial empty preview shadows: `.study-cards-empty-preview::before` / `::after` and `.study-cards-empty-card`. This pass does not migrate Study Cards practice-card shadows, answer-panel shadows, export-area shadows, or button colors.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the Study Cards empty preview layer and empty card to read `--study-cards-empty-*` tokens from `:root`, while rejecting the old direct `rgba(20, 20, 19, ...)` and white inset shadow literals.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the empty preview layer still used `0 14px 34px rgba(20, 20, 19, 0.08)`, and the empty card still used `0 24px 58px rgba(20, 20, 19, 0.13)` plus `inset 0 1px 0 rgba(255, 255, 255, 0.82)`.
+
+- [x] **Step 4: Move Study Cards empty preview shadows to shared tokens**
+
+Added `--study-cards-empty-preview-shadow` and `--study-cards-empty-card-shadow` to `:root`, deriving the outer shadows from `--foreground` and the inset highlight from `--card`. Updated the empty preview layer and empty card rules to use those variables while preserving layout, decorative layering, background gradients, and padding.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 35/35 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 359/359 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards empty preview browser behavior**
+
+Started `npm run start -- --port 3076`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3076/tools/study-cards`, inspected `--study-cards-empty-preview-shadow` and `--study-cards-empty-card-shadow` plus the computed pseudo-element/card shadows on desktop, then resized to `390x844` and repeated the layout check.
+
+Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; the empty preview and empty card were both visible at `240x320`, and their computed shadows resolved from the new tokens. Mobile `clientWidth=390`, `scrollWidth=390`; the empty preview and empty card were both visible at `220x293`, and console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10ah`, noting that this closes only the Study Cards initial empty-preview shadow token sub-item and leaves practice-card, answer-panel, export-area shadows, and button colors for separate passes.

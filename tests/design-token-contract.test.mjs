@@ -356,6 +356,24 @@ test("study cards page shell shadows derive from shared design tokens", async ()
   assert.match(panelBlock, /box-shadow:\s*var\(--study-cards-panel-shadow\)/);
 });
 
+test("study cards empty preview shadows derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const previewLayerBlock = globals.match(/\.study-cards-empty-preview::before,\n\.study-cards-empty-preview::after\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+  const emptyCardBlock = readCssRule(globals, ".study-cards-empty-card");
+  const scopedSource = [previewLayerBlock, emptyCardBlock].join("\n");
+
+  assert.ok(previewLayerBlock, "study cards empty preview layer rule should exist");
+  assert.doesNotMatch(scopedSource, /0 14px 34px rgba\(20,\s*20,\s*19,\s*0\.08\)/);
+  assert.doesNotMatch(scopedSource, /0 24px 58px rgba\(20,\s*20,\s*19,\s*0\.13\)/);
+  assert.doesNotMatch(scopedSource, /inset 0 1px 0 rgba\(255,\s*255,\s*255,\s*0\.82\)/);
+  assert.match(rootSource, /--study-cards-empty-preview-shadow:\s*0 14px 34px color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*transparent\)/);
+  assert.match(rootSource, /--study-cards-empty-card-shadow:\s*0 24px 58px color-mix\(in srgb,\s*var\(--foreground\) 13%,\s*transparent\),\s*inset 0 1px 0 color-mix\(in srgb,\s*var\(--card\) 82%,\s*transparent\)/);
+  assert.match(previewLayerBlock, /box-shadow:\s*var\(--study-cards-empty-preview-shadow\)/);
+  assert.match(emptyCardBlock, /box-shadow:\s*var\(--study-cards-empty-card-shadow\)/);
+});
+
 test("chat assistant shell visuals use shared design tokens", async () => {
   const chatWidget = await readProjectFile("src/components/ChatWidget.tsx");
   const globals = await readProjectFile("src/app/globals.css");
