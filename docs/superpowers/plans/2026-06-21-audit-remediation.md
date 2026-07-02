@@ -5740,3 +5740,69 @@ Observed: CSSOM contained `.thinking-filter-chip` reading `background: var(--thi
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bd`, noting that this closes only the Thinking Lab filter chip background/count text token sub-item while leaving tool icons and other local Thinking Lab colors for later passes.
+
+### Task 89: Tokenize Thinking Lab Tool Icon Colors
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/thinking-lab` list page quick-tool icons: `.thinking-tool-icon` and `.thinking-tool-list article:nth-child(2) .thinking-tool-icon`. This pass covers only the icon text color and primary/alternate icon backgrounds; article type pills, tool action links, and other local Thinking Lab colors remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `--thinking-tool-icon-bg`, `--thinking-tool-icon-alt-bg`, and `--thinking-tool-icon-text` to exist in `:root`, and requiring the two icon rules to read those tokens.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `--thinking-tool-icon-bg` did not exist and the icon rules still wrote `#fff`, `--accent-secondary`, and `--accent-tertiary` directly.
+
+- [x] **Step 4: Move Thinking Lab tool icon colors to shared tokens**
+
+Added the three Thinking Lab tool icon tokens to `:root`, deriving them from `--accent-secondary`, `--accent-tertiary`, and `--card`. Updated `.thinking-tool-icon` and the second-tool override to read those variables while preserving the existing icon dimensions, radius, grid centering, and mobile size override.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 58/58 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 382/382 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Thinking Lab in browser**
+
+Restarted local production with `npm run start -- --port 3099`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3099/thinking-lab`, inspected the tool icon CSSOM at desktop width, resized to `390x844`, inspected the same token usage, and checked the browser console.
+
+Observed: CSSOM contained `.thinking-tool-icon` reading `color: var(--thinking-tool-icon-text)` and `background: var(--thinking-tool-icon-bg)`, plus the second icon override reading `background: var(--thinking-tool-icon-alt-bg)`. Desktop icons rendered at `38x38`; mobile icons rendered at `40x40`; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10be`, noting that this closes only the Thinking Lab quick-tool icon color token sub-item while leaving article type pills, tool action links, and other local Thinking Lab colors for later passes.

@@ -37,6 +37,9 @@
   --thinking-filter-chip-bg: color-mix(in srgb, var(--card) 88%, var(--background));
   --thinking-filter-chip-active-bg: color-mix(in srgb, var(--accent) 9%, var(--card));
   --thinking-filter-chip-count-text: color-mix(in srgb, var(--muted) 68%, var(--card));
+  --thinking-tool-icon-bg: var(--accent-secondary);
+  --thinking-tool-icon-alt-bg: var(--accent-tertiary);
+  --thinking-tool-icon-text: var(--card);
   --thinking-panel-shadow: 0 18px 42px color-mix(in srgb, var(--foreground) 5.5%, transparent);
   --thinking-article-card-shadow: 0 10px 26px color-mix(in srgb, var(--foreground) 4%, transparent);
   --thinking-article-card-hover-shadow: 0 14px 32px color-mix(in srgb, var(--foreground) 6%, transparent);
@@ -4388,8 +4391,8 @@ h6 {
   height: 38px;
   place-items: center;
   border-radius: 8px;
-  color: #fff;
-  background: var(--accent-secondary);
+  color: var(--thinking-tool-icon-text);
+  background: var(--thinking-tool-icon-bg);
 }
 
 .thinking-tool-icon svg {
@@ -4398,7 +4401,7 @@ h6 {
 }
 
 .thinking-tool-list article:nth-child(2) .thinking-tool-icon {
-  background: var(--accent-tertiary);
+  background: var(--thinking-tool-icon-alt-bg);
 }
 
 .thinking-tool-copy {

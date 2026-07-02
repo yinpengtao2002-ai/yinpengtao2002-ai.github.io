@@ -377,6 +377,21 @@ test("thinking lab filter chip backgrounds derive from shared design tokens", as
   assert.match(filterChipCountBlock, /color:\s*var\(--thinking-filter-chip-count-text\)/);
 });
 
+test("thinking lab tool icons derive colors from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const toolIconBlock = readCssRule(globals, ".thinking-tool-icon");
+  const alternateToolIconBlock = readCssRule(globals, ".thinking-tool-list article:nth-child(2) .thinking-tool-icon");
+
+  assert.match(rootSource, /--thinking-tool-icon-bg:\s*var\(--accent-secondary\)/);
+  assert.match(rootSource, /--thinking-tool-icon-alt-bg:\s*var\(--accent-tertiary\)/);
+  assert.match(rootSource, /--thinking-tool-icon-text:\s*var\(--card\)/);
+  assert.match(toolIconBlock, /color:\s*var\(--thinking-tool-icon-text\)/);
+  assert.match(toolIconBlock, /background:\s*var\(--thinking-tool-icon-bg\)/);
+  assert.match(alternateToolIconBlock, /background:\s*var\(--thinking-tool-icon-alt-bg\)/);
+});
+
 test("study cards page shell shadows derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
