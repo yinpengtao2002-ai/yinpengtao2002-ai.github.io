@@ -51,6 +51,16 @@
   --thinking-article-type-text: color-mix(in srgb, var(--foreground) 56%, var(--muted));
   --thinking-article-type-bg: color-mix(in srgb, var(--background) 74%, var(--card));
   --thinking-action-text: var(--foreground);
+  --thinking-eyebrow-text: var(--accent);
+  --thinking-title-text: var(--foreground);
+  --thinking-intro-text: color-mix(in srgb, var(--foreground) 56%, var(--muted));
+  --thinking-panel-heading-text: var(--foreground);
+  --thinking-filter-chip-text: color-mix(in srgb, var(--foreground) 58%, var(--muted));
+  --thinking-filter-chip-active-text: color-mix(in srgb, var(--foreground) 86%, var(--accent));
+  --thinking-article-title-text: var(--foreground);
+  --thinking-article-desc-text: color-mix(in srgb, var(--foreground) 52%, var(--muted));
+  --thinking-tool-name-text: var(--foreground);
+  --thinking-tool-desc-text: color-mix(in srgb, var(--foreground) 52%, var(--muted));
   --thinking-panel-shadow: 0 18px 42px color-mix(in srgb, var(--foreground) 5.5%, transparent);
   --thinking-article-card-shadow: 0 10px 26px color-mix(in srgb, var(--foreground) 4%, transparent);
   --thinking-article-card-hover-shadow: 0 14px 32px color-mix(in srgb, var(--foreground) 6%, transparent);
@@ -4203,7 +4213,7 @@ h6 {
 
 .thinking-index-eyebrow {
   margin: 0 0 10px;
-  color: var(--accent);
+  color: var(--thinking-eyebrow-text);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0;
@@ -4212,7 +4222,7 @@ h6 {
 
 .thinking-index-title {
   margin: 0;
-  color: var(--foreground);
+  color: var(--thinking-title-text);
   font-size: clamp(1.75rem, 3.2vw, 2.45rem);
   line-height: 1.1;
   letter-spacing: 0;
@@ -4221,7 +4231,7 @@ h6 {
 .thinking-index-intro {
   max-width: 520px;
   margin: 12px 0 0;
-  color: color-mix(in srgb, var(--foreground) 56%, var(--muted));
+  color: var(--thinking-intro-text);
   font-size: 14px;
   line-height: 1.75;
 }
@@ -4265,7 +4275,7 @@ h6 {
 
 .thinking-panel-head h2 {
   margin: 0;
-  color: var(--foreground);
+  color: var(--thinking-panel-heading-text);
   font-size: 16px;
   line-height: 1.35;
 }
@@ -4285,7 +4295,7 @@ h6 {
   border: 1px solid var(--thinking-filter-chip-border);
   border-radius: 999px;
   padding: 0 12px;
-  color: color-mix(in srgb, var(--foreground) 58%, var(--muted));
+  color: var(--thinking-filter-chip-text);
   font: inherit;
   font-size: 12px;
   font-weight: 750;
@@ -4298,7 +4308,7 @@ h6 {
 }
 
 .thinking-filter-chip.active {
-  color: color-mix(in srgb, var(--foreground) 86%, var(--accent));
+  color: var(--thinking-filter-chip-active-text);
   border-color: var(--thinking-filter-chip-active-border);
   background: var(--thinking-filter-chip-active-bg);
 }
@@ -4346,14 +4356,14 @@ h6 {
 .thinking-article-title {
   display: block;
   margin-bottom: 6px;
-  color: var(--foreground);
+  color: var(--thinking-article-title-text);
   font-size: 15px;
   line-height: 1.42;
 }
 
 .thinking-article-desc {
   display: -webkit-box;
-  color: color-mix(in srgb, var(--foreground) 52%, var(--muted));
+  color: var(--thinking-article-desc-text);
   font-size: 13px;
   line-height: 1.58;
   -webkit-box-orient: vertical;
@@ -4422,14 +4432,14 @@ h6 {
 .thinking-tool-name {
   display: block;
   margin: 0 0 4px;
-  color: var(--foreground);
+  color: var(--thinking-tool-name-text);
   font-size: 14px;
   line-height: 1.35;
 }
 
 .thinking-tool-desc {
   display: -webkit-box;
-  color: color-mix(in srgb, var(--foreground) 52%, var(--muted));
+  color: var(--thinking-tool-desc-text);
   font-size: 12px;
   line-height: 1.55;
   -webkit-box-orient: vertical;

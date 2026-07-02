@@ -406,6 +406,43 @@ test("thinking lab panels chips and cards derive border colors from shared desig
   assert.match(toolHoverBlock, /border-color:\s*var\(--thinking-tool-card-hover-border\)/);
 });
 
+test("thinking lab index copy derives text colors from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const eyebrowBlock = readCssRule(globals, ".thinking-index-eyebrow");
+  const titleBlock = readCssRule(globals, ".thinking-index-title");
+  const introBlock = readCssRule(globals, ".thinking-index-intro");
+  const panelHeadingBlock = readCssRule(globals, ".thinking-panel-head h2");
+  const filterChipBlock = readCssRule(globals, ".thinking-filter-chip");
+  const activeFilterChipBlock = readCssRule(globals, ".thinking-filter-chip.active");
+  const articleTitleBlock = readCssRule(globals, ".thinking-article-title");
+  const articleDescBlock = readCssRule(globals, ".thinking-article-desc");
+  const toolNameBlock = readCssRule(globals, ".thinking-tool-name");
+  const toolDescBlock = readCssRule(globals, ".thinking-tool-desc");
+
+  assert.match(rootSource, /--thinking-eyebrow-text:\s*var\(--accent\)/);
+  assert.match(rootSource, /--thinking-title-text:\s*var\(--foreground\)/);
+  assert.match(rootSource, /--thinking-intro-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 56%,\s*var\(--muted\)\)/);
+  assert.match(rootSource, /--thinking-panel-heading-text:\s*var\(--foreground\)/);
+  assert.match(rootSource, /--thinking-filter-chip-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 58%,\s*var\(--muted\)\)/);
+  assert.match(rootSource, /--thinking-filter-chip-active-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 86%,\s*var\(--accent\)\)/);
+  assert.match(rootSource, /--thinking-article-title-text:\s*var\(--foreground\)/);
+  assert.match(rootSource, /--thinking-article-desc-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 52%,\s*var\(--muted\)\)/);
+  assert.match(rootSource, /--thinking-tool-name-text:\s*var\(--foreground\)/);
+  assert.match(rootSource, /--thinking-tool-desc-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 52%,\s*var\(--muted\)\)/);
+  assert.match(eyebrowBlock, /color:\s*var\(--thinking-eyebrow-text\)/);
+  assert.match(titleBlock, /color:\s*var\(--thinking-title-text\)/);
+  assert.match(introBlock, /color:\s*var\(--thinking-intro-text\)/);
+  assert.match(panelHeadingBlock, /color:\s*var\(--thinking-panel-heading-text\)/);
+  assert.match(filterChipBlock, /color:\s*var\(--thinking-filter-chip-text\)/);
+  assert.match(activeFilterChipBlock, /color:\s*var\(--thinking-filter-chip-active-text\)/);
+  assert.match(articleTitleBlock, /color:\s*var\(--thinking-article-title-text\)/);
+  assert.match(articleDescBlock, /color:\s*var\(--thinking-article-desc-text\)/);
+  assert.match(toolNameBlock, /color:\s*var\(--thinking-tool-name-text\)/);
+  assert.match(toolDescBlock, /color:\s*var\(--thinking-tool-desc-text\)/);
+});
+
 test("thinking lab tool icons derive colors from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];

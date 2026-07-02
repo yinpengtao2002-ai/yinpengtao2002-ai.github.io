@@ -5938,3 +5938,69 @@ Observed: root border tokens existed for panels, chips, cards, and hover states;
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bg`, noting that this closes only the Thinking Lab main border-color sub-item while leaving title, description, eyebrow, and other local text colors for later passes.
+
+### Task 92: Tokenize Thinking Lab Index Text Colors
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/thinking-lab` list page text colors: page eyebrow/title/intro, panel heading, filter chip text, active filter chip text, article title/description, and tool title/description. This pass covers only the main list-page text colors; page background texture and other non-text decorative colors remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring ten `--thinking-*-text` tokens to exist in `:root`, and requiring the relevant Thinking Lab text rules to read those tokens.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the Thinking Lab text tokens did not exist and the text rules still read global foreground/accent values or wrote local `color-mix(...)` values directly.
+
+- [x] **Step 4: Move Thinking Lab index text colors to shared tokens**
+
+Added `--thinking-eyebrow-text`, `--thinking-title-text`, `--thinking-intro-text`, `--thinking-panel-heading-text`, `--thinking-filter-chip-text`, `--thinking-filter-chip-active-text`, `--thinking-article-title-text`, `--thinking-article-desc-text`, `--thinking-tool-name-text`, and `--thinking-tool-desc-text` to `:root`. Updated the corresponding Thinking Lab rules to read those variables while preserving typography, line-height, and truncation behavior.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 61/61 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 385/385 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Thinking Lab in browser**
+
+Started `npm run start -- --port 3102`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3102/thinking-lab?audit=ui-p1-10bh`, inspected the ten text tokens and their computed colors at desktop width, resized to `390x844`, inspected the same token usage, and checked the browser console.
+
+Observed: the ten text tokens existed and resolved to visible text colors for eyebrow, title, intro, panel heading, filter chips, article copy, and tool copy. Mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bh`, noting that this closes only the Thinking Lab main text-color sub-item while leaving page background texture and other non-text decorative colors for later passes.
