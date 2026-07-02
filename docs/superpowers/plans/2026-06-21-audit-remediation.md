@@ -4368,3 +4368,69 @@ Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; the practice card was 
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10ai`, noting that this closes only the Study Cards practice deck, drag-state, and main practice-card shadow token sub-item while leaving answer-panel, completion, export-area shadows, and button colors for separate passes.
+
+### Task 68: Tokenize Study Cards Answer And Nav Shadows
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/tools/study-cards` answer and card navigation shadows after loading cards: `.study-cards-answer-panel:hover`, `.study-cards-answer-panel.is-revealed`, and `.study-cards-nav-arrow`. This pass does not migrate completion/bingo shadows, export-area shadows, or button colors.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the Study Cards answer hover state, answer revealed state, and navigation arrow shadow to read `--study-cards-*` tokens from `:root`, while rejecting the old direct `rgba(69, 113, 157, 0.12)`, `rgba(20, 20, 19, 0.12)`, and white inset shadow literals.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.study-cards-answer-panel:hover` still used the hardcoded accent-secondary shadow plus white inset highlight, `.study-cards-answer-panel.is-revealed` still used a white inset shadow, and `.study-cards-nav-arrow` still used hardcoded foreground and white inset shadows.
+
+- [x] **Step 4: Move Study Cards answer and nav shadows to shared tokens**
+
+Added `--study-cards-answer-panel-hover-shadow`, `--study-cards-answer-panel-revealed-shadow`, and `--study-cards-nav-arrow-shadow` to `:root`, deriving shadows from `--accent-secondary`, `--foreground`, and `--card`. Updated the answer hover, answer revealed, and nav arrow rules to use those variables while preserving layout, hover/reveal behavior, and arrow positioning.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 37/37 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 361/361 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards answer and nav browser behavior**
+
+Started `npm run start -- --port 3078`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3078/tools/study-cards`, clicked `示例内容`, inspected loaded stylesheet rules and computed shadows for desktop and `390x844` mobile, then clicked through all 10 example cards to enter recall-check mode and inspect the hidden answer-panel hover state.
+
+Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; mobile `clientWidth=390`, `scrollWidth=390`; practice card, answer panel, and nav arrow were visible; revealed answer-panel and nav-arrow shadows resolved from token-backed rules; after entering recall-check mode, hidden answer-panel hover resolved to `0px 16px 36px` with the accent-secondary 12% token-derived color plus the card inset highlight. Console error count was 0 in both desktop and mobile checks.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10aj`, noting that this closes only the Study Cards answer-panel hover/revealed and nav-arrow shadow token sub-item while leaving completion/bingo, export-area shadows, and button colors for separate passes.

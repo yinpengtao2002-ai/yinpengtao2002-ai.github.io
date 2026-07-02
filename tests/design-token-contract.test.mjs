@@ -401,6 +401,28 @@ test("study cards practice deck shadows derive from shared design tokens", async
   assert.match(practiceCardBlock, /box-shadow:\s*var\(--study-cards-practice-card-shadow\)/);
 });
 
+test("study cards answer and nav shadows derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const answerHoverBlock = readCssRule(globals, ".study-cards-answer-panel:hover");
+  const answerRevealedBlock = readCssRule(globals, ".study-cards-answer-panel.is-revealed");
+  const navArrowBlock = readCssRule(globals, ".study-cards-nav-arrow");
+  const scopedSource = [answerHoverBlock, answerRevealedBlock, navArrowBlock].join("\n");
+
+  assert.doesNotMatch(scopedSource, /0 16px 36px rgba\(69,\s*113,\s*157,\s*0\.12\)/);
+  assert.doesNotMatch(scopedSource, /inset 0 1px 0 rgba\(255,\s*255,\s*255,\s*0\.78\)/);
+  assert.doesNotMatch(scopedSource, /inset 0 1px 0 rgba\(255,\s*255,\s*255,\s*0\.82\)/);
+  assert.doesNotMatch(scopedSource, /0 14px 30px rgba\(20,\s*20,\s*19,\s*0\.12\)/);
+  assert.doesNotMatch(scopedSource, /inset 0 1px 0 rgba\(255,\s*255,\s*255,\s*0\.86\)/);
+  assert.match(rootSource, /--study-cards-answer-panel-hover-shadow:\s*0 16px 36px color-mix\(in srgb,\s*var\(--accent-secondary\) 12%,\s*transparent\),\s*inset 0 1px 0 color-mix\(in srgb,\s*var\(--card\) 78%,\s*transparent\)/);
+  assert.match(rootSource, /--study-cards-answer-panel-revealed-shadow:\s*inset 0 1px 0 color-mix\(in srgb,\s*var\(--card\) 82%,\s*transparent\)/);
+  assert.match(rootSource, /--study-cards-nav-arrow-shadow:\s*0 14px 30px color-mix\(in srgb,\s*var\(--foreground\) 12%,\s*transparent\),\s*inset 0 1px 0 color-mix\(in srgb,\s*var\(--card\) 86%,\s*transparent\)/);
+  assert.match(answerHoverBlock, /box-shadow:\s*var\(--study-cards-answer-panel-hover-shadow\)/);
+  assert.match(answerRevealedBlock, /box-shadow:\s*var\(--study-cards-answer-panel-revealed-shadow\)/);
+  assert.match(navArrowBlock, /box-shadow:\s*var\(--study-cards-nav-arrow-shadow\)/);
+});
+
 test("chat assistant shell visuals use shared design tokens", async () => {
   const chatWidget = await readProjectFile("src/components/ChatWidget.tsx");
   const globals = await readProjectFile("src/app/globals.css");
