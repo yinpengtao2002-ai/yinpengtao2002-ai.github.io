@@ -70,6 +70,7 @@
   --study-cards-memory-action-shaky-border: color-mix(in srgb, var(--accent) 24%, var(--border));
   --study-cards-memory-action-shaky-bg: color-mix(in srgb, var(--accent) 7%, var(--card));
   --study-cards-memory-action-shaky-text: color-mix(in srgb, var(--accent) 84%, var(--foreground));
+  --study-cards-memory-helper-text: color-mix(in srgb, var(--foreground) 48%, var(--muted));
   --study-cards-speak-button-border: color-mix(in srgb, var(--accent-secondary) 28%, var(--border));
   --study-cards-speak-button-bg: color-mix(in srgb, var(--accent-secondary) 8%, var(--card));
   --study-cards-speak-button-text: color-mix(in srgb, var(--accent-secondary) 82%, var(--foreground));
@@ -5595,7 +5596,7 @@ h6 {
 
 .study-cards-memory-actions small {
   min-width: 0;
-  color: color-mix(in srgb, var(--foreground) 48%, var(--muted));
+  color: var(--study-cards-memory-helper-text);
   font-size: 11px;
   font-weight: 760;
   line-height: 1.35;

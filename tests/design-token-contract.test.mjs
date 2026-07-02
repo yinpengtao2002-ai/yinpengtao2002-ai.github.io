@@ -652,6 +652,16 @@ test("study cards memory feedback button colors derive from shared design tokens
   assert.match(shakyButtonBlock, /color:\s*var\(--study-cards-memory-action-shaky-text\)/);
 });
 
+test("study cards memory feedback helper text derives from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const memoryHelperBlock = readCssRule(globals, ".study-cards-memory-actions small");
+
+  assert.match(rootSource, /--study-cards-memory-helper-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 48%,\s*var\(--muted\)\)/);
+  assert.match(memoryHelperBlock, /color:\s*var\(--study-cards-memory-helper-text\)/);
+});
+
 test("study cards pronunciation button colors derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];

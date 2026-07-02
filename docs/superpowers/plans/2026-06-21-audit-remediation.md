@@ -5542,3 +5542,69 @@ Observed: BINGO text was visible; CSSOM reported `.study-cards-bingo`, `.study-c
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10ba`, noting that this closes only the Study Cards completion surface color token sub-item while leaving memory feedback helper copy and other Study Cards local colors for later passes.
+
+### Task 86: Tokenize Study Cards Memory Feedback Helper Text
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/tools/study-cards` memory feedback helper copy: `.study-cards-memory-actions small`. This pass covers only the small helper text under the memory feedback buttons; other Study Cards local colors remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `--study-cards-memory-helper-text` to be defined in `:root` and `.study-cards-memory-actions small` to read that token.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `--study-cards-memory-helper-text` did not exist and the helper copy still wrote its text color directly.
+
+- [x] **Step 4: Move memory helper text color to a shared token**
+
+Added `--study-cards-memory-helper-text` to `:root`, deriving it from `--foreground` and `--muted`. Updated `.study-cards-memory-actions small` to read that token while preserving its current typography and layout.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 55/55 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 379/379 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards memory helper text in browser**
+
+Started `npm run start -- --port 3096`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3096/tools/study-cards` at `390x844`, clicked `示例内容`, then inspected `.study-cards-memory-actions small` from the page CSSOM and computed styles.
+
+Observed: the helper text rendered as `认识就左滑或点右箭头`; CSSOM reported `.study-cards-memory-actions small` reading `var(--study-cards-memory-helper-text)`. Mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bb`, noting that this closes only the Study Cards memory feedback helper text token sub-item while leaving other Study Cards local colors for later passes.
