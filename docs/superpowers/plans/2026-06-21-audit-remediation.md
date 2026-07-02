@@ -4434,3 +4434,53 @@ Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; mobile `clientWidth=39
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10aj`, noting that this closes only the Study Cards answer-panel hover/revealed and nav-arrow shadow token sub-item while leaving completion/bingo, export-area shadows, and button colors for separate passes.
+
+### Task 69: Tokenize Study Cards Completion Shadows
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/tools/study-cards` final completion state: `.study-cards-bingo` and `.study-cards-bingo-icon`. This pass does not migrate export-area shadows or button colors.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the Study Cards BINGO container and trophy icon shadows to read `--study-cards-bingo-*` tokens from `:root`, while rejecting the old direct `rgba(20, 20, 19, 0.12)`, `rgba(20, 20, 19, 0.1)`, and white inset shadow literals.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.study-cards-bingo` still used `0 30px 70px rgba(20, 20, 19, 0.12)` plus `inset 0 1px 0 rgba(255, 255, 255, 0.84)`, and `.study-cards-bingo-icon` still used `0 18px 36px rgba(20, 20, 19, 0.1)`.
+
+- [x] **Step 4: Move Study Cards completion shadows to shared tokens**
+
+Added `--study-cards-bingo-shadow` and `--study-cards-bingo-icon-shadow` to `:root`, deriving the container and icon shadows from `--foreground` and the inset highlight from `--card`. Updated the BINGO container and trophy icon rules to use those variables while preserving the completion layout and visual hierarchy.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 38/38 tests.
+
+- [x] **Step 6: Run production build**
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards completion browser behavior**
+
+Started `npm run start -- --port 3079`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3079/tools/study-cards`, clicked `示例内容`, clicked through all 10 learning cards and all 10 recall-check cards until the final BINGO state rendered, then inspected loaded stylesheet rules and computed shadows for desktop and `390x844` mobile.
+
+Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; mobile `clientWidth=390`, `scrollWidth=390`; BINGO container and trophy icon were visible, completion copy included `BINGO` and `通关`, and both computed shadows resolved from `--study-cards-bingo-*` token-backed rules. Console error count was 0 in both desktop and mobile checks.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10ak`, noting that this closes only the Study Cards completion/BINGO shadow token sub-item while leaving export-area shadows and button colors for separate passes.

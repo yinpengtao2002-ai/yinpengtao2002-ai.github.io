@@ -423,6 +423,23 @@ test("study cards answer and nav shadows derive from shared design tokens", asyn
   assert.match(navArrowBlock, /box-shadow:\s*var\(--study-cards-nav-arrow-shadow\)/);
 });
 
+test("study cards completion shadows derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const bingoBlock = readCssRule(globals, ".study-cards-bingo");
+  const bingoIconBlock = readCssRule(globals, ".study-cards-bingo-icon");
+  const scopedSource = [bingoBlock, bingoIconBlock].join("\n");
+
+  assert.doesNotMatch(scopedSource, /0 30px 70px rgba\(20,\s*20,\s*19,\s*0\.12\)/);
+  assert.doesNotMatch(scopedSource, /inset 0 1px 0 rgba\(255,\s*255,\s*255,\s*0\.84\)/);
+  assert.doesNotMatch(scopedSource, /0 18px 36px rgba\(20,\s*20,\s*19,\s*0\.1\)/);
+  assert.match(rootSource, /--study-cards-bingo-shadow:\s*0 30px 70px color-mix\(in srgb,\s*var\(--foreground\) 12%,\s*transparent\),\s*inset 0 1px 0 color-mix\(in srgb,\s*var\(--card\) 84%,\s*transparent\)/);
+  assert.match(rootSource, /--study-cards-bingo-icon-shadow:\s*0 18px 36px color-mix\(in srgb,\s*var\(--foreground\) 10%,\s*transparent\)/);
+  assert.match(bingoBlock, /box-shadow:\s*var\(--study-cards-bingo-shadow\)/);
+  assert.match(bingoIconBlock, /box-shadow:\s*var\(--study-cards-bingo-icon-shadow\)/);
+});
+
 test("chat assistant shell visuals use shared design tokens", async () => {
   const chatWidget = await readProjectFile("src/components/ChatWidget.tsx");
   const globals = await readProjectFile("src/app/globals.css");

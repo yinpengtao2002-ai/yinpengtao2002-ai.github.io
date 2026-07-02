@@ -45,6 +45,8 @@
   --study-cards-answer-panel-hover-shadow: 0 16px 36px color-mix(in srgb, var(--accent-secondary) 12%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 78%, transparent);
   --study-cards-answer-panel-revealed-shadow: inset 0 1px 0 color-mix(in srgb, var(--card) 82%, transparent);
   --study-cards-nav-arrow-shadow: 0 14px 30px color-mix(in srgb, var(--foreground) 12%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 86%, transparent);
+  --study-cards-bingo-shadow: 0 30px 70px color-mix(in srgb, var(--foreground) 12%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 84%, transparent);
+  --study-cards-bingo-icon-shadow: 0 18px 36px color-mix(in srgb, var(--foreground) 10%, transparent);
   --chat-mobile-backdrop-keyboard: color-mix(in srgb, var(--foreground) 22%, transparent);
   --chat-mobile-backdrop-fullscreen: color-mix(in srgb, var(--foreground) 12%, transparent);
   --chat-mobile-backdrop-sheet: color-mix(in srgb, var(--foreground) 18%, transparent);
@@ -5523,9 +5525,7 @@ h6 {
     radial-gradient(circle at 50% 20%, color-mix(in srgb, var(--accent-tertiary) 20%, transparent), transparent 34%),
     linear-gradient(135deg, color-mix(in srgb, var(--accent-secondary) 9%, var(--card)), color-mix(in srgb, var(--background) 62%, var(--card))),
     var(--card);
-  box-shadow:
-    0 30px 70px rgba(20, 20, 19, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.84);
+  box-shadow: var(--study-cards-bingo-shadow);
   color: var(--foreground);
   padding: clamp(26px, 4vw, 42px);
   text-align: center;
@@ -5541,7 +5541,7 @@ h6 {
   border: 1px solid color-mix(in srgb, var(--accent-tertiary) 36%, var(--border));
   border-radius: 999px;
   background: color-mix(in srgb, var(--accent-tertiary) 14%, var(--card));
-  box-shadow: 0 18px 36px rgba(20, 20, 19, 0.1);
+  box-shadow: var(--study-cards-bingo-icon-shadow);
   color: color-mix(in srgb, var(--accent-tertiary) 78%, var(--foreground));
 }
 
