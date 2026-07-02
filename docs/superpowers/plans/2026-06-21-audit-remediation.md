@@ -4104,3 +4104,69 @@ Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; the first track card w
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10ae`, noting that this closes only the homepage thinking track card active shadow token sub-item and leaves track card backgrounds, orbit glow, image overlays, and other homepage decorative colors for separate passes.
+
+### Task 64: Tokenize Thinking Lab Panel And Card Shadows
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/thinking-lab` list page shadows: `.thinking-content-panel` / `.thinking-tools-panel`, the base `.thinking-article-card`, article-card hover, and tool-card hover. This pass does not migrate Thinking Lab background fills, hover backgrounds, icon colors, or unrelated finance card hover shadows.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the Thinking Lab panel, article-card, article hover, and tool hover shadows to read `--thinking-*` tokens from `:root`, while rejecting the old direct `rgba(33, 29, 22, ...)` shadow literals.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the Thinking Lab panel rule still used `0 18px 42px rgba(33, 29, 22, 0.055)`, and the scoped source also contained the old article and tool card `rgba(...)` shadows.
+
+- [x] **Step 4: Move Thinking Lab shadows to shared tokens**
+
+Added `--thinking-panel-shadow`, `--thinking-article-card-shadow`, `--thinking-article-card-hover-shadow`, and `--thinking-tool-card-hover-shadow` to `:root`, deriving each from `--foreground`. Updated the four Thinking Lab CSS rules to use those variables while preserving layout, borders, hover lift, and transition behavior.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 33/33 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 357/357 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Thinking Lab browser behavior**
+
+Started `npm run start -- --port 3074`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3074/thinking-lab`, inspected the Thinking Lab panel/card token values on desktop, hovered the first article card and first tool card, then resized to `390x844` and repeated the layout check.
+
+Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; content and tools panels were visible; article-card hover and tool-card hover both matched `:hover` and resolved to token-derived shadows. Mobile `clientWidth=390`, `scrollWidth=390`; panels stacked into one column, the first article card was visible, and console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10af`, noting that this closes only the Thinking Lab panel/list-card shadow token sub-item and leaves local backgrounds and other color literals for separate passes.

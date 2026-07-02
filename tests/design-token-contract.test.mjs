@@ -309,6 +309,36 @@ test("home thinking track card active shadow derives from a shared design token"
   assert.match(activeCardBlock, /box-shadow:\s*var\(--home-thinking-track-card-active-shadow\)/);
 });
 
+test("thinking lab card and panel shadows derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const panelBlock = globals.match(/\.thinking-content-panel,\n\.thinking-tools-panel\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+  const articleCardBlock = readCssRule(globals, ".thinking-article-card");
+  const articleHoverBlock = readCssRule(globals, ".thinking-article-card:hover");
+  const toolHoverBlock = readCssRule(globals, ".thinking-tool-card:hover");
+  const scopedSource = [panelBlock, articleCardBlock, articleHoverBlock, toolHoverBlock].join("\n");
+
+  assert.ok(panelBlock, "thinking lab panel rule should exist");
+  for (const literal of [
+    "0 18px 42px rgba(33, 29, 22, 0.055)",
+    "0 10px 26px rgba(33, 29, 22, 0.04)",
+    "0 14px 32px rgba(33, 29, 22, 0.06)",
+    "0 12px 28px rgba(33, 29, 22, 0.055)",
+  ]) {
+    assert.doesNotMatch(scopedSource, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(rootSource, /--thinking-panel-shadow:\s*0 18px 42px color-mix\(in srgb,\s*var\(--foreground\) 5\.5%,\s*transparent\)/);
+  assert.match(rootSource, /--thinking-article-card-shadow:\s*0 10px 26px color-mix\(in srgb,\s*var\(--foreground\) 4%,\s*transparent\)/);
+  assert.match(rootSource, /--thinking-article-card-hover-shadow:\s*0 14px 32px color-mix\(in srgb,\s*var\(--foreground\) 6%,\s*transparent\)/);
+  assert.match(rootSource, /--thinking-tool-card-hover-shadow:\s*0 12px 28px color-mix\(in srgb,\s*var\(--foreground\) 5\.5%,\s*transparent\)/);
+  assert.match(panelBlock, /box-shadow:\s*var\(--thinking-panel-shadow\)/);
+  assert.match(articleCardBlock, /box-shadow:\s*var\(--thinking-article-card-shadow\)/);
+  assert.match(articleHoverBlock, /box-shadow:\s*var\(--thinking-article-card-hover-shadow\)/);
+  assert.match(toolHoverBlock, /box-shadow:\s*var\(--thinking-tool-card-hover-shadow\)/);
+});
+
 test("chat assistant shell visuals use shared design tokens", async () => {
   const chatWidget = await readProjectFile("src/components/ChatWidget.tsx");
   const globals = await readProjectFile("src/app/globals.css");
