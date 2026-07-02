@@ -5080,3 +5080,69 @@ Observed: the visible feedback label was `再记一次`; CSSOM reported `.study-
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10at`, noting that this closes only the Study Cards `再记一次` memory feedback button color token sub-item while leaving speak/pronunciation buttons, nav-arrow colors, and other button details for later passes.
+
+### Task 79: Tokenize Study Cards Pronunciation Button Colors
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/tools/study-cards` pronunciation controls: the initial empty preview `.study-cards-empty-speak`, the generated-card `.study-cards-speak-button`, and `.study-cards-speak-button:hover`. This pass covers only the visible 发音 / 朗读 button colors; nav-arrow colors and other button details remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the pronunciation controls to read `--study-cards-speak-button-*` tokens from `:root`, and to cover both the empty preview and generated-card rules.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before the final implementation because `.study-cards-speak-button` still wrote its border, background, and text colors directly as `color-mix(...)` values.
+
+- [x] **Step 4: Move pronunciation colors to shared tokens**
+
+Added `--study-cards-speak-button-border`, `--study-cards-speak-button-bg`, `--study-cards-speak-button-text`, `--study-cards-speak-button-hover-border`, `--study-cards-speak-button-hover-bg`, and `--study-cards-speak-button-hover-text` to `:root`, deriving them from the site accent-secondary/border/card/foreground tokens. Updated `.study-cards-empty-speak`, `.study-cards-speak-button`, and `.study-cards-speak-button:hover` to use those tokens while preserving sizing, layout, radius, font, and spacing.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 48/48 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 372/372 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards pronunciation button in browser**
+
+Started `npm run start -- --port 3089`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3089/tools/study-cards` at `390x844`, clicked `示例内容`, waited for `.study-cards-speak-button`, and recursively inspected CSSOM inside stylesheets.
+
+Observed: the generated-card pronunciation label was `朗读`; CSSOM reported `.study-cards-empty-speak`, `.study-cards-speak-button`, and `.study-cards-speak-button:hover` reading `var(--study-cards-speak-button-*)`. Mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10au`, noting that this closes only the Study Cards 发音 / 朗读 button color token sub-item while leaving nav-arrow colors and other button details for later passes.

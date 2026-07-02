@@ -583,6 +583,31 @@ test("study cards memory feedback button colors derive from shared design tokens
   assert.match(shakyButtonBlock, /color:\s*var\(--study-cards-memory-action-shaky-text\)/);
 });
 
+test("study cards pronunciation button colors derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const emptySpeakBlock = readCssRule(globals, ".study-cards-empty-speak");
+  const speakButtonBlock = readCssRule(globals, ".study-cards-speak-button");
+  const speakButtonHoverBlock = readCssRule(globals, ".study-cards-speak-button:hover");
+
+  assert.match(rootSource, /--study-cards-speak-button-border:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 28%,\s*var\(--border\)\)/);
+  assert.match(rootSource, /--study-cards-speak-button-bg:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 8%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--study-cards-speak-button-text:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 82%,\s*var\(--foreground\)\)/);
+  assert.match(rootSource, /--study-cards-speak-button-hover-border:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 52%,\s*var\(--border\)\)/);
+  assert.match(rootSource, /--study-cards-speak-button-hover-bg:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 14%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--study-cards-speak-button-hover-text:\s*var\(--foreground\)/);
+  assert.match(emptySpeakBlock, /border:\s*1px solid var\(--study-cards-speak-button-border\)/);
+  assert.match(emptySpeakBlock, /background:\s*var\(--study-cards-speak-button-bg\)/);
+  assert.match(emptySpeakBlock, /color:\s*var\(--study-cards-speak-button-text\)/);
+  assert.match(speakButtonBlock, /border:\s*1px solid var\(--study-cards-speak-button-border\)/);
+  assert.match(speakButtonBlock, /background:\s*var\(--study-cards-speak-button-bg\)/);
+  assert.match(speakButtonBlock, /color:\s*var\(--study-cards-speak-button-text\)/);
+  assert.match(speakButtonHoverBlock, /border-color:\s*var\(--study-cards-speak-button-hover-border\)/);
+  assert.match(speakButtonHoverBlock, /background:\s*var\(--study-cards-speak-button-hover-bg\)/);
+  assert.match(speakButtonHoverBlock, /color:\s*var\(--study-cards-speak-button-hover-text\)/);
+});
+
 test("study cards completion action button colors derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
