@@ -396,6 +396,73 @@ test("home thinking preview controls derive surface colors from shared design to
   assert.match(previewPillBlock, /color:\s*var\(--home-thinking-preview-count-pill-text\)/);
 });
 
+test("home thinking track cards derive decorative colors from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const basePillBlock = readCssRule(globals, ".home-thinking-count-pill");
+  const trackPillBlock = readCssRule(globals, ".home-thinking-track-head .home-thinking-count-pill");
+  const baseCardBlock = readCssRule(globals, ".home-thinking-track-card");
+  const trackCardMatches = [...globals.matchAll(/(^|\n)\s*\.home-thinking-track-card\s*\{[\s\S]*?\n\s*\}/g)];
+  const trackCardBlock = trackCardMatches.map((match) => match[0]).find((block) => block.includes("radial-gradient")) ?? "";
+  assert.ok(trackCardBlock, "home thinking track card decorative background rule should exist");
+  const stripeBlock = readCssRule(globals, ".home-thinking-track-card::before");
+  const orbitBlock = readCssRule(globals, ".home-thinking-track-orbit");
+  const orbitDotBlock = readCssRule(globals, ".home-thinking-track-orbit::after");
+  const activeBlock = globals.match(/\.home-thinking-track-card:hover,\n\.home-thinking-track-card:focus-visible,\n\.home-thinking-track-card\.is-active\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+  assert.ok(activeBlock, "home thinking track active rule should exist");
+  const scopedSource = [
+    basePillBlock,
+    trackPillBlock,
+    baseCardBlock,
+    trackCardBlock,
+    stripeBlock,
+    orbitBlock,
+    orbitDotBlock,
+    activeBlock,
+  ].join("\n").toLowerCase();
+
+  for (const literal of ["#fff", "rgba(216, 119, 87"]) {
+    assert.doesNotMatch(scopedSource, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  for (const token of [
+    "--home-thinking-count-pill-border",
+    "--home-thinking-count-pill-bg",
+    "--home-thinking-count-pill-text",
+    "--home-thinking-track-count-pill-bg",
+    "--home-thinking-track-count-pill-text",
+    "--home-thinking-track-card-border",
+    "--home-thinking-track-card-surface-bg",
+    "--home-thinking-track-card-glow",
+    "--home-thinking-track-card-bg",
+    "--home-thinking-track-stripe-start",
+    "--home-thinking-track-stripe-end",
+    "--home-thinking-track-orbit-border",
+    "--home-thinking-track-orbit-dot-bg",
+    "--home-thinking-track-orbit-dot-shadow",
+    "--home-thinking-track-card-active-border",
+  ]) {
+    assert.match(rootSource, new RegExp(`${token}:\\s*`), `${token} should be declared in :root`);
+  }
+
+  assert.match(basePillBlock, /border:\s*1px solid var\(--home-thinking-count-pill-border\)/);
+  assert.match(basePillBlock, /background:\s*var\(--home-thinking-count-pill-bg\)/);
+  assert.match(basePillBlock, /color:\s*var\(--home-thinking-count-pill-text\)/);
+  assert.match(trackPillBlock, /background:\s*var\(--home-thinking-track-count-pill-bg\)/);
+  assert.match(trackPillBlock, /color:\s*var\(--home-thinking-track-count-pill-text\)/);
+  assert.match(baseCardBlock, /border:\s*1px solid var\(--home-thinking-track-card-border\)/);
+  assert.match(baseCardBlock, /background:\s*var\(--home-thinking-track-card-surface-bg\)/);
+  assert.match(trackCardBlock, /radial-gradient\(circle at 96% 8%,\s*var\(--home-thinking-track-card-glow\),\s*transparent 34%\)/);
+  assert.match(trackCardBlock, /var\(--home-thinking-track-card-bg\)/);
+  assert.match(stripeBlock, /var\(--home-thinking-track-stripe-start\)/);
+  assert.match(stripeBlock, /var\(--home-thinking-track-stripe-end\)/);
+  assert.match(orbitBlock, /border:\s*1px solid var\(--home-thinking-track-orbit-border\)/);
+  assert.match(orbitDotBlock, /background:\s*var\(--home-thinking-track-orbit-dot-bg\)/);
+  assert.match(orbitDotBlock, /box-shadow:\s*var\(--home-thinking-track-orbit-dot-shadow\)/);
+  assert.match(activeBlock, /border-color:\s*var\(--home-thinking-track-card-active-border\)/);
+});
+
 test("home thinking count pill shadows derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];

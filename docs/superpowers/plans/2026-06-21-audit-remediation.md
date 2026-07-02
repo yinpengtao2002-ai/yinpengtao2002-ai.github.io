@@ -6343,3 +6343,74 @@ Observed: all 15 tokens existed and resolved; the CSSOM rules read `var(--home-t
 - [x] **Step 9: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bm`, noting that this closes only the homepage Thinking preview-control surface color sub-item while leaving other homepage decorative colors for later passes.
+
+### Task 98: Tokenize Home Thinking Track Card Decorative Colors
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `tests/home-experience-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the homepage "工具与思考" category track cards: base `.home-thinking-count-pill`, `.home-thinking-track-head .home-thinking-count-pill`, the shared `.home-thinking-track-card` surface, the decorative radial glow, the stripe `::before`, `.home-thinking-track-orbit` / `::after`, and the hover/focus/active border. This pass covers only the count pills and category-card decorative colors; other homepage and site-wide rendered paths remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring 15 track-card decorative tokens in `:root`, requiring the scoped rules to read those variables, and rejecting old scoped `#fff` / warm orange `rgba(...)` literals.
+
+- [x] **Step 3: Verify the old contract gap**
+
+Run: `node --test tests/design-token-contract.test.mjs tests/home-experience-contract.test.mjs`
+
+Observed: FAIL before updating the legacy homepage experience contract. The new design-token contract passed after the CSS tokenization, but `home thinking count pills remain legible on the image card and category cards` still required the former direct `color-mix(...)` background literal for `.home-thinking-track-head .home-thinking-count-pill`.
+
+- [x] **Step 4: Move track-card decorative colors to shared tokens**
+
+Added `--home-thinking-count-pill-*`, `--home-thinking-track-count-pill-*`, `--home-thinking-track-card-*`, `--home-thinking-track-stripe-*`, and `--home-thinking-track-orbit-*` tokens to `:root`, deriving them from `--thinking-track-accent`, `--accent-secondary`, `--border`, `--card`, and `--foreground`. Updated the count pill, shared card surface, decorative card background, stripe, orbit, orbit dot, and active border rules to read those tokens.
+
+- [x] **Step 5: Update the old homepage experience contract**
+
+Updated `tests/home-experience-contract.test.mjs` so the "home thinking count pills remain legible" contract checks the track count pill background/text tokens and the rendered rule reads `var(--home-thinking-track-count-pill-*)`, rather than requiring the former hardcoded background literal.
+
+- [x] **Step 6: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs tests/home-experience-contract.test.mjs`
+
+Observed: PASS, 96/96 tests.
+
+- [x] **Step 7: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 391/391 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 8: Verify homepage in browser**
+
+Started `npm run start -- --port 3108`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3108/?audit=ui-p1-10bn`, inspected desktop and `390x844` mobile rendering, fetched the production CSS chunks, and checked the scoped track-card rules.
+
+Observed: all 15 track-card decorative tokens existed in the built CSS; the scoped built CSS rules read `var(--home-thinking-*)`; scoped old literal count was 0; three category cards rendered; desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 9: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bn`, noting that this closes only the homepage Thinking category-card/count-pill decorative color sub-item while leaving other rendered paths for later passes.

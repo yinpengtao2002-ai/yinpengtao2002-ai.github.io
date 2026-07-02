@@ -667,8 +667,10 @@ test("home thinking section keeps its visual card readable in short desktop view
 test("home thinking count pills remain legible on the image card and category cards", () => {
   assert.match(globals, /--home-thinking-preview-count-pill-bg:\s*color-mix\(in srgb,\s*var\(--background\) 92%,\s*transparent\)/);
   assert.match(globals, /--home-thinking-preview-count-pill-text:\s*color-mix\(in srgb,\s*var\(--thinking-track-accent,\s*var\(--background\)\) 70%,\s*var\(--foreground\)\)/);
+  assert.match(globals, /--home-thinking-track-count-pill-bg:\s*color-mix\(in srgb,\s*var\(--thinking-track-accent,\s*var\(--accent-secondary\)\) 16%,\s*var\(--card\)\)/);
+  assert.match(globals, /--home-thinking-track-count-pill-text:\s*color-mix\(in srgb,\s*var\(--thinking-track-accent,\s*var\(--accent-secondary\)\) 82%,\s*var\(--foreground\)\)/);
   assert.match(globals, /\.home-thinking-preview-panel \.home-thinking-count-pill\s*\{[\s\S]*background:\s*var\(--home-thinking-preview-count-pill-bg\)[\s\S]*color:\s*var\(--home-thinking-preview-count-pill-text\)[\s\S]*box-shadow:\s*var\(--home-thinking-preview-count-pill-shadow\)/s);
-  assert.match(globals, /\.home-thinking-track-head \.home-thinking-count-pill\s*\{[\s\S]*min-width:\s*58px[\s\S]*justify-content:\s*center[\s\S]*background:\s*color-mix\(in srgb,\s*var\(--thinking-track-accent,\s*var\(--accent-secondary\)\)\s*16%,\s*var\(--card\)\)[\s\S]*box-shadow:\s*var\(--home-thinking-track-count-pill-shadow\)/s);
+  assert.match(globals, /\.home-thinking-track-head \.home-thinking-count-pill\s*\{[\s\S]*min-width:\s*58px[\s\S]*justify-content:\s*center[\s\S]*background:\s*var\(--home-thinking-track-count-pill-bg\)[\s\S]*color:\s*var\(--home-thinking-track-count-pill-text\)[\s\S]*box-shadow:\s*var\(--home-thinking-track-count-pill-shadow\)/s);
 });
 
 test("home thinking mobile stacks category cards vertically", () => {

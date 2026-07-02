@@ -52,7 +52,22 @@
   --home-thinking-preview-count-pill-bg: color-mix(in srgb, var(--background) 92%, transparent);
   --home-thinking-preview-count-pill-text: color-mix(in srgb, var(--thinking-track-accent, var(--background)) 70%, var(--foreground));
   --home-thinking-preview-count-pill-shadow: 0 8px 18px color-mix(in srgb, var(--foreground) 20%, transparent);
+  --home-thinking-count-pill-border: color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 26%, var(--border));
+  --home-thinking-count-pill-bg: var(--thinking-track-soft, color-mix(in srgb, var(--accent-secondary) 8%, var(--card)));
+  --home-thinking-count-pill-text: color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 78%, var(--foreground));
+  --home-thinking-track-count-pill-bg: color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 16%, var(--card));
+  --home-thinking-track-count-pill-text: color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 82%, var(--foreground));
   --home-thinking-track-count-pill-shadow: 0 6px 16px color-mix(in srgb, var(--foreground) 5.5%, transparent);
+  --home-thinking-track-card-border: color-mix(in srgb, var(--border) 84%, transparent);
+  --home-thinking-track-card-surface-bg: color-mix(in srgb, var(--card) 92%, transparent);
+  --home-thinking-track-card-glow: var(--thinking-track-soft, color-mix(in srgb, var(--accent) 12%, transparent));
+  --home-thinking-track-card-bg: color-mix(in srgb, var(--card) 94%, transparent);
+  --home-thinking-track-stripe-start: color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 92%, var(--card));
+  --home-thinking-track-stripe-end: color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 38%, transparent);
+  --home-thinking-track-orbit-border: color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 22%, transparent);
+  --home-thinking-track-orbit-dot-bg: var(--thinking-track-accent, var(--accent-secondary));
+  --home-thinking-track-orbit-dot-shadow: 0 0 18px color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 54%, transparent);
+  --home-thinking-track-card-active-border: color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 42%, var(--border));
   --home-thinking-track-card-active-shadow: 0 16px 42px color-mix(in srgb, var(--foreground) 7%, transparent);
   --home-thinking-preview-item-border: color-mix(in srgb, var(--thinking-track-accent, var(--card)) 20%, color-mix(in srgb, var(--card) 20%, transparent));
   --home-thinking-preview-item-bg: color-mix(in srgb, var(--thinking-track-accent, var(--card)) 12%, color-mix(in srgb, var(--card) 8%, transparent));
@@ -3789,9 +3804,9 @@ h6 {
 .home-thinking-visual-card,
 .home-thinking-note,
 .home-thinking-track-card {
-  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  border: 1px solid var(--home-thinking-track-card-border);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--card) 92%, transparent);
+  background: var(--home-thinking-track-card-surface-bg);
   animation: home-thinking-card-rise 0.54s cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: calc(var(--thinking-track-index, 0) * 55ms);
 }
@@ -4000,10 +4015,10 @@ h6 {
   display: inline-flex;
   align-items: center;
   min-height: 24px;
-  border: 1px solid color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 26%, var(--border));
+  border: 1px solid var(--home-thinking-count-pill-border);
   border-radius: 999px;
-  background: var(--thinking-track-soft, color-mix(in srgb, var(--accent-secondary) 8%, var(--card)));
-  color: color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 78%, var(--foreground));
+  background: var(--home-thinking-count-pill-bg);
+  color: var(--home-thinking-count-pill-text);
   font-family: var(--font-poppins);
   font-size: 10px;
   font-variant-numeric: tabular-nums;
@@ -4027,8 +4042,8 @@ h6 {
   z-index: 2;
   min-width: 58px;
   justify-content: center;
-  background: color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 16%, var(--card));
-  color: color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 82%, var(--foreground));
+  background: var(--home-thinking-track-count-pill-bg);
+  color: var(--home-thinking-track-count-pill-text);
   box-shadow: var(--home-thinking-track-count-pill-shadow);
 }
 
@@ -4106,8 +4121,8 @@ h6 {
   cursor: pointer;
   text-decoration: none;
   background:
-    radial-gradient(circle at 96% 8%, var(--thinking-track-soft, rgba(216, 119, 87, 0.12)), transparent 34%),
-    color-mix(in srgb, var(--card) 94%, transparent);
+    radial-gradient(circle at 96% 8%, var(--home-thinking-track-card-glow), transparent 34%),
+    var(--home-thinking-track-card-bg);
   transition:
     border-color 0.24s ease,
     box-shadow 0.24s ease,
@@ -4121,8 +4136,8 @@ h6 {
   width: 4px;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 92%, #fff) 0%,
-    color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 38%, transparent) 100%
+    var(--home-thinking-track-stripe-start) 0%,
+    var(--home-thinking-track-stripe-end) 100%
   );
 }
 
@@ -4132,7 +4147,7 @@ h6 {
   right: 16px;
   width: 46px;
   height: 46px;
-  border: 1px solid color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 22%, transparent);
+  border: 1px solid var(--home-thinking-track-orbit-border);
   border-radius: 999px;
   opacity: 0.7;
   pointer-events: none;
@@ -4146,14 +4161,14 @@ h6 {
   width: 6px;
   height: 6px;
   border-radius: 999px;
-  background: var(--thinking-track-accent, var(--accent-secondary));
-  box-shadow: 0 0 18px color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 54%, transparent);
+  background: var(--home-thinking-track-orbit-dot-bg);
+  box-shadow: var(--home-thinking-track-orbit-dot-shadow);
 }
 
 .home-thinking-track-card:hover,
 .home-thinking-track-card:focus-visible,
 .home-thinking-track-card.is-active {
-  border-color: color-mix(in srgb, var(--thinking-track-accent, var(--accent-secondary)) 42%, var(--border));
+  border-color: var(--home-thinking-track-card-active-border);
   box-shadow: var(--home-thinking-track-card-active-shadow);
   transform: translateY(-3px);
 }
