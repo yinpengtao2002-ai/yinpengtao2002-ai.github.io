@@ -374,6 +374,33 @@ test("study cards empty preview shadows derive from shared design tokens", async
   assert.match(emptyCardBlock, /box-shadow:\s*var\(--study-cards-empty-card-shadow\)/);
 });
 
+test("study cards practice deck shadows derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const deckLayerBlock = globals.match(/\.study-cards-deck::before,\n\.study-cards-deck::after\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+  const dragNextBlock = readCssRule(globals, ".study-cards-card-stage.is-drag-next");
+  const dragPrevBlock = readCssRule(globals, ".study-cards-card-stage.is-drag-prev");
+  const practiceCardBlock = readCssRule(globals, ".study-cards-practice-card");
+  const scopedSource = [deckLayerBlock, dragNextBlock, dragPrevBlock, practiceCardBlock].join("\n");
+
+  assert.ok(deckLayerBlock, "study cards deck layer rule should exist");
+  assert.doesNotMatch(scopedSource, /0 18px 44px rgba\(20,\s*20,\s*19,\s*0\.08\)/);
+  assert.doesNotMatch(scopedSource, /drop-shadow\(16px 20px 24px rgba\(20,\s*20,\s*19,\s*0\.12\)\)/);
+  assert.doesNotMatch(scopedSource, /drop-shadow\(-16px 20px 24px rgba\(20,\s*20,\s*19,\s*0\.12\)\)/);
+  assert.doesNotMatch(scopedSource, /0 34px 86px rgba\(20,\s*20,\s*19,\s*0\.18\)/);
+  assert.doesNotMatch(scopedSource, /0 8px 22px rgba\(20,\s*20,\s*19,\s*0\.1\)/);
+  assert.doesNotMatch(scopedSource, /inset 0 1px 0 rgba\(255,\s*255,\s*255,\s*0\.92\)/);
+  assert.match(rootSource, /--study-cards-deck-layer-shadow:\s*0 18px 44px color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*transparent\),\s*inset 0 1px 0 color-mix\(in srgb,\s*var\(--card\) 72%,\s*transparent\)/);
+  assert.match(rootSource, /--study-cards-drag-next-shadow:\s*drop-shadow\(16px 20px 24px color-mix\(in srgb,\s*var\(--foreground\) 12%,\s*transparent\)\)/);
+  assert.match(rootSource, /--study-cards-drag-prev-shadow:\s*drop-shadow\(-16px 20px 24px color-mix\(in srgb,\s*var\(--foreground\) 12%,\s*transparent\)\)/);
+  assert.match(rootSource, /--study-cards-practice-card-shadow:\s*0 34px 86px color-mix\(in srgb,\s*var\(--foreground\) 18%,\s*transparent\),\s*0 8px 22px color-mix\(in srgb,\s*var\(--foreground\) 10%,\s*transparent\),\s*inset 0 1px 0 color-mix\(in srgb,\s*var\(--card\) 92%,\s*transparent\)/);
+  assert.match(deckLayerBlock, /box-shadow:\s*var\(--study-cards-deck-layer-shadow\)/);
+  assert.match(dragNextBlock, /filter:\s*var\(--study-cards-drag-next-shadow\)/);
+  assert.match(dragPrevBlock, /filter:\s*var\(--study-cards-drag-prev-shadow\)/);
+  assert.match(practiceCardBlock, /box-shadow:\s*var\(--study-cards-practice-card-shadow\)/);
+});
+
 test("chat assistant shell visuals use shared design tokens", async () => {
   const chatWidget = await readProjectFile("src/components/ChatWidget.tsx");
   const globals = await readProjectFile("src/app/globals.css");

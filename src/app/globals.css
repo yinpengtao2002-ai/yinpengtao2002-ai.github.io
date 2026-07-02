@@ -38,6 +38,10 @@
   --study-cards-panel-shadow: 0 18px 48px color-mix(in srgb, var(--foreground) 8%, transparent);
   --study-cards-empty-preview-shadow: 0 14px 34px color-mix(in srgb, var(--foreground) 8%, transparent);
   --study-cards-empty-card-shadow: 0 24px 58px color-mix(in srgb, var(--foreground) 13%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 82%, transparent);
+  --study-cards-deck-layer-shadow: 0 18px 44px color-mix(in srgb, var(--foreground) 8%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 72%, transparent);
+  --study-cards-drag-next-shadow: drop-shadow(16px 20px 24px color-mix(in srgb, var(--foreground) 12%, transparent));
+  --study-cards-drag-prev-shadow: drop-shadow(-16px 20px 24px color-mix(in srgb, var(--foreground) 12%, transparent));
+  --study-cards-practice-card-shadow: 0 34px 86px color-mix(in srgb, var(--foreground) 18%, transparent), 0 8px 22px color-mix(in srgb, var(--foreground) 10%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 92%, transparent);
   --chat-mobile-backdrop-keyboard: color-mix(in srgb, var(--foreground) 22%, transparent);
   --chat-mobile-backdrop-fullscreen: color-mix(in srgb, var(--foreground) 12%, transparent);
   --chat-mobile-backdrop-sheet: color-mix(in srgb, var(--foreground) 18%, transparent);
@@ -5029,9 +5033,7 @@ h6 {
     linear-gradient(180deg, color-mix(in srgb, var(--accent-secondary) 8%, var(--card)), color-mix(in srgb, var(--background) 64%, var(--card))) 22px 212px / calc(100% - 44px) calc(100% - 212px) no-repeat,
     linear-gradient(180deg, color-mix(in srgb, var(--card) 96%, white), color-mix(in srgb, var(--background) 64%, var(--card))),
     var(--card);
-  box-shadow:
-    0 18px 44px rgba(20, 20, 19, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  box-shadow: var(--study-cards-deck-layer-shadow);
   opacity: 0.78;
   pointer-events: none;
 }
@@ -5062,11 +5064,11 @@ h6 {
 }
 
 .study-cards-card-stage.is-drag-next {
-  filter: drop-shadow(16px 20px 24px rgba(20, 20, 19, 0.12));
+  filter: var(--study-cards-drag-next-shadow);
 }
 
 .study-cards-card-stage.is-drag-prev {
-  filter: drop-shadow(-16px 20px 24px rgba(20, 20, 19, 0.12));
+  filter: var(--study-cards-drag-prev-shadow);
 }
 
 .study-cards-practice-card {
@@ -5094,10 +5096,7 @@ h6 {
     linear-gradient(145deg, color-mix(in srgb, var(--accent-secondary) 7%, transparent), transparent 42%),
     linear-gradient(0deg, color-mix(in srgb, var(--accent) 4%, transparent), transparent 58%),
     var(--card);
-  box-shadow:
-    0 34px 86px rgba(20, 20, 19, 0.18),
-    0 8px 22px rgba(20, 20, 19, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  box-shadow: var(--study-cards-practice-card-shadow);
   transform-origin: 52% 88%;
   padding: clamp(18px, 2vw, 24px);
   will-change: transform, opacity;

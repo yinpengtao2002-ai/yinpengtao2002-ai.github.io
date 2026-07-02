@@ -4302,3 +4302,69 @@ Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; the empty preview and 
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10ah`, noting that this closes only the Study Cards initial empty-preview shadow token sub-item and leaves practice-card, answer-panel, export-area shadows, and button colors for separate passes.
+
+### Task 67: Tokenize Study Cards Practice Deck Shadows
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/tools/study-cards` practice deck shadows after loading cards: `.study-cards-deck::before` / `::after`, `.study-cards-card-stage.is-drag-next` / `.is-drag-prev`, and `.study-cards-practice-card`. This pass does not migrate answer-panel, bingo/completion, export-area shadows, or button colors.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the Study Cards card stack, drag filters, and main practice card shadow to read `--study-cards-*` tokens from `:root`, while rejecting the old direct `rgba(20, 20, 19, ...)` and white inset shadow literals.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the deck layer still used `0 18px 44px rgba(20, 20, 19, 0.08)`, drag next/prev still used direct `drop-shadow(... rgba(20, 20, 19, 0.12))`, and the practice card still used `0 34px 86px rgba(20, 20, 19, 0.18)`, `0 8px 22px rgba(20, 20, 19, 0.1)`, plus `inset 0 1px 0 rgba(255, 255, 255, 0.92)`.
+
+- [x] **Step 4: Move Study Cards practice deck shadows to shared tokens**
+
+Added `--study-cards-deck-layer-shadow`, `--study-cards-drag-next-shadow`, `--study-cards-drag-prev-shadow`, and `--study-cards-practice-card-shadow` to `:root`, deriving shadows from `--foreground` and inset highlights from `--card`. Updated the deck layer, drag state, and practice card rules to use those variables while preserving layout, animation, transforms, and visual hierarchy.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 36/36 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 360/360 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards practice deck browser behavior**
+
+Started `npm run start -- --port 3077`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3077/tools/study-cards`, clicked `示例内容`, inspected the deck layer token, practice-card token, computed pseudo-element/card shadows, then resized to `390x844` and repeated the layout check. A second browser check forced `is-drag-next` / `is-drag-prev` on the card stage and waited for the filter transition to settle.
+
+Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; the practice card was visible at `371x494`, deck pseudo-elements and the main card resolved to token-derived `color(srgb ...)` shadows, and forced drag state settled to `drop-shadow(color(srgb ... / 0.12) 16px 20px 24px)`. Mobile `clientWidth=390`, `scrollWidth=390`; the practice card was visible at `354x598`, the deck was visible, and console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10ai`, noting that this closes only the Study Cards practice deck, drag-state, and main practice-card shadow token sub-item while leaving answer-panel, completion, export-area shadows, and button colors for separate passes.
