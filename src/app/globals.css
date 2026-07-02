@@ -34,6 +34,8 @@
   --thinking-article-card-shadow: 0 10px 26px color-mix(in srgb, var(--foreground) 4%, transparent);
   --thinking-article-card-hover-shadow: 0 14px 32px color-mix(in srgb, var(--foreground) 6%, transparent);
   --thinking-tool-card-hover-shadow: 0 12px 28px color-mix(in srgb, var(--foreground) 5.5%, transparent);
+  --study-cards-back-link-shadow: 0 12px 30px color-mix(in srgb, var(--foreground) 10%, transparent);
+  --study-cards-panel-shadow: 0 18px 48px color-mix(in srgb, var(--foreground) 8%, transparent);
   --chat-mobile-backdrop-keyboard: color-mix(in srgb, var(--foreground) 22%, transparent);
   --chat-mobile-backdrop-fullscreen: color-mix(in srgb, var(--foreground) 12%, transparent);
   --chat-mobile-backdrop-sheet: color-mix(in srgb, var(--foreground) 18%, transparent);
@@ -4339,7 +4341,7 @@ h6 {
   border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
   border-radius: 999px;
   background: color-mix(in srgb, var(--card) 88%, transparent);
-  box-shadow: 0 12px 30px rgba(20, 20, 19, 0.1);
+  box-shadow: var(--study-cards-back-link-shadow);
   color: color-mix(in srgb, var(--foreground) 86%, var(--muted));
   font-size: 12px;
   font-weight: 800;
@@ -4385,7 +4387,7 @@ h6 {
   border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
   border-radius: 8px;
   background: color-mix(in srgb, var(--card) 94%, var(--background));
-  box-shadow: 0 18px 48px rgba(20, 20, 19, 0.08);
+  box-shadow: var(--study-cards-panel-shadow);
 }
 
 .study-cards-input-panel {

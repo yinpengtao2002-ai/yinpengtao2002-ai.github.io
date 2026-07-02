@@ -339,6 +339,23 @@ test("thinking lab card and panel shadows derive from shared design tokens", asy
   assert.match(toolHoverBlock, /box-shadow:\s*var\(--thinking-tool-card-hover-shadow\)/);
 });
 
+test("study cards page shell shadows derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const backLinkBlock = readCssRule(globals, ".study-cards-back-link");
+  const panelBlock = globals.match(/\.study-cards-input-panel,\n\.study-cards-output-panel\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+  const scopedSource = [backLinkBlock, panelBlock].join("\n");
+
+  assert.ok(panelBlock, "study cards input/output panel rule should exist");
+  assert.doesNotMatch(scopedSource, /0 12px 30px rgba\(20,\s*20,\s*19,\s*0\.1\)/);
+  assert.doesNotMatch(scopedSource, /0 18px 48px rgba\(20,\s*20,\s*19,\s*0\.08\)/);
+  assert.match(rootSource, /--study-cards-back-link-shadow:\s*0 12px 30px color-mix\(in srgb,\s*var\(--foreground\) 10%,\s*transparent\)/);
+  assert.match(rootSource, /--study-cards-panel-shadow:\s*0 18px 48px color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*transparent\)/);
+  assert.match(backLinkBlock, /box-shadow:\s*var\(--study-cards-back-link-shadow\)/);
+  assert.match(panelBlock, /box-shadow:\s*var\(--study-cards-panel-shadow\)/);
+});
+
 test("chat assistant shell visuals use shared design tokens", async () => {
   const chatWidget = await readProjectFile("src/components/ChatWidget.tsx");
   const globals = await readProjectFile("src/app/globals.css");
