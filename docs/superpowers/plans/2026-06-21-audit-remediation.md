@@ -5806,3 +5806,69 @@ Observed: CSSOM contained `.thinking-tool-icon` reading `color: var(--thinking-t
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10be`, noting that this closes only the Thinking Lab quick-tool icon color token sub-item while leaving article type pills, tool action links, and other local Thinking Lab colors for later passes.
+
+### Task 90: Tokenize Thinking Lab Article Labels And Actions
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/thinking-lab` list page article category pills and action labels: `.thinking-article-type`, `.thinking-tool-action`, and `.thinking-article-action`. This pass covers only the article label border/text/background colors and the action text color; other local Thinking Lab colors remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `--thinking-article-type-border`, `--thinking-article-type-text`, `--thinking-article-type-bg`, and `--thinking-action-text` to exist in `:root`, and requiring the relevant Thinking Lab CSS rules to read those tokens.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the article label tokens did not exist and `.thinking-article-type` / action rules still wrote their color values directly.
+
+- [x] **Step 4: Move article label and action colors to shared tokens**
+
+Added the four Thinking Lab article/action tokens to `:root`, deriving them from `--foreground`, `--border`, `--muted`, `--background`, and `--card`. Updated `.thinking-article-type` and the shared action rule to read those variables while preserving the existing pill shape, typography, and action layout.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 59/59 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 383/383 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Thinking Lab in browser**
+
+Started `npm run start -- --port 3100`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3100/thinking-lab?audit=ui-p1-10bf`, inspected the article label and action CSSOM at desktop width, resized to `390x844`, inspected the same token usage, and checked the browser console.
+
+Observed: CSSOM contained `.thinking-article-type` reading `border: 1px solid var(--thinking-article-type-border)`, `color: var(--thinking-article-type-text)`, and `background: var(--thinking-article-type-bg)`, plus the shared action rule reading `color: var(--thinking-action-text)`. Mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bf`, noting that this closes only the Thinking Lab article category pill and action-link color sub-item while leaving other local Thinking Lab colors for later passes.

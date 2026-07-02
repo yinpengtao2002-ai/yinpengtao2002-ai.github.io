@@ -40,6 +40,10 @@
   --thinking-tool-icon-bg: var(--accent-secondary);
   --thinking-tool-icon-alt-bg: var(--accent-tertiary);
   --thinking-tool-icon-text: var(--card);
+  --thinking-article-type-border: color-mix(in srgb, var(--foreground) 8%, var(--border));
+  --thinking-article-type-text: color-mix(in srgb, var(--foreground) 56%, var(--muted));
+  --thinking-article-type-bg: color-mix(in srgb, var(--background) 74%, var(--card));
+  --thinking-action-text: var(--foreground);
   --thinking-panel-shadow: 0 18px 42px color-mix(in srgb, var(--foreground) 5.5%, transparent);
   --thinking-article-card-shadow: 0 10px 26px color-mix(in srgb, var(--foreground) 4%, transparent);
   --thinking-article-card-hover-shadow: 0 14px 32px color-mix(in srgb, var(--foreground) 6%, transparent);
@@ -4355,11 +4359,11 @@ h6 {
   align-items: center;
   justify-content: center;
   min-height: 28px;
-  border: 1px solid color-mix(in srgb, var(--foreground) 8%, var(--border));
+  border: 1px solid var(--thinking-article-type-border);
   border-radius: 999px;
   padding: 0 10px;
-  color: color-mix(in srgb, var(--foreground) 56%, var(--muted));
-  background: color-mix(in srgb, var(--background) 74%, var(--card));
+  color: var(--thinking-article-type-text);
+  background: var(--thinking-article-type-bg);
   font-size: 12px;
   font-weight: 750;
   white-space: nowrap;
@@ -4431,7 +4435,7 @@ h6 {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--foreground);
+  color: var(--thinking-action-text);
   font-size: 13px;
   font-weight: 850;
   white-space: nowrap;

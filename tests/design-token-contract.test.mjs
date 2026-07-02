@@ -392,6 +392,24 @@ test("thinking lab tool icons derive colors from shared design tokens", async ()
   assert.match(alternateToolIconBlock, /background:\s*var\(--thinking-tool-icon-alt-bg\)/);
 });
 
+test("thinking lab article labels and action links derive colors from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const articleTypeBlock = readCssRule(globals, ".thinking-article-type");
+  const actionBlock = globals.match(/\.thinking-tool-action,\n\.thinking-article-action\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+
+  assert.ok(actionBlock, "thinking lab shared action rule should exist");
+  assert.match(rootSource, /--thinking-article-type-border:\s*color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*var\(--border\)\)/);
+  assert.match(rootSource, /--thinking-article-type-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 56%,\s*var\(--muted\)\)/);
+  assert.match(rootSource, /--thinking-article-type-bg:\s*color-mix\(in srgb,\s*var\(--background\) 74%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--thinking-action-text:\s*var\(--foreground\)/);
+  assert.match(articleTypeBlock, /border:\s*1px solid var\(--thinking-article-type-border\)/);
+  assert.match(articleTypeBlock, /color:\s*var\(--thinking-article-type-text\)/);
+  assert.match(articleTypeBlock, /background:\s*var\(--thinking-article-type-bg\)/);
+  assert.match(actionBlock, /color:\s*var\(--thinking-action-text\)/);
+});
+
 test("study cards page shell shadows derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
