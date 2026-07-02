@@ -56,6 +56,9 @@
   --study-cards-result-count-border: color-mix(in srgb, var(--accent-secondary) 24%, var(--border));
   --study-cards-result-count-bg: color-mix(in srgb, var(--accent-secondary) 9%, var(--card));
   --study-cards-result-count-text: color-mix(in srgb, var(--foreground) 74%, var(--accent-secondary));
+  --study-cards-mobile-edit-button-border: color-mix(in srgb, var(--border) 80%, transparent);
+  --study-cards-mobile-edit-button-bg: color-mix(in srgb, var(--card) 84%, transparent);
+  --study-cards-mobile-edit-button-text: color-mix(in srgb, var(--foreground) 70%, var(--muted));
   --study-cards-bingo-action-button-border: color-mix(in srgb, var(--border) 78%, transparent);
   --study-cards-bingo-action-button-bg: color-mix(in srgb, var(--card) 92%, var(--background));
   --study-cards-bingo-action-button-text: color-mix(in srgb, var(--foreground) 74%, var(--muted));
@@ -6015,10 +6018,10 @@ h6 {
     align-items: center;
     gap: 5px;
     margin: 0 0 6px;
-    border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+    border: 1px solid var(--study-cards-mobile-edit-button-border);
     border-radius: 999px;
-    background: color-mix(in srgb, var(--card) 84%, transparent);
-    color: color-mix(in srgb, var(--foreground) 70%, var(--muted));
+    background: var(--study-cards-mobile-edit-button-bg);
+    color: var(--study-cards-mobile-edit-button-text);
     font: inherit;
     font-size: 11px;
     font-weight: 850;

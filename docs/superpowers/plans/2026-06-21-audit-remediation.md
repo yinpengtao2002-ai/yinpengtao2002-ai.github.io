@@ -4948,3 +4948,69 @@ Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; the count text `已认
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10ar`, noting that this closes only the Study Cards result-area `已认识 / 第几张` count pill color token sub-item while leaving mobile edit button, memory feedback buttons, and other button color details for later passes.
+
+### Task 77: Tokenize Study Cards Mobile Edit Button Colors
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/tools/study-cards` mobile practice edit button: `.study-cards-page.is-mobile-practice .study-cards-mobile-edit-button`. This pass covers only the mobile练习态 `编辑内容` button; memory feedback buttons, speak/pronunciation buttons, and other button color details remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the mobile edit button colors to read `--study-cards-mobile-edit-button-*` tokens from `:root`, using `readLastCssRule()` so the mobile override rule is checked as the effective selector.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the mobile edit button tokens did not exist and `.study-cards-page.is-mobile-practice .study-cards-mobile-edit-button` still wrote its border, background, and text colors directly.
+
+- [x] **Step 4: Move mobile edit button colors to shared tokens**
+
+Added `--study-cards-mobile-edit-button-border`, `--study-cards-mobile-edit-button-bg`, and `--study-cards-mobile-edit-button-text` to `:root`, deriving them from the site border/card/foreground/muted tokens. Updated the mobile edit button CSS rule to use those tokens while preserving sizing, layout, radius, font, and spacing.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 46/46 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 370/370 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards mobile edit button in browser**
+
+Started `npm run start -- --port 3087`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3087/tools/study-cards` at `390x844`, clicked `示例内容`, waited for `.study-cards-page.is-mobile-practice .study-cards-mobile-edit-button`, and recursively inspected CSSOM inside media rules.
+
+Observed: page class `study-cards-page has-result is-mobile-practice`; the button text was `编辑内容`; CSSOM reported `.study-cards-page.is-mobile-practice .study-cards-mobile-edit-button` reading `var(--study-cards-mobile-edit-button-border)`, `var(--study-cards-mobile-edit-button-bg)`, and `var(--study-cards-mobile-edit-button-text)`. Mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10as`, noting that this closes only the Study Cards mobile practice `编辑内容` button color token sub-item while leaving memory feedback buttons, speak buttons, and other button color details for later passes.

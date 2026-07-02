@@ -548,6 +548,20 @@ test("study cards result count colors derive from shared design tokens", async (
   assert.match(resultCountBlock, /color:\s*var\(--study-cards-result-count-text\)/);
 });
 
+test("study cards mobile edit button colors derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const mobileEditButtonBlock = readLastCssRule(globals, ".study-cards-page.is-mobile-practice .study-cards-mobile-edit-button");
+
+  assert.match(rootSource, /--study-cards-mobile-edit-button-border:\s*color-mix\(in srgb,\s*var\(--border\) 80%,\s*transparent\)/);
+  assert.match(rootSource, /--study-cards-mobile-edit-button-bg:\s*color-mix\(in srgb,\s*var\(--card\) 84%,\s*transparent\)/);
+  assert.match(rootSource, /--study-cards-mobile-edit-button-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 70%,\s*var\(--muted\)\)/);
+  assert.match(mobileEditButtonBlock, /border:\s*1px solid var\(--study-cards-mobile-edit-button-border\)/);
+  assert.match(mobileEditButtonBlock, /background:\s*var\(--study-cards-mobile-edit-button-bg\)/);
+  assert.match(mobileEditButtonBlock, /color:\s*var\(--study-cards-mobile-edit-button-text\)/);
+});
+
 test("study cards completion action button colors derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
