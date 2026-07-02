@@ -36,6 +36,21 @@
   --home-thinking-preview-label-text: var(--background);
   --home-thinking-preview-summary-text: color-mix(in srgb, var(--background) 78%, transparent);
   --home-thinking-preview-action-text: var(--background);
+  --home-thinking-featured-meta-border: color-mix(in srgb, var(--background) 24%, transparent);
+  --home-thinking-featured-meta-bg: color-mix(in srgb, var(--background) 10%, transparent);
+  --home-thinking-featured-meta-text: color-mix(in srgb, var(--background) 78%, transparent);
+  --home-thinking-featured-meta-active-border: color-mix(in srgb, var(--background) 50%, transparent);
+  --home-thinking-featured-meta-active-bg: color-mix(in srgb, var(--background) 88%, transparent);
+  --home-thinking-featured-meta-active-text: var(--foreground);
+  --home-thinking-preview-panel-border: color-mix(in srgb, var(--background) 20%, transparent);
+  --home-thinking-preview-panel-bg: color-mix(in srgb, var(--foreground) 20%, transparent);
+  --home-thinking-all-link-border: color-mix(in srgb, var(--background) 44%, transparent);
+  --home-thinking-all-link-bg: color-mix(in srgb, var(--background) 92%, transparent);
+  --home-thinking-all-link-text: var(--foreground);
+  --home-thinking-all-link-hover-bg: var(--background);
+  --home-thinking-preview-count-pill-border: color-mix(in srgb, var(--background) 62%, transparent);
+  --home-thinking-preview-count-pill-bg: color-mix(in srgb, var(--background) 92%, transparent);
+  --home-thinking-preview-count-pill-text: color-mix(in srgb, var(--thinking-track-accent, var(--background)) 70%, var(--foreground));
   --home-thinking-preview-count-pill-shadow: 0 8px 18px color-mix(in srgb, var(--foreground) 20%, transparent);
   --home-thinking-track-count-pill-shadow: 0 6px 16px color-mix(in srgb, var(--foreground) 5.5%, transparent);
   --home-thinking-track-card-active-shadow: 0 16px 42px color-mix(in srgb, var(--foreground) 7%, transparent);
@@ -3845,10 +3860,10 @@ h6 {
   display: inline-flex;
   align-items: center;
   min-height: 26px;
-  border: 1px solid rgba(255, 250, 240, 0.24);
+  border: 1px solid var(--home-thinking-featured-meta-border);
   border-radius: 999px;
-  background: rgba(255, 250, 240, 0.1);
-  color: rgba(255, 250, 240, 0.78);
+  background: var(--home-thinking-featured-meta-bg);
+  color: var(--home-thinking-featured-meta-text);
   font-family: var(--font-poppins);
   font-size: 11px;
   font-weight: 650;
@@ -3856,16 +3871,16 @@ h6 {
 }
 
 .home-thinking-featured-meta span.is-active {
-  border-color: rgba(255, 250, 240, 0.5);
-  background: rgba(255, 250, 240, 0.88);
-  color: var(--foreground);
+  border-color: var(--home-thinking-featured-meta-active-border);
+  background: var(--home-thinking-featured-meta-active-bg);
+  color: var(--home-thinking-featured-meta-active-text);
 }
 
 .home-thinking-preview-panel {
   width: min(100%, 440px);
-  border: 1px solid rgba(255, 250, 240, 0.2);
+  border: 1px solid var(--home-thinking-preview-panel-border);
   border-radius: 8px;
-  background: rgba(20, 20, 19, 0.2);
+  background: var(--home-thinking-preview-panel-bg);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   padding: 13px;
@@ -3962,10 +3977,10 @@ h6 {
   justify-content: center;
   gap: 8px;
   min-height: 38px;
-  border: 1px solid rgba(255, 250, 240, 0.44);
+  border: 1px solid var(--home-thinking-all-link-border);
   border-radius: 999px;
-  background: rgba(255, 250, 240, 0.92);
-  color: var(--foreground);
+  background: var(--home-thinking-all-link-bg);
+  color: var(--home-thinking-all-link-text);
   font-family: var(--font-poppins);
   font-size: 13px;
   font-weight: 650;
@@ -3977,7 +3992,7 @@ h6 {
 }
 
 .home-thinking-all-link:hover {
-  background: #fffaf0;
+  background: var(--home-thinking-all-link-hover-bg);
   transform: translateY(-1px);
 }
 
@@ -4000,9 +4015,9 @@ h6 {
 .home-thinking-preview-panel .home-thinking-count-pill {
   justify-content: center;
   min-width: 62px;
-  border-color: rgba(255, 250, 240, 0.62);
-  background: rgba(255, 250, 240, 0.92);
-  color: color-mix(in srgb, var(--thinking-track-accent, #fffaf0) 70%, var(--foreground));
+  border-color: var(--home-thinking-preview-count-pill-border);
+  background: var(--home-thinking-preview-count-pill-bg);
+  color: var(--home-thinking-preview-count-pill-text);
   box-shadow: var(--home-thinking-preview-count-pill-shadow);
   padding: 0 10px;
 }

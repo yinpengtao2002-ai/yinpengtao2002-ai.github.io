@@ -6268,3 +6268,78 @@ Observed: the five visual copy tokens existed and resolved; the CSSOM rules read
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bl`, noting that this closes only the homepage Thinking visual copy color sub-item while leaving meta pills, preview panel backgrounds, and other homepage decorative colors for later passes.
+
+### Task 97: Tokenize Home Thinking Preview Control Surfaces
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `tests/home-experience-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the homepage "工具与思考" preview control surfaces: `.home-thinking-featured-meta span`, `.home-thinking-featured-meta span.is-active`, `.home-thinking-preview-panel`, `.home-thinking-all-link`, `.home-thinking-all-link:hover`, and `.home-thinking-preview-panel .home-thinking-count-pill`. This pass covers only the meta pills, preview panel surface, all-link button, and image-card count pill colors; other homepage decorative colors remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring 15 `--home-thinking-*` surface tokens in `:root`, requiring the six scoped rules to read those variables, and rejecting the old `#fffaf0`, `rgba(255, 250, 240, ...)`, and `rgba(20, 20, 19, ...)` literals in this scoped surface group.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation, 65/66 passing. The new test failed because the meta pills, preview panel, all-link button, hover state, and preview count pill still contained the old warm-white and dark rgba literals.
+
+- [x] **Step 4: Move preview control surface colors to shared tokens**
+
+Added the 15 preview-control tokens to `:root`, deriving them from `--background`, `--foreground`, and `--thinking-track-accent`. Updated the meta pill, active meta pill, preview panel, all-link, all-link hover, and preview-panel count pill rules to read those variables while preserving dimensions, radius, blur, shadows, layout, and hover motion.
+
+- [x] **Step 5: Update the old homepage experience contract**
+
+Updated `tests/home-experience-contract.test.mjs` so the "home thinking count pills remain legible" contract checks tokenized preview count pill background/text values instead of requiring the former hardcoded warm-white literals.
+
+- [x] **Step 6: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 66/66 tests.
+
+Run: `node --test tests/design-token-contract.test.mjs tests/home-experience-contract.test.mjs`
+
+Observed: PASS, 95/95 tests.
+
+- [x] **Step 7: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 390/390 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 8: Verify homepage in browser**
+
+Started `npm run start -- --port 3107`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3107/?audit=ui-p1-10bm`, inspected the 15 preview-control tokens, the target CSSOM rules, and computed styles at desktop width, then resized to `390x844` and repeated the overflow and console checks.
+
+Observed: all 15 tokens existed and resolved; the CSSOM rules read `var(--home-thinking-*)`; the scoped CSSOM had old literal count 0; desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; the preview panel and all-link remained visible; console error count was 0.
+
+- [x] **Step 9: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bm`, noting that this closes only the homepage Thinking preview-control surface color sub-item while leaving other homepage decorative colors for later passes.

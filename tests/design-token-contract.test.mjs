@@ -336,6 +336,66 @@ test("home thinking visual copy colors derive from shared design tokens", async 
   assert.match(previewActionBlock, /color:\s*var\(--home-thinking-preview-action-text\)/);
 });
 
+test("home thinking preview controls derive surface colors from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const metaBlock = readCssRule(globals, ".home-thinking-featured-meta span");
+  const metaActiveBlock = readCssRule(globals, ".home-thinking-featured-meta span.is-active");
+  const panelBlock = readCssRule(globals, ".home-thinking-preview-panel");
+  const allLinkBlock = readCssRule(globals, ".home-thinking-all-link");
+  const allLinkHoverBlock = readCssRule(globals, ".home-thinking-all-link:hover");
+  const previewPillBlock = readCssRule(globals, ".home-thinking-preview-panel .home-thinking-count-pill");
+  const scopedSource = [
+    metaBlock,
+    metaActiveBlock,
+    panelBlock,
+    allLinkBlock,
+    allLinkHoverBlock,
+    previewPillBlock,
+  ].join("\n").toLowerCase();
+
+  for (const literal of ["#fffaf0", "rgba(255, 250, 240", "rgba(20, 20, 19"]) {
+    assert.doesNotMatch(scopedSource, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  for (const token of [
+    "--home-thinking-featured-meta-border",
+    "--home-thinking-featured-meta-bg",
+    "--home-thinking-featured-meta-text",
+    "--home-thinking-featured-meta-active-border",
+    "--home-thinking-featured-meta-active-bg",
+    "--home-thinking-featured-meta-active-text",
+    "--home-thinking-preview-panel-border",
+    "--home-thinking-preview-panel-bg",
+    "--home-thinking-all-link-border",
+    "--home-thinking-all-link-bg",
+    "--home-thinking-all-link-text",
+    "--home-thinking-all-link-hover-bg",
+    "--home-thinking-preview-count-pill-border",
+    "--home-thinking-preview-count-pill-bg",
+    "--home-thinking-preview-count-pill-text",
+  ]) {
+    assert.match(rootSource, new RegExp(`${token}:\\s*`), `${token} should be declared in :root`);
+  }
+
+  assert.match(metaBlock, /border:\s*1px solid var\(--home-thinking-featured-meta-border\)/);
+  assert.match(metaBlock, /background:\s*var\(--home-thinking-featured-meta-bg\)/);
+  assert.match(metaBlock, /color:\s*var\(--home-thinking-featured-meta-text\)/);
+  assert.match(metaActiveBlock, /border-color:\s*var\(--home-thinking-featured-meta-active-border\)/);
+  assert.match(metaActiveBlock, /background:\s*var\(--home-thinking-featured-meta-active-bg\)/);
+  assert.match(metaActiveBlock, /color:\s*var\(--home-thinking-featured-meta-active-text\)/);
+  assert.match(panelBlock, /border:\s*1px solid var\(--home-thinking-preview-panel-border\)/);
+  assert.match(panelBlock, /background:\s*var\(--home-thinking-preview-panel-bg\)/);
+  assert.match(allLinkBlock, /border:\s*1px solid var\(--home-thinking-all-link-border\)/);
+  assert.match(allLinkBlock, /background:\s*var\(--home-thinking-all-link-bg\)/);
+  assert.match(allLinkBlock, /color:\s*var\(--home-thinking-all-link-text\)/);
+  assert.match(allLinkHoverBlock, /background:\s*var\(--home-thinking-all-link-hover-bg\)/);
+  assert.match(previewPillBlock, /border-color:\s*var\(--home-thinking-preview-count-pill-border\)/);
+  assert.match(previewPillBlock, /background:\s*var\(--home-thinking-preview-count-pill-bg\)/);
+  assert.match(previewPillBlock, /color:\s*var\(--home-thinking-preview-count-pill-text\)/);
+});
+
 test("home thinking count pill shadows derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
