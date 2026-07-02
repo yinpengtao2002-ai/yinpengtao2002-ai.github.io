@@ -30,6 +30,10 @@
   --home-thinking-preview-count-pill-shadow: 0 8px 18px color-mix(in srgb, var(--foreground) 20%, transparent);
   --home-thinking-track-count-pill-shadow: 0 6px 16px color-mix(in srgb, var(--foreground) 5.5%, transparent);
   --home-thinking-track-card-active-shadow: 0 16px 42px color-mix(in srgb, var(--foreground) 7%, transparent);
+  --thinking-page-grid-line-x: color-mix(in srgb, var(--foreground) 2%, transparent);
+  --thinking-page-grid-line-y: color-mix(in srgb, var(--foreground) 1.5%, transparent);
+  --thinking-page-gradient-start: color-mix(in srgb, var(--card) 78%, var(--background));
+  --thinking-page-gradient-end: var(--background);
   --thinking-panel-bg: color-mix(in srgb, var(--card) 90%, transparent);
   --thinking-article-card-bg: color-mix(in srgb, var(--card) 92%, transparent);
   --thinking-tool-card-bg: color-mix(in srgb, var(--card) 88%, transparent);
@@ -4192,9 +4196,9 @@ h6 {
   min-height: 100dvh;
   color: var(--foreground);
   background:
-    repeating-linear-gradient(90deg, color-mix(in srgb, var(--foreground) 2%, transparent) 0 1px, transparent 1px 64px),
-    repeating-linear-gradient(0deg, color-mix(in srgb, var(--foreground) 1.5%, transparent) 0 1px, transparent 1px 64px),
-    linear-gradient(180deg, color-mix(in srgb, var(--card) 78%, var(--background)), var(--background) 52%);
+    repeating-linear-gradient(90deg, var(--thinking-page-grid-line-x) 0 1px, transparent 1px 64px),
+    repeating-linear-gradient(0deg, var(--thinking-page-grid-line-y) 0 1px, transparent 1px 64px),
+    linear-gradient(180deg, var(--thinking-page-gradient-start), var(--thinking-page-gradient-end) 52%);
   font-family: var(--font-poppins);
 }
 

@@ -6004,3 +6004,69 @@ Observed: the ten text tokens existed and resolved to visible text colors for ey
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bh`, noting that this closes only the Thinking Lab main text-color sub-item while leaving page background texture and other non-text decorative colors for later passes.
+
+### Task 93: Tokenize Thinking Lab Page Background Texture
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/thinking-lab` list page background texture: the two subtle grid-line gradients and the warm page gradient on `.thinking-index-page`. This pass covers only the page-level background texture; other non-text decorative colors remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `--thinking-page-grid-line-x`, `--thinking-page-grid-line-y`, `--thinking-page-gradient-start`, and `--thinking-page-gradient-end` to exist in `:root`, and requiring `.thinking-index-page` to read those tokens in its three-layer background.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.thinking-index-page` still wrote `repeating-linear-gradient(... color-mix(...))` and the page gradient directly in the background declaration.
+
+- [x] **Step 4: Move Thinking Lab page background texture to shared tokens**
+
+Added the four Thinking Lab page background tokens to `:root`, deriving the grid lines from `--foreground`, the gradient start from `--card` / `--background`, and the gradient end from `--background`. Updated `.thinking-index-page` to read those variables while preserving the same background layers and spacing.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 62/62 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 386/386 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Thinking Lab in browser**
+
+Started `npm run start -- --port 3103`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3103/thinking-lab?audit=ui-p1-10bi`, inspected the four page background tokens, the CSSOM background rule, and the computed background image at desktop width, then resized to `390x844` and repeated the overflow and console checks.
+
+Observed: the four page background tokens existed and resolved; the CSSOM rule read `var(--thinking-page-*)`; desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bi`, noting that this closes only the Thinking Lab page background texture sub-item while leaving other non-text decorative colors for later passes.

@@ -443,6 +443,29 @@ test("thinking lab index copy derives text colors from shared design tokens", as
   assert.match(toolDescBlock, /color:\s*var\(--thinking-tool-desc-text\)/);
 });
 
+test("thinking lab page background texture derives from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const pageBlock = readCssRule(globals, ".thinking-index-page");
+
+  for (const literal of [
+    "repeating-linear-gradient(90deg, color-mix(in srgb, var(--foreground) 2%, transparent)",
+    "repeating-linear-gradient(0deg, color-mix(in srgb, var(--foreground) 1.5%, transparent)",
+    "linear-gradient(180deg, color-mix(in srgb, var(--card) 78%, var(--background)), var(--background) 52%)",
+  ]) {
+    assert.doesNotMatch(pageBlock, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(rootSource, /--thinking-page-grid-line-x:\s*color-mix\(in srgb,\s*var\(--foreground\) 2%,\s*transparent\)/);
+  assert.match(rootSource, /--thinking-page-grid-line-y:\s*color-mix\(in srgb,\s*var\(--foreground\) 1\.5%,\s*transparent\)/);
+  assert.match(rootSource, /--thinking-page-gradient-start:\s*color-mix\(in srgb,\s*var\(--card\) 78%,\s*var\(--background\)\)/);
+  assert.match(rootSource, /--thinking-page-gradient-end:\s*var\(--background\)/);
+  assert.match(pageBlock, /repeating-linear-gradient\(90deg,\s*var\(--thinking-page-grid-line-x\) 0 1px,\s*transparent 1px 64px\)/);
+  assert.match(pageBlock, /repeating-linear-gradient\(0deg,\s*var\(--thinking-page-grid-line-y\) 0 1px,\s*transparent 1px 64px\)/);
+  assert.match(pageBlock, /linear-gradient\(180deg,\s*var\(--thinking-page-gradient-start\),\s*var\(--thinking-page-gradient-end\) 52%\)/);
+});
+
 test("thinking lab tool icons derive colors from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
