@@ -4552,3 +4552,69 @@ Observed: desktop `clientWidth=1280`, `scrollWidth=1280`, deck and practice card
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10al`, noting that this closes only the Study Cards mobile practice deck override shadow token sub-item while leaving export-area shadows and button colors for separate passes.
+
+### Task 71: Tokenize Study Cards Loaded Input Panel Shadow
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/tools/study-cards` desktop generated-result override for the input panel shadow: `.study-cards-page.has-result .study-cards-input-panel` inside `@media (min-width: 901px)`. This pass does not migrate export-area shadows or button colors.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the generated-result input panel override to read `--study-cards-loaded-input-panel-shadow` from `:root`, while rejecting the old direct `0 14px 34px rgba(20, 20, 19, 0.06)` shadow literal.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.study-cards-page.has-result .study-cards-input-panel` still used `0 14px 34px rgba(20, 20, 19, 0.06)`.
+
+- [x] **Step 4: Move generated-result input panel shadow to a shared token**
+
+Added `--study-cards-loaded-input-panel-shadow` to `:root`, deriving the shadow from `--foreground`. Updated the generated-result desktop input panel override to use that token while preserving the result layout and narrower input panel behavior.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 40/40 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 364/364 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards generated-result browser behavior**
+
+Started `npm run start -- --port 3081`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3081/tools/study-cards`, clicked `示例内容`, inspected desktop generated-result input panel behavior, then resized to `390x844` and checked the mobile practice layout.
+
+Observed: desktop `clientWidth=1280`, `scrollWidth=1280`; `.study-cards-page` entered `has-result`; input panel was visible at about `511x794`; the loaded result input-panel rule reported `box-shadow: var(--study-cards-loaded-input-panel-shadow)`; computed shadow resolved to a token-derived `color(srgb ... / 0.06)` value. Mobile `clientWidth=390`, `scrollWidth=390`; `.study-cards-page` entered `is-mobile-practice`; input panel was hidden and the practice card remained visible. Console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10am`, noting that this closes only the Study Cards generated-result desktop input panel shadow token sub-item while leaving export-area shadows and button colors for separate passes.

@@ -460,6 +460,17 @@ test("study cards mobile practice deck layer shadow derives from shared design t
   assert.match(mobileDeckLayerBlock, /box-shadow:\s*var\(--study-cards-mobile-deck-layer-shadow\)/);
 });
 
+test("study cards loaded input panel shadow derives from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const loadedInputPanelBlock = readCssRule(globals, ".study-cards-page.has-result .study-cards-input-panel");
+
+  assert.doesNotMatch(loadedInputPanelBlock, /0 14px 34px rgba\(20,\s*20,\s*19,\s*0\.06\)/);
+  assert.match(rootSource, /--study-cards-loaded-input-panel-shadow:\s*0 14px 34px color-mix\(in srgb,\s*var\(--foreground\) 6%,\s*transparent\)/);
+  assert.match(loadedInputPanelBlock, /box-shadow:\s*var\(--study-cards-loaded-input-panel-shadow\)/);
+});
+
 test("chat assistant shell visuals use shared design tokens", async () => {
   const chatWidget = await readProjectFile("src/components/ChatWidget.tsx");
   const globals = await readProjectFile("src/app/globals.css");

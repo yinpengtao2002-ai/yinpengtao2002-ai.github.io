@@ -36,6 +36,7 @@
   --thinking-tool-card-hover-shadow: 0 12px 28px color-mix(in srgb, var(--foreground) 5.5%, transparent);
   --study-cards-back-link-shadow: 0 12px 30px color-mix(in srgb, var(--foreground) 10%, transparent);
   --study-cards-panel-shadow: 0 18px 48px color-mix(in srgb, var(--foreground) 8%, transparent);
+  --study-cards-loaded-input-panel-shadow: 0 14px 34px color-mix(in srgb, var(--foreground) 6%, transparent);
   --study-cards-empty-preview-shadow: 0 14px 34px color-mix(in srgb, var(--foreground) 8%, transparent);
   --study-cards-empty-card-shadow: 0 24px 58px color-mix(in srgb, var(--foreground) 13%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 82%, transparent);
   --study-cards-deck-layer-shadow: 0 18px 44px color-mix(in srgb, var(--foreground) 8%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card) 72%, transparent);
@@ -4865,7 +4866,7 @@ h6 {
   }
 
   .study-cards-page.has-result .study-cards-input-panel {
-    box-shadow: 0 14px 34px rgba(20, 20, 19, 0.06);
+    box-shadow: var(--study-cards-loaded-input-panel-shadow);
   }
 
   .study-cards-page.has-result .study-cards-actions {
