@@ -300,6 +300,42 @@ test("home thinking visual shade gradients derive from shared design tokens", as
   assert.match(visualShadeBlock, /linear-gradient\(90deg,\s*var\(--home-thinking-visual-shade-horizontal-start\),\s*var\(--home-thinking-visual-shade-horizontal-end\)\)/);
 });
 
+test("home thinking visual copy colors derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const kickerBlock = readCssRule(globals, ".home-thinking-visual-copy .home-thinking-kicker");
+  const titleBlock = readCssRule(globals, ".home-thinking-visual-copy h2");
+  const introBlock = readCssRule(globals, ".home-thinking-featured-intro");
+  const previewLabelBlock = readCssRule(globals, ".home-thinking-preview-label");
+  const previewSummaryBlock = readCssRule(globals, ".home-thinking-preview-summary");
+  const previewActionBlock = readCssRule(globals, ".home-thinking-preview-action");
+  const scopedSource = [
+    kickerBlock,
+    titleBlock,
+    introBlock,
+    previewLabelBlock,
+    previewSummaryBlock,
+    previewActionBlock,
+  ].join("\n").toLowerCase();
+
+  for (const literal of ["#fffaf0", "rgba(255, 250, 240"]) {
+    assert.doesNotMatch(scopedSource, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(rootSource, /--home-thinking-visual-copy-title-text:\s*var\(--background\)/);
+  assert.match(rootSource, /--home-thinking-visual-copy-muted-text:\s*color-mix\(in srgb,\s*var\(--background\) 82%,\s*transparent\)/);
+  assert.match(rootSource, /--home-thinking-preview-label-text:\s*var\(--background\)/);
+  assert.match(rootSource, /--home-thinking-preview-summary-text:\s*color-mix\(in srgb,\s*var\(--background\) 78%,\s*transparent\)/);
+  assert.match(rootSource, /--home-thinking-preview-action-text:\s*var\(--background\)/);
+  assert.match(kickerBlock, /color:\s*var\(--home-thinking-visual-copy-title-text\)/);
+  assert.match(titleBlock, /color:\s*var\(--home-thinking-visual-copy-title-text\)/);
+  assert.match(introBlock, /color:\s*var\(--home-thinking-visual-copy-muted-text\)/);
+  assert.match(previewLabelBlock, /color:\s*var\(--home-thinking-preview-label-text\)/);
+  assert.match(previewSummaryBlock, /color:\s*var\(--home-thinking-preview-summary-text\)/);
+  assert.match(previewActionBlock, /color:\s*var\(--home-thinking-preview-action-text\)/);
+});
+
 test("home thinking count pill shadows derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];

@@ -31,6 +31,11 @@
   --home-thinking-visual-shade-vertical-end: color-mix(in srgb, var(--foreground) 58%, transparent);
   --home-thinking-visual-shade-horizontal-start: color-mix(in srgb, var(--background) 6%, transparent);
   --home-thinking-visual-shade-horizontal-end: color-mix(in srgb, var(--foreground) 18%, transparent);
+  --home-thinking-visual-copy-title-text: var(--background);
+  --home-thinking-visual-copy-muted-text: color-mix(in srgb, var(--background) 82%, transparent);
+  --home-thinking-preview-label-text: var(--background);
+  --home-thinking-preview-summary-text: color-mix(in srgb, var(--background) 78%, transparent);
+  --home-thinking-preview-action-text: var(--background);
   --home-thinking-preview-count-pill-shadow: 0 8px 18px color-mix(in srgb, var(--foreground) 20%, transparent);
   --home-thinking-track-count-pill-shadow: 0 6px 16px color-mix(in srgb, var(--foreground) 5.5%, transparent);
   --home-thinking-track-card-active-shadow: 0 16px 42px color-mix(in srgb, var(--foreground) 7%, transparent);
@@ -3807,11 +3812,11 @@ h6 {
 }
 
 .home-thinking-visual-copy .home-thinking-kicker {
-  color: #fffaf0;
+  color: var(--home-thinking-visual-copy-title-text);
 }
 
 .home-thinking-visual-copy h2 {
-  color: #fffaf0;
+  color: var(--home-thinking-visual-copy-title-text);
   font-family: var(--font-hero-display);
   font-size: clamp(1.95rem, 4.2vw, 3.15rem);
   font-weight: 500;
@@ -3822,7 +3827,7 @@ h6 {
 
 .home-thinking-featured-intro {
   max-width: 25em;
-  color: rgba(255, 250, 240, 0.82);
+  color: var(--home-thinking-visual-copy-muted-text);
   font-size: 13px;
   font-weight: 700;
   line-height: 1.66;
@@ -3875,7 +3880,7 @@ h6 {
 }
 
 .home-thinking-preview-label {
-  color: #fffaf0;
+  color: var(--home-thinking-preview-label-text);
   font-family: var(--font-poppins);
   font-size: 11px;
   font-weight: 650;
@@ -3883,7 +3888,7 @@ h6 {
 
 .home-thinking-preview-summary {
   display: -webkit-box;
-  color: rgba(255, 250, 240, 0.78);
+  color: var(--home-thinking-preview-summary-text);
   font-size: 12px;
   font-weight: 450;
   line-height: 1.58;
@@ -3943,7 +3948,7 @@ h6 {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #fffaf0;
+  color: var(--home-thinking-preview-action-text);
   font-family: var(--font-poppins);
   font-size: 12px;
   font-weight: 650;

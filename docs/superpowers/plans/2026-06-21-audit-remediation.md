@@ -6202,3 +6202,69 @@ Observed: the four visual shade tokens existed and resolved; the CSSOM rule read
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bk`, noting that this closes only the homepage Thinking visual shade gradient sub-item while leaving over-image copy colors, meta pills, preview panel backgrounds, and other homepage decorative colors for later passes.
+
+### Task 96: Tokenize Home Thinking Visual Copy Colors
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the homepage "工具与思考" over-image text colors: `.home-thinking-visual-copy .home-thinking-kicker`, `.home-thinking-visual-copy h2`, `.home-thinking-featured-intro`, `.home-thinking-preview-label`, `.home-thinking-preview-summary`, and `.home-thinking-preview-action`. This pass covers only these text colors; meta pills, preview panel backgrounds, and other homepage decorative colors remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `--home-thinking-visual-copy-title-text`, `--home-thinking-visual-copy-muted-text`, `--home-thinking-preview-label-text`, `--home-thinking-preview-summary-text`, and `--home-thinking-preview-action-text` to exist in `:root`, and requiring the six scoped text rules to read those variables while rejecting the old `#fffaf0` / `rgba(255, 250, 240, ...)` literals.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation, 64/65 passing. The new test failed because the kicker, title, intro, preview label, preview summary, and preview action rules still contained the old warm-white literals.
+
+- [x] **Step 4: Move visual copy colors to shared tokens**
+
+Added the five visual copy tokens to `:root`, deriving title/label/action text from `--background` and softer intro/summary text from `--background` mixed with transparency. Updated the six scoped text rules to read those variables.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 65/65 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 389/389 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify homepage in browser**
+
+Started `npm run start -- --port 3106`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3106/?audit=ui-p1-10bl`, inspected the five visual copy tokens, the CSSOM text rules, and computed colors at desktop width, then resized to `390x844` and repeated the overflow and console checks.
+
+Observed: the five visual copy tokens existed and resolved; the CSSOM rules read `var(--home-thinking-*)`; the scoped CSSOM did not include the old warm-white literals; current rendered DOM exposes the kicker/title/preview label/summary/action nodes while the intro node is not currently mounted; desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bl`, noting that this closes only the homepage Thinking visual copy color sub-item while leaving meta pills, preview panel backgrounds, and other homepage decorative colors for later passes.
