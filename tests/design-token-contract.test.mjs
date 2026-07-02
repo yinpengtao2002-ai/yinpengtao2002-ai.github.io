@@ -339,6 +339,28 @@ test("thinking lab card and panel shadows derive from shared design tokens", asy
   assert.match(toolHoverBlock, /box-shadow:\s*var\(--thinking-tool-card-hover-shadow\)/);
 });
 
+test("thinking lab panel and card backgrounds derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const panelBlock = globals.match(/\.thinking-content-panel,\n\.thinking-tools-panel\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+  const articleCardBlock = readCssRule(globals, ".thinking-article-card");
+  const toolCardBlock = readCssRule(globals, ".thinking-tool-card");
+  const articleHoverBlock = readCssRule(globals, ".thinking-article-card:hover");
+  const toolHoverBlock = readCssRule(globals, ".thinking-tool-card:hover");
+
+  assert.ok(panelBlock, "thinking lab panel rule should exist");
+  assert.match(rootSource, /--thinking-panel-bg:\s*color-mix\(in srgb,\s*var\(--card\) 90%,\s*transparent\)/);
+  assert.match(rootSource, /--thinking-article-card-bg:\s*color-mix\(in srgb,\s*var\(--card\) 92%,\s*transparent\)/);
+  assert.match(rootSource, /--thinking-tool-card-bg:\s*color-mix\(in srgb,\s*var\(--card\) 88%,\s*transparent\)/);
+  assert.match(rootSource, /--thinking-card-hover-bg:\s*color-mix\(in srgb,\s*var\(--accent\) 7%,\s*var\(--card\)\)/);
+  assert.match(panelBlock, /background:\s*var\(--thinking-panel-bg\)/);
+  assert.match(articleCardBlock, /background:\s*var\(--thinking-article-card-bg\)/);
+  assert.match(toolCardBlock, /background:\s*var\(--thinking-tool-card-bg\)/);
+  assert.match(articleHoverBlock, /background:\s*var\(--thinking-card-hover-bg\)/);
+  assert.match(toolHoverBlock, /background:\s*var\(--thinking-card-hover-bg\)/);
+});
+
 test("study cards page shell shadows derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];

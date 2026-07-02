@@ -5608,3 +5608,69 @@ Observed: the helper text rendered as `认识就左滑或点右箭头`; CSSOM re
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bb`, noting that this closes only the Study Cards memory feedback helper text token sub-item while leaving other Study Cards local colors for later passes.
+
+### Task 87: Tokenize Thinking Lab Panel And Card Backgrounds
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/thinking-lab` list page panel and card backgrounds: `.thinking-content-panel`, `.thinking-tools-panel`, `.thinking-article-card`, `.thinking-tool-card`, plus the article and tool card hover backgrounds. This pass covers only these panel/list-card surfaces; filter chips, tool icons, and other local Thinking Lab colors remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `--thinking-panel-bg`, `--thinking-article-card-bg`, `--thinking-tool-card-bg`, and `--thinking-card-hover-bg` to exist in `:root`, and requiring the relevant Thinking Lab CSS rules to read those tokens.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `--thinking-panel-bg` did not exist and the Thinking Lab panel/list-card backgrounds still wrote their local colors directly.
+
+- [x] **Step 4: Move Thinking Lab panel and card backgrounds to shared tokens**
+
+Added the four Thinking Lab background tokens to `:root`, deriving them from `--card` and `--accent`. Updated the panel, article card, tool card, and hover rules to read those variables while preserving the existing layout, borders, shadows, and hover transforms.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 56/56 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 380/380 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Thinking Lab in browser**
+
+Started `npm run start -- --port 3097`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3097/thinking-lab`, inspected the Thinking Lab CSSOM at desktop width, resized to `390x844`, inspected the same background token usage, and checked the browser console.
+
+Observed: CSSOM contained and used `--thinking-panel-bg`, `--thinking-article-card-bg`, `--thinking-tool-card-bg`, and `--thinking-card-hover-bg`; panel, article card, and tool card backgrounds computed to the expected token-derived translucent card colors. Mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bc`, noting that this closes only the Thinking Lab panel/list-card background token sub-item while leaving filter chips, tool icons, and other local colors for later passes.

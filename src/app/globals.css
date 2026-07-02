@@ -30,6 +30,10 @@
   --home-thinking-preview-count-pill-shadow: 0 8px 18px color-mix(in srgb, var(--foreground) 20%, transparent);
   --home-thinking-track-count-pill-shadow: 0 6px 16px color-mix(in srgb, var(--foreground) 5.5%, transparent);
   --home-thinking-track-card-active-shadow: 0 16px 42px color-mix(in srgb, var(--foreground) 7%, transparent);
+  --thinking-panel-bg: color-mix(in srgb, var(--card) 90%, transparent);
+  --thinking-article-card-bg: color-mix(in srgb, var(--card) 92%, transparent);
+  --thinking-tool-card-bg: color-mix(in srgb, var(--card) 88%, transparent);
+  --thinking-card-hover-bg: color-mix(in srgb, var(--accent) 7%, var(--card));
   --thinking-panel-shadow: 0 18px 42px color-mix(in srgb, var(--foreground) 5.5%, transparent);
   --thinking-article-card-shadow: 0 10px 26px color-mix(in srgb, var(--foreground) 4%, transparent);
   --thinking-article-card-hover-shadow: 0 14px 32px color-mix(in srgb, var(--foreground) 6%, transparent);
@@ -4216,7 +4220,7 @@ h6 {
 .thinking-tools-panel {
   border: 1px solid color-mix(in srgb, var(--foreground) 9%, var(--border));
   border-radius: 8px;
-  background: color-mix(in srgb, var(--card) 90%, transparent);
+  background: var(--thinking-panel-bg);
   box-shadow: var(--thinking-panel-shadow);
 }
 
@@ -4303,7 +4307,7 @@ h6 {
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
   border-radius: 8px;
-  background: color-mix(in srgb, var(--card) 92%, transparent);
+  background: var(--thinking-article-card-bg);
   box-shadow: var(--thinking-article-card-shadow);
   padding: 15px 16px;
   text-decoration: none;
@@ -4364,7 +4368,7 @@ h6 {
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--foreground) 9%, var(--border));
   border-radius: 8px;
-  background: color-mix(in srgb, var(--card) 88%, transparent);
+  background: var(--thinking-tool-card-bg);
   padding: 13px;
   text-decoration: none;
   touch-action: manipulation;
@@ -7649,14 +7653,14 @@ h6 {
 @media (hover: hover) and (pointer: fine) {
   .thinking-article-card:hover {
     border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
-    background: #fffaf4;
+    background: var(--thinking-card-hover-bg);
     box-shadow: var(--thinking-article-card-hover-shadow);
     transform: translateY(-2px);
   }
 
   .thinking-tool-card:hover {
     border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
-    background: #fffaf4;
+    background: var(--thinking-card-hover-bg);
     box-shadow: var(--thinking-tool-card-hover-shadow);
     transform: translateY(-2px);
   }
