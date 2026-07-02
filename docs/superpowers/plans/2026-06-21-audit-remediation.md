@@ -5410,3 +5410,69 @@ Observed: CSSOM reported `.study-cards-answer-panel`, `.is-hidden`, `.is-hidden:
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10ay`, noting that this closes only the Study Cards answer panel surface color token sub-item while leaving answer content emphasis colors and other Study Cards local colors for later passes.
+
+### Task 84: Tokenize Study Cards Answer Content Colors
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/tools/study-cards` answer content colors inside the answer panel: `.study-cards-answer-placeholder`, `.study-cards-answer-placeholder-icon`, `.study-cards-answer-placeholder small`, `.study-cards-answer-copy strong`, `.study-cards-example-line`, `.study-cards-example-highlight`, `.study-cards-example-translation`, `.study-cards-answer-meta small`, and `.study-cards-answer-meta b`. This pass covers only answer placeholder, example, translation, emphasis, and meta label colors; completion-state bingo surfaces and other Study Cards local colors remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the answer content rules to read `--study-cards-answer-content-*` tokens from `:root`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `--study-cards-answer-content-placeholder-text` did not exist and the answer content rules still wrote color-mix values directly.
+
+- [x] **Step 4: Move answer content colors to shared tokens**
+
+Added `--study-cards-answer-content-placeholder-*`, `--study-cards-answer-content-title-text`, example / highlight / translation text tokens, and answer meta border / background / text tokens to `:root`, deriving them from the site accent-secondary, border, card, background, foreground, and muted tokens. Updated the answer content CSS rules to read those variables while preserving typography, spacing, overflow wrapping, and the current card layout.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 53/53 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 377/377 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards answer content in browser**
+
+Started `npm run start -- --port 3094`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3094/tools/study-cards` at `390x844`, clicked `示例内容`, inspected answer title, example line, highlighted word, translation, and answer meta CSSOM / computed styles, then advanced into recall-check mode and inspected the hidden answer placeholder, icon, and note.
+
+Observed: CSSOM reported all nine answer-content selectors reading `var(--study-cards-answer-content-*)`; learning mode rendered the answer title, example, highlighted word, translation, and difficulty meta normally; recall mode rendered the placeholder text `先在心里说中文释义答完后点这里看释义`. Mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10az`, noting that this closes only the Study Cards answer content color token sub-item while leaving completion-state bingo surfaces and other Study Cards local colors for later passes.

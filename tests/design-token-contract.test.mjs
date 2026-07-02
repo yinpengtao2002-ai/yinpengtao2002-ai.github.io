@@ -699,6 +699,46 @@ test("study cards answer panel colors derive from shared design tokens", async (
   assert.match(revealedPanelBlock, /background:\s*var\(--study-cards-answer-panel-revealed-bg\)/);
 });
 
+test("study cards answer content colors derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const placeholderBlock = readCssRule(globals, ".study-cards-answer-placeholder");
+  const placeholderIconBlock = readCssRule(globals, ".study-cards-answer-placeholder-icon");
+  const placeholderNoteBlock = readCssRule(globals, ".study-cards-answer-placeholder small");
+  const answerTitleBlock = readCssRule(globals, ".study-cards-answer-copy strong");
+  const exampleLineBlock = readCssRule(globals, ".study-cards-example-line");
+  const exampleHighlightBlock = readCssRule(globals, ".study-cards-example-highlight");
+  const exampleTranslationBlock = readCssRule(globals, ".study-cards-example-translation");
+  const answerMetaBlock = readCssRule(globals, ".study-cards-answer-meta small");
+  const answerMetaLabelBlock = readCssRule(globals, ".study-cards-answer-meta b");
+
+  assert.match(rootSource, /--study-cards-answer-content-placeholder-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 56%,\s*var\(--muted\)\)/);
+  assert.match(rootSource, /--study-cards-answer-content-placeholder-icon-bg:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 11%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--study-cards-answer-content-placeholder-icon-text:\s*var\(--accent-secondary\)/);
+  assert.match(rootSource, /--study-cards-answer-content-placeholder-note-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 44%,\s*var\(--muted\)\)/);
+  assert.match(rootSource, /--study-cards-answer-content-title-text:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 84%,\s*var\(--foreground\)\)/);
+  assert.match(rootSource, /--study-cards-answer-content-example-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 78%,\s*var\(--muted\)\)/);
+  assert.match(rootSource, /--study-cards-answer-content-example-highlight-text:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 78%,\s*var\(--foreground\)\)/);
+  assert.match(rootSource, /--study-cards-answer-content-translation-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 66%,\s*var\(--muted\)\)/);
+  assert.match(rootSource, /--study-cards-answer-content-meta-border:\s*color-mix\(in srgb,\s*var\(--border\) 76%,\s*transparent\)/);
+  assert.match(rootSource, /--study-cards-answer-content-meta-bg:\s*color-mix\(in srgb,\s*var\(--background\) 62%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--study-cards-answer-content-meta-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 52%,\s*var\(--muted\)\)/);
+  assert.match(rootSource, /--study-cards-answer-content-meta-label-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 70%,\s*var\(--muted\)\)/);
+  assert.match(placeholderBlock, /color:\s*var\(--study-cards-answer-content-placeholder-text\)/);
+  assert.match(placeholderIconBlock, /background:\s*var\(--study-cards-answer-content-placeholder-icon-bg\)/);
+  assert.match(placeholderIconBlock, /color:\s*var\(--study-cards-answer-content-placeholder-icon-text\)/);
+  assert.match(placeholderNoteBlock, /color:\s*var\(--study-cards-answer-content-placeholder-note-text\)/);
+  assert.match(answerTitleBlock, /color:\s*var\(--study-cards-answer-content-title-text\)/);
+  assert.match(exampleLineBlock, /color:\s*var\(--study-cards-answer-content-example-text\)/);
+  assert.match(exampleHighlightBlock, /color:\s*var\(--study-cards-answer-content-example-highlight-text\)/);
+  assert.match(exampleTranslationBlock, /color:\s*var\(--study-cards-answer-content-translation-text\)/);
+  assert.match(answerMetaBlock, /border:\s*1px solid var\(--study-cards-answer-content-meta-border\)/);
+  assert.match(answerMetaBlock, /background:\s*var\(--study-cards-answer-content-meta-bg\)/);
+  assert.match(answerMetaBlock, /color:\s*var\(--study-cards-answer-content-meta-text\)/);
+  assert.match(answerMetaLabelBlock, /color:\s*var\(--study-cards-answer-content-meta-label-text\)/);
+});
+
 test("study cards completion action button colors derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];

@@ -101,6 +101,18 @@
     linear-gradient(color-mix(in srgb, var(--accent-tertiary) 9%, transparent) 1px, transparent 1px) 0 0 / 100% 36px,
     linear-gradient(180deg, color-mix(in srgb, var(--accent-tertiary) 8%, var(--card)), color-mix(in srgb, var(--background) 64%, var(--card))),
     var(--card);
+  --study-cards-answer-content-placeholder-text: color-mix(in srgb, var(--foreground) 56%, var(--muted));
+  --study-cards-answer-content-placeholder-icon-bg: color-mix(in srgb, var(--accent-secondary) 11%, var(--card));
+  --study-cards-answer-content-placeholder-icon-text: var(--accent-secondary);
+  --study-cards-answer-content-placeholder-note-text: color-mix(in srgb, var(--foreground) 44%, var(--muted));
+  --study-cards-answer-content-title-text: color-mix(in srgb, var(--accent-secondary) 84%, var(--foreground));
+  --study-cards-answer-content-example-text: color-mix(in srgb, var(--foreground) 78%, var(--muted));
+  --study-cards-answer-content-example-highlight-text: color-mix(in srgb, var(--accent-secondary) 78%, var(--foreground));
+  --study-cards-answer-content-translation-text: color-mix(in srgb, var(--foreground) 66%, var(--muted));
+  --study-cards-answer-content-meta-border: color-mix(in srgb, var(--border) 76%, transparent);
+  --study-cards-answer-content-meta-bg: color-mix(in srgb, var(--background) 62%, var(--card));
+  --study-cards-answer-content-meta-text: color-mix(in srgb, var(--foreground) 52%, var(--muted));
+  --study-cards-answer-content-meta-label-text: color-mix(in srgb, var(--foreground) 70%, var(--muted));
   --study-cards-bingo-action-button-border: color-mix(in srgb, var(--border) 78%, transparent);
   --study-cards-bingo-action-button-bg: color-mix(in srgb, var(--card) 92%, var(--background));
   --study-cards-bingo-action-button-text: color-mix(in srgb, var(--foreground) 74%, var(--muted));
@@ -5420,7 +5432,7 @@ h6 {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: color-mix(in srgb, var(--foreground) 56%, var(--muted));
+  color: var(--study-cards-answer-content-placeholder-text);
   font-size: 14.5px;
   font-weight: 850;
   line-height: 1.3;
@@ -5435,12 +5447,12 @@ h6 {
   justify-content: center;
   margin-bottom: 2px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--accent-secondary) 11%, var(--card));
-  color: var(--accent-secondary);
+  background: var(--study-cards-answer-content-placeholder-icon-bg);
+  color: var(--study-cards-answer-content-placeholder-icon-text);
 }
 
 .study-cards-answer-placeholder small {
-  color: color-mix(in srgb, var(--foreground) 44%, var(--muted));
+  color: var(--study-cards-answer-content-placeholder-note-text);
   font-size: 11px;
   font-weight: 820;
 }
@@ -5461,28 +5473,28 @@ h6 {
 .study-cards-answer-copy strong {
   display: block;
   margin-bottom: 8px;
-  color: color-mix(in srgb, var(--accent-secondary) 84%, var(--foreground));
+  color: var(--study-cards-answer-content-title-text);
   font-size: 12px;
   font-weight: 900;
 }
 
 .study-cards-example-line {
   display: block;
-  color: color-mix(in srgb, var(--foreground) 78%, var(--muted));
+  color: var(--study-cards-answer-content-example-text);
   font-size: var(--study-card-answer-size);
   line-height: var(--study-card-answer-leading);
   overflow-wrap: anywhere;
 }
 
 .study-cards-example-highlight {
-  color: color-mix(in srgb, var(--accent-secondary) 78%, var(--foreground));
+  color: var(--study-cards-answer-content-example-highlight-text);
   font-weight: 950;
 }
 
 .study-cards-example-translation {
   display: block;
   margin-top: 8px;
-  color: color-mix(in srgb, var(--foreground) 66%, var(--muted));
+  color: var(--study-cards-answer-content-translation-text);
   font-size: calc(var(--study-card-answer-size) * 0.9);
   font-weight: 720;
   line-height: 1.55;
@@ -5502,10 +5514,10 @@ h6 {
   max-width: 100%;
   align-items: center;
   gap: 5px;
-  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+  border: 1px solid var(--study-cards-answer-content-meta-border);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--background) 62%, var(--card));
-  color: color-mix(in srgb, var(--foreground) 52%, var(--muted));
+  background: var(--study-cards-answer-content-meta-bg);
+  color: var(--study-cards-answer-content-meta-text);
   font-size: 10.5px;
   font-weight: 760;
   line-height: 1.25;
@@ -5514,7 +5526,7 @@ h6 {
 }
 
 .study-cards-answer-meta b {
-  color: color-mix(in srgb, var(--foreground) 70%, var(--muted));
+  color: var(--study-cards-answer-content-meta-label-text);
   font-size: 10px;
   font-weight: 920;
 }
