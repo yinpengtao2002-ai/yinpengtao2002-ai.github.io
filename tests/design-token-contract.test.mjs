@@ -361,6 +361,22 @@ test("thinking lab panel and card backgrounds derive from shared design tokens",
   assert.match(toolHoverBlock, /background:\s*var\(--thinking-card-hover-bg\)/);
 });
 
+test("thinking lab filter chip backgrounds derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const filterChipBlock = readCssRule(globals, ".thinking-filter-chip");
+  const activeFilterChipBlock = readCssRule(globals, ".thinking-filter-chip.active");
+  const filterChipCountBlock = readCssRule(globals, ".thinking-filter-chip span:last-child");
+
+  assert.match(rootSource, /--thinking-filter-chip-bg:\s*color-mix\(in srgb,\s*var\(--card\) 88%,\s*var\(--background\)\)/);
+  assert.match(rootSource, /--thinking-filter-chip-active-bg:\s*color-mix\(in srgb,\s*var\(--accent\) 9%,\s*var\(--card\)\)/);
+  assert.match(rootSource, /--thinking-filter-chip-count-text:\s*color-mix\(in srgb,\s*var\(--muted\) 68%,\s*var\(--card\)\)/);
+  assert.match(filterChipBlock, /background:\s*var\(--thinking-filter-chip-bg\)/);
+  assert.match(activeFilterChipBlock, /background:\s*var\(--thinking-filter-chip-active-bg\)/);
+  assert.match(filterChipCountBlock, /color:\s*var\(--thinking-filter-chip-count-text\)/);
+});
+
 test("study cards page shell shadows derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];

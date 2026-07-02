@@ -5674,3 +5674,69 @@ Observed: CSSOM contained and used `--thinking-panel-bg`, `--thinking-article-ca
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bc`, noting that this closes only the Thinking Lab panel/list-card background token sub-item while leaving filter chips, tool icons, and other local colors for later passes.
+
+### Task 88: Tokenize Thinking Lab Filter Chip Backgrounds
+
+**Files:**
+- Modify: `src/app/globals.css`
+- Modify: `tests/design-token-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the P1 UI token governance item to the `/thinking-lab` list page filter chip backgrounds and count text: `.thinking-filter-chip`, `.thinking-filter-chip.active`, and `.thinking-filter-chip span:last-child`. This pass covers only the filter chip base/active backgrounds and count text color; tool icons and other local Thinking Lab colors remain separate follow-ups.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `--thinking-filter-chip-bg`, `--thinking-filter-chip-active-bg`, and `--thinking-filter-chip-count-text` to exist in `:root`, and requiring the relevant Thinking Lab filter chip CSS rules to read those tokens.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `--thinking-filter-chip-bg` did not exist and the filter chip rules still wrote their background / count color directly.
+
+- [x] **Step 4: Move Thinking Lab filter chip backgrounds to shared tokens**
+
+Added the three Thinking Lab filter chip tokens to `:root`, deriving them from `--card`, `--background`, `--accent`, and `--muted`. Updated the base chip, active chip, and count span rules to read those variables while preserving the existing chip layout, border, typography, and transitions.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 57/57 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 381/381 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Thinking Lab in browser**
+
+Started `npm run start -- --port 3098`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3098/thinking-lab`, inspected the filter chip CSSOM at desktop width, resized to `390x844`, inspected the same token usage, and checked the browser console.
+
+Observed: CSSOM contained `.thinking-filter-chip` reading `background: var(--thinking-filter-chip-bg)`, `.thinking-filter-chip.active` reading `background: var(--thinking-filter-chip-active-bg)`, and `.thinking-filter-chip span:last-child` reading `color: var(--thinking-filter-chip-count-text)`. Mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bd`, noting that this closes only the Thinking Lab filter chip background/count text token sub-item while leaving tool icons and other local Thinking Lab colors for later passes.

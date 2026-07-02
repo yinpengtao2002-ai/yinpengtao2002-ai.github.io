@@ -34,6 +34,9 @@
   --thinking-article-card-bg: color-mix(in srgb, var(--card) 92%, transparent);
   --thinking-tool-card-bg: color-mix(in srgb, var(--card) 88%, transparent);
   --thinking-card-hover-bg: color-mix(in srgb, var(--accent) 7%, var(--card));
+  --thinking-filter-chip-bg: color-mix(in srgb, var(--card) 88%, var(--background));
+  --thinking-filter-chip-active-bg: color-mix(in srgb, var(--accent) 9%, var(--card));
+  --thinking-filter-chip-count-text: color-mix(in srgb, var(--muted) 68%, var(--card));
   --thinking-panel-shadow: 0 18px 42px color-mix(in srgb, var(--foreground) 5.5%, transparent);
   --thinking-article-card-shadow: 0 10px 26px color-mix(in srgb, var(--foreground) 4%, transparent);
   --thinking-article-card-hover-shadow: 0 14px 32px color-mix(in srgb, var(--foreground) 6%, transparent);
@@ -4272,7 +4275,7 @@ h6 {
   font: inherit;
   font-size: 12px;
   font-weight: 750;
-  background: color-mix(in srgb, var(--card) 88%, var(--background));
+  background: var(--thinking-filter-chip-bg);
   cursor: pointer;
   transition:
     background 0.18s ease,
@@ -4283,11 +4286,11 @@ h6 {
 .thinking-filter-chip.active {
   color: color-mix(in srgb, var(--foreground) 86%, var(--accent));
   border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
-  background: #fff3ea;
+  background: var(--thinking-filter-chip-active-bg);
 }
 
 .thinking-filter-chip span:last-child {
-  color: color-mix(in srgb, var(--muted) 68%, white);
+  color: var(--thinking-filter-chip-count-text);
   font-size: 11px;
   font-weight: 850;
 }
