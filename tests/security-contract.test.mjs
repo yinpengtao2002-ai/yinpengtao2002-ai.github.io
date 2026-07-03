@@ -63,6 +63,15 @@ test("legacy finance AI access endpoint delegates to private tool access", async
   assert.match(legacyRoute, /export\s+\{\s*POST\s*\}/);
 });
 
+test("private tool access client endpoints include trailing slashes", async () => {
+  const constants = await readProjectFile("src/lib/private-tool-access/constants.ts");
+  const nextConfig = await readProjectFile("next.config.ts");
+
+  assert.match(nextConfig, /trailingSlash:\s*true/);
+  assert.match(constants, /PRIVATE_TOOL_ACCESS_ENDPOINT\s*=\s*"\/api\/private-tool-access\/"/);
+  assert.match(constants, /LEGACY_FINANCE_AI_ACCESS_ENDPOINT\s*=\s*"\/api\/tools\/finance-ai-assistant\/access\/"/);
+});
+
 test("rate limiter buckets requests by route and forwarded client IP", async () => {
   resetRateLimitForTests();
   const request = new Request("https://yinpengtao.cn/api/test", {

@@ -264,6 +264,29 @@ test("Perspective BI dependencies and local browser assets are wired", () => {
   assert.match(perspectiveShim, /removeFilters/);
 });
 
+test("Perspective BI D3 legend chain stays on patched D3 versions", () => {
+  assert.equal(packageData.overrides?.["d3-color"], "^3.1.0");
+  assert.equal(packageData.overrides?.["d3-interpolate"], "^3.0.1");
+  assert.equal(packageData.overrides?.["d3-scale"], "^4.0.2");
+  assert.equal(packageData.overrides?.["d3-transition"], "^3.0.1");
+
+  const installedD3Color = packageLockData.packages?.["node_modules/d3-color"];
+  const installedD3Interpolate = packageLockData.packages?.["node_modules/d3-interpolate"];
+  const installedD3Scale = packageLockData.packages?.["node_modules/d3-scale"];
+  const installedD3Transition = packageLockData.packages?.["node_modules/d3-transition"];
+
+  assertVersionAtLeast(installedD3Color?.version ?? "0.0.0", "3.1.0", "d3-color");
+  assertVersionAtLeast(installedD3Interpolate?.version ?? "0.0.0", "3.0.1", "d3-interpolate");
+  assertVersionAtLeast(installedD3Scale?.version ?? "0.0.0", "4.0.2", "d3-scale");
+  assertVersionAtLeast(installedD3Transition?.version ?? "0.0.0", "3.0.1", "d3-transition");
+
+  assert.doesNotMatch(packageLockJson, /node_modules\/d3-svg-legend\/node_modules\/d3-(?:color|interpolate|scale|transition)/);
+  assert.doesNotMatch(packageLockJson, /d3-color-1\.4\.1\.tgz/);
+  assert.doesNotMatch(packageLockJson, /d3-interpolate-1\.4\.0\.tgz/);
+  assert.doesNotMatch(packageLockJson, /d3-scale-1\.0\.3\.tgz/);
+  assert.doesNotMatch(packageLockJson, /d3-transition-1\.0\.3\.tgz/);
+});
+
 test("spreadsheet parser uses the patched SheetJS npm alias and matching browser asset", () => {
   assert.match(packageData.dependencies?.xlsx ?? "", /^npm:@e965\/xlsx@\^?0\.20\./);
 

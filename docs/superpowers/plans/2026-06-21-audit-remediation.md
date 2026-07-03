@@ -174,6 +174,8 @@ Observed: no remaining `xlsx` advisory; the command still exits non-zero for 18 
 - Modify: `package.json`
 - Modify: `package-lock.json`
 - Modify: `tests/tooling-contract.test.mjs`
+- Modify: `tests/security-contract.test.mjs`
+- Modify: `src/lib/private-tool-access/constants.ts`
 - Modify: `docs/project-audit-report.md`
 - Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
 
@@ -326,6 +328,79 @@ The Notion-backed generation scripts stay on the existing contract: local runs w
 - [x] **Step 6: Record completion**
 
 Updated `docs/project-audit-report.md` as `安全 P1-3d`, noting that this closes only the Notion/form-data child chain and leaves the Perspective/D3 production advisory chain for a separate pass.
+
+### Task 4e: Patch The Perspective D3 Legend Dependency Chain
+
+**Files:**
+- Modify: `package.json`
+- Modify: `package-lock.json`
+- Modify: `tests/tooling-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Re-check the residual Perspective/D3 chain**
+
+Confirmed `npm audit --omit=dev --json` reported only the Perspective BI D3 legend chain after the Notion SDK upgrade. `@perspective-dev/viewer-d3fc@4.4.1` depends on `d3-svg-legend@2.25.6`, whose package dependencies pin old `d3-scale@1.0.3` and `d3-transition@1.0.3`, which pull vulnerable `d3-color@1.4.1` and `d3-interpolate@1.4.0`.
+
+- [x] **Step 2: Check package update options**
+
+`@perspective-dev/client`, `server`, `viewer`, and `viewer-datagrid` have newer `4.5.1` releases, but `@perspective-dev/viewer-d3fc` latest remains `4.4.1`, so a direct Perspective package upgrade does not remove the D3 legend tail. A narrow npm override was the safer remediation path for this child chain.
+
+- [x] **Step 3: Patch the D3 child chain**
+
+Added npm overrides for `d3-color@^3.1.0`, `d3-interpolate@^3.0.1`, `d3-scale@^4.0.2`, and `d3-transition@^3.0.1`, then reran `npm install`. The lockfile no longer contains `node_modules/d3-svg-legend/node_modules/d3-*` nested copies; `d3-svg-legend` now dedupes to the patched top-level D3 packages.
+
+- [x] **Step 4: Add a dependency contract**
+
+Extended `tests/tooling-contract.test.mjs` to require the D3 overrides, patched installed D3 versions, absence of old nested `d3-svg-legend/node_modules/d3-*` paths, and absence of the vulnerable old D3 tarballs from the lockfile.
+
+- [x] **Step 5: Run targeted dependency verification**
+
+Run: `npm audit --omit=dev --json`
+
+Observed: production vulnerabilities are now 0.
+
+Run: `npm ls @perspective-dev/viewer-d3fc d3-svg-legend d3-scale d3-color d3-interpolate d3-transition --depth=5`
+
+Observed: `d3-svg-legend@2.25.6` dedupes to `d3-scale@4.0.2` and `d3-transition@3.0.1`; patched `d3-color@3.1.0` and `d3-interpolate@3.0.1` are used.
+
+- [x] **Step 6: Preserve Perspective BI runtime behavior**
+
+Run: `node --test tests/tooling-contract.test.mjs tests/finance-mobile-drill-contract.test.mjs`
+
+Observed: PASS, 53/53 tests.
+
+Run: `node --test tests/security-contract.test.mjs tests/tooling-contract.test.mjs tests/lucas-private-route-contract.test.mjs tests/profit-structure-analysis.test.mjs`
+
+Observed: PASS, 41/41 tests. This also locks the private-tool client endpoints to include trailing slashes while `next.config.ts` uses `trailingSlash: true`.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 408/408 tests.
+
+Run: `npm run build:vercel`
+
+Observed: PASS.
+
+Run: local production Playwright smoke against `http://127.0.0.1:3040/finance/perspective-bi/?audit=deps-perspective-d3` with `PRIVATE_TOOL_ACCESS_KEY=local-smoke-private-tool-key`, at `1440x900` and `390x844`.
+
+Observed: both desktop and mobile passed the private access gate, registered `perspective-viewer` and `perspective-viewer-d3fc-ybar`, rendered `时间维度 / 业务维度 / 金额指标`, had viewer sizes `1368x540` and `346x622`, no horizontal overflow, and console error count 0.
+
+- [x] **Step 7: Record completion**
+
+Updated `docs/project-audit-report.md` as `安全 P1-3e`, noting that the D3 child dependency chain is patched, production dependency audit is now 0, the trailing-slash access endpoint regression was fixed, and Perspective BI runtime behavior was verified in a local production browser on desktop and mobile.
 
 ### Task 5: Shorten Shared Finance Access Token TTL
 
