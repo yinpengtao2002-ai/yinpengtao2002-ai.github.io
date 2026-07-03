@@ -241,6 +241,49 @@ Observed: homepage hero rendered, finance library rendered with 7 cards, no hori
 
 Updated `docs/project-audit-report.md` as `安全 P1-3b`, noting that this closes only the Next/PostCSS dependency chain and that the remaining 15 production advisories still need separate child-chain evaluation.
 
+### Task 4c: Patch The Mermaid Sanitizer And Parser Dependency Chain
+
+**Files:**
+- Modify: `package.json`
+- Modify: `package-lock.json`
+- Modify: `tests/tooling-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Re-check the residual dependency audit item**
+
+Confirmed the remaining audit advisories grouped into three independent chains: direct `mermaid` pulled DOMPurify, parser/Langium/Chevrotain/lodash-es, and uuid; Perspective BI pulled `d3-svg-legend` and old nested D3 packages; `@notionhq/client` pulled `form-data` through `@types/node-fetch`.
+
+- [x] **Step 2: Upgrade the direct Mermaid dependency**
+
+Ran `npm install mermaid@^11.16.0`. This upgraded Mermaid from `11.12.2` to `11.16.0`, moved `@mermaid-js/parser` to `1.2.0`, removed the old Langium/Chevrotain runtime chain, upgraded DOMPurify to `3.4.11`, and upgraded lodash-es to `4.18.1`.
+
+- [x] **Step 3: Patch Mermaid's uuid tail without a broad major jump**
+
+Mermaid 11.16.0 allows `uuid` ranges `^11.1.0 || ^12 || ^13 || ^14.0.0`, but npm initially resolved the vulnerable `uuid@11.1.0`. Added `overrides.uuid = "^11.1.1"` and reran `npm install`, keeping the dependency on the smallest patched 11.x line.
+
+- [x] **Step 4: Add a dependency contract**
+
+Extended `tests/tooling-contract.test.mjs` to require `mermaid@^11.16.0`, `uuid` override `^11.1.1`, installed Mermaid `11.16.0`, parser at least `1.2.0`, DOMPurify at least `3.4.11`, uuid at least `11.1.1`, lodash-es at least `4.18.1`, and absence of the old Langium/Chevrotain and vulnerable DOMPurify/uuid tarballs from the lockfile.
+
+- [x] **Step 5: Run targeted dependency verification**
+
+Run: `npm audit --omit=dev --json`
+
+Observed: production advisories dropped from 15 to 6. Mermaid, DOMPurify, parser/Langium/Chevrotain/lodash-es, and uuid no longer appear. The remaining production advisories are Perspective/D3 and form-data.
+
+Run: `npm ls mermaid dompurify @mermaid-js/parser langium chevrotain lodash-es uuid --depth=5`
+
+Observed: `mermaid@11.16.0`, `@mermaid-js/parser@1.2.0`, `dompurify@3.4.11`, `lodash-es@4.18.1`, and `uuid@11.1.1`; no installed Langium/Chevrotain runtime chain remains under Mermaid.
+
+- [x] **Step 6: Preserve article Mermaid rendering**
+
+The site renders Mermaid diagrams inside `ArticleReader.tsx`, so this pass must keep the existing loading/ready/error rendering boundary and browser smoke an article with a Mermaid code block after build.
+
+- [x] **Step 7: Record completion**
+
+Updated `docs/project-audit-report.md` as `安全 P1-3c`, noting that this closes only the Mermaid sanitizer/parser dependency chain and leaves Perspective/D3 plus form-data for separate passes.
+
 ### Task 5: Shorten Shared Finance Access Token TTL
 
 **Files:**

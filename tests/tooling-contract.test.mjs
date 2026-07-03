@@ -294,6 +294,28 @@ test("Next runtime and PostCSS dependency stay on patched versions", () => {
   assert.notEqual(installedNextPostcss.version, "8.4.31");
 });
 
+test("Mermaid parser and sanitizer dependencies stay on patched versions", () => {
+  assert.equal(packageData.dependencies?.mermaid, "^11.16.0");
+  assert.equal(packageData.overrides?.uuid, "^11.1.1");
+
+  const installedMermaid = packageLockData.packages?.["node_modules/mermaid"];
+  const installedParser = packageLockData.packages?.["node_modules/@mermaid-js/parser"];
+  const installedDomPurify = packageLockData.packages?.["node_modules/dompurify"];
+  const installedUuid = packageLockData.packages?.["node_modules/uuid"];
+  const installedLodashEs = packageLockData.packages?.["node_modules/lodash-es"];
+
+  assert.equal(installedMermaid?.version, "11.16.0");
+  assertVersionAtLeast(installedParser?.version ?? "0.0.0", "1.2.0", "Mermaid parser");
+  assertVersionAtLeast(installedDomPurify?.version ?? "0.0.0", "3.4.11", "DOMPurify");
+  assertVersionAtLeast(installedUuid?.version ?? "0.0.0", "11.1.1", "uuid");
+  assertVersionAtLeast(installedLodashEs?.version ?? "0.0.0", "4.18.1", "lodash-es");
+
+  assert.doesNotMatch(packageLockJson, /node_modules\/langium/);
+  assert.doesNotMatch(packageLockJson, /node_modules\/chevrotain/);
+  assert.doesNotMatch(packageLockJson, /dompurify-3\.3\.1\.tgz/);
+  assert.doesNotMatch(packageLockJson, /uuid-11\.1\.0\.tgz/);
+});
+
 test("Perspective BI requires the private tool access key before booting", async () => {
   const tool = await readRequiredProjectFile("../src/app/finance/perspective-bi/PerspectiveBITool.tsx");
   const styles = await readRequiredProjectFile("../src/app/finance/perspective-bi/tool.css");
