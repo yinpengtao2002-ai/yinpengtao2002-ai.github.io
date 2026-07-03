@@ -284,6 +284,21 @@ test("home hero does not keep unused mini widget dot or status color styles", as
   assert.doesNotMatch(globals, /\.home-mini-widget-status\b/);
 });
 
+test("home hero does not keep unused question card styles", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const hero = await readProjectFile("src/components/home/CapabilityHero.tsx");
+
+  for (const className of [
+    "home-hero-question-strip",
+    "home-hero-question-card",
+    "home-hero-question-meta",
+    "home-hero-question-model",
+  ]) {
+    assert.doesNotMatch(hero, new RegExp(className), `CapabilityHero should not render ${className}`);
+    assert.doesNotMatch(globals, new RegExp(`\\.${className}\\b`), `globals.css should not retain ${className} dead styles`);
+  }
+});
+
 test("home thinking track accents use site color tokens", async () => {
   const homeThinkingSection = await readProjectFile("src/components/home/HomeThinkingSection.tsx");
 

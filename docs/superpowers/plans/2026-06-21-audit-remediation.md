@@ -6540,3 +6540,67 @@ Observed: desktop rendered two current mini widgets (`home-mini-widget-window` a
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bp`, noting that this closes only the visible mini widget line and muted fourth-bar color token sub-item while leaving other rendered paths for later passes.
+
+## UI P1-10bq - Remove unused homepage hero question card styles
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the next P1 UI cleanup to old homepage hero question-card styles. `tests/home-experience-contract.test.mjs` already requires `CapabilityHero` not to render `.home-hero-question-strip` or `.home-hero-question-card`, and current source search showed the question card classes only remained in `src/app/globals.css` and tests.
+
+- [x] **Step 2: Add a failing dead-style contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `CapabilityHero` not to render `.home-hero-question-strip`, `.home-hero-question-card`, `.home-hero-question-meta`, or `.home-hero-question-model`, and requiring `src/app/globals.css` not to retain those selector blocks.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation, 68/69 passing. The new contract failed because `src/app/globals.css` still contained `.home-hero-question-strip`.
+
+- [x] **Step 4: Remove the unused question card styles**
+
+Deleted the base `.home-hero-question-*` CSS blocks, the tablet/mobile responsive overrides, and the reduced-motion list entry for `.home-hero-question-card`. Kept the current homepage hero stage, workflow strip, and mini widget styles unchanged.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs tests/home-experience-contract.test.mjs`
+
+Observed: PASS, 98/98 tests.
+
+Run: `rg -n "home-hero-question-(strip|card|meta|model)" src/app/globals.css src/components/home/CapabilityHero.tsx tests/design-token-contract.test.mjs tests/home-experience-contract.test.mjs`
+
+Observed: only the two contract files mention the old question classes; `src/app/globals.css` and `CapabilityHero.tsx` do not.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 393/393 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify homepage in browser**
+
+Started `npm run start -- --port 3111`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3111/?audit=ui-p1-10bq`, inspected desktop and `390x844` mobile rendering, and fetched the production CSS chunks.
+
+Observed: desktop and mobile both kept one `.home-hero-stage-panel` and two `.home-mini-widget` nodes; question strip/card DOM count was 0; built CSS no longer contained `.home-hero-question-strip`, `.home-hero-question-card`, `.home-hero-question-meta`, or `.home-hero-question-model`; desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bq`, noting that this closes only the unused homepage hero question-card CSS sub-item while keeping the current hero stage and mini widgets unchanged.
