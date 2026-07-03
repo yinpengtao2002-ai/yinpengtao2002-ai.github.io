@@ -52,6 +52,24 @@ async function assertProjectFileMissing(path) {
   assert.fail(`${path} should be removed instead of kept as unreferenced legacy code`);
 }
 
+function assertVersionAtLeast(actualVersion, minimumVersion, label) {
+  const actualParts = actualVersion.split(".").map(Number);
+  const minimumParts = minimumVersion.split(".").map(Number);
+
+  for (let index = 0; index < Math.max(actualParts.length, minimumParts.length); index += 1) {
+    const actualPart = actualParts[index] ?? 0;
+    const minimumPart = minimumParts[index] ?? 0;
+
+    if (actualPart > minimumPart) {
+      return;
+    }
+
+    if (actualPart < minimumPart) {
+      assert.fail(`${label} should be at least ${minimumVersion}; found ${actualVersion}`);
+    }
+  }
+}
+
 async function pathExists(path) {
   try {
     await access(path);
@@ -258,6 +276,22 @@ test("spreadsheet parser uses the patched SheetJS npm alias and matching browser
   assert.doesNotMatch(xlsxVendorBundle, /version="0\.18\.5"/);
   assert.match(xlsxVendorBundle, /version="0\.20\./);
   assert.match(vendorScript, /node_modules\/xlsx\/dist\/xlsx\.full\.min\.js/);
+});
+
+test("Next runtime and PostCSS dependency stay on patched versions", () => {
+  assert.equal(packageData.dependencies?.next, "16.2.10");
+  assert.equal(packageData.devDependencies?.["eslint-config-next"], "16.2.10");
+  assert.equal(packageData.overrides?.next?.postcss, "^8.5.10");
+
+  const installedNext = packageLockData.packages?.["node_modules/next"];
+  const installedEslintConfig = packageLockData.packages?.["node_modules/eslint-config-next"];
+  const installedNextPostcss = packageLockData.packages?.["node_modules/next/node_modules/postcss"];
+
+  assert.equal(installedNext?.version, "16.2.10");
+  assert.equal(installedEslintConfig?.version, "16.2.10");
+  assert.ok(installedNextPostcss, "Next should keep a resolved PostCSS dependency in the lockfile");
+  assertVersionAtLeast(installedNextPostcss.version, "8.5.10", "Next nested PostCSS");
+  assert.notEqual(installedNextPostcss.version, "8.4.31");
 });
 
 test("Perspective BI requires the private tool access key before booting", async () => {

@@ -168,6 +168,79 @@ Run: `npm audit --omit=dev`
 
 Observed: no remaining `xlsx` advisory; the command still exits non-zero for 18 unrelated production dependency advisories in Next, Mermaid/DOMPurify, and Perspective/D3. Updated `docs/project-audit-report.md` with the result and residual scope.
 
+### Task 4b: Patch The Next/PostCSS Dependency Chain
+
+**Files:**
+- Modify: `package.json`
+- Modify: `package-lock.json`
+- Modify: `tests/tooling-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Re-check the residual dependency audit item**
+
+Confirmed `npm audit --omit=dev` still reported a production dependency chain involving Next / PostCSS after the `xlsx` alias fix, while Mermaid/DOMPurify and Perspective/D3 represented separate residual chains that should not be mixed into the same upgrade.
+
+- [x] **Step 2: Upgrade Next and lock the nested PostCSS floor**
+
+Updated `next` and `eslint-config-next` from `16.1.1` to `16.2.10`, then added an npm override so Next's nested `postcss` resolution stays on `^8.5.10`.
+
+- [x] **Step 3: Add a dependency contract**
+
+Extended `tests/tooling-contract.test.mjs` with a version helper and a contract requiring `next@16.2.10`, `eslint-config-next@16.2.10`, the `next.postcss` override, and a resolved `node_modules/next/node_modules/postcss` version of at least `8.5.10`.
+
+- [x] **Step 4: Run targeted dependency verification**
+
+Run: `node --test tests/tooling-contract.test.mjs`
+
+Observed: PASS, 14/14 tests.
+
+Run: `npm audit --omit=dev --json`
+
+Observed: Next / PostCSS no longer appeared in the production advisories. The audit still reports 15 production vulnerabilities across Mermaid/DOMPurify/lodash-es/Chevrotain, Perspective/D3, form-data, and uuid.
+
+Run: `npm ls next eslint-config-next postcss --depth=3`
+
+Observed: `next@16.2.10`, `eslint-config-next@16.2.10`, and Next's nested `postcss@8.5.16`; Tailwind's PostCSS dependency remains a separate `postcss@8.5.6`.
+
+- [x] **Step 5: Resolve the stale local Next type cache**
+
+The first `npx tsc --noEmit` after the upgrade failed because old generated files under `.next/dev/types` referenced `PrefetchForTypeCheckInternal`, a removed internal Next type. `.next/` is gitignored and regenerated; after removing `.next/`, the same typecheck passed. This was a local cache mismatch, not a source regression.
+
+- [x] **Step 6: Run full local verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS after clearing stale `.next/`.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 404/404 tests.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled with Next.js 16.2.10 and generated 36 static pages.
+
+- [x] **Step 7: Verify core pages in browser**
+
+Started `npm run start -- --port 3125`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3125/?audit=deps-next-postcss` and `/finance?audit=deps-next-postcss` at desktop and `390x844`.
+
+Observed: homepage hero rendered, finance library rendered with 7 cards, no horizontal overflow, and console error count was 0 on both desktop and mobile.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `安全 P1-3b`, noting that this closes only the Next/PostCSS dependency chain and that the remaining 15 production advisories still need separate child-chain evaluation.
+
 ### Task 5: Shorten Shared Finance Access Token TTL
 
 **Files:**
