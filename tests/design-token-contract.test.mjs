@@ -394,6 +394,31 @@ test("home finance mobile carousel dots derive from shared design tokens", async
   assert.match(currentDotBlock, /background:\s*var\(--home-finance-mobile-dot-current-bg\)/);
 });
 
+test("home finance mobile current switch card derives from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const currentCardBlock = readLastCssRule(globals, ".home-finance-switch-card.is-mobile-current");
+
+  for (const literal of [
+    "border-color: color-mix(in srgb, var(--accent) 42%, var(--border))",
+    "box-shadow: 0 14px 34px rgba(217, 120, 92, 0.14)",
+  ]) {
+    assert.doesNotMatch(currentCardBlock, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(
+    rootSource,
+    /--home-finance-switch-card-mobile-current-border:\s*color-mix\(in srgb,\s*var\(--accent\) 42%,\s*var\(--border\)\)/
+  );
+  assert.match(
+    rootSource,
+    /--home-finance-switch-card-mobile-current-shadow:\s*0 14px 34px color-mix\(in srgb,\s*var\(--accent\) 14%,\s*transparent\)/
+  );
+  assert.match(currentCardBlock, /border-color:\s*var\(--home-finance-switch-card-mobile-current-border\)/);
+  assert.match(currentCardBlock, /box-shadow:\s*var\(--home-finance-switch-card-mobile-current-shadow\)/);
+});
+
 test("home thinking track accents use site color tokens", async () => {
   const homeThinkingSection = await readProjectFile("src/components/home/HomeThinkingSection.tsx");
 

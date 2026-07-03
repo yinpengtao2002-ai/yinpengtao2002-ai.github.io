@@ -6784,3 +6784,63 @@ Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bt`, noting that this closes only the homepage finance mobile carousel dots while leaving `.home-finance-switch-card.is-mobile-current` token cleanup for later.
+
+## UI P1-10bu - Tokenize homepage finance mobile current switch card
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the next P1 UI token cleanup to the homepage finance mobile current switch-card state. This pass covers only `.home-finance-switch-card.is-mobile-current` border and shadow colors inside the mobile layout; desktop hover and `aria-current` states remain separate follow-ups.
+
+- [x] **Step 2: Add a failing selector-specific contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `--home-finance-switch-card-mobile-current-border` and `--home-finance-switch-card-mobile-current-shadow` to exist in `:root`, and requiring `.home-finance-switch-card.is-mobile-current` to read those tokens instead of direct `color-mix(...)` and orange `rgba(...)` values.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation, 72/73 passing. The new contract failed because `.home-finance-switch-card.is-mobile-current` still directly wrote `border-color: color-mix(in srgb, var(--accent) 42%, var(--border))` and `box-shadow: 0 14px 34px rgba(217, 120, 92, 0.14)`.
+
+- [x] **Step 4: Implement tokenized mobile current-card styles**
+
+Added the two root tokens in `src/app/globals.css`, deriving the current-card border from `--accent` / `--border` and the current-card shadow from `--accent`, then updated the mobile current-card rule to use `var(--home-finance-switch-card-mobile-current-*)`.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs tests/home-experience-contract.test.mjs`
+
+Observed: PASS, 102/102 tests.
+
+- [x] **Step 6: Run full local verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 397/397 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages.
+
+- [x] **Step 7: Verify homepage in browser**
+
+Started `npm run start -- --port 3115`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3115/?audit=ui-p1-10bu` at desktop and `390x844`, then inserted a temporary `.home-finance-switch-card.is-mobile-current` probe under each viewport.
+
+Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`, mobile-current styles did not apply outside the mobile media query; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`, border and shadow resolved from the new tokens, and console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bu`, noting that this closes only the homepage finance mobile current switch-card state while leaving desktop hover / `aria-current` state token cleanup for later.

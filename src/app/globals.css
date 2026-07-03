@@ -38,6 +38,8 @@
   --home-finance-mobile-guide-body-text: color-mix(in srgb, var(--foreground) 74%, var(--muted));
   --home-finance-mobile-dot-bg: color-mix(in srgb, var(--muted) 42%, transparent);
   --home-finance-mobile-dot-current-bg: var(--accent);
+  --home-finance-switch-card-mobile-current-border: color-mix(in srgb, var(--accent) 42%, var(--border));
+  --home-finance-switch-card-mobile-current-shadow: 0 14px 34px color-mix(in srgb, var(--accent) 14%, transparent);
   --home-thinking-visual-card-shadow: 0 22px 58px color-mix(in srgb, var(--foreground) 8%, transparent);
   --home-thinking-visual-shade-vertical-start: color-mix(in srgb, var(--foreground) 8%, transparent);
   --home-thinking-visual-shade-vertical-end: color-mix(in srgb, var(--foreground) 58%, transparent);
@@ -7234,8 +7236,8 @@ h6 {
   }
 
   .home-finance-switch-card.is-mobile-current {
-    border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
-    box-shadow: 0 14px 34px rgba(217, 120, 92, 0.14);
+    border-color: var(--home-finance-switch-card-mobile-current-border);
+    box-shadow: var(--home-finance-switch-card-mobile-current-shadow);
   }
 
   .home-finance-switch-card .finance-model-preview {
