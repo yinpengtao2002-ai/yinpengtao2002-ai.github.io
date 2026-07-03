@@ -29,6 +29,9 @@
   --home-mini-widget-line-primary: color-mix(in srgb, var(--accent-secondary) 22%, transparent);
   --home-mini-widget-line-secondary: color-mix(in srgb, var(--border) 70%, transparent);
   --home-mini-widget-bar-muted: color-mix(in srgb, var(--foreground) 24%, var(--border));
+  --home-finance-mobile-carousel-border: color-mix(in srgb, var(--border) 84%, transparent);
+  --home-finance-mobile-carousel-bg: color-mix(in srgb, var(--card) 94%, transparent);
+  --home-finance-mobile-carousel-shadow: 0 18px 46px color-mix(in srgb, var(--foreground) 8%, transparent);
   --home-thinking-visual-card-shadow: 0 22px 58px color-mix(in srgb, var(--foreground) 8%, transparent);
   --home-thinking-visual-shade-vertical-start: color-mix(in srgb, var(--foreground) 8%, transparent);
   --home-thinking-visual-shade-vertical-end: color-mix(in srgb, var(--foreground) 58%, transparent);
@@ -7042,10 +7045,10 @@ h6 {
     min-height: 0;
     touch-action: pan-y;
     user-select: none;
-    border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+    border: 1px solid var(--home-finance-mobile-carousel-border);
     border-radius: 8px;
-    background: color-mix(in srgb, var(--card) 94%, transparent);
-    box-shadow: 0 18px 46px rgba(20, 20, 19, 0.08);
+    background: var(--home-finance-mobile-carousel-bg);
+    box-shadow: var(--home-finance-mobile-carousel-shadow);
   }
 
   .home-finance-mobile-rise {

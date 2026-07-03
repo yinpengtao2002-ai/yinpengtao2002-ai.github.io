@@ -6604,3 +6604,63 @@ Observed: desktop and mobile both kept one `.home-hero-stage-panel` and two `.ho
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bq`, noting that this closes only the unused homepage hero question-card CSS sub-item while keeping the current hero stage and mini widgets unchanged.
+
+## UI P1-10br - Tokenize homepage finance mobile carousel surface
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the next P1 UI token cleanup to the dormant-but-covered homepage finance mobile carousel container. This pass covers only the mobile `.home-finance-mobile-carousel` border, background, and shadow surface; guide cards, carousel dots, and `.home-finance-switch-card.is-mobile-current` remain separate follow-ups.
+
+- [x] **Step 2: Add a failing selector-specific contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `--home-finance-mobile-carousel-border`, `--home-finance-mobile-carousel-bg`, and `--home-finance-mobile-carousel-shadow` to exist in `:root`, and requiring the effective mobile `.home-finance-mobile-carousel` rule to read those tokens.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation, 69/70 passing. The new contract failed because the mobile carousel rule still directly wrote `border: 1px solid color-mix(in srgb, var(--border) 84%, transparent)`, `background: color-mix(in srgb, var(--card) 94%, transparent)`, and `box-shadow: 0 18px 46px rgba(20, 20, 19, 0.08)`.
+
+- [x] **Step 4: Implement tokenized carousel surface styles**
+
+Added the three root tokens in `src/app/globals.css`, deriving them from `--border`, `--card`, and `--foreground`, then updated the mobile `.home-finance-mobile-carousel` rule to use `var(--home-finance-mobile-carousel-*)`.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs tests/home-experience-contract.test.mjs`
+
+Observed: PASS, 99/99 tests.
+
+- [x] **Step 6: Run full local verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: an initial parallel run collided with `npm run build:vercel` rewriting vendor assets, then the sequential rerun passed, 394/394 tests. Existing `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify homepage in browser**
+
+Started `npm run start -- --port 3112`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3112/?audit=ui-p1-10br` at desktop and `390x844`, then inserted a temporary `.home-finance-mobile-carousel` probe under the mobile viewport to inspect the actual computed style.
+
+Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; root tokens were present; the probe displayed as `block` and computed border/background/shadow resolved from the new tokens; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10br`, noting that this closes only the homepage finance mobile carousel container surface while leaving guide, dots, and switch-card current-state token cleanup for later passes.

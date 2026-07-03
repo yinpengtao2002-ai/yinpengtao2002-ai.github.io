@@ -299,6 +299,37 @@ test("home hero does not keep unused question card styles", async () => {
   }
 });
 
+test("home finance mobile carousel surface derives from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const carouselBlock = readLastCssRule(globals, ".home-finance-mobile-carousel");
+
+  for (const literal of [
+    "border: 1px solid color-mix(in srgb, var(--border) 84%, transparent)",
+    "background: color-mix(in srgb, var(--card) 94%, transparent)",
+    "box-shadow: 0 18px 46px rgba(20, 20, 19, 0.08)",
+  ]) {
+    assert.doesNotMatch(carouselBlock, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(
+    rootSource,
+    /--home-finance-mobile-carousel-border:\s*color-mix\(in srgb,\s*var\(--border\) 84%,\s*transparent\)/
+  );
+  assert.match(
+    rootSource,
+    /--home-finance-mobile-carousel-bg:\s*color-mix\(in srgb,\s*var\(--card\) 94%,\s*transparent\)/
+  );
+  assert.match(
+    rootSource,
+    /--home-finance-mobile-carousel-shadow:\s*0 18px 46px color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*transparent\)/
+  );
+  assert.match(carouselBlock, /border:\s*1px solid var\(--home-finance-mobile-carousel-border\)/);
+  assert.match(carouselBlock, /background:\s*var\(--home-finance-mobile-carousel-bg\)/);
+  assert.match(carouselBlock, /box-shadow:\s*var\(--home-finance-mobile-carousel-shadow\)/);
+});
+
 test("home thinking track accents use site color tokens", async () => {
   const homeThinkingSection = await readProjectFile("src/components/home/HomeThinkingSection.tsx");
 
