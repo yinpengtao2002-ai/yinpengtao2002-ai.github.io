@@ -346,6 +346,13 @@ test("home hero does not keep unused question card styles", async () => {
   }
 });
 
+test("globals does not keep unused legacy glow or card base utilities", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+
+  assert.doesNotMatch(globals, /\.glow\s*\{/);
+  assert.doesNotMatch(globals, /\.card-base\b/);
+});
+
 test("home finance mobile carousel surface derives from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];

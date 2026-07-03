@@ -7443,11 +7443,6 @@ h6 {
   }
 }
 
-/* Warm glow effect */
-.glow {
-  box-shadow: 0 0 40px rgba(217, 119, 87, 0.1);
-}
-
 .finance-model-card {
   position: relative;
   height: 100%;
@@ -8004,19 +7999,6 @@ h6 {
 
 .transition-fast {
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Component base styles */
-.card-base {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-2xl);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.card-base:hover {
-  border-color: rgba(217, 119, 87, 0.4);
-  box-shadow: var(--shadow-md);
 }
 
 .button-base {

@@ -7144,3 +7144,67 @@ Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bz`, noting that this closes only the `ChatWidget` route card hover-state token sub-item while leaving message content cards, chart colors, and other inline assistant styles for later passes.
+
+## UI P1-10ca - Remove unused legacy global glow and card-base utilities
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the next P1 UI token cleanup to two unused global utility selectors in `src/app/globals.css`: `.glow` and `.card-base` / `.card-base:hover`. Current source search found no real page usage for these selectors; `public/tools/margin-analysis` has its own `.title-glow`, which is unrelated.
+
+- [x] **Step 2: Add a failing dead-style contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `globals.css` not to retain `.glow` or `.card-base` rules.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation, 77/78 passing. The new contract failed because `.glow` still existed and `.card-base:hover` still carried a hardcoded `rgba(217, 119, 87, 0.4)` border.
+
+- [x] **Step 4: Delete unused legacy utilities**
+
+Deleted the `.glow` block and `.card-base` / `.card-base:hover` blocks from `src/app/globals.css`. This pass intentionally removed dead CSS instead of tokenizing it, because the selectors were not mounted by current app surfaces.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 78/78 tests.
+
+Run: `node --test tests/design-token-contract.test.mjs tests/tooling-contract.test.mjs`
+
+Observed: PASS, 91/91 tests.
+
+- [x] **Step 6: Run full local verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 402/402 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages.
+
+- [x] **Step 7: Verify homepage in browser**
+
+Started `npm run start -- --port 3123`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3123/?audit=ui-p1-10ca` at desktop and `390x844`, inspected built CSSOM for `.glow` / `.card-base`, and checked the homepage shell.
+
+Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; built CSS did not contain `.glow` or `.card-base`; `.home-hero` and the `LucasYin` title rendered; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10ca`, noting that this closes only the unused `.glow` / `.card-base` dead-style sub-item while leaving base `--shadow-*` tokens and other utilities for later passes.
