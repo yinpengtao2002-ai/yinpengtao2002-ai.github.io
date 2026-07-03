@@ -7024,3 +7024,63 @@ Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bx`, noting that this closes only the `/finance` model card hover-state token sub-item while leaving other global utilities and rendered paths for later passes.
+
+## UI P1-10by - Remove duplicate hardcoded selection override
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the next P1 UI token cleanup to a global selection-style regression: an old lower `::selection` rule still overrode the earlier tokenized selection style with a hardcoded transparent orange background. This pass covers only the duplicate text-selection override.
+
+- [x] **Step 2: Tighten the contract**
+
+Updated `tests/design-token-contract.test.mjs` so the selection test scans every `::selection` rule in `globals.css`, requires each rule to read `var(--accent)` and `var(--card)`, and rejects `rgba(...)` inside any selection block.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation, 75/76 passing. The tightened contract failed because the bottom `::selection` rule still wrote `background: rgba(217, 119, 87, 0.25)` and `color: var(--foreground)`.
+
+- [x] **Step 4: Remove the duplicate hardcoded override**
+
+Deleted the lower `::selection` block in `src/app/globals.css`, leaving the earlier tokenized `::selection { background: var(--accent); color: var(--card); }` as the only text-selection rule.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs tests/home-experience-contract.test.mjs`
+
+Observed: PASS, 105/105 tests.
+
+- [x] **Step 6: Run full local verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 400/400 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages.
+
+- [x] **Step 7: Verify homepage in browser**
+
+Started `npm run start -- --port 3121`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3121/?audit=ui-p1-10by` at desktop and `390x844`, inspected built CSSOM `::selection` rules, and checked overflow / console errors.
+
+Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; built CSS contained only one `::selection` rule, reading `var(--accent)` and `var(--card)`; no selection rule contained `rgba(...)`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10by`, noting that this closes only the duplicate selection override while leaving other global utilities and rendered paths for later passes.

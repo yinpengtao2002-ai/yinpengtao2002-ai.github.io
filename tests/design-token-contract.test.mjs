@@ -103,9 +103,14 @@ test("global text selection colors use site tokens", async () => {
   assert.doesNotMatch(layout, /selection:[a-z-]+-\[#/);
   assert.doesNotMatch(layout, /selection:text-white/);
 
-  const selectionBlock = globals.match(/::selection\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
-  assert.match(selectionBlock, /background:\s*var\(--accent\)/);
-  assert.match(selectionBlock, /color:\s*var\(--card\)/);
+  const selectionBlocks = globals.match(/::selection\s*\{[\s\S]*?\n\}/g) ?? [];
+  assert.ok(selectionBlocks.length > 0, "globals.css should define text selection styles");
+
+  for (const selectionBlock of selectionBlocks) {
+    assert.doesNotMatch(selectionBlock, /rgba\(/);
+    assert.match(selectionBlock, /background:\s*var\(--accent\)/);
+    assert.match(selectionBlock, /color:\s*var\(--card\)/);
+  }
 });
 
 test("site navigation shadows use shared design tokens", async () => {

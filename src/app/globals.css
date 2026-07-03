@@ -7826,12 +7826,6 @@ h6 {
   z-index: 1000;
 }
 
-/* Selection color - Anthropic Orange */
-::selection {
-  background: rgba(217, 119, 87, 0.25);
-  color: var(--foreground);
-}
-
 /* Scrollbar styling - light theme */
 ::-webkit-scrollbar {
   width: 8px;
