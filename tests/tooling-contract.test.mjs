@@ -316,6 +316,18 @@ test("Mermaid parser and sanitizer dependencies stay on patched versions", () =>
   assert.doesNotMatch(packageLockJson, /uuid-11\.1\.0\.tgz/);
 });
 
+test("Notion content sync uses the modern SDK without the vulnerable form-data chain", () => {
+  assert.equal(packageData.dependencies?.["@notionhq/client"], "^5.22.0");
+
+  const installedNotionClient = packageLockData.packages?.["node_modules/@notionhq/client"];
+  assert.equal(installedNotionClient?.version, "5.22.0");
+  assertVersionAtLeast(installedNotionClient?.engines?.node?.replace(/[^\d.]/g, "") || "0.0.0", "18.0.0", "Notion SDK Node engine");
+
+  assert.doesNotMatch(packageLockJson, /node_modules\/@types\/node-fetch/);
+  assert.doesNotMatch(packageLockJson, /node_modules\/form-data/);
+  assert.doesNotMatch(packageLockJson, /form-data-4\.0\.[0-5]\.tgz/);
+});
+
 test("Perspective BI requires the private tool access key before booting", async () => {
   const tool = await readRequiredProjectFile("../src/app/finance/perspective-bi/PerspectiveBITool.tsx");
   const styles = await readRequiredProjectFile("../src/app/finance/perspective-bi/tool.css");

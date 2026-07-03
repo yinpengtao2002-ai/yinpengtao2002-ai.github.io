@@ -20,7 +20,7 @@
     "prebuild": "node scripts/generate-content.js && npm run prepare:vendor"
   },
   "dependencies": {
-    "@notionhq/client": "^2.3.0",
+    "@notionhq/client": "^5.22.0",
     "@perspective-dev/client": "^4.4.1",
     "@perspective-dev/server": "^4.4.1",
     "@perspective-dev/viewer": "^4.4.1",

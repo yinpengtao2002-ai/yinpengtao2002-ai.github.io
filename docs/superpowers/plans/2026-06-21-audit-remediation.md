@@ -284,6 +284,49 @@ The site renders Mermaid diagrams inside `ArticleReader.tsx`, so this pass must 
 
 Updated `docs/project-audit-report.md` as `安全 P1-3c`, noting that this closes only the Mermaid sanitizer/parser dependency chain and leaves Perspective/D3 plus form-data for separate passes.
 
+### Task 4d: Patch The Notion form-data Dependency Chain
+
+**Files:**
+- Modify: `package.json`
+- Modify: `package-lock.json`
+- Modify: `tests/tooling-contract.test.mjs`
+- Modify: `docs/project-audit-report.md`
+- Modify: `docs/superpowers/plans/2026-06-21-audit-remediation.md`
+
+- [x] **Step 1: Re-check the residual form-data chain**
+
+Confirmed the remaining non-Perspective audit chain came from `@notionhq/client@2.3.0`, which pulled `@types/node-fetch`, which in turn pulled vulnerable `form-data`. The local `notion-to-md` dependency still brings `node-fetch@2.7.0`, but it does not bring `form-data`.
+
+- [x] **Step 2: Upgrade the Notion SDK**
+
+Ran the package update to move `@notionhq/client` from `^2.3.0` to `^5.22.0`. The lockfile now resolves `@notionhq/client@5.22.0`, whose package metadata requires Node `>=18` and no longer depends on `@types/node-fetch` or `form-data`.
+
+- [x] **Step 3: Add a dependency contract**
+
+Extended `tests/tooling-contract.test.mjs` to require the modern Notion SDK range, installed `@notionhq/client@5.22.0`, a Node engine floor of 18, and absence of `node_modules/@types/node-fetch`, `node_modules/form-data`, and vulnerable `form-data-4.0.[0-5]` tarballs from the lockfile.
+
+- [x] **Step 4: Run targeted dependency verification**
+
+Run: `node --test tests/tooling-contract.test.mjs tests/generated-content-contract.test.mjs`
+
+Observed: Notion SDK and generated-content contracts pass locally.
+
+Run: `npm audit --omit=dev --json`
+
+Observed: form-data no longer appears in production advisories. The remaining five production advisories are the D3 chain under Perspective BI's `d3-svg-legend` dependency.
+
+Run: `npm why form-data @types/node-fetch @notionhq/client`
+
+Observed: `@notionhq/client@5.22.0` remains installed directly; `form-data` and `@types/node-fetch` no longer have an installed production path.
+
+- [x] **Step 5: Preserve generated-content behavior**
+
+The Notion-backed generation scripts stay on the existing contract: local runs without Notion environment variables reuse generated content, while production/Vercel uses configured Notion env vars for real sync.
+
+- [x] **Step 6: Record completion**
+
+Updated `docs/project-audit-report.md` as `安全 P1-3d`, noting that this closes only the Notion/form-data child chain and leaves the Perspective/D3 production advisory chain for a separate pass.
+
 ### Task 5: Shorten Shared Finance Access Token TTL
 
 **Files:**
