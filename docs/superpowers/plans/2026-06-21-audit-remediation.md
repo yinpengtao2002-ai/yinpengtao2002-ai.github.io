@@ -6480,3 +6480,63 @@ Observed: desktop still rendered two current mini widgets (`home-mini-widget-win
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bo`, noting that this closes only the unused mini widget fallback CSS sub-item while keeping the current visible mini widgets unchanged.
+
+## UI P1-10bp - Tokenize visible homepage mini widget line and muted bar colors
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the next P1 UI cleanup to the remaining visible colors inside the homepage hero mini widgets. This pass covers `.home-mini-widget-lines span`, `.home-mini-widget-lines span:last-child`, and `.home-mini-widget-bars span:nth-child(4)`, which are part of the currently rendered mini widget window / bar visuals.
+
+- [x] **Step 2: Add a selector-specific contract**
+
+Added `tests/design-token-contract.test.mjs` checks requiring `--home-mini-widget-line-primary`, `--home-mini-widget-line-secondary`, and `--home-mini-widget-bar-muted` to be declared in `:root`, and requiring the three target selectors to read those tokens through `var(...)`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because the three new mini widget line / muted bar tokens were not declared.
+
+- [x] **Step 4: Implement the tokenized styles**
+
+Added the three root tokens in `src/app/globals.css`, deriving them from `--accent-secondary`, `--border`, and `--foreground`, then updated the target mini widget line and fourth-bar selectors to read those tokens.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs tests/home-experience-contract.test.mjs`
+
+Observed: PASS, 97/97 tests.
+
+- [x] **Step 6: Run full verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 392/392 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify homepage in browser**
+
+Started `npm run start -- --port 3110`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3110/?audit=ui-p1-10bp`, inspected desktop and `390x844` mobile rendering, and fetched the production CSS chunks.
+
+Observed: desktop rendered two current mini widgets (`home-mini-widget-window` and `home-mini-widget-bars`); the three new tokens existed in the built CSS; the target line / fourth-bar rules read `var(--home-mini-widget-line-primary)`, `var(--home-mini-widget-line-secondary)`, and `var(--home-mini-widget-bar-muted)`; scoped old line/bar literal count was 0; desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bp`, noting that this closes only the visible mini widget line and muted fourth-bar color token sub-item while leaving other rendered paths for later passes.

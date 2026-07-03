@@ -26,6 +26,9 @@
   --home-mini-widget-accent-secondary: color-mix(in srgb, var(--accent-secondary) 82%, var(--foreground));
   --home-mini-widget-accent-tertiary: color-mix(in srgb, var(--accent-tertiary) 82%, var(--card));
   --home-mini-widget-accent-warm: color-mix(in srgb, var(--accent) 45%, var(--accent-tertiary));
+  --home-mini-widget-line-primary: color-mix(in srgb, var(--accent-secondary) 22%, transparent);
+  --home-mini-widget-line-secondary: color-mix(in srgb, var(--border) 70%, transparent);
+  --home-mini-widget-bar-muted: color-mix(in srgb, var(--foreground) 24%, var(--border));
   --home-thinking-visual-card-shadow: 0 22px 58px color-mix(in srgb, var(--foreground) 8%, transparent);
   --home-thinking-visual-shade-vertical-start: color-mix(in srgb, var(--foreground) 8%, transparent);
   --home-thinking-visual-shade-vertical-end: color-mix(in srgb, var(--foreground) 58%, transparent);
@@ -3538,12 +3541,12 @@ h6 {
 .home-mini-widget-lines span {
   height: 9px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--accent-secondary) 22%, transparent);
+  background: var(--home-mini-widget-line-primary);
 }
 
 .home-mini-widget-lines span:last-child {
   width: 64%;
-  background: color-mix(in srgb, var(--border) 70%, transparent);
+  background: var(--home-mini-widget-line-secondary);
 }
 
 .home-mini-widget-bars {
@@ -3585,7 +3588,7 @@ h6 {
 
 .home-mini-widget-bars span:nth-child(4) {
   height: 58%;
-  background: color-mix(in srgb, var(--foreground) 24%, var(--border));
+  background: var(--home-mini-widget-bar-muted);
   animation-delay: -2.2s;
 }
 

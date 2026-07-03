@@ -227,6 +227,9 @@ test("home hero floating mini widget accents derive from shared site tokens", as
   const barBlock = readCssRule(globals, ".home-mini-widget-bars span");
   const barSecondBlock = readCssRule(globals, ".home-mini-widget-bars span:nth-child(2)");
   const barThirdBlock = readCssRule(globals, ".home-mini-widget-bars span:nth-child(3)");
+  const barFourthBlock = readCssRule(globals, ".home-mini-widget-bars span:nth-child(4)");
+  const lineBlock = readCssRule(globals, ".home-mini-widget-lines span");
+  const lineLastBlock = readCssRule(globals, ".home-mini-widget-lines span:last-child");
   const scopedSource = [
     chromeDotBlock,
     chromeDotSecondBlock,
@@ -234,6 +237,9 @@ test("home hero floating mini widget accents derive from shared site tokens", as
     barBlock,
     barSecondBlock,
     barThirdBlock,
+    barFourthBlock,
+    lineBlock,
+    lineLastBlock,
   ].join("\n").toLowerCase();
 
   for (const literal of ["#dc7f5f", "#e8c66d", "#7ebc9a", "#d9785c", "#6f9eb8", "#90a675"]) {
@@ -249,12 +255,23 @@ test("home hero floating mini widget accents derive from shared site tokens", as
     assert.match(rootSource, new RegExp(`${token}:\\s*color-mix\\(in srgb,\\s*var\\(--accent`), `${token} should derive from site accent tokens`);
   }
 
+  for (const token of [
+    "--home-mini-widget-line-primary",
+    "--home-mini-widget-line-secondary",
+    "--home-mini-widget-bar-muted",
+  ]) {
+    assert.match(rootSource, new RegExp(`${token}:\\s*`), `${token} should be declared in :root`);
+  }
+
   assert.match(chromeDotBlock, /background:\s*var\(--home-mini-widget-accent-primary\)/);
   assert.match(chromeDotSecondBlock, /background:\s*var\(--home-mini-widget-accent-warm\)/);
   assert.match(chromeDotThirdBlock, /background:\s*var\(--home-mini-widget-accent-tertiary\)/);
   assert.match(barBlock, /background:\s*var\(--home-mini-widget-accent-primary\)/);
   assert.match(barSecondBlock, /background:\s*var\(--home-mini-widget-accent-secondary\)/);
   assert.match(barThirdBlock, /background:\s*var\(--home-mini-widget-accent-tertiary\)/);
+  assert.match(barFourthBlock, /background:\s*var\(--home-mini-widget-bar-muted\)/);
+  assert.match(lineBlock, /background:\s*var\(--home-mini-widget-line-primary\)/);
+  assert.match(lineLastBlock, /background:\s*var\(--home-mini-widget-line-secondary\)/);
 });
 
 test("home hero does not keep unused mini widget dot or status color styles", async () => {
