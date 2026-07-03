@@ -6904,3 +6904,63 @@ Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bv`, noting that this closes only the homepage finance desktop hover / current-card active state while leaving other homepage and site-wide rendered paths for later passes.
+
+## UI P1-10bw - Tokenize homepage hero model library active details
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the next P1 UI token cleanup to the homepage hero right-side model library entry active details. This pass covers only `.home-model-library-entry::after` dot background / shadow and `.home-model-library-entry:hover` / `:focus-visible` border / shadow values; other hero decorative gradients, stage visuals, and site-wide rendered paths remain separate follow-ups.
+
+- [x] **Step 2: Add a failing selector-specific contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `--home-model-library-entry-dot-bg`, `--home-model-library-entry-dot-shadow`, `--home-model-library-entry-active-border`, and `--home-model-library-entry-active-shadow` to exist in `:root`, and requiring the model-entry dot plus hover/focus rule to read those tokens instead of direct `#fff`, `color-mix(...)`, and hardcoded `rgba(...)` values.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation, 74/75 passing. The new contract failed because `.home-model-library-entry::after` still directly wrote `background: color-mix(in srgb, var(--accent-secondary) 82%, #fff)` and the hover/focus rule still wrote the active border and `box-shadow: 0 16px 38px rgba(20, 20, 19, 0.085)`.
+
+- [x] **Step 4: Implement tokenized model-entry active details**
+
+Added the four root tokens in `src/app/globals.css`, deriving the dot background from `--accent-secondary` / `--card`, the dot shadow from `--accent-secondary`, the active border from `--accent` / `--accent-secondary`, and the active shadow from `--foreground`, then updated the dot and hover/focus rules to use `var(--home-model-library-entry-*)`.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs tests/home-experience-contract.test.mjs`
+
+Observed: PASS, 104/104 tests.
+
+- [x] **Step 6: Run full local verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 399/399 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages.
+
+- [x] **Step 7: Verify homepage in browser**
+
+Started `npm run start -- --port 3117`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3117/?audit=ui-p1-10bw` at desktop and `390x844`, inspected the rendered `.home-model-library-entry::after` pseudo-element, and hovered the desktop model entry after waiting for the transition to finish.
+
+Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; the four root model-entry tokens were present; CSSOM dot and hover/focus rules read `var(--home-model-library-entry-*)`; dot background / shadow matched token-resolved reference values; desktop hover shadow matched the active shadow token; console error count was 0. The border color itself remains animated by `homeModelLibraryGlow`, so the smoke used CSSOM token coverage rather than computed border equality.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bw`, noting that this closes only the homepage hero model-entry dot and hover/focus details while leaving other hero decorative colors for later passes.

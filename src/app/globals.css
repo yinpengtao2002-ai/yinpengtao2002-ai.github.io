@@ -15,6 +15,10 @@
   --site-nav-shell-shadow: 0 12px 32px color-mix(in srgb, var(--foreground) 8%, transparent);
   --home-hero-copy-card-shadow: 0 14px 38px color-mix(in srgb, var(--foreground) 5.5%, transparent);
   --home-model-library-entry-shadow: 0 12px 30px color-mix(in srgb, var(--foreground) 5.5%, transparent);
+  --home-model-library-entry-dot-bg: color-mix(in srgb, var(--accent-secondary) 82%, var(--card));
+  --home-model-library-entry-dot-shadow: 0 0 14px color-mix(in srgb, var(--accent-secondary) 58%, transparent);
+  --home-model-library-entry-active-border: color-mix(in srgb, var(--accent) 44%, var(--accent-secondary));
+  --home-model-library-entry-active-shadow: 0 16px 38px color-mix(in srgb, var(--foreground) 8.5%, transparent);
   --home-hero-stage-panel-shadow: 0 24px 64px color-mix(in srgb, var(--foreground) 9%, transparent);
   --home-hero-stage-preview-shadow: 0 20px 50px color-mix(in srgb, var(--foreground) 8%, transparent);
   --home-hero-stage-skeleton-window-shadow: 0 18px 42px color-mix(in srgb, var(--foreground) 6%, transparent);
@@ -2147,8 +2151,8 @@ h6 {
   width: 5px;
   height: 5px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--accent-secondary) 82%, #fff);
-  box-shadow: 0 0 14px color-mix(in srgb, var(--accent-secondary) 58%, transparent);
+  background: var(--home-model-library-entry-dot-bg);
+  box-shadow: var(--home-model-library-entry-dot-shadow);
   animation: homeModelLibraryDot 4.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 
@@ -2183,8 +2187,8 @@ h6 {
 
 .home-model-library-entry:hover,
 .home-model-library-entry:focus-visible {
-  border-color: color-mix(in srgb, var(--accent) 44%, var(--accent-secondary));
-  box-shadow: 0 16px 38px rgba(20, 20, 19, 0.085);
+  border-color: var(--home-model-library-entry-active-border);
+  box-shadow: var(--home-model-library-entry-active-shadow);
   transform: translateY(-1px);
 }
 

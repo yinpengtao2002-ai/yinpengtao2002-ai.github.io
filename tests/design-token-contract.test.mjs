@@ -155,6 +155,48 @@ test("home hero intro card shadows derive from shared design tokens", async () =
   assert.match(modelEntryBlock, /box-shadow:\s*var\(--home-model-library-entry-shadow\)/);
 });
 
+test("home model library entry active details derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const dotBlock = readCssRule(globals, ".home-model-library-entry::after");
+  const activeBlock =
+    globals.match(/\.home-model-library-entry:hover,\n\.home-model-library-entry:focus-visible\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+
+  assert.ok(activeBlock, "home model library hover/focus rule should exist");
+
+  for (const literal of [
+    "background: color-mix(in srgb, var(--accent-secondary) 82%, #fff)",
+    "box-shadow: 0 0 14px color-mix(in srgb, var(--accent-secondary) 58%, transparent)",
+    "border-color: color-mix(in srgb, var(--accent) 44%, var(--accent-secondary))",
+    "box-shadow: 0 16px 38px rgba(20, 20, 19, 0.085)",
+  ]) {
+    const scopedSource = `${dotBlock}\n${activeBlock}`;
+    assert.doesNotMatch(scopedSource, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(
+    rootSource,
+    /--home-model-library-entry-dot-bg:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 82%,\s*var\(--card\)\)/
+  );
+  assert.match(
+    rootSource,
+    /--home-model-library-entry-dot-shadow:\s*0 0 14px color-mix\(in srgb,\s*var\(--accent-secondary\) 58%,\s*transparent\)/
+  );
+  assert.match(
+    rootSource,
+    /--home-model-library-entry-active-border:\s*color-mix\(in srgb,\s*var\(--accent\) 44%,\s*var\(--accent-secondary\)\)/
+  );
+  assert.match(
+    rootSource,
+    /--home-model-library-entry-active-shadow:\s*0 16px 38px color-mix\(in srgb,\s*var\(--foreground\) 8\.5%,\s*transparent\)/
+  );
+  assert.match(dotBlock, /background:\s*var\(--home-model-library-entry-dot-bg\)/);
+  assert.match(dotBlock, /box-shadow:\s*var\(--home-model-library-entry-dot-shadow\)/);
+  assert.match(activeBlock, /border-color:\s*var\(--home-model-library-entry-active-border\)/);
+  assert.match(activeBlock, /box-shadow:\s*var\(--home-model-library-entry-active-shadow\)/);
+});
+
 test("home hero model stage shadows derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
