@@ -7208,3 +7208,63 @@ Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10ca`, noting that this closes only the unused `.glow` / `.card-base` dead-style sub-item while leaving base `--shadow-*` tokens and other utilities for later passes.
+
+## UI P1-10cb - Tokenize base shadow tokens
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the next P1 UI token cleanup to the four base shadow tokens in `src/app/globals.css`: `--shadow-sm`, `--shadow-md`, `--shadow-lg`, and `--shadow-glow`. This pass covers only those token declarations, not Tailwind's built-in shadow variables, other utility styles, or every rendered shadow in the site.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the four base shadow tokens to be declared in `:root`, to avoid direct `rgba(...)`, and to derive their colors from `--foreground` / `--accent` through `color-mix(...)`.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation, 78/79 passing. The new contract failed because `--shadow-sm`, `--shadow-md`, `--shadow-lg`, and `--shadow-glow` still directly used `rgba(...)` values.
+
+- [x] **Step 4: Implement tokenized base shadows**
+
+Updated `src/app/globals.css` so `--shadow-sm`, `--shadow-md`, and `--shadow-lg` derive from `--foreground`, while `--shadow-glow` derives from `--accent`, all through `color-mix(..., transparent)`.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 79/79 tests.
+
+- [x] **Step 6: Run full local verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 403/403 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify homepage in browser**
+
+Started `npm run start -- --port 3124`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3124/?audit=ui-p1-10cb` at desktop and `390x844`, inspected computed root token values and fetched built CSS to confirm the `@supports` color-mix branches survived minification.
+
+Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; homepage hero and model stage rendered; all four computed `--shadow-*` tokens resolved to `color-mix(...)` and contained no `rgba(...)`; built CSS contained the expected color-mix support declarations for the four tokens; console error count was 0. Earlier smoke-script attempts used overly strict string matching against browser-normalized CSS values and were adjusted; those were verifier issues, not page regressions.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10cb`, noting that this closes only the base `--shadow-*` token declarations while leaving Tailwind internal shadow variables, other utilities, and remaining rendered paths for later passes.

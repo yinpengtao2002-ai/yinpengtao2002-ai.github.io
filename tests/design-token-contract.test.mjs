@@ -353,6 +353,23 @@ test("globals does not keep unused legacy glow or card base utilities", async ()
   assert.doesNotMatch(globals, /\.card-base\b/);
 });
 
+test("base shadow tokens derive from shared color tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+
+  for (const tokenName of ["--shadow-sm", "--shadow-md", "--shadow-lg", "--shadow-glow"]) {
+    const declaration = rootSource.match(new RegExp(`${tokenName}:[^;]+;`))?.[0] ?? "";
+    assert.ok(declaration, `${tokenName} should be declared`);
+    assert.doesNotMatch(declaration, /rgba\(/);
+  }
+
+  assert.match(rootSource, /--shadow-sm:\s*0 1px 2px 0 color-mix\(in srgb,\s*var\(--foreground\) 5%,\s*transparent\)/);
+  assert.match(rootSource, /--shadow-md:\s*0 4px 6px -1px color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*transparent\),\s*0 2px 4px -1px color-mix\(in srgb,\s*var\(--foreground\) 4%,\s*transparent\)/);
+  assert.match(rootSource, /--shadow-lg:\s*0 10px 15px -3px color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*transparent\),\s*0 4px 6px -2px color-mix\(in srgb,\s*var\(--foreground\) 4%,\s*transparent\)/);
+  assert.match(rootSource, /--shadow-glow:\s*0 0 40px color-mix\(in srgb,\s*var\(--accent\) 10%,\s*transparent\)/);
+});
+
 test("home finance mobile carousel surface derives from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
