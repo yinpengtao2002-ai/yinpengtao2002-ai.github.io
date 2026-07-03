@@ -370,6 +370,30 @@ test("home finance mobile guide colors derive from shared design tokens", async 
   assert.match(guideBodyBlock, /color:\s*var\(--home-finance-mobile-guide-body-text\)/);
 });
 
+test("home finance mobile carousel dots derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const dotBlock = readLastCssRule(globals, ".home-finance-mobile-dots button");
+  const currentDotBlock = readLastCssRule(globals, ".home-finance-mobile-dots button.is-current");
+  const scopedSource = [dotBlock, currentDotBlock].join("\n");
+
+  for (const literal of [
+    "background: color-mix(in srgb, var(--muted) 42%, transparent)",
+    "background: var(--accent)",
+  ]) {
+    assert.doesNotMatch(scopedSource, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(
+    rootSource,
+    /--home-finance-mobile-dot-bg:\s*color-mix\(in srgb,\s*var\(--muted\) 42%,\s*transparent\)/
+  );
+  assert.match(rootSource, /--home-finance-mobile-dot-current-bg:\s*var\(--accent\)/);
+  assert.match(dotBlock, /background:\s*var\(--home-finance-mobile-dot-bg\)/);
+  assert.match(currentDotBlock, /background:\s*var\(--home-finance-mobile-dot-current-bg\)/);
+});
+
 test("home thinking track accents use site color tokens", async () => {
   const homeThinkingSection = await readProjectFile("src/components/home/HomeThinkingSection.tsx");
 

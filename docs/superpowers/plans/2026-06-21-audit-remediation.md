@@ -6724,3 +6724,63 @@ Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bs`, noting that this closes only the homepage finance mobile guide colors while leaving dots and switch-card current-state token cleanup for later passes.
+
+## UI P1-10bt - Tokenize homepage finance mobile carousel dots
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the next P1 UI token cleanup to the dormant-but-covered homepage finance mobile carousel dots. This pass covers only `.home-finance-mobile-dots button` and `.home-finance-mobile-dots button.is-current` background colors; `.home-finance-switch-card.is-mobile-current` remains a separate follow-up.
+
+- [x] **Step 2: Add a failing selector-specific contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `--home-finance-mobile-dot-bg` and `--home-finance-mobile-dot-current-bg` to exist in `:root`, and requiring the effective dot rules to read those tokens instead of direct `color-mix(...)` / `var(--accent)` backgrounds.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation, 71/72 passing. The new contract failed because `.home-finance-mobile-dots button` still directly wrote `background: color-mix(in srgb, var(--muted) 42%, transparent)` and `.home-finance-mobile-dots button.is-current` still directly wrote `background: var(--accent)`.
+
+- [x] **Step 4: Implement tokenized dot backgrounds**
+
+Added the two root tokens in `src/app/globals.css`, deriving the base dot from `--muted` and the current dot from `--accent`, then updated the mobile dot rules to use `var(--home-finance-mobile-dot-*)`.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs tests/home-experience-contract.test.mjs`
+
+Observed: PASS, 101/101 tests.
+
+- [x] **Step 6: Run full local verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 396/396 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages.
+
+- [x] **Step 7: Verify homepage in browser**
+
+Started `npm run start -- --port 3114`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3114/?audit=ui-p1-10bt` at desktop and `390x844`, then inserted a temporary `.home-finance-mobile-dots` probe under each viewport.
+
+Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`, dots stayed hidden; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`, dots displayed as `flex`, the base dot was `6px`, the current dot was `18px`, both colors resolved from the new tokens, and console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bt`, noting that this closes only the homepage finance mobile carousel dots while leaving `.home-finance-switch-card.is-mobile-current` token cleanup for later.
