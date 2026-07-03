@@ -7502,3 +7502,67 @@ Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10cb`, noting that this closes only the base `--shadow-*` token declarations while leaving Tailwind internal shadow variables, other utilities, and remaining rendered paths for later passes.
+
+## UI P1-10cc - Tokenize home hero continue cue glass colors
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the next P1 UI token cleanup to the homepage hero continue cue: `.home-hero-continue`, `.home-hero-continue::before`, `.home-hero-continue::after`, and `.home-hero-continue:hover`. This pass covers only the "浏览更多" glass cue's background, sheen, inset highlights, and hover shadows. It does not attempt to migrate `product-stage-visual`, dormant `HomeFinanceSection`, or tool-internal CSS.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring the continue cue rules to avoid `rgba(...)`, read `--home-hero-continue-*` local tokens, and preserve the existing `linear-gradient` glass / sheen structure through tokenized color stops.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation, 79/80 passing. The new contract failed because `.home-hero-continue`, `::before`, `::after`, and hover still directly used multiple warm-white, accent, and foreground `rgba(...)` values.
+
+- [x] **Step 4: Move continue cue glass colors to local tokens**
+
+Added `--home-hero-continue-*` tokens in `:root`, deriving the base glass fill, accent shadow, inset highlight, animated sheen, inner glass layer, and hover shadows from `--background`, `--card`, `--accent`, `--accent-secondary`, and `--foreground`. Updated the cue rules to use those tokens while preserving the original layout, text, animation, and responsive sizing.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 80/80 tests.
+
+Run: `node --test tests/design-token-contract.test.mjs tests/home-experience-contract.test.mjs`
+
+Observed: PASS, 109/109 tests.
+
+- [x] **Step 6: Run full local verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 409/409 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify homepage in browser**
+
+Started `npm run start -- -p 3125`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3125/?audit=ui-p1-10cc` at desktop and `390x844`, inspected CSSOM rules for `.home-hero-continue`, hovered the desktop cue, and checked token values, horizontal overflow, and console errors.
+
+Observed: desktop cue rendered as `104x42`; mobile cue rendered as `93x36`, matching the existing compact mobile rule. Targeted CSSOM rules contained no `rgba(` and did read `var(--home-hero-continue-*)`; token values resolved to `color-mix(...)` / normalized color values without `rgba(`; desktop and mobile had no horizontal overflow and console error count 0. Two earlier smoke-script attempts used overly broad minimum size assumptions and were corrected; the page itself was not regressed.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10cc`, noting that this closes only the homepage hero continue cue's glass/highlight/hover token sub-item while leaving product-stage visual, HomeFinanceSection, and tool-internal CSS for later passes.

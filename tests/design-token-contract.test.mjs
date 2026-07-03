@@ -202,6 +202,46 @@ test("home model library entry active details derive from shared design tokens",
   assert.match(activeBlock, /box-shadow:\s*var\(--home-model-library-entry-active-shadow\)/);
 });
 
+test("home hero continue cue glass colors derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const continueBlock = readCssRule(globals, ".home-hero-continue");
+  const sheenBlock = readCssRule(globals, ".home-hero-continue::before");
+  const glassBlock = readCssRule(globals, ".home-hero-continue::after");
+  const hoverBlock = readCssRule(globals, ".home-hero-continue:hover");
+  const scopedSource = [continueBlock, sheenBlock, glassBlock, hoverBlock].join("\n");
+
+  assert.doesNotMatch(scopedSource, /rgba\(/);
+
+  for (const token of [
+    "--home-hero-continue-bg-start",
+    "--home-hero-continue-bg-end",
+    "--home-hero-continue-shadow-color",
+    "--home-hero-continue-accent-shadow-color",
+    "--home-hero-continue-highlight-color",
+    "--home-hero-continue-edge-color",
+    "--home-hero-continue-sheen-light",
+    "--home-hero-continue-sheen-accent",
+    "--home-hero-continue-glass-start",
+    "--home-hero-continue-glass-end",
+    "--home-hero-continue-glass-accent",
+    "--home-hero-continue-glass-secondary",
+    "--home-hero-continue-glass-ring",
+    "--home-hero-continue-glass-edge",
+    "--home-hero-continue-hover-shadow-color",
+    "--home-hero-continue-hover-accent-shadow-color",
+    "--home-hero-continue-hover-highlight-color",
+  ]) {
+    assert.match(rootSource, new RegExp(`${token}:`));
+    assert.match(scopedSource, new RegExp(`var\\(${token}\\)`));
+  }
+
+  assert.match(continueBlock, /background:\s*linear-gradient\(135deg,\s*var\(--home-hero-continue-bg-start\),\s*var\(--home-hero-continue-bg-end\)\)/);
+  assert.match(sheenBlock, /linear-gradient\(100deg,\s*transparent 0 18%,\s*var\(--home-hero-continue-sheen-light\)/);
+  assert.match(glassBlock, /linear-gradient\(180deg,\s*var\(--home-hero-continue-glass-start\),\s*var\(--home-hero-continue-glass-end\)\)/);
+});
+
 test("home hero model stage shadows derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
