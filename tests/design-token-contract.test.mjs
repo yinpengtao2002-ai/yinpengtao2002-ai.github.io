@@ -1470,6 +1470,31 @@ test("chat assistant shell visuals use shared design tokens", async () => {
   assert.match(rootSource, /--chat-panel-mobile-shadow:\s*0 24px 60px color-mix\(in srgb,\s*var\(--foreground\) 18%,\s*transparent\)/);
 });
 
+test("chat route card hover state derives from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const hoverBlock = readCssRule(globals, ".chat-route-card:hover");
+
+  for (const literal of [
+    "border-color: color-mix(in srgb, var(--route-card-accent, var(--accent)) 42%, var(--border))",
+    "box-shadow: 0 12px 26px rgba(20, 20, 19, 0.06)",
+  ]) {
+    assert.doesNotMatch(hoverBlock, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(
+    rootSource,
+    /--chat-route-card-hover-border:\s*color-mix\(in srgb,\s*var\(--route-card-accent,\s*var\(--accent\)\) 42%,\s*var\(--border\)\)/
+  );
+  assert.match(
+    rootSource,
+    /--chat-route-card-hover-shadow:\s*0 12px 26px color-mix\(in srgb,\s*var\(--foreground\) 6%,\s*transparent\)/
+  );
+  assert.match(hoverBlock, /border-color:\s*var\(--chat-route-card-hover-border\)/);
+  assert.match(hoverBlock, /box-shadow:\s*var\(--chat-route-card-hover-shadow\)/);
+});
+
 test("finance model testing ribbon visuals use shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];

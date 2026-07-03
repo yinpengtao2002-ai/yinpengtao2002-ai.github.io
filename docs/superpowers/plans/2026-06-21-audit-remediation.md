@@ -7084,3 +7084,63 @@ Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10by`, noting that this closes only the duplicate selection override while leaving other global utilities and rendered paths for later passes.
+
+## UI P1-10bz - Tokenize ChatWidget route card hover state
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the next P1 UI token cleanup to the real rendered route cards inside the global `ChatWidget`. This pass covers only `.chat-route-card:hover` border and shadow values for assistant messages that contain internal finance / thinking links; message content cards, chart colors, and other inline assistant styles remain separate follow-ups.
+
+- [x] **Step 2: Add a failing selector-specific contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `--chat-route-card-hover-border` and `--chat-route-card-hover-shadow` in `:root`, and requiring `.chat-route-card:hover` to read those tokens instead of direct `color-mix(...)` and hardcoded `rgba(...)` values.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation, 76/77 passing. The new contract failed because `.chat-route-card:hover` still directly wrote `border-color: color-mix(in srgb, var(--route-card-accent, var(--accent)) 42%, var(--border))` and `box-shadow: 0 12px 26px rgba(20, 20, 19, 0.06)`.
+
+- [x] **Step 4: Implement tokenized route card hover styles**
+
+Added the two root tokens in `src/app/globals.css`, deriving the hover border from the per-card `--route-card-accent` with `--accent` fallback and the hover shadow from `--foreground`, then updated `.chat-route-card:hover` to use `var(--chat-route-card-hover-*)`.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs tests/chat-math-normalization.test.mjs`
+
+Observed: PASS, 100/100 tests.
+
+- [x] **Step 6: Run full local verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 401/401 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages.
+
+- [x] **Step 7: Verify route cards in browser**
+
+Started `npm run start -- --port 3122`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3122/?audit=ui-p1-10bz` at desktop and `390x844`, intercepted `/api/chat/` with an empty 200 response so the real `ChatWidget` fallback rendered internal route cards, sent `网站入口`, and inspected the resulting `.chat-route-card` elements.
+
+Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; 3 route cards rendered; root hover-card tokens were present; CSSOM `.chat-route-card:hover` read `var(--chat-route-card-hover-border)` and `var(--chat-route-card-hover-shadow)`; desktop hover changed the border and applied the token shadow; mobile did not retain hover shadow; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bz`, noting that this closes only the `ChatWidget` route card hover-state token sub-item while leaving message content cards, chart colors, and other inline assistant styles for later passes.

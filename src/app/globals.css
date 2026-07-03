@@ -260,6 +260,8 @@
   --chat-status-online-shadow: 0 0 6px color-mix(in srgb, var(--accent-tertiary) 40%, transparent);
   --chat-greeting-mobile-shadow: 0 10px 24px color-mix(in srgb, var(--foreground) 5%, transparent);
   --chat-input-mobile-shadow: 0 4px 14px color-mix(in srgb, var(--foreground) 4%, transparent);
+  --chat-route-card-hover-border: color-mix(in srgb, var(--route-card-accent, var(--accent)) 42%, var(--border));
+  --chat-route-card-hover-shadow: 0 12px 26px color-mix(in srgb, var(--foreground) 6%, transparent);
   --finance-ribbon-bg: linear-gradient(135deg, color-mix(in srgb, var(--accent) 72%, var(--card)) 0%, var(--accent) 58%, color-mix(in srgb, var(--accent) 86%, var(--foreground)) 100%);
   --finance-ribbon-text: var(--card);
   --finance-ribbon-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 22%, transparent);
@@ -8115,8 +8117,8 @@ h6 {
 }
 
 .chat-route-card:hover {
-  border-color: color-mix(in srgb, var(--route-card-accent, var(--accent)) 42%, var(--border));
-  box-shadow: 0 12px 26px rgba(20, 20, 19, 0.06);
+  border-color: var(--chat-route-card-hover-border);
+  box-shadow: var(--chat-route-card-hover-shadow);
   transform: translateY(-1px);
 }
 
