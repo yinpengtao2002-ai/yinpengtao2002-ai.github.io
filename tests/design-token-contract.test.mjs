@@ -330,6 +330,46 @@ test("home finance mobile carousel surface derives from shared design tokens", a
   assert.match(carouselBlock, /box-shadow:\s*var\(--home-finance-mobile-carousel-shadow\)/);
 });
 
+test("home finance mobile guide colors derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const guideBlock = readLastCssRule(globals, ".home-finance-mobile-guide");
+  const guideLabelBlock = readLastCssRule(globals, ".home-finance-mobile-guide span");
+  const guideBodyBlock = readLastCssRule(globals, ".home-finance-mobile-guide p");
+  const scopedSource = [guideBlock, guideLabelBlock, guideBodyBlock].join("\n");
+
+  for (const literal of [
+    "border: 1px solid color-mix(in srgb, var(--accent-secondary) 18%, var(--border))",
+    "background: color-mix(in srgb, var(--card) 74%, transparent)",
+    "color: color-mix(in srgb, var(--accent-secondary) 78%, var(--foreground))",
+    "color: color-mix(in srgb, var(--foreground) 74%, var(--muted))",
+  ]) {
+    assert.doesNotMatch(scopedSource, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(
+    rootSource,
+    /--home-finance-mobile-guide-border:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 18%,\s*var\(--border\)\)/
+  );
+  assert.match(
+    rootSource,
+    /--home-finance-mobile-guide-bg:\s*color-mix\(in srgb,\s*var\(--card\) 74%,\s*transparent\)/
+  );
+  assert.match(
+    rootSource,
+    /--home-finance-mobile-guide-label-text:\s*color-mix\(in srgb,\s*var\(--accent-secondary\) 78%,\s*var\(--foreground\)\)/
+  );
+  assert.match(
+    rootSource,
+    /--home-finance-mobile-guide-body-text:\s*color-mix\(in srgb,\s*var\(--foreground\) 74%,\s*var\(--muted\)\)/
+  );
+  assert.match(guideBlock, /border:\s*1px solid var\(--home-finance-mobile-guide-border\)/);
+  assert.match(guideBlock, /background:\s*var\(--home-finance-mobile-guide-bg\)/);
+  assert.match(guideLabelBlock, /color:\s*var\(--home-finance-mobile-guide-label-text\)/);
+  assert.match(guideBodyBlock, /color:\s*var\(--home-finance-mobile-guide-body-text\)/);
+});
+
 test("home thinking track accents use site color tokens", async () => {
   const homeThinkingSection = await readProjectFile("src/components/home/HomeThinkingSection.tsx");
 

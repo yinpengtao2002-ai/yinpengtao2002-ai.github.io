@@ -6664,3 +6664,63 @@ Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10br`, noting that this closes only the homepage finance mobile carousel container surface while leaving guide, dots, and switch-card current-state token cleanup for later passes.
+
+## UI P1-10bs - Tokenize homepage finance mobile guide colors
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the next P1 UI token cleanup to the dormant-but-covered homepage finance mobile guide card. This pass covers only the mobile `.home-finance-mobile-guide` container border/background and its label/body text colors; carousel dots and `.home-finance-switch-card.is-mobile-current` remain separate follow-ups.
+
+- [x] **Step 2: Add a failing selector-specific contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `--home-finance-mobile-guide-border`, `--home-finance-mobile-guide-bg`, `--home-finance-mobile-guide-label-text`, and `--home-finance-mobile-guide-body-text` to exist in `:root`, and requiring the effective `.home-finance-mobile-guide`, `.home-finance-mobile-guide span`, and `.home-finance-mobile-guide p` rules to read those tokens.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation, 70/71 passing. The new contract failed because the guide rule still directly wrote `border: 1px solid color-mix(in srgb, var(--accent-secondary) 18%, var(--border))`, `background: color-mix(in srgb, var(--card) 74%, transparent)`, and direct text `color-mix(...)` values.
+
+- [x] **Step 4: Implement tokenized guide colors**
+
+Added the four root tokens in `src/app/globals.css`, deriving them from `--accent-secondary`, `--border`, `--card`, `--foreground`, and `--muted`, then updated the mobile guide container, label, and body rules to use `var(--home-finance-mobile-guide-*)`.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs tests/home-experience-contract.test.mjs`
+
+Observed: PASS, 100/100 tests.
+
+- [x] **Step 6: Run full local verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 395/395 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages.
+
+- [x] **Step 7: Verify homepage in browser**
+
+Started `npm run start -- --port 3113`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3113/?audit=ui-p1-10bs` at desktop and `390x844`, then inserted a temporary `.home-finance-mobile-guide` probe under the mobile viewport to inspect the actual computed style.
+
+Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`; mobile had no horizontal overflow; root guide tokens were present; the probe displayed as `grid` and computed border/background/label/body text colors resolved from the new tokens; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bs`, noting that this closes only the homepage finance mobile guide colors while leaving dots and switch-card current-state token cleanup for later passes.
