@@ -419,6 +419,36 @@ test("home finance mobile current switch card derives from shared design tokens"
   assert.match(currentCardBlock, /box-shadow:\s*var\(--home-finance-switch-card-mobile-current-shadow\)/);
 });
 
+test("home finance stage and switch card active state derives from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const activeBlock =
+    globals.match(
+      /\.home-finance-stage:hover,\s*\.home-finance-switch-card:hover,\s*\.home-finance-switch-card\[aria-current="true"\]\s*\{[\s\S]*?\n\}/
+    )?.[0] ?? "";
+
+  assert.ok(activeBlock, "home finance active stage/switch-card rule should exist");
+
+  for (const literal of [
+    "border-color: color-mix(in srgb, var(--accent) 34%, var(--border))",
+    "box-shadow: 0 18px 44px rgba(20, 20, 19, 0.08)",
+  ]) {
+    assert.doesNotMatch(activeBlock, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(
+    rootSource,
+    /--home-finance-card-active-border:\s*color-mix\(in srgb,\s*var\(--accent\) 34%,\s*var\(--border\)\)/
+  );
+  assert.match(
+    rootSource,
+    /--home-finance-card-active-shadow:\s*0 18px 44px color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*transparent\)/
+  );
+  assert.match(activeBlock, /border-color:\s*var\(--home-finance-card-active-border\)/);
+  assert.match(activeBlock, /box-shadow:\s*var\(--home-finance-card-active-shadow\)/);
+});
+
 test("home thinking track accents use site color tokens", async () => {
   const homeThinkingSection = await readProjectFile("src/components/home/HomeThinkingSection.tsx");
 

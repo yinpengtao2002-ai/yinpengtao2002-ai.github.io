@@ -6844,3 +6844,63 @@ Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bu`, noting that this closes only the homepage finance mobile current switch-card state while leaving desktop hover / `aria-current` state token cleanup for later.
+
+## UI P1-10bv - Tokenize homepage finance desktop active card state
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the next P1 UI token cleanup to the homepage finance desktop hover / current-card state. This pass covers only `.home-finance-stage:hover`, `.home-finance-switch-card:hover`, and `.home-finance-switch-card[aria-current="true"]` border and shadow values; other homepage and site-wide rendered paths remain separate follow-ups.
+
+- [x] **Step 2: Add a failing selector-specific contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `--home-finance-card-active-border` and `--home-finance-card-active-shadow` to exist in `:root`, and requiring the active stage / switch-card rule to read those tokens instead of direct `color-mix(...)` and hardcoded `rgba(...)` values.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation, 73/74 passing. The new contract failed because the active rule still directly wrote `border-color: color-mix(in srgb, var(--accent) 34%, var(--border))` and `box-shadow: 0 18px 44px rgba(20, 20, 19, 0.08)`.
+
+- [x] **Step 4: Implement tokenized active-card styles**
+
+Added the two root tokens in `src/app/globals.css`, deriving the active border from `--accent` / `--border` and the active shadow from `--foreground`, then updated the active stage / switch-card rule to use `var(--home-finance-card-active-*)`.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs tests/home-experience-contract.test.mjs`
+
+Observed: PASS, 103/103 tests.
+
+- [x] **Step 6: Run full local verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 398/398 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages.
+
+- [x] **Step 7: Verify homepage in browser**
+
+Started `npm run start -- --port 3116`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3116/?audit=ui-p1-10bv` at desktop and `390x844`, then inserted a temporary `.home-finance-switch-card[aria-current="true"]` probe to compare computed active border / shadow against the token-resolved reference values.
+
+Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; root active-card tokens were present; CSSOM active rule read `var(--home-finance-card-active-border)` and `var(--home-finance-card-active-shadow)`; the active probe's computed border / shadow matched the token-resolved reference; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bv`, noting that this closes only the homepage finance desktop hover / current-card active state while leaving other homepage and site-wide rendered paths for later passes.
