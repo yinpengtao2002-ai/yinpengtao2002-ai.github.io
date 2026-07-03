@@ -6964,3 +6964,63 @@ Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10bw`, noting that this closes only the homepage hero model-entry dot and hover/focus details while leaving other hero decorative colors for later passes.
+
+## UI P1-10bx - Tokenize finance model library hover card state
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the next P1 UI token cleanup to the `/finance` model library card hover state. This pass covers only `.finance-model-card:hover` border and shadow values; other global utility hovers and remaining rendered paths stay separate follow-ups.
+
+- [x] **Step 2: Add a failing selector-specific contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `--finance-model-card-hover-border` and `--finance-model-card-hover-shadow` in `:root`, and requiring `.finance-model-card:hover` to read those tokens instead of direct `color-mix(...)` and hardcoded `rgba(...)` values.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation, 75/76 passing. The new contract failed because `.finance-model-card:hover` still directly wrote `border-color: color-mix(in srgb, var(--accent) 36%, var(--border))` and `box-shadow: 0 18px 44px rgba(20, 20, 19, 0.08)`.
+
+- [x] **Step 4: Implement tokenized finance model card hover styles**
+
+Added the two root tokens in `src/app/globals.css`, deriving the hover border from `--accent` / `--border` and the hover shadow from `--foreground`, then updated the hover card rule to use `var(--finance-model-card-hover-*)`.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs tests/finance-model-registry.test.mjs`
+
+Observed: PASS, 91/91 tests.
+
+- [x] **Step 6: Run full local verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 400/400 tests. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` warnings remain unrelated.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages.
+
+- [x] **Step 7: Verify `/finance` in browser**
+
+Started `npm run start -- --port 3120`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3120/finance?audit=ui-p1-10bx` at desktop and `390x844`, hovered the first desktop `.finance-model-card`, and compared computed hover border / shadow against token-resolved probe values.
+
+Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; 7 finance model cards rendered; root hover-card tokens were present; desktop hover border / shadow matched token-resolved values; mobile did not trigger hover styles; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10bx`, noting that this closes only the `/finance` model card hover-state token sub-item while leaving other global utilities and rendered paths for later passes.

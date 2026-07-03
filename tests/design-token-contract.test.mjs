@@ -491,6 +491,31 @@ test("home finance stage and switch card active state derives from shared design
   assert.match(activeBlock, /box-shadow:\s*var\(--home-finance-card-active-shadow\)/);
 });
 
+test("finance model library hover card state derives from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const hoverBlock = readLastCssRule(globals, ".finance-model-card:hover");
+
+  for (const literal of [
+    "border-color: color-mix(in srgb, var(--accent) 36%, var(--border))",
+    "box-shadow: 0 18px 44px rgba(20, 20, 19, 0.08)",
+  ]) {
+    assert.doesNotMatch(hoverBlock, new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(
+    rootSource,
+    /--finance-model-card-hover-border:\s*color-mix\(in srgb,\s*var\(--accent\) 36%,\s*var\(--border\)\)/
+  );
+  assert.match(
+    rootSource,
+    /--finance-model-card-hover-shadow:\s*0 18px 44px color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*transparent\)/
+  );
+  assert.match(hoverBlock, /border-color:\s*var\(--finance-model-card-hover-border\)/);
+  assert.match(hoverBlock, /box-shadow:\s*var\(--finance-model-card-hover-shadow\)/);
+});
+
 test("home thinking track accents use site color tokens", async () => {
   const homeThinkingSection = await readProjectFile("src/components/home/HomeThinkingSection.tsx");
 
