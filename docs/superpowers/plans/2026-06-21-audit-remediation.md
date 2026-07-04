@@ -7630,3 +7630,67 @@ Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10cd`, noting that this closes only the retained `ProductStageVisual` shadow token sub-item while leaving other homepage hero and tool-internal CSS for later passes.
+
+## UI P1-10ce - Tokenize Study Cards practice-card highlight
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the next P1 UI token cleanup to the real Study Cards practice surface: `.study-cards-practice-card` after users generate or load example cards. This pass covers only the top highlight layer in the main practice card background, not other Study Cards gradients, buttons, or generated content behavior.
+
+- [x] **Step 2: Add a failing token contract**
+
+Updated `tests/design-token-contract.test.mjs` to reject the old `rgba(255, 255, 255, 0.74)` top highlight in `.study-cards-practice-card`, require `--study-cards-practice-card-highlight` in `:root`, and require the background gradient to read that token.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation, 80/81 passing. The new assertion failed because the practice-card background still directly wrote `linear-gradient(180deg, rgba(255, 255, 255, 0.74), transparent 34%)`.
+
+- [x] **Step 4: Move the practice-card highlight to a local token**
+
+Added `--study-cards-practice-card-highlight: color-mix(in srgb, var(--card) 74%, transparent)` in `src/app/globals.css`, and updated the first `.study-cards-practice-card` background layer to use `var(--study-cards-practice-card-highlight)`.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 81/81 tests.
+
+Run: `node --test tests/design-token-contract.test.mjs tests/study-card-tool-contract.test.mjs`
+
+Observed: PASS, 85/85 tests.
+
+- [x] **Step 6: Run full local verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 410/410 tests.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify Study Cards in browser**
+
+Started `npm run start -- -p 3127`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3127/tools/study-cards?audit=ui-p1-10ce` at desktop and `390x844`, clicked `示例内容`, checked the practice card, and fetched built CSS.
+
+Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; practice card rendered after the example click; built CSS contained `--study-cards-practice-card-highlight` and the `.study-cards-practice-card` background read that token without the old white `rgba(...)`; console error count was 0.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10ce`, noting that this closes only the Study Cards practice-card top highlight while leaving other Study Cards local colors for later passes.

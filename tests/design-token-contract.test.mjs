@@ -1105,14 +1105,17 @@ test("study cards practice deck shadows derive from shared design tokens", async
   assert.doesNotMatch(scopedSource, /0 34px 86px rgba\(20,\s*20,\s*19,\s*0\.18\)/);
   assert.doesNotMatch(scopedSource, /0 8px 22px rgba\(20,\s*20,\s*19,\s*0\.1\)/);
   assert.doesNotMatch(scopedSource, /inset 0 1px 0 rgba\(255,\s*255,\s*255,\s*0\.92\)/);
+  assert.doesNotMatch(practiceCardBlock, /rgba\(255,\s*255,\s*255,\s*0\.74\)/);
   assert.match(rootSource, /--study-cards-deck-layer-shadow:\s*0 18px 44px color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*transparent\),\s*inset 0 1px 0 color-mix\(in srgb,\s*var\(--card\) 72%,\s*transparent\)/);
   assert.match(rootSource, /--study-cards-drag-next-shadow:\s*drop-shadow\(16px 20px 24px color-mix\(in srgb,\s*var\(--foreground\) 12%,\s*transparent\)\)/);
   assert.match(rootSource, /--study-cards-drag-prev-shadow:\s*drop-shadow\(-16px 20px 24px color-mix\(in srgb,\s*var\(--foreground\) 12%,\s*transparent\)\)/);
   assert.match(rootSource, /--study-cards-practice-card-shadow:\s*0 34px 86px color-mix\(in srgb,\s*var\(--foreground\) 18%,\s*transparent\),\s*0 8px 22px color-mix\(in srgb,\s*var\(--foreground\) 10%,\s*transparent\),\s*inset 0 1px 0 color-mix\(in srgb,\s*var\(--card\) 92%,\s*transparent\)/);
+  assert.match(rootSource, /--study-cards-practice-card-highlight:\s*color-mix\(in srgb,\s*var\(--card\) 74%,\s*transparent\)/);
   assert.match(deckLayerBlock, /box-shadow:\s*var\(--study-cards-deck-layer-shadow\)/);
   assert.match(dragNextBlock, /filter:\s*var\(--study-cards-drag-next-shadow\)/);
   assert.match(dragPrevBlock, /filter:\s*var\(--study-cards-drag-prev-shadow\)/);
   assert.match(practiceCardBlock, /box-shadow:\s*var\(--study-cards-practice-card-shadow\)/);
+  assert.match(practiceCardBlock, /linear-gradient\(180deg,\s*var\(--study-cards-practice-card-highlight\),\s*transparent 34%\)/);
 });
 
 test("study cards answer and nav shadows derive from shared design tokens", async () => {
