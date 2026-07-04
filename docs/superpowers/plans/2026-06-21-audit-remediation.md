@@ -7566,3 +7566,67 @@ Observed: desktop cue rendered as `104x42`; mobile cue rendered as `93x36`, matc
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10cc`, noting that this closes only the homepage hero continue cue's glass/highlight/hover token sub-item while leaving product-stage visual, HomeFinanceSection, and tool-internal CSS for later passes.
+
+## UI P1-10cd - Tokenize retained ProductStageVisual motion shadows
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the next P1 UI token cleanup to the retained `ProductStageVisual` CSS path: `.product-stage-visual`, `.product-stage-motion-chart`, and `.product-stage-motion-ai`. The current homepage mounts `HeroModelStage`, not `ProductStageVisual`, so this pass covers the retained global style rules and verifies that the active homepage remains unaffected.
+
+- [x] **Step 2: Add a failing token contract**
+
+Added a `tests/design-token-contract.test.mjs` contract requiring `--product-stage-visual-shadow`, `--product-stage-motion-chart-shadow`, and `--product-stage-motion-ai-shadow` in `:root`, and requiring the three product-stage rules to read those variables without direct `rgba(...)` shadows.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation because `.product-stage-visual`, `.product-stage-motion-chart`, and `.product-stage-motion-ai` still directly wrote `rgba(...)` box shadows.
+
+- [x] **Step 4: Move retained product-stage shadows to local tokens**
+
+Added the three root tokens in `src/app/globals.css`, deriving the retained stage shadow from `--foreground`, the chart layer shadow from `--foreground`, and the AI layer shadow from `--accent`. Updated the three rules to use `var(--product-stage-*)`.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 81/81 tests.
+
+Run: `node --test tests/design-token-contract.test.mjs tests/home-experience-contract.test.mjs`
+
+Observed: PASS, 110/110 tests.
+
+- [x] **Step 6: Run full local verification**
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `git diff --check`
+
+Observed: PASS.
+
+Run: `npm run lint`
+
+Observed: PASS.
+
+Run: `npm run test:site`
+
+Observed: PASS, 410/410 tests.
+
+Run: `npm run build:vercel`
+
+Observed: PASS, Next production build compiled and generated 36 static pages. Content generation reported unchanged.
+
+- [x] **Step 7: Verify homepage and built CSS in browser**
+
+Started `npm run start -- -p 3126`.
+
+Run: bundled Playwright opened `http://127.0.0.1:3126/?audit=ui-p1-10cd` at desktop and `390x844`, checked the active homepage hero, fetched built CSS, and inspected the retained product-stage rules.
+
+Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`; mobile `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; active homepage hero, `HeroModelStage`, and continue cue rendered; `ProductStageVisual` was not mounted on the current homepage, as expected; built CSS contained the three `--product-stage-*` tokens and the three product-stage shadow rules read those tokens without `rgba(...)`; console error count was 0. Earlier smoke attempts incorrectly expected `.product-stage-visual` to be in the active DOM; source review confirmed that was a verifier assumption, not a page regression.
+
+- [x] **Step 8: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10cd`, noting that this closes only the retained `ProductStageVisual` shadow token sub-item while leaving other homepage hero and tool-internal CSS for later passes.

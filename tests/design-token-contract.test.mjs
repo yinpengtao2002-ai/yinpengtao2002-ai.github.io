@@ -242,6 +242,25 @@ test("home hero continue cue glass colors derive from shared design tokens", asy
   assert.match(glassBlock, /linear-gradient\(180deg,\s*var\(--home-hero-continue-glass-start\),\s*var\(--home-hero-continue-glass-end\)\)/);
 });
 
+test("home product stage motion shadows derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const productStageBlock = readCssRule(globals, ".product-stage-visual");
+  const chartBlock = readCssRule(globals, ".product-stage-motion-chart");
+  const aiBlock = readCssRule(globals, ".product-stage-motion-ai");
+  const scopedSource = [productStageBlock, chartBlock, aiBlock].join("\n");
+
+  assert.doesNotMatch(scopedSource, /rgba\(/);
+
+  assert.match(rootSource, /--product-stage-visual-shadow:\s*0 22px 56px color-mix\(in srgb,\s*var\(--foreground\) 9%,\s*transparent\)/);
+  assert.match(rootSource, /--product-stage-motion-chart-shadow:\s*0 10px 24px color-mix\(in srgb,\s*var\(--foreground\) 4\.5%,\s*transparent\)/);
+  assert.match(rootSource, /--product-stage-motion-ai-shadow:\s*0 12px 28px color-mix\(in srgb,\s*var\(--accent\) 8%,\s*transparent\)/);
+  assert.match(productStageBlock, /box-shadow:\s*var\(--product-stage-visual-shadow\)/);
+  assert.match(chartBlock, /box-shadow:\s*var\(--product-stage-motion-chart-shadow\)/);
+  assert.match(aiBlock, /box-shadow:\s*var\(--product-stage-motion-ai-shadow\)/);
+});
+
 test("home hero model stage shadows derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
