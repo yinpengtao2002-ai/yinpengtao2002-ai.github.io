@@ -1,37 +1,22 @@
 "use client";
 
 import { useEffect } from "react";
-import { loadBrowserScript } from "@/lib/finance/browser-tool-loader";
-
-declare global {
-    interface Window {
-        MonthlyTrendModel?: {
-            initApp: () => void;
-        };
-    }
-}
+import { bootFinanceBrowserEngine } from "@/lib/finance/browser-tool-loader";
 
 export default function MonthlyTrendTool() {
     useEffect(() => {
         let cancelled = false;
 
-        async function bootTool() {
-            try {
-                await Promise.all([
-                    loadBrowserScript("/vendor/plotly/plotly.min.js"),
-                    loadBrowserScript("/vendor/xlsx/xlsx.full.min.js"),
-                ]);
-                await import("./monthly-trend-engine.js");
-
-                if (!cancelled) {
-                    window.MonthlyTrendModel?.initApp();
-                }
-            } catch (error) {
-                console.error("Failed to start monthly trend model", error);
-            }
-        }
-
-        void bootTool();
+        void bootFinanceBrowserEngine({
+            engineName: "MonthlyTrendModel",
+            importEngine: () => import("./monthly-trend-engine.js"),
+            scripts: [
+                "/vendor/plotly/plotly.min.js",
+                "/vendor/xlsx/xlsx.full.min.js",
+            ],
+            isCancelled: () => cancelled,
+            errorMessage: "Failed to start monthly trend model",
+        });
 
         return () => {
             cancelled = true;

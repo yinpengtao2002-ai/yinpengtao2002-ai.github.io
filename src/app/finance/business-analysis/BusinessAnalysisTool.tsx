@@ -1,37 +1,22 @@
 "use client";
 
 import { useEffect } from "react";
-import { loadBrowserScript } from "@/lib/finance/browser-tool-loader";
-
-declare global {
-    interface Window {
-        BusinessAnalysisModel?: {
-            initApp: () => void;
-        };
-    }
-}
+import { bootFinanceBrowserEngine } from "@/lib/finance/browser-tool-loader";
 
 export default function BusinessAnalysisTool() {
     useEffect(() => {
         let cancelled = false;
 
-        async function bootTool() {
-            try {
-                await Promise.all([
-                    loadBrowserScript("/vendor/plotly/plotly.min.js"),
-                    loadBrowserScript("/vendor/xlsx/xlsx.full.min.js"),
-                ]);
-                await import("./business-analysis-engine.js");
-
-                if (!cancelled) {
-                    window.BusinessAnalysisModel?.initApp();
-                }
-            } catch (error) {
-                console.error("Failed to start business analysis model", error);
-            }
-        }
-
-        void bootTool();
+        void bootFinanceBrowserEngine({
+            engineName: "BusinessAnalysisModel",
+            importEngine: () => import("./business-analysis-engine.js"),
+            scripts: [
+                "/vendor/plotly/plotly.min.js",
+                "/vendor/xlsx/xlsx.full.min.js",
+            ],
+            isCancelled: () => cancelled,
+            errorMessage: "Failed to start business analysis model",
+        });
 
         return () => {
             cancelled = true;

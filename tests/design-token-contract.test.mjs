@@ -261,6 +261,36 @@ test("home product stage motion shadows derive from shared design tokens", async
   assert.match(aiBlock, /box-shadow:\s*var\(--product-stage-motion-ai-shadow\)/);
 });
 
+test("retained home finance stage styles derive from shared design tokens", async () => {
+  const globals = await readProjectFile("src/app/globals.css");
+  const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
+  const rootSource = rootBlocks.join("\n");
+  const titleCardBlock = readCssRule(globals, ".home-finance-title-card");
+  const stageLayerBlock =
+    globals.match(/\.home-finance-stage-frame::before,\n\.home-finance-stage-frame::after\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+
+  assert.ok(stageLayerBlock, "home finance retained stage layer rule should exist");
+  assert.doesNotMatch(globals, /rgba\(/, "globals.css should not contain raw rgba() values");
+
+  assert.match(
+    rootSource,
+    /--home-finance-title-card-shadow:\s*0 18px 48px color-mix\(in srgb,\s*var\(--foreground\) 7%,\s*transparent\)/
+  );
+  assert.match(
+    rootSource,
+    /--home-finance-stage-layer-start:\s*color-mix\(in srgb,\s*var\(--card\) 86%,\s*transparent\)/
+  );
+  assert.match(
+    rootSource,
+    /--home-finance-stage-layer-end:\s*color-mix\(in srgb,\s*var\(--background\) 72%,\s*transparent\)/
+  );
+  assert.match(titleCardBlock, /box-shadow:\s*var\(--home-finance-title-card-shadow\)/);
+  assert.match(
+    stageLayerBlock,
+    /linear-gradient\(135deg,\s*var\(--home-finance-stage-layer-start\),\s*var\(--home-finance-stage-layer-end\)\)/
+  );
+});
+
 test("home hero model stage shadows derive from shared design tokens", async () => {
   const globals = await readProjectFile("src/app/globals.css");
   const rootBlocks = globals.match(/:root\s*\{[\s\S]*?\n\}/g) ?? [];
@@ -1106,6 +1136,7 @@ test("study cards practice deck shadows derive from shared design tokens", async
   assert.doesNotMatch(scopedSource, /0 8px 22px rgba\(20,\s*20,\s*19,\s*0\.1\)/);
   assert.doesNotMatch(scopedSource, /inset 0 1px 0 rgba\(255,\s*255,\s*255,\s*0\.92\)/);
   assert.doesNotMatch(practiceCardBlock, /rgba\(255,\s*255,\s*255,\s*0\.74\)/);
+  assert.doesNotMatch(deckLayerBlock, /\bwhite\b/, "study card deck layer backgrounds should use --card instead of raw white");
   assert.match(rootSource, /--study-cards-deck-layer-shadow:\s*0 18px 44px color-mix\(in srgb,\s*var\(--foreground\) 8%,\s*transparent\),\s*inset 0 1px 0 color-mix\(in srgb,\s*var\(--card\) 72%,\s*transparent\)/);
   assert.match(rootSource, /--study-cards-drag-next-shadow:\s*drop-shadow\(16px 20px 24px color-mix\(in srgb,\s*var\(--foreground\) 12%,\s*transparent\)\)/);
   assert.match(rootSource, /--study-cards-drag-prev-shadow:\s*drop-shadow\(-16px 20px 24px color-mix\(in srgb,\s*var\(--foreground\) 12%,\s*transparent\)\)/);

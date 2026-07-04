@@ -236,16 +236,64 @@ test("legacy finance browser engines share one typed script loader boundary", as
   ];
 
   assert.match(loader, /export function loadBrowserScript/);
+  assert.match(loader, /export type FinanceBrowserEngine/);
+  assert.match(loader, /export type FinanceBrowserEngineName/);
+  assert.match(loader, /export async function bootFinanceBrowserEngine/);
   assert.match(loader, /__financeToolScripts/);
   assert.match(loader, /Promise<void>/);
+  for (const engineName of [
+    "BusinessAnalysisModel",
+    "MonthlyTrendModel",
+    "ProfitBridgeSensitivity",
+    "ProfitStructureModel",
+    "PerspectiveBIModel",
+  ]) {
+    assert.match(loader, new RegExp(`${engineName}\\?:\\s*FinanceBrowserEngine`));
+  }
 
   await Promise.all(toolShells.map(async (path) => {
     const source = await readRequiredProjectFile(path);
 
     assert.match(source, /@\/lib\/finance\/browser-tool-loader/, `${path} should import the shared loader`);
+    assert.match(source, /bootFinanceBrowserEngine/, `${path} should use the shared boot boundary`);
     assert.doesNotMatch(source, /function loadBrowserScript/, `${path} should not keep a local script loader`);
     assert.doesNotMatch(source, /__financeToolScripts/, `${path} should not own the browser script cache type`);
+    assert.doesNotMatch(source, /declare global/, `${path} should not redeclare the browser engine global`);
   }));
+
+  const perspectiveShell = await readRequiredProjectFile("../src/app/finance/perspective-bi/PerspectiveBITool.tsx");
+  assert.match(perspectiveShell, /bootFinanceBrowserEngine/);
+  assert.doesNotMatch(perspectiveShell, /declare global/);
+});
+
+test("interactive viewport media queries use named breakpoint constants", async () => {
+  const breakpoints = await readRequiredProjectFile("../src/lib/responsive/breakpoints.ts");
+  const viewportHook = await readRequiredProjectFile("../src/lib/useLowMotionMode.ts");
+  const mouseTrail = await readRequiredProjectFile("../src/components/ui/MouseTrail.tsx");
+  const homeFinanceSection = await readRequiredProjectFile("../src/components/home/HomeFinanceSection.tsx");
+  const studyCardsTool = await readRequiredProjectFile("../src/app/tools/study-cards/StudyCardsTool.tsx");
+
+  assert.match(breakpoints, /SITE_MOBILE_BREAKPOINT_PX\s*=\s*768/);
+  assert.match(breakpoints, /SITE_MOBILE_QUERY/);
+  assert.match(breakpoints, /TOUCH_POINTER_QUERY/);
+  assert.match(breakpoints, /TOUCH_OR_MOBILE_QUERY/);
+  assert.match(breakpoints, /STUDY_CARDS_MOBILE_PRACTICE_QUERY/);
+  assert.match(breakpoints, /STUDY_CARDS_RESULT_PORTRAIT_QUERY/);
+
+  assert.match(viewportHook, /TOUCH_OR_MOBILE_QUERY/);
+  assert.doesNotMatch(viewportHook, /MOBILE_LIKE_QUERY/);
+  assert.doesNotMatch(viewportHook, /max-width:\s*768px/);
+
+  assert.match(mouseTrail, /TOUCH_POINTER_QUERY/);
+  assert.doesNotMatch(mouseTrail, /matchMedia\("\(pointer: coarse\), \(hover: none\)"\)/);
+
+  assert.match(homeFinanceSection, /SITE_MOBILE_QUERY/);
+  assert.doesNotMatch(homeFinanceSection, /MOBILE_FINANCE_QUERY/);
+  assert.doesNotMatch(homeFinanceSection, /max-width:\s*768px/);
+
+  assert.match(studyCardsTool, /STUDY_CARDS_MOBILE_PRACTICE_QUERY/);
+  assert.match(studyCardsTool, /STUDY_CARDS_RESULT_PORTRAIT_QUERY/);
+  assert.doesNotMatch(studyCardsTool, /matchMedia\("\(max-width:\s*(?:760|900)px\)/);
 });
 
 test("Perspective BI dependencies and local browser assets are wired", () => {

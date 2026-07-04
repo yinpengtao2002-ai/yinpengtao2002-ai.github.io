@@ -2,16 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { KeyRound, Loader2 } from "lucide-react";
-import { loadBrowserScript } from "@/lib/finance/browser-tool-loader";
+import { bootFinanceBrowserEngine } from "@/lib/finance/browser-tool-loader";
 import { PRIVATE_TOOL_ACCESS_ENDPOINT } from "@/lib/private-tool-access/constants";
-
-declare global {
-    interface Window {
-        ProfitStructureModel?: {
-            initApp: () => void;
-        };
-    }
-}
 
 type AccessResponse = {
     token?: string;
@@ -44,23 +36,16 @@ export default function ProfitStructureTool() {
 
         let cancelled = false;
 
-        async function bootTool() {
-            try {
-                await Promise.all([
-                    loadBrowserScript("/vendor/plotly/plotly.min.js"),
-                    loadBrowserScript("/vendor/xlsx/xlsx.full.min.js"),
-                ]);
-                await import("./profit-structure-engine.js");
-
-                if (!cancelled) {
-                    window.ProfitStructureModel?.initApp();
-                }
-            } catch (error) {
-                console.error("Failed to start profit structure model", error);
-            }
-        }
-
-        void bootTool();
+        void bootFinanceBrowserEngine({
+            engineName: "ProfitStructureModel",
+            importEngine: () => import("./profit-structure-engine.js"),
+            scripts: [
+                "/vendor/plotly/plotly.min.js",
+                "/vendor/xlsx/xlsx.full.min.js",
+            ],
+            isCancelled: () => cancelled,
+            errorMessage: "Failed to start profit structure model",
+        });
 
         return () => {
             cancelled = true;

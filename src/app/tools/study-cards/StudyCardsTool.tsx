@@ -17,6 +17,10 @@ import {
   Volume2,
   WandSparkles,
 } from "lucide-react";
+import {
+  STUDY_CARDS_MOBILE_PRACTICE_QUERY,
+  STUDY_CARDS_RESULT_PORTRAIT_QUERY,
+} from "@/lib/responsive/breakpoints";
 
 type VocabularyCard = {
   word: string;
@@ -493,7 +497,7 @@ export default function StudyCardsTool() {
   }, []);
 
   useEffect(() => {
-    const media = window.matchMedia("(max-width: 760px) and (orientation: portrait)");
+    const media = window.matchMedia(STUDY_CARDS_MOBILE_PRACTICE_QUERY);
     const syncMobilePracticeMode = () => {
       if (!media.matches) {
         setMobilePracticeActive(false);
@@ -536,7 +540,7 @@ export default function StudyCardsTool() {
   }
 
   function isMobilePracticeViewport() {
-    return window.matchMedia("(max-width: 760px) and (orientation: portrait)").matches;
+    return window.matchMedia(STUDY_CARDS_MOBILE_PRACTICE_QUERY).matches;
   }
 
   function focusCardsOnMobile() {
@@ -546,7 +550,7 @@ export default function StudyCardsTool() {
         return;
       }
 
-      if (window.matchMedia("(max-width: 900px) and (orientation: portrait)").matches) {
+      if (window.matchMedia(STUDY_CARDS_RESULT_PORTRAIT_QUERY).matches) {
         outputPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }, 120);

@@ -2,15 +2,8 @@
 
 import { createElement, useEffect, useState } from "react";
 import { KeyRound, Loader2 } from "lucide-react";
+import { bootFinanceBrowserEngine } from "@/lib/finance/browser-tool-loader";
 import { PRIVATE_TOOL_ACCESS_ENDPOINT } from "@/lib/private-tool-access/constants";
-
-declare global {
-    interface Window {
-        PerspectiveBIModel?: {
-            initApp: () => void;
-        };
-    }
-}
 
 type AccessResponse = {
     token?: string;
@@ -43,19 +36,12 @@ export default function PerspectiveBITool() {
 
         let cancelled = false;
 
-        async function bootTool() {
-            try {
-                await import("./perspective-bi-engine.js");
-
-                if (!cancelled) {
-                    window.PerspectiveBIModel?.initApp();
-                }
-            } catch (error) {
-                console.error("Failed to start Perspective BI model", error);
-            }
-        }
-
-        void bootTool();
+        void bootFinanceBrowserEngine({
+            engineName: "PerspectiveBIModel",
+            importEngine: () => import("./perspective-bi-engine.js"),
+            isCancelled: () => cancelled,
+            errorMessage: "Failed to start Perspective BI model",
+        });
 
         return () => {
             cancelled = true;

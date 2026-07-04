@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
+import { TOUCH_POINTER_QUERY } from "@/lib/responsive/breakpoints";
 
 const PARTICLE_COLORS = [
     "217, 119, 87",
@@ -54,7 +55,7 @@ export default function MouseTrail() {
     const [isTouchDevice] = useState(() => {
         if (typeof window === "undefined") return false;
         return (
-            window.matchMedia("(pointer: coarse), (hover: none)").matches ||
+            window.matchMedia(TOUCH_POINTER_QUERY).matches ||
             "ontouchstart" in window
         );
     });

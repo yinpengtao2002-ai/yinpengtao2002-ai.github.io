@@ -14,10 +14,10 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import FinanceModelPreview from "@/components/finance/FinanceModelPreview";
 import { financeModels } from "@/lib/finance/modelRegistry";
+import { SITE_MOBILE_QUERY } from "@/lib/responsive/breakpoints";
 
 const DEFAULT_MODEL_SLUG = "margin-analysis";
 const SWIPE_THRESHOLD = 46;
-const MOBILE_FINANCE_QUERY = "(max-width: 768px)";
 const financeRevealViewport = { once: true, amount: 0.3 } as const;
 const financeEase = [0.22, 1, 0.36, 1] as const;
 const financeSwitcherVariants = {
@@ -133,7 +133,7 @@ export default function HomeFinanceSection() {
     if (switcherModels.length <= 1) return;
 
     const timer = window.setInterval(() => {
-      if (!window.matchMedia(MOBILE_FINANCE_QUERY).matches) return;
+      if (!window.matchMedia(SITE_MOBILE_QUERY).matches) return;
 
       updateMobileCarousel(1);
     }, 3600);

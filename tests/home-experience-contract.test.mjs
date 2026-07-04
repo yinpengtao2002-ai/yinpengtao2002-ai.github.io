@@ -200,8 +200,8 @@ test("home hero mobile intro moves Lucas upward before revealing the product sta
 
 test("viewport profile and hero animation avoid mobile hydration drift", () => {
   assert.match(viewportHook, /useState\(false\)/);
-  assert.ok(viewportHook.includes('MOBILE_LIKE_QUERY = "(pointer: coarse), (hover: none), (max-width: 768px)"'));
-  assert.match(viewportHook, /matchMedia\(MOBILE_LIKE_QUERY\)/);
+  assert.match(viewportHook, /TOUCH_OR_MOBILE_QUERY/);
+  assert.match(viewportHook, /matchMedia\(TOUCH_OR_MOBILE_QUERY\)/);
   assert.match(hero, /const heroAnimate = \{ opacity: 1, x: 0, y: 0 \}/);
 });
 
@@ -471,8 +471,8 @@ test("homepage finance section uses an automatic mobile preview carousel with fo
   assert.match(financeSection, /mobileCarouselTransitionEnabled/);
   assert.match(financeSection, /mobileCarouselInteractionKey/);
   assert.match(financeSection, /setMobileCarouselInteractionKey/);
-  assert.match(financeSection, /MOBILE_FINANCE_QUERY = "\(max-width: 768px\)"/);
-  assert.match(financeSection, /matchMedia\(MOBILE_FINANCE_QUERY\)\.matches/);
+  assert.match(financeSection, /SITE_MOBILE_QUERY/);
+  assert.match(financeSection, /matchMedia\(SITE_MOBILE_QUERY\)\.matches/);
   assert.match(financeSection, /mobileCarouselSlides/);
   assert.match(financeSection, /\[switcherModels\.at\(-1\)!,\s*...switcherModels,\s*switcherModels\[0\]!\]/s);
   assert.match(financeSection, /setInterval/);

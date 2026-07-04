@@ -2,8 +2,7 @@
 
 import { useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
-
-const MOBILE_LIKE_QUERY = "(pointer: coarse), (hover: none), (max-width: 768px)";
+import { TOUCH_OR_MOBILE_QUERY } from "@/lib/responsive/breakpoints";
 
 export function useViewportProfile() {
     const prefersReducedMotion = useReducedMotion();
@@ -12,7 +11,7 @@ export function useViewportProfile() {
     useEffect(() => {
         if (typeof window === "undefined") return;
 
-        const mediaQuery = window.matchMedia(MOBILE_LIKE_QUERY);
+        const mediaQuery = window.matchMedia(TOUCH_OR_MOBILE_QUERY);
 
         const update = () => {
             const hasTouch = window.navigator.maxTouchPoints > 0;

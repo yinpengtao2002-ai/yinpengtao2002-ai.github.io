@@ -1,6 +1,49 @@
+export type FinanceBrowserEngine = {
+    initApp: () => void;
+};
+
+export type FinanceBrowserEngineName =
+    | "BusinessAnalysisModel"
+    | "MonthlyTrendModel"
+    | "ProfitBridgeSensitivity"
+    | "ProfitStructureModel"
+    | "PerspectiveBIModel";
+
+type BootFinanceBrowserEngineOptions = {
+    engineName: FinanceBrowserEngineName;
+    importEngine: () => Promise<unknown>;
+    scripts?: string[];
+    isCancelled?: () => boolean;
+    errorMessage: string;
+};
+
 declare global {
     interface Window {
         __financeToolScripts?: Record<string, Promise<void> | undefined>;
+        BusinessAnalysisModel?: FinanceBrowserEngine;
+        MonthlyTrendModel?: FinanceBrowserEngine;
+        ProfitBridgeSensitivity?: FinanceBrowserEngine;
+        ProfitStructureModel?: FinanceBrowserEngine;
+        PerspectiveBIModel?: FinanceBrowserEngine;
+    }
+}
+
+export async function bootFinanceBrowserEngine({
+    engineName,
+    importEngine,
+    scripts = [],
+    isCancelled = () => false,
+    errorMessage,
+}: BootFinanceBrowserEngineOptions) {
+    try {
+        await Promise.all(scripts.map(loadBrowserScript));
+        await importEngine();
+
+        if (!isCancelled()) {
+            window[engineName]?.initApp();
+        }
+    } catch (error) {
+        console.error(errorMessage, error);
     }
 }
 

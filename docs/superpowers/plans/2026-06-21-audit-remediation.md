@@ -7694,3 +7694,109 @@ Observed: desktop `clientWidth=1440`, `scrollWidth=1440`, `bodyScrollWidth=1440`
 - [x] **Step 8: Record completion**
 
 Updated `docs/project-audit-report.md` as `UI P1-10ce`, noting that this closes only the Study Cards practice-card top highlight while leaving other Study Cards local colors for later passes.
+
+## UI P1-10cf - Close remaining global CSS raw color residues
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped this P1 token cleanup to the remaining raw color residues in `src/app/globals.css`: retained `HomeFinanceSection` title/stage styles still used two raw `rgba(...)` values, and the Study Cards deck background still mixed against raw `white`.
+
+- [x] **Step 2: Add failing token contracts**
+
+Updated `tests/design-token-contract.test.mjs` to require `--home-finance-title-card-shadow`, `--home-finance-stage-layer-start`, and `--home-finance-stage-layer-end`, to reject raw `rgba(...)` anywhere in `globals.css`, and to reject raw `white` inside the Study Cards deck-layer background.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: FAIL before implementation on retained finance raw `rgba(...)`, then FAIL on Study Cards raw `white` after the first fix, proving both contracts caught real residues.
+
+- [x] **Step 4: Implement tokenized CSS**
+
+Added the retained home finance root tokens, replaced the title-card shadow and stage-layer gradient with token reads, and changed Study Cards deck background mixes from raw `white` to `var(--card)`.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/design-token-contract.test.mjs`
+
+Observed: PASS, 82/82 tests.
+
+Run: `rg -n 'color-mix\([^\n]*\bwhite\b|rgba\(' src/app/globals.css`
+
+Observed: no matches.
+
+- [x] **Step 6: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P1-10cf`, noting that global CSS raw color residues are now covered by token contracts and that remaining Plotly/canvas `rgba(...)` strings are runtime output formats rather than CSS token debt.
+
+## Architecture P2-3c - Centralize finance browser engine boot boundary
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped this architecture pass to the TS/JS browser-engine boundary, not to a high-risk full conversion of all finance runtime engines. The goal was to remove scattered `declare global` and direct `window.*Model?.initApp()` calls from the TSX shells.
+
+- [x] **Step 2: Add a failing tooling contract**
+
+Extended `tests/tooling-contract.test.mjs` to require `FinanceBrowserEngine`, `FinanceBrowserEngineName`, and `bootFinanceBrowserEngine` in `src/lib/finance/browser-tool-loader.ts`, and to require all finance TSX shells to use that shared boot boundary without local global declarations.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/tooling-contract.test.mjs`
+
+Observed: FAIL before implementation because the typed boot helper did not exist and the TSX shells still owned local global declarations.
+
+- [x] **Step 4: Implement the typed boot boundary**
+
+Added the shared engine types and `bootFinanceBrowserEngine`, centralized the five browser engine global names in one `Window` declaration, and updated `business-analysis`, `monthly-trend`, `sensitivity-analysis`, `profit-structure`, and `perspective-bi` TSX shells to call the helper.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/tooling-contract.test.mjs`
+
+Observed: PASS, 17/17 tests.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+- [x] **Step 6: Record completion**
+
+Updated `docs/project-audit-report.md` as `架构 P2-3c`, closing the `.js` engine audit item through explicit typed isolation. Runtime engine files stay JS and should only be converted one model at a time when their calculation logic is already being changed.
+
+## UI P2-4b - Centralize interactive viewport media queries
+
+- [x] **Step 1: Scope the audit item**
+
+Scoped the remaining breakpoint work to duplicated JS `matchMedia` strings in interaction code. CSS chart-density and short-height breakpoints remain content-specific exceptions, not page-layout breakpoints.
+
+- [x] **Step 2: Add a failing breakpoint contract**
+
+Extended `tests/tooling-contract.test.mjs` to require `src/lib/responsive/breakpoints.ts`, named constants for site mobile, touch/mobile, and Study Cards portrait queries, and no raw `matchMedia("(max-width: ...")` strings in the targeted components.
+
+- [x] **Step 3: Verify the old code fails**
+
+Run: `node --test tests/tooling-contract.test.mjs`
+
+Observed: FAIL before implementation because `src/lib/responsive/breakpoints.ts` did not exist.
+
+- [x] **Step 4: Implement shared responsive constants**
+
+Added `src/lib/responsive/breakpoints.ts` and updated `useLowMotionMode`, `MouseTrail`, `HomeFinanceSection`, and `StudyCardsTool` to consume the named query constants.
+
+- [x] **Step 5: Run targeted verification**
+
+Run: `node --test tests/tooling-contract.test.mjs tests/home-experience-contract.test.mjs tests/study-card-tool-contract.test.mjs`
+
+Observed: PASS, 51/51 tests.
+
+Run: `npx tsc --noEmit`
+
+Observed: PASS.
+
+Run: `rg -n 'matchMedia\("' src/components src/app/tools src/lib`
+
+Observed: no matches.
+
+- [x] **Step 6: Record completion**
+
+Updated `docs/project-audit-report.md` as `UI P2-4b`, noting that layout/interaction queries are centralized while graph label-density breakpoints remain intentional per-surface exceptions.

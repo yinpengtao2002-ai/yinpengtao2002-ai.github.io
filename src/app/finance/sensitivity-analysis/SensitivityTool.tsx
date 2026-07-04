@@ -1,37 +1,22 @@
 "use client";
 
 import { useEffect } from "react";
-import { loadBrowserScript } from "@/lib/finance/browser-tool-loader";
-
-declare global {
-    interface Window {
-        ProfitBridgeSensitivity?: {
-            initApp: () => void;
-        };
-    }
-}
+import { bootFinanceBrowserEngine } from "@/lib/finance/browser-tool-loader";
 
 export default function SensitivityTool() {
     useEffect(() => {
         let cancelled = false;
 
-        async function bootTool() {
-            try {
-                await Promise.all([
-                    loadBrowserScript("/vendor/plotly/plotly.min.js"),
-                    loadBrowserScript("/vendor/xlsx/xlsx.full.min.js"),
-                ]);
-                await import("./sensitivity-engine.js");
-
-                if (!cancelled) {
-                    window.ProfitBridgeSensitivity?.initApp();
-                }
-            } catch (error) {
-                console.error("Failed to start sensitivity analysis tool", error);
-            }
-        }
-
-        void bootTool();
+        void bootFinanceBrowserEngine({
+            engineName: "ProfitBridgeSensitivity",
+            importEngine: () => import("./sensitivity-engine.js"),
+            scripts: [
+                "/vendor/plotly/plotly.min.js",
+                "/vendor/xlsx/xlsx.full.min.js",
+            ],
+            isCancelled: () => cancelled,
+            errorMessage: "Failed to start sensitivity analysis tool",
+        });
 
         return () => {
             cancelled = true;
