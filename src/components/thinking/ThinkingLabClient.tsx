@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowRight, BookOpenCheck, Captions, Wrench } from "lucide-react";
+import { ArrowRight, BookOpenCheck, Captions, Gamepad2, Wrench } from "lucide-react";
 import type { ContentItem } from "@/lib/data/generated/content";
 
 const THINKING_CATEGORY_ORDER = ["全部", "AI创作", "思考记录"];
@@ -12,11 +12,13 @@ const THINKING_CATEGORY_ORDER = ["全部", "AI创作", "思考记录"];
 const TOOL_SHORT_COPY = {
   "study-cards": "英文文章 → 单词卡",
   "subtitle-workbench": "视频/音频 → 字幕总结",
+  "goalkeeper-landscape": "横屏守门挑战",
 };
 
 const TOOL_ICONS = {
   "study-cards": BookOpenCheck,
   "subtitle-workbench": Captions,
+  "goalkeeper-landscape": Gamepad2,
 };
 
 function getDisplayCategory(item: ContentItem) {

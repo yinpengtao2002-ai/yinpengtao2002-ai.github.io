@@ -12,6 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE_URL}/thinking-lab`, lastModified: new Date(), priority: 0.8 },
     { url: `${BASE_URL}/tools/study-cards`, lastModified: new Date(), priority: 0.7 },
     { url: `${BASE_URL}/tools/subtitle-workbench`, lastModified: new Date(), priority: 0.7 },
+    { url: `${BASE_URL}/tools/goalkeeper-landscape`, lastModified: new Date(), priority: 0.7 },
     {
       url: `${BASE_URL}/finance/finance-ai-assistant`,
       lastModified: new Date(),

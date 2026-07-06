@@ -24,8 +24,21 @@ export const studyCardsContent: ContentItem = {
   source: "hosted-tool",
 };
 
+export const goalkeeperLandscapeContent: ContentItem = {
+  id: 9003,
+  slug: "goalkeeper-landscape",
+  title: "守门小游戏",
+  description: "横屏体验的弹力手套守门挑战。",
+  date: "2026-07-07",
+  category: "工具",
+  href: "/tools/goalkeeper-landscape",
+  content: "",
+  source: "hosted-tool",
+};
+
 export const thinkingLabContent: ContentItem[] = [
   studyCardsContent,
   subtitleWorkbenchContent,
+  goalkeeperLandscapeContent,
   ...thinkingContent,
 ];

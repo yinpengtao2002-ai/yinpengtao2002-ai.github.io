@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 
 const nextConfig = await readFile(new URL("../next.config.ts", import.meta.url), "utf8");
 const sitemap = await readFile(new URL("../src/app/sitemap.ts", import.meta.url), "utf8");
@@ -108,4 +108,32 @@ test("thinking lab is a compact two-column index with article chips and quick to
     /\.thinking-index-hero\s*\{[^}]*min-height:\s*clamp\(120px,\s*18vh,\s*160px\)/s
   );
   assert.doesNotMatch(globals, /\.thinking-tool-detail\s*\{/);
+});
+
+test("goalkeeper landscape game is exposed as a thinking lab tool", async () => {
+  const goalkeeperPage = await readFile(
+    new URL("../src/app/tools/goalkeeper-landscape/page.tsx", import.meta.url),
+    "utf8"
+  );
+  const gameIndex = await readFile(
+    new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
+    "utf8"
+  );
+  const gameScript = await stat(new URL("../public/tools/goalkeeper-landscape/assets/index-BTXDQwMI.js", import.meta.url));
+  const gameStyles = await stat(new URL("../public/tools/goalkeeper-landscape/assets/index-BD73VWCd.css", import.meta.url));
+  const gameWasm = await stat(new URL("../public/tools/goalkeeper-landscape/vendor/rapier_wasm3d_bg.wasm", import.meta.url));
+
+  assert.match(goalkeeperPage, /redirect\(GOALKEEPER_LANDSCAPE_URL\)/);
+  assert.match(goalkeeperPage, /弹力手套守门挑战/);
+  assert.match(thinkingLabContent, /href:\s*"\/tools\/goalkeeper-landscape"/);
+  assert.match(thinkingLabContent, /title:\s*"守门小游戏"/);
+  assert.match(thinkingClient, /\"goalkeeper-landscape\":\s*Gamepad2/);
+  assert.match(thinkingClient, /横屏守门挑战/);
+  assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
+  assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-BTXDQwMI\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-BD73VWCd\.css/);
+  assert.ok(gameScript.size > 1024, "game script should be copied from the Vite dist output");
+  assert.ok(gameStyles.size > 1024, "game styles should be copied from the Vite dist output");
+  assert.ok(gameWasm.size > 1024, "Rapier wasm should be available to the game runtime");
 });
