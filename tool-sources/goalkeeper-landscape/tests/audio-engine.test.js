@@ -146,10 +146,10 @@ describe("audio engine", () => {
   it("maps core game events to downloaded football-style samples", () => {
     const manifest = getSoundAssetManifest();
 
-    expect(manifest.shot.url).toBe("/audio/mixkit-soccer-ball-kick-2099.wav");
-    expect(manifest.save.url).toBe("/audio/mixkit-hitting-soccer-ball-2112.wav");
-    expect(manifest.catch.url).toBe("/audio/mixkit-hitting-soccer-ball-2112.wav");
-    expect(manifest.goal.url).toBe("/audio/mixkit-basketball-ball-hitting-net-2084.wav");
+    expect(manifest.shot.url).toBe("/tools/goalkeeper-landscape/audio/mixkit-soccer-ball-kick-2099.wav");
+    expect(manifest.save.url).toBe("/tools/goalkeeper-landscape/audio/mixkit-hitting-soccer-ball-2112.wav");
+    expect(manifest.catch.url).toBe("/tools/goalkeeper-landscape/audio/mixkit-hitting-soccer-ball-2112.wav");
+    expect(manifest.goal.url).toBe("/tools/goalkeeper-landscape/audio/mixkit-basketball-ball-hitting-net-2084.wav");
   });
 
   it("preloads and plays decoded samples instead of synthetic oscillators", async () => {
@@ -159,7 +159,7 @@ describe("audio engine", () => {
     await audio.preload();
     audio.play("goal");
 
-    expect(root.fetchedUrls).toContain("/audio/mixkit-basketball-ball-hitting-net-2084.wav");
+    expect(root.fetchedUrls).toContain("/tools/goalkeeper-landscape/audio/mixkit-basketball-ball-hitting-net-2084.wav");
     expect(root.startedSources).toHaveLength(1);
     expect(root.startedSources[0].buffer).toEqual(expect.objectContaining({ kind: "decoded" }));
   });

@@ -1,21 +1,21 @@
 const SAMPLE_ASSETS = {
   shot: {
-    url: "/audio/mixkit-soccer-ball-kick-2099.wav",
+    url: "/tools/goalkeeper-landscape/audio/mixkit-soccer-ball-kick-2099.wav",
     gain: 0.42,
     playbackRate: 1.05,
   },
   save: {
-    url: "/audio/mixkit-hitting-soccer-ball-2112.wav",
+    url: "/tools/goalkeeper-landscape/audio/mixkit-hitting-soccer-ball-2112.wav",
     gain: 0.5,
     playbackRate: 0.92,
   },
   catch: {
-    url: "/audio/mixkit-hitting-soccer-ball-2112.wav",
+    url: "/tools/goalkeeper-landscape/audio/mixkit-hitting-soccer-ball-2112.wav",
     gain: 0.42,
     playbackRate: 0.78,
   },
   goal: {
-    url: "/audio/mixkit-basketball-ball-hitting-net-2084.wav",
+    url: "/tools/goalkeeper-landscape/audio/mixkit-basketball-ball-hitting-net-2084.wav",
     gain: 0.48,
     playbackRate: 0.82,
   },

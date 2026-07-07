@@ -145,7 +145,7 @@ class RapierGoalkeeperWorld {
   createFieldColliders() {
     var body = this.world.createRigidBody(this.R.RigidBodyDesc.fixed().setTranslation(0, -0.055, -8.5));
     this.world.createCollider(
-      this.R.ColliderDesc.cuboid(9.5, 0.055, 18.5).setRestitution(0.58).setFriction(0.56),
+      this.R.ColliderDesc.cuboid(9.5, 0.055, 18.5).setRestitution(0.16).setFriction(0.88),
       body,
     );
   }
@@ -180,13 +180,13 @@ class RapierGoalkeeperWorld {
       .setTranslation(ballPlan.origin.x, ballPlan.origin.y, ballPlan.origin.z)
       .setLinvel(ballPlan.velocity.x, ballPlan.velocity.y, ballPlan.velocity.z)
       .setAngvel(ballPlan.angularVelocity || { x: 0, y: 0, z: 0 })
-      .setLinearDamping(0.015)
-      .setAngularDamping(0.02)
+      .setLinearDamping(0.035)
+      .setAngularDamping(0.08)
       .setCcdEnabled(true);
     this.ballBody = this.world.createRigidBody(bodyDesc);
     this.ballBody.setGravityScale(1, true);
     this.ballCollider = this.world.createCollider(
-      this.R.ColliderDesc.ball(this.ballRadius).setRestitution(0.76).setFriction(0.22),
+      this.R.ColliderDesc.ball(this.ballRadius).setRestitution(0.38).setFriction(0.62),
       this.ballBody,
     );
     this.previousBallPosition = vector(ballPlan.origin);

@@ -121,7 +121,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
     new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
     "utf8"
   );
-  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-33m-OX9c.js", import.meta.url);
+  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-CBV-qCmv.js", import.meta.url);
   const gameScript = await stat(gameScriptPath);
   const gameScriptSource = await readFile(gameScriptPath, "utf8");
   const gameStyles = await stat(new URL("../public/tools/goalkeeper-landscape/assets/index-hTxdIy6z.css", import.meta.url));
@@ -144,10 +144,12 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(thinkingClient, /横屏守门挑战/);
   assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-33m-OX9c\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-CBV-qCmv\.js/);
   assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-hTxdIy6z\.css/);
   assert.match(gameScriptSource, /difficulty/);
   assert.match(gameScriptSource, /medium/);
+  assert.match(gameScriptSource, /\/tools\/goalkeeper-landscape\/audio\/mixkit-soccer-ball-kick-2099\.wav/);
+  assert.doesNotMatch(gameScriptSource, /url:\s*"\/audio\//);
   assert.doesNotMatch(gameScriptSource, /training/);
   assert.doesNotMatch(gameScriptSource, /arcade/);
   assert.doesNotMatch(gameScriptSource, /compositionPreset/);

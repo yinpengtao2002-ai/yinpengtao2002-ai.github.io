@@ -17,4 +17,12 @@ describe("low rolling ball lab scenario", () => {
     expect(telemetry.velocity.y).toBeGreaterThan(-1.2);
     expect(Number.isFinite(telemetry.angularVelocity.x)).toBe(true);
   });
+
+  it("settles low balls onto the turf instead of kicking them back upward", async () => {
+    const telemetry = await runLowRollingBallLabScenario({ steps: 90, dt: 1 / 120 });
+
+    expect(telemetry.groundClearance).toBeLessThan(0.05);
+    expect(Math.abs(telemetry.velocity.y)).toBeLessThan(0.55);
+    expect(telemetry.velocity.z).toBeLessThan(LOW_ROLLING_BALL_LAB_SCENARIO.ballPlan.velocity.z);
+  });
 });
