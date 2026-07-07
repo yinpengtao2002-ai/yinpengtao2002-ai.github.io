@@ -267,4 +267,33 @@ describe("Rapier goalkeeper world", () => {
 
     world.dispose();
   });
+
+  it("marks direct post hits as frame contact misses instead of leaving the ball live", async () => {
+    const world = await createRapierGoalkeeperWorld();
+
+    world.setGloveTarget({ x: 0, y: 3, z: 3.15 });
+    world.launchShot({
+      origin: { x: -2.85, y: 1.25, z: 2.2 },
+      target: { x: -3.72, y: 1.25, z: 4.65 },
+      velocity: { x: -7.4, y: 0, z: 20.5 },
+      angularVelocity: { x: 0, y: 16, z: 0 },
+      curveForce: { x: 0, y: 0, z: 0 },
+      radius: 0.11,
+    });
+
+    for (let i = 0; i < 22; i += 1) {
+      world.step(1 / 120);
+    }
+    const ball = world.getBallState();
+
+    expect(ball.outcome).toBe("missed");
+    expect(ball.live).toBe(false);
+    expect(ball.lastContact?.type).toBe("frame");
+    expect(ball.lastContact.part).toBe("left-post");
+    expect(ball.lastContact.point.x).toBeLessThan(-3.6);
+    expect(ball.lastContact.strength).toBeGreaterThan(20);
+    expect(ball.velocity.z).toBeLessThan(0);
+
+    world.dispose();
+  });
 });

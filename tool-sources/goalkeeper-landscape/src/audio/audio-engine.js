@@ -14,6 +14,11 @@ const SAMPLE_ASSETS = {
     gain: 0.42,
     playbackRate: 0.78,
   },
+  frame: {
+    url: "/tools/goalkeeper-landscape/audio/mixkit-hitting-soccer-ball-2112.wav",
+    gain: 0.46,
+    playbackRate: 1.18,
+  },
   goal: {
     url: "/tools/goalkeeper-landscape/audio/mixkit-basketball-ball-hitting-net-2084.wav",
     gain: 0.48,
@@ -25,6 +30,7 @@ const SYNTH_PROFILE = {
   shot: { frequency: 120, endFrequency: 65, duration: 0.1, gain: 0.08, type: "sine" },
   save: { frequency: 260, endFrequency: 150, duration: 0.16, gain: 0.14, type: "square" },
   catch: { frequency: 190, endFrequency: 90, duration: 0.13, gain: 0.1, type: "triangle" },
+  frame: { frequency: 340, endFrequency: 190, duration: 0.12, gain: 0.11, type: "square" },
   goal: { frequency: 82, endFrequency: 42, duration: 0.28, gain: 0.1, type: "triangle" },
   tick: { frequency: 180, endFrequency: 110, duration: 0.08, gain: 0.06, type: "sine" },
 };

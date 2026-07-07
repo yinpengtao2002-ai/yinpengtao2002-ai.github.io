@@ -7,10 +7,12 @@ import {
   advanceLingeringBalls,
   advanceRoundIntroTimer,
   createDebugSavePlan,
+  createDebugFramePlan,
   getRoundIntroCue,
   getLingeringBallDurationForOutcome,
   getNextShotDelayForOutcome,
   getReplayDurationForOutcome,
+  getAudioCueForContactType,
   resolveRuntimeDifficulty,
 } from "../src/game/three-game-runtime.js";
 import { createRapierGoalkeeperWorld } from "../src/physics/rapier-world.js";
@@ -32,6 +34,14 @@ describe("three game runtime timing", () => {
     expect(getNextShotDelayForOutcome("save")).toBeLessThan(getLingeringBallDurationForOutcome("save"));
     expect(getReplayDurationForOutcome("goal")).toBeCloseTo(1.08);
     expect(getReplayDurationForOutcome("miss")).toBeCloseTo(0.58);
+  });
+
+  it("maps frame contacts to a distinct restrained impact sound", () => {
+    expect(getAudioCueForContactType("catch")).toBe("catch");
+    expect(getAudioCueForContactType("glove")).toBe("save");
+    expect(getAudioCueForContactType("net")).toBe("goal");
+    expect(getAudioCueForContactType("frame")).toBe("frame");
+    expect(getAudioCueForContactType("wide")).toBeNull();
   });
 
   it("continues simulating a deflected lingering ball instead of freezing it in the sky", () => {
@@ -122,6 +132,26 @@ describe("three game runtime timing", () => {
     const ball = world.getBallState();
     expect(ball.lastContact?.type).toBe("catch");
     expect(ball.outcome).toBe("saved");
+
+    world.dispose();
+  });
+
+  it("keeps the forced-frame debug path aligned with a post-hit Rapier shot", async () => {
+    const world = await createRapierGoalkeeperWorld();
+    const plan = createDebugFramePlan();
+
+    world.setGloveTarget({ x: 0, y: 3, z: 3.15 });
+    world.step(DEBUG_FORCE_GLOVE_SETTLE_DT);
+    world.launchShot(plan);
+
+    for (let i = 0; i < 22; i += 1) {
+      world.step(1 / 120);
+    }
+
+    const ball = world.getBallState();
+    expect(ball.lastContact?.type).toBe("frame");
+    expect(ball.lastContact.part).toBe("left-post");
+    expect(ball.outcome).toBe("missed");
 
     world.dispose();
   });

@@ -22,6 +22,8 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.feedback.saveFlashColor).toBe("#fff1a8");
     expect(SCENE_TUNING.feedback.goalFlashColor).toBe("#ff7846");
     expect(SCENE_TUNING.feedback.streakFlashColor).toBe("#61f0ff");
+    expect(SCENE_TUNING.feedback.frameFlashColor).toBe("#f8fff2");
+    expect(SCENE_TUNING.feedback.frameImpactStrength).toBeLessThanOrEqual(0.85);
     expect(SCENE_TUNING.feedback.maxCameraShake).toBeLessThanOrEqual(0.055);
     expect(SCENE_TUNING.feedback.netPulseDecay).toBeGreaterThanOrEqual(0.025);
     expect(SCENE_TUNING.feedback.groundSkidCount).toBeGreaterThanOrEqual(4);

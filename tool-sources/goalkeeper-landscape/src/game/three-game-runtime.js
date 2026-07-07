@@ -63,6 +63,17 @@ export function createDebugSavePlan() {
   };
 }
 
+export function createDebugFramePlan() {
+  return {
+    origin: { x: -2.85, y: 1.25, z: 2.2 },
+    target: { x: -3.72, y: 1.25, z: 4.65 },
+    velocity: { x: -7.4, y: 0, z: 20.5 },
+    angularVelocity: { x: 0, y: 16, z: 0 },
+    curveForce: { x: 0, y: 0, z: 0 },
+    radius: 0.11,
+  };
+}
+
 function makeCloseMissPlan() {
   return {
     origin: { x: 0, y: 1.2, z: 3.55 },
@@ -87,6 +98,14 @@ export function getNextShotDelayForOutcome(outcome) {
   if (outcome === "goal") return 1.08;
   if (outcome === "save") return 0.38;
   return 0.58;
+}
+
+export function getAudioCueForContactType(type) {
+  if (type === "catch") return "catch";
+  if (type === "glove") return "save";
+  if (type === "net") return "goal";
+  if (type === "frame") return "frame";
+  return null;
 }
 
 function cloneVector(value) {
@@ -359,13 +378,8 @@ export async function createThreeGameRuntime(options) {
     ].join(":");
     if (signature === handledContactAudio) return;
     handledContactAudio = signature;
-    if (contact.type === "catch") {
-      audio.play("catch");
-    } else if (contact.type === "glove") {
-      audio.play("save");
-    } else if (contact.type === "net") {
-      audio.play("goal");
-    }
+    var cue = getAudioCueForContactType(contact.type);
+    if (cue) audio.play(cue);
   }
 
   function update(dt) {
@@ -570,6 +584,9 @@ export async function createThreeGameRuntime(options) {
     },
     forceMiss() {
       forcePlan(makeCloseMissPlan(), { x: 3.1, y: 2.55, z: 3.15 });
+    },
+    forceFrame() {
+      forcePlan(createDebugFramePlan(), { x: 0, y: 3, z: 3.15 });
     },
     dispose() {
       this.stop();

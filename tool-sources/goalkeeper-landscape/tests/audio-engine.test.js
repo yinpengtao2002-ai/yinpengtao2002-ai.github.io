@@ -149,6 +149,8 @@ describe("audio engine", () => {
     expect(manifest.shot.url).toBe("/tools/goalkeeper-landscape/audio/mixkit-soccer-ball-kick-2099.wav");
     expect(manifest.save.url).toBe("/tools/goalkeeper-landscape/audio/mixkit-hitting-soccer-ball-2112.wav");
     expect(manifest.catch.url).toBe("/tools/goalkeeper-landscape/audio/mixkit-hitting-soccer-ball-2112.wav");
+    expect(manifest.frame.url).toBe("/tools/goalkeeper-landscape/audio/mixkit-hitting-soccer-ball-2112.wav");
+    expect(manifest.frame.playbackRate).toBeGreaterThan(manifest.save.playbackRate);
     expect(manifest.goal.url).toBe("/tools/goalkeeper-landscape/audio/mixkit-basketball-ball-hitting-net-2084.wav");
   });
 

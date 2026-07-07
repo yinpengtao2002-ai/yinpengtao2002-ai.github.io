@@ -64,6 +64,12 @@ function closestPointOnSegment(point, start, end) {
   };
 }
 
+function isStrongVelocityChange(previousVelocity, velocity) {
+  if (!previousVelocity || !velocity) return false;
+  var delta = subtract3(previousVelocity, velocity);
+  return length3(delta) > 8 && previousVelocity.z > 4 && velocity.z < previousVelocity.z - 8;
+}
+
 function createPartOffsets(side) {
   var thumbSide = side === "left" ? 1 : -1;
   var palmRadius = GLOVE_3D.colliderRadius;
@@ -243,6 +249,7 @@ class RapierGoalkeeperWorld {
     }
 
     var previousPosition = this.ballBody ? vector(this.ballBody.translation()) : null;
+    var previousVelocity = this.ballBody ? vector(this.ballBody.linvel()) : null;
     this.world.step();
     this.time += dt;
 
@@ -271,6 +278,7 @@ class RapierGoalkeeperWorld {
       this.resolveGloveContact(previousPosition || this.previousBallPosition, ballPosition, ballVelocity);
     }
 
+    this.resolveFrameContact(previousPosition || this.previousBallPosition, previousVelocity, ballPosition, ballVelocity);
     this.resolveGoalOrSave(previousPosition || this.previousBallPosition, ballPosition);
     this.previousBallPosition = vector(this.ballBody.translation());
   }
@@ -468,6 +476,55 @@ class RapierGoalkeeperWorld {
         this.outcome = "saved";
       }
     }
+  }
+
+  resolveFrameContact(previousPosition, previousVelocity, position, velocity) {
+    if (!previousPosition || !this.ballBody) return;
+    if (this.outcome !== "live" && this.outcome !== "deflected") return;
+    if (!isStrongVelocityChange(previousVelocity, velocity)) return;
+    if (Math.abs(position.z - RAPIER_GOAL.netPlaneZ) > 0.45) return;
+
+    var postX = RAPIER_GOAL.halfWidth + 0.06;
+    var nearLeftPost = Math.abs(position.x + postX) <= this.ballRadius + 0.17;
+    var nearRightPost = Math.abs(position.x - postX) <= this.ballRadius + 0.17;
+    var nearCrossbar = Math.abs(position.y - (RAPIER_GOAL.height + 0.06)) <= this.ballRadius + 0.2;
+    var withinPostHeight = position.y >= -this.ballRadius && position.y <= RAPIER_GOAL.height + this.ballRadius * 1.8;
+    var withinCrossbarWidth = Math.abs(position.x) <= RAPIER_GOAL.halfWidth + this.ballRadius * 1.8;
+    var part = null;
+    var point = null;
+
+    if (nearLeftPost && withinPostHeight) {
+      part = "left-post";
+      point = {
+        x: -postX,
+        y: clamp(position.y, 0, RAPIER_GOAL.height),
+        z: RAPIER_GOAL.netPlaneZ,
+      };
+    } else if (nearRightPost && withinPostHeight) {
+      part = "right-post";
+      point = {
+        x: postX,
+        y: clamp(position.y, 0, RAPIER_GOAL.height),
+        z: RAPIER_GOAL.netPlaneZ,
+      };
+    } else if (nearCrossbar && withinCrossbarWidth) {
+      part = "crossbar";
+      point = {
+        x: clamp(position.x, -RAPIER_GOAL.halfWidth, RAPIER_GOAL.halfWidth),
+        y: RAPIER_GOAL.height + 0.06,
+        z: RAPIER_GOAL.netPlaneZ,
+      };
+    }
+
+    if (!part) return;
+
+    this.lastContact = {
+      type: "frame",
+      part: part,
+      point: point,
+      strength: length3(subtract3(previousVelocity, velocity)),
+    };
+    this.outcome = this.outcome === "deflected" ? "saved" : "missed";
   }
 
   getBallState() {

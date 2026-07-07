@@ -41,6 +41,8 @@ export const SCENE_TUNING = {
     saveFlashColor: "#fff1a8",
     goalFlashColor: "#ff7846",
     streakFlashColor: "#61f0ff",
+    frameFlashColor: "#f8fff2",
+    frameImpactStrength: 0.82,
     maxCameraShake: 0.045,
     netPulseDecay: 0.032,
     groundSkidCount: 5,
@@ -304,7 +306,9 @@ export function createGoalkeeperScene(canvas) {
         ? tuning.feedback.goalFlashColor
         : type === "streak"
           ? tuning.feedback.streakFlashColor
-          : tuning.feedback.saveFlashColor;
+          : type === "frame"
+            ? tuning.feedback.frameFlashColor
+            : tuning.feedback.saveFlashColor;
     var pulseStrength = strength || 1;
     impactRings.forEach((ring, index) => {
       ring.position.set(position.x, position.y, position.z);
@@ -346,6 +350,10 @@ export function createGoalkeeperScene(canvas) {
       }
       if (ballState.lastContact.type === "net") {
         triggerGoalFeedback(ballState.position);
+      }
+      if (ballState.lastContact.type === "frame") {
+        var framePosition = ballState.lastContact.point || ballState.position;
+        triggerImpact("frame", framePosition, tuning.feedback.frameImpactStrength);
       }
     }
   }
