@@ -31,8 +31,17 @@ function makeCloseMissPlan() {
 }
 
 export function getReplayDurationForOutcome(outcome) {
-  if (outcome === "goal") return 1.08;
+  return getLingeringBallDurationForOutcome(outcome) || getNextShotDelayForOutcome(outcome);
+}
+
+export function getLingeringBallDurationForOutcome(outcome) {
   if (outcome === "save") return 5;
+  return 0;
+}
+
+export function getNextShotDelayForOutcome(outcome) {
+  if (outcome === "goal") return 1.08;
+  if (outcome === "save") return 0.38;
   return 0.58;
 }
 
@@ -62,6 +71,7 @@ export async function createThreeGameRuntime(options) {
   var handledOutcome = null;
   var handledContactAudio = null;
   var outcomeTimer = 0;
+  var lingeringBalls = [];
   var lastFrame = 0;
   var runningLoop = false;
   var debugKeysEnabled =
@@ -90,14 +100,50 @@ export async function createThreeGameRuntime(options) {
     handledOutcome = null;
     handledContactAudio = null;
     outcomeTimer = 0;
+    lingeringBalls = [];
     hud.update(state, audio.isEnabled());
+  }
+
+  function cloneVector(value) {
+    if (!value) return null;
+    return {
+      x: value.x || 0,
+      y: value.y || 0,
+      z: value.z || 0,
+    };
+  }
+
+  function rememberLingeringBall(ball, outcome) {
+    var duration = getLingeringBallDurationForOutcome(outcome);
+    if (!duration || !ball?.position) return;
+    lingeringBalls = [
+      ...lingeringBalls,
+      {
+        live: false,
+        outcome: ball.outcome || outcome,
+        position: cloneVector(ball.position),
+        velocity: cloneVector(ball.velocity),
+        angularVelocity: cloneVector(ball.angularVelocity),
+        radius: ball.radius,
+        lastContact: ball.lastContact,
+        age: 0,
+        duration: duration,
+      },
+    ].slice(-6);
+  }
+
+  function updateLingeringBalls(dt) {
+    if (!lingeringBalls.length) return;
+    lingeringBalls = lingeringBalls
+      .map((ball) => ({ ...ball, age: ball.age + dt }))
+      .filter((ball) => ball.age < ball.duration);
   }
 
   function finishCurrentShotAfterReplay(dt) {
     if (!handledOutcome) return;
     outcomeTimer += dt;
-    var replayDuration = getReplayDurationForOutcome(handledOutcome);
-    if (outcomeTimer >= replayDuration && !state.ended) {
+    var nextShotDelay = getNextShotDelayForOutcome(handledOutcome);
+    if (outcomeTimer >= nextShotDelay && !state.ended) {
       director = completeShot3D(director);
       physics.resetBall();
       launchedShotId = null;
@@ -116,6 +162,7 @@ export async function createThreeGameRuntime(options) {
     }
     if (ball.outcome === "saved") {
       state = recordSave(state);
+      rememberLingeringBall(ball, "save");
       handledOutcome = "save";
       outcomeTimer = 0;
       return;
@@ -164,6 +211,7 @@ export async function createThreeGameRuntime(options) {
 
     state = tickRound(state, dt);
     if (state.ended) return;
+    updateLingeringBalls(dt);
 
     gloveController = updateGloveController(gloveController, input.getPointer(bounds), dt, {
       ...bounds,
@@ -191,6 +239,7 @@ export async function createThreeGameRuntime(options) {
       state,
       director,
       ball,
+      lingeringBalls,
       gloves: physics.getGloveState(),
       gloveController,
     };
@@ -207,6 +256,7 @@ export async function createThreeGameRuntime(options) {
     stage.dataset.ballX = ball?.position ? String(Math.round(ball.position.x * 100) / 100) : "";
     stage.dataset.ballY = ball?.position ? String(Math.round(ball.position.y * 100) / 100) : "";
     stage.dataset.handledOutcome = handledOutcome || "";
+    stage.dataset.lingeringBalls = String(lingeringBalls.length);
     stage.dataset.score = String(state.score);
     stage.dataset.conceded = String(state.conceded);
   }

@@ -29,6 +29,8 @@ export const SCENE_TUNING = {
     nearScale: 1.32,
     goalScale: 1.12,
     deflectedScale: 1.06,
+    showShotTrail: false,
+    maxLingeringBalls: 6,
   },
   gloves: {
     scale: 0.64,
@@ -84,34 +86,59 @@ export function createGoalkeeperScene(canvas) {
   var field = createFieldGroup();
   var goal = createGoalAndNet();
   var shooter = createShooterModel();
-  var ball = new THREE.Mesh(
-    new THREE.SphereGeometry(SCENE_TUNING.ball.radius, 32, 24),
-    new THREE.MeshStandardMaterial({ map: createFootballTexture(), roughness: 0.42, metalness: 0.02 }),
+  var ballTexture = createFootballTexture();
+  var ballGeometry = new THREE.SphereGeometry(SCENE_TUNING.ball.radius, 32, 24);
+  var haloGeometry = new THREE.CircleGeometry(SCENE_TUNING.ball.haloRadius, 32);
+  var shadowGeometry = new THREE.CircleGeometry(SCENE_TUNING.ball.shadowRadius, 24);
+  function createBallView(name) {
+    var mesh = new THREE.Mesh(
+      ballGeometry,
+      new THREE.MeshStandardMaterial({ map: ballTexture, roughness: 0.42, metalness: 0.02 }),
+    );
+    var halo = new THREE.Mesh(
+      haloGeometry,
+      new THREE.MeshBasicMaterial({ color: "#fff0a6", transparent: true, opacity: 0.34, depthWrite: false }),
+    );
+    var shadow = new THREE.Mesh(
+      shadowGeometry,
+      new THREE.MeshBasicMaterial({ color: "#173720", transparent: true, opacity: 0.28, depthWrite: false }),
+    );
+    mesh.name = name + "-ball";
+    halo.name = name + "-halo";
+    shadow.name = name + "-shadow";
+    shadow.rotation.x = -Math.PI / 2;
+    mesh.visible = false;
+    halo.visible = false;
+    shadow.visible = false;
+    return { mesh, halo, shadow };
+  }
+  var activeBall = createBallView("active");
+  var lingeringBallViews = Array.from({ length: SCENE_TUNING.ball.maxLingeringBalls }, (_, index) =>
+    createBallView("lingering-" + index),
   );
-  var ballHalo = new THREE.Mesh(
-    new THREE.CircleGeometry(SCENE_TUNING.ball.haloRadius, 32),
-    new THREE.MeshBasicMaterial({ color: "#fff0a6", transparent: true, opacity: 0.34, depthWrite: false }),
-  );
-  var ballShadow = new THREE.Mesh(
-    new THREE.CircleGeometry(SCENE_TUNING.ball.shadowRadius, 24),
-    new THREE.MeshBasicMaterial({ color: "#173720", transparent: true, opacity: 0.28, depthWrite: false }),
-  );
-  ballShadow.rotation.x = -Math.PI / 2;
   var leftGlove = createGloveMesh("left");
   var rightGlove = createGloveMesh("right");
   leftGlove.scale.setScalar(SCENE_TUNING.gloves.scale);
   rightGlove.scale.setScalar(SCENE_TUNING.gloves.scale);
-  var trailMaterial = new THREE.LineBasicMaterial({ color: "#f9fff7", transparent: true, opacity: 0.72 });
-  var trail = new THREE.Line(new THREE.BufferGeometry(), trailMaterial);
   var impact = new THREE.Mesh(
     new THREE.TorusGeometry(0.28, 0.014, 8, 32),
     new THREE.MeshBasicMaterial({ color: "#fff1a8", transparent: true, opacity: 0, depthWrite: false }),
   );
   impact.rotation.x = Math.PI / 2;
 
-  scene.add(field, goal.group, shooter.group, ballHalo, ball, ballShadow, leftGlove, rightGlove, trail, impact);
+  scene.add(
+    field,
+    goal.group,
+    shooter.group,
+    activeBall.halo,
+    activeBall.mesh,
+    activeBall.shadow,
+    ...lingeringBallViews.flatMap((view) => [view.halo, view.mesh, view.shadow]),
+    leftGlove,
+    rightGlove,
+    impact,
+  );
 
-  var ballTrail = [];
   var netPulse = 0;
   var lastContactType = null;
 
@@ -125,20 +152,21 @@ export function createGoalkeeperScene(canvas) {
     camera.updateProjectionMatrix();
   }
 
-  function updateBall(snapshot) {
-    var ballState = snapshot.ball;
-    var shot = snapshot.director?.currentShot;
+  function setBallViewVisible(view, visible) {
+    view.mesh.visible = visible;
+    view.halo.visible = visible;
+    view.shadow.visible = visible;
+  }
+
+  function updateBallView(view, ballState, shot) {
     var position = ballState?.position || shot?.origin;
     if (!position) {
-      ball.visible = false;
-      ballHalo.visible = false;
-      ballShadow.visible = false;
-      trail.visible = false;
+      setBallViewVisible(view, false);
       return;
     }
 
-    ball.visible = true;
-    ball.position.set(position.x, position.y, position.z);
+    setBallViewVisible(view, true);
+    view.mesh.position.set(position.x, position.y, position.z);
     var depthRange = SCENE_TUNING.depth.netPlaneZ - SCENE_TUNING.depth.originZ;
     var depth = clamp01((position.z - SCENE_TUNING.depth.originZ) / depthRange);
     var speedScale =
@@ -148,36 +176,38 @@ export function createGoalkeeperScene(canvas) {
           ? SCENE_TUNING.ball.deflectedScale
           : 1;
     var visualScale = lerpNumber(SCENE_TUNING.ball.baseScale, SCENE_TUNING.ball.nearScale, depth);
-    ball.scale.setScalar(speedScale * visualScale);
+    view.mesh.scale.setScalar(speedScale * visualScale);
     var angular = ballState?.angularVelocity || shot?.ballPlan?.angularVelocity || { x: -8, y: 12, z: 0 };
-    ball.rotation.x += angular.x * 0.008;
-    ball.rotation.y += angular.y * 0.008;
-    ball.rotation.z += angular.z * 0.008;
+    view.mesh.rotation.x += angular.x * 0.008;
+    view.mesh.rotation.y += angular.y * 0.008;
+    view.mesh.rotation.z += angular.z * 0.008;
 
-    ballHalo.visible = true;
-    ballHalo.position.set(position.x, position.y, position.z - 0.025);
-    ballHalo.lookAt(camera.position);
-    ballHalo.scale.setScalar(0.22 + depth * 0.64);
-    ballHalo.material.opacity = ballState?.outcome === "goal" ? 0.34 : ballState?.live ? 0.28 : 0.18;
+    view.halo.position.set(position.x, position.y, position.z - 0.025);
+    view.halo.lookAt(camera.position);
+    view.halo.scale.setScalar(0.22 + depth * 0.64);
+    view.halo.material.opacity = ballState?.outcome === "goal" ? 0.34 : ballState?.live ? 0.28 : 0.18;
 
-    ballShadow.visible = true;
-    ballShadow.position.set(position.x, 0.012, position.z);
+    view.shadow.position.set(position.x, 0.012, position.z);
     var shadowScale = Math.max(0.12, 0.28 - position.y * 0.04);
-    ballShadow.scale.set(shadowScale, shadowScale * 0.62, 1);
+    view.shadow.scale.set(shadowScale, shadowScale * 0.62, 1);
+  }
 
-    if (ballState?.live || ballState?.outcome === "goal" || ballState?.outcome === "saved") {
-      ballTrail.push(new THREE.Vector3(position.x, position.y, position.z));
-      if (ballTrail.length > 14) ballTrail.shift();
-    } else if (!ballState) {
-      ballTrail = [];
-    }
-    trail.visible = ballTrail.length > 1;
-    trail.geometry.dispose();
-    trail.geometry = new THREE.BufferGeometry().setFromPoints(ballTrail);
+  function updateLingeringBalls(snapshot) {
+    var lingeringBalls = snapshot.lingeringBalls || [];
+    lingeringBallViews.forEach((view, index) => {
+      updateBallView(view, lingeringBalls[index], null);
+    });
+  }
+
+  function updateBall(snapshot) {
+    var ballState = snapshot.ball;
+    var shot = snapshot.director?.currentShot;
+    updateBallView(activeBall, ballState, shot);
 
     if (ballState?.lastContact?.type && ballState.lastContact.type !== lastContactType) {
       lastContactType = ballState.lastContact.type;
       if (ballState.lastContact.type === "glove") {
+        var position = ballState.position;
         impact.position.set(position.x, position.y, position.z);
         impact.material.opacity = 0.86;
         impact.scale.setScalar(1);
@@ -219,6 +249,7 @@ export function createGoalkeeperScene(canvas) {
   function updateVisuals(snapshot) {
     updateShooterModel(shooter, snapshot.director || { phase: "cue", phaseTime: 0, currentShot: null });
     updateBall(snapshot);
+    updateLingeringBalls(snapshot);
     updateGloves(snapshot.gloves);
     updateNetAndEffects();
     renderer.render(scene, camera);

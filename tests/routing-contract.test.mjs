@@ -119,7 +119,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
     new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
     "utf8"
   );
-  const gameScript = await stat(new URL("../public/tools/goalkeeper-landscape/assets/index-BvfKc6Ux.js", import.meta.url));
+  const gameScript = await stat(new URL("../public/tools/goalkeeper-landscape/assets/index-DxpXjVHL.js", import.meta.url));
   const gameStyles = await stat(new URL("../public/tools/goalkeeper-landscape/assets/index-BD73VWCd.css", import.meta.url));
   const gameWasm = await stat(new URL("../public/tools/goalkeeper-landscape/vendor/rapier_wasm3d_bg.wasm", import.meta.url));
 
@@ -137,7 +137,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(thinkingClient, /横屏守门挑战/);
   assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-BvfKc6Ux\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-DxpXjVHL\.js/);
   assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-BD73VWCd\.css/);
   assert.ok(gameScript.size > 1024, "game script should be copied from the Vite dist output");
   assert.ok(gameStyles.size > 1024, "game styles should be copied from the Vite dist output");
