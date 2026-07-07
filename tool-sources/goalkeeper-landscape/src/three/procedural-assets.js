@@ -61,53 +61,105 @@ function makeRoundedPart(name, width, height, radius, depth, material, x, y, z) 
 }
 
 export function createFootballTexture() {
+  if (typeof document === "undefined" || !document.createElement) {
+    return createFallbackFootballTexture();
+  }
+
   var canvas = document.createElement("canvas");
   canvas.width = 512;
   canvas.height = 512;
   var ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#f8f5e8";
+  var baseGradient = ctx.createRadialGradient(204, 156, 20, 256, 256, 384);
+  baseGradient.addColorStop(0, "#fffdf1");
+  baseGradient.addColorStop(0.58, "#f7f3e5");
+  baseGradient.addColorStop(1, "#d9d2c0");
+  ctx.fillStyle = baseGradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = "rgba(26, 27, 27, 0.36)";
-  ctx.lineWidth = 5;
 
-  for (var x = -80; x < 600; x += 96) {
-    for (var y = -80; y < 600; y += 88) {
-      ctx.beginPath();
-      for (var i = 0; i < 6; i += 1) {
-        var angle = Math.PI / 6 + (i / 6) * Math.PI * 2;
-        var px = x + Math.cos(angle) * 36;
-        var py = y + Math.sin(angle) * 36;
-        if (i === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
-      }
-      ctx.closePath();
-      ctx.stroke();
-    }
+  ctx.strokeStyle = "rgba(23, 28, 30, 0.38)";
+  ctx.lineWidth = 4;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (var panel = 0; panel < 12; panel += 1) {
+    var angle = (panel / 12) * Math.PI * 2;
+    var nextAngle = angle + Math.PI / 6;
+    var innerX = 256 + Math.cos(angle) * 42;
+    var innerY = 256 + Math.sin(angle) * 42;
+    var outerX = 256 + Math.cos(angle) * 252;
+    var outerY = 256 + Math.sin(angle) * 252;
+    var controlX = 256 + Math.cos(nextAngle) * 138;
+    var controlY = 256 + Math.sin(nextAngle) * 138;
+    ctx.beginPath();
+    ctx.moveTo(innerX, innerY);
+    ctx.quadraticCurveTo(controlX, controlY, outerX, outerY);
+    ctx.stroke();
   }
 
   [
-    [256, 256, 42],
-    [116, 120, 34],
-    [396, 128, 34],
-    [146, 392, 34],
-    [378, 378, 34],
+    [256, 256, 58, "#1f272b", -Math.PI / 2],
+    [118, 120, 44, "#f0782f", -0.2],
+    [392, 130, 44, "#61f0ff", 0.52],
+    [145, 392, 42, "#1f272b", 0.2],
+    [378, 378, 42, "#f0782f", -0.7],
   ].forEach(function drawPatch(patch) {
     ctx.beginPath();
-    for (var i = 0; i < 5; i += 1) {
-      var angle = -Math.PI / 2 + (i / 5) * Math.PI * 2;
+    for (var i = 0; i < 6; i += 1) {
+      var angle = patch[4] + (i / 6) * Math.PI * 2;
       var px = patch[0] + Math.cos(angle) * patch[2];
       var py = patch[1] + Math.sin(angle) * patch[2];
       if (i === 0) ctx.moveTo(px, py);
       else ctx.lineTo(px, py);
     }
     ctx.closePath();
-    ctx.fillStyle = "#202224";
+    ctx.fillStyle = patch[3];
     ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.58)";
+    ctx.lineWidth = 3;
+    ctx.stroke();
   });
+
+  ctx.globalAlpha = 0.52;
+  ["#f0782f", "#61f0ff", "#1f272b"].forEach(function drawAccent(color, index) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 9 - index * 2;
+    ctx.beginPath();
+    ctx.arc(256, 256, 132 + index * 28, Math.PI * (0.12 + index * 0.16), Math.PI * (0.62 + index * 0.16));
+    ctx.stroke();
+  });
+  ctx.globalAlpha = 1;
 
   var texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
+  texture.userData.assetSystem = "modern-panel-match-ball-texture";
+  texture.userData.panelSystem = "radial-accent-seamed-panels";
+  return texture;
+}
+
+function createFallbackFootballTexture() {
+  var size = 512;
+  var data = new Uint8Array(size * size * 4);
+  for (var y = 0; y < size; y += 1) {
+    for (var x = 0; x < size; x += 1) {
+      var index = (y * size + x) * 4;
+      var nx = (x - size / 2) / (size / 2);
+      var ny = (y - size / 2) / (size / 2);
+      var radius = Math.hypot(nx, ny);
+      var angle = Math.atan2(ny, nx);
+      var seam = Math.abs(Math.sin(angle * 6 + radius * 8)) < 0.055 || Math.abs((radius * 5) % 1 - 0.5) < 0.025;
+      var accent = Math.abs(Math.sin(angle * 3 - radius * 5)) < 0.08 && radius > 0.28 && radius < 0.78;
+      data[index] = seam ? 34 : accent ? 240 : 246 - Math.floor(radius * 28);
+      data[index + 1] = seam ? 39 : accent ? 120 : 242 - Math.floor(radius * 24);
+      data[index + 2] = seam ? 42 : accent ? 47 : 229 - Math.floor(radius * 22);
+      data[index + 3] = 255;
+    }
+  }
+  var texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+  texture.needsUpdate = true;
+  texture.userData.assetSystem = "modern-panel-match-ball-texture";
+  texture.userData.panelSystem = "radial-accent-seamed-panels";
   return texture;
 }
 
@@ -117,6 +169,7 @@ export function createFieldGroup() {
   group.userData.assetSystem = "stylized-reusable-matchday-kit";
   group.userData.markingSystem = "standard-football-pitch";
   group.userData.surfaceDetailSystem = "layered-turf-with-foreground-blades";
+  group.userData.stadiumDressingSystem = "crowd-scoreboard-flags-matchday-dressing";
   var turf = new THREE.Mesh(
     new THREE.PlaneGeometry(18, 52, 1, 1),
     new THREE.MeshStandardMaterial({ color: "#69bd53", map: createGrassTexture(), roughness: 0.9 }),
@@ -139,6 +192,22 @@ export function createFieldGroup() {
     stripe.rotation.x = -Math.PI / 2;
     stripe.position.set(0, -0.018, -38 + i * 5.9);
     group.add(stripe);
+  }
+
+  var brushMaterial = new THREE.MeshBasicMaterial({
+    color: "#d8f3bd",
+    transparent: true,
+    opacity: 0.12,
+    depthWrite: false,
+  });
+  for (var brushIndex = 0; brushIndex < 12; brushIndex += 1) {
+    var brush = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 5.4), brushMaterial.clone());
+    brush.name = "field-turf-maintenance-brush-" + brushIndex;
+    brush.rotation.x = -Math.PI / 2;
+    brush.rotation.z = brushIndex % 2 ? 0.07 : -0.07;
+    brush.position.set(-5.6 + brushIndex * 1.02, -0.01, -13.2 + (brushIndex % 3) * 2.1);
+    brush.material.opacity = 0.08 + (brushIndex % 4) * 0.018;
+    group.add(brush);
   }
 
   var depthBandMaterial = new THREE.MeshBasicMaterial({
@@ -325,6 +394,7 @@ export function createFieldGroup() {
 
   var standMatA = new THREE.MeshStandardMaterial({ color: "#264c54", roughness: 0.64, metalness: 0.02 });
   var standMatB = new THREE.MeshStandardMaterial({ color: "#f2f0df", roughness: 0.7, metalness: 0.01 });
+  var crowdColors = ["#f0782f", "#f5f0df", "#2d5963", "#61b979", "#23383d"];
   for (var s = 0; s < 5; s += 1) {
     var stand = new THREE.Mesh(new THREE.BoxGeometry(2.35, 0.64, 0.62), s % 2 ? standMatB : standMatA);
     stand.name = "stadium-stand-back-" + s;
@@ -337,7 +407,59 @@ export function createFieldGroup() {
     upperStand.position.set(-5.25 + s * 2.65, 0.88, -24.92);
     upperStand.rotation.x = -0.08;
     group.add(upperStand);
+
+    var crowdRow = new THREE.Group();
+    crowdRow.name = "stadium-crowd-row-" + s;
+    crowdRow.position.set(-5.98 + s * 2.65, 0.72, -24.18);
+    for (var person = 0; person < 10; person += 1) {
+      var crowdDot = new THREE.Mesh(
+        new THREE.BoxGeometry(0.11, 0.12 + (person % 3) * 0.025, 0.055),
+        new THREE.MeshStandardMaterial({ color: crowdColors[(s + person) % crowdColors.length], roughness: 0.58 }),
+      );
+      crowdDot.name = "stadium-crowd-seat-" + s + "-" + person;
+      crowdDot.position.set(person * 0.19, (person % 2) * 0.02, 0);
+      crowdRow.add(crowdDot);
+    }
+    group.add(crowdRow);
   }
+
+  var scoreboardMat = new THREE.MeshStandardMaterial({ color: "#172326", roughness: 0.38, metalness: 0.04 });
+  var scoreboardGlow = new THREE.MeshBasicMaterial({ color: "#fff1a8", transparent: true, opacity: 0.78 });
+  var scoreboard = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.62, 0.08), scoreboardMat);
+  scoreboard.name = "stadium-scoreboard-panel";
+  scoreboard.position.set(0, 1.78, -24.72);
+  group.add(scoreboard);
+  for (var digit = 0; digit < 6; digit += 1) {
+    var tile = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.012), scoreboardGlow.clone());
+    tile.name = "stadium-scoreboard-light-tile-" + digit;
+    tile.position.set(-0.55 + digit * 0.22, 1.82 + (digit % 2) * 0.12, -24.66);
+    group.add(tile);
+  }
+
+  var flagPoleMat = new THREE.MeshStandardMaterial({ color: "#f9fff3", roughness: 0.42, metalness: 0.03 });
+  var flagMat = new THREE.MeshBasicMaterial({ color: "#f0782f", side: THREE.DoubleSide });
+  [
+    ["left", -7.28, RAPIER_GOAL.netPlaneZ - 0.18, 1],
+    ["right", 7.28, RAPIER_GOAL.netPlaneZ - 0.18, -1],
+    ["far-left", -7.28, -21.9, 1],
+    ["far-right", 7.28, -21.9, -1],
+  ].forEach(function addCornerFlag(item) {
+    var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.022, 0.62, 10), flagPoleMat);
+    pole.name = "stadium-corner-flag-pole-" + item[0];
+    pole.position.set(item[1], 0.31, item[2]);
+    group.add(pole);
+
+    var flagShape = new THREE.Shape();
+    flagShape.moveTo(0, 0);
+    flagShape.lineTo(0.34 * item[3], 0.08);
+    flagShape.lineTo(0, 0.18);
+    flagShape.lineTo(0, 0);
+    var flag = new THREE.Mesh(new THREE.ShapeGeometry(flagShape), flagMat.clone());
+    flag.name = "stadium-corner-flag-banner-" + item[0];
+    flag.position.set(item[1], 0.58, item[2]);
+    flag.rotation.y = item[3] > 0 ? -0.32 : 0.32;
+    group.add(flag);
+  });
 
   var boardMaterials = ["#f0782f", "#203f52", "#f6f1df", "#3f8f62"].map(
     (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.02 }),

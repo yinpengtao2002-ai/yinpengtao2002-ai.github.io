@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
-import { createFieldGroup, createGloveMesh, createGoalAndNet, createShooterModel } from "../src/three/procedural-assets.js";
+import {
+  createFieldGroup,
+  createFootballTexture,
+  createGloveMesh,
+  createGoalAndNet,
+  createShooterModel,
+} from "../src/three/procedural-assets.js";
 
 function collectByName(root, pattern) {
   const matches = [];
@@ -59,6 +65,15 @@ describe("procedural 3D assets", () => {
     expect(markings.length).toBeGreaterThanOrEqual(5);
   });
 
+  it("uses a modern finished match ball texture instead of a plain prototype pattern", () => {
+    const texture = createFootballTexture();
+
+    expect(texture.userData.assetSystem).toBe("modern-panel-match-ball-texture");
+    expect(texture.image.width).toBeGreaterThanOrEqual(512);
+    expect(texture.anisotropy).toBeGreaterThanOrEqual(4);
+    expect(texture.userData.panelSystem).toBe("radial-accent-seamed-panels");
+  });
+
   it("adds lightweight field depth details around the goalmouth and shooting lane", () => {
     const field = createFieldGroup();
 
@@ -76,7 +91,11 @@ describe("procedural 3D assets", () => {
     const field = createFieldGroup();
 
     expect(field.userData.assetSystem).toBe("stylized-reusable-matchday-kit");
+    expect(field.userData.stadiumDressingSystem).toBe("crowd-scoreboard-flags-matchday-dressing");
     expect(collectByName(field, /^stadium-stand-/).length).toBeGreaterThanOrEqual(5);
+    expect(collectByName(field, /^stadium-crowd-row-/).length).toBeGreaterThanOrEqual(5);
+    expect(collectByName(field, /^stadium-scoreboard-/).length).toBeGreaterThanOrEqual(3);
+    expect(collectByName(field, /^stadium-corner-flag-/).length).toBeGreaterThanOrEqual(2);
     expect(collectByName(field, /^stadium-ad-board-/).length).toBeGreaterThanOrEqual(6);
     expect(collectByName(field, /^stadium-floodlight-/).length).toBeGreaterThanOrEqual(4);
     expect(collectByName(field, /^field-goalmouth-wear-/)).toHaveLength(3);
@@ -87,6 +106,7 @@ describe("procedural 3D assets", () => {
 
     expect(field.userData.surfaceDetailSystem).toBe("layered-turf-with-foreground-blades");
     expect(collectByName(field, /^field-foreground-blade-cluster-/).length).toBeGreaterThanOrEqual(36);
+    expect(collectByName(field, /^field-turf-maintenance-brush-/).length).toBeGreaterThanOrEqual(8);
     expect(collectByName(field, /^field-goalmouth-depth-shadow-/)).toHaveLength(2);
     expect(collectByName(field, /^field-touchline-shadow-/)).toHaveLength(2);
   });
