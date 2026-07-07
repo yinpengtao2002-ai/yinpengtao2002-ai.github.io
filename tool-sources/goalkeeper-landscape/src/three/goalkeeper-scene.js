@@ -10,121 +10,36 @@ import {
 import { SHOT_3D } from "../game/shot-3d-director.js";
 import { RAPIER_GOAL } from "../physics/rapier-world.js";
 
-const BASE_BALL_TUNING = {
-  radius: 0.12,
-  haloRadius: 0.24,
-  shadowRadius: 0.14,
-  baseScale: 0.72,
-  nearScale: 1.32,
-  goalScale: 1.12,
-  deflectedScale: 1.06,
-  showShotTrail: false,
-  maxLingeringBalls: 6,
-};
-
-const BASE_DEPTH_TUNING = {
-  originZ: SHOT_3D.origin.z,
-  netPlaneZ: SHOT_3D.netPlaneZ,
-};
-
-export const COMPOSITION_PRESETS = {
-  classic: {
-    id: "classic",
-    camera: {
-      fov: 68,
-      position: { x: 0, y: 1.42, z: 9.35 },
-      lookAt: { x: 0, y: 1.16, z: -12 },
-    },
-    portraitCamera: {
-      fov: 74,
-      position: { x: 0, y: 1.34, z: 17.2 },
-      lookAt: { x: 0, y: 1.12, z: -9 },
-    },
-    ball: BASE_BALL_TUNING,
-    gloves: {
-      scale: 0.64,
-    },
-    depth: BASE_DEPTH_TUNING,
+export const SCENE_TUNING = {
+  camera: {
+    fov: 68,
+    position: { x: 0, y: 1.42, z: 9.35 },
+    lookAt: { x: 0, y: 1.16, z: -12 },
   },
-  keeper: {
-    id: "keeper",
-    camera: {
-      fov: 70,
-      position: { x: 0, y: 1.28, z: 7.65 },
-      lookAt: { x: 0, y: 1.18, z: -10.2 },
-    },
-    portraitCamera: {
-      fov: 76,
-      position: { x: 0, y: 1.26, z: 12.8 },
-      lookAt: { x: 0, y: 1.12, z: -8.2 },
-    },
-    ball: {
-      ...BASE_BALL_TUNING,
-      baseScale: 0.78,
-      nearScale: 1.42,
-      goalScale: 1.16,
-    },
-    gloves: {
-      scale: 0.7,
-    },
-    depth: BASE_DEPTH_TUNING,
+  portraitCamera: {
+    fov: 74,
+    position: { x: 0, y: 1.34, z: 17.2 },
+    lookAt: { x: 0, y: 1.12, z: -9 },
   },
-  training: {
-    id: "training",
-    camera: {
-      fov: 62,
-      position: { x: 0, y: 1.78, z: 13.2 },
-      lookAt: { x: 0, y: 1.16, z: -13.8 },
-    },
-    portraitCamera: {
-      fov: 68,
-      position: { x: 0, y: 1.62, z: 20.2 },
-      lookAt: { x: 0, y: 1.12, z: -10.6 },
-    },
-    ball: {
-      ...BASE_BALL_TUNING,
-      baseScale: 0.66,
-      nearScale: 1.2,
-      goalScale: 1.04,
-      deflectedScale: 1,
-    },
-    gloves: {
-      scale: 0.58,
-    },
-    depth: BASE_DEPTH_TUNING,
+  ball: {
+    radius: 0.12,
+    haloRadius: 0.24,
+    shadowRadius: 0.14,
+    baseScale: 0.72,
+    nearScale: 1.32,
+    goalScale: 1.12,
+    deflectedScale: 1.06,
+    showShotTrail: false,
+    maxLingeringBalls: 6,
   },
-  arcade: {
-    id: "arcade",
-    camera: {
-      fov: 86,
-      position: { x: 0, y: 1.16, z: 6.8 },
-      lookAt: { x: 0, y: 1.22, z: -8.4 },
-    },
-    portraitCamera: {
-      fov: 88,
-      position: { x: 0, y: 1.14, z: 11.2 },
-      lookAt: { x: 0, y: 1.14, z: -6.8 },
-    },
-    ball: {
-      ...BASE_BALL_TUNING,
-      baseScale: 0.86,
-      nearScale: 1.62,
-      goalScale: 1.24,
-      deflectedScale: 1.12,
-    },
-    gloves: {
-      scale: 0.78,
-    },
-    depth: BASE_DEPTH_TUNING,
+  gloves: {
+    scale: 0.64,
+  },
+  depth: {
+    originZ: SHOT_3D.origin.z,
+    netPlaneZ: SHOT_3D.netPlaneZ,
   },
 };
-
-export const DEFAULT_COMPOSITION_PRESET = "classic";
-export const SCENE_TUNING = COMPOSITION_PRESETS[DEFAULT_COMPOSITION_PRESET];
-
-export function getGoalkeeperCompositionPreset(id) {
-  return COMPOSITION_PRESETS[id] || SCENE_TUNING;
-}
 
 function clamp01(value) {
   return Math.max(0, Math.min(1, value));
@@ -151,8 +66,8 @@ function applyCameraTuning(camera, aspect, tuning) {
   );
 }
 
-export function createGoalkeeperScene(canvas, options = {}) {
-  var tuning = getGoalkeeperCompositionPreset(options.composition);
+export function createGoalkeeperScene(canvas) {
+  var tuning = SCENE_TUNING;
   var renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
   renderer.setClearColor("#8ed7ff", 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;

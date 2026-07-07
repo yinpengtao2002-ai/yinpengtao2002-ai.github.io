@@ -10,6 +10,7 @@ export function createHud(documentRef) {
     soundButton: documentRef.getElementById("soundButton"),
     startButton: documentRef.getElementById("startButton"),
     restartButton: documentRef.getElementById("restartButton"),
+    difficultyButtons: Array.from(documentRef.querySelectorAll?.("[data-difficulty]") || []),
     startOverlay: documentRef.getElementById("startOverlay"),
     endOverlay: documentRef.getElementById("endOverlay"),
     finalScore: documentRef.getElementById("finalScore"),
@@ -27,6 +28,16 @@ export function createHud(documentRef) {
       refs.restartButton?.addEventListener("click", actions.onRestart);
       refs.pauseButton?.addEventListener("click", actions.onPause);
       refs.soundButton?.addEventListener("click", actions.onSound);
+      refs.difficultyButtons.forEach((button) => {
+        button.addEventListener("click", () => actions.onDifficulty?.(button.dataset.difficulty));
+      });
+    },
+    updateDifficulty(selectedDifficulty) {
+      refs.difficultyButtons.forEach((button) => {
+        var active = button.dataset.difficulty === selectedDifficulty;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+      });
     },
     update(state, soundEnabled) {
       if (refs.scoreValue) refs.scoreValue.textContent = String(state.score);

@@ -119,10 +119,10 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
     new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
     "utf8"
   );
-  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-DS5J2WVF.js", import.meta.url);
+  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-33m-OX9c.js", import.meta.url);
   const gameScript = await stat(gameScriptPath);
   const gameScriptSource = await readFile(gameScriptPath, "utf8");
-  const gameStyles = await stat(new URL("../public/tools/goalkeeper-landscape/assets/index-BD73VWCd.css", import.meta.url));
+  const gameStyles = await stat(new URL("../public/tools/goalkeeper-landscape/assets/index-hTxdIy6z.css", import.meta.url));
   const gameWasm = await stat(new URL("../public/tools/goalkeeper-landscape/vendor/rapier_wasm3d_bg.wasm", import.meta.url));
 
   assert.doesNotMatch(goalkeeperPage, /redirect\(/);
@@ -133,17 +133,22 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(goalkeeperPage, /弹力手套守门挑战/);
   assert.match(goalkeeperPage, /id="gameCanvas"/);
   assert.match(goalkeeperPage, /id="startButton"/);
+  assert.match(goalkeeperPage, /data-difficulty="easy"/);
+  assert.match(goalkeeperPage, /data-difficulty="medium"/);
+  assert.match(goalkeeperPage, /data-difficulty="hard"/);
   assert.match(thinkingLabContent, /href:\s*"\/tools\/goalkeeper-landscape"/);
   assert.match(thinkingLabContent, /title:\s*"守门小游戏"/);
   assert.match(thinkingClient, /\"goalkeeper-landscape\":\s*Gamepad2/);
   assert.match(thinkingClient, /横屏守门挑战/);
   assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-DS5J2WVF\.js/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-BD73VWCd\.css/);
-  assert.match(gameScriptSource, /keeper/);
-  assert.match(gameScriptSource, /training/);
-  assert.match(gameScriptSource, /arcade/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-33m-OX9c\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-hTxdIy6z\.css/);
+  assert.match(gameScriptSource, /difficulty/);
+  assert.match(gameScriptSource, /medium/);
+  assert.doesNotMatch(gameScriptSource, /training/);
+  assert.doesNotMatch(gameScriptSource, /arcade/);
+  assert.doesNotMatch(gameScriptSource, /compositionPreset/);
   assert.ok(gameScript.size > 1024, "game script should be copied from the Vite dist output");
   assert.ok(gameStyles.size > 1024, "game styles should be copied from the Vite dist output");
   assert.ok(gameWasm.size > 1024, "Rapier wasm should be available to the game runtime");

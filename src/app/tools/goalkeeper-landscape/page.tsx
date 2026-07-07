@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import GoalkeeperLandscapeRuntime, { GOALKEEPER_SCRIPT_SRC } from "./GoalkeeperLandscapeRuntime";
 
-const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-BD73VWCd.css";
+const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-hTxdIy6z.css";
 
 export const metadata: Metadata = {
   title: "弹力手套守门挑战｜Lucas Yin",
@@ -52,6 +52,11 @@ export default function GoalkeeperLandscapePage() {
             </section>
 
             <div className="bottom-controls" aria-label="游戏控制">
+              <div className="difficulty-control glass-panel" role="group" aria-label="难度">
+                <button className="difficulty-button" type="button" data-difficulty="easy" aria-pressed="false">容易</button>
+                <button className="difficulty-button is-active" type="button" data-difficulty="medium" aria-pressed="true">中等</button>
+                <button className="difficulty-button" type="button" data-difficulty="hard" aria-pressed="false">困难</button>
+              </div>
               <button className="glass-button utility-button" id="soundButton" type="button" aria-label="关闭音效">音效开</button>
             </div>
 

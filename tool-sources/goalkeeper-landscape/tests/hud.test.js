@@ -6,14 +6,24 @@ function createElement() {
   return {
     textContent: "",
     attributes: {},
+    dataset: {},
+    listeners: {},
     classList: {
       values: new Set(),
       toggle(name, enabled) {
         if (enabled) this.values.add(name);
         else this.values.delete(name);
       },
+      contains(name) {
+        return this.values.has(name);
+      },
     },
-    addEventListener() {},
+    addEventListener(name, listener) {
+      this.listeners[name] = listener;
+    },
+    click() {
+      this.listeners.click?.({ currentTarget: this });
+    },
     setAttribute(name, value) {
       this.attributes[name] = value;
     },
@@ -41,11 +51,23 @@ function createDocument() {
   ].forEach((id) => {
     elements[id] = createElement();
   });
+  elements.easyDifficulty = createElement();
+  elements.easyDifficulty.dataset.difficulty = "easy";
+  elements.mediumDifficulty = createElement();
+  elements.mediumDifficulty.dataset.difficulty = "medium";
+  elements.hardDifficulty = createElement();
+  elements.hardDifficulty.dataset.difficulty = "hard";
 
   return {
     elements,
     getElementById(id) {
       return elements[id] || null;
+    },
+    querySelectorAll(selector) {
+      if (selector === "[data-difficulty]") {
+        return [elements.easyDifficulty, elements.mediumDifficulty, elements.hardDifficulty];
+      }
+      return [];
     },
   };
 }
@@ -64,5 +86,31 @@ describe("hud", () => {
 
     expect(documentRef.elements.soundButton.textContent).toBe("静音");
     expect(documentRef.elements.soundButton.getAttribute("aria-label")).toBe("开启音效");
+  });
+
+  it("highlights the selected difficulty and reports difficulty changes", () => {
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    let selected = "medium";
+
+    hud.bind({
+      onStart() {},
+      onRestart() {},
+      onPause() {},
+      onSound() {},
+      onDifficulty(value) {
+        selected = value;
+      },
+    });
+
+    hud.updateDifficulty("medium");
+    expect(documentRef.elements.mediumDifficulty.getAttribute("aria-pressed")).toBe("true");
+    expect(documentRef.elements.easyDifficulty.getAttribute("aria-pressed")).toBe("false");
+    expect(documentRef.elements.hardDifficulty.getAttribute("aria-pressed")).toBe("false");
+
+    documentRef.elements.hardDifficulty.click();
+    expect(selected).toBe("hard");
+    hud.updateDifficulty(selected);
+    expect(documentRef.elements.hardDifficulty.classList.contains("is-active")).toBe(true);
   });
 });

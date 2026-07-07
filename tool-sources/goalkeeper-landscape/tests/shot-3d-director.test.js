@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_SHOT_DIFFICULTY,
+  SHOT_DIFFICULTIES,
   createShot3DDirector,
   predictShotPosition,
+  resolveShotDifficulty,
   updateShot3DDirector,
 } from "../src/game/shot-3d-director.js";
 
@@ -65,5 +68,27 @@ describe("3D shot director", () => {
     director = updateShot3DDirector(director, 0.45, 1);
     expect(director.phase).toBe("live");
     expect(director.currentShot.shotId).toBe(0);
+  });
+
+  it("keeps medium as the current baseline while easy and hard adjust shot pressure", () => {
+    expect(DEFAULT_SHOT_DIFFICULTY).toBe("medium");
+    expect(Object.keys(SHOT_DIFFICULTIES)).toEqual(["easy", "medium", "hard"]);
+    expect(resolveShotDifficulty("missing").id).toBe("medium");
+
+    const easy = createShot3DDirector({ seed: 22, elapsed: 18, difficulty: "easy" }).currentShot;
+    const medium = createShot3DDirector({ seed: 22, elapsed: 18, difficulty: "medium" }).currentShot;
+    const hard = createShot3DDirector({ seed: 22, elapsed: 18, difficulty: "hard" }).currentShot;
+
+    expect(easy.difficulty).toBe("easy");
+    expect(medium.difficulty).toBe("medium");
+    expect(hard.difficulty).toBe("hard");
+    expect(medium.flightTime).toBeCloseTo(0.525, 3);
+    expect(medium.cueDuration).toBeCloseTo(0.712, 3);
+    expect(easy.flightTime).toBeGreaterThan(medium.flightTime);
+    expect(easy.cueDuration).toBeGreaterThan(medium.cueDuration);
+    expect(hard.flightTime).toBeLessThan(medium.flightTime);
+    expect(hard.cueDuration).toBeLessThan(medium.cueDuration);
+    expect(hard.ballPlan.velocity.z).toBeGreaterThan(medium.ballPlan.velocity.z);
+    expect(easy.ballPlan.velocity.z).toBeLessThan(medium.ballPlan.velocity.z);
   });
 });

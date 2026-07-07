@@ -14,6 +14,39 @@ export const SHOT_3D = {
   lateFlightTime: 0.42,
 };
 
+export const DEFAULT_SHOT_DIFFICULTY = "medium";
+
+export const SHOT_DIFFICULTIES = {
+  easy: {
+    id: "easy",
+    label: "容易",
+    pressureOffset: -0.18,
+    cueScale: 1.16,
+    flightScale: 1.12,
+    curveScale: 0.78,
+  },
+  medium: {
+    id: "medium",
+    label: "中等",
+    pressureOffset: 0,
+    cueScale: 1,
+    flightScale: 1,
+    curveScale: 1,
+  },
+  hard: {
+    id: "hard",
+    label: "困难",
+    pressureOffset: 0.18,
+    cueScale: 0.88,
+    flightScale: 0.86,
+    curveScale: 1.18,
+  },
+};
+
+export function resolveShotDifficulty(id) {
+  return SHOT_DIFFICULTIES[id] || SHOT_DIFFICULTIES[DEFAULT_SHOT_DIFFICULTY];
+}
+
 function makeRandom(seed) {
   var value = (seed || 1) >>> 0;
   return function random() {
@@ -89,33 +122,37 @@ function pickTargetY(random, swing, difficulty) {
 export function createShot3DDirector(options = {}) {
   var seed = options.seed || Math.floor(Math.random() * 1000000);
   var elapsed = options.elapsed || 0;
+  var shotDifficulty = resolveShotDifficulty(options.difficulty);
   var random = makeRandom(seed);
   return {
     seed: seed,
+    difficulty: shotDifficulty.id,
     shotIndex: 0,
     phase: "cue",
     phaseTime: 0,
     cooldown: 0,
-    currentShot: createShot3D({ random: random, elapsed: elapsed, shotId: 0 }),
+    currentShot: createShot3D({ random: random, elapsed: elapsed, shotId: 0, difficulty: shotDifficulty.id }),
   };
 }
 
 export function createShot3D(context) {
   var random = context.random;
+  var shotDifficulty = resolveShotDifficulty(context.difficulty);
   var difficulty = difficultyFromElapsed3D(context.elapsed || 0);
+  var shotPressure = clamp(difficulty + shotDifficulty.pressureOffset, 0, 1);
   var swing = pick(["drive", "curl", "dip"], random);
   var lean = pick(["left", "right", "center"], random);
   var side = lean === "left" ? -1 : lean === "right" ? 1 : random() > 0.5 ? 1 : -1;
   var foot = side < 0 ? "right-foot-inside" : "left-foot-inside";
-  var cueDuration = lerp(SHOT_3D.earlyCueDuration, SHOT_3D.lateCueDuration, difficulty);
-  var flightTime = lerp(SHOT_3D.earlyFlightTime, SHOT_3D.lateFlightTime, difficulty);
+  var cueDuration = lerp(SHOT_3D.earlyCueDuration, SHOT_3D.lateCueDuration, difficulty) * shotDifficulty.cueScale;
+  var flightTime = lerp(SHOT_3D.earlyFlightTime, SHOT_3D.lateFlightTime, difficulty) * shotDifficulty.flightScale;
   var origin = {
     x: lerp(-0.06, 0.06, random()),
     y: lerp(0.24, 0.32, random()),
     z: SHOT_3D.origin.z,
   };
-  var targetX = pickTargetX(random, side, difficulty);
-  var targetY = pickTargetY(random, swing, difficulty);
+  var targetX = pickTargetX(random, side, shotPressure);
+  var targetY = pickTargetY(random, swing, shotPressure);
   var target = {
     x: clamp(targetX, -SHOT_3D.goalHalfWidth + 0.26, SHOT_3D.goalHalfWidth - 0.26),
     y: clamp(targetY, 0.46, SHOT_3D.goalHeight - 0.16),
@@ -123,11 +160,12 @@ export function createShot3D(context) {
   };
   var curveAmount =
     swing === "curl"
-      ? lerp(1.0, 2.8, difficulty) * side
+      ? lerp(1.0, 2.8, shotPressure) * side
       : swing === "dip"
         ? lerp(0.15, 0.55, random()) * side
         : lerp(0.05, 0.36, random()) * side;
-  var dipForce = swing === "dip" ? -lerp(0.7, 1.6, difficulty) : swing === "drive" ? 0.18 : -0.24;
+  curveAmount *= shotDifficulty.curveScale;
+  var dipForce = swing === "dip" ? -lerp(0.7, 1.6, shotPressure) * shotDifficulty.curveScale : swing === "drive" ? 0.18 : -0.24;
   var curveForce = {
     x: curveAmount,
     y: dipForce,
@@ -146,6 +184,7 @@ export function createShot3D(context) {
 
   return {
     shotId: context.shotId || 0,
+    difficulty: shotDifficulty.id,
     cue: {
       lean: lean,
       swing: swing,
@@ -172,19 +211,21 @@ export function createShot3D(context) {
   };
 }
 
-export function updateShot3DDirector(director, dt, elapsed) {
+export function updateShot3DDirector(director, dt, elapsed, difficulty = director.difficulty) {
   if (director.phase === "cooldown") {
     var cooldown = Math.max(0, director.cooldown - dt);
     if (cooldown > 0) return { ...director, cooldown: cooldown };
     var shotIndex = director.shotIndex + 1;
     var random = makeRandom(director.seed + shotIndex * 37 + 11);
+    var shotDifficulty = resolveShotDifficulty(difficulty);
     return {
       ...director,
+      difficulty: shotDifficulty.id,
       shotIndex: shotIndex,
       phase: "cue",
       phaseTime: 0,
       cooldown: 0,
-      currentShot: createShot3D({ random: random, elapsed: elapsed, shotId: shotIndex }),
+      currentShot: createShot3D({ random: random, elapsed: elapsed, shotId: shotIndex, difficulty: shotDifficulty.id }),
     };
   }
 

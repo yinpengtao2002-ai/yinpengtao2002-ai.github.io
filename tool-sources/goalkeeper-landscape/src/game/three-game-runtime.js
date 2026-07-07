@@ -1,10 +1,16 @@
 import { createAudioEngine } from "../audio/audio-engine.js";
 import { createGameState, recordGoal, recordSave, startRound, tickRound, togglePause } from "./game-state.js";
-import { completeShot3D, createShot3DDirector, updateShot3DDirector } from "./shot-3d-director.js";
+import {
+  DEFAULT_SHOT_DIFFICULTY,
+  completeShot3D,
+  createShot3DDirector,
+  resolveShotDifficulty,
+  updateShot3DDirector,
+} from "./shot-3d-director.js";
 import { createPointerInput } from "../input/pointer-input.js";
 import { GLOVE_3D, createGloveController, updateGloveController } from "../input/glove-controller.js";
 import { createRapierGoalkeeperWorld } from "../physics/rapier-world.js";
-import { DEFAULT_COMPOSITION_PRESET, getGoalkeeperCompositionPreset, createGoalkeeperScene } from "../three/goalkeeper-scene.js";
+import { createGoalkeeperScene } from "../three/goalkeeper-scene.js";
 import { createHud } from "../ui/hud.js";
 import { getStageRenderBounds, requestLandscapeOrientation, syncMobileLandscape } from "../ui/mobile-landscape.js";
 
@@ -106,18 +112,18 @@ export function advanceLingeringBalls(balls, dt) {
   return balls.map((ball) => advanceLingeringBall(ball, dt)).filter((ball) => ball.age < ball.duration);
 }
 
-export function resolveCompositionPreset(windowRef) {
+export function resolveRuntimeDifficulty(windowRef) {
   var search = windowRef?.location?.search || "";
-  var value = DEFAULT_COMPOSITION_PRESET;
+  var value = DEFAULT_SHOT_DIFFICULTY;
 
   try {
     var params = new URLSearchParams(search);
-    value = params.get("view") || params.get("composition") || DEFAULT_COMPOSITION_PRESET;
+    value = params.get("difficulty") || DEFAULT_SHOT_DIFFICULTY;
   } catch {
-    value = DEFAULT_COMPOSITION_PRESET;
+    value = DEFAULT_SHOT_DIFFICULTY;
   }
 
-  return getGoalkeeperCompositionPreset(value).id;
+  return resolveShotDifficulty(value).id;
 }
 
 export async function createThreeGameRuntime(options) {
@@ -125,7 +131,7 @@ export async function createThreeGameRuntime(options) {
   var stage = options.stage;
   var documentRef = options.documentRef || document;
   var windowRef = options.windowRef || window;
-  var compositionPreset = resolveCompositionPreset(windowRef);
+  var selectedDifficulty = resolveRuntimeDifficulty(windowRef);
 
   windowRef.goalkeeperBootStatus = "hud";
   var hud = createHud(documentRef);
@@ -134,14 +140,14 @@ export async function createThreeGameRuntime(options) {
   windowRef.goalkeeperBootStatus = "input";
   var input = createPointerInput(stage);
   windowRef.goalkeeperBootStatus = "three-scene";
-  var scene = createGoalkeeperScene(canvas, { composition: compositionPreset });
+  var scene = createGoalkeeperScene(canvas);
   windowRef.goalkeeperBootStatus = "rapier-world";
   var physics = await createRapierGoalkeeperWorld();
   windowRef.goalkeeperBootStatus = "runtime-ready";
 
   var bounds = { width: 1280, height: 720 };
   var state = createGameState();
-  var director = createShot3DDirector({ seed: Date.now() % 100000 });
+  var director = createShot3DDirector({ seed: Date.now() % 100000, difficulty: selectedDifficulty });
   var gloveController = createGloveController();
   var launchedShotId = null;
   var handledOutcome = null;
@@ -169,7 +175,7 @@ export async function createThreeGameRuntime(options) {
   function resetRound() {
     audio.prime();
     state = startRound(createGameState());
-    director = createShot3DDirector({ seed: Date.now() % 100000, elapsed: 0 });
+    director = createShot3DDirector({ seed: Date.now() % 100000, elapsed: 0, difficulty: selectedDifficulty });
     gloveController = createGloveController();
     physics.resetBall();
     launchedShotId = null;
@@ -209,7 +215,7 @@ export async function createThreeGameRuntime(options) {
     outcomeTimer += dt;
     var nextShotDelay = getNextShotDelayForOutcome(handledOutcome);
     if (outcomeTimer >= nextShotDelay && !state.ended) {
-      director = completeShot3D(director);
+      director = completeShot3D({ ...director, difficulty: selectedDifficulty });
       physics.resetBall();
       launchedShotId = null;
       handledOutcome = null;
@@ -284,7 +290,7 @@ export async function createThreeGameRuntime(options) {
     });
     physics.setGloveTarget(gloveController.center);
 
-    director = updateShot3DDirector(director, dt, state.elapsed);
+    director = updateShot3DDirector(director, dt, state.elapsed, selectedDifficulty);
     launchCurrentShotIfNeeded();
 
     physics.step(dt);
@@ -312,7 +318,7 @@ export async function createThreeGameRuntime(options) {
 
   function syncDebugDataset() {
     var ball = physics.getBallState();
-    stage.dataset.compositionPreset = compositionPreset;
+    stage.dataset.difficulty = selectedDifficulty;
     stage.dataset.bootStatus = windowRef.goalkeeperBootStatus || "";
     stage.dataset.phase = director.phase;
     stage.dataset.shotId = String(director.currentShot?.shotId ?? "");
@@ -386,7 +392,13 @@ export async function createThreeGameRuntime(options) {
       audio.toggle();
       hud.update(state, audio.isEnabled());
     },
+    onDifficulty(value) {
+      selectedDifficulty = resolveShotDifficulty(value).id;
+      director = { ...director, difficulty: selectedDifficulty };
+      hud.updateDifficulty(selectedDifficulty);
+    },
   });
+  hud.updateDifficulty(selectedDifficulty);
 
   function onDebugKey(event) {
     if (!debugKeysEnabled) return;
@@ -420,6 +432,9 @@ export async function createThreeGameRuntime(options) {
     },
     getDirector() {
       return director;
+    },
+    getDifficulty() {
+      return selectedDifficulty;
     },
     getBall() {
       return physics.getBallState();

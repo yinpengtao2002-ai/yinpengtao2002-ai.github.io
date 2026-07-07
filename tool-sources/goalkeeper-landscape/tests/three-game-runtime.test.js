@@ -4,7 +4,7 @@ import {
   getLingeringBallDurationForOutcome,
   getNextShotDelayForOutcome,
   getReplayDurationForOutcome,
-  resolveCompositionPreset,
+  resolveRuntimeDifficulty,
 } from "../src/game/three-game-runtime.js";
 
 describe("three game runtime timing", () => {
@@ -42,11 +42,14 @@ describe("three game runtime timing", () => {
     expect(afterTwoSeconds.velocity.y).toBeLessThan(0.5);
   });
 
-  it("resolves framing demo presets from the URL without changing the default", () => {
-    expect(resolveCompositionPreset({ location: { search: "" } })).toBe("classic");
-    expect(resolveCompositionPreset({ location: { search: "?view=keeper" } })).toBe("keeper");
-    expect(resolveCompositionPreset({ location: { search: "?view=training" } })).toBe("training");
-    expect(resolveCompositionPreset({ location: { search: "?composition=arcade" } })).toBe("arcade");
-    expect(resolveCompositionPreset({ location: { search: "?view=unknown" } })).toBe("classic");
+  it("ignores old framing demo parameters and resolves only gameplay difficulty", async () => {
+    const runtimeModule = await import("../src/game/three-game-runtime.js");
+
+    expect(runtimeModule.resolveCompositionPreset).toBeUndefined();
+    expect(resolveRuntimeDifficulty({ location: { search: "" } })).toBe("medium");
+    expect(resolveRuntimeDifficulty({ location: { search: "?view=keeper" } })).toBe("medium");
+    expect(resolveRuntimeDifficulty({ location: { search: "?difficulty=easy" } })).toBe("easy");
+    expect(resolveRuntimeDifficulty({ location: { search: "?difficulty=hard" } })).toBe("hard");
+    expect(resolveRuntimeDifficulty({ location: { search: "?difficulty=unknown" } })).toBe("medium");
   });
 });
