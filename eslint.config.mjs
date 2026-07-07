@@ -22,6 +22,8 @@ const eslintConfig = defineConfig([
     "social-card-prompt-handoff*/**",
     "next-env.d.ts",
     "public/vendor/**",
+    "public/tools/goalkeeper-landscape/assets/**",
+    "tool-sources/goalkeeper-landscape/dist/**",
   ]),
 ]);
 

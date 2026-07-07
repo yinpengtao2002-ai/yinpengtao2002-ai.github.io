@@ -36,6 +36,29 @@ describe("Rapier goalkeeper world", () => {
     world.dispose();
   });
 
+  it("keeps low balls on the field instead of falling through the ground", async () => {
+    const world = await createRapierGoalkeeperWorld();
+
+    world.launchShot({
+      origin: { x: 0, y: 0.38, z: 1.4 },
+      target: { x: 0, y: 0.1, z: 2.4 },
+      velocity: { x: 0, y: -4.2, z: 1.2 },
+      angularVelocity: { x: 8, y: 0, z: 0 },
+      curveForce: { x: 0, y: 0, z: 0 },
+      radius: 0.11,
+    });
+
+    for (let i = 0; i < 90; i += 1) {
+      world.step(1 / 120);
+    }
+    const ball = world.getBallState();
+
+    expect(ball.position.y).toBeGreaterThanOrEqual(0.09);
+    expect(ball.velocity.y).toBeGreaterThan(-1.2);
+
+    world.dispose();
+  });
+
   it("side-parries an offset waiting block without always driving it forward", async () => {
     const world = await createRapierGoalkeeperWorld();
 

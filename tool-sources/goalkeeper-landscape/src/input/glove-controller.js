@@ -70,9 +70,28 @@ export function createGloveController() {
 export function updateGloveController(controller, pointer, dt, bounds) {
   var inputMode = bounds.inputMode || controller.inputMode || "mouse";
   var target = mapPointerToGloveTarget(pointer, bounds);
-  var follow = inputMode === "touch" ? GLOVE_3D.touchFollow : GLOVE_3D.mouseFollow;
-  var maxSpeed = inputMode === "touch" ? GLOVE_3D.maxSpeedTouch : GLOVE_3D.maxSpeedMouse;
   var previous = controller.center;
+  var safeDt = Math.max(dt, 1 / 120);
+
+  if (inputMode === "touch") {
+    var touchVelocity = {
+      x: (target.x - previous.x) / safeDt,
+      y: (target.y - previous.y) / safeDt,
+      z: 0,
+    };
+
+    return {
+      center: { x: target.x, y: target.y, z: GLOVE_3D.planeZ },
+      previousCenter: previous,
+      velocity: touchVelocity,
+      inputMode: inputMode,
+      target: target,
+      ...withHands({ x: target.x, y: target.y, z: GLOVE_3D.planeZ }),
+    };
+  }
+
+  var follow = GLOVE_3D.mouseFollow;
+  var maxSpeed = GLOVE_3D.maxSpeedMouse;
   var desired = {
     x: previous.x + (target.x - previous.x) * follow,
     y: previous.y + (target.y - previous.y) * follow,
@@ -81,7 +100,6 @@ export function updateGloveController(controller, pointer, dt, bounds) {
   var dx = desired.x - previous.x;
   var dy = desired.y - previous.y;
   var distance = Math.hypot(dx, dy);
-  var safeDt = Math.max(dt, 1 / 120);
   var maxDistance = maxSpeed * safeDt;
   var center = desired;
 

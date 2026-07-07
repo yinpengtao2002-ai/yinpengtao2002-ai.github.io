@@ -100,6 +100,7 @@ class RapierGoalkeeperWorld {
     this.gloveParts = [];
     this.createGloves();
     this.createGoalColliders();
+    this.createFieldColliders();
   }
 
   createGloves() {
@@ -139,6 +140,14 @@ class RapierGoalkeeperWorld {
       var body = this.world.createRigidBody(R.RigidBodyDesc.fixed().setTranslation(box.x, box.y, box.z));
       this.world.createCollider(R.ColliderDesc.cuboid(box.hx, box.hy, box.hz).setRestitution(0.72).setFriction(0.3), body);
     });
+  }
+
+  createFieldColliders() {
+    var body = this.world.createRigidBody(this.R.RigidBodyDesc.fixed().setTranslation(0, -0.055, -8.5));
+    this.world.createCollider(
+      this.R.ColliderDesc.cuboid(9.5, 0.055, 18.5).setRestitution(0.58).setFriction(0.56),
+      body,
+    );
   }
 
   dispose() {

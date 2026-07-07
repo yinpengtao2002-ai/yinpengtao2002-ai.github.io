@@ -25,7 +25,12 @@ export function createPointerInput(element) {
     pointer.active = true;
     updateFromEvent(event);
     if (element.setPointerCapture && event.pointerId !== undefined) {
-      element.setPointerCapture(event.pointerId);
+      try {
+        element.setPointerCapture(event.pointerId);
+      } catch {
+        // Synthetic touch events and some embedded browsers may not create an
+        // active pointer before pointerdown reaches this handler.
+      }
     }
   });
 
@@ -40,7 +45,7 @@ export function createPointerInput(element) {
     if (element.releasePointerCapture && event.pointerId !== undefined) {
       try {
         element.releasePointerCapture(event.pointerId);
-      } catch (error) {
+      } catch {
         // Pointer may already have been released by the browser.
       }
     }

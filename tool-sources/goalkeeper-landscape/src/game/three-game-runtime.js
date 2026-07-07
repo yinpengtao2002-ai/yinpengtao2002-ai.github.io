@@ -30,6 +30,12 @@ function makeCloseMissPlan() {
   };
 }
 
+export function getReplayDurationForOutcome(outcome) {
+  if (outcome === "goal") return 1.08;
+  if (outcome === "save") return 5;
+  return 0.58;
+}
+
 export async function createThreeGameRuntime(options) {
   var canvas = options.canvas;
   var stage = options.stage;
@@ -90,7 +96,7 @@ export async function createThreeGameRuntime(options) {
   function finishCurrentShotAfterReplay(dt) {
     if (!handledOutcome) return;
     outcomeTimer += dt;
-    var replayDuration = handledOutcome === "goal" ? 1.08 : 0.58;
+    var replayDuration = getReplayDurationForOutcome(handledOutcome);
     if (outcomeTimer >= replayDuration && !state.ended) {
       director = completeShot3D(director);
       physics.resetBall();
@@ -168,8 +174,9 @@ export async function createThreeGameRuntime(options) {
     director = updateShot3DDirector(director, dt, state.elapsed);
     launchCurrentShotIfNeeded();
 
+    physics.step(dt);
+
     if (launchedShotId !== null) {
-      physics.step(dt);
       var ball = physics.getBallState();
       playContactAudio(ball);
       handleBallOutcome(ball);

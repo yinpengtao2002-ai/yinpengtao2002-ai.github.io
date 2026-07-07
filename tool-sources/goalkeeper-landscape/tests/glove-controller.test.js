@@ -29,18 +29,28 @@ describe("3D glove controller", () => {
     expect(target.colliderRadius).toBeLessThanOrEqual(0.21);
   });
 
-  it("mouse follows the target more directly than touch", () => {
-    const mouse = updateGloveController(createGloveController(), { x: 1100, y: 180 }, 0.016, {
-      ...bounds,
-      inputMode: "mouse",
-    });
-    const touch = updateGloveController(createGloveController(), { x: 1100, y: 180 }, 0.016, {
+  it("touch follows the finger target immediately on mobile", () => {
+    const pointer = { x: 1100, y: 180 };
+    const target = mapPointerToGloveTarget(pointer, bounds);
+    const touch = updateGloveController(createGloveController(), pointer, 0.016, {
       ...bounds,
       inputMode: "touch",
     });
 
-    expect(mouse.center.x).toBeGreaterThan(touch.center.x);
-    expect(mouse.center.y).toBeGreaterThan(touch.center.y);
-    expect(mouse.velocity.x).toBeGreaterThan(touch.velocity.x);
+    expect(touch.center.x).toBeCloseTo(target.x, 5);
+    expect(touch.center.y).toBeCloseTo(target.y, 5);
+    expect(touch.target.x).toBeCloseTo(target.x, 5);
+  });
+
+  it("mouse still eases into the target instead of snapping", () => {
+    const pointer = { x: 1100, y: 180 };
+    const target = mapPointerToGloveTarget(pointer, bounds);
+    const mouse = updateGloveController(createGloveController(), pointer, 0.016, {
+      ...bounds,
+      inputMode: "mouse",
+    });
+
+    expect(mouse.center.x).toBeGreaterThan(0);
+    expect(mouse.center.x).toBeLessThan(target.x);
   });
 });
