@@ -22,6 +22,14 @@ test("global security headers are configured in Next", async () => {
   assert.match(nextConfig, /Permissions-Policy/);
 });
 
+test("local development CSP does not upgrade same-origin API fetches to HTTPS", async () => {
+  const nextConfig = await readProjectFile("next.config.ts");
+
+  assert.match(nextConfig, /shouldUpgradeInsecureRequests/);
+  assert.match(nextConfig, /process\.env\.NODE_ENV\s*===\s*"production"/);
+  assert.match(nextConfig, /upgradeInsecureRequestsDirective/);
+});
+
 test("same-origin static finance tools remain embeddable by their finance pages", async () => {
   const nextConfig = await readProjectFile("next.config.ts");
 

@@ -3,6 +3,8 @@ import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
+const shouldUpgradeInsecureRequests = process.env.NODE_ENV === "production";
+const upgradeInsecureRequestsDirective = shouldUpgradeInsecureRequests ? ["upgrade-insecure-requests"] : [];
 
 const baseContentSecurityPolicyDirectives = [
   "default-src 'self'",
@@ -21,13 +23,13 @@ const baseContentSecurityPolicyDirectives = [
 const contentSecurityPolicy = [
   ...baseContentSecurityPolicyDirectives,
   "frame-ancestors 'none'",
-  "upgrade-insecure-requests",
+  ...upgradeInsecureRequestsDirective,
 ].join("; ");
 
 const sameOriginFrameContentSecurityPolicy = [
   ...baseContentSecurityPolicyDirectives,
   "frame-ancestors 'self'",
-  "upgrade-insecure-requests",
+  ...upgradeInsecureRequestsDirective,
 ].join("; ");
 
 const sharedSecurityHeaders = [

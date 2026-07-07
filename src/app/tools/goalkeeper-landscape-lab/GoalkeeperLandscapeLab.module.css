@@ -181,7 +181,12 @@
   align-items: center;
   justify-content: center;
   color: #1d3429;
-  cursor: default;
+  cursor: pointer;
+}
+
+.iconButton:disabled {
+  cursor: progress;
+  opacity: 0.58;
 }
 
 .pitchPreview {
@@ -260,6 +265,15 @@
     radial-gradient(circle at 62% 64%, #17211c 0 13%, transparent 14%),
     #f8f4e8;
   box-shadow: 0 10px 22px rgba(21, 36, 28, 0.28);
+}
+
+.traceDot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(45, 94, 130, 0.78);
+  box-shadow: 0 0 0 5px rgba(45, 94, 130, 0.12);
 }
 
 .previewReadout {
@@ -358,6 +372,18 @@
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 18px;
+}
+
+.statusText {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(179, 74, 55, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 246, 242, 0.82);
+  color: #8a3228;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.5;
 }
 
 .markerStack span {

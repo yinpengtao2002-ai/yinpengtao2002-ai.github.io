@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
-import { Box, Gauge, Goal, RotateCcw, Shield, Sparkles } from "lucide-react";
+import { Box, Gauge, Sparkles } from "lucide-react";
+import LowRollingBallReplay from "./LowRollingBallReplay";
 import styles from "./GoalkeeperLandscapeLab.module.css";
 
 type PhysicsScenario = {
@@ -202,96 +203,7 @@ export default function GoalkeeperLandscapeLabPage() {
       </aside>
 
       <section className={styles.workbench} aria-label="Goalkeeper experiment workbench">
-        <section id="physics-lab" className={styles.previewPanel} aria-label="Physics Lab">
-          <div className={styles.panelHeader}>
-            <div>
-              <span className={styles.kicker}>Physics Lab</span>
-              <h2>确定性球路与碰撞样例</h2>
-            </div>
-            <button className={styles.iconButton} type="button" aria-label="Replay selected scenario">
-              <RotateCcw aria-hidden="true" />
-            </button>
-          </div>
-
-          <div className={styles.pitchPreview} aria-label={`${activeScenario.name} preview`}>
-            <div className={styles.goalFrame} aria-hidden="true">
-              <div className={styles.netLine} />
-              <Shield className={styles.gloveGhost} aria-hidden="true" />
-              <div className={styles.ballTrace} />
-              <div className={styles.contactMarker} />
-              <div className={styles.ball} />
-            </div>
-            <div className={styles.previewReadout}>
-              <span>{activeScenario.name}</span>
-              <strong>{activeScenario.status}</strong>
-            </div>
-          </div>
-
-          <div className={styles.scenarioGrid}>
-            {physicsScenarios.map((scenario, index) => (
-              <article className={styles.scenarioCard} key={scenario.key} aria-current={index === 0 ? "true" : undefined}>
-                <div className={styles.cardTopline}>
-                  <span>{scenario.name}</span>
-                  <strong>{scenario.status}</strong>
-                </div>
-                <p>{scenario.intent}</p>
-                <dl className={styles.telemetryList}>
-                  <div>
-                    <dt>position</dt>
-                    <dd>{scenario.position}</dd>
-                  </div>
-                  <div>
-                    <dt>velocity</dt>
-                    <dd>{scenario.velocity}</dd>
-                  </div>
-                  <div>
-                    <dt>angular velocity</dt>
-                    <dd>{scenario.angularVelocity}</dd>
-                  </div>
-                  <div>
-                    <dt>last contact</dt>
-                    <dd>{scenario.contact.type}</dd>
-                  </div>
-                </dl>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <aside className={styles.telemetryPanel} aria-label="Selected scenario telemetry">
-          <div className={styles.panelHeader}>
-            <div>
-              <span className={styles.kicker}>Contact Telemetry</span>
-              <h2>{activeScenario.name}</h2>
-            </div>
-            <Goal aria-hidden="true" />
-          </div>
-
-          <dl className={styles.detailGrid}>
-            <div>
-              <dt>contact point</dt>
-              <dd>{activeScenario.contact.point}</dd>
-            </div>
-            <div>
-              <dt>contact normal</dt>
-              <dd>{activeScenario.contact.normal}</dd>
-            </div>
-            <div>
-              <dt>contact strength</dt>
-              <dd>{activeScenario.contact.strength}</dd>
-            </div>
-            <div>
-              <dt>outcome state</dt>
-              <dd>{activeScenario.status}</dd>
-            </div>
-          </dl>
-
-          <div className={styles.markerStack} aria-label="Debug markers">
-            {activeScenario.markers.map((marker) => (
-              <span key={marker}>{marker}</span>
-            ))}
-          </div>
-        </aside>
+        <LowRollingBallReplay scenario={activeScenario} scenarios={physicsScenarios} />
 
         <section id="asset-lab" className={styles.assetPanel} aria-label="Asset Lab">
           <div className={styles.panelHeader}>

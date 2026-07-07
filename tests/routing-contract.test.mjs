@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile, stat } from "node:fs/promises";
 
 const nextConfig = await readFile(new URL("../next.config.ts", import.meta.url), "utf8");
+const packageJson = await readFile(new URL("../package.json", import.meta.url), "utf8");
 const sitemap = await readFile(new URL("../src/app/sitemap.ts", import.meta.url), "utf8");
 const globals = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
 const clientShell = await readFile(new URL("../src/components/ClientShell.tsx", import.meta.url), "utf8");
@@ -160,6 +161,14 @@ test("goalkeeper landscape lab is a hidden internal workbench route", async () =
     new URL("../src/app/tools/goalkeeper-landscape-lab/page.tsx", import.meta.url),
     "utf8"
   );
+  const labReplay = await readFile(
+    new URL("../src/app/tools/goalkeeper-landscape-lab/LowRollingBallReplay.tsx", import.meta.url),
+    "utf8"
+  );
+  const labApi = await readFile(
+    new URL("../src/app/api/tools/goalkeeper-landscape-lab/low-rolling-ball/route.ts", import.meta.url),
+    "utf8"
+  );
 
   assert.doesNotMatch(labPage, /redirect\(/);
   assert.match(labPage, /Goalkeeper Landscape Lab/);
@@ -175,6 +184,14 @@ test("goalkeeper landscape lab is a hidden internal workbench route", async () =
   assert.match(labPage, /license/);
   assert.match(labPage, /performance/);
   assert.match(labPage, /prefetch=\{false\}/);
+  assert.match(labPage, /LowRollingBallReplay/);
+  assert.match(labReplay, /"use client"/);
+  assert.match(labReplay, /\/api\/tools\/goalkeeper-landscape-lab\/low-rolling-ball/);
+  assert.match(labReplay, /data-live-telemetry/);
+  assert.match(labReplay, /Replay selected scenario/);
+  assert.match(labApi, /runLowRollingBallLabScenario/);
+  assert.match(labApi, /NextResponse\.json/);
+  assert.match(packageJson, /"@dimforge\/rapier3d-compat"/);
   assert.doesNotMatch(sitemap, /goalkeeper-landscape-lab/);
   assert.doesNotMatch(thinkingLabContent, /goalkeeper-landscape-lab/);
   assert.doesNotMatch(thinkingClient, /goalkeeper-landscape-lab/);
