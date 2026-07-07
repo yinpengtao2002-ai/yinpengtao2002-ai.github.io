@@ -16,6 +16,81 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.depth.originZ).toBe(SHOT_3D.origin.z);
   });
 
+  it("defines restrained glove impact compression and rebound feedback", () => {
+    expect(SCENE_TUNING.gloves.impactSystem).toBe("glove-impact-compression-rebound");
+    expect(SCENE_TUNING.gloves.impactDecay).toBeGreaterThanOrEqual(0.035);
+    expect(SCENE_TUNING.gloves.impactDecay).toBeLessThanOrEqual(0.09);
+    expect(SCENE_TUNING.gloves.impactCompression).toBeGreaterThanOrEqual(0.1);
+    expect(SCENE_TUNING.gloves.impactCompression).toBeLessThanOrEqual(0.2);
+    expect(SCENE_TUNING.gloves.impactRebound).toBeGreaterThan(0.04);
+    expect(SCENE_TUNING.gloves.impactRebound).toBeLessThan(SCENE_TUNING.gloves.impactCompression);
+    expect(SCENE_TUNING.gloves.impactTwist).toBeGreaterThan(0.04);
+    expect(SCENE_TUNING.gloves.impactTwist).toBeLessThanOrEqual(0.1);
+  });
+
+  it("turns save contact into side-specific glove compression state", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.createGloveImpactState).toBeTypeOf("function");
+    expect(sceneModule.triggerGloveImpactState).toBeTypeOf("function");
+    expect(sceneModule.advanceGloveImpactState).toBeTypeOf("function");
+    expect(sceneModule.getGloveVisualTransform).toBeTypeOf("function");
+
+    const state = sceneModule.createGloveImpactState();
+    sceneModule.triggerGloveImpactState(
+      state,
+      {
+        type: "glove",
+        side: "left",
+        point: { x: -0.48, y: 1.24, z: 3.15 },
+        strength: 22,
+      },
+      {
+        left: { x: -0.34, y: 1.2, z: 3.15 },
+        right: { x: 0.34, y: 1.2, z: 3.15 },
+      },
+    );
+
+    expect(state.left.life).toBe(1);
+    expect(state.left.strength).toBeGreaterThan(0.5);
+    expect(state.left.point).toEqual({ x: -0.48, y: 1.24, z: 3.15 });
+    expect(state.right.life).toBe(0);
+
+    const visual = sceneModule.getGloveVisualTransform("left", SCENE_TUNING.gloves.scale, state.left);
+    expect(visual.scale.x).toBeGreaterThan(SCENE_TUNING.gloves.scale);
+    expect(visual.scale.y).toBeLessThan(SCENE_TUNING.gloves.scale);
+    expect(visual.scale.z).toBeGreaterThan(SCENE_TUNING.gloves.scale);
+    expect(Math.abs(visual.rotation.z)).toBeGreaterThan(0.01);
+
+    sceneModule.advanceGloveImpactState(state);
+    expect(state.left.life).toBeLessThan(1);
+    expect(state.right.life).toBe(0);
+  });
+
+  it("treats centered catches as a two-glove cushion", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+    const state = sceneModule.createGloveImpactState();
+
+    sceneModule.triggerGloveImpactState(
+      state,
+      {
+        type: "catch",
+        side: "both",
+        point: { x: 0.02, y: 1.31, z: 3.12 },
+        strength: 13,
+      },
+      {
+        left: { x: -0.34, y: 1.2, z: 3.15 },
+        right: { x: 0.34, y: 1.2, z: 3.15 },
+      },
+    );
+
+    expect(state.left.life).toBe(1);
+    expect(state.right.life).toBe(1);
+    expect(state.left.strength).toBeGreaterThan(0.35);
+    expect(state.right.strength).toBeGreaterThan(0.35);
+  });
+
   it("uses height-aware ball shadows so airborne and rolling balls read differently", () => {
     expect(SCENE_TUNING.ball.shadowAssetSystem).toBe("height-aware-ball-shadow");
     expect(SCENE_TUNING.ball.shadowGroundOpacity).toBeGreaterThan(SCENE_TUNING.ball.shadowAirOpacity);

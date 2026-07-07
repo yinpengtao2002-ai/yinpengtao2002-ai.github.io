@@ -41,6 +41,13 @@ export const SCENE_TUNING = {
   },
   gloves: {
     scale: 0.64,
+    impactSystem: "glove-impact-compression-rebound",
+    impactDecay: 0.055,
+    impactCompression: 0.16,
+    impactRebound: 0.075,
+    impactTwist: 0.075,
+    impactKickback: 0.035,
+    impactStrengthScale: 0.035,
   },
   lighting: {
     assetSystem: "warm-stadium-three-point",
@@ -89,6 +96,104 @@ function lerpNumber(start, end, amount) {
   return start + (end - start) * amount;
 }
 
+function createEmptyGloveImpact() {
+  return {
+    life: 0,
+    strength: 0,
+    point: null,
+  };
+}
+
+function distanceSquared(a, b) {
+  if (!a || !b) return Number.POSITIVE_INFINITY;
+  var dx = (a.x || 0) - (b.x || 0);
+  var dy = (a.y || 0) - (b.y || 0);
+  var dz = (a.z || 0) - (b.z || 0);
+  return dx * dx + dy * dy + dz * dz;
+}
+
+function normalizeGloveImpactStrength(contact, tuning) {
+  var rawStrength = Number.isFinite(contact?.strength) ? contact.strength : contact?.type === "catch" ? 14 : 18;
+  return clamp01(rawStrength * tuning.impactStrengthScale);
+}
+
+export function createGloveImpactState() {
+  return {
+    left: createEmptyGloveImpact(),
+    right: createEmptyGloveImpact(),
+  };
+}
+
+export function getGloveImpactForContact(contact, gloves, tuning = SCENE_TUNING.gloves) {
+  if (!contact || (contact.type !== "glove" && contact.type !== "catch")) return null;
+
+  var point = contact.point || gloves?.center || { x: 0, y: 1.2, z: 3.15 };
+  var side = contact.type === "catch" || contact.side === "both" ? "both" : contact.side;
+  if (side !== "left" && side !== "right" && side !== "both") {
+    side = distanceSquared(point, gloves?.left) <= distanceSquared(point, gloves?.right) ? "left" : "right";
+  }
+
+  return {
+    side,
+    point,
+    strength: Math.max(contact.type === "catch" ? 0.38 : 0.3, normalizeGloveImpactStrength(contact, tuning)),
+  };
+}
+
+export function triggerGloveImpactState(state, contact, gloves, tuning = SCENE_TUNING.gloves) {
+  var impact = getGloveImpactForContact(contact, gloves, tuning);
+  if (!impact) return state;
+
+  var sides = impact.side === "both" ? ["left", "right"] : [impact.side];
+  sides.forEach((side) => {
+    if (!state[side]) state[side] = createEmptyGloveImpact();
+    state[side].life = 1;
+    state[side].strength = Math.max(state[side].strength || 0, impact.strength);
+    state[side].point = impact.point;
+  });
+  return state;
+}
+
+export function advanceGloveImpactState(state, tuning = SCENE_TUNING.gloves) {
+  var decay = typeof tuning === "number" ? tuning : tuning.impactDecay;
+  ["left", "right"].forEach((side) => {
+    if (!state[side]) state[side] = createEmptyGloveImpact();
+    state[side].life = Math.max(0, state[side].life - decay);
+    if (state[side].life === 0) {
+      state[side].strength = 0;
+      state[side].point = null;
+    }
+  });
+  return state;
+}
+
+export function getGloveVisualTransform(side, baseScale, impact, tuning = SCENE_TUNING.gloves) {
+  var life = clamp01(impact?.life || 0);
+  var strength = clamp01(impact?.strength || 0);
+  var amount = life * strength;
+  var compression = tuning.impactCompression * amount;
+  var rebound = tuning.impactRebound * amount;
+  var twistSign = side === "left" ? -1 : 1;
+
+  return {
+    scale: {
+      x: baseScale * (1 + rebound),
+      y: baseScale * (1 - compression),
+      z: baseScale * (1 + rebound * 0.72),
+    },
+    rotation: {
+      x: -compression * 0.18,
+      y: twistSign * tuning.impactTwist * amount * 0.45,
+      z: twistSign * tuning.impactTwist * amount,
+    },
+    offset: {
+      x: 0,
+      y: 0,
+      z: tuning.impactKickback * amount,
+    },
+  };
+}
+
 function applyCameraTuning(camera, aspect, tuning) {
   var portraitMix = clamp01((1.25 - aspect) / 0.75);
   var base = tuning.camera;
@@ -124,6 +229,7 @@ export function createGoalkeeperScene(canvas) {
   scene.userData.feedbackAssetSystem = tuning.feedback.assetSystem;
   scene.userData.netRippleAssetSystem = tuning.feedback.netRippleAssetSystem;
   scene.userData.ballShadowAssetSystem = tuning.ball.shadowAssetSystem;
+  scene.userData.gloveImpactSystem = tuning.gloves.impactSystem;
   scene.fog = new THREE.Fog("#8ed7ff", 28, 58);
 
   var camera = new THREE.PerspectiveCamera(tuning.camera.fov, 16 / 9, 0.05, 90);
@@ -316,6 +422,7 @@ export function createGoalkeeperScene(canvas) {
   var cameraShake = 0;
   var feedbackSignature = "";
   var feedbackFrame = 0;
+  var gloveImpactState = createGloveImpactState();
 
   function resize(bounds) {
     var width = Math.max(1, Math.round(bounds.width || canvas.clientWidth || 1280));
@@ -510,6 +617,7 @@ export function createGoalkeeperScene(canvas) {
       if (ballState.lastContact.type === "glove" || ballState.lastContact.type === "catch") {
         var position = contactPoint;
         triggerSaveFeedback(position, ballState.lastContact.type === "catch" ? 0.95 : 0.82);
+        triggerGloveImpactState(gloveImpactState, ballState.lastContact, snapshot.gloves, tuning.gloves);
       }
       if (ballState.lastContact.type === "net") {
         triggerGoalFeedback(contactPoint);
@@ -536,10 +644,22 @@ export function createGoalkeeperScene(canvas) {
   function updateGloves(gloves) {
     var left = gloves?.left || { x: -0.34, y: 1.2, z: 3.15 };
     var right = gloves?.right || { x: 0.34, y: 1.2, z: 3.15 };
-    leftGlove.position.set(left.x, left.y, left.z);
-    rightGlove.position.set(right.x, right.y, right.z);
-    leftGlove.rotation.set(-0.12, 0.08, -0.1);
-    rightGlove.rotation.set(-0.12, -0.08, 0.1);
+    var leftTransform = getGloveVisualTransform("left", tuning.gloves.scale, gloveImpactState.left, tuning.gloves);
+    var rightTransform = getGloveVisualTransform("right", tuning.gloves.scale, gloveImpactState.right, tuning.gloves);
+    leftGlove.position.set(left.x + leftTransform.offset.x, left.y + leftTransform.offset.y, left.z + leftTransform.offset.z);
+    rightGlove.position.set(
+      right.x + rightTransform.offset.x,
+      right.y + rightTransform.offset.y,
+      right.z + rightTransform.offset.z,
+    );
+    leftGlove.rotation.set(-0.12 + leftTransform.rotation.x, 0.08 + leftTransform.rotation.y, -0.1 + leftTransform.rotation.z);
+    rightGlove.rotation.set(
+      -0.12 + rightTransform.rotation.x,
+      -0.08 + rightTransform.rotation.y,
+      0.1 + rightTransform.rotation.z,
+    );
+    leftGlove.scale.set(leftTransform.scale.x, leftTransform.scale.y, leftTransform.scale.z);
+    rightGlove.scale.set(rightTransform.scale.x, rightTransform.scale.y, rightTransform.scale.z);
   }
 
   function updateNetAndEffects() {
@@ -631,6 +751,8 @@ export function createGoalkeeperScene(canvas) {
       pulse.scale.multiplyScalar(1.025 + index * 0.006);
       pulse.lookAt(camera.position);
     });
+
+    advanceGloveImpactState(gloveImpactState, tuning.gloves);
   }
 
   function applyFeedbackCamera() {
