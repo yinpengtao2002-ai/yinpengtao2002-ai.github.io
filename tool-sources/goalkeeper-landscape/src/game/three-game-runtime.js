@@ -4,7 +4,7 @@ import { completeShot3D, createShot3DDirector, updateShot3DDirector } from "./sh
 import { createPointerInput } from "../input/pointer-input.js";
 import { GLOVE_3D, createGloveController, updateGloveController } from "../input/glove-controller.js";
 import { createRapierGoalkeeperWorld } from "../physics/rapier-world.js";
-import { createGoalkeeperScene } from "../three/goalkeeper-scene.js";
+import { DEFAULT_COMPOSITION_PRESET, getGoalkeeperCompositionPreset, createGoalkeeperScene } from "../three/goalkeeper-scene.js";
 import { createHud } from "../ui/hud.js";
 import { getStageRenderBounds, requestLandscapeOrientation, syncMobileLandscape } from "../ui/mobile-landscape.js";
 
@@ -106,11 +106,26 @@ export function advanceLingeringBalls(balls, dt) {
   return balls.map((ball) => advanceLingeringBall(ball, dt)).filter((ball) => ball.age < ball.duration);
 }
 
+export function resolveCompositionPreset(windowRef) {
+  var search = windowRef?.location?.search || "";
+  var value = DEFAULT_COMPOSITION_PRESET;
+
+  try {
+    var params = new URLSearchParams(search);
+    value = params.get("view") || params.get("composition") || DEFAULT_COMPOSITION_PRESET;
+  } catch {
+    value = DEFAULT_COMPOSITION_PRESET;
+  }
+
+  return getGoalkeeperCompositionPreset(value).id;
+}
+
 export async function createThreeGameRuntime(options) {
   var canvas = options.canvas;
   var stage = options.stage;
   var documentRef = options.documentRef || document;
   var windowRef = options.windowRef || window;
+  var compositionPreset = resolveCompositionPreset(windowRef);
 
   windowRef.goalkeeperBootStatus = "hud";
   var hud = createHud(documentRef);
@@ -119,7 +134,7 @@ export async function createThreeGameRuntime(options) {
   windowRef.goalkeeperBootStatus = "input";
   var input = createPointerInput(stage);
   windowRef.goalkeeperBootStatus = "three-scene";
-  var scene = createGoalkeeperScene(canvas);
+  var scene = createGoalkeeperScene(canvas, { composition: compositionPreset });
   windowRef.goalkeeperBootStatus = "rapier-world";
   var physics = await createRapierGoalkeeperWorld();
   windowRef.goalkeeperBootStatus = "runtime-ready";
@@ -297,6 +312,7 @@ export async function createThreeGameRuntime(options) {
 
   function syncDebugDataset() {
     var ball = physics.getBallState();
+    stage.dataset.compositionPreset = compositionPreset;
     stage.dataset.bootStatus = windowRef.goalkeeperBootStatus || "";
     stage.dataset.phase = director.phase;
     stage.dataset.shotId = String(director.currentShot?.shotId ?? "");

@@ -4,6 +4,7 @@ import {
   getLingeringBallDurationForOutcome,
   getNextShotDelayForOutcome,
   getReplayDurationForOutcome,
+  resolveCompositionPreset,
 } from "../src/game/three-game-runtime.js";
 
 describe("three game runtime timing", () => {
@@ -39,5 +40,13 @@ describe("three game runtime timing", () => {
     expect(afterTwoSeconds.position.y).toBeGreaterThanOrEqual(airborne.radius);
     expect(afterTwoSeconds.position.y).toBeLessThan(halfSecond.position.y);
     expect(afterTwoSeconds.velocity.y).toBeLessThan(0.5);
+  });
+
+  it("resolves framing demo presets from the URL without changing the default", () => {
+    expect(resolveCompositionPreset({ location: { search: "" } })).toBe("classic");
+    expect(resolveCompositionPreset({ location: { search: "?view=keeper" } })).toBe("keeper");
+    expect(resolveCompositionPreset({ location: { search: "?view=training" } })).toBe("training");
+    expect(resolveCompositionPreset({ location: { search: "?composition=arcade" } })).toBe("arcade");
+    expect(resolveCompositionPreset({ location: { search: "?view=unknown" } })).toBe("classic");
   });
 });

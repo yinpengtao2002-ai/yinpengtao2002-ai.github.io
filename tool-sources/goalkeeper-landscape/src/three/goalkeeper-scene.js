@@ -10,36 +10,121 @@ import {
 import { SHOT_3D } from "../game/shot-3d-director.js";
 import { RAPIER_GOAL } from "../physics/rapier-world.js";
 
-export const SCENE_TUNING = {
-  camera: {
-    fov: 68,
-    position: { x: 0, y: 1.42, z: 9.35 },
-    lookAt: { x: 0, y: 1.16, z: -12 },
+const BASE_BALL_TUNING = {
+  radius: 0.12,
+  haloRadius: 0.24,
+  shadowRadius: 0.14,
+  baseScale: 0.72,
+  nearScale: 1.32,
+  goalScale: 1.12,
+  deflectedScale: 1.06,
+  showShotTrail: false,
+  maxLingeringBalls: 6,
+};
+
+const BASE_DEPTH_TUNING = {
+  originZ: SHOT_3D.origin.z,
+  netPlaneZ: SHOT_3D.netPlaneZ,
+};
+
+export const COMPOSITION_PRESETS = {
+  classic: {
+    id: "classic",
+    camera: {
+      fov: 68,
+      position: { x: 0, y: 1.42, z: 9.35 },
+      lookAt: { x: 0, y: 1.16, z: -12 },
+    },
+    portraitCamera: {
+      fov: 74,
+      position: { x: 0, y: 1.34, z: 17.2 },
+      lookAt: { x: 0, y: 1.12, z: -9 },
+    },
+    ball: BASE_BALL_TUNING,
+    gloves: {
+      scale: 0.64,
+    },
+    depth: BASE_DEPTH_TUNING,
   },
-  portraitCamera: {
-    fov: 74,
-    position: { x: 0, y: 1.34, z: 17.2 },
-    lookAt: { x: 0, y: 1.12, z: -9 },
+  keeper: {
+    id: "keeper",
+    camera: {
+      fov: 70,
+      position: { x: 0, y: 1.28, z: 7.65 },
+      lookAt: { x: 0, y: 1.18, z: -10.2 },
+    },
+    portraitCamera: {
+      fov: 76,
+      position: { x: 0, y: 1.26, z: 12.8 },
+      lookAt: { x: 0, y: 1.12, z: -8.2 },
+    },
+    ball: {
+      ...BASE_BALL_TUNING,
+      baseScale: 0.78,
+      nearScale: 1.42,
+      goalScale: 1.16,
+    },
+    gloves: {
+      scale: 0.7,
+    },
+    depth: BASE_DEPTH_TUNING,
   },
-  ball: {
-    radius: 0.12,
-    haloRadius: 0.24,
-    shadowRadius: 0.14,
-    baseScale: 0.72,
-    nearScale: 1.32,
-    goalScale: 1.12,
-    deflectedScale: 1.06,
-    showShotTrail: false,
-    maxLingeringBalls: 6,
+  training: {
+    id: "training",
+    camera: {
+      fov: 62,
+      position: { x: 0, y: 1.78, z: 13.2 },
+      lookAt: { x: 0, y: 1.16, z: -13.8 },
+    },
+    portraitCamera: {
+      fov: 68,
+      position: { x: 0, y: 1.62, z: 20.2 },
+      lookAt: { x: 0, y: 1.12, z: -10.6 },
+    },
+    ball: {
+      ...BASE_BALL_TUNING,
+      baseScale: 0.66,
+      nearScale: 1.2,
+      goalScale: 1.04,
+      deflectedScale: 1,
+    },
+    gloves: {
+      scale: 0.58,
+    },
+    depth: BASE_DEPTH_TUNING,
   },
-  gloves: {
-    scale: 0.64,
-  },
-  depth: {
-    originZ: SHOT_3D.origin.z,
-    netPlaneZ: SHOT_3D.netPlaneZ,
+  arcade: {
+    id: "arcade",
+    camera: {
+      fov: 86,
+      position: { x: 0, y: 1.16, z: 6.8 },
+      lookAt: { x: 0, y: 1.22, z: -8.4 },
+    },
+    portraitCamera: {
+      fov: 88,
+      position: { x: 0, y: 1.14, z: 11.2 },
+      lookAt: { x: 0, y: 1.14, z: -6.8 },
+    },
+    ball: {
+      ...BASE_BALL_TUNING,
+      baseScale: 0.86,
+      nearScale: 1.62,
+      goalScale: 1.24,
+      deflectedScale: 1.12,
+    },
+    gloves: {
+      scale: 0.78,
+    },
+    depth: BASE_DEPTH_TUNING,
   },
 };
+
+export const DEFAULT_COMPOSITION_PRESET = "classic";
+export const SCENE_TUNING = COMPOSITION_PRESETS[DEFAULT_COMPOSITION_PRESET];
+
+export function getGoalkeeperCompositionPreset(id) {
+  return COMPOSITION_PRESETS[id] || SCENE_TUNING;
+}
 
 function clamp01(value) {
   return Math.max(0, Math.min(1, value));
@@ -49,10 +134,10 @@ function lerpNumber(start, end, amount) {
   return start + (end - start) * amount;
 }
 
-function applyCameraTuning(camera, aspect) {
+function applyCameraTuning(camera, aspect, tuning) {
   var portraitMix = clamp01((1.25 - aspect) / 0.75);
-  var base = SCENE_TUNING.camera;
-  var portrait = SCENE_TUNING.portraitCamera;
+  var base = tuning.camera;
+  var portrait = tuning.portraitCamera;
   camera.fov = lerpNumber(base.fov, portrait.fov, portraitMix);
   camera.position.set(
     lerpNumber(base.position.x, portrait.position.x, portraitMix),
@@ -66,7 +151,8 @@ function applyCameraTuning(camera, aspect) {
   );
 }
 
-export function createGoalkeeperScene(canvas) {
+export function createGoalkeeperScene(canvas, options = {}) {
+  var tuning = getGoalkeeperCompositionPreset(options.composition);
   var renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
   renderer.setClearColor("#8ed7ff", 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -75,8 +161,8 @@ export function createGoalkeeperScene(canvas) {
   var scene = new THREE.Scene();
   scene.fog = new THREE.Fog("#8ed7ff", 28, 58);
 
-  var camera = new THREE.PerspectiveCamera(SCENE_TUNING.camera.fov, 16 / 9, 0.05, 90);
-  applyCameraTuning(camera, 16 / 9);
+  var camera = new THREE.PerspectiveCamera(tuning.camera.fov, 16 / 9, 0.05, 90);
+  applyCameraTuning(camera, 16 / 9, tuning);
 
   var hemi = new THREE.HemisphereLight("#fff7da", "#2d6b40", 2.3);
   var sun = new THREE.DirectionalLight("#fff4cf", 2.1);
@@ -87,9 +173,9 @@ export function createGoalkeeperScene(canvas) {
   var goal = createGoalAndNet();
   var shooter = createShooterModel();
   var ballTexture = createFootballTexture();
-  var ballGeometry = new THREE.SphereGeometry(SCENE_TUNING.ball.radius, 32, 24);
-  var haloGeometry = new THREE.CircleGeometry(SCENE_TUNING.ball.haloRadius, 32);
-  var shadowGeometry = new THREE.CircleGeometry(SCENE_TUNING.ball.shadowRadius, 24);
+  var ballGeometry = new THREE.SphereGeometry(tuning.ball.radius, 32, 24);
+  var haloGeometry = new THREE.CircleGeometry(tuning.ball.haloRadius, 32);
+  var shadowGeometry = new THREE.CircleGeometry(tuning.ball.shadowRadius, 24);
   function createBallView(name) {
     var mesh = new THREE.Mesh(
       ballGeometry,
@@ -113,13 +199,13 @@ export function createGoalkeeperScene(canvas) {
     return { mesh, halo, shadow };
   }
   var activeBall = createBallView("active");
-  var lingeringBallViews = Array.from({ length: SCENE_TUNING.ball.maxLingeringBalls }, (_, index) =>
+  var lingeringBallViews = Array.from({ length: tuning.ball.maxLingeringBalls }, (_, index) =>
     createBallView("lingering-" + index),
   );
   var leftGlove = createGloveMesh("left");
   var rightGlove = createGloveMesh("right");
-  leftGlove.scale.setScalar(SCENE_TUNING.gloves.scale);
-  rightGlove.scale.setScalar(SCENE_TUNING.gloves.scale);
+  leftGlove.scale.setScalar(tuning.gloves.scale);
+  rightGlove.scale.setScalar(tuning.gloves.scale);
   var impact = new THREE.Mesh(
     new THREE.TorusGeometry(0.28, 0.014, 8, 32),
     new THREE.MeshBasicMaterial({ color: "#fff1a8", transparent: true, opacity: 0, depthWrite: false }),
@@ -148,7 +234,7 @@ export function createGoalkeeperScene(canvas) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
-    applyCameraTuning(camera, camera.aspect);
+    applyCameraTuning(camera, camera.aspect, tuning);
     camera.updateProjectionMatrix();
   }
 
@@ -167,15 +253,15 @@ export function createGoalkeeperScene(canvas) {
 
     setBallViewVisible(view, true);
     view.mesh.position.set(position.x, position.y, position.z);
-    var depthRange = SCENE_TUNING.depth.netPlaneZ - SCENE_TUNING.depth.originZ;
-    var depth = clamp01((position.z - SCENE_TUNING.depth.originZ) / depthRange);
+    var depthRange = tuning.depth.netPlaneZ - tuning.depth.originZ;
+    var depth = clamp01((position.z - tuning.depth.originZ) / depthRange);
     var speedScale =
       ballState?.outcome === "goal"
-        ? SCENE_TUNING.ball.goalScale
+        ? tuning.ball.goalScale
         : ballState?.outcome === "deflected"
-          ? SCENE_TUNING.ball.deflectedScale
+          ? tuning.ball.deflectedScale
           : 1;
-    var visualScale = lerpNumber(SCENE_TUNING.ball.baseScale, SCENE_TUNING.ball.nearScale, depth);
+    var visualScale = lerpNumber(tuning.ball.baseScale, tuning.ball.nearScale, depth);
     view.mesh.scale.setScalar(speedScale * visualScale);
     var angular = ballState?.angularVelocity || shot?.ballPlan?.angularVelocity || { x: -8, y: 12, z: 0 };
     view.mesh.rotation.x += angular.x * 0.008;
