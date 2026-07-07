@@ -46,6 +46,7 @@
           </section>
 
           <div class="feedback-toast" id="feedbackToast" aria-live="polite"></div>
+          <div class="match-status" id="matchStatus" aria-live="polite"></div>
 
           <div class="bottom-controls" aria-label="游戏控制">
             <div class="difficulty-control glass-panel" role="group" aria-label="难度">
@@ -67,6 +68,11 @@
             <div class="result-panel">
               <span class="result-kicker" id="resultReason">挑战结束</span>
               <strong id="finalScore">0</strong>
+              <div class="result-stats" aria-label="本局统计">
+                <span>扑救 <strong id="finalSaves">0</strong></span>
+                <span>连扑 <strong id="finalBestStreak">x0</strong></span>
+                <span>失球 <strong id="finalConceded">0/5</strong></span>
+              </div>
               <button id="restartButton" type="button">再来一局</button>
             </div>
           </div>

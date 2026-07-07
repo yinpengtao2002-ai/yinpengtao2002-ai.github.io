@@ -49,6 +49,10 @@ function createDocument() {
     "finalScore",
     "resultReason",
     "feedbackToast",
+    "matchStatus",
+    "finalSaves",
+    "finalBestStreak",
+    "finalConceded",
   ].forEach((id) => {
     elements[id] = createElement();
   });
@@ -139,5 +143,60 @@ describe("hud", () => {
     expect(documentRef.elements.feedbackToast.textContent).toBe("失球");
     expect(documentRef.elements.feedbackToast.classList.contains("is-goal")).toBe(true);
     expect(documentRef.elements.streakValue.classList.contains("is-hot")).toBe(false);
+  });
+
+  it("shows match flow states without replacing the playable field", () => {
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    const state = {
+      ...createGameState(),
+      running: true,
+      message: "start",
+    };
+
+    hud.update(state, true, { roundIntroCue: { visible: true, label: "3" } });
+
+    expect(documentRef.elements.matchStatus.textContent).toBe("3");
+    expect(documentRef.elements.matchStatus.classList.contains("is-visible")).toBe(true);
+    expect(documentRef.elements.matchStatus.classList.contains("is-countdown")).toBe(true);
+
+    hud.update({ ...state, paused: true, message: "pause" }, true, {
+      roundIntroCue: { visible: false, label: "" },
+    });
+
+    expect(documentRef.elements.matchStatus.textContent).toBe("暂停");
+    expect(documentRef.elements.matchStatus.classList.contains("is-visible")).toBe(true);
+    expect(documentRef.elements.matchStatus.classList.contains("is-paused")).toBe(true);
+    expect(documentRef.elements.matchStatus.classList.contains("is-countdown")).toBe(false);
+
+    hud.update({ ...state, paused: false, message: "save" }, true, {
+      roundIntroCue: { visible: false, label: "" },
+    });
+
+    expect(documentRef.elements.matchStatus.textContent).toBe("");
+    expect(documentRef.elements.matchStatus.classList.contains("is-visible")).toBe(false);
+  });
+
+  it("fills the end overlay with useful round statistics", () => {
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    const state = {
+      ...createGameState(),
+      running: false,
+      ended: true,
+      endReason: "time",
+      score: 475,
+      saves: 4,
+      conceded: 2,
+      bestStreak: 3,
+    };
+
+    hud.update(state, true);
+
+    expect(documentRef.elements.resultReason.textContent).toBe("时间到");
+    expect(documentRef.elements.finalScore.textContent).toBe("475");
+    expect(documentRef.elements.finalSaves.textContent).toBe("4");
+    expect(documentRef.elements.finalBestStreak.textContent).toBe("x3");
+    expect(documentRef.elements.finalConceded.textContent).toBe("2/5");
   });
 });

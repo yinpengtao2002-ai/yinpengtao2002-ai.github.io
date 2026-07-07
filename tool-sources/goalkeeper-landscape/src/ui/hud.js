@@ -16,6 +16,10 @@ export function createHud(documentRef) {
     finalScore: documentRef.getElementById("finalScore"),
     resultReason: documentRef.getElementById("resultReason"),
     feedbackToast: documentRef.getElementById("feedbackToast"),
+    matchStatus: documentRef.getElementById("matchStatus"),
+    finalSaves: documentRef.getElementById("finalSaves"),
+    finalBestStreak: documentRef.getElementById("finalBestStreak"),
+    finalConceded: documentRef.getElementById("finalConceded"),
   };
 
   function setVisible(element, visible) {
@@ -45,6 +49,27 @@ export function createHud(documentRef) {
     setClass(refs.streakValue, "is-hot", (state.streak || 0) >= 3);
   }
 
+  function getResultReasonText(endReason) {
+    if (endReason === "conceded") return "失球过多";
+    if (endReason === "time") return "时间到";
+    return "挑战结束";
+  }
+
+  function updateMatchStatus(state, context) {
+    var status = refs.matchStatus;
+    var roundIntroCue = context?.roundIntroCue || { visible: false, label: "" };
+    var isPaused = state.running && state.paused && !state.ended;
+    var isCountdown = !isPaused && roundIntroCue.visible;
+    var visible = isPaused || isCountdown;
+
+    if (!status) return;
+
+    status.textContent = isPaused ? "暂停" : isCountdown ? roundIntroCue.label : "";
+    setClass(status, "is-visible", visible);
+    setClass(status, "is-paused", isPaused);
+    setClass(status, "is-countdown", isCountdown);
+  }
+
   return {
     refs,
     bind(actions) {
@@ -63,7 +88,7 @@ export function createHud(documentRef) {
         button.setAttribute("aria-pressed", active ? "true" : "false");
       });
     },
-    update(state, soundEnabled) {
+    update(state, soundEnabled, context = {}) {
       if (refs.scoreValue) refs.scoreValue.textContent = String(state.score);
       if (refs.timeValue) refs.timeValue.textContent = String(Math.max(0, Math.ceil(state.timeLeft)));
       if (refs.streakValue) refs.streakValue.textContent = "x" + String(state.streak || 0);
@@ -74,8 +99,12 @@ export function createHud(documentRef) {
         refs.soundButton.setAttribute("aria-label", soundEnabled ? "关闭音效" : "开启音效");
       }
       if (refs.finalScore) refs.finalScore.textContent = String(state.score);
-      if (refs.resultReason) refs.resultReason.textContent = state.endReason === "conceded" ? "失球过多" : "挑战结束";
+      if (refs.resultReason) refs.resultReason.textContent = getResultReasonText(state.endReason);
+      if (refs.finalSaves) refs.finalSaves.textContent = String(state.saves || 0);
+      if (refs.finalBestStreak) refs.finalBestStreak.textContent = "x" + String(state.bestStreak || 0);
+      if (refs.finalConceded) refs.finalConceded.textContent = state.conceded + "/" + MAX_CONCEDED;
       updateFeedback(state);
+      updateMatchStatus(state, context);
       setVisible(refs.startOverlay, !state.running && !state.ended);
       setVisible(refs.endOverlay, state.ended);
     },

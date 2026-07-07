@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   DEBUG_FORCE_GLOVE_SETTLE_DT,
   DEBUG_FORCE_GLOVE_HOLD_SECONDS,
+  ROUND_INTRO_SECONDS,
   applyForcedGloveTarget,
   advanceLingeringBalls,
+  advanceRoundIntroTimer,
   createDebugSavePlan,
+  getRoundIntroCue,
   getLingeringBallDurationForOutcome,
   getNextShotDelayForOutcome,
   getReplayDurationForOutcome,
@@ -13,6 +16,16 @@ import {
 import { createRapierGoalkeeperWorld } from "../src/physics/rapier-world.js";
 
 describe("three game runtime timing", () => {
+  it("uses a short match countdown before live play begins", () => {
+    expect(ROUND_INTRO_SECONDS).toBeGreaterThanOrEqual(1.2);
+    expect(ROUND_INTRO_SECONDS).toBeLessThanOrEqual(2.4);
+    expect(getRoundIntroCue(1.8)).toEqual({ visible: true, label: "2" });
+    expect(getRoundIntroCue(0.42)).toEqual({ visible: true, label: "1" });
+    expect(getRoundIntroCue(0)).toEqual({ visible: false, label: "" });
+    expect(advanceRoundIntroTimer(1.8, 0.5)).toBeCloseTo(1.3);
+    expect(advanceRoundIntroTimer(0.2, 0.5)).toBe(0);
+  });
+
   it("keeps blocked saves visible without making the next shot wait five seconds", () => {
     expect(getLingeringBallDurationForOutcome("save")).toBe(5);
     expect(getNextShotDelayForOutcome("save")).toBeLessThan(1);

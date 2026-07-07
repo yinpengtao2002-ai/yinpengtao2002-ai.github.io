@@ -16,6 +16,17 @@ import { getStageRenderBounds, requestLandscapeOrientation, syncMobileLandscape 
 
 export const DEBUG_FORCE_GLOVE_SETTLE_DT = 1 / 30;
 export const DEBUG_FORCE_GLOVE_HOLD_SECONDS = 0.45;
+export const ROUND_INTRO_SECONDS = 1.8;
+
+export function advanceRoundIntroTimer(timer, dt) {
+  return Math.max(0, (timer || 0) - Math.max(0, dt || 0));
+}
+
+export function getRoundIntroCue(timer) {
+  var remaining = Math.max(0, timer || 0);
+  if (remaining <= 0) return { visible: false, label: "" };
+  return { visible: true, label: String(Math.max(1, Math.ceil(remaining))) };
+}
 
 export function applyForcedGloveTarget(controller, target) {
   return {
@@ -178,6 +189,7 @@ export async function createThreeGameRuntime(options) {
   var lingeringBalls = [];
   var forcedGloveTarget = null;
   var forcedGloveTimer = 0;
+  var roundIntroTimer = 0;
   var lastFrame = 0;
   var runningLoop = false;
   var debugKeysEnabled =
@@ -209,7 +221,8 @@ export async function createThreeGameRuntime(options) {
     lingeringBalls = [];
     forcedGloveTarget = null;
     forcedGloveTimer = 0;
-    hud.update(state, audio.isEnabled());
+    roundIntroTimer = ROUND_INTRO_SECONDS;
+    updateHud();
   }
 
   function rememberLingeringBall(ball, outcome) {
@@ -306,6 +319,11 @@ export async function createThreeGameRuntime(options) {
   function update(dt) {
     if (!state.running || state.paused || state.ended) return;
 
+    if (roundIntroTimer > 0) {
+      roundIntroTimer = advanceRoundIntroTimer(roundIntroTimer, dt);
+      return;
+    }
+
     state = tickRound(state, dt);
     if (state.ended) return;
     updateLingeringBalls(dt);
@@ -363,6 +381,17 @@ export async function createThreeGameRuntime(options) {
     stage.dataset.lingeringBalls = String(lingeringBalls.length);
     stage.dataset.score = String(state.score);
     stage.dataset.conceded = String(state.conceded);
+    stage.dataset.roundIntro = String(Math.round(roundIntroTimer * 100) / 100);
+  }
+
+  function getHudContext() {
+    return {
+      roundIntroCue: getRoundIntroCue(roundIntroTimer),
+    };
+  }
+
+  function updateHud() {
+    hud.update(state, audio.isEnabled(), getHudContext());
   }
 
   function render() {
@@ -374,7 +403,7 @@ export async function createThreeGameRuntime(options) {
     var dt = lastFrame ? Math.min(0.04, (now - lastFrame) / 1000) : 0;
     lastFrame = now;
     update(dt);
-    hud.update(state, audio.isEnabled());
+    updateHud();
     render();
     if (runningLoop) windowRef.requestAnimationFrame(frame);
   }
@@ -407,6 +436,7 @@ export async function createThreeGameRuntime(options) {
     outcomeTimer = 0;
     forcedGloveTarget = gloveTarget;
     forcedGloveTimer = DEBUG_FORCE_GLOVE_HOLD_SECONDS;
+    roundIntroTimer = 0;
     launchCurrentShotIfNeeded();
   }
 
@@ -421,11 +451,11 @@ export async function createThreeGameRuntime(options) {
     },
     onPause() {
       state = togglePause(state);
-      hud.update(state, audio.isEnabled());
+      updateHud();
     },
     onSound() {
       audio.toggle();
-      hud.update(state, audio.isEnabled());
+      updateHud();
     },
     onDifficulty(value) {
       selectedDifficulty = resolveShotDifficulty(value).id;
@@ -452,7 +482,7 @@ export async function createThreeGameRuntime(options) {
       resize();
       windowRef.addEventListener("resize", resize);
       windowRef.addEventListener("keydown", onDebugKey);
-      hud.update(state, audio.isEnabled());
+      updateHud();
       windowRef.requestAnimationFrame(frame);
     },
     stop() {
@@ -481,7 +511,7 @@ export async function createThreeGameRuntime(options) {
       while (!state.ended) {
         state = recordGoal(state);
       }
-      hud.update(state, audio.isEnabled());
+      updateHud();
     },
     forceSave() {
       forcePlan(createDebugSavePlan(), { x: 0, y: 1.25, z: 3.15 });
