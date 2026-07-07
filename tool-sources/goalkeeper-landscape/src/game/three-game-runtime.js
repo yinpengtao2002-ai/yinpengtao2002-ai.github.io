@@ -17,6 +17,11 @@ import { getStageRenderBounds, requestLandscapeOrientation, syncMobileLandscape 
 export const DEBUG_FORCE_GLOVE_SETTLE_DT = 1 / 30;
 export const DEBUG_FORCE_GLOVE_HOLD_SECONDS = 0.45;
 export const ROUND_INTRO_SECONDS = 1.8;
+const GROUND_FEEDBACK_DURATION = 0.62;
+
+function clamp01(value) {
+  return Math.max(0, Math.min(1, value || 0));
+}
 
 export function advanceRoundIntroTimer(timer, dt) {
   return Math.max(0, (timer || 0) - Math.max(0, dt || 0));
@@ -93,16 +98,59 @@ function cloneVector(value) {
   };
 }
 
+function advanceGroundFeedback(feedback, dt) {
+  if (!feedback) return null;
+  var duration = feedback.duration || GROUND_FEEDBACK_DURATION;
+  var age = (feedback.age || 0) + Math.max(0, dt || 0);
+  var fade = clamp01(1 - age / duration);
+  var intensity = (feedback.baseIntensity || feedback.intensity || 0) * fade;
+  return {
+    ...feedback,
+    age,
+    duration,
+    intensity,
+    active: age < duration && intensity > 0.04,
+  };
+}
+
+function createGroundFeedback(position, velocity, impactSpeed) {
+  var horizontalSpeed = Math.hypot(velocity.x || 0, velocity.z || 0);
+  var speed = Math.max(horizontalSpeed, impactSpeed || 0);
+  var baseIntensity = clamp01(Math.abs(impactSpeed || 0) / 7 + horizontalSpeed / 16);
+  return {
+    active: true,
+    age: 0,
+    duration: GROUND_FEEDBACK_DURATION,
+    intensity: baseIntensity,
+    baseIntensity,
+    speed: horizontalSpeed,
+    point: {
+      x: position.x || 0,
+      y: 0.012,
+      z: position.z || 0,
+    },
+    direction: {
+      x: horizontalSpeed > 0.001 ? (velocity.x || 0) / horizontalSpeed : 0,
+      y: 0,
+      z: horizontalSpeed > 0.001 ? (velocity.z || 0) / horizontalSpeed : -1,
+    },
+    impactSpeed: Math.abs(impactSpeed || 0),
+    skidLength: 0.28 + clamp01(speed / 10) * 0.62,
+  };
+}
+
 function advanceLingeringBall(ball, dt) {
   var radius = ball.radius || 0.11;
   var position = cloneVector(ball.position) || { x: 0, y: radius, z: 0 };
   var velocity = cloneVector(ball.velocity) || { x: 0, y: 0, z: 0 };
   var angularVelocity = cloneVector(ball.angularVelocity) || { x: 0, y: 0, z: 0 };
+  var groundFeedback = advanceGroundFeedback(ball.groundFeedback, dt);
   var remaining = Math.max(0, Math.min(dt, 0.75));
   var step = 1 / 60;
 
   while (remaining > 0) {
     var h = Math.min(step, remaining);
+    var verticalImpactSpeed = velocity.y < 0 ? Math.abs(velocity.y) : 0;
     velocity.y += -9.81 * h;
     position.x += velocity.x * h;
     position.y += velocity.y * h;
@@ -119,6 +167,9 @@ function advanceLingeringBall(ball, dt) {
       angularVelocity.x *= 0.82;
       angularVelocity.y *= 0.82;
       angularVelocity.z *= 0.82;
+      if (verticalImpactSpeed > 0.65 || Math.hypot(velocity.x, velocity.z) > 1.3) {
+        groundFeedback = createGroundFeedback(position, velocity, verticalImpactSpeed);
+      }
     } else {
       velocity.x *= 0.998;
       velocity.z *= 0.998;
@@ -137,6 +188,7 @@ function advanceLingeringBall(ball, dt) {
     position,
     velocity,
     angularVelocity,
+    groundFeedback,
   };
 }
 

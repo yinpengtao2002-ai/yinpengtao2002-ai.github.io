@@ -60,6 +60,39 @@ describe("three game runtime timing", () => {
     expect(afterTwoSeconds.velocity.y).toBeLessThan(0.5);
   });
 
+  it("marks lingering saves with grounded skid feedback after the first turf bounce", () => {
+    const landingSave = {
+      live: false,
+      outcome: "saved",
+      position: { x: -0.2, y: 0.18, z: 2.9 },
+      velocity: { x: 4.4, y: -3.2, z: -2.1 },
+      angularVelocity: { x: -8, y: 10, z: 2 },
+      radius: 0.11,
+      age: 0,
+      duration: 5,
+    };
+
+    const landed = advanceLingeringBalls([landingSave], 0.08)[0];
+
+    expect(landed.position.y).toBeGreaterThanOrEqual(landingSave.radius);
+    expect(landed.groundFeedback).toMatchObject({
+      active: true,
+      age: 0,
+    });
+    expect(landed.groundFeedback.intensity).toBeGreaterThan(0.35);
+    expect(landed.groundFeedback.speed).toBeGreaterThan(1.5);
+    expect(landed.groundFeedback.point.y).toBeCloseTo(0.012);
+
+    const rolling = advanceLingeringBalls([landed], 0.7)[0];
+    expect(rolling.groundFeedback.active).toBe(true);
+    expect(rolling.groundFeedback.intensity).toBeLessThan(landed.groundFeedback.intensity);
+    expect(rolling.groundFeedback.speed).toBeLessThan(landed.groundFeedback.speed);
+
+    const settled = advanceLingeringBalls([rolling], 2.2)[0];
+    expect(settled.groundFeedback.active).toBe(false);
+    expect(settled.groundFeedback.intensity).toBe(0);
+  });
+
   it("ignores old framing demo parameters and resolves only gameplay difficulty", async () => {
     const runtimeModule = await import("../src/game/three-game-runtime.js");
 

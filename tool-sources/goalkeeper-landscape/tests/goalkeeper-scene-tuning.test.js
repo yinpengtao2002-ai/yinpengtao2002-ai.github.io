@@ -24,6 +24,9 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.feedback.streakFlashColor).toBe("#61f0ff");
     expect(SCENE_TUNING.feedback.maxCameraShake).toBeLessThanOrEqual(0.055);
     expect(SCENE_TUNING.feedback.netPulseDecay).toBeGreaterThanOrEqual(0.025);
+    expect(SCENE_TUNING.feedback.groundSkidCount).toBeGreaterThanOrEqual(4);
+    expect(SCENE_TUNING.feedback.groundSkidColor).toBe("#e7d5a7");
+    expect(SCENE_TUNING.feedback.groundSkidMaxOpacity).toBeLessThanOrEqual(0.42);
   });
 
   it("keeps one canonical framing instead of composition demo presets", async () => {

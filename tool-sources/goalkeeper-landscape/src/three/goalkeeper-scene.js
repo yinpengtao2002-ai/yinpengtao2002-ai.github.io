@@ -43,6 +43,9 @@ export const SCENE_TUNING = {
     streakFlashColor: "#61f0ff",
     maxCameraShake: 0.045,
     netPulseDecay: 0.032,
+    groundSkidCount: 5,
+    groundSkidColor: "#e7d5a7",
+    groundSkidMaxOpacity: 0.34,
   },
   depth: {
     originZ: SHOT_3D.origin.z,
@@ -132,6 +135,22 @@ export function createGoalkeeperScene(canvas) {
   var lingeringBallViews = Array.from({ length: tuning.ball.maxLingeringBalls }, (_, index) =>
     createBallView("lingering-" + index),
   );
+  var groundSkidGeometry = new THREE.CircleGeometry(0.22, 28);
+  var groundSkids = Array.from({ length: tuning.feedback.groundSkidCount }, (_, index) => {
+    var skid = new THREE.Mesh(
+      groundSkidGeometry,
+      new THREE.MeshBasicMaterial({
+        color: tuning.feedback.groundSkidColor,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      }),
+    );
+    skid.name = "feedback-ground-skid-" + index;
+    skid.rotation.x = -Math.PI / 2;
+    skid.visible = false;
+    return skid;
+  });
   var leftGlove = createGloveMesh("left");
   var rightGlove = createGloveMesh("right");
   leftGlove.scale.setScalar(tuning.gloves.scale);
@@ -183,6 +202,7 @@ export function createGoalkeeperScene(canvas) {
     activeBall.mesh,
     activeBall.shadow,
     ...lingeringBallViews.flatMap((view) => [view.halo, view.mesh, view.shadow]),
+    ...groundSkids,
     leftGlove,
     rightGlove,
     ...impactRings,
@@ -250,6 +270,31 @@ export function createGoalkeeperScene(canvas) {
     var lingeringBalls = snapshot.lingeringBalls || [];
     lingeringBallViews.forEach((view, index) => {
       updateBallView(view, lingeringBalls[index], null);
+    });
+  }
+
+  function updateGroundSkid(skid, ballState) {
+    var feedback = ballState?.groundFeedback;
+    if (!feedback?.active || !feedback.point) {
+      skid.visible = false;
+      skid.material.opacity = 0;
+      return;
+    }
+    var direction = feedback.direction || { x: 0, y: 0, z: -1 };
+    var angle = Math.atan2(direction.x || 0, direction.z || -1);
+    var intensity = clamp01(feedback.intensity || 0);
+    var length = feedback.skidLength || 0.32;
+    skid.visible = true;
+    skid.position.set(feedback.point.x, feedback.point.y, feedback.point.z);
+    skid.rotation.set(-Math.PI / 2, 0, angle);
+    skid.scale.set(Math.max(0.28, length), 0.22 + intensity * 0.32, 1);
+    skid.material.opacity = tuning.feedback.groundSkidMaxOpacity * intensity;
+  }
+
+  function updateGroundSkids(snapshot) {
+    var candidates = [snapshot.ball, ...(snapshot.lingeringBalls || [])].filter((ballState) => ballState?.groundFeedback?.active);
+    groundSkids.forEach((skid, index) => {
+      updateGroundSkid(skid, candidates[index]);
     });
   }
 
@@ -388,6 +433,7 @@ export function createGoalkeeperScene(canvas) {
     updateStateFeedback(snapshot);
     updateBall(snapshot);
     updateLingeringBalls(snapshot);
+    updateGroundSkids(snapshot);
     updateGloves(snapshot.gloves);
     updateNetAndEffects();
     applyFeedbackCamera();
