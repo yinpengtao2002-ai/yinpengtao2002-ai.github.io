@@ -16,6 +16,16 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.depth.originZ).toBe(SHOT_3D.origin.z);
   });
 
+  it("defines a restrained matchday feedback layer for saves, goals, streaks, and camera shake", () => {
+    expect(SCENE_TUNING.feedback.assetSystem).toBe("matchday-feedback-kit");
+    expect(SCENE_TUNING.feedback.impactRingCount).toBeGreaterThanOrEqual(3);
+    expect(SCENE_TUNING.feedback.saveFlashColor).toBe("#fff1a8");
+    expect(SCENE_TUNING.feedback.goalFlashColor).toBe("#ff7846");
+    expect(SCENE_TUNING.feedback.streakFlashColor).toBe("#61f0ff");
+    expect(SCENE_TUNING.feedback.maxCameraShake).toBeLessThanOrEqual(0.055);
+    expect(SCENE_TUNING.feedback.netPulseDecay).toBeGreaterThanOrEqual(0.025);
+  });
+
   it("keeps one canonical framing instead of composition demo presets", async () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
 

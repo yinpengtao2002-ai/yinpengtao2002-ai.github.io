@@ -121,10 +121,10 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
     new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
     "utf8"
   );
-  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-CBV-qCmv.js", import.meta.url);
+  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-DOhWhiGc.js", import.meta.url);
   const gameScript = await stat(gameScriptPath);
   const gameScriptSource = await readFile(gameScriptPath, "utf8");
-  const gameStyles = await stat(new URL("../public/tools/goalkeeper-landscape/assets/index-hTxdIy6z.css", import.meta.url));
+  const gameStyles = await stat(new URL("../public/tools/goalkeeper-landscape/assets/index-D2Nib8kw.css", import.meta.url));
   const gameWasm = await stat(new URL("../public/tools/goalkeeper-landscape/vendor/rapier_wasm3d_bg.wasm", import.meta.url));
 
   assert.doesNotMatch(goalkeeperPage, /redirect\(/);
@@ -135,6 +135,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(goalkeeperPage, /弹力手套守门挑战/);
   assert.match(goalkeeperPage, /id="gameCanvas"/);
   assert.match(goalkeeperPage, /id="startButton"/);
+  assert.match(goalkeeperPage, /id="feedbackToast"/);
   assert.match(goalkeeperPage, /data-difficulty="easy"/);
   assert.match(goalkeeperPage, /data-difficulty="medium"/);
   assert.match(goalkeeperPage, /data-difficulty="hard"/);
@@ -144,10 +145,14 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(thinkingClient, /横屏守门挑战/);
   assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-CBV-qCmv\.js/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-hTxdIy6z\.css/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-DOhWhiGc\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-D2Nib8kw\.css/);
+  assert.match(gameIndex, /id="feedbackToast"/);
   assert.match(gameScriptSource, /difficulty/);
   assert.match(gameScriptSource, /medium/);
+  assert.match(gameScriptSource, /stylized-reusable-matchday-kit/);
+  assert.match(gameScriptSource, /matchday-feedback-kit/);
+  assert.match(gameScriptSource, /feedback-impact-ring/);
   assert.match(gameScriptSource, /\/tools\/goalkeeper-landscape\/audio\/mixkit-soccer-ball-kick-2099\.wav/);
   assert.doesNotMatch(gameScriptSource, /url:\s*"\/audio\//);
   assert.doesNotMatch(gameScriptSource, /training/);

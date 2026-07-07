@@ -35,6 +35,15 @@ export const SCENE_TUNING = {
   gloves: {
     scale: 0.64,
   },
+  feedback: {
+    assetSystem: "matchday-feedback-kit",
+    impactRingCount: 3,
+    saveFlashColor: "#fff1a8",
+    goalFlashColor: "#ff7846",
+    streakFlashColor: "#61f0ff",
+    maxCameraShake: 0.045,
+    netPulseDecay: 0.032,
+  },
   depth: {
     originZ: SHOT_3D.origin.z,
     netPlaneZ: SHOT_3D.netPlaneZ,
@@ -59,11 +68,16 @@ function applyCameraTuning(camera, aspect, tuning) {
     lerpNumber(base.position.y, portrait.position.y, portraitMix),
     lerpNumber(base.position.z, portrait.position.z, portraitMix),
   );
-  camera.lookAt(
+  var lookAt = new THREE.Vector3(
     lerpNumber(base.lookAt.x, portrait.lookAt.x, portraitMix),
     lerpNumber(base.lookAt.y, portrait.lookAt.y, portraitMix),
     lerpNumber(base.lookAt.z, portrait.lookAt.z, portraitMix),
   );
+  camera.lookAt(lookAt);
+  return {
+    position: camera.position.clone(),
+    lookAt,
+  };
 }
 
 export function createGoalkeeperScene(canvas) {
@@ -74,10 +88,11 @@ export function createGoalkeeperScene(canvas) {
   renderer.shadowMap.enabled = true;
 
   var scene = new THREE.Scene();
+  scene.userData.feedbackAssetSystem = tuning.feedback.assetSystem;
   scene.fog = new THREE.Fog("#8ed7ff", 28, 58);
 
   var camera = new THREE.PerspectiveCamera(tuning.camera.fov, 16 / 9, 0.05, 90);
-  applyCameraTuning(camera, 16 / 9, tuning);
+  var cameraFraming = applyCameraTuning(camera, 16 / 9, tuning);
 
   var hemi = new THREE.HemisphereLight("#fff7da", "#2d6b40", 2.3);
   var sun = new THREE.DirectionalLight("#fff4cf", 2.1);
@@ -121,11 +136,44 @@ export function createGoalkeeperScene(canvas) {
   var rightGlove = createGloveMesh("right");
   leftGlove.scale.setScalar(tuning.gloves.scale);
   rightGlove.scale.setScalar(tuning.gloves.scale);
-  var impact = new THREE.Mesh(
-    new THREE.TorusGeometry(0.28, 0.014, 8, 32),
-    new THREE.MeshBasicMaterial({ color: "#fff1a8", transparent: true, opacity: 0, depthWrite: false }),
+  var impactRings = Array.from({ length: tuning.feedback.impactRingCount }, (_, index) => {
+    var ring = new THREE.Mesh(
+      new THREE.TorusGeometry(0.2 + index * 0.06, 0.012, 8, 36),
+      new THREE.MeshBasicMaterial({
+        color: tuning.feedback.saveFlashColor,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      }),
+    );
+    ring.name = "feedback-impact-ring-" + index;
+    ring.rotation.x = Math.PI / 2;
+    ring.userData.life = 0;
+    return ring;
+  });
+  var goalFlash = new THREE.Mesh(
+    new THREE.CircleGeometry(0.42, 36),
+    new THREE.MeshBasicMaterial({
+      color: tuning.feedback.goalFlashColor,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+    }),
   );
-  impact.rotation.x = Math.PI / 2;
+  goalFlash.name = "feedback-goal-flash";
+  goalFlash.rotation.x = Math.PI / 2;
+  var streakFlash = new THREE.Mesh(
+    new THREE.TorusGeometry(0.42, 0.018, 8, 40),
+    new THREE.MeshBasicMaterial({
+      color: tuning.feedback.streakFlashColor,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+    }),
+  );
+  streakFlash.name = "feedback-streak-ring";
+  streakFlash.rotation.x = Math.PI / 2;
+  streakFlash.userData.life = 0;
 
   scene.add(
     field,
@@ -137,11 +185,16 @@ export function createGoalkeeperScene(canvas) {
     ...lingeringBallViews.flatMap((view) => [view.halo, view.mesh, view.shadow]),
     leftGlove,
     rightGlove,
-    impact,
+    ...impactRings,
+    goalFlash,
+    streakFlash,
   );
 
   var netPulse = 0;
   var lastContactType = null;
+  var cameraShake = 0;
+  var feedbackSignature = "";
+  var feedbackFrame = 0;
 
   function resize(bounds) {
     var width = Math.max(1, Math.round(bounds.width || canvas.clientWidth || 1280));
@@ -149,7 +202,7 @@ export function createGoalkeeperScene(canvas) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
-    applyCameraTuning(camera, camera.aspect, tuning);
+    cameraFraming = applyCameraTuning(camera, camera.aspect, tuning);
     camera.updateProjectionMatrix();
   }
 
@@ -200,6 +253,41 @@ export function createGoalkeeperScene(canvas) {
     });
   }
 
+  function triggerImpact(type, position, strength) {
+    var color =
+      type === "goal"
+        ? tuning.feedback.goalFlashColor
+        : type === "streak"
+          ? tuning.feedback.streakFlashColor
+          : tuning.feedback.saveFlashColor;
+    var pulseStrength = strength || 1;
+    impactRings.forEach((ring, index) => {
+      ring.position.set(position.x, position.y, position.z);
+      ring.material.color.set(color);
+      ring.material.opacity = Math.max(0.18, 0.72 - index * 0.16) * pulseStrength;
+      ring.scale.setScalar(1 + index * 0.12);
+      ring.userData.life = Math.max(0.35, 1 - index * 0.12);
+    });
+    cameraShake = Math.max(cameraShake, tuning.feedback.maxCameraShake * pulseStrength);
+  }
+
+  function triggerGoalFeedback(position) {
+    goalFlash.position.set(position.x, Math.max(0.08, position.y), position.z + 0.05);
+    goalFlash.material.opacity = 0.38;
+    goalFlash.scale.setScalar(1);
+    triggerImpact("goal", position, 1);
+    netPulse = 1;
+  }
+
+  function triggerStreakFeedback(gloves) {
+    var center = gloves?.center || { x: 0, y: 1.35, z: 3.15 };
+    streakFlash.position.set(center.x, center.y, center.z - 0.04);
+    streakFlash.material.opacity = 0.72;
+    streakFlash.scale.setScalar(1);
+    streakFlash.userData.life = 1;
+    triggerImpact("streak", center, 0.72);
+  }
+
   function updateBall(snapshot) {
     var ballState = snapshot.ball;
     var shot = snapshot.director?.currentShot;
@@ -209,13 +297,24 @@ export function createGoalkeeperScene(canvas) {
       lastContactType = ballState.lastContact.type;
       if (ballState.lastContact.type === "glove") {
         var position = ballState.position;
-        impact.position.set(position.x, position.y, position.z);
-        impact.material.opacity = 0.86;
-        impact.scale.setScalar(1);
+        triggerImpact("save", position, 1);
       }
       if (ballState.lastContact.type === "net") {
-        netPulse = 1;
+        triggerGoalFeedback(ballState.position);
       }
+    }
+  }
+
+  function updateStateFeedback(snapshot) {
+    var state = snapshot.state || {};
+    var signature = [state.message, state.score, state.conceded, state.saves, state.streak].join(":");
+    if (signature === feedbackSignature) return;
+    feedbackSignature = signature;
+    if (state.message === "save" && state.streak >= 3) {
+      triggerStreakFeedback(snapshot.gloves);
+    }
+    if (state.message === "goal" && snapshot.ball?.position) {
+      triggerGoalFeedback(snapshot.ball.position);
     }
   }
 
@@ -230,7 +329,7 @@ export function createGoalkeeperScene(canvas) {
 
   function updateNetAndEffects() {
     if (netPulse > 0) {
-      netPulse = Math.max(0, netPulse - 0.035);
+      netPulse = Math.max(0, netPulse - tuning.feedback.netPulseDecay);
       goal.net.position.z = RAPIER_GOAL.netPlaneZ + 0.1 + Math.sin(netPulse * Math.PI) * 0.18;
       goal.net.material.opacity = 0.16 + netPulse * 0.24;
       goal.grid.position.z = Math.sin(netPulse * Math.PI) * 0.1;
@@ -240,19 +339,58 @@ export function createGoalkeeperScene(canvas) {
       goal.grid.position.z = 0;
     }
 
-    if (impact.material.opacity > 0) {
-      impact.material.opacity = Math.max(0, impact.material.opacity - 0.055);
-      impact.scale.multiplyScalar(1.035);
-      impact.lookAt(camera.position);
+    impactRings.forEach((ring, index) => {
+      if (ring.userData.life <= 0) {
+        ring.material.opacity = 0;
+        return;
+      }
+      ring.userData.life = Math.max(0, ring.userData.life - 0.045 - index * 0.006);
+      ring.material.opacity = Math.max(0, ring.userData.life * (0.54 - index * 0.08));
+      ring.scale.multiplyScalar(1.045 + index * 0.01);
+      ring.lookAt(camera.position);
+    });
+
+    if (goalFlash.material.opacity > 0) {
+      goalFlash.material.opacity = Math.max(0, goalFlash.material.opacity - 0.028);
+      goalFlash.scale.multiplyScalar(1.028);
+      goalFlash.lookAt(camera.position);
     }
+
+    if (streakFlash.userData.life > 0) {
+      streakFlash.userData.life = Math.max(0, streakFlash.userData.life - 0.038);
+      streakFlash.material.opacity = Math.max(0, streakFlash.userData.life * 0.68);
+      streakFlash.scale.multiplyScalar(1.032);
+      streakFlash.lookAt(camera.position);
+    } else {
+      streakFlash.material.opacity = 0;
+    }
+  }
+
+  function applyFeedbackCamera() {
+    feedbackFrame += 1;
+    if (cameraShake <= 0) {
+      camera.position.copy(cameraFraming.position);
+      camera.lookAt(cameraFraming.lookAt);
+      return;
+    }
+    var amount = cameraShake;
+    camera.position.set(
+      cameraFraming.position.x + Math.sin(feedbackFrame * 1.7) * amount,
+      cameraFraming.position.y + Math.cos(feedbackFrame * 1.13) * amount * 0.62,
+      cameraFraming.position.z,
+    );
+    camera.lookAt(cameraFraming.lookAt);
+    cameraShake = Math.max(0, cameraShake - 0.0048);
   }
 
   function updateVisuals(snapshot) {
     updateShooterModel(shooter, snapshot.director || { phase: "cue", phaseTime: 0, currentShot: null });
+    updateStateFeedback(snapshot);
     updateBall(snapshot);
     updateLingeringBalls(snapshot);
     updateGloves(snapshot.gloves);
     updateNetAndEffects();
+    applyFeedbackCamera();
     renderer.render(scene, camera);
   }
 

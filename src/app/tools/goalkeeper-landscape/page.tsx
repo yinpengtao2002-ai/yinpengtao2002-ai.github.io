@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import GoalkeeperLandscapeRuntime, { GOALKEEPER_SCRIPT_SRC } from "./GoalkeeperLandscapeRuntime";
 
-const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-hTxdIy6z.css";
+const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-D2Nib8kw.css";
 
 export const metadata: Metadata = {
   title: "弹力手套守门挑战｜Lucas Yin",
@@ -50,6 +50,8 @@ export default function GoalkeeperLandscapePage() {
                 <button className="glass-button" id="pauseButton" type="button" aria-label="暂停">Ⅱ 暂停</button>
               </div>
             </section>
+
+            <div className="feedback-toast" id="feedbackToast" aria-live="polite" />
 
             <div className="bottom-controls" aria-label="游戏控制">
               <div className="difficulty-control glass-panel" role="group" aria-label="难度">

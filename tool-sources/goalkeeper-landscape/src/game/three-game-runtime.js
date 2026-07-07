@@ -14,12 +14,34 @@ import { createGoalkeeperScene } from "../three/goalkeeper-scene.js";
 import { createHud } from "../ui/hud.js";
 import { getStageRenderBounds, requestLandscapeOrientation, syncMobileLandscape } from "../ui/mobile-landscape.js";
 
-function makeCloseSavePlan() {
+export const DEBUG_FORCE_GLOVE_SETTLE_DT = 1 / 30;
+export const DEBUG_FORCE_GLOVE_HOLD_SECONDS = 0.45;
+
+export function applyForcedGloveTarget(controller, target) {
   return {
-    origin: { x: 0, y: 1.25, z: 2.25 },
+    ...controller,
+    center: target,
+    previousCenter: target,
+    velocity: { x: 0, y: 0, z: 0 },
+    inputMode: "debug",
+    left: { x: target.x - GLOVE_3D.spread, y: target.y, z: target.z },
+    right: { x: target.x + GLOVE_3D.spread, y: target.y, z: target.z },
+    target: {
+      center: target,
+      left: { x: target.x - GLOVE_3D.spread, y: target.y, z: target.z },
+      right: { x: target.x + GLOVE_3D.spread, y: target.y, z: target.z },
+      spread: GLOVE_3D.spread,
+      colliderRadius: GLOVE_3D.colliderRadius,
+    },
+  };
+}
+
+export function createDebugSavePlan() {
+  return {
+    origin: { x: 0, y: 1.25, z: 2.35 },
     target: { x: 0, y: 1.25, z: 4.65 },
-    velocity: { x: 0, y: 0, z: 26 },
-    angularVelocity: { x: 0, y: 14, z: 0 },
+    velocity: { x: 0, y: 0, z: 22 },
+    angularVelocity: { x: 0, y: 10, z: 0 },
     curveForce: { x: 0, y: 0, z: 0 },
     radius: 0.11,
   };
@@ -154,6 +176,8 @@ export async function createThreeGameRuntime(options) {
   var handledContactAudio = null;
   var outcomeTimer = 0;
   var lingeringBalls = [];
+  var forcedGloveTarget = null;
+  var forcedGloveTimer = 0;
   var lastFrame = 0;
   var runningLoop = false;
   var debugKeysEnabled =
@@ -183,6 +207,8 @@ export async function createThreeGameRuntime(options) {
     handledContactAudio = null;
     outcomeTimer = 0;
     lingeringBalls = [];
+    forcedGloveTarget = null;
+    forcedGloveTimer = 0;
     hud.update(state, audio.isEnabled());
   }
 
@@ -284,10 +310,16 @@ export async function createThreeGameRuntime(options) {
     if (state.ended) return;
     updateLingeringBalls(dt);
 
-    gloveController = updateGloveController(gloveController, input.getPointer(bounds), dt, {
-      ...bounds,
-      inputMode: input.getMode(),
-    });
+    if (forcedGloveTarget && forcedGloveTimer > 0) {
+      forcedGloveTimer = Math.max(0, forcedGloveTimer - dt);
+      gloveController = applyForcedGloveTarget(gloveController, forcedGloveTarget);
+      if (forcedGloveTimer <= 0) forcedGloveTarget = null;
+    } else {
+      gloveController = updateGloveController(gloveController, input.getPointer(bounds), dt, {
+        ...bounds,
+        inputMode: input.getMode(),
+      });
+    }
     physics.setGloveTarget(gloveController.center);
 
     director = updateShot3DDirector(director, dt, state.elapsed, selectedDifficulty);
@@ -350,6 +382,7 @@ export async function createThreeGameRuntime(options) {
   function forcePlan(plan, gloveTarget) {
     if (!state.running || state.ended) resetRound();
     physics.setGloveTarget(gloveTarget);
+    physics.step(DEBUG_FORCE_GLOVE_SETTLE_DT);
     gloveController = {
       ...gloveController,
       center: gloveTarget,
@@ -372,6 +405,8 @@ export async function createThreeGameRuntime(options) {
     handledOutcome = null;
     handledContactAudio = null;
     outcomeTimer = 0;
+    forcedGloveTarget = gloveTarget;
+    forcedGloveTimer = DEBUG_FORCE_GLOVE_HOLD_SECONDS;
     launchCurrentShotIfNeeded();
   }
 
@@ -403,7 +438,7 @@ export async function createThreeGameRuntime(options) {
   function onDebugKey(event) {
     if (!debugKeysEnabled) return;
     if (event.key === "[") {
-      forcePlan(makeCloseSavePlan(), { x: 0, y: 1.25, z: 3.15 });
+      forcePlan(createDebugSavePlan(), { x: 0, y: 1.25, z: 3.15 });
     }
     if (event.key === "]") {
       forcePlan(makeCloseMissPlan(), { x: 3.1, y: 2.55, z: 3.15 });
@@ -449,7 +484,7 @@ export async function createThreeGameRuntime(options) {
       hud.update(state, audio.isEnabled());
     },
     forceSave() {
-      forcePlan(makeCloseSavePlan(), { x: 0, y: 1.25, z: 3.15 });
+      forcePlan(createDebugSavePlan(), { x: 0, y: 1.25, z: 3.15 });
     },
     forceMiss() {
       forcePlan(makeCloseMissPlan(), { x: 3.1, y: 2.55, z: 3.15 });

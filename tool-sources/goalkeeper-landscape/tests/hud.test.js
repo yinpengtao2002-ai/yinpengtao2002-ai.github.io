@@ -48,6 +48,7 @@ function createDocument() {
     "endOverlay",
     "finalScore",
     "resultReason",
+    "feedbackToast",
   ].forEach((id) => {
     elements[id] = createElement();
   });
@@ -112,5 +113,31 @@ describe("hud", () => {
     expect(selected).toBe("hard");
     hud.updateDifficulty(selected);
     expect(documentRef.elements.hardDifficulty.classList.contains("is-active")).toBe(true);
+  });
+
+  it("turns game events into restrained status feedback without covering the play field", () => {
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    const state = {
+      ...createGameState(),
+      running: true,
+      message: "save",
+      streak: 3,
+      lastSavePoints: 150,
+    };
+
+    hud.update(state, true);
+
+    expect(documentRef.elements.feedbackToast.textContent).toBe("+150");
+    expect(documentRef.elements.feedbackToast.classList.contains("is-visible")).toBe(true);
+    expect(documentRef.elements.feedbackToast.classList.contains("is-save")).toBe(true);
+    expect(documentRef.elements.feedbackToast.classList.contains("is-streak")).toBe(true);
+    expect(documentRef.elements.streakValue.classList.contains("is-hot")).toBe(true);
+
+    hud.update({ ...state, message: "goal", streak: 0, lastSavePoints: 0 }, true);
+
+    expect(documentRef.elements.feedbackToast.textContent).toBe("失球");
+    expect(documentRef.elements.feedbackToast.classList.contains("is-goal")).toBe(true);
+    expect(documentRef.elements.streakValue.classList.contains("is-hot")).toBe(false);
   });
 });

@@ -15,10 +15,34 @@ export function createHud(documentRef) {
     endOverlay: documentRef.getElementById("endOverlay"),
     finalScore: documentRef.getElementById("finalScore"),
     resultReason: documentRef.getElementById("resultReason"),
+    feedbackToast: documentRef.getElementById("feedbackToast"),
   };
 
   function setVisible(element, visible) {
     if (element) element.classList.toggle("hidden", !visible);
+  }
+
+  function setClass(element, className, enabled) {
+    if (element) element.classList.toggle(className, enabled);
+  }
+
+  function updateFeedback(state) {
+    var toast = refs.feedbackToast;
+    var message = state.message;
+    var isSave = message === "save";
+    var isGoal = message === "goal";
+    var isStreak = isSave && (state.streak || 0) >= 3;
+    var visible = isSave || isGoal;
+
+    if (toast) {
+      toast.textContent = isSave ? "+" + String(state.lastSavePoints || 0) : isGoal ? "失球" : "";
+      setClass(toast, "is-visible", visible);
+      setClass(toast, "is-save", isSave);
+      setClass(toast, "is-goal", isGoal);
+      setClass(toast, "is-streak", isStreak);
+    }
+
+    setClass(refs.streakValue, "is-hot", (state.streak || 0) >= 3);
   }
 
   return {
@@ -51,6 +75,7 @@ export function createHud(documentRef) {
       }
       if (refs.finalScore) refs.finalScore.textContent = String(state.score);
       if (refs.resultReason) refs.resultReason.textContent = state.endReason === "conceded" ? "失球过多" : "挑战结束";
+      updateFeedback(state);
       setVisible(refs.startOverlay, !state.running && !state.ended);
       setVisible(refs.endOverlay, state.ended);
     },

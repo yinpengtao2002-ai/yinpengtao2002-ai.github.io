@@ -114,6 +114,7 @@ export function createFootballTexture() {
 export function createFieldGroup() {
   var group = new THREE.Group();
   group.userData.visualStyle = "standard-football-match-pitch";
+  group.userData.assetSystem = "stylized-reusable-matchday-kit";
   group.userData.markingSystem = "standard-football-pitch";
   var turf = new THREE.Mesh(
     new THREE.PlaneGeometry(18, 52, 1, 1),
@@ -264,21 +265,82 @@ export function createFieldGroup() {
     addStandardLine("corner-arc-" + item[0], points, 0.7);
   });
 
+  var standMatA = new THREE.MeshStandardMaterial({ color: "#264c54", roughness: 0.64, metalness: 0.02 });
+  var standMatB = new THREE.MeshStandardMaterial({ color: "#f2f0df", roughness: 0.7, metalness: 0.01 });
+  for (var s = 0; s < 5; s += 1) {
+    var stand = new THREE.Mesh(new THREE.BoxGeometry(2.35, 0.64, 0.62), s % 2 ? standMatB : standMatA);
+    stand.name = "stadium-stand-back-" + s;
+    stand.position.set(-5.25 + s * 2.65, 0.38, -24.6);
+    stand.rotation.x = -0.08;
+    group.add(stand);
+
+    var upperStand = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.32, 0.42), s % 2 ? standMatA : standMatB);
+    upperStand.name = "stadium-stand-upper-" + s;
+    upperStand.position.set(-5.25 + s * 2.65, 0.88, -24.92);
+    upperStand.rotation.x = -0.08;
+    group.add(upperStand);
+  }
+
+  var boardMaterials = ["#f0782f", "#203f52", "#f6f1df", "#3f8f62"].map(
+    (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.02 }),
+  );
+  for (var b = 0; b < 8; b += 1) {
+    var board = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.34, 0.055), boardMaterials[b % boardMaterials.length]);
+    board.name = "stadium-ad-board-" + b;
+    var side = b % 2 === 0 ? -1 : 1;
+    board.position.set(side * 7.08, 0.22, -8.8 + Math.floor(b / 2) * 3.6);
+    board.rotation.y = side > 0 ? -Math.PI / 2 + 0.04 : Math.PI / 2 - 0.04;
+    group.add(board);
+  }
+
+  var poleMat = new THREE.MeshStandardMaterial({ color: "#263538", roughness: 0.42, metalness: 0.12 });
+  var lampMat = new THREE.MeshBasicMaterial({ color: "#fff4c8", transparent: true, opacity: 0.84 });
+  [
+    ["left-back", -7.2, -22.0],
+    ["right-back", 7.2, -22.0],
+    ["left-mid", -7.4, -8.0],
+    ["right-mid", 7.4, -8.0],
+  ].forEach(function addFloodlight(item) {
+    var mast = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.052, 2.6, 10), poleMat);
+    mast.name = "stadium-floodlight-mast-" + item[0];
+    mast.position.set(item[1], 1.28, item[2]);
+    group.add(mast);
+
+    var head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.07), lampMat);
+    head.name = "stadium-floodlight-head-" + item[0];
+    head.position.set(item[1], 2.62, item[2] + 0.08);
+    head.rotation.y = item[1] < 0 ? -0.32 : 0.32;
+    group.add(head);
+  });
+
   return group;
 }
 
 export function createGoalAndNet() {
   var group = new THREE.Group();
+  group.userData.assetSystem = "layered-goal-and-net-kit";
   var frameMaterial = new THREE.MeshStandardMaterial({ color: "#f5fff7", roughness: 0.34, metalness: 0.04 });
+  var trimMaterial = new THREE.MeshStandardMaterial({ color: "#f0782f", roughness: 0.36, metalness: 0.02 });
   var postGeometry = new THREE.BoxGeometry(0.12, RAPIER_GOAL.height, 0.12);
   var barGeometry = new THREE.BoxGeometry(RAPIER_GOAL.halfWidth * 2 + 0.2, 0.12, 0.12);
   var left = new THREE.Mesh(postGeometry, frameMaterial);
   var right = new THREE.Mesh(postGeometry, frameMaterial);
   var top = new THREE.Mesh(barGeometry, frameMaterial);
+  left.name = "goal-frame-left-post";
+  right.name = "goal-frame-right-post";
+  top.name = "goal-frame-crossbar";
   left.position.set(-RAPIER_GOAL.halfWidth, RAPIER_GOAL.height / 2, RAPIER_GOAL.netPlaneZ);
   right.position.set(RAPIER_GOAL.halfWidth, RAPIER_GOAL.height / 2, RAPIER_GOAL.netPlaneZ);
   top.position.set(0, RAPIER_GOAL.height, RAPIER_GOAL.netPlaneZ);
   group.add(left, right, top);
+
+  var leftTrim = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.28, 0.135), trimMaterial);
+  leftTrim.name = "goal-brand-trim-left-post";
+  leftTrim.position.set(-RAPIER_GOAL.halfWidth, 0.42, RAPIER_GOAL.netPlaneZ - 0.005);
+  var rightTrim = leftTrim.clone();
+  rightTrim.name = "goal-brand-trim-right-post";
+  rightTrim.position.x = RAPIER_GOAL.halfWidth;
+  group.add(leftTrim, rightTrim);
 
   var netMaterial = new THREE.MeshBasicMaterial({
     color: "#dff8ff",
@@ -288,6 +350,7 @@ export function createGoalAndNet() {
     depthWrite: false,
   });
   var net = new THREE.Mesh(new THREE.PlaneGeometry(RAPIER_GOAL.halfWidth * 2, RAPIER_GOAL.height, 18, 8), netMaterial);
+  net.name = "goal-net-back-panel";
   net.position.set(0, RAPIER_GOAL.height / 2, RAPIER_GOAL.netPlaneZ + 0.1);
   group.add(net);
 
@@ -302,7 +365,41 @@ export function createGoalAndNet() {
     linePoints.push(new THREE.Vector3(RAPIER_GOAL.halfWidth, y, RAPIER_GOAL.netPlaneZ + 0.09));
   }
   var grid = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(linePoints), gridMaterial);
+  grid.name = "goal-net-back-grid";
   group.add(grid);
+
+  var sideNetMaterial = netMaterial.clone();
+  sideNetMaterial.opacity = 0.12;
+  ["left", "right"].forEach(function addSideNet(side) {
+    var sign = side === "left" ? -1 : 1;
+    var sideNet = new THREE.Mesh(new THREE.PlaneGeometry(0.95, RAPIER_GOAL.height, 5, 8), sideNetMaterial.clone());
+    sideNet.name = "goal-net-side-" + side;
+    sideNet.position.set(sign * RAPIER_GOAL.halfWidth, RAPIER_GOAL.height / 2, RAPIER_GOAL.netPlaneZ + 0.48);
+    sideNet.rotation.y = sign > 0 ? -Math.PI / 2 : Math.PI / 2;
+    group.add(sideNet);
+
+    var stanchion = makeLimb("#edf9f2", 0.038);
+    stanchion.name = "goal-depth-stanchion-" + side;
+    setLimb(
+      stanchion,
+      { x: sign * RAPIER_GOAL.halfWidth, y: RAPIER_GOAL.height, z: RAPIER_GOAL.netPlaneZ },
+      { x: sign * (RAPIER_GOAL.halfWidth + 0.42), y: 0.12, z: RAPIER_GOAL.netPlaneZ + 0.92 },
+    );
+    group.add(stanchion);
+  });
+
+  var anchorMaterial = new THREE.MeshStandardMaterial({ color: "#dbe8dd", roughness: 0.48, metalness: 0.04 });
+  [
+    ["front-left", -RAPIER_GOAL.halfWidth, 0, RAPIER_GOAL.netPlaneZ],
+    ["front-right", RAPIER_GOAL.halfWidth, 0, RAPIER_GOAL.netPlaneZ],
+    ["back-left", -RAPIER_GOAL.halfWidth - 0.42, 0, RAPIER_GOAL.netPlaneZ + 0.92],
+    ["back-right", RAPIER_GOAL.halfWidth + 0.42, 0, RAPIER_GOAL.netPlaneZ + 0.92],
+  ].forEach(function addAnchor(item) {
+    var anchor = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.085, 0.055, 14), anchorMaterial);
+    anchor.name = "goal-net-anchor-" + item[0];
+    anchor.position.set(item[1], 0.03, item[3]);
+    group.add(anchor);
+  });
 
   return { group, net, grid };
 }

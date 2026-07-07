@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
-import { createFieldGroup, createGloveMesh, createShooterModel } from "../src/three/procedural-assets.js";
+import { createFieldGroup, createGloveMesh, createGoalAndNet, createShooterModel } from "../src/three/procedural-assets.js";
 
 function collectByName(root, pattern) {
   const matches = [];
@@ -70,5 +70,27 @@ describe("procedural 3D assets", () => {
     expect(collectByName(field, /^field-standard-center-line/)).toHaveLength(1);
     expect(collectByName(field, /^field-penalty-spot$/)).toHaveLength(1);
     expect(collectByName(field, /^field-standard-corner-arc-/).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("adds stadium dressing and lighting props so the scene no longer reads as a bare prototype", () => {
+    const field = createFieldGroup();
+
+    expect(field.userData.assetSystem).toBe("stylized-reusable-matchday-kit");
+    expect(collectByName(field, /^stadium-stand-/).length).toBeGreaterThanOrEqual(5);
+    expect(collectByName(field, /^stadium-ad-board-/).length).toBeGreaterThanOrEqual(6);
+    expect(collectByName(field, /^stadium-floodlight-/).length).toBeGreaterThanOrEqual(4);
+    expect(collectByName(field, /^field-goalmouth-wear-/)).toHaveLength(3);
+  });
+
+  it("models the goal with depth, side netting, anchors, and branded posts", () => {
+    const goal = createGoalAndNet();
+
+    expect(goal.group.userData.assetSystem).toBe("layered-goal-and-net-kit");
+    expect(collectByName(goal.group, /^goal-frame-/)).toHaveLength(3);
+    expect(collectByName(goal.group, /^goal-depth-stanchion-/)).toHaveLength(2);
+    expect(collectByName(goal.group, /^goal-net-side-/)).toHaveLength(2);
+    expect(collectByName(goal.group, /^goal-net-anchor-/).length).toBeGreaterThanOrEqual(4);
+    expect(goal.net.name).toBe("goal-net-back-panel");
+    expect(goal.grid.name).toBe("goal-net-back-grid");
   });
 });
