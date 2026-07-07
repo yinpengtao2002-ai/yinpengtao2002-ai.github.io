@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createGameState } from "../src/game/game-state.js";
+import * as HudModule from "../src/ui/hud.js";
 import { createHud } from "../src/ui/hud.js";
 
 function createElement() {
@@ -48,6 +49,7 @@ function createDocument() {
     "endOverlay",
     "finalScore",
     "resultReason",
+    "resultSummary",
     "feedbackToast",
     "matchStatus",
     "finalSaves",
@@ -228,5 +230,33 @@ describe("hud", () => {
     expect(documentRef.elements.finalSaves.textContent).toBe("4");
     expect(documentRef.elements.finalBestStreak.textContent).toBe("x3");
     expect(documentRef.elements.finalConceded.textContent).toBe("2/5");
+  });
+
+  it("adds a concise result summary so the end screen feels intentional", () => {
+    expect(HudModule.getResultSummaryText).toBeTypeOf("function");
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+
+    hud.update({
+      ...createGameState(),
+      ended: true,
+      endReason: "time",
+      saves: 7,
+      conceded: 1,
+      bestStreak: 4,
+    }, true);
+
+    expect(documentRef.elements.resultSummary.textContent).toBe("最佳连扑 x4，手感在线");
+
+    hud.update({
+      ...createGameState(),
+      ended: true,
+      endReason: "conceded",
+      saves: 2,
+      conceded: 5,
+      bestStreak: 1,
+    }, true);
+
+    expect(documentRef.elements.resultSummary.textContent).toBe("再守一轮，先稳近角");
   });
 });

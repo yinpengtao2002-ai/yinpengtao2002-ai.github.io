@@ -1,5 +1,20 @@
 import { MAX_CONCEDED } from "../config/game-config.js";
 
+export const ROUND_RESULT_SUMMARY_MARKER = "round-result-summary";
+
+export function getResultSummaryText(state) {
+  if (!state?.ended) return "";
+  var bestStreak = state.bestStreak || 0;
+  var saves = state.saves || 0;
+  var conceded = state.conceded || 0;
+
+  if (bestStreak >= 3) return "最佳连扑 x" + String(bestStreak) + "，手感在线";
+  if (state.endReason === "conceded") return "再守一轮，先稳近角";
+  if (conceded <= 1 && saves >= 5) return "扑救 " + String(saves) + " 次，防线很稳";
+  if (saves > 0) return "扑救 " + String(saves) + " 次，继续提速";
+  return "再来一局，读准球路";
+}
+
 export function createHud(documentRef) {
   var refs = {
     scoreValue: documentRef.getElementById("scoreValue"),
@@ -15,6 +30,7 @@ export function createHud(documentRef) {
     endOverlay: documentRef.getElementById("endOverlay"),
     finalScore: documentRef.getElementById("finalScore"),
     resultReason: documentRef.getElementById("resultReason"),
+    resultSummary: documentRef.getElementById("resultSummary"),
     feedbackToast: documentRef.getElementById("feedbackToast"),
     matchStatus: documentRef.getElementById("matchStatus"),
     finalSaves: documentRef.getElementById("finalSaves"),
@@ -115,6 +131,10 @@ export function createHud(documentRef) {
       }
       if (refs.finalScore) refs.finalScore.textContent = String(state.score);
       if (refs.resultReason) refs.resultReason.textContent = getResultReasonText(state.endReason);
+      if (refs.resultSummary) {
+        refs.resultSummary.textContent = getResultSummaryText(state);
+        refs.resultSummary.dataset.summarySystem = ROUND_RESULT_SUMMARY_MARKER;
+      }
       if (refs.finalSaves) refs.finalSaves.textContent = String(state.saves || 0);
       if (refs.finalBestStreak) refs.finalBestStreak.textContent = "x" + String(state.bestStreak || 0);
       if (refs.finalConceded) refs.finalConceded.textContent = state.conceded + "/" + MAX_CONCEDED;

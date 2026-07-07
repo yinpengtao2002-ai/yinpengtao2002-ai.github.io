@@ -35,8 +35,29 @@ const SYNTH_PROFILE = {
   tick: { frequency: 180, endFrequency: 110, duration: 0.08, gain: 0.06, type: "sine" },
 };
 
+export const MATCHDAY_AUDIO_EVENT_LAYER = "matchday-audio-event-layer";
+
+const AUDIO_EVENT_PLANS = {
+  "save-streak": [
+    { name: "save", delay: 0, gainScale: 0.92, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "save-streak-audio-cue" },
+    { name: "tick", delay: 0.06, gainScale: 0.52, playbackRateOffset: 0 },
+  ],
+  "danger-goal": [
+    { name: "goal", delay: 0, gainScale: 0.82, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "danger-goal-audio-cue" },
+    { name: "frame", delay: 0.08, gainScale: 0.32, playbackRateOffset: -0.08 },
+  ],
+  "round-end": [
+    { name: "frame", delay: 0, gainScale: 0.36, playbackRateOffset: -0.16, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "round-end-audio-cue" },
+    { name: "tick", delay: 0.12, gainScale: 0.45, playbackRateOffset: 0 },
+  ],
+};
+
 export function getSoundAssetManifest() {
   return { ...SAMPLE_ASSETS };
+}
+
+export function getAudioEventPlan(eventName) {
+  return (AUDIO_EVENT_PLANS[eventName] || []).map((cue) => ({ ...cue }));
 }
 
 export function createAudioEngine(root = window) {
@@ -132,26 +153,27 @@ export function createAudioEngine(root = window) {
     return Promise.all(Object.keys(SAMPLE_ASSETS).map(loadSample)).then(() => undefined);
   }
 
-  function playSample(name, ctx) {
+  function playSample(name, ctx, modifiers = {}) {
     var asset = SAMPLE_ASSETS[name];
     var buffer = sampleBuffers[name];
     if (!asset || !buffer || !ctx.createBufferSource) return false;
     var source = ctx.createBufferSource();
     var gain = ctx.createGain();
     source.buffer = buffer;
+    var playbackRate = Math.max(0.2, (asset.playbackRate || 1) + (modifiers.playbackRateOffset || 0));
     if (source.playbackRate?.setValueAtTime) {
-      source.playbackRate.setValueAtTime(asset.playbackRate || 1, ctx.currentTime);
+      source.playbackRate.setValueAtTime(playbackRate, ctx.currentTime);
     } else if (source.playbackRate) {
-      source.playbackRate.value = asset.playbackRate || 1;
+      source.playbackRate.value = playbackRate;
     }
-    gain.gain.setValueAtTime(asset.gain || 0.35, ctx.currentTime);
+    gain.gain.setValueAtTime((asset.gain || 0.35) * (modifiers.gainScale ?? 1), ctx.currentTime);
     source.connect(gain);
     gain.connect(ctx.destination);
     source.start(ctx.currentTime);
     return true;
   }
 
-  function playFallback(name, ctx) {
+  function playFallback(name, ctx, modifiers = {}) {
     var profile = SYNTH_PROFILE[name];
     if (!profile || !ctx || !ctx.createOscillator) return;
     var now = ctx.currentTime;
@@ -161,7 +183,7 @@ export function createAudioEngine(root = window) {
     oscillator.frequency.setValueAtTime(profile.frequency, now);
     oscillator.frequency.exponentialRampToValueAtTime(Math.max(20, profile.endFrequency), now + profile.duration);
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(profile.gain, now + 0.012);
+    gain.gain.exponentialRampToValueAtTime(profile.gain * (modifiers.gainScale ?? 1), now + 0.012);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + profile.duration);
     oscillator.connect(gain);
     gain.connect(ctx.destination);
@@ -169,15 +191,30 @@ export function createAudioEngine(root = window) {
     oscillator.stop(now + profile.duration + 0.03);
   }
 
-  function play(name) {
+  function play(name, modifiers = {}) {
     if (!enabled) return;
     var ctx = getContext();
     if (!ctx) return;
     resumeContext(ctx);
 
-    if (playSample(name, ctx)) return;
+    if (playSample(name, ctx, modifiers)) return;
     loadSample(name);
-    playFallback(name, ctx);
+    playFallback(name, ctx, modifiers);
+  }
+
+  function playEvent(eventName) {
+    var plan = getAudioEventPlan(eventName);
+    if (!plan.length) return;
+    var schedule = root.setTimeout || (typeof setTimeout !== "undefined" ? setTimeout : null);
+
+    plan.forEach((cue) => {
+      var delayMs = Math.max(0, Math.round((cue.delay || 0) * 1000));
+      if (delayMs > 0 && schedule) {
+        schedule.call(root, () => play(cue.name, cue), delayMs);
+      } else {
+        play(cue.name, cue);
+      }
+    });
   }
 
   function toggle() {
@@ -190,6 +227,7 @@ export function createAudioEngine(root = window) {
     prime,
     preload,
     play,
+    playEvent,
     toggle,
     isEnabled() {
       return enabled;

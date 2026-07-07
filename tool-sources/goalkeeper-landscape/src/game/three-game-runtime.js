@@ -1,4 +1,5 @@
 import { createAudioEngine } from "../audio/audio-engine.js";
+import { MAX_CONCEDED } from "../config/game-config.js";
 import { createGameState, recordGoal, recordMiss, recordSave, startRound, tickRound, togglePause } from "./game-state.js";
 import {
   DEFAULT_SHOT_DIFFICULTY,
@@ -111,6 +112,14 @@ export function getAudioCueForContactType(type) {
   if (type === "glove") return "save";
   if (type === "net") return "goal";
   if (type === "frame") return "frame";
+  return null;
+}
+
+export function getOutcomeAudioEvent(state, previousState = null) {
+  if (!state) return null;
+  if (state.ended && !previousState?.ended) return "round-end";
+  if (state.message === "save" && (state.streak || 0) >= 3) return "save-streak";
+  if (state.message === "goal" && !state.ended && (state.conceded || 0) >= MAX_CONCEDED - 1) return "danger-goal";
   return null;
 }
 
@@ -329,6 +338,7 @@ export async function createThreeGameRuntime(options) {
   var launchedShotId = null;
   var handledOutcome = null;
   var handledContactAudio = null;
+  var handledRoundEndAudio = false;
   var outcomeTimer = 0;
   var lingeringBalls = [];
   var forcedGloveTarget = null;
@@ -361,6 +371,7 @@ export async function createThreeGameRuntime(options) {
     launchedShotId = null;
     handledOutcome = null;
     handledContactAudio = null;
+    handledRoundEndAudio = false;
     outcomeTimer = 0;
     lingeringBalls = [];
     forcedGloveTarget = null;
@@ -407,16 +418,30 @@ export async function createThreeGameRuntime(options) {
     }
   }
 
+  function playOutcomeAudioEvent(previousState) {
+    var eventName = getOutcomeAudioEvent(state, previousState);
+    if (!eventName) return;
+    if (eventName === "round-end") {
+      if (handledRoundEndAudio) return;
+      handledRoundEndAudio = true;
+    }
+    audio.playEvent(eventName);
+  }
+
   function handleBallOutcome(ball) {
     if (!ball || handledOutcome) return;
     if (ball.outcome === "goal") {
+      var previousState = state;
       state = recordGoal(state);
+      playOutcomeAudioEvent(previousState);
       handledOutcome = "goal";
       outcomeTimer = 0;
       return;
     }
     if (ball.outcome === "saved") {
+      var previousStateForSave = state;
       state = recordSave(state);
+      playOutcomeAudioEvent(previousStateForSave);
       rememberLingeringBall(ball, "save");
       handledOutcome = "save";
       outcomeTimer = 0;
@@ -465,8 +490,12 @@ export async function createThreeGameRuntime(options) {
       return;
     }
 
+    var previousState = state;
     state = tickRound(state, dt);
-    if (state.ended) return;
+    if (state.ended) {
+      playOutcomeAudioEvent(previousState);
+      return;
+    }
     updateLingeringBalls(dt);
 
     if (forcedGloveTarget && forcedGloveTimer > 0) {
@@ -649,9 +678,11 @@ export async function createThreeGameRuntime(options) {
       return physics.getGloveState();
     },
     forceEnd() {
+      var previousState = state;
       while (!state.ended) {
         state = recordGoal(state);
       }
+      playOutcomeAudioEvent(previousState);
       updateHud();
     },
     forceSave() {

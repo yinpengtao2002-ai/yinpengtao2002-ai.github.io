@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import * as RuntimeModule from "../src/game/three-game-runtime.js";
 import {
   DEBUG_FORCE_GLOVE_SETTLE_DT,
   DEBUG_FORCE_GLOVE_HOLD_SECONDS,
@@ -43,6 +44,26 @@ describe("three game runtime timing", () => {
     expect(getAudioCueForContactType("net")).toBe("goal");
     expect(getAudioCueForContactType("frame")).toBe("frame");
     expect(getAudioCueForContactType("wide")).toBeNull();
+  });
+
+  it("maps meaningful outcome transitions to layered match audio events", () => {
+    expect(RuntimeModule.getOutcomeAudioEvent).toBeTypeOf("function");
+    expect(RuntimeModule.getOutcomeAudioEvent(
+      { message: "save", streak: 3, ended: false },
+      { message: "save", streak: 2, ended: false },
+    )).toBe("save-streak");
+    expect(RuntimeModule.getOutcomeAudioEvent(
+      { message: "goal", conceded: 4, ended: false },
+      { message: "goal", conceded: 3, ended: false },
+    )).toBe("danger-goal");
+    expect(RuntimeModule.getOutcomeAudioEvent(
+      { message: "ended", endReason: "time", ended: true },
+      { message: "save", ended: false },
+    )).toBe("round-end");
+    expect(RuntimeModule.getOutcomeAudioEvent(
+      { message: "save", streak: 1, ended: false },
+      { message: "miss", streak: 0, ended: false },
+    )).toBeNull();
   });
 
   it("turns frame misses into a distinct HUD message instead of a silent generic miss", () => {

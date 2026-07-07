@@ -441,6 +441,17 @@ button {
   letter-spacing: 0;
 }
 
+.result-summary {
+  max-width: min(310px, 62vw);
+  margin: -4px 0 0;
+  color: #36544c;
+  font-size: clamp(14px, 1.25vw, 18px);
+  font-weight: 900;
+  line-height: 1.35;
+  text-align: center;
+  letter-spacing: 0;
+}
+
 .result-stats {
   width: 100%;
   display: grid;
