@@ -1,0 +1,481 @@
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 18px;
+  padding: 18px;
+  background:
+    linear-gradient(135deg, rgba(245, 249, 246, 0.94), rgba(238, 244, 241, 0.96)),
+    radial-gradient(circle at 22% 18%, rgba(242, 154, 68, 0.16), transparent 32%),
+    radial-gradient(circle at 86% 10%, rgba(69, 123, 157, 0.14), transparent 30%);
+  color: #17211c;
+  font-family:
+    var(--font-poppins),
+    "PingFang SC",
+    "Hiragino Sans GB",
+    "Microsoft YaHei",
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+}
+
+.rail,
+.previewPanel,
+.telemetryPanel,
+.assetPanel {
+  border: 1px solid rgba(23, 33, 28, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 20px 60px rgba(25, 43, 34, 0.12);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.rail {
+  position: sticky;
+  top: 18px;
+  height: calc(100vh - 36px);
+  height: calc(100dvh - 36px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px;
+}
+
+.brandBlock {
+  display: grid;
+  gap: 10px;
+}
+
+.kicker {
+  color: #547063;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.brandBlock h1,
+.panelHeader h2 {
+  margin: 0;
+  color: #142019;
+  letter-spacing: 0;
+}
+
+.brandBlock h1 {
+  font-size: 28px;
+  line-height: 1.04;
+}
+
+.brandBlock p,
+.scenarioCard p,
+.assetRow p {
+  margin: 0;
+  color: #5e6b64;
+  line-height: 1.55;
+}
+
+.brandBlock p {
+  font-size: 14px;
+}
+
+.modeSwitch {
+  display: grid;
+  gap: 8px;
+}
+
+.modeButton,
+.routeCard,
+.iconButton {
+  border: 1px solid rgba(23, 33, 28, 0.12);
+  border-radius: 8px;
+  background: #fffdf8;
+}
+
+.modeButton {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  color: #1f332a;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.modeButton svg,
+.iconButton svg,
+.panelHeader svg {
+  width: 18px;
+  height: 18px;
+}
+
+.routeCard {
+  margin-top: auto;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.routeCard span {
+  color: #67746d;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.routeCard a {
+  overflow-wrap: anywhere;
+  color: #2e5f88;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1.62fr) minmax(280px, 0.72fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.previewPanel,
+.telemetryPanel,
+.assetPanel {
+  padding: 18px;
+}
+
+.previewPanel {
+  min-height: calc(100vh - 36px);
+  min-height: calc(100dvh - 36px);
+}
+
+.assetPanel {
+  grid-column: 1 / -1;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.panelHeader h2 {
+  margin-top: 5px;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.panelHeader svg {
+  color: #38646f;
+  flex: 0 0 auto;
+}
+
+.iconButton {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #1d3429;
+  cursor: default;
+}
+
+.pitchPreview {
+  position: relative;
+  overflow: hidden;
+  min-height: 340px;
+  border: 1px solid rgba(23, 33, 28, 0.14);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(154, 191, 198, 0.58), rgba(234, 242, 235, 0.2) 38%, rgba(80, 142, 88, 0.28) 39%),
+    repeating-linear-gradient(90deg, rgba(39, 103, 54, 0.28) 0 42px, rgba(55, 127, 66, 0.2) 42px 84px);
+}
+
+.goalFrame {
+  position: absolute;
+  left: 50%;
+  bottom: 36px;
+  width: min(68%, 560px);
+  height: 210px;
+  transform: translateX(-50%);
+  border: 8px solid rgba(249, 252, 248, 0.94);
+  border-bottom-width: 5px;
+  box-shadow: 0 18px 45px rgba(28, 58, 38, 0.22);
+}
+
+.netLine {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.28) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.gloveGhost {
+  position: absolute;
+  left: 46%;
+  top: 46%;
+  width: 52px;
+  height: 52px;
+  color: #f29a44;
+  filter: drop-shadow(0 10px 18px rgba(151, 77, 23, 0.28));
+}
+
+.ballTrace {
+  position: absolute;
+  left: 15%;
+  bottom: 46px;
+  width: 56%;
+  height: 3px;
+  transform: rotate(-8deg);
+  transform-origin: left center;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(45, 94, 130, 0.78));
+}
+
+.contactMarker {
+  position: absolute;
+  left: 52%;
+  top: 52%;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #f29a44;
+  border-radius: 50%;
+  box-shadow: 0 0 0 8px rgba(242, 154, 68, 0.16);
+}
+
+.ball {
+  position: absolute;
+  left: 26%;
+  bottom: 48px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 30%, #ffffff 0 20%, transparent 21%),
+    radial-gradient(circle at 62% 64%, #17211c 0 13%, transparent 14%),
+    #f8f4e8;
+  box-shadow: 0 10px 22px rgba(21, 36, 28, 0.28);
+}
+
+.previewReadout {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.previewReadout span,
+.cardTopline span {
+  color: #1a2b22;
+  font-weight: 800;
+}
+
+.previewReadout strong,
+.cardTopline strong {
+  color: #38646f;
+  font-size: 12px;
+}
+
+.scenarioGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.scenarioCard {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(23, 33, 28, 0.1);
+  border-radius: 8px;
+  background: #fffdf8;
+}
+
+.scenarioCard[aria-current="true"] {
+  border-color: rgba(242, 154, 68, 0.64);
+  box-shadow: 0 0 0 3px rgba(242, 154, 68, 0.12);
+}
+
+.cardTopline {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.scenarioCard p,
+.assetRow p {
+  font-size: 12px;
+}
+
+.telemetryList,
+.detailGrid {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.telemetryList div,
+.detailGrid div {
+  display: grid;
+  gap: 2px;
+}
+
+.telemetryList dt,
+.detailGrid dt {
+  color: #718077;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.telemetryList dd,
+.detailGrid dd {
+  margin: 0;
+  color: #26372e;
+  font-size: 12px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.detailGrid {
+  grid-template-columns: 1fr;
+}
+
+.markerStack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.markerStack span {
+  padding: 7px 9px;
+  border-radius: 999px;
+  background: #e8f1ec;
+  color: #36574a;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.assetTable {
+  display: grid;
+  gap: 8px;
+}
+
+.assetHead,
+.assetRow {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.3fr) 0.7fr 1fr 0.8fr 1.1fr 1.2fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.assetHead {
+  padding: 0 10px;
+  color: #68776f;
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.assetRow {
+  padding: 12px 10px;
+  border: 1px solid rgba(23, 33, 28, 0.09);
+  border-radius: 8px;
+  background: #fffdf8;
+  color: #26372e;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.assetRow strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #15251d;
+  font-size: 13px;
+}
+
+@media (max-width: 1100px) {
+  .page {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+
+  .workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .previewPanel {
+    min-height: auto;
+  }
+
+  .assetHead {
+    display: none;
+  }
+
+  .assetRow {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .assetRow > span {
+    display: block;
+  }
+}
+
+@media (max-width: 820px) {
+  .page {
+    display: block;
+    padding: 12px;
+  }
+
+  .rail {
+    position: static;
+    height: auto;
+    margin-bottom: 12px;
+  }
+
+  .brandBlock h1 {
+    font-size: 22px;
+  }
+
+  .modeSwitch {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workbench {
+    display: grid;
+    gap: 12px;
+  }
+
+  .previewPanel,
+  .telemetryPanel,
+  .assetPanel {
+    padding: 14px;
+  }
+
+  .pitchPreview {
+    min-height: 260px;
+  }
+
+  .goalFrame {
+    width: 82%;
+    height: 160px;
+  }
+
+  .scenarioGrid {
+    grid-template-columns: 1fr;
+  }
+
+}

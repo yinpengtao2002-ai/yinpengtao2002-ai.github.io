@@ -6,6 +6,7 @@ const nextConfig = await readFile(new URL("../next.config.ts", import.meta.url),
 const sitemap = await readFile(new URL("../src/app/sitemap.ts", import.meta.url), "utf8");
 const globals = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
 const clientShell = await readFile(new URL("../src/components/ClientShell.tsx", import.meta.url), "utf8");
+const navigation = await readFile(new URL("../src/components/layout/SiteNavigation.tsx", import.meta.url), "utf8");
 const thinkingClient = await readFile(new URL("../src/components/thinking/ThinkingLabClient.tsx", import.meta.url), "utf8");
 const thinkingLabContent = await readFile(new URL("../src/lib/data/thinkingLabContent.ts", import.meta.url), "utf8");
 const subtitleWorkbenchPage = await readFile(
@@ -152,4 +153,30 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.ok(gameScript.size > 1024, "game script should be copied from the Vite dist output");
   assert.ok(gameStyles.size > 1024, "game styles should be copied from the Vite dist output");
   assert.ok(gameWasm.size > 1024, "Rapier wasm should be available to the game runtime");
+});
+
+test("goalkeeper landscape lab is a hidden internal workbench route", async () => {
+  const labPage = await readFile(
+    new URL("../src/app/tools/goalkeeper-landscape-lab/page.tsx", import.meta.url),
+    "utf8"
+  );
+
+  assert.doesNotMatch(labPage, /redirect\(/);
+  assert.match(labPage, /Goalkeeper Landscape Lab/);
+  assert.match(labPage, /Physics Lab/);
+  assert.match(labPage, /Asset Lab/);
+  assert.match(labPage, /低平滚动球/);
+  assert.match(labPage, /中路抱球/);
+  assert.match(labPage, /侧身拨挡/);
+  assert.match(labPage, /上升掌托/);
+  assert.match(labPage, /擦碰漏防/);
+  assert.match(labPage, /Khronos glTF Sample Assets/);
+  assert.match(labPage, /Kenney official assets/);
+  assert.match(labPage, /license/);
+  assert.match(labPage, /performance/);
+  assert.doesNotMatch(sitemap, /goalkeeper-landscape-lab/);
+  assert.doesNotMatch(thinkingLabContent, /goalkeeper-landscape-lab/);
+  assert.doesNotMatch(thinkingClient, /goalkeeper-landscape-lab/);
+  assert.doesNotMatch(clientShell, /goalkeeper-landscape-lab/);
+  assert.doesNotMatch(navigation, /goalkeeper-landscape-lab/);
 });
