@@ -82,15 +82,34 @@ describe("procedural 3D assets", () => {
     expect(collectByName(field, /^field-goalmouth-wear-/)).toHaveLength(3);
   });
 
+  it("adds foreground turf blade clusters and pitch depth shadows for a finished match surface", () => {
+    const field = createFieldGroup();
+
+    expect(field.userData.surfaceDetailSystem).toBe("layered-turf-with-foreground-blades");
+    expect(collectByName(field, /^field-foreground-blade-cluster-/).length).toBeGreaterThanOrEqual(36);
+    expect(collectByName(field, /^field-goalmouth-depth-shadow-/)).toHaveLength(2);
+    expect(collectByName(field, /^field-touchline-shadow-/)).toHaveLength(2);
+  });
+
   it("models the goal with depth, side netting, anchors, and branded posts", () => {
     const goal = createGoalAndNet();
 
     expect(goal.group.userData.assetSystem).toBe("layered-goal-and-net-kit");
-    expect(collectByName(goal.group, /^goal-frame-/)).toHaveLength(3);
+    expect(collectByName(goal.group, /^goal-frame-(left-post|right-post|crossbar)$/)).toHaveLength(3);
     expect(collectByName(goal.group, /^goal-depth-stanchion-/)).toHaveLength(2);
     expect(collectByName(goal.group, /^goal-net-side-/)).toHaveLength(2);
     expect(collectByName(goal.group, /^goal-net-anchor-/).length).toBeGreaterThanOrEqual(4);
     expect(goal.net.name).toBe("goal-net-back-panel");
     expect(goal.grid.name).toBe("goal-net-back-grid");
+  });
+
+  it("adds round frame caps, base rails, and tension cords to move the goal past boxy prototype geometry", () => {
+    const goal = createGoalAndNet();
+
+    expect(goal.group.userData.frameDetailSystem).toBe("rounded-posts-with-tensioned-net");
+    expect(collectByName(goal.group, /^goal-frame-post-cap-/).length).toBeGreaterThanOrEqual(4);
+    expect(collectByName(goal.group, /^goal-frame-base-rail-/)).toHaveLength(2);
+    expect(collectByName(goal.group, /^goal-net-tension-cord-/).length).toBeGreaterThanOrEqual(4);
+    expect(collectByName(goal.group, /^goal-net-rope-knot-/).length).toBeGreaterThanOrEqual(4);
   });
 });

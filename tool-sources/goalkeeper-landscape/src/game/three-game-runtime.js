@@ -1,5 +1,5 @@
 import { createAudioEngine } from "../audio/audio-engine.js";
-import { createGameState, recordGoal, recordSave, startRound, tickRound, togglePause } from "./game-state.js";
+import { createGameState, recordGoal, recordMiss, recordSave, startRound, tickRound, togglePause } from "./game-state.js";
 import {
   DEFAULT_SHOT_DIFFICULTY,
   completeShot3D,
@@ -106,6 +106,10 @@ export function getAudioCueForContactType(type) {
   if (type === "net") return "goal";
   if (type === "frame") return "frame";
   return null;
+}
+
+export function getMissMessageForBall(ball) {
+  return ball?.lastContact?.type === "frame" ? "frame" : "miss";
 }
 
 function cloneVector(value) {
@@ -349,6 +353,7 @@ export async function createThreeGameRuntime(options) {
       return;
     }
     if (ball.outcome === "missed") {
+      state = recordMiss(state, getMissMessageForBall(ball));
       handledOutcome = "miss";
       outcomeTimer = 0;
     }

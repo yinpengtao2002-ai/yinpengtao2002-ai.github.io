@@ -31,6 +31,14 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.feedback.groundSkidMaxOpacity).toBeLessThanOrEqual(0.42);
   });
 
+  it("uses a warm stadium lighting rig instead of flat prototype lighting", () => {
+    expect(SCENE_TUNING.lighting.assetSystem).toBe("warm-stadium-three-point");
+    expect(SCENE_TUNING.lighting.hemisphereIntensity).toBeGreaterThanOrEqual(2);
+    expect(SCENE_TUNING.lighting.sunIntensity).toBeGreaterThanOrEqual(2);
+    expect(SCENE_TUNING.lighting.rimIntensity).toBeGreaterThanOrEqual(0.55);
+    expect(SCENE_TUNING.lighting.fillIntensity).toBeLessThanOrEqual(0.9);
+  });
+
   it("keeps one canonical framing instead of composition demo presets", async () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
 

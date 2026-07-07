@@ -145,6 +145,31 @@ describe("hud", () => {
     expect(documentRef.elements.streakValue.classList.contains("is-hot")).toBe(false);
   });
 
+  it("distinguishes frame and wide misses without using the conceded goal treatment", () => {
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    const state = {
+      ...createGameState(),
+      running: true,
+      message: "frame",
+      streak: 0,
+      lastSavePoints: 0,
+    };
+
+    hud.update(state, true);
+
+    expect(documentRef.elements.feedbackToast.textContent).toBe("门框");
+    expect(documentRef.elements.feedbackToast.classList.contains("is-visible")).toBe(true);
+    expect(documentRef.elements.feedbackToast.classList.contains("is-frame")).toBe(true);
+    expect(documentRef.elements.feedbackToast.classList.contains("is-goal")).toBe(false);
+
+    hud.update({ ...state, message: "miss" }, true);
+
+    expect(documentRef.elements.feedbackToast.textContent).toBe("偏出");
+    expect(documentRef.elements.feedbackToast.classList.contains("is-miss")).toBe(true);
+    expect(documentRef.elements.feedbackToast.classList.contains("is-frame")).toBe(false);
+  });
+
   it("shows match flow states without replacing the playable field", () => {
     const documentRef = createDocument();
     const hud = createHud(documentRef);

@@ -117,20 +117,26 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
     new URL("../src/app/tools/goalkeeper-landscape/page.tsx", import.meta.url),
     "utf8"
   );
+  const goalkeeperRuntime = await readFile(
+    new URL("../src/app/tools/goalkeeper-landscape/GoalkeeperLandscapeRuntime.tsx", import.meta.url),
+    "utf8"
+  );
   const gameIndex = await readFile(
     new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
     "utf8"
   );
-  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-BRNT-pgc.js", import.meta.url);
+  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-B8DjL8t-.js", import.meta.url);
   const gameScript = await stat(gameScriptPath);
   const gameScriptSource = await readFile(gameScriptPath, "utf8");
-  const gameStyles = await stat(new URL("../public/tools/goalkeeper-landscape/assets/index-BLnfxGQV.css", import.meta.url));
+  const gameStyles = await stat(new URL("../public/tools/goalkeeper-landscape/assets/index-FYJ__wDJ.css", import.meta.url));
   const gameWasm = await stat(new URL("../public/tools/goalkeeper-landscape/vendor/rapier_wasm3d_bg.wasm", import.meta.url));
 
   assert.doesNotMatch(goalkeeperPage, /redirect\(/);
   assert.match(goalkeeperPage, /import GoalkeeperLandscapeRuntime/);
   assert.match(goalkeeperPage, /GOALKEEPER_SCRIPT_SRC/);
   assert.match(goalkeeperPage, /GOALKEEPER_STYLESHEET_HREF/);
+  assert.match(goalkeeperRuntime, /index-B8DjL8t-\.js/);
+  assert.match(goalkeeperPage, /index-FYJ__wDJ\.css/);
   assert.match(goalkeeperPage, /<GoalkeeperLandscapeRuntime \/>/);
   assert.match(goalkeeperPage, /弹力手套守门挑战/);
   assert.match(goalkeeperPage, /id="gameCanvas"/);
@@ -149,17 +155,22 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(thinkingClient, /横屏守门挑战/);
   assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-BRNT-pgc\.js/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-BLnfxGQV\.css/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-B8DjL8t-\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-FYJ__wDJ\.css/);
   assert.match(gameIndex, /id="feedbackToast"/);
   assert.match(gameIndex, /id="matchStatus"/);
   assert.match(gameIndex, /id="finalSaves"/);
   assert.match(gameScriptSource, /difficulty/);
   assert.match(gameScriptSource, /medium/);
   assert.match(gameScriptSource, /stylized-reusable-matchday-kit/);
+  assert.match(gameScriptSource, /layered-turf-with-foreground-blades/);
+  assert.match(gameScriptSource, /rounded-posts-with-tensioned-net/);
+  assert.match(gameScriptSource, /warm-stadium-three-point/);
   assert.match(gameScriptSource, /matchday-feedback-kit/);
   assert.match(gameScriptSource, /feedback-impact-ring/);
   assert.match(gameScriptSource, /feedback-ground-skid/);
+  assert.match(gameScriptSource, /field-foreground-blade-cluster/);
+  assert.match(gameScriptSource, /goal-net-tension-cord/);
   assert.match(gameScriptSource, /forceFrame/);
   assert.match(gameScriptSource, /frameFlashColor/);
   assert.match(gameScriptSource, /\/tools\/goalkeeper-landscape\/audio\/mixkit-soccer-ball-kick-2099\.wav/);

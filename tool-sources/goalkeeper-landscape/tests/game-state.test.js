@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createGameState, recordGoal, recordSave, startRound, tickRound, togglePause } from "../src/game/game-state.js";
+import { createGameState, recordGoal, recordMiss, recordSave, startRound, tickRound, togglePause } from "../src/game/game-state.js";
 
 describe("game state", () => {
   it("starts a 60 second round and ends after time expires", () => {
@@ -45,6 +45,19 @@ describe("game state", () => {
     state = recordGoal(state);
     expect(state.streak).toBe(0);
     expect(state.bestStreak).toBe(2);
+  });
+
+  it("surfaces frame misses without counting them as conceded goals", () => {
+    let state = startRound(createGameState());
+    state = recordSave(state);
+
+    state = recordMiss(state, "frame");
+
+    expect(state.message).toBe("frame");
+    expect(state.conceded).toBe(0);
+    expect(state.streak).toBe(0);
+    expect(state.bestStreak).toBe(1);
+    expect(state.lastSavePoints).toBe(0);
   });
 
   it("pauses without consuming round time", () => {

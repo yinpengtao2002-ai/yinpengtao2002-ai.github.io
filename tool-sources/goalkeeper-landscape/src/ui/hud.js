@@ -35,14 +35,26 @@ export function createHud(documentRef) {
     var message = state.message;
     var isSave = message === "save";
     var isGoal = message === "goal";
+    var isFrame = message === "frame";
+    var isMiss = message === "miss";
     var isStreak = isSave && (state.streak || 0) >= 3;
-    var visible = isSave || isGoal;
+    var visible = isSave || isGoal || isFrame || isMiss;
 
     if (toast) {
-      toast.textContent = isSave ? "+" + String(state.lastSavePoints || 0) : isGoal ? "失球" : "";
+      toast.textContent = isSave
+        ? "+" + String(state.lastSavePoints || 0)
+        : isGoal
+          ? "失球"
+          : isFrame
+            ? "门框"
+            : isMiss
+              ? "偏出"
+              : "";
       setClass(toast, "is-visible", visible);
       setClass(toast, "is-save", isSave);
       setClass(toast, "is-goal", isGoal);
+      setClass(toast, "is-frame", isFrame);
+      setClass(toast, "is-miss", isMiss);
       setClass(toast, "is-streak", isStreak);
     }
 

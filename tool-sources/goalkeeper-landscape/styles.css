@@ -213,6 +213,16 @@ button {
   background: linear-gradient(180deg, rgba(201, 82, 43, 0.82), rgba(92, 33, 21, 0.7));
 }
 
+.feedback-toast.is-frame {
+  color: #20312c;
+  background: linear-gradient(180deg, rgba(250, 255, 239, 0.9), rgba(208, 229, 194, 0.78));
+  box-shadow: 0 0 0 3px rgba(255, 255, 245, 0.32), 0 16px 30px rgba(15, 35, 29, 0.18);
+}
+
+.feedback-toast.is-miss {
+  background: linear-gradient(180deg, rgba(38, 65, 66, 0.72), rgba(19, 36, 34, 0.64));
+}
+
 .feedback-toast.is-streak {
   box-shadow: 0 0 0 4px rgba(97, 240, 255, 0.18), 0 16px 32px rgba(15, 35, 29, 0.22);
 }

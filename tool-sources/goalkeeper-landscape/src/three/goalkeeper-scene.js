@@ -35,6 +35,13 @@ export const SCENE_TUNING = {
   gloves: {
     scale: 0.64,
   },
+  lighting: {
+    assetSystem: "warm-stadium-three-point",
+    hemisphereIntensity: 2.35,
+    sunIntensity: 2.25,
+    rimIntensity: 0.72,
+    fillIntensity: 0.62,
+  },
   feedback: {
     assetSystem: "matchday-feedback-kit",
     impactRingCount: 3,
@@ -90,6 +97,8 @@ export function createGoalkeeperScene(canvas) {
   var renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
   renderer.setClearColor("#8ed7ff", 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.04;
   renderer.shadowMap.enabled = true;
 
   var scene = new THREE.Scene();
@@ -99,10 +108,15 @@ export function createGoalkeeperScene(canvas) {
   var camera = new THREE.PerspectiveCamera(tuning.camera.fov, 16 / 9, 0.05, 90);
   var cameraFraming = applyCameraTuning(camera, 16 / 9, tuning);
 
-  var hemi = new THREE.HemisphereLight("#fff7da", "#2d6b40", 2.3);
-  var sun = new THREE.DirectionalLight("#fff4cf", 2.1);
+  scene.userData.lightingAssetSystem = tuning.lighting.assetSystem;
+  var hemi = new THREE.HemisphereLight("#fff7da", "#2d6b40", tuning.lighting.hemisphereIntensity);
+  var sun = new THREE.DirectionalLight("#fff4cf", tuning.lighting.sunIntensity);
   sun.position.set(-3, 7, 5);
-  scene.add(hemi, sun);
+  var rim = new THREE.DirectionalLight("#dffcff", tuning.lighting.rimIntensity);
+  rim.position.set(4.8, 3.1, -8.6);
+  var fill = new THREE.DirectionalLight("#fff0dd", tuning.lighting.fillIntensity);
+  fill.position.set(3.4, 2.2, 4.6);
+  scene.add(hemi, sun, rim, fill);
 
   var field = createFieldGroup();
   var goal = createGoalAndNet();

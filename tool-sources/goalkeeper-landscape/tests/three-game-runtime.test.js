@@ -13,6 +13,7 @@ import {
   getNextShotDelayForOutcome,
   getReplayDurationForOutcome,
   getAudioCueForContactType,
+  getMissMessageForBall,
   resolveRuntimeDifficulty,
 } from "../src/game/three-game-runtime.js";
 import { createRapierGoalkeeperWorld } from "../src/physics/rapier-world.js";
@@ -42,6 +43,12 @@ describe("three game runtime timing", () => {
     expect(getAudioCueForContactType("net")).toBe("goal");
     expect(getAudioCueForContactType("frame")).toBe("frame");
     expect(getAudioCueForContactType("wide")).toBeNull();
+  });
+
+  it("turns frame misses into a distinct HUD message instead of a silent generic miss", () => {
+    expect(getMissMessageForBall({ outcome: "missed", lastContact: { type: "frame" } })).toBe("frame");
+    expect(getMissMessageForBall({ outcome: "missed", lastContact: { type: "ground" } })).toBe("miss");
+    expect(getMissMessageForBall(null)).toBe("miss");
   });
 
   it("continues simulating a deflected lingering ball instead of freezing it in the sky", () => {

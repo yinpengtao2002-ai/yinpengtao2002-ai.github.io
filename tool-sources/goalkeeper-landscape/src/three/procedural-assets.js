@@ -116,6 +116,7 @@ export function createFieldGroup() {
   group.userData.visualStyle = "standard-football-match-pitch";
   group.userData.assetSystem = "stylized-reusable-matchday-kit";
   group.userData.markingSystem = "standard-football-pitch";
+  group.userData.surfaceDetailSystem = "layered-turf-with-foreground-blades";
   var turf = new THREE.Mesh(
     new THREE.PlaneGeometry(18, 52, 1, 1),
     new THREE.MeshStandardMaterial({ color: "#69bd53", map: createGrassTexture(), roughness: 0.9 }),
@@ -265,6 +266,63 @@ export function createFieldGroup() {
     addStandardLine("corner-arc-" + item[0], points, 0.7);
   });
 
+  var touchlineShadowMaterial = new THREE.MeshBasicMaterial({
+    color: "#184c2c",
+    transparent: true,
+    opacity: 0.16,
+    depthWrite: false,
+  });
+  [-1, 1].forEach(function addTouchlineShadow(side) {
+    var shadow = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 18), touchlineShadowMaterial);
+    shadow.name = "field-touchline-shadow-" + (side < 0 ? "left" : "right");
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.set(side * (pitchHalfWidth - 0.16), 0.006, -7.8);
+    group.add(shadow);
+  });
+
+  var mouthShadowMaterial = new THREE.MeshBasicMaterial({
+    color: "#123d24",
+    transparent: true,
+    opacity: 0.18,
+    depthWrite: false,
+  });
+  [
+    ["left", -RAPIER_GOAL.halfWidth - 0.28],
+    ["right", RAPIER_GOAL.halfWidth + 0.28],
+  ].forEach(function addGoalmouthShadow(item) {
+    var shadow = new THREE.Mesh(new THREE.CircleGeometry(1, 32), mouthShadowMaterial);
+    shadow.name = "field-goalmouth-depth-shadow-" + item[0];
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.scale.set(0.28, 1.55, 1);
+    shadow.position.set(item[1], 0.006, RAPIER_GOAL.netPlaneZ - 0.8);
+    group.add(shadow);
+  });
+
+  var bladeGeometry = new THREE.PlaneGeometry(0.035, 0.18);
+  bladeGeometry.translate(0, 0.09, 0);
+  var bladeMaterials = [
+    new THREE.MeshStandardMaterial({ color: "#7fda5f", roughness: 0.9, side: THREE.DoubleSide }),
+    new THREE.MeshStandardMaterial({ color: "#4ba94e", roughness: 0.92, side: THREE.DoubleSide }),
+    new THREE.MeshStandardMaterial({ color: "#b7e879", roughness: 0.88, side: THREE.DoubleSide }),
+  ];
+  for (var g = 0; g < 42; g += 1) {
+    var cluster = new THREE.Group();
+    cluster.name = "field-foreground-blade-cluster-" + g;
+    var row = Math.floor(g / 7);
+    var col = g % 7;
+    cluster.position.set(-3.8 + col * 1.26 + (row % 2) * 0.18, 0.02, 2.15 + row * 0.54);
+    cluster.rotation.y = -0.28 + (g % 5) * 0.14;
+    for (var bladeIndex = 0; bladeIndex < 3; bladeIndex += 1) {
+      var blade = new THREE.Mesh(bladeGeometry, bladeMaterials[(g + bladeIndex) % bladeMaterials.length]);
+      blade.name = "field-foreground-blade-" + g + "-" + bladeIndex;
+      blade.position.set((bladeIndex - 1) * 0.04, 0, (bladeIndex % 2) * 0.035);
+      blade.rotation.set(0.12 + bladeIndex * 0.04, bladeIndex * 0.72, (bladeIndex - 1) * 0.18);
+      blade.scale.setScalar(0.72 + ((g + bladeIndex) % 4) * 0.08);
+      cluster.add(blade);
+    }
+    group.add(cluster);
+  }
+
   var standMatA = new THREE.MeshStandardMaterial({ color: "#264c54", roughness: 0.64, metalness: 0.02 });
   var standMatB = new THREE.MeshStandardMaterial({ color: "#f2f0df", roughness: 0.7, metalness: 0.01 });
   for (var s = 0; s < 5; s += 1) {
@@ -319,20 +377,45 @@ export function createFieldGroup() {
 export function createGoalAndNet() {
   var group = new THREE.Group();
   group.userData.assetSystem = "layered-goal-and-net-kit";
+  group.userData.frameDetailSystem = "rounded-posts-with-tensioned-net";
   var frameMaterial = new THREE.MeshStandardMaterial({ color: "#f5fff7", roughness: 0.34, metalness: 0.04 });
   var trimMaterial = new THREE.MeshStandardMaterial({ color: "#f0782f", roughness: 0.36, metalness: 0.02 });
-  var postGeometry = new THREE.BoxGeometry(0.12, RAPIER_GOAL.height, 0.12);
-  var barGeometry = new THREE.BoxGeometry(RAPIER_GOAL.halfWidth * 2 + 0.2, 0.12, 0.12);
+  var postGeometry = new THREE.CylinderGeometry(0.065, 0.065, 1, 24);
   var left = new THREE.Mesh(postGeometry, frameMaterial);
   var right = new THREE.Mesh(postGeometry, frameMaterial);
-  var top = new THREE.Mesh(barGeometry, frameMaterial);
+  var top = new THREE.Mesh(postGeometry, frameMaterial);
   left.name = "goal-frame-left-post";
   right.name = "goal-frame-right-post";
   top.name = "goal-frame-crossbar";
-  left.position.set(-RAPIER_GOAL.halfWidth, RAPIER_GOAL.height / 2, RAPIER_GOAL.netPlaneZ);
-  right.position.set(RAPIER_GOAL.halfWidth, RAPIER_GOAL.height / 2, RAPIER_GOAL.netPlaneZ);
-  top.position.set(0, RAPIER_GOAL.height, RAPIER_GOAL.netPlaneZ);
+  setLimb(left, { x: -RAPIER_GOAL.halfWidth, y: 0, z: RAPIER_GOAL.netPlaneZ }, {
+    x: -RAPIER_GOAL.halfWidth,
+    y: RAPIER_GOAL.height,
+    z: RAPIER_GOAL.netPlaneZ,
+  });
+  setLimb(right, { x: RAPIER_GOAL.halfWidth, y: 0, z: RAPIER_GOAL.netPlaneZ }, {
+    x: RAPIER_GOAL.halfWidth,
+    y: RAPIER_GOAL.height,
+    z: RAPIER_GOAL.netPlaneZ,
+  });
+  setLimb(top, { x: -RAPIER_GOAL.halfWidth - 0.02, y: RAPIER_GOAL.height, z: RAPIER_GOAL.netPlaneZ }, {
+    x: RAPIER_GOAL.halfWidth + 0.02,
+    y: RAPIER_GOAL.height,
+    z: RAPIER_GOAL.netPlaneZ,
+  });
   group.add(left, right, top);
+
+  var capMaterial = new THREE.MeshStandardMaterial({ color: "#fbfff3", roughness: 0.28, metalness: 0.05 });
+  [
+    ["left-bottom", -RAPIER_GOAL.halfWidth, 0.02, RAPIER_GOAL.netPlaneZ],
+    ["left-top", -RAPIER_GOAL.halfWidth, RAPIER_GOAL.height, RAPIER_GOAL.netPlaneZ],
+    ["right-bottom", RAPIER_GOAL.halfWidth, 0.02, RAPIER_GOAL.netPlaneZ],
+    ["right-top", RAPIER_GOAL.halfWidth, RAPIER_GOAL.height, RAPIER_GOAL.netPlaneZ],
+  ].forEach(function addFrameCap(item) {
+    var cap = new THREE.Mesh(new THREE.SphereGeometry(0.072, 20, 14), capMaterial);
+    cap.name = "goal-frame-post-cap-" + item[0];
+    cap.position.set(item[1], item[2], item[3]);
+    group.add(cap);
+  });
 
   var leftTrim = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.28, 0.135), trimMaterial);
   leftTrim.name = "goal-brand-trim-left-post";
@@ -386,6 +469,38 @@ export function createGoalAndNet() {
       { x: sign * (RAPIER_GOAL.halfWidth + 0.42), y: 0.12, z: RAPIER_GOAL.netPlaneZ + 0.92 },
     );
     group.add(stanchion);
+
+    var baseRail = makeLimb("#eefaf0", 0.03);
+    baseRail.name = "goal-frame-base-rail-" + side;
+    setLimb(
+      baseRail,
+      { x: sign * RAPIER_GOAL.halfWidth, y: 0.045, z: RAPIER_GOAL.netPlaneZ },
+      { x: sign * (RAPIER_GOAL.halfWidth + 0.42), y: 0.045, z: RAPIER_GOAL.netPlaneZ + 0.92 },
+    );
+    group.add(baseRail);
+  });
+
+  var cordMaterial = new THREE.MeshBasicMaterial({ color: "#f5fffb", transparent: true, opacity: 0.68 });
+  [
+    ["top-left", -RAPIER_GOAL.halfWidth, RAPIER_GOAL.height, RAPIER_GOAL.netPlaneZ, -RAPIER_GOAL.halfWidth - 0.42, 0.18, RAPIER_GOAL.netPlaneZ + 0.92],
+    ["top-right", RAPIER_GOAL.halfWidth, RAPIER_GOAL.height, RAPIER_GOAL.netPlaneZ, RAPIER_GOAL.halfWidth + 0.42, 0.18, RAPIER_GOAL.netPlaneZ + 0.92],
+    ["mid-left", -RAPIER_GOAL.halfWidth, RAPIER_GOAL.height * 0.55, RAPIER_GOAL.netPlaneZ, -RAPIER_GOAL.halfWidth - 0.42, 0.12, RAPIER_GOAL.netPlaneZ + 0.92],
+    ["mid-right", RAPIER_GOAL.halfWidth, RAPIER_GOAL.height * 0.55, RAPIER_GOAL.netPlaneZ, RAPIER_GOAL.halfWidth + 0.42, 0.12, RAPIER_GOAL.netPlaneZ + 0.92],
+  ].forEach(function addTensionCord(item) {
+    var cord = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(item[1], item[2], item[3]),
+        new THREE.Vector3(item[4], item[5], item[6]),
+      ]),
+      cordMaterial.clone(),
+    );
+    cord.name = "goal-net-tension-cord-" + item[0];
+    group.add(cord);
+
+    var knot = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 8), cordMaterial.clone());
+    knot.name = "goal-net-rope-knot-" + item[0];
+    knot.position.set(item[4], item[5], item[6]);
+    group.add(knot);
   });
 
   var anchorMaterial = new THREE.MeshStandardMaterial({ color: "#dbe8dd", roughness: 0.48, metalness: 0.04 });

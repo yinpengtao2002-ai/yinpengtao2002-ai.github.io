@@ -94,6 +94,16 @@ export function recordGoal(state) {
   return conceded >= MAX_CONCEDED ? finishRound(next, "conceded") : next;
 }
 
+export function recordMiss(state, kind = "miss") {
+  if (state.ended) return state;
+  return {
+    ...state,
+    streak: 0,
+    lastSavePoints: 0,
+    message: kind === "frame" ? "frame" : "miss",
+  };
+}
+
 export function togglePause(state) {
   if (!state.running || state.ended) return state;
   return {
