@@ -69,6 +69,12 @@ export const SCENE_TUNING = {
     groundSkidCount: 5,
     groundSkidColor: "#e7d5a7",
     groundSkidMaxOpacity: 0.34,
+    turfContactAssetSystem: "rolling-turf-contact-flecks",
+    turfFleckCount: 14,
+    turfFleckMaxOpacity: 0.46,
+    turfFleckTriggerAge: 0.12,
+    turfFleckDecay: 0.052,
+    turfFleckRise: 0.028,
     saveSparkCount: 10,
     saveSparkColor: "#fff7ba",
     saveSparkMaxOpacity: 0.68,
@@ -194,6 +200,58 @@ export function getGloveVisualTransform(side, baseScale, impact, tuning = SCENE_
   };
 }
 
+export function getTurfContactFleckPlan(feedback, tuning = SCENE_TUNING.feedback) {
+  if (!feedback?.active || !feedback.point) return [];
+  if ((feedback.age || 0) > tuning.turfFleckTriggerAge) return [];
+
+  var intensity = clamp01(feedback.intensity || 0);
+  if (intensity <= 0.04) return [];
+
+  var direction = feedback.direction || { x: 0, y: 0, z: -1 };
+  var length = Math.hypot(direction.x || 0, direction.z || 0) || 1;
+  var forward = {
+    x: (direction.x || 0) / length,
+    z: (direction.z || -1) / length,
+  };
+  var side = {
+    x: -forward.z,
+    z: forward.x,
+  };
+  var speedMix = clamp01((feedback.speed || 0) / 8);
+  var count = tuning.turfFleckCount;
+
+  return Array.from({ length: count }, (_, index) => {
+    var t = count <= 1 ? 0 : index / (count - 1);
+    var fan = (t - 0.5) * 2;
+    var stagger = index % 3;
+    var lateral = fan * (0.035 + intensity * 0.11);
+    var forwardOffset = (0.018 + stagger * 0.008) * (0.35 + speedMix);
+    var lift = tuning.turfFleckRise * (0.72 + intensity * 0.82 + stagger * 0.18);
+    var fleckSpeed = (0.012 + index * 0.0007) * (0.7 + intensity + speedMix * 0.6);
+
+    return {
+      marker: "feedback-turf-fleck",
+      position: {
+        x: feedback.point.x + side.x * lateral + forward.x * forwardOffset,
+        y: feedback.point.y + 0.018 + stagger * 0.006,
+        z: feedback.point.z + side.z * lateral + forward.z * forwardOffset,
+      },
+      velocity: {
+        x: forward.x * fleckSpeed + side.x * fan * fleckSpeed * 0.56,
+        y: lift,
+        z: forward.z * fleckSpeed + side.z * fan * fleckSpeed * 0.56,
+      },
+      scale: {
+        x: 0.48 + stagger * 0.08,
+        y: 0.86 + intensity * 0.44 + t * 0.18,
+      },
+      rotation: Math.atan2(forward.x, forward.z) + fan * 0.42,
+      opacity: tuning.turfFleckMaxOpacity * intensity * (0.74 + (1 - Math.abs(fan)) * 0.26),
+      life: Math.max(0.36, 0.72 - index * 0.012),
+    };
+  });
+}
+
 function applyCameraTuning(camera, aspect, tuning) {
   var portraitMix = clamp01((1.25 - aspect) / 0.75);
   var base = tuning.camera;
@@ -293,6 +351,23 @@ export function createGoalkeeperScene(canvas) {
     skid.rotation.x = -Math.PI / 2;
     skid.visible = false;
     return skid;
+  });
+  var turfFleckGeometry = new THREE.PlaneGeometry(0.035, 0.11);
+  var turfFlecks = Array.from({ length: tuning.feedback.turfFleckCount }, (_, index) => {
+    var fleck = new THREE.Mesh(
+      turfFleckGeometry,
+      new THREE.MeshBasicMaterial({
+        color: index % 3 === 0 ? "#c8d36f" : index % 3 === 1 ? "#e2c779" : "#8fcf5d",
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    );
+    fleck.name = "feedback-turf-fleck-" + index;
+    fleck.userData.life = 0;
+    fleck.userData.velocity = { x: 0, y: 0, z: 0 };
+    return fleck;
   });
   var leftGlove = createGloveMesh("left");
   var rightGlove = createGloveMesh("right");
@@ -406,6 +481,7 @@ export function createGoalkeeperScene(canvas) {
     activeBall.shadow,
     ...lingeringBallViews.flatMap((view) => [view.halo, view.mesh, view.shadow]),
     ...groundSkids,
+    ...turfFlecks,
     leftGlove,
     rightGlove,
     ...impactRings,
@@ -423,6 +499,7 @@ export function createGoalkeeperScene(canvas) {
   var feedbackSignature = "";
   var feedbackFrame = 0;
   var gloveImpactState = createGloveImpactState();
+  var lastTurfContactSignature = "";
 
   function resize(bounds) {
     var width = Math.max(1, Math.round(bounds.width || canvas.clientWidth || 1280));
@@ -508,6 +585,37 @@ export function createGoalkeeperScene(canvas) {
     var candidates = [snapshot.ball, ...(snapshot.lingeringBalls || [])].filter((ballState) => ballState?.groundFeedback?.active);
     groundSkids.forEach((skid, index) => {
       updateGroundSkid(skid, candidates[index]);
+    });
+    candidates.forEach((ballState, index) => {
+      triggerTurfContactFeedback(ballState, index);
+    });
+  }
+
+  function triggerTurfContactFeedback(ballState, ballIndex) {
+    var feedback = ballState?.groundFeedback;
+    var fleckPlan = getTurfContactFleckPlan(feedback, tuning.feedback);
+    if (!fleckPlan.length) return;
+
+    var point = feedback.point;
+    var signature = [
+      ballIndex,
+      Math.round((point.x || 0) * 14),
+      Math.round((point.z || 0) * 14),
+      Math.round((feedback.speed || 0) * 10),
+    ].join(":");
+    if (signature === lastTurfContactSignature) return;
+    lastTurfContactSignature = signature;
+
+    fleckPlan.forEach((plan, index) => {
+      var fleck = turfFlecks[index % turfFlecks.length];
+      fleck.visible = true;
+      fleck.position.set(plan.position.x, plan.position.y, plan.position.z);
+      fleck.rotation.set(-Math.PI / 2 + 0.22, 0, plan.rotation);
+      fleck.scale.set(plan.scale.x, plan.scale.y, 1);
+      fleck.material.opacity = plan.opacity;
+      fleck.userData.life = plan.life;
+      fleck.userData.baseOpacity = plan.opacity;
+      fleck.userData.velocity = plan.velocity;
     });
   }
 
@@ -698,6 +806,27 @@ export function createGoalkeeperScene(canvas) {
       spark.material.opacity = spark.userData.life * tuning.feedback.saveSparkMaxOpacity;
       spark.scale.multiplyScalar(0.992);
       spark.lookAt(camera.position);
+    });
+
+    turfFlecks.forEach((fleck, index) => {
+      if (fleck.userData.life <= 0) {
+        fleck.material.opacity = 0;
+        fleck.visible = false;
+        return;
+      }
+      fleck.userData.life = Math.max(0, fleck.userData.life - tuning.feedback.turfFleckDecay - index * 0.001);
+      var velocity = fleck.userData.velocity || { x: 0, y: 0, z: 0 };
+      fleck.position.x += velocity.x;
+      fleck.position.y += velocity.y;
+      fleck.position.z += velocity.z;
+      fleck.userData.velocity = {
+        x: velocity.x * 0.96,
+        y: velocity.y * 0.82 - 0.0012,
+        z: velocity.z * 0.96,
+      };
+      fleck.material.opacity = Math.max(0, fleck.userData.life * (fleck.userData.baseOpacity || tuning.feedback.turfFleckMaxOpacity));
+      fleck.scale.multiplyScalar(0.994);
+      fleck.lookAt(camera.position);
     });
 
     if (goalFlash.material.opacity > 0) {

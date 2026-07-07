@@ -111,6 +111,11 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.feedback.groundSkidCount).toBeGreaterThanOrEqual(4);
     expect(SCENE_TUNING.feedback.groundSkidColor).toBe("#e7d5a7");
     expect(SCENE_TUNING.feedback.groundSkidMaxOpacity).toBeLessThanOrEqual(0.42);
+    expect(SCENE_TUNING.feedback.turfContactAssetSystem).toBe("rolling-turf-contact-flecks");
+    expect(SCENE_TUNING.feedback.turfFleckCount).toBeGreaterThanOrEqual(8);
+    expect(SCENE_TUNING.feedback.turfFleckCount).toBeLessThanOrEqual(18);
+    expect(SCENE_TUNING.feedback.turfFleckMaxOpacity).toBeLessThanOrEqual(0.5);
+    expect(SCENE_TUNING.feedback.turfFleckTriggerAge).toBeLessThanOrEqual(0.16);
     expect(SCENE_TUNING.feedback.saveSparkCount).toBeGreaterThanOrEqual(6);
     expect(SCENE_TUNING.feedback.saveSparkMaxOpacity).toBeLessThanOrEqual(0.74);
     expect(SCENE_TUNING.feedback.netRippleLineCount).toBeGreaterThanOrEqual(4);
@@ -123,6 +128,34 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.feedback.goalWaveMaxOpacity).toBeLessThanOrEqual(0.48);
     expect(SCENE_TUNING.feedback.streakPulseCount).toBeGreaterThanOrEqual(2);
     expect(SCENE_TUNING.feedback.streakPulseMaxOpacity).toBeLessThanOrEqual(0.7);
+  });
+
+  it("plans directional turf flecks for fresh rolling ground contact", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.getTurfContactFleckPlan).toBeTypeOf("function");
+
+    const flecks = sceneModule.getTurfContactFleckPlan({
+      active: true,
+      age: 0.02,
+      intensity: 0.72,
+      speed: 5.4,
+      point: { x: -0.35, y: 0.012, z: 2.9 },
+      direction: { x: 0.56, y: 0, z: -0.83 },
+    });
+
+    expect(flecks).toHaveLength(SCENE_TUNING.feedback.turfFleckCount);
+    expect(flecks[0].marker).toBe("feedback-turf-fleck");
+    expect(flecks[0].position.y).toBeGreaterThan(0.012);
+    expect(flecks[0].velocity.y).toBeGreaterThan(0);
+    expect(flecks[0].opacity).toBeLessThanOrEqual(SCENE_TUNING.feedback.turfFleckMaxOpacity);
+    expect(flecks[0].scale.x).toBeGreaterThan(0);
+    expect(flecks[0].scale.y).toBeGreaterThan(flecks[0].scale.x);
+    expect(flecks.some((fleck) => fleck.velocity.x > 0)).toBe(true);
+    expect(flecks.some((fleck) => fleck.velocity.z < 0)).toBe(true);
+
+    expect(sceneModule.getTurfContactFleckPlan({ active: false })).toEqual([]);
+    expect(sceneModule.getTurfContactFleckPlan({ active: true, age: 0.4, point: { x: 0, y: 0, z: 0 } })).toEqual([]);
   });
 
   it("uses a warm stadium lighting rig instead of flat prototype lighting", () => {
