@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-export const GOALKEEPER_SCRIPT_SRC = "/tools/goalkeeper-landscape/assets/index-BE061-0S.js";
+export const GOALKEEPER_SCRIPT_SRC = "/tools/goalkeeper-landscape/assets/index--OVPqoAt.js";
 
 export default function GoalkeeperLandscapeRuntime() {
   useEffect(() => {

@@ -500,6 +500,7 @@ export function createGoalAndNet() {
   var group = new THREE.Group();
   group.userData.assetSystem = "layered-goal-and-net-kit";
   group.userData.frameDetailSystem = "rounded-posts-with-tensioned-net";
+  group.userData.netPocketSystem = "localized-net-pocket-deformation";
   var frameMaterial = new THREE.MeshStandardMaterial({ color: "#f5fff7", roughness: 0.34, metalness: 0.04 });
   var trimMaterial = new THREE.MeshStandardMaterial({ color: "#f0782f", roughness: 0.36, metalness: 0.02 });
   var postGeometry = new THREE.CylinderGeometry(0.065, 0.065, 1, 24);
@@ -556,6 +557,7 @@ export function createGoalAndNet() {
   });
   var net = new THREE.Mesh(new THREE.PlaneGeometry(RAPIER_GOAL.halfWidth * 2, RAPIER_GOAL.height, 18, 8), netMaterial);
   net.name = "goal-net-back-panel";
+  net.userData.deformationSystem = "localized-net-pocket-deformation";
   net.position.set(0, RAPIER_GOAL.height / 2, RAPIER_GOAL.netPlaneZ + 0.1);
   group.add(net);
 

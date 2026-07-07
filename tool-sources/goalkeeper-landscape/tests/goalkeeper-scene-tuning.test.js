@@ -124,10 +124,78 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.feedback.netRippleContactRadius).toBeGreaterThanOrEqual(0.42);
     expect(SCENE_TUNING.feedback.netRippleContactRadius).toBeLessThanOrEqual(0.9);
     expect(SCENE_TUNING.feedback.netRippleTravel).toBeGreaterThan(0.04);
+    expect(SCENE_TUNING.feedback.netPocketAssetSystem).toBe("localized-net-pocket-deformation");
+    expect(SCENE_TUNING.feedback.netPocketPatchCount).toBeGreaterThanOrEqual(2);
+    expect(SCENE_TUNING.feedback.netPocketMaxDepth).toBeGreaterThanOrEqual(0.18);
+    expect(SCENE_TUNING.feedback.netPocketMaxDepth).toBeLessThanOrEqual(0.36);
+    expect(SCENE_TUNING.feedback.frameReboundSystem).toBe("post-crossbar-rebound-highlight");
+    expect(SCENE_TUNING.feedback.frameReboundMaxOpacity).toBeLessThanOrEqual(0.72);
     expect(SCENE_TUNING.feedback.goalWaveCount).toBeGreaterThanOrEqual(2);
     expect(SCENE_TUNING.feedback.goalWaveMaxOpacity).toBeLessThanOrEqual(0.48);
     expect(SCENE_TUNING.feedback.streakPulseCount).toBeGreaterThanOrEqual(2);
     expect(SCENE_TUNING.feedback.streakPulseMaxOpacity).toBeLessThanOrEqual(0.7);
+  });
+
+  it("plans a localized net pocket deformation around the ball impact", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.createNetPocketState).toBeTypeOf("function");
+    expect(sceneModule.triggerNetPocketState).toBeTypeOf("function");
+    expect(sceneModule.advanceNetPocketState).toBeTypeOf("function");
+    expect(sceneModule.getNetPocketFeedbackPlan).toBeTypeOf("function");
+
+    const state = sceneModule.createNetPocketState();
+    sceneModule.triggerNetPocketState(state, {
+      x: 1.2,
+      y: 1.45,
+      z: SHOT_3D.netPlaneZ,
+      strength: 0.86,
+    });
+
+    expect(state.life).toBe(1);
+    expect(state.point.x).toBeCloseTo(1.2);
+    expect(state.point.y).toBeCloseTo(1.45);
+
+    const plan = sceneModule.getNetPocketFeedbackPlan(state);
+    expect(plan.marker).toBe("feedback-net-pocket-deformation");
+    expect(plan.patches).toHaveLength(SCENE_TUNING.feedback.netPocketPatchCount);
+    expect(plan.depth).toBeGreaterThan(0.16);
+    expect(plan.radius).toBeGreaterThanOrEqual(SCENE_TUNING.feedback.netRippleContactRadius);
+    expect(plan.patches[0].opacity).toBeLessThanOrEqual(0.72);
+    expect(plan.patches[0].scale.x).toBeGreaterThan(plan.patches[0].scale.y);
+
+    sceneModule.advanceNetPocketState(state);
+    expect(state.life).toBeLessThan(1);
+
+    expect(sceneModule.getNetPocketFeedbackPlan(sceneModule.createNetPocketState())).toBeNull();
+  });
+
+  it("plans post and crossbar rebound highlights from frame contacts", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.getFrameReboundFeedbackPlan).toBeTypeOf("function");
+
+    const leftPost = sceneModule.getFrameReboundFeedbackPlan({
+      type: "frame",
+      part: "left-post",
+      point: { x: -3.8, y: 1.2, z: SHOT_3D.netPlaneZ },
+      strength: 0.82,
+    });
+
+    expect(leftPost.marker).toBe("feedback-frame-rebound-highlight");
+    expect(leftPost.part).toBe("left-post");
+    expect(leftPost.position.x).toBeLessThan(0);
+    expect(leftPost.opacity).toBeLessThanOrEqual(SCENE_TUNING.feedback.frameReboundMaxOpacity);
+    expect(leftPost.shake).toBeGreaterThan(0);
+
+    const crossbar = sceneModule.getFrameReboundFeedbackPlan({
+      type: "frame",
+      part: "crossbar",
+      point: { x: 0.75, y: 2.6, z: SHOT_3D.netPlaneZ },
+    });
+
+    expect(crossbar.part).toBe("crossbar");
+    expect(crossbar.position.y).toBeCloseTo(2.44, 1);
   });
 
   it("plans directional turf flecks for fresh rolling ground contact", async () => {

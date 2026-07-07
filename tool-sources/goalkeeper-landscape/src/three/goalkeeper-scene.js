@@ -83,6 +83,15 @@ export const SCENE_TUNING = {
     netRippleAssetSystem: "localized-net-ripple",
     netRippleContactRadius: 0.62,
     netRippleTravel: 0.075,
+    netPocketAssetSystem: "localized-net-pocket-deformation",
+    netPocketPatchCount: 3,
+    netPocketMaxDepth: 0.28,
+    netPocketMaxOpacity: 0.58,
+    netPocketDecay: 0.042,
+    frameReboundSystem: "post-crossbar-rebound-highlight",
+    frameReboundMaxOpacity: 0.62,
+    frameReboundDecay: 0.052,
+    frameReboundShake: 0.72,
     goalWaveCount: 3,
     goalWaveMaxOpacity: 0.42,
     streakPulseCount: 2,
@@ -252,6 +261,108 @@ export function getTurfContactFleckPlan(feedback, tuning = SCENE_TUNING.feedback
   });
 }
 
+export function createNetPocketState() {
+  return {
+    life: 0,
+    strength: 0,
+    point: null,
+    radius: 0,
+    depth: 0,
+  };
+}
+
+export function triggerNetPocketState(state, contact, tuning = SCENE_TUNING.feedback) {
+  if (!state || !contact) return state;
+  var strength = clamp01(Number.isFinite(contact.strength) ? contact.strength : 0.78);
+  var point = {
+    x: Math.max(-RAPIER_GOAL.halfWidth + 0.16, Math.min(RAPIER_GOAL.halfWidth - 0.16, contact.x || contact.point?.x || 0)),
+    y: Math.max(0.16, Math.min(RAPIER_GOAL.height - 0.08, contact.y || contact.point?.y || 1.2)),
+    z: contact.z || contact.point?.z || RAPIER_GOAL.netPlaneZ,
+  };
+
+  state.life = 1;
+  state.strength = Math.max(state.strength || 0, strength);
+  state.point = point;
+  state.radius = tuning.netRippleContactRadius * (0.92 + strength * 0.34);
+  state.depth = tuning.netPocketMaxDepth * (0.68 + strength * 0.32);
+  return state;
+}
+
+export function advanceNetPocketState(state, tuning = SCENE_TUNING.feedback) {
+  if (!state) return state;
+  state.life = Math.max(0, (state.life || 0) - tuning.netPocketDecay);
+  if (state.life <= 0) {
+    state.strength = 0;
+    state.point = null;
+    state.radius = 0;
+    state.depth = 0;
+  }
+  return state;
+}
+
+export function getNetPocketFeedbackPlan(state, tuning = SCENE_TUNING.feedback) {
+  if (!state?.point || (state.life || 0) <= 0) return null;
+  var life = clamp01(state.life);
+  var strength = clamp01(state.strength || 0.72);
+  var pulse = 0.78 + Math.sin((1 - life) * Math.PI) * 0.22;
+  var depth = (state.depth || tuning.netPocketMaxDepth) * life * pulse;
+  var radius = Math.max(tuning.netRippleContactRadius, state.radius || tuning.netRippleContactRadius);
+
+  return {
+    marker: "feedback-net-pocket-deformation",
+    point: state.point,
+    radius,
+    depth,
+    strength,
+    patches: Array.from({ length: tuning.netPocketPatchCount }, (_, index) => {
+      var t = tuning.netPocketPatchCount <= 1 ? 0 : index / (tuning.netPocketPatchCount - 1);
+      return {
+        marker: "feedback-net-pocket-patch",
+        position: {
+          x: state.point.x,
+          y: state.point.y + (t - 0.5) * radius * 0.2,
+          z: state.point.z + 0.13 + depth * (1 - index * 0.16),
+        },
+        scale: {
+          x: radius * (1.12 + index * 0.26),
+          y: radius * (0.18 + index * 0.075),
+        },
+        opacity: tuning.netPocketMaxOpacity * life * (0.92 - index * 0.16),
+        rotation: (index - 1) * 0.06,
+      };
+    }),
+  };
+}
+
+export function getFrameReboundFeedbackPlan(contact, tuning = SCENE_TUNING.feedback) {
+  if (!contact || contact.type !== "frame") return null;
+  var raw = contact.point || contact;
+  var part = contact.part || (raw.y >= RAPIER_GOAL.height - 0.14 ? "crossbar" : raw.x < 0 ? "left-post" : "right-post");
+  var strength = clamp01(Number.isFinite(contact.strength) ? contact.strength : tuning.frameImpactStrength);
+  var position = {
+    x:
+      part === "left-post"
+        ? -RAPIER_GOAL.halfWidth
+        : part === "right-post"
+          ? RAPIER_GOAL.halfWidth
+          : Math.max(-RAPIER_GOAL.halfWidth + 0.2, Math.min(RAPIER_GOAL.halfWidth - 0.2, raw.x || 0)),
+    y:
+      part === "crossbar"
+        ? RAPIER_GOAL.height
+        : Math.max(0.18, Math.min(RAPIER_GOAL.height - 0.12, raw.y || 1.2)),
+    z: raw.z || RAPIER_GOAL.netPlaneZ,
+  };
+
+  return {
+    marker: "feedback-frame-rebound-highlight",
+    part,
+    position,
+    strength,
+    opacity: tuning.frameReboundMaxOpacity * strength,
+    shake: tuning.maxCameraShake * tuning.frameReboundShake * strength,
+  };
+}
+
 function applyCameraTuning(camera, aspect, tuning) {
   var portraitMix = clamp01((1.25 - aspect) / 0.75);
   var base = tuning.camera;
@@ -286,6 +397,8 @@ export function createGoalkeeperScene(canvas) {
   var scene = new THREE.Scene();
   scene.userData.feedbackAssetSystem = tuning.feedback.assetSystem;
   scene.userData.netRippleAssetSystem = tuning.feedback.netRippleAssetSystem;
+  scene.userData.netPocketAssetSystem = tuning.feedback.netPocketAssetSystem;
+  scene.userData.frameReboundSystem = tuning.feedback.frameReboundSystem;
   scene.userData.ballShadowAssetSystem = tuning.ball.shadowAssetSystem;
   scene.userData.gloveImpactSystem = tuning.gloves.impactSystem;
   scene.fog = new THREE.Fog("#8ed7ff", 28, 58);
@@ -305,6 +418,7 @@ export function createGoalkeeperScene(canvas) {
 
   var field = createFieldGroup();
   var goal = createGoalAndNet();
+  var netBasePositions = Array.from(goal.net.geometry.attributes.position.array);
   var shooter = createShooterModel();
   var ballTexture = createFootballTexture();
   var ballGeometry = new THREE.SphereGeometry(tuning.ball.radius, 32, 24);
@@ -443,6 +557,39 @@ export function createGoalkeeperScene(canvas) {
     line.userData.baseY = line.position.y;
     return line;
   });
+  var netPocketGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
+  var netPocketPatches = Array.from({ length: tuning.feedback.netPocketPatchCount }, (_, index) => {
+    var patch = new THREE.Mesh(
+      netPocketGeometry,
+      new THREE.MeshBasicMaterial({
+        color: index === 0 ? "#ffffff" : "#dff8ff",
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    );
+    patch.name = "feedback-net-pocket-deformation-" + index;
+    patch.userData.life = 0;
+    return patch;
+  });
+  var frameReboundGeometry = new THREE.SphereGeometry(0.09, 16, 10);
+  var frameReboundHighlights = Array.from({ length: 3 }, (_, index) => {
+    var highlight = new THREE.Mesh(
+      frameReboundGeometry,
+      new THREE.MeshBasicMaterial({
+        color: index === 0 ? "#fff8d6" : "#f8fff2",
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      }),
+    );
+    highlight.name = "feedback-frame-rebound-highlight-" + index;
+    highlight.userData.life = 0;
+    highlight.userData.part = "";
+    highlight.userData.basePosition = { x: 0, y: 0, z: 0 };
+    return highlight;
+  });
   var goalWaves = Array.from({ length: tuning.feedback.goalWaveCount }, (_, index) => {
     var wave = new THREE.Mesh(
       new THREE.TorusGeometry(0.28 + index * 0.08, 0.012, 8, 42),
@@ -489,6 +636,8 @@ export function createGoalkeeperScene(canvas) {
     goalFlash,
     streakFlash,
     ...netRippleLines,
+    ...netPocketPatches,
+    ...frameReboundHighlights,
     ...goalWaves,
     ...streakPulses,
   );
@@ -499,6 +648,7 @@ export function createGoalkeeperScene(canvas) {
   var feedbackSignature = "";
   var feedbackFrame = 0;
   var gloveImpactState = createGloveImpactState();
+  var netPocketState = createNetPocketState();
   var lastTurfContactSignature = "";
 
   function resize(bounds) {
@@ -662,10 +812,21 @@ export function createGoalkeeperScene(canvas) {
     });
   }
 
-  function triggerGoalFeedback(position) {
+  function triggerGoalFeedback(position, contact = null) {
     var contactX = Math.max(-RAPIER_GOAL.halfWidth + 0.18, Math.min(RAPIER_GOAL.halfWidth - 0.18, position.x || 0));
     var contactY = Math.max(0.18, Math.min(RAPIER_GOAL.height - 0.08, position.y || 1));
-    goalFlash.position.set(contactX, Math.max(0.08, contactY), position.z + 0.05);
+    var contactZ = position.z || RAPIER_GOAL.netPlaneZ;
+    triggerNetPocketState(
+      netPocketState,
+      {
+        x: contactX,
+        y: contactY,
+        z: contactZ,
+        strength: Number.isFinite(contact?.strength) ? contact.strength : 0.82,
+      },
+      tuning.feedback,
+    );
+    goalFlash.position.set(contactX, Math.max(0.08, contactY), contactZ + 0.05);
     goalFlash.material.opacity = 0.38;
     goalFlash.scale.setScalar(1);
     triggerImpact("goal", { ...position, x: contactX, y: contactY }, 1);
@@ -688,6 +849,39 @@ export function createGoalkeeperScene(canvas) {
       line.position.x = contactX;
       line.position.y = localY;
       line.scale.set(line.userData.baseScaleX, 1, 1);
+    });
+  }
+
+  function triggerFrameReboundFeedback(contact, fallbackPosition) {
+    var plan = getFrameReboundFeedbackPlan(
+      {
+        ...(contact || {}),
+        type: "frame",
+        point: contact?.point || fallbackPosition,
+      },
+      tuning.feedback,
+    );
+    if (!plan) return;
+
+    cameraShake = Math.max(cameraShake, plan.shake);
+    frameReboundHighlights.forEach((highlight, index) => {
+      var offset = (index - 1) * 0.045;
+      var isCrossbar = plan.part === "crossbar";
+      highlight.visible = true;
+      highlight.position.set(
+        plan.position.x + (isCrossbar ? offset : 0),
+        plan.position.y + (isCrossbar ? 0 : offset),
+        plan.position.z + 0.035 + index * 0.012,
+      );
+      highlight.scale.setScalar(1.08 + index * 0.22);
+      highlight.material.opacity = plan.opacity * (1 - index * 0.2);
+      highlight.userData.life = Math.max(0.42, 0.72 - index * 0.08);
+      highlight.userData.part = plan.part;
+      highlight.userData.basePosition = {
+        x: highlight.position.x,
+        y: highlight.position.y,
+        z: highlight.position.z,
+      };
     });
   }
 
@@ -728,10 +922,11 @@ export function createGoalkeeperScene(canvas) {
         triggerGloveImpactState(gloveImpactState, ballState.lastContact, snapshot.gloves, tuning.gloves);
       }
       if (ballState.lastContact.type === "net") {
-        triggerGoalFeedback(contactPoint);
+        triggerGoalFeedback(contactPoint, ballState.lastContact);
       }
       if (ballState.lastContact.type === "frame") {
         triggerImpact("frame", contactPoint, tuning.feedback.frameImpactStrength);
+        triggerFrameReboundFeedback(ballState.lastContact, contactPoint);
       }
     }
   }
@@ -770,6 +965,75 @@ export function createGoalkeeperScene(canvas) {
     rightGlove.scale.set(rightTransform.scale.x, rightTransform.scale.y, rightTransform.scale.z);
   }
 
+  function applyNetPocketGeometry(plan) {
+    var attribute = goal.net.geometry.attributes.position;
+    var positions = attribute.array;
+    var radius = plan?.radius || 1;
+    var point = plan?.point;
+    var depth = plan?.depth || 0;
+
+    for (var index = 0; index < positions.length; index += 3) {
+      var baseX = netBasePositions[index];
+      var baseY = netBasePositions[index + 1];
+      var worldY = baseY + RAPIER_GOAL.height / 2;
+      var falloff = 0;
+      if (point) {
+        var dx = baseX - point.x;
+        var dy = worldY - point.y;
+        falloff = Math.max(0, 1 - Math.hypot(dx, dy) / radius);
+        falloff *= falloff;
+      }
+      positions[index] = baseX;
+      positions[index + 1] = baseY;
+      positions[index + 2] = netBasePositions[index + 2] + depth * falloff;
+    }
+    attribute.needsUpdate = true;
+  }
+
+  function updateNetPocketVisuals() {
+    var plan = getNetPocketFeedbackPlan(netPocketState, tuning.feedback);
+    applyNetPocketGeometry(plan);
+
+    netPocketPatches.forEach((patch, index) => {
+      var patchPlan = plan?.patches?.[index];
+      if (!patchPlan) {
+        patch.visible = false;
+        patch.material.opacity = 0;
+        return;
+      }
+      patch.visible = true;
+      patch.position.set(patchPlan.position.x, patchPlan.position.y, patchPlan.position.z);
+      patch.rotation.set(0, 0, patchPlan.rotation);
+      patch.scale.set(patchPlan.scale.x, patchPlan.scale.y, 1);
+      patch.material.opacity = patchPlan.opacity;
+      patch.userData.life = netPocketState.life;
+    });
+
+    advanceNetPocketState(netPocketState, tuning.feedback);
+  }
+
+  function updateFrameReboundHighlights() {
+    frameReboundHighlights.forEach((highlight, index) => {
+      if (highlight.userData.life <= 0) {
+        highlight.visible = false;
+        highlight.material.opacity = 0;
+        return;
+      }
+      highlight.userData.life = Math.max(0, highlight.userData.life - tuning.feedback.frameReboundDecay - index * 0.002);
+      var base = highlight.userData.basePosition || highlight.position;
+      var tremor = Math.sin((1 - highlight.userData.life) * Math.PI * 8 + index) * 0.014 * highlight.userData.life;
+      var isCrossbar = highlight.userData.part === "crossbar";
+      highlight.position.set(
+        base.x + (isCrossbar ? 0 : tremor),
+        base.y + (isCrossbar ? tremor : 0),
+        base.z + Math.sin(highlight.userData.life * Math.PI) * 0.025,
+      );
+      highlight.material.opacity = highlight.userData.life * tuning.feedback.frameReboundMaxOpacity * (1 - index * 0.16);
+      highlight.scale.multiplyScalar(1.01 + index * 0.003);
+      highlight.lookAt(camera.position);
+    });
+  }
+
   function updateNetAndEffects() {
     if (netPulse > 0) {
       netPulse = Math.max(0, netPulse - tuning.feedback.netPulseDecay);
@@ -781,6 +1045,7 @@ export function createGoalkeeperScene(canvas) {
       goal.net.material.opacity = 0.16;
       goal.grid.position.z = 0;
     }
+    updateNetPocketVisuals();
 
     impactRings.forEach((ring, index) => {
       if (ring.userData.life <= 0) {
@@ -858,6 +1123,8 @@ export function createGoalkeeperScene(canvas) {
       line.material.opacity = line.userData.life * tuning.feedback.netRippleMaxOpacity;
       line.scale.x = (line.userData.baseScaleX || 0.18) + (1 - line.userData.life) * 0.1 + index * 0.006;
     });
+
+    updateFrameReboundHighlights();
 
     goalWaves.forEach((wave, index) => {
       if (wave.userData.life <= 0) {

@@ -115,6 +115,9 @@ describe("procedural 3D assets", () => {
     const goal = createGoalAndNet();
 
     expect(goal.group.userData.assetSystem).toBe("layered-goal-and-net-kit");
+    expect(goal.group.userData.netPocketSystem).toBe("localized-net-pocket-deformation");
+    expect(goal.net.userData.deformationSystem).toBe("localized-net-pocket-deformation");
+    expect(goal.net.geometry.attributes.position.count).toBeGreaterThanOrEqual(120);
     expect(collectByName(goal.group, /^goal-frame-(left-post|right-post|crossbar)$/)).toHaveLength(3);
     expect(collectByName(goal.group, /^goal-depth-stanchion-/)).toHaveLength(2);
     expect(collectByName(goal.group, /^goal-net-side-/)).toHaveLength(2);
