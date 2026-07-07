@@ -42,7 +42,7 @@ export function createHud(documentRef) {
 
     if (toast) {
       toast.textContent = isSave
-        ? "+" + String(state.lastSavePoints || 0)
+        ? (isStreak ? "连扑 " : "") + "+" + String(state.lastSavePoints || 0)
         : isGoal
           ? "失球"
           : isFrame
@@ -59,6 +59,9 @@ export function createHud(documentRef) {
     }
 
     setClass(refs.streakValue, "is-hot", (state.streak || 0) >= 3);
+    setClass(refs.scoreValue, "is-score-pulse", isSave);
+    setClass(refs.streakValue, "is-streak-pop", isStreak);
+    setClass(refs.concededValue, "is-danger-pulse", isGoal);
   }
 
   function getResultReasonText(endReason) {

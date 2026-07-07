@@ -119,6 +119,7 @@ button {
 }
 
 .glass-panel strong {
+  display: inline-block;
   color: #202326;
   font-size: clamp(20px, 2vw, 32px);
   line-height: 1;
@@ -129,6 +130,27 @@ button {
 .hud-streak strong.is-hot {
   color: #0b6d75;
   text-shadow: 0 0 14px rgba(97, 240, 255, 0.42);
+}
+
+.glass-panel strong.is-score-pulse,
+.glass-panel strong.is-danger-pulse,
+.glass-panel strong.is-streak-pop {
+  animation-duration: 520ms;
+  animation-timing-function: ease-out;
+  animation-iteration-count: 1;
+}
+
+.glass-panel strong.is-score-pulse {
+  animation-name: scorePulse;
+}
+
+.glass-panel strong.is-danger-pulse {
+  color: #a84727;
+  animation-name: dangerPulse;
+}
+
+.glass-panel strong.is-streak-pop {
+  animation-name: streakPulse;
 }
 
 .hud-icon {
@@ -225,6 +247,48 @@ button {
 
 .feedback-toast.is-streak {
   box-shadow: 0 0 0 4px rgba(97, 240, 255, 0.18), 0 16px 32px rgba(15, 35, 29, 0.22);
+}
+
+@keyframes scorePulse {
+  0% {
+    transform: scale(1);
+    text-shadow: none;
+  }
+  36% {
+    transform: scale(1.08);
+    text-shadow: 0 0 16px rgba(255, 241, 168, 0.52);
+  }
+  100% {
+    transform: scale(1);
+    text-shadow: none;
+  }
+}
+
+@keyframes dangerPulse {
+  0% {
+    transform: scale(1);
+    text-shadow: none;
+  }
+  38% {
+    transform: scale(1.08);
+    text-shadow: 0 0 16px rgba(255, 120, 70, 0.46);
+  }
+  100% {
+    transform: scale(1);
+    text-shadow: none;
+  }
+}
+
+@keyframes streakPulse {
+  0% {
+    transform: scale(1);
+  }
+  42% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .match-status {

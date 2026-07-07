@@ -29,6 +29,14 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.feedback.groundSkidCount).toBeGreaterThanOrEqual(4);
     expect(SCENE_TUNING.feedback.groundSkidColor).toBe("#e7d5a7");
     expect(SCENE_TUNING.feedback.groundSkidMaxOpacity).toBeLessThanOrEqual(0.42);
+    expect(SCENE_TUNING.feedback.saveSparkCount).toBeGreaterThanOrEqual(6);
+    expect(SCENE_TUNING.feedback.saveSparkMaxOpacity).toBeLessThanOrEqual(0.74);
+    expect(SCENE_TUNING.feedback.netRippleLineCount).toBeGreaterThanOrEqual(4);
+    expect(SCENE_TUNING.feedback.netRippleMaxOpacity).toBeLessThanOrEqual(0.42);
+    expect(SCENE_TUNING.feedback.goalWaveCount).toBeGreaterThanOrEqual(2);
+    expect(SCENE_TUNING.feedback.goalWaveMaxOpacity).toBeLessThanOrEqual(0.48);
+    expect(SCENE_TUNING.feedback.streakPulseCount).toBeGreaterThanOrEqual(2);
+    expect(SCENE_TUNING.feedback.streakPulseMaxOpacity).toBeLessThanOrEqual(0.7);
   });
 
   it("uses a warm stadium lighting rig instead of flat prototype lighting", () => {

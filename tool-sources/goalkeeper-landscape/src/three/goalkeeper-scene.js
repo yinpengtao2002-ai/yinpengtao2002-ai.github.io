@@ -55,6 +55,15 @@ export const SCENE_TUNING = {
     groundSkidCount: 5,
     groundSkidColor: "#e7d5a7",
     groundSkidMaxOpacity: 0.34,
+    saveSparkCount: 10,
+    saveSparkColor: "#fff7ba",
+    saveSparkMaxOpacity: 0.68,
+    netRippleLineCount: 5,
+    netRippleMaxOpacity: 0.34,
+    goalWaveCount: 3,
+    goalWaveMaxOpacity: 0.42,
+    streakPulseCount: 2,
+    streakPulseMaxOpacity: 0.62,
   },
   depth: {
     originZ: SHOT_3D.origin.z,
@@ -186,6 +195,22 @@ export function createGoalkeeperScene(canvas) {
     ring.userData.life = 0;
     return ring;
   });
+  var saveSparks = Array.from({ length: tuning.feedback.saveSparkCount }, (_, index) => {
+    var spark = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.035, 0.16),
+      new THREE.MeshBasicMaterial({
+        color: tuning.feedback.saveSparkColor,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    );
+    spark.name = "feedback-save-spark-" + index;
+    spark.userData.life = 0;
+    spark.userData.velocity = { x: 0, y: 0, z: 0 };
+    return spark;
+  });
   var goalFlash = new THREE.Mesh(
     new THREE.CircleGeometry(0.42, 36),
     new THREE.MeshBasicMaterial({
@@ -209,6 +234,50 @@ export function createGoalkeeperScene(canvas) {
   streakFlash.name = "feedback-streak-ring";
   streakFlash.rotation.x = Math.PI / 2;
   streakFlash.userData.life = 0;
+  var netRippleLines = Array.from({ length: tuning.feedback.netRippleLineCount }, (_, index) => {
+    var line = new THREE.Mesh(
+      new THREE.PlaneGeometry(RAPIER_GOAL.halfWidth * 1.82, 0.018),
+      new THREE.MeshBasicMaterial({
+        color: "#f8fff2",
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      }),
+    );
+    line.name = "feedback-net-ripple-line-" + index;
+    line.position.set(0, 0.52 + index * 0.34, RAPIER_GOAL.netPlaneZ + 0.13);
+    line.userData.life = 0;
+    line.userData.baseY = line.position.y;
+    return line;
+  });
+  var goalWaves = Array.from({ length: tuning.feedback.goalWaveCount }, (_, index) => {
+    var wave = new THREE.Mesh(
+      new THREE.TorusGeometry(0.28 + index * 0.08, 0.012, 8, 42),
+      new THREE.MeshBasicMaterial({
+        color: tuning.feedback.goalFlashColor,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      }),
+    );
+    wave.name = "feedback-goal-wave-" + index;
+    wave.userData.life = 0;
+    return wave;
+  });
+  var streakPulses = Array.from({ length: tuning.feedback.streakPulseCount }, (_, index) => {
+    var pulse = new THREE.Mesh(
+      new THREE.TorusGeometry(0.5 + index * 0.11, 0.014, 8, 44),
+      new THREE.MeshBasicMaterial({
+        color: tuning.feedback.streakFlashColor,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      }),
+    );
+    pulse.name = "feedback-streak-pulse-" + index;
+    pulse.userData.life = 0;
+    return pulse;
+  });
 
   scene.add(
     field,
@@ -222,12 +291,16 @@ export function createGoalkeeperScene(canvas) {
     leftGlove,
     rightGlove,
     ...impactRings,
+    ...saveSparks,
     goalFlash,
     streakFlash,
+    ...netRippleLines,
+    ...goalWaves,
+    ...streakPulses,
   );
 
   var netPulse = 0;
-  var lastContactType = null;
+  var lastContactSignature = "";
   var cameraShake = 0;
   var feedbackSignature = "";
   var feedbackFrame = 0;
@@ -334,12 +407,46 @@ export function createGoalkeeperScene(canvas) {
     cameraShake = Math.max(cameraShake, tuning.feedback.maxCameraShake * pulseStrength);
   }
 
+  function triggerSaveFeedback(position, strength) {
+    var pulseStrength = strength || 1;
+    triggerImpact("save", position, pulseStrength);
+    saveSparks.forEach((spark, index) => {
+      var angle = (index / saveSparks.length) * Math.PI * 2 + (index % 2 ? 0.26 : -0.18);
+      var radius = 0.08 + (index % 3) * 0.026;
+      spark.position.set(
+        position.x + Math.cos(angle) * radius,
+        position.y + Math.sin(angle) * radius * 0.7,
+        position.z - 0.025 + (index % 2) * 0.02,
+      );
+      spark.rotation.set(0, 0, angle);
+      spark.scale.setScalar(0.8 + (index % 4) * 0.08);
+      spark.material.opacity = tuning.feedback.saveSparkMaxOpacity * pulseStrength;
+      spark.userData.life = Math.max(0.28, 0.58 - index * 0.018);
+      spark.userData.velocity = {
+        x: Math.cos(angle) * (0.009 + index * 0.0008),
+        y: Math.sin(angle) * 0.006,
+        z: -0.002,
+      };
+    });
+  }
+
   function triggerGoalFeedback(position) {
     goalFlash.position.set(position.x, Math.max(0.08, position.y), position.z + 0.05);
     goalFlash.material.opacity = 0.38;
     goalFlash.scale.setScalar(1);
     triggerImpact("goal", position, 1);
     netPulse = 1;
+    goalWaves.forEach((wave, index) => {
+      wave.position.set(position.x, Math.max(0.16, position.y), position.z + 0.06 + index * 0.012);
+      wave.scale.setScalar(1 + index * 0.12);
+      wave.material.opacity = tuning.feedback.goalWaveMaxOpacity * (1 - index * 0.16);
+      wave.userData.life = Math.max(0.42, 0.74 - index * 0.12);
+    });
+    netRippleLines.forEach((line, index) => {
+      line.userData.life = Math.max(0.38, 0.7 - index * 0.055);
+      line.material.opacity = tuning.feedback.netRippleMaxOpacity * (1 - index * 0.09);
+      line.scale.set(0.72 + index * 0.06, 1, 1);
+    });
   }
 
   function triggerStreakFeedback(gloves) {
@@ -349,6 +456,12 @@ export function createGoalkeeperScene(canvas) {
     streakFlash.scale.setScalar(1);
     streakFlash.userData.life = 1;
     triggerImpact("streak", center, 0.72);
+    streakPulses.forEach((pulse, index) => {
+      pulse.position.set(center.x, center.y, center.z - 0.045 - index * 0.018);
+      pulse.material.opacity = tuning.feedback.streakPulseMaxOpacity * (1 - index * 0.18);
+      pulse.scale.setScalar(1 + index * 0.16);
+      pulse.userData.life = Math.max(0.48, 0.84 - index * 0.12);
+    });
   }
 
   function updateBall(snapshot) {
@@ -356,18 +469,26 @@ export function createGoalkeeperScene(canvas) {
     var shot = snapshot.director?.currentShot;
     updateBallView(activeBall, ballState, shot);
 
-    if (ballState?.lastContact?.type && ballState.lastContact.type !== lastContactType) {
-      lastContactType = ballState.lastContact.type;
-      if (ballState.lastContact.type === "glove") {
-        var position = ballState.position;
-        triggerImpact("save", position, 1);
+    if (ballState?.lastContact?.type) {
+      var contactPoint = ballState.lastContact.point || ballState.position || { x: 0, y: 0, z: 0 };
+      var contactSignature = [
+        shot?.shotId ?? "",
+        ballState.lastContact.type,
+        Math.round((contactPoint.x || 0) * 10),
+        Math.round((contactPoint.y || 0) * 10),
+        Math.round((contactPoint.z || 0) * 10),
+      ].join(":");
+      if (contactSignature === lastContactSignature) return;
+      lastContactSignature = contactSignature;
+      if (ballState.lastContact.type === "glove" || ballState.lastContact.type === "catch") {
+        var position = contactPoint;
+        triggerSaveFeedback(position, ballState.lastContact.type === "catch" ? 0.95 : 0.82);
       }
       if (ballState.lastContact.type === "net") {
-        triggerGoalFeedback(ballState.position);
+        triggerGoalFeedback(contactPoint);
       }
       if (ballState.lastContact.type === "frame") {
-        var framePosition = ballState.lastContact.point || ballState.position;
-        triggerImpact("frame", framePosition, tuning.feedback.frameImpactStrength);
+        triggerImpact("frame", contactPoint, tuning.feedback.frameImpactStrength);
       }
     }
   }
@@ -417,6 +538,21 @@ export function createGoalkeeperScene(canvas) {
       ring.lookAt(camera.position);
     });
 
+    saveSparks.forEach((spark, index) => {
+      if (spark.userData.life <= 0) {
+        spark.material.opacity = 0;
+        return;
+      }
+      spark.userData.life = Math.max(0, spark.userData.life - 0.055 - index * 0.002);
+      var velocity = spark.userData.velocity || { x: 0, y: 0, z: 0 };
+      spark.position.x += velocity.x;
+      spark.position.y += velocity.y;
+      spark.position.z += velocity.z;
+      spark.material.opacity = spark.userData.life * tuning.feedback.saveSparkMaxOpacity;
+      spark.scale.multiplyScalar(0.992);
+      spark.lookAt(camera.position);
+    });
+
     if (goalFlash.material.opacity > 0) {
       goalFlash.material.opacity = Math.max(0, goalFlash.material.opacity - 0.028);
       goalFlash.scale.multiplyScalar(1.028);
@@ -431,6 +567,41 @@ export function createGoalkeeperScene(canvas) {
     } else {
       streakFlash.material.opacity = 0;
     }
+
+    netRippleLines.forEach((line, index) => {
+      if (line.userData.life <= 0) {
+        line.material.opacity = 0;
+        return;
+      }
+      line.userData.life = Math.max(0, line.userData.life - 0.035 - index * 0.002);
+      var wave = Math.sin(line.userData.life * Math.PI * 4 + index * 0.65);
+      line.position.y = line.userData.baseY + wave * 0.018;
+      line.position.z = RAPIER_GOAL.netPlaneZ + 0.14 + Math.sin(line.userData.life * Math.PI) * 0.08;
+      line.material.opacity = line.userData.life * tuning.feedback.netRippleMaxOpacity;
+      line.scale.x = 0.82 + (1 - line.userData.life) * 0.34 + index * 0.03;
+    });
+
+    goalWaves.forEach((wave, index) => {
+      if (wave.userData.life <= 0) {
+        wave.material.opacity = 0;
+        return;
+      }
+      wave.userData.life = Math.max(0, wave.userData.life - 0.036 - index * 0.003);
+      wave.material.opacity = wave.userData.life * tuning.feedback.goalWaveMaxOpacity;
+      wave.scale.multiplyScalar(1.035 + index * 0.006);
+      wave.lookAt(camera.position);
+    });
+
+    streakPulses.forEach((pulse, index) => {
+      if (pulse.userData.life <= 0) {
+        pulse.material.opacity = 0;
+        return;
+      }
+      pulse.userData.life = Math.max(0, pulse.userData.life - 0.04 - index * 0.004);
+      pulse.material.opacity = pulse.userData.life * tuning.feedback.streakPulseMaxOpacity;
+      pulse.scale.multiplyScalar(1.025 + index * 0.006);
+      pulse.lookAt(camera.position);
+    });
   }
 
   function applyFeedbackCamera() {

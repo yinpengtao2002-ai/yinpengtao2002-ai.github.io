@@ -132,17 +132,22 @@ describe("hud", () => {
 
     hud.update(state, true);
 
-    expect(documentRef.elements.feedbackToast.textContent).toBe("+150");
+    expect(documentRef.elements.feedbackToast.textContent).toBe("连扑 +150");
     expect(documentRef.elements.feedbackToast.classList.contains("is-visible")).toBe(true);
     expect(documentRef.elements.feedbackToast.classList.contains("is-save")).toBe(true);
     expect(documentRef.elements.feedbackToast.classList.contains("is-streak")).toBe(true);
+    expect(documentRef.elements.scoreValue.classList.contains("is-score-pulse")).toBe(true);
     expect(documentRef.elements.streakValue.classList.contains("is-hot")).toBe(true);
+    expect(documentRef.elements.streakValue.classList.contains("is-streak-pop")).toBe(true);
 
     hud.update({ ...state, message: "goal", streak: 0, lastSavePoints: 0 }, true);
 
     expect(documentRef.elements.feedbackToast.textContent).toBe("失球");
     expect(documentRef.elements.feedbackToast.classList.contains("is-goal")).toBe(true);
+    expect(documentRef.elements.scoreValue.classList.contains("is-score-pulse")).toBe(false);
+    expect(documentRef.elements.concededValue.classList.contains("is-danger-pulse")).toBe(true);
     expect(documentRef.elements.streakValue.classList.contains("is-hot")).toBe(false);
+    expect(documentRef.elements.streakValue.classList.contains("is-streak-pop")).toBe(false);
   });
 
   it("distinguishes frame and wide misses without using the conceded goal treatment", () => {
