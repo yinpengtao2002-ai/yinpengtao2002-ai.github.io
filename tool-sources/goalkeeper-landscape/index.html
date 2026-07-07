@@ -41,7 +41,7 @@
                 <span>失球</span>
                 <strong id="concededValue">0/5</strong>
               </div>
-              <button class="glass-button" id="pauseButton" type="button" aria-label="暂停">Ⅱ 暂停</button>
+                <button class="glass-button" id="pauseButton" type="button" aria-label="暂停挑战">Ⅱ 暂停</button>
             </div>
           </section>
 
@@ -58,16 +58,34 @@
           </div>
 
           <div class="overlay start-overlay" id="startOverlay">
-            <button class="start-disc" id="startButton" type="button" aria-label="开始挑战">
-              <span>拖动后</span>
-              <strong>开始</strong>
-            </button>
+            <div class="start-panel" data-ui-system="match-hud-flow-polish">
+              <p class="start-kicker">60 秒守门挑战</p>
+              <h1>弹力手套守门</h1>
+              <div class="start-rules" aria-label="挑战规则">
+                <span><strong>60</strong> 秒</span>
+                <span><strong>5</strong> 失球</span>
+                <span><strong>x3</strong> 连扑</span>
+              </div>
+              <button class="start-disc" id="startButton" type="button" aria-label="开始挑战">
+                <span>准备好</span>
+                <strong>开始</strong>
+              </button>
+            </div>
+          </div>
+
+          <div class="overlay pause-overlay hidden" id="pauseOverlay" aria-live="polite">
+            <div class="pause-panel">
+              <span>比赛暂停</span>
+              <button class="glass-button pause-resume-button" id="pauseResumeButton" type="button" aria-label="继续挑战">▶ 继续</button>
+            </div>
           </div>
 
           <div class="overlay end-overlay hidden" id="endOverlay" aria-live="polite">
             <div class="result-panel">
+              <span class="result-grade" id="resultGrade">C级</span>
               <span class="result-kicker" id="resultReason">挑战结束</span>
               <strong id="finalScore">0</strong>
+              <p class="result-verdict" id="resultVerdict">先守住中路，再去赌边角</p>
               <p class="result-summary" id="resultSummary">再来一局，读准球路</p>
               <div class="result-stats" aria-label="本局统计">
                 <span>扑救 <strong id="finalSaves">0</strong></span>

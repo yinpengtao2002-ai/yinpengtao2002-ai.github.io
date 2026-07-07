@@ -45,10 +45,14 @@ function createDocument() {
     "soundButton",
     "startButton",
     "restartButton",
+    "pauseResumeButton",
     "startOverlay",
+    "pauseOverlay",
     "endOverlay",
     "finalScore",
+    "resultGrade",
     "resultReason",
+    "resultVerdict",
     "resultSummary",
     "feedbackToast",
     "matchStatus",
@@ -209,6 +213,41 @@ describe("hud", () => {
     expect(documentRef.elements.matchStatus.classList.contains("is-visible")).toBe(false);
   });
 
+  it("uses a dedicated pause overlay and keeps the resume action reachable", () => {
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    let pauseClicks = 0;
+    const state = {
+      ...createGameState(),
+      running: true,
+      paused: false,
+      message: "start",
+    };
+
+    hud.bind({
+      onStart() {},
+      onRestart() {},
+      onPause() {
+        pauseClicks += 1;
+      },
+      onSound() {},
+      onDifficulty() {},
+    });
+
+    hud.update(state, true);
+    expect(documentRef.elements.pauseOverlay.classList.contains("hidden")).toBe(true);
+    expect(documentRef.elements.pauseButton.getAttribute("aria-label")).toBe("暂停挑战");
+
+    hud.update({ ...state, paused: true, message: "pause" }, true);
+
+    expect(documentRef.elements.pauseOverlay.classList.contains("hidden")).toBe(false);
+    expect(documentRef.elements.pauseButton.textContent).toBe("▶ 继续");
+    expect(documentRef.elements.pauseButton.getAttribute("aria-label")).toBe("继续挑战");
+
+    documentRef.elements.pauseResumeButton.click();
+    expect(pauseClicks).toBe(1);
+  });
+
   it("fills the end overlay with useful round statistics", () => {
     const documentRef = createDocument();
     const hud = createHud(documentRef);
@@ -258,5 +297,38 @@ describe("hud", () => {
     }, true);
 
     expect(documentRef.elements.resultSummary.textContent).toBe("再守一轮，先稳近角");
+  });
+
+  it("grades the round so the end screen feels like a complete game result", () => {
+    expect(HudModule.getResultGrade).toBeTypeOf("function");
+    expect(HudModule.getResultVerdictText).toBeTypeOf("function");
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+
+    hud.update({
+      ...createGameState(),
+      ended: true,
+      score: 980,
+      saves: 8,
+      conceded: 1,
+      bestStreak: 5,
+      endReason: "time",
+    }, true);
+
+    expect(documentRef.elements.resultGrade.textContent).toBe("A级");
+    expect(documentRef.elements.resultVerdict.textContent).toBe("反应很稳，已经有比赛手感");
+
+    hud.update({
+      ...createGameState(),
+      ended: true,
+      score: 120,
+      saves: 1,
+      conceded: 5,
+      bestStreak: 1,
+      endReason: "conceded",
+    }, true);
+
+    expect(documentRef.elements.resultGrade.textContent).toBe("C级");
+    expect(documentRef.elements.resultVerdict.textContent).toBe("先守住中路，再去赌边角");
   });
 });

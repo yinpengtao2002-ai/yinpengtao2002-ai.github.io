@@ -13,4 +13,15 @@ describe("responsive layout css", () => {
     expect(css).toContain("@media (max-height: 520px) and (orientation: landscape)");
     expect(css).toContain("left: max(64px, env(safe-area-inset-left));");
   });
+
+  it("defines a polished match-flow HUD layer instead of a single temporary start button", () => {
+    const css = readFileSync(stylesPath, "utf8");
+
+    expect(css).toContain("match-hud-flow-polish");
+    expect(css).toContain(".start-panel");
+    expect(css).toContain(".start-rules");
+    expect(css).toContain(".pause-overlay");
+    expect(css).toContain(".result-grade");
+    expect(css).toContain(".result-verdict");
+  });
 });

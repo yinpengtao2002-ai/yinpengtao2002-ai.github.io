@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import GoalkeeperLandscapeRuntime, { GOALKEEPER_SCRIPT_SRC } from "./GoalkeeperLandscapeRuntime";
 
-const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-Bc0W5uC4.css";
+const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-B5UnGDgz.css";
 
 export const metadata: Metadata = {
   title: "弹力手套守门挑战｜Lucas Yin",
@@ -47,7 +47,7 @@ export default function GoalkeeperLandscapePage() {
                   <span>失球</span>
                   <strong id="concededValue">0/5</strong>
                 </div>
-                <button className="glass-button" id="pauseButton" type="button" aria-label="暂停">Ⅱ 暂停</button>
+                <button className="glass-button" id="pauseButton" type="button" aria-label="暂停挑战">Ⅱ 暂停</button>
               </div>
             </section>
 
@@ -64,16 +64,34 @@ export default function GoalkeeperLandscapePage() {
             </div>
 
             <div className="overlay start-overlay" id="startOverlay">
-              <button className="start-disc" id="startButton" type="button" aria-label="开始挑战">
-                <span>拖动后</span>
-                <strong>开始</strong>
-              </button>
+              <div className="start-panel" data-ui-system="match-hud-flow-polish">
+                <p className="start-kicker">60 秒守门挑战</p>
+                <h1>弹力手套守门</h1>
+                <div className="start-rules" aria-label="挑战规则">
+                  <span><strong>60</strong> 秒</span>
+                  <span><strong>5</strong> 失球</span>
+                  <span><strong>x3</strong> 连扑</span>
+                </div>
+                <button className="start-disc" id="startButton" type="button" aria-label="开始挑战">
+                  <span>准备好</span>
+                  <strong>开始</strong>
+                </button>
+              </div>
+            </div>
+
+            <div className="overlay pause-overlay hidden" id="pauseOverlay" aria-live="polite">
+              <div className="pause-panel">
+                <span>比赛暂停</span>
+                <button className="glass-button pause-resume-button" id="pauseResumeButton" type="button" aria-label="继续挑战">▶ 继续</button>
+              </div>
             </div>
 
             <div className="overlay end-overlay hidden" id="endOverlay" aria-live="polite">
               <div className="result-panel">
+                <span className="result-grade" id="resultGrade">C级</span>
                 <span className="result-kicker" id="resultReason">挑战结束</span>
                 <strong id="finalScore">0</strong>
+                <p className="result-verdict" id="resultVerdict">先守住中路，再去赌边角</p>
                 <p className="result-summary" id="resultSummary">再来一局，读准球路</p>
                 <div className="result-stats" aria-label="本局统计">
                   <span>扑救 <strong id="finalSaves">0</strong></span>
