@@ -119,7 +119,10 @@ export function getOutcomeAudioEvent(state, previousState = null) {
   if (!state) return null;
   if (state.ended && !previousState?.ended) return "round-end";
   if (state.message === "save" && (state.streak || 0) >= 3) return "save-streak";
+  if (state.message === "save") return "clean-save";
   if (state.message === "goal" && !state.ended && (state.conceded || 0) >= MAX_CONCEDED - 1) return "danger-goal";
+  if (state.message === "goal") return "goal-net";
+  if (state.message === "frame") return "frame-rattle";
   return null;
 }
 
@@ -448,7 +451,9 @@ export async function createThreeGameRuntime(options) {
       return;
     }
     if (ball.outcome === "missed") {
+      var previousStateForMiss = state;
       state = recordMiss(state, getMissMessageForBall(ball));
+      playOutcomeAudioEvent(previousStateForMiss);
       handledOutcome = "miss";
       outcomeTimer = 0;
     }

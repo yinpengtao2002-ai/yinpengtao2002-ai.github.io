@@ -147,6 +147,7 @@ function createLayeredAudioRoot() {
   var startedSources = [];
   var startedOscillators = [];
   var scheduledDelays = [];
+  var vibrationPatterns = [];
   var context = {
     currentTime: 3,
     state: "running",
@@ -231,6 +232,13 @@ function createLayeredAudioRoot() {
       callback();
       return scheduledDelays.length;
     },
+    navigator: {
+      vibrate(pattern) {
+        vibrationPatterns.push(pattern);
+        return true;
+      },
+    },
+    vibrationPatterns,
   };
 }
 
@@ -272,6 +280,18 @@ describe("audio engine", () => {
   it("exposes restrained layered audio plans for high-value match events", () => {
     expect(AudioModule.getAudioEventPlan).toBeTypeOf("function");
 
+    expect(AudioModule.getAudioEventPlan("clean-save")).toEqual([
+      expect.objectContaining({ name: "save", marker: "clean-save-audio-cue" }),
+      expect.objectContaining({ name: "tick", delay: expect.any(Number), gainScale: expect.any(Number) }),
+    ]);
+    expect(AudioModule.getAudioEventPlan("frame-rattle")).toEqual([
+      expect.objectContaining({ name: "frame", marker: "frame-rattle-audio-cue" }),
+      expect.objectContaining({ name: "tick", delay: expect.any(Number), gainScale: expect.any(Number) }),
+    ]);
+    expect(AudioModule.getAudioEventPlan("goal-net")).toEqual([
+      expect.objectContaining({ name: "goal", marker: "goal-net-audio-cue" }),
+      expect.objectContaining({ name: "tick", delay: expect.any(Number), gainScale: expect.any(Number) }),
+    ]);
     expect(AudioModule.getAudioEventPlan("save-streak")).toEqual([
       expect.objectContaining({ name: "save", marker: "save-streak-audio-cue" }),
       expect.objectContaining({ name: "tick", delay: expect.any(Number), gainScale: expect.any(Number) }),
@@ -287,6 +307,18 @@ describe("audio engine", () => {
     expect(AudioModule.getAudioEventPlan("unknown")).toEqual([]);
   });
 
+  it("exposes restrained mobile haptic patterns for core keeper events", () => {
+    expect(AudioModule.getHapticPattern).toBeTypeOf("function");
+
+    expect(AudioModule.getHapticPattern("save")).toEqual([16]);
+    expect(AudioModule.getHapticPattern("clean-save")).toEqual([16]);
+    expect(AudioModule.getHapticPattern("frame")).toEqual([24, 32, 16]);
+    expect(AudioModule.getHapticPattern("frame-rattle")).toEqual([24, 32, 16]);
+    expect(AudioModule.getHapticPattern("goal")).toEqual([42, 35, 58]);
+    expect(AudioModule.getHapticPattern("save-streak")).toEqual([16, 30, 16]);
+    expect(AudioModule.getHapticPattern("unknown")).toEqual([]);
+  });
+
   it("plays layered match events with scheduled secondary cues", async () => {
     const root = createLayeredAudioRoot();
     const audio = createAudioEngine(root);
@@ -298,5 +330,6 @@ describe("audio engine", () => {
     expect(root.startedSources).toHaveLength(1);
     expect(root.startedOscillators).toHaveLength(1);
     expect(root.scheduledDelays).toEqual([60]);
+    expect(root.vibrationPatterns).toEqual([[16, 30, 16]]);
   });
 });

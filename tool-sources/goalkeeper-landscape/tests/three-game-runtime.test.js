@@ -53,15 +53,27 @@ describe("three game runtime timing", () => {
       { message: "save", streak: 2, ended: false },
     )).toBe("save-streak");
     expect(RuntimeModule.getOutcomeAudioEvent(
+      { message: "save", streak: 1, ended: false },
+      { message: "miss", streak: 0, ended: false },
+    )).toBe("clean-save");
+    expect(RuntimeModule.getOutcomeAudioEvent(
       { message: "goal", conceded: 4, ended: false },
       { message: "goal", conceded: 3, ended: false },
     )).toBe("danger-goal");
+    expect(RuntimeModule.getOutcomeAudioEvent(
+      { message: "goal", conceded: 1, ended: false },
+      { message: "miss", conceded: 0, ended: false },
+    )).toBe("goal-net");
+    expect(RuntimeModule.getOutcomeAudioEvent(
+      { message: "frame", ended: false },
+      { message: "save", ended: false },
+    )).toBe("frame-rattle");
     expect(RuntimeModule.getOutcomeAudioEvent(
       { message: "ended", endReason: "time", ended: true },
       { message: "save", ended: false },
     )).toBe("round-end");
     expect(RuntimeModule.getOutcomeAudioEvent(
-      { message: "save", streak: 1, ended: false },
+      { message: "miss", streak: 0, ended: false },
       { message: "miss", streak: 0, ended: false },
     )).toBeNull();
   });

@@ -38,6 +38,18 @@ const SYNTH_PROFILE = {
 export const MATCHDAY_AUDIO_EVENT_LAYER = "matchday-audio-event-layer";
 
 const AUDIO_EVENT_PLANS = {
+  "clean-save": [
+    { name: "save", delay: 0, gainScale: 0.74, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "clean-save-audio-cue" },
+    { name: "tick", delay: 0.045, gainScale: 0.34, playbackRateOffset: 0.08 },
+  ],
+  "frame-rattle": [
+    { name: "frame", delay: 0, gainScale: 0.68, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "frame-rattle-audio-cue" },
+    { name: "tick", delay: 0.055, gainScale: 0.24, playbackRateOffset: -0.12 },
+  ],
+  "goal-net": [
+    { name: "goal", delay: 0, gainScale: 0.74, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "goal-net-audio-cue" },
+    { name: "tick", delay: 0.1, gainScale: 0.22, playbackRateOffset: -0.08 },
+  ],
   "save-streak": [
     { name: "save", delay: 0, gainScale: 0.92, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "save-streak-audio-cue" },
     { name: "tick", delay: 0.06, gainScale: 0.52, playbackRateOffset: 0 },
@@ -52,12 +64,30 @@ const AUDIO_EVENT_PLANS = {
   ],
 };
 
+const HAPTIC_PATTERNS = {
+  shot: [8],
+  save: [16],
+  catch: [12],
+  "clean-save": [16],
+  frame: [24, 32, 16],
+  "frame-rattle": [24, 32, 16],
+  goal: [42, 35, 58],
+  "goal-net": [42, 35, 58],
+  "danger-goal": [48, 35, 82],
+  "save-streak": [16, 30, 16],
+  "round-end": [32, 42, 32],
+};
+
 export function getSoundAssetManifest() {
   return { ...SAMPLE_ASSETS };
 }
 
 export function getAudioEventPlan(eventName) {
   return (AUDIO_EVENT_PLANS[eventName] || []).map((cue) => ({ ...cue }));
+}
+
+export function getHapticPattern(eventName) {
+  return [...(HAPTIC_PATTERNS[eventName] || [])];
 }
 
 export function createAudioEngine(root = window) {
@@ -106,7 +136,7 @@ export function createAudioEngine(root = window) {
       oscillator.start(now);
       oscillator.stop(now + 0.025);
       unlocked = true;
-    } catch (error) {
+    } catch {
       // Some browsers reject synthetic unlock sounds; gameplay samples still try to play normally.
     }
   }
@@ -191,11 +221,24 @@ export function createAudioEngine(root = window) {
     oscillator.stop(now + profile.duration + 0.03);
   }
 
+  function pulseHaptic(eventName) {
+    var pattern = getHapticPattern(eventName);
+    var vibrate = root.navigator?.vibrate || root.navigator?.webkitVibrate;
+    if (!pattern.length || !vibrate) return;
+
+    try {
+      vibrate.call(root.navigator, pattern);
+    } catch {
+      // Haptics are best-effort and should never interrupt play.
+    }
+  }
+
   function play(name, modifiers = {}) {
     if (!enabled) return;
     var ctx = getContext();
     if (!ctx) return;
     resumeContext(ctx);
+    if (modifiers.haptic !== false) pulseHaptic(name);
 
     if (playSample(name, ctx, modifiers)) return;
     loadSample(name);
@@ -207,12 +250,13 @@ export function createAudioEngine(root = window) {
     if (!plan.length) return;
     var schedule = root.setTimeout || (typeof setTimeout !== "undefined" ? setTimeout : null);
 
+    if (enabled) pulseHaptic(eventName);
     plan.forEach((cue) => {
       var delayMs = Math.max(0, Math.round((cue.delay || 0) * 1000));
       if (delayMs > 0 && schedule) {
-        schedule.call(root, () => play(cue.name, cue), delayMs);
+        schedule.call(root, () => play(cue.name, { ...cue, haptic: false }), delayMs);
       } else {
-        play(cue.name, cue);
+        play(cue.name, { ...cue, haptic: false });
       }
     });
   }
@@ -228,6 +272,7 @@ export function createAudioEngine(root = window) {
     preload,
     play,
     playEvent,
+    pulseHaptic,
     toggle,
     isEnabled() {
       return enabled;
