@@ -17,10 +17,16 @@ import { getStageRenderBounds, requestLandscapeOrientation, syncMobileLandscape 
 export const DEBUG_FORCE_GLOVE_SETTLE_DT = 1 / 30;
 export const DEBUG_FORCE_GLOVE_HOLD_SECONDS = 0.45;
 export const ROUND_INTRO_SECONDS = 1.8;
+export const CAUGHT_SAVE_REPLAY_STYLE = "caught-save-drop-replay";
+export const PARRIED_SAVE_REPLAY_STYLE = "parried-save-deflection-replay";
 const GROUND_FEEDBACK_DURATION = 0.62;
 
 function clamp01(value) {
   return Math.max(0, Math.min(1, value || 0));
+}
+
+function clampNumber(value, min, max) {
+  return Math.max(min, Math.min(max, value || 0));
 }
 
 export function advanceRoundIntroTimer(timer, dt) {
@@ -162,7 +168,67 @@ function createGroundFeedback(position, velocity, impactSpeed) {
   };
 }
 
+function getSaveReplayStyle(ball) {
+  if (ball?.saveReplayStyle) return ball.saveReplayStyle;
+  var outcome = ball?.outcome;
+  if (outcome !== "saved" && outcome !== "save") return null;
+  if (ball?.lastContact?.type === "catch") return CAUGHT_SAVE_REPLAY_STYLE;
+  if (ball?.lastContact?.type === "glove") return PARRIED_SAVE_REPLAY_STYLE;
+  return null;
+}
+
+function initializeSaveReplay(ball) {
+  var saveReplayStyle = getSaveReplayStyle(ball);
+  if (!saveReplayStyle || ball.replayInitialized) return ball;
+
+  var velocity = cloneVector(ball.velocity) || { x: 0, y: 0, z: 0 };
+  var angularVelocity = cloneVector(ball.angularVelocity) || { x: 0, y: 0, z: 0 };
+  var contact = ball.lastContact || {};
+
+  if (saveReplayStyle === CAUGHT_SAVE_REPLAY_STYLE) {
+    var sideDrift = Math.sign(ball.position?.x || contact.point?.x || 0) * 0.18;
+    return {
+      ...ball,
+      saveReplayStyle,
+      replayInitialized: true,
+      velocity: {
+        x: clampNumber(velocity.x * 0.08 + sideDrift, -0.72, 0.72),
+        y: clampNumber(velocity.y * 0.06 - 0.64, -1.18, -0.34),
+        z: clampNumber(velocity.z * 0.06 - 0.46, -0.94, -0.28),
+      },
+      angularVelocity: {
+        x: clampNumber(angularVelocity.x * 0.12 - 1.4, -3.2, 2.2),
+        y: clampNumber(angularVelocity.y * 0.1 + sideDrift * 5, -3.2, 3.2),
+        z: clampNumber(angularVelocity.z * 0.08, -1.4, 1.4),
+      },
+    };
+  }
+
+  var normal = contact.normal || { x: Math.sign(ball.position?.x || velocity.x || 1) * 0.45, y: 0.08, z: -0.72 };
+  var side = Math.sign(normal.x || ball.position?.x || velocity.x || 1);
+  var strength = clampNumber(contact.strength || Math.hypot(velocity.x, velocity.y, velocity.z) || 16, 10, 36);
+  var lateralSpeed = Math.max(2.6, Math.min(5.6, 1.8 + strength * 0.08 + Math.abs(velocity.x) * 0.18));
+  var awaySpeed = Math.max(1.7, Math.min(5.2, 1.2 + strength * 0.09 + Math.max(0, -velocity.z) * 0.22));
+
+  return {
+    ...ball,
+    saveReplayStyle,
+    replayInitialized: true,
+    velocity: {
+      x: side * lateralSpeed,
+      y: clampNumber(velocity.y * 0.18 + (normal.y || 0) * 1.2 + 0.92, -0.28, 3.2),
+      z: -awaySpeed,
+    },
+    angularVelocity: {
+      x: -8.5 - strength * 0.14,
+      y: side * (8 + strength * 0.32),
+      z: side * (2.2 + strength * 0.035),
+    },
+  };
+}
+
 function advanceLingeringBall(ball, dt) {
+  ball = initializeSaveReplay(ball);
   var radius = ball.radius || 0.11;
   var position = cloneVector(ball.position) || { x: 0, y: radius, z: 0 };
   var velocity = cloneVector(ball.velocity) || { x: 0, y: 0, z: 0 };
@@ -182,14 +248,17 @@ function advanceLingeringBall(ball, dt) {
     if (position.y < radius) {
       position.y = radius;
       if (velocity.y < 0) {
-        velocity.y = Math.abs(velocity.y) * 0.22;
+        var bounce = ball.saveReplayStyle === CAUGHT_SAVE_REPLAY_STYLE ? 0.12 : 0.22;
+        velocity.y = Math.abs(velocity.y) * bounce;
         if (velocity.y < 0.45) velocity.y = 0;
       }
-      velocity.x *= 0.72;
-      velocity.z *= 0.72;
-      angularVelocity.x *= 0.82;
-      angularVelocity.y *= 0.82;
-      angularVelocity.z *= 0.82;
+      var groundDamping = ball.saveReplayStyle === CAUGHT_SAVE_REPLAY_STYLE ? 0.58 : 0.72;
+      var spinDamping = ball.saveReplayStyle === CAUGHT_SAVE_REPLAY_STYLE ? 0.66 : 0.82;
+      velocity.x *= groundDamping;
+      velocity.z *= groundDamping;
+      angularVelocity.x *= spinDamping;
+      angularVelocity.y *= spinDamping;
+      angularVelocity.z *= spinDamping;
       if (verticalImpactSpeed > 0.65 || Math.hypot(velocity.x, velocity.z) > 1.3) {
         groundFeedback = createGroundFeedback(position, velocity, verticalImpactSpeed);
       }
@@ -303,19 +372,20 @@ export async function createThreeGameRuntime(options) {
   function rememberLingeringBall(ball, outcome) {
     var duration = getLingeringBallDurationForOutcome(outcome);
     if (!duration || !ball?.position) return;
+    var replayBall = initializeSaveReplay({
+      live: false,
+      outcome: ball.outcome || outcome,
+      position: cloneVector(ball.position),
+      velocity: cloneVector(ball.velocity),
+      angularVelocity: cloneVector(ball.angularVelocity),
+      radius: ball.radius,
+      lastContact: ball.lastContact,
+      age: 0,
+      duration: duration,
+    });
     lingeringBalls = [
       ...lingeringBalls,
-      {
-        live: false,
-        outcome: ball.outcome || outcome,
-        position: cloneVector(ball.position),
-        velocity: cloneVector(ball.velocity),
-        angularVelocity: cloneVector(ball.angularVelocity),
-        radius: ball.radius,
-        lastContact: ball.lastContact,
-        age: 0,
-        duration: duration,
-      },
+      replayBall,
     ].slice(-6);
   }
 

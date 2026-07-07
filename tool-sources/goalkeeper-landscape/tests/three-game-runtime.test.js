@@ -110,6 +110,61 @@ describe("three game runtime timing", () => {
     expect(settled.groundFeedback.intensity).toBe(0);
   });
 
+  it("turns caught saves into a soft drop replay instead of inheriting wild contact velocity", () => {
+    const caughtSave = {
+      live: false,
+      outcome: "saved",
+      position: { x: 0.35, y: 1.42, z: 3.08 },
+      velocity: { x: 7.8, y: 4.6, z: -8.4 },
+      angularVelocity: { x: -13, y: 16, z: 4 },
+      radius: 0.11,
+      age: 0,
+      duration: 5,
+      lastContact: {
+        type: "catch",
+        point: { x: 0.24, y: 1.32, z: 3.12 },
+        catchQuality: 0.82,
+      },
+    };
+
+    const replay = advanceLingeringBalls([caughtSave], 0.08)[0];
+
+    expect(replay.saveReplayStyle).toBe("caught-save-drop-replay");
+    expect(replay.replayInitialized).toBe(true);
+    expect(Math.hypot(replay.velocity.x, replay.velocity.z)).toBeLessThan(1.9);
+    expect(Math.hypot(replay.angularVelocity.x, replay.angularVelocity.y, replay.angularVelocity.z)).toBeLessThan(5);
+    expect(replay.position.y).toBeLessThan(caughtSave.position.y);
+  });
+
+  it("turns glove saves into a visible parry replay with lateral deflection and spin", () => {
+    const glovedSave = {
+      live: false,
+      outcome: "saved",
+      position: { x: 0.18, y: 1.24, z: 3.04 },
+      velocity: { x: 0.25, y: 0.1, z: 0.35 },
+      angularVelocity: { x: 0.5, y: 0.2, z: 0 },
+      radius: 0.11,
+      age: 0,
+      duration: 5,
+      lastContact: {
+        type: "glove",
+        side: "right",
+        point: { x: 0.18, y: 1.22, z: 3.14 },
+        normal: { x: 0.42, y: 0.08, z: -0.72 },
+        strength: 24,
+      },
+    };
+
+    const replay = advanceLingeringBalls([glovedSave], 0.08)[0];
+
+    expect(replay.saveReplayStyle).toBe("parried-save-deflection-replay");
+    expect(replay.replayInitialized).toBe(true);
+    expect(Math.abs(replay.velocity.x)).toBeGreaterThan(2.2);
+    expect(replay.velocity.z).toBeLessThan(-1.4);
+    expect(Math.hypot(replay.angularVelocity.x, replay.angularVelocity.y, replay.angularVelocity.z)).toBeGreaterThan(9);
+    expect(replay.position.x).toBeGreaterThan(glovedSave.position.x);
+  });
+
   it("ignores old framing demo parameters and resolves only gameplay difficulty", async () => {
     const runtimeModule = await import("../src/game/three-game-runtime.js");
 

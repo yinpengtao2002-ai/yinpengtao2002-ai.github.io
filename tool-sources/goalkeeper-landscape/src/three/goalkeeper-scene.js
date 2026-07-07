@@ -25,6 +25,13 @@ export const SCENE_TUNING = {
     radius: 0.12,
     haloRadius: 0.24,
     shadowRadius: 0.14,
+    shadowAssetSystem: "height-aware-ball-shadow",
+    shadowGroundOpacity: 0.34,
+    shadowAirOpacity: 0.08,
+    shadowGroundScale: 0.34,
+    shadowAirScale: 0.12,
+    shadowHeightFade: 1.55,
+    shadowStretch: 0.58,
     baseScale: 0.72,
     nearScale: 1.32,
     goalScale: 1.12,
@@ -60,6 +67,9 @@ export const SCENE_TUNING = {
     saveSparkMaxOpacity: 0.68,
     netRippleLineCount: 5,
     netRippleMaxOpacity: 0.34,
+    netRippleAssetSystem: "localized-net-ripple",
+    netRippleContactRadius: 0.62,
+    netRippleTravel: 0.075,
     goalWaveCount: 3,
     goalWaveMaxOpacity: 0.42,
     streakPulseCount: 2,
@@ -112,6 +122,8 @@ export function createGoalkeeperScene(canvas) {
 
   var scene = new THREE.Scene();
   scene.userData.feedbackAssetSystem = tuning.feedback.assetSystem;
+  scene.userData.netRippleAssetSystem = tuning.feedback.netRippleAssetSystem;
+  scene.userData.ballShadowAssetSystem = tuning.ball.shadowAssetSystem;
   scene.fog = new THREE.Fog("#8ed7ff", 28, 58);
 
   var camera = new THREE.PerspectiveCamera(tuning.camera.fov, 16 / 9, 0.05, 90);
@@ -351,8 +363,13 @@ export function createGoalkeeperScene(canvas) {
     view.halo.material.opacity = ballState?.outcome === "goal" ? 0.34 : ballState?.live ? 0.28 : 0.18;
 
     view.shadow.position.set(position.x, 0.012, position.z);
-    var shadowScale = Math.max(0.12, 0.28 - position.y * 0.04);
-    view.shadow.scale.set(shadowScale, shadowScale * 0.62, 1);
+    var heightAboveTurf = Math.max(0, position.y - (ballState?.radius || tuning.ball.radius));
+    var airMix = clamp01(heightAboveTurf / tuning.ball.shadowHeightFade);
+    var shadowScale = lerpNumber(tuning.ball.shadowGroundScale, tuning.ball.shadowAirScale, airMix);
+    var shadowOpacity = lerpNumber(tuning.ball.shadowGroundOpacity, tuning.ball.shadowAirOpacity, airMix);
+    var depthBoost = 1 + depth * 0.14;
+    view.shadow.scale.set(shadowScale * depthBoost, shadowScale * tuning.ball.shadowStretch * depthBoost, 1);
+    view.shadow.material.opacity = shadowOpacity * (ballState?.live ? 1 : 0.9);
   }
 
   function updateLingeringBalls(snapshot) {
@@ -431,21 +448,31 @@ export function createGoalkeeperScene(canvas) {
   }
 
   function triggerGoalFeedback(position) {
-    goalFlash.position.set(position.x, Math.max(0.08, position.y), position.z + 0.05);
+    var contactX = Math.max(-RAPIER_GOAL.halfWidth + 0.18, Math.min(RAPIER_GOAL.halfWidth - 0.18, position.x || 0));
+    var contactY = Math.max(0.18, Math.min(RAPIER_GOAL.height - 0.08, position.y || 1));
+    goalFlash.position.set(contactX, Math.max(0.08, contactY), position.z + 0.05);
     goalFlash.material.opacity = 0.38;
     goalFlash.scale.setScalar(1);
-    triggerImpact("goal", position, 1);
+    triggerImpact("goal", { ...position, x: contactX, y: contactY }, 1);
     netPulse = 1;
     goalWaves.forEach((wave, index) => {
-      wave.position.set(position.x, Math.max(0.16, position.y), position.z + 0.06 + index * 0.012);
+      wave.position.set(contactX, Math.max(0.16, contactY), position.z + 0.06 + index * 0.012);
       wave.scale.setScalar(1 + index * 0.12);
       wave.material.opacity = tuning.feedback.goalWaveMaxOpacity * (1 - index * 0.16);
       wave.userData.life = Math.max(0.42, 0.74 - index * 0.12);
     });
     netRippleLines.forEach((line, index) => {
+      var centeredIndex = index - (netRippleLines.length - 1) / 2;
+      var localY = Math.max(0.28, Math.min(RAPIER_GOAL.height - 0.12, contactY + centeredIndex * 0.16));
+      var rippleWidth = tuning.feedback.netRippleContactRadius * (1.35 + index * 0.16);
       line.userData.life = Math.max(0.38, 0.7 - index * 0.055);
+      line.userData.originX = contactX;
+      line.userData.baseY = localY;
+      line.userData.baseScaleX = rippleWidth / (RAPIER_GOAL.halfWidth * 1.82);
       line.material.opacity = tuning.feedback.netRippleMaxOpacity * (1 - index * 0.09);
-      line.scale.set(0.72 + index * 0.06, 1, 1);
+      line.position.x = contactX;
+      line.position.y = localY;
+      line.scale.set(line.userData.baseScaleX, 1, 1);
     });
   }
 
@@ -575,10 +602,12 @@ export function createGoalkeeperScene(canvas) {
       }
       line.userData.life = Math.max(0, line.userData.life - 0.035 - index * 0.002);
       var wave = Math.sin(line.userData.life * Math.PI * 4 + index * 0.65);
+      var travelWave = Math.sin((1 - line.userData.life) * Math.PI * 2 + index) * tuning.feedback.netRippleTravel;
+      line.position.x = (line.userData.originX || 0) + travelWave * (index % 2 ? -0.6 : 0.6);
       line.position.y = line.userData.baseY + wave * 0.018;
       line.position.z = RAPIER_GOAL.netPlaneZ + 0.14 + Math.sin(line.userData.life * Math.PI) * 0.08;
       line.material.opacity = line.userData.life * tuning.feedback.netRippleMaxOpacity;
-      line.scale.x = 0.82 + (1 - line.userData.life) * 0.34 + index * 0.03;
+      line.scale.x = (line.userData.baseScaleX || 0.18) + (1 - line.userData.life) * 0.1 + index * 0.006;
     });
 
     goalWaves.forEach((wave, index) => {

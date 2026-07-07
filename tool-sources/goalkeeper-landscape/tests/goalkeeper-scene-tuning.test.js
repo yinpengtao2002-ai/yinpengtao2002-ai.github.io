@@ -16,6 +16,13 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.depth.originZ).toBe(SHOT_3D.origin.z);
   });
 
+  it("uses height-aware ball shadows so airborne and rolling balls read differently", () => {
+    expect(SCENE_TUNING.ball.shadowAssetSystem).toBe("height-aware-ball-shadow");
+    expect(SCENE_TUNING.ball.shadowGroundOpacity).toBeGreaterThan(SCENE_TUNING.ball.shadowAirOpacity);
+    expect(SCENE_TUNING.ball.shadowGroundScale).toBeGreaterThan(SCENE_TUNING.ball.shadowAirScale);
+    expect(SCENE_TUNING.ball.shadowHeightFade).toBeGreaterThanOrEqual(1.2);
+  });
+
   it("defines a restrained matchday feedback layer for saves, goals, streaks, and camera shake", () => {
     expect(SCENE_TUNING.feedback.assetSystem).toBe("matchday-feedback-kit");
     expect(SCENE_TUNING.feedback.impactRingCount).toBeGreaterThanOrEqual(3);
@@ -33,6 +40,10 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.feedback.saveSparkMaxOpacity).toBeLessThanOrEqual(0.74);
     expect(SCENE_TUNING.feedback.netRippleLineCount).toBeGreaterThanOrEqual(4);
     expect(SCENE_TUNING.feedback.netRippleMaxOpacity).toBeLessThanOrEqual(0.42);
+    expect(SCENE_TUNING.feedback.netRippleAssetSystem).toBe("localized-net-ripple");
+    expect(SCENE_TUNING.feedback.netRippleContactRadius).toBeGreaterThanOrEqual(0.42);
+    expect(SCENE_TUNING.feedback.netRippleContactRadius).toBeLessThanOrEqual(0.9);
+    expect(SCENE_TUNING.feedback.netRippleTravel).toBeGreaterThan(0.04);
     expect(SCENE_TUNING.feedback.goalWaveCount).toBeGreaterThanOrEqual(2);
     expect(SCENE_TUNING.feedback.goalWaveMaxOpacity).toBeLessThanOrEqual(0.48);
     expect(SCENE_TUNING.feedback.streakPulseCount).toBeGreaterThanOrEqual(2);
