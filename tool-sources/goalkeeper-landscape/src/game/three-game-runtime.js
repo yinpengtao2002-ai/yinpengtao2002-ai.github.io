@@ -45,6 +45,67 @@ export function getNextShotDelayForOutcome(outcome) {
   return 0.58;
 }
 
+function cloneVector(value) {
+  if (!value) return null;
+  return {
+    x: value.x || 0,
+    y: value.y || 0,
+    z: value.z || 0,
+  };
+}
+
+function advanceLingeringBall(ball, dt) {
+  var radius = ball.radius || 0.11;
+  var position = cloneVector(ball.position) || { x: 0, y: radius, z: 0 };
+  var velocity = cloneVector(ball.velocity) || { x: 0, y: 0, z: 0 };
+  var angularVelocity = cloneVector(ball.angularVelocity) || { x: 0, y: 0, z: 0 };
+  var remaining = Math.max(0, Math.min(dt, 0.75));
+  var step = 1 / 60;
+
+  while (remaining > 0) {
+    var h = Math.min(step, remaining);
+    velocity.y += -9.81 * h;
+    position.x += velocity.x * h;
+    position.y += velocity.y * h;
+    position.z += velocity.z * h;
+
+    if (position.y < radius) {
+      position.y = radius;
+      if (velocity.y < 0) {
+        velocity.y = Math.abs(velocity.y) * 0.22;
+        if (velocity.y < 0.45) velocity.y = 0;
+      }
+      velocity.x *= 0.72;
+      velocity.z *= 0.72;
+      angularVelocity.x *= 0.82;
+      angularVelocity.y *= 0.82;
+      angularVelocity.z *= 0.82;
+    } else {
+      velocity.x *= 0.998;
+      velocity.z *= 0.998;
+      angularVelocity.x *= 0.997;
+      angularVelocity.y *= 0.997;
+      angularVelocity.z *= 0.997;
+    }
+
+    remaining -= h;
+  }
+
+  return {
+    ...ball,
+    age: (ball.age || 0) + dt,
+    live: false,
+    position,
+    velocity,
+    angularVelocity,
+  };
+}
+
+export function advanceLingeringBalls(balls, dt) {
+  if (!balls?.length) return [];
+  return balls.map((ball) => advanceLingeringBall(ball, dt)).filter((ball) => ball.age < ball.duration);
+}
+
 export async function createThreeGameRuntime(options) {
   var canvas = options.canvas;
   var stage = options.stage;
@@ -104,15 +165,6 @@ export async function createThreeGameRuntime(options) {
     hud.update(state, audio.isEnabled());
   }
 
-  function cloneVector(value) {
-    if (!value) return null;
-    return {
-      x: value.x || 0,
-      y: value.y || 0,
-      z: value.z || 0,
-    };
-  }
-
   function rememberLingeringBall(ball, outcome) {
     var duration = getLingeringBallDurationForOutcome(outcome);
     if (!duration || !ball?.position) return;
@@ -134,9 +186,7 @@ export async function createThreeGameRuntime(options) {
 
   function updateLingeringBalls(dt) {
     if (!lingeringBalls.length) return;
-    lingeringBalls = lingeringBalls
-      .map((ball) => ({ ...ball, age: ball.age + dt }))
-      .filter((ball) => ball.age < ball.duration);
+    lingeringBalls = advanceLingeringBalls(lingeringBalls, dt);
   }
 
   function finishCurrentShotAfterReplay(dt) {
