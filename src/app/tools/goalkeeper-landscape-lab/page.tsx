@@ -197,7 +197,7 @@ export default function GoalkeeperLandscapeLabPage() {
 
         <div className={styles.routeCard}>
           <span>Stable Route</span>
-          <Link href="/tools/goalkeeper-landscape">/tools/goalkeeper-landscape</Link>
+          <Link href="/tools/goalkeeper-landscape" prefetch={false}>/tools/goalkeeper-landscape</Link>
         </div>
       </aside>
 

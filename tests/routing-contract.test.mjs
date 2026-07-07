@@ -174,6 +174,7 @@ test("goalkeeper landscape lab is a hidden internal workbench route", async () =
   assert.match(labPage, /Kenney official assets/);
   assert.match(labPage, /license/);
   assert.match(labPage, /performance/);
+  assert.match(labPage, /prefetch=\{false\}/);
   assert.doesNotMatch(sitemap, /goalkeeper-landscape-lab/);
   assert.doesNotMatch(thinkingLabContent, /goalkeeper-landscape-lab/);
   assert.doesNotMatch(thinkingClient, /goalkeeper-landscape-lab/);
