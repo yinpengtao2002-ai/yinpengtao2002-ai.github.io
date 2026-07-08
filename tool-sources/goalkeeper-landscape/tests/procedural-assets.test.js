@@ -207,4 +207,37 @@ describe("procedural 3D assets", () => {
     expect(ballTexture.userData.materialSystem).toBe("raised-seam-accent-match-ball");
     expect(ballTexture.userData.finishSystem).toBe("micro-scuffed-satin-panels");
   });
+
+  it("uses an instanced turf finishing layer so the pitch reads as authored grass without excessive draw calls", () => {
+    const field = createFieldGroup();
+    const instancedTurf = collectByName(field, /^field-instanced-turf-blades-/);
+
+    expect(field.userData.reusableAssetTechnique).toBe("instanced-turf-and-layered-material-kit");
+    expect(instancedTurf.length).toBeGreaterThanOrEqual(2);
+    expect(instancedTurf.every((mesh) => mesh.isInstancedMesh)).toBe(true);
+    expect(instancedTurf.reduce((total, mesh) => total + mesh.count, 0)).toBeGreaterThanOrEqual(220);
+    expect(collectByName(field, /^field-turf-color-variation-patch-/).length).toBeGreaterThanOrEqual(6);
+  });
+
+  it("adds diagonal net weave and rope sleeve details so the goal feels like a real object", () => {
+    const goal = createGoalAndNet();
+
+    expect(goal.group.userData.netWeaveSystem).toBe("knotted-diagonal-net-weave");
+    expect(collectByName(goal.group, /^goal-net-diagonal-weave-/).length).toBeGreaterThanOrEqual(2);
+    expect(collectByName(goal.group, /^goal-net-corner-sleeve-/).length).toBeGreaterThanOrEqual(4);
+    expect(collectByName(goal.group, /^goal-net-weave-knot-/).length).toBeGreaterThanOrEqual(8);
+  });
+
+  it("adds close-range glove protection ridges and ball surface storytelling details", () => {
+    const glove = createGloveMesh("left");
+    const ballTexture = createFootballTexture();
+
+    expect(glove.userData.gripSystem).toBe("latex-ridge-and-stitched-fingerback");
+    expect(collectByName(glove, /^glove-fingerback-protection-ridge-/).length).toBeGreaterThanOrEqual(4);
+    expect(collectByName(glove, /^glove-latex-grip-ridge-/).length).toBeGreaterThanOrEqual(5);
+    expect(collectByName(glove, /^glove-stitch-bead-/).length).toBeGreaterThanOrEqual(8);
+
+    expect(ballTexture.userData.surfaceDetailSystem).toBe("micro-scuffs-valve-and-panel-depth");
+    expect(ballTexture.userData.valveSystem).toBe("painted-rubber-air-valve");
+  });
 });

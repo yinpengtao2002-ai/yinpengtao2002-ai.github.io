@@ -128,6 +128,32 @@ export function createFootballTexture() {
   });
   ctx.globalAlpha = 1;
 
+  ctx.globalAlpha = 0.28;
+  ctx.strokeStyle = "#7f7465";
+  ctx.lineWidth = 2;
+  for (var scuff = 0; scuff < 18; scuff += 1) {
+    var sx = 92 + ((scuff * 61) % 330);
+    var sy = 86 + ((scuff * 97) % 322);
+    var length = 16 + (scuff % 5) * 7;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.quadraticCurveTo(sx + length * 0.38, sy - 6 + (scuff % 4) * 4, sx + length, sy + (scuff % 3) * 3);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.beginPath();
+  ctx.arc(337, 236, 15, 0, Math.PI * 2);
+  ctx.fillStyle = "#182226";
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(337, 236, 7, 0, Math.PI * 2);
+  ctx.fillStyle = "#4f5d5e";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.55)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
   var texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
@@ -135,6 +161,8 @@ export function createFootballTexture() {
   texture.userData.panelSystem = "radial-accent-seamed-panels";
   texture.userData.materialSystem = "raised-seam-accent-match-ball";
   texture.userData.finishSystem = "micro-scuffed-satin-panels";
+  texture.userData.surfaceDetailSystem = "micro-scuffs-valve-and-panel-depth";
+  texture.userData.valveSystem = "painted-rubber-air-valve";
   return texture;
 }
 
@@ -164,6 +192,8 @@ function createFallbackFootballTexture() {
   texture.userData.panelSystem = "radial-accent-seamed-panels";
   texture.userData.materialSystem = "raised-seam-accent-match-ball";
   texture.userData.finishSystem = "micro-scuffed-satin-panels";
+  texture.userData.surfaceDetailSystem = "micro-scuffs-valve-and-panel-depth";
+  texture.userData.valveSystem = "painted-rubber-air-valve";
   return texture;
 }
 
@@ -175,6 +205,7 @@ export function createFieldGroup() {
   group.userData.surfaceDetailSystem = "layered-turf-with-foreground-blades";
   group.userData.surfaceFinishSystem = "multi-layer-turf-edge-divot-kit";
   group.userData.stadiumDressingSystem = "crowd-scoreboard-flags-matchday-dressing";
+  group.userData.reusableAssetTechnique = "instanced-turf-and-layered-material-kit";
   var turf = new THREE.Mesh(
     new THREE.PlaneGeometry(18, 52, 1, 1),
     new THREE.MeshStandardMaterial({ color: "#69bd53", map: createGrassTexture(), roughness: 0.9 }),
@@ -183,6 +214,24 @@ export function createFieldGroup() {
   turf.rotation.x = -Math.PI / 2;
   turf.position.set(0, -0.025, -14);
   group.add(turf);
+
+  var patchMaterial = new THREE.MeshBasicMaterial({
+    color: "#74c95b",
+    transparent: true,
+    opacity: 0.12,
+    depthWrite: false,
+  });
+  for (var patchIndex = 0; patchIndex < 8; patchIndex += 1) {
+    var patch = new THREE.Mesh(new THREE.CircleGeometry(1, 28), patchMaterial.clone());
+    patch.name = "field-turf-color-variation-patch-" + patchIndex;
+    patch.rotation.x = -Math.PI / 2;
+    patch.rotation.z = patchIndex * 0.37;
+    patch.scale.set(0.72 + (patchIndex % 3) * 0.18, 0.18 + (patchIndex % 4) * 0.06, 1);
+    patch.material.color.set(patchIndex % 2 ? "#4fab4d" : "#a6df70");
+    patch.material.opacity = 0.075 + (patchIndex % 4) * 0.018;
+    patch.position.set(-4.9 + (patchIndex % 4) * 3.2, -0.014, -15.8 + Math.floor(patchIndex / 4) * 8.2);
+    group.add(patch);
+  }
 
   var stripeMaterial = new THREE.MeshBasicMaterial({ color: "#9ee87d", transparent: true, opacity: 0.14, depthWrite: false });
   var shadowStripeMaterial = new THREE.MeshBasicMaterial({
@@ -436,6 +485,45 @@ export function createFieldGroup() {
     group.add(divot);
   }
 
+  function addInstancedTurfLayer(name, count, zStart, zSpan, halfWidth, yBase, color) {
+    var geometry = new THREE.PlaneGeometry(0.028, 0.18);
+    geometry.translate(0, 0.09, 0);
+    var material = new THREE.MeshStandardMaterial({
+      color,
+      roughness: 0.92,
+      metalness: 0,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.78,
+    });
+    var blades = new THREE.InstancedMesh(geometry, material, count);
+    blades.name = name;
+    blades.userData.assetTechnique = "deterministic-instanced-turf";
+    var dummy = new THREE.Object3D();
+    for (var bladeInstance = 0; bladeInstance < count; bladeInstance += 1) {
+      var row = Math.floor(bladeInstance / 22);
+      var col = bladeInstance % 22;
+      var jitterA = Math.sin(bladeInstance * 12.9898) * 43758.5453;
+      var jitterB = Math.sin(bladeInstance * 78.233) * 19341.372;
+      var jx = jitterA - Math.floor(jitterA);
+      var jz = jitterB - Math.floor(jitterB);
+      dummy.position.set(
+        -halfWidth + (col / 21) * halfWidth * 2 + (jx - 0.5) * 0.18,
+        yBase,
+        zStart + (row / Math.max(1, Math.floor(count / 22))) * zSpan + (jz - 0.5) * 0.24,
+      );
+      dummy.rotation.set(0.12 + (bladeInstance % 5) * 0.025, bladeInstance * 0.53, (jx - 0.5) * 0.38);
+      dummy.scale.set(0.72 + jx * 0.55, 0.68 + jz * 0.8, 1);
+      dummy.updateMatrix();
+      blades.setMatrixAt(bladeInstance, dummy.matrix);
+    }
+    blades.instanceMatrix.needsUpdate = true;
+    group.add(blades);
+  }
+
+  addInstancedTurfLayer("field-instanced-turf-blades-near", 132, 1.05, 3.3, 4.4, 0.018, "#8bdc62");
+  addInstancedTurfLayer("field-instanced-turf-blades-goalmouth", 110, 2.3, 2.4, RAPIER_GOAL.halfWidth + 0.95, 0.02, "#d3e878");
+
   var chalkDustMaterial = new THREE.MeshBasicMaterial({
     color: "#f6fff2",
     transparent: true,
@@ -562,6 +650,7 @@ export function createGoalAndNet() {
   group.userData.frameDetailSystem = "rounded-posts-with-tensioned-net";
   group.userData.netPocketSystem = "localized-net-pocket-deformation";
   group.userData.netHardwareSystem = "weighted-net-label-and-clip-kit";
+  group.userData.netWeaveSystem = "knotted-diagonal-net-weave";
   var frameMaterial = new THREE.MeshStandardMaterial({ color: "#f5fff7", roughness: 0.34, metalness: 0.04 });
   var trimMaterial = new THREE.MeshStandardMaterial({ color: "#f0782f", roughness: 0.36, metalness: 0.02 });
   var postGeometry = new THREE.CylinderGeometry(0.065, 0.065, 1, 24);
@@ -636,6 +725,25 @@ export function createGoalAndNet() {
   grid.name = "goal-net-back-grid";
   group.add(grid);
 
+  var diagonalMaterial = new THREE.LineBasicMaterial({ color: "#f7ffff", transparent: true, opacity: 0.22 });
+  function addDiagonalWeave(name, direction) {
+    var diagonalPoints = [];
+    for (var offset = -RAPIER_GOAL.halfWidth - RAPIER_GOAL.height; offset <= RAPIER_GOAL.halfWidth; offset += 0.64) {
+      var startX = Math.max(-RAPIER_GOAL.halfWidth, offset);
+      var startY = direction > 0 ? 0 : RAPIER_GOAL.height;
+      var endX = Math.min(RAPIER_GOAL.halfWidth, offset + RAPIER_GOAL.height * 1.18);
+      var endY = direction > 0 ? (endX - startX) / 1.18 : RAPIER_GOAL.height - (endX - startX) / 1.18;
+      if (endY < 0 || endY > RAPIER_GOAL.height) continue;
+      diagonalPoints.push(new THREE.Vector3(startX, startY, RAPIER_GOAL.netPlaneZ + 0.105));
+      diagonalPoints.push(new THREE.Vector3(endX, endY, RAPIER_GOAL.netPlaneZ + 0.105));
+    }
+    var weave = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(diagonalPoints), diagonalMaterial.clone());
+    weave.name = "goal-net-diagonal-weave-" + name;
+    group.add(weave);
+  }
+  addDiagonalWeave("rising", 1);
+  addDiagonalWeave("falling", -1);
+
   var sideNetMaterial = netMaterial.clone();
   sideNetMaterial.opacity = 0.12;
   ["left", "right"].forEach(function addSideNet(side) {
@@ -687,6 +795,30 @@ export function createGoalAndNet() {
     knot.position.set(item[4], item[5], item[6]);
     group.add(knot);
   });
+
+  var sleeveMaterial = new THREE.MeshStandardMaterial({ color: "#fbfff4", roughness: 0.4, metalness: 0.02 });
+  [
+    ["front-left", -RAPIER_GOAL.halfWidth, RAPIER_GOAL.height - 0.22, RAPIER_GOAL.netPlaneZ + 0.055],
+    ["front-right", RAPIER_GOAL.halfWidth, RAPIER_GOAL.height - 0.22, RAPIER_GOAL.netPlaneZ + 0.055],
+    ["back-left", -RAPIER_GOAL.halfWidth - 0.34, 0.24, RAPIER_GOAL.netPlaneZ + 0.86],
+    ["back-right", RAPIER_GOAL.halfWidth + 0.34, 0.24, RAPIER_GOAL.netPlaneZ + 0.86],
+  ].forEach(function addCornerSleeve(item) {
+    var sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.032, 0.36, 12), sleeveMaterial);
+    sleeve.name = "goal-net-corner-sleeve-" + item[0];
+    sleeve.rotation.z = Math.PI / 2;
+    sleeve.position.set(item[1], item[2], item[3]);
+    group.add(sleeve);
+  });
+
+  var weaveKnotMaterial = new THREE.MeshBasicMaterial({ color: "#fafff7", transparent: true, opacity: 0.54 });
+  for (var weaveKnotIndex = 0; weaveKnotIndex < 10; weaveKnotIndex += 1) {
+    var knotX = -RAPIER_GOAL.halfWidth + 0.52 + (weaveKnotIndex % 5) * 1.42;
+    var knotY = 0.46 + Math.floor(weaveKnotIndex / 5) * 0.96 + (weaveKnotIndex % 2) * 0.12;
+    var weaveKnot = new THREE.Mesh(new THREE.SphereGeometry(0.018, 8, 6), weaveKnotMaterial.clone());
+    weaveKnot.name = "goal-net-weave-knot-" + weaveKnotIndex;
+    weaveKnot.position.set(knotX, knotY, RAPIER_GOAL.netPlaneZ + 0.12);
+    group.add(weaveKnot);
+  }
 
   var netWeightMaterial = new THREE.MeshStandardMaterial({ color: "#eef4e9", roughness: 0.46, metalness: 0.05 });
   for (var weightIndex = 0; weightIndex < 5; weightIndex += 1) {
@@ -1011,6 +1143,7 @@ export function createGloveMesh(side) {
   var group = new THREE.Group();
   group.userData.visualStyle = "polished-orange-reference-glove";
   group.userData.materialSystem = "stitched-padded-match-glove";
+  group.userData.gripSystem = "latex-ridge-and-stitched-fingerback";
   var palmMat = new THREE.MeshStandardMaterial({
     color: side === "left" ? "#ff6339" : "#ff7244",
     roughness: 0.42,
@@ -1041,6 +1174,20 @@ export function createGloveMesh(side) {
     fingerHighlight.name = "glove-highlight-finger-" + i;
     fingerHighlight.position.set(finger.position.x - 0.012, finger.position.y + 0.006, 0.066);
     group.add(fingerHighlight);
+
+    var fingerbackRidge = makeRoundedPart(
+      "glove-fingerback-protection-ridge-" + i,
+      0.055,
+      0.12,
+      0.014,
+      0.018,
+      padMat,
+      finger.position.x,
+      finger.position.y + 0.006,
+      0.09,
+    );
+    fingerbackRidge.rotation.z = (i - 1.5) * 0.035;
+    group.add(fingerbackRidge);
   }
 
   var thumbSide = side === "left" ? 1 : -1;
@@ -1066,6 +1213,14 @@ export function createGloveMesh(side) {
     seam.position.set(item[1], 0.02, 0.086);
     group.add(seam);
   });
+
+  for (var gripIndex = 0; gripIndex < 6; gripIndex += 1) {
+    var grip = new THREE.Mesh(new THREE.BoxGeometry(0.23 - gripIndex * 0.012, 0.011, 0.01), seamMat);
+    grip.name = "glove-latex-grip-ridge-" + gripIndex;
+    grip.position.set(0, 0.118 - gripIndex * 0.047, 0.102);
+    grip.rotation.z = (gripIndex % 2 ? 0.035 : -0.035) * (side === "left" ? 1 : -1);
+    group.add(grip);
+  }
 
   [
     ["palm-sheen-a", -0.085, 0.07, 0.09],
@@ -1093,6 +1248,15 @@ export function createGloveMesh(side) {
   var brandPatch = makeRoundedPart("glove-brand-patch-front", 0.1, 0.046, 0.012, 0.01, cuffTrimMat, side === "left" ? -0.055 : 0.055, -0.245, 0.145);
   brandPatch.rotation.z = side === "left" ? -0.08 : 0.08;
   group.add(brandPatch);
+
+  var stitchBeadMaterial = new THREE.MeshStandardMaterial({ color: "#ffd6aa", roughness: 0.52, metalness: 0.01 });
+  for (var stitchIndex = 0; stitchIndex < 10; stitchIndex += 1) {
+    var stitch = new THREE.Mesh(new THREE.SphereGeometry(0.011, 8, 6), stitchBeadMaterial);
+    stitch.name = "glove-stitch-bead-" + stitchIndex;
+    stitch.position.set(-0.18 + (stitchIndex % 5) * 0.09, stitchIndex < 5 ? 0.205 : -0.185, 0.107);
+    stitch.scale.set(1, 0.72, 0.56);
+    group.add(stitch);
+  }
 
   var ventMat = new THREE.MeshBasicMaterial({ color: "#7b2f22", transparent: true, opacity: 0.58, side: THREE.DoubleSide });
   for (var ventIndex = 0; ventIndex < 10; ventIndex += 1) {
