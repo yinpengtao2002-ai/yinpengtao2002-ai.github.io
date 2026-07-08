@@ -244,6 +244,92 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(frame.cameraShake).toBeLessThanOrEqual(SCENE_TUNING.feedback.maxCameraShake);
   });
 
+  it("orchestrates complete event feedback packages across visuals, sound, HUD tone, and camera weight", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.getMatchEventFeedbackPlan).toBeTypeOf("function");
+    expect(SCENE_TUNING.feedback.eventOrchestratorSystem).toBe("keeper-event-feedback-orchestrator");
+
+    const streakSave = sceneModule.getMatchEventFeedbackPlan({
+      type: "save",
+      contact: {
+        type: "glove",
+        side: "right",
+        strength: 30,
+        point: { x: 0.44, y: 1.26, z: 3.14 },
+      },
+      state: { message: "save", streak: 4, conceded: 1 },
+    });
+    const dangerGoal = sceneModule.getMatchEventFeedbackPlan({
+      type: "goal",
+      contact: {
+        type: "net",
+        strength: 0.92,
+        point: { x: -0.74, y: 1.42, z: SHOT_3D.netPlaneZ },
+      },
+      state: { message: "goal", conceded: 4 },
+    });
+    const frame = sceneModule.getMatchEventFeedbackPlan({
+      type: "frame",
+      contact: {
+        type: "frame",
+        part: "crossbar",
+        strength: 0.72,
+        point: { x: 0.52, y: 2.48, z: SHOT_3D.netPlaneZ },
+      },
+      state: { message: "frame", conceded: 1 },
+    });
+    const turf = sceneModule.getMatchEventFeedbackPlan({
+      type: "ground",
+      groundFeedback: {
+        active: true,
+        age: 0.02,
+        intensity: 0.58,
+        speed: 5.2,
+        point: { x: -0.22, y: 0.012, z: 2.74 },
+      },
+    });
+
+    expect(streakSave.system).toBe("keeper-event-feedback-orchestrator");
+    expect(streakSave.audioEvent).toBe("save-streak");
+    expect(streakSave.hudTone).toBe("streak");
+    expect(streakSave.cameraShake).toBeGreaterThan(0);
+    expect(streakSave.cameraShake).toBeLessThan(dangerGoal.cameraShake);
+    expect(streakSave.visualEffects).toEqual(expect.arrayContaining([
+      "feedback-impact-ring",
+      "feedback-save-spark",
+      "feedback-save-pressure-arc",
+      "feedback-save-afterimage",
+      "feedback-streak-pulse",
+    ]));
+    expect(streakSave.ringCount).toBeGreaterThanOrEqual(3);
+    expect(streakSave.net.recoilStrength).toBe(0);
+    expect(streakSave.durationMs).toBeGreaterThanOrEqual(520);
+
+    expect(dangerGoal.audioEvent).toBe("danger-goal");
+    expect(dangerGoal.hudTone).toBe("danger");
+    expect(dangerGoal.visualEffects).toEqual(expect.arrayContaining([
+      "feedback-goal-wave",
+      "feedback-net-pocket-deformation",
+      "feedback-net-ripple-line",
+      "feedback-dynamic-net-detail-recoil",
+    ]));
+    expect(dangerGoal.net.recoilStrength).toBeGreaterThan(streakSave.net.recoilStrength);
+    expect(dangerGoal.net.pocketStrength).toBeGreaterThanOrEqual(0.9);
+    expect(dangerGoal.cameraShake).toBeLessThanOrEqual(SCENE_TUNING.feedback.maxCameraShake * 1.24);
+
+    expect(frame.audioEvent).toBe("frame-rattle");
+    expect(frame.hudTone).toBe("frame");
+    expect(frame.visualEffects).toEqual(expect.arrayContaining(["feedback-frame-rebound-highlight"]));
+    expect(frame.cameraShake).toBeLessThan(dangerGoal.cameraShake);
+
+    expect(turf.audioEvent).toBe("turf-skid");
+    expect(turf.hudTone).toBe("ambient");
+    expect(turf.visualEffects).toEqual(expect.arrayContaining(["feedback-ground-skid", "feedback-turf-fleck"]));
+    expect(turf.cameraShake).toBe(0);
+    expect(turf.priority).toBe("ambient");
+  });
+
   it("advances a damped spring net recoil so goals push the net then rebound and settle", async () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
 

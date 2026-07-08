@@ -72,7 +72,8 @@ export const SCENE_TUNING = {
   },
   feedback: {
     assetSystem: "matchday-feedback-kit",
-    impactRingCount: 3,
+    eventOrchestratorSystem: "keeper-event-feedback-orchestrator",
+    impactRingCount: 4,
     saveFlashColor: "#fff1a8",
     goalFlashColor: "#ff7846",
     dangerGoalFlashColor: "#ff3f2f",
@@ -743,6 +744,148 @@ export function getMatchFeedbackProfile(event = {}, tuning = SCENE_TUNING.feedba
   };
 }
 
+export function getMatchEventFeedbackPlan(event = {}, tuning = SCENE_TUNING.feedback) {
+  var system = tuning.eventOrchestratorSystem || "keeper-event-feedback-orchestrator";
+  var type = event.type || event.contact?.type || "ambient";
+  var state = event.state || {};
+  var profile = getMatchFeedbackProfile(event, tuning);
+  var defaultRingCount = Math.max(3, Math.min(tuning.impactRingCount || 3, 4));
+
+  if (type === "save" || type === "glove" || type === "catch") {
+    var streak = state.streak || 0;
+    var isStreak = streak >= 3;
+    var impactStrength = clampNumber(profile.impactStrength || tuning.saveImpactStrength, 0.58, 1.12);
+    return {
+      system,
+      kind: profile.kind,
+      profile,
+      priority: isStreak ? "high" : "core",
+      hudTone: isStreak ? "streak" : "save",
+      audioEvent: isStreak ? "save-streak" : "clean-save",
+      visualEffects: [
+        "feedback-impact-ring",
+        "feedback-save-spark",
+        "feedback-save-pressure-arc",
+        "feedback-save-afterimage",
+        ...(isStreak ? ["feedback-streak-pulse"] : []),
+      ],
+      flashColor: profile.flashColor,
+      effectIntensity: impactStrength * (isStreak ? 1.08 : 1),
+      cameraShake: Math.min(tuning.maxCameraShake * 0.86, (profile.cameraShake || 0) * (isStreak ? 1.14 : 1)),
+      ringCount: Math.min(tuning.impactRingCount || defaultRingCount, isStreak ? 4 : 3),
+      durationMs: isStreak ? 760 : 620,
+      net: {
+        recoilStrength: 0,
+        pocketStrength: 0,
+        pulse: 0,
+      },
+    };
+  }
+
+  if (type === "goal" || type === "net") {
+    var isDanger = profile.kind === "danger-goal";
+    var goalIntensity = clampNumber(profile.impactStrength || tuning.goalImpactStrength, 0.82, 1.24);
+    return {
+      system,
+      kind: profile.kind,
+      profile,
+      priority: isDanger ? "critical" : "high",
+      hudTone: isDanger ? "danger" : "goal",
+      audioEvent: isDanger ? "danger-goal" : "goal-net",
+      visualEffects: [
+        "feedback-impact-ring",
+        "feedback-goal-wave",
+        "feedback-net-pocket-deformation",
+        "feedback-net-ripple-line",
+        "feedback-dynamic-net-detail-recoil",
+      ],
+      flashColor: profile.flashColor,
+      effectIntensity: goalIntensity,
+      cameraShake: Math.min(tuning.maxCameraShake * 1.24, profile.cameraShake || tuning.maxCameraShake * goalIntensity),
+      ringCount: Math.min(tuning.impactRingCount || defaultRingCount, isDanger ? 4 : 3),
+      durationMs: isDanger ? 900 : 780,
+      net: {
+        recoilStrength: clampNumber(profile.netPulse || 0, 0.78, isDanger ? 1.14 : 1.02),
+        pocketStrength: clampNumber(profile.netPocketStrength || 0, 0.72, isDanger ? 1.14 : 1.04),
+        pulse: clampNumber(profile.netPulse || 0, 0.82, isDanger ? 1.14 : 1.04),
+      },
+    };
+  }
+
+  if (type === "frame") {
+    var frameIntensity = clampNumber(profile.impactStrength || tuning.frameImpactStrength, 0.42, 0.86);
+    return {
+      system,
+      kind: profile.kind,
+      profile,
+      priority: "core",
+      hudTone: "frame",
+      audioEvent: "frame-rattle",
+      visualEffects: [
+        "feedback-impact-ring",
+        "feedback-frame-rebound-highlight",
+      ],
+      flashColor: profile.flashColor,
+      effectIntensity: frameIntensity,
+      cameraShake: Math.min(tuning.maxCameraShake * 0.82, profile.cameraShake || tuning.maxCameraShake * frameIntensity),
+      ringCount: Math.min(tuning.impactRingCount || defaultRingCount, 3),
+      durationMs: 620,
+      net: {
+        recoilStrength: 0,
+        pocketStrength: 0,
+        pulse: 0,
+      },
+    };
+  }
+
+  if (type === "ground" || type === "turf") {
+    var feedback = event.groundFeedback || {};
+    var intensity = clamp01(Math.max(feedback.intensity || 0, (feedback.speed || 0) / 10));
+    return {
+      system,
+      kind: "ground-skid",
+      profile,
+      priority: "ambient",
+      hudTone: "ambient",
+      audioEvent: intensity >= 0.18 && feedback.active ? "turf-skid" : null,
+      visualEffects: [
+        "feedback-ground-skid",
+        "feedback-turf-fleck",
+      ],
+      flashColor: tuning.groundSkidColor,
+      effectIntensity: intensity,
+      cameraShake: 0,
+      ringCount: 0,
+      durationMs: 520,
+      net: {
+        recoilStrength: 0,
+        pocketStrength: 0,
+        pulse: 0,
+      },
+    };
+  }
+
+  return {
+    system,
+    kind: "ambient",
+    profile,
+    priority: "ambient",
+    hudTone: "ambient",
+    audioEvent: null,
+    visualEffects: [],
+    flashColor: profile.flashColor,
+    effectIntensity: profile.impactStrength || tuning.saveImpactStrength,
+    cameraShake: profile.cameraShake || 0,
+    ringCount: 0,
+    durationMs: 420,
+    net: {
+      recoilStrength: 0,
+      pocketStrength: 0,
+      pulse: 0,
+    },
+  };
+}
+
 export function getDynamicNetDetailMotionPlan(detail, pulse, contactPoint, tuning = SCENE_TUNING.feedback) {
   var base = detail?.basePosition || detail?.object?.position || { x: 0, y: 0, z: 0 };
   var life = clamp01(pulse || 0);
@@ -802,6 +945,7 @@ export function createGoalkeeperScene(canvas) {
 
   var scene = new THREE.Scene();
   scene.userData.feedbackAssetSystem = tuning.feedback.assetSystem;
+  scene.userData.feedbackOrchestratorSystem = tuning.feedback.eventOrchestratorSystem;
   scene.userData.netRippleAssetSystem = tuning.feedback.netRippleAssetSystem;
   scene.userData.netPocketAssetSystem = tuning.feedback.netPocketAssetSystem;
   scene.userData.netRecoilSystem = tuning.feedback.netRecoilSystem;
@@ -1241,7 +1385,8 @@ export function createGoalkeeperScene(canvas) {
     }
     var direction = feedback.direction || { x: 0, y: 0, z: -1 };
     var angle = Math.atan2(direction.x || 0, direction.z || -1);
-    var intensity = clamp01(feedback.intensity || 0);
+    var eventPlan = getMatchEventFeedbackPlan({ type: "ground", groundFeedback: feedback }, tuning.feedback);
+    var intensity = clamp01(eventPlan.effectIntensity || feedback.intensity || 0);
     var length = feedback.skidLength || 0.32;
     skid.visible = true;
     skid.position.set(feedback.point.x, feedback.point.y, feedback.point.z);
@@ -1288,8 +1433,9 @@ export function createGoalkeeperScene(canvas) {
     });
   }
 
-  function triggerImpact(type, position, strength, profile = null) {
+  function triggerImpact(type, position, strength, profile = null, eventPlan = null) {
     var color =
+      eventPlan?.flashColor ||
       profile?.flashColor ||
       (type === "goal"
         ? tuning.feedback.goalFlashColor
@@ -1298,21 +1444,31 @@ export function createGoalkeeperScene(canvas) {
           : type === "frame"
             ? tuning.feedback.frameFlashColor
             : tuning.feedback.saveFlashColor);
-    var pulseStrength = strength || 1;
+    var pulseStrength = eventPlan?.effectIntensity || strength || 1;
+    var ringCount = Math.max(0, Math.min(impactRings.length, eventPlan?.ringCount ?? impactRings.length));
     impactRings.forEach((ring, index) => {
+      if (index >= ringCount) {
+        ring.material.opacity = 0;
+        ring.userData.life = 0;
+        return;
+      }
       ring.position.set(position.x, position.y, position.z);
       ring.material.color.set(color);
       ring.material.opacity = Math.max(0.18, 0.72 - index * 0.16) * pulseStrength;
       ring.scale.setScalar(1 + index * 0.12);
       ring.userData.life = Math.max(0.35, 1 - index * 0.12);
     });
-    cameraShake = Math.max(cameraShake, profile?.cameraShake ?? tuning.feedback.maxCameraShake * pulseStrength);
+    cameraShake = Math.max(
+      cameraShake,
+      eventPlan?.cameraShake ?? profile?.cameraShake ?? tuning.feedback.maxCameraShake * pulseStrength,
+    );
   }
 
-  function triggerSaveFeedback(position, strength, contact = null, gloves = null) {
-    var profile = getMatchFeedbackProfile({ type: "save", contact }, tuning.feedback);
-    var pulseStrength = strength || profile.impactStrength || 1;
-    triggerImpact("save", position, profile.impactStrength || pulseStrength, profile);
+  function triggerSaveFeedback(position, strength, contact = null, gloves = null, state = null) {
+    var eventPlan = getMatchEventFeedbackPlan({ type: "save", contact, state }, tuning.feedback);
+    var profile = eventPlan.profile || getMatchFeedbackProfile({ type: "save", contact, state }, tuning.feedback);
+    var pulseStrength = strength || eventPlan.effectIntensity || profile.impactStrength || 1;
+    triggerImpact("save", position, profile.impactStrength || pulseStrength, profile, eventPlan);
     saveSparks.forEach((spark, index) => {
       var angle = (index / saveSparks.length) * Math.PI * 2 + (index % 2 ? 0.26 : -0.18);
       var radius = 0.08 + (index % 3) * 0.026;
@@ -1323,7 +1479,7 @@ export function createGoalkeeperScene(canvas) {
       );
       spark.rotation.set(0, 0, angle);
       spark.scale.setScalar(0.8 + (index % 4) * 0.08);
-      spark.material.opacity = tuning.feedback.saveSparkMaxOpacity * pulseStrength;
+      spark.material.opacity = tuning.feedback.saveSparkMaxOpacity * Math.min(1.16, pulseStrength);
       spark.userData.life = Math.max(0.28, 0.58 - index * 0.018);
       spark.userData.velocity = {
         x: Math.cos(angle) * (0.009 + index * 0.0008),
@@ -1391,7 +1547,8 @@ export function createGoalkeeperScene(canvas) {
   }
 
   function triggerGoalFeedback(position, contact = null, state = null) {
-    var profile = getMatchFeedbackProfile({ type: "goal", contact, state }, tuning.feedback);
+    var eventPlan = getMatchEventFeedbackPlan({ type: "goal", contact, state }, tuning.feedback);
+    var profile = eventPlan.profile || getMatchFeedbackProfile({ type: "goal", contact, state }, tuning.feedback);
     var contactX = Math.max(-RAPIER_GOAL.halfWidth + 0.18, Math.min(RAPIER_GOAL.halfWidth - 0.18, position.x || 0));
     var contactY = Math.max(0.18, Math.min(RAPIER_GOAL.height - 0.08, position.y || 1));
     var contactZ = position.z || RAPIER_GOAL.netPlaneZ;
@@ -1401,7 +1558,7 @@ export function createGoalkeeperScene(canvas) {
         x: contactX,
         y: contactY,
         z: contactZ,
-        strength: profile.netPocketStrength,
+        strength: eventPlan.net.pocketStrength,
       },
       tuning.feedback,
     );
@@ -1409,14 +1566,14 @@ export function createGoalkeeperScene(canvas) {
     goalFlash.position.set(contactX, Math.max(0.08, contactY), contactZ + 0.05);
     goalFlash.material.opacity = Math.min(0.52, 0.34 * profile.impactStrength + (profile.kind === "danger-goal" ? 0.08 : 0));
     goalFlash.scale.setScalar(1);
-    triggerImpact("goal", { ...position, x: contactX, y: contactY }, profile.impactStrength, profile);
-    netPulse = Math.max(netPulse, profile.netPulse);
+    triggerImpact("goal", { ...position, x: contactX, y: contactY }, profile.impactStrength, profile, eventPlan);
+    netPulse = Math.max(netPulse, eventPlan.net.pulse);
     netPulseContactPoint = { x: contactX, y: contactY, z: contactZ };
     triggerNetRecoilState(
       netRecoilState,
       {
         point: netPulseContactPoint,
-        strength: profile.netPulse,
+        strength: eventPlan.net.recoilStrength,
       },
       tuning.feedback,
     );
@@ -1424,7 +1581,7 @@ export function createGoalkeeperScene(canvas) {
       wave.material.color.set(profile.flashColor);
       wave.position.set(contactX, Math.max(0.16, contactY), position.z + 0.06 + index * 0.012);
       wave.scale.setScalar(1 + index * 0.12);
-      wave.material.opacity = tuning.feedback.goalWaveMaxOpacity * profile.impactStrength * (1 - index * 0.16);
+      wave.material.opacity = tuning.feedback.goalWaveMaxOpacity * eventPlan.effectIntensity * (1 - index * 0.16);
       wave.userData.life = Math.max(0.42, 0.74 - index * 0.12);
     });
     netRippleLines.forEach((line, index) => {
@@ -1443,7 +1600,14 @@ export function createGoalkeeperScene(canvas) {
   }
 
   function triggerFrameReboundFeedback(contact, fallbackPosition) {
-    var feedbackProfile = getMatchFeedbackProfile(
+    var eventPlan = getMatchEventFeedbackPlan(
+      {
+        type: "frame",
+        contact,
+      },
+      tuning.feedback,
+    );
+    var feedbackProfile = eventPlan.profile || getMatchFeedbackProfile(
       {
         type: "frame",
         contact,
@@ -1460,7 +1624,7 @@ export function createGoalkeeperScene(canvas) {
     );
     if (!plan) return;
 
-    cameraShake = Math.max(cameraShake, feedbackProfile.cameraShake, plan.shake);
+    cameraShake = Math.max(cameraShake, eventPlan.cameraShake, feedbackProfile.cameraShake, plan.shake);
     frameReboundHighlights.forEach((highlight, index) => {
       var offset = (index - 1) * 0.045;
       var isCrossbar = plan.part === "crossbar";
@@ -1516,15 +1680,16 @@ export function createGoalkeeperScene(canvas) {
       lastContactSignature = contactSignature;
       if (ballState.lastContact.type === "glove" || ballState.lastContact.type === "catch") {
         var position = contactPoint;
-        triggerSaveFeedback(position, null, ballState.lastContact, snapshot.gloves);
+        triggerSaveFeedback(position, null, ballState.lastContact, snapshot.gloves, snapshot.state);
         triggerGloveImpactState(gloveImpactState, ballState.lastContact, snapshot.gloves, tuning.gloves);
       }
       if (ballState.lastContact.type === "net") {
         triggerGoalFeedback(contactPoint, ballState.lastContact, snapshot.state);
       }
       if (ballState.lastContact.type === "frame") {
-        var frameProfile = getMatchFeedbackProfile({ type: "frame", contact: ballState.lastContact }, tuning.feedback);
-        triggerImpact("frame", contactPoint, frameProfile.impactStrength, frameProfile);
+        var framePlan = getMatchEventFeedbackPlan({ type: "frame", contact: ballState.lastContact, state: snapshot.state }, tuning.feedback);
+        var frameProfile = framePlan.profile || getMatchFeedbackProfile({ type: "frame", contact: ballState.lastContact }, tuning.feedback);
+        triggerImpact("frame", contactPoint, frameProfile.impactStrength, frameProfile, framePlan);
         triggerFrameReboundFeedback(ballState.lastContact, contactPoint);
       }
     }
