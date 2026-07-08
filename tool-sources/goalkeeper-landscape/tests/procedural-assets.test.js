@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import {
   createFieldGroup,
+  createFootballMaterial,
   createFootballTexture,
   createGloveMesh,
   createGoalAndNet,
@@ -219,6 +220,28 @@ describe("procedural 3D assets", () => {
     expect(collectByName(field, /^field-turf-color-variation-patch-/).length).toBeGreaterThanOrEqual(6);
   });
 
+  it("uses reusable PBR-style material stacks for the turf and match ball", () => {
+    const field = createFieldGroup();
+    const turf = collectByName(field, /^field-turf$/)[0];
+    const ballMaterial = createFootballMaterial();
+
+    expect(field.userData.materialPipelineSystem).toBe("procedural-pbr-material-stack");
+    expect(turf.material.userData.materialPipelineSystem).toBe("procedural-layered-turf-pbr");
+    expect(turf.material.map).toBeTruthy();
+    expect(turf.material.bumpMap).toBeTruthy();
+    expect(turf.material.roughnessMap).toBeTruthy();
+    expect(turf.material.bumpScale).toBeGreaterThan(0.015);
+    expect(turf.material.roughness).toBeGreaterThanOrEqual(0.88);
+
+    expect(ballMaterial.userData.materialPipelineSystem).toBe("procedural-match-ball-pbr");
+    expect(ballMaterial.map.userData.assetSystem).toBe("modern-panel-match-ball-texture");
+    expect(ballMaterial.bumpMap).toBeTruthy();
+    expect(ballMaterial.roughnessMap).toBeTruthy();
+    expect(ballMaterial.bumpScale).toBeGreaterThan(0.01);
+    expect(ballMaterial.roughness).toBeGreaterThanOrEqual(0.38);
+    expect(ballMaterial.metalness).toBeLessThanOrEqual(0.03);
+  });
+
   it("adds diagonal net weave and rope sleeve details so the goal feels like a real object", () => {
     const goal = createGoalAndNet();
 
@@ -249,6 +272,15 @@ describe("procedural 3D assets", () => {
     expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-tension-cord-"))).toBe(true);
     expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-weave-knot-"))).toBe(true);
     expect(goal.dynamicNetDetails.every((detail) => detail.object.userData.dynamicNetDetailSystem)).toBe(true);
+  });
+
+  it("adds goalmouth contact shadows and net depth haze so the goal has readable space", () => {
+    const goal = createGoalAndNet();
+
+    expect(goal.group.userData.depthReadabilitySystem).toBe("goal-net-depth-contact-shadow-kit");
+    expect(collectByName(goal.group, /^goal-frame-contact-shadow-/).length).toBeGreaterThanOrEqual(3);
+    expect(collectByName(goal.group, /^goal-net-depth-haze-/).length).toBeGreaterThanOrEqual(2);
+    expect(collectByName(goal.group, /^goal-net-rear-weight-cord-/).length).toBeGreaterThanOrEqual(1);
   });
 
   it("adds close-range glove protection ridges and ball surface storytelling details", () => {

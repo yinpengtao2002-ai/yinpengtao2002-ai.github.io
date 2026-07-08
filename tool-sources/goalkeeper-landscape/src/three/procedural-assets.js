@@ -28,6 +28,72 @@ function createGrassTexture() {
   return texture;
 }
 
+function createSurfaceDetailTexture(size, sample, repeatX = 1, repeatY = 1) {
+  var data = new Uint8Array(size * size * 4);
+  for (var y = 0; y < size; y += 1) {
+    for (var x = 0; x < size; x += 1) {
+      var value = Math.max(0, Math.min(255, Math.round(sample(x, y, size))));
+      var index = (y * size + x) * 4;
+      data[index] = value;
+      data[index + 1] = value;
+      data[index + 2] = value;
+      data[index + 3] = 255;
+    }
+  }
+  var texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(repeatX, repeatY);
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function createTurfDetailTexture(kind) {
+  return createSurfaceDetailTexture(
+    256,
+    (x, y) => {
+      var grain = Math.sin(x * 16.17 + y * 73.31) * 24634.634;
+      var noise = grain - Math.floor(grain);
+      var blade = Math.sin((x * 0.82 + y * 0.26) * 1.8) * 0.5 + 0.5;
+      var cross = Math.sin((x - y * 0.7) * 0.38) * 0.5 + 0.5;
+      return kind === "roughness" ? 182 + noise * 42 + blade * 22 : 104 + noise * 56 + blade * 68 + cross * 22;
+    },
+    2.8,
+    10,
+  );
+}
+
+function createFootballSurfaceMap(kind) {
+  return createSurfaceDetailTexture(512, (x, y, size) => {
+    var nx = (x - size / 2) / (size / 2);
+    var ny = (y - size / 2) / (size / 2);
+    var radius = Math.hypot(nx, ny);
+    var angle = Math.atan2(ny, nx);
+    var seam = Math.abs(Math.sin(angle * 6 + radius * 7.5)) < 0.045 || Math.abs((radius * 5.2) % 1 - 0.5) < 0.03;
+    var panel = Math.sin(angle * 3 - radius * 5.4) * 0.5 + 0.5;
+    var grain = Math.sin(x * 43.17 + y * 19.31) * 31415.9;
+    var noise = grain - Math.floor(grain);
+    if (kind === "roughness") return seam ? 238 : 158 + panel * 44 + noise * 22;
+    return seam ? 228 : 118 + panel * 46 + noise * 32;
+  });
+}
+
+function createTurfMaterial() {
+  var material = new THREE.MeshStandardMaterial({
+    color: "#69bd53",
+    map: createGrassTexture(),
+    bumpMap: createTurfDetailTexture("bump"),
+    bumpScale: 0.026,
+    roughnessMap: createTurfDetailTexture("roughness"),
+    roughness: 0.92,
+    metalness: 0,
+  });
+  material.userData.materialPipelineSystem = "procedural-layered-turf-pbr";
+  return material;
+}
+
 function createRoundedRectGeometry(width, height, radius, depth) {
   var x = -width / 2;
   var y = -height / 2;
@@ -166,6 +232,20 @@ export function createFootballTexture() {
   return texture;
 }
 
+export function createFootballMaterial() {
+  var material = new THREE.MeshStandardMaterial({
+    map: createFootballTexture(),
+    bumpMap: createFootballSurfaceMap("bump"),
+    bumpScale: 0.018,
+    roughnessMap: createFootballSurfaceMap("roughness"),
+    roughness: 0.44,
+    metalness: 0.015,
+  });
+  material.userData.materialPipelineSystem = "procedural-match-ball-pbr";
+  material.userData.surfaceDetailSystem = "raised-seam-and-scuffed-panel-relief";
+  return material;
+}
+
 function createFallbackFootballTexture() {
   var size = 512;
   var data = new Uint8Array(size * size * 4);
@@ -201,6 +281,7 @@ export function createFieldGroup() {
   var group = new THREE.Group();
   group.userData.visualStyle = "standard-football-match-pitch";
   group.userData.assetSystem = "stylized-reusable-matchday-kit";
+  group.userData.materialPipelineSystem = "procedural-pbr-material-stack";
   group.userData.markingSystem = "standard-football-pitch";
   group.userData.surfaceDetailSystem = "layered-turf-with-foreground-blades";
   group.userData.surfaceFinishSystem = "multi-layer-turf-edge-divot-kit";
@@ -208,7 +289,7 @@ export function createFieldGroup() {
   group.userData.reusableAssetTechnique = "instanced-turf-and-layered-material-kit";
   var turf = new THREE.Mesh(
     new THREE.PlaneGeometry(18, 52, 1, 1),
-    new THREE.MeshStandardMaterial({ color: "#69bd53", map: createGrassTexture(), roughness: 0.9 }),
+    createTurfMaterial(),
   );
   turf.name = "field-turf";
   turf.rotation.x = -Math.PI / 2;
@@ -653,6 +734,7 @@ export function createGoalAndNet() {
   group.userData.netWeaveSystem = "knotted-diagonal-net-weave";
   group.userData.dynamicNetDetailSystem = "reactive-woven-net-detail-kit";
   group.userData.frameAssemblySystem = "manufactured-goal-frame-hardware";
+  group.userData.depthReadabilitySystem = "goal-net-depth-contact-shadow-kit";
   var dynamicNetDetails = [];
 
   function registerDynamicNetDetail(object, motionScale, opacityScale) {
@@ -751,6 +833,43 @@ export function createGoalAndNet() {
   net.position.set(0, RAPIER_GOAL.height / 2, RAPIER_GOAL.netPlaneZ + 0.1);
   group.add(net);
 
+  var frameContactShadowMaterial = new THREE.MeshBasicMaterial({
+    color: "#102f24",
+    transparent: true,
+    opacity: 0.22,
+    depthWrite: false,
+  });
+  [
+    ["left-post", -RAPIER_GOAL.halfWidth, RAPIER_GOAL.netPlaneZ + 0.02, 0.28, 0.12],
+    ["right-post", RAPIER_GOAL.halfWidth, RAPIER_GOAL.netPlaneZ + 0.02, 0.28, 0.12],
+    ["rear-cord", 0, RAPIER_GOAL.netPlaneZ + 0.72, 1.55, 0.11],
+  ].forEach(function addFrameContactShadow(item) {
+    var shadow = new THREE.Mesh(new THREE.CircleGeometry(1, 32), frameContactShadowMaterial.clone());
+    shadow.name = "goal-frame-contact-shadow-" + item[0];
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.scale.set(item[3], item[4], 1);
+    shadow.position.set(item[1], 0.008, item[2]);
+    group.add(shadow);
+  });
+
+  var depthHazeMaterial = new THREE.MeshBasicMaterial({
+    color: "#dff8ff",
+    transparent: true,
+    opacity: 0.08,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  [
+    ["back-panel", 0, RAPIER_GOAL.height * 0.54, RAPIER_GOAL.netPlaneZ + 0.24, RAPIER_GOAL.halfWidth * 1.7, RAPIER_GOAL.height * 0.72, 0],
+    ["rear-pocket", 0, RAPIER_GOAL.height * 0.34, RAPIER_GOAL.netPlaneZ + 0.74, RAPIER_GOAL.halfWidth * 1.35, RAPIER_GOAL.height * 0.42, 0],
+  ].forEach(function addNetDepthHaze(item) {
+    var haze = new THREE.Mesh(new THREE.PlaneGeometry(item[4], item[5]), depthHazeMaterial.clone());
+    haze.name = "goal-net-depth-haze-" + item[0];
+    haze.position.set(item[1], item[2], item[3]);
+    haze.rotation.y = item[6];
+    group.add(haze);
+  });
+
   var gridMaterial = new THREE.LineBasicMaterial({ color: "#ecfdff", transparent: true, opacity: 0.32 });
   var linePoints = [];
   for (var x = -RAPIER_GOAL.halfWidth; x <= RAPIER_GOAL.halfWidth + 0.01; x += 0.42) {
@@ -835,6 +954,21 @@ export function createGoalAndNet() {
     knot.position.set(item[4], item[5], item[6]);
     group.add(registerDynamicNetDetail(knot, 0.62, 0.36));
   });
+
+  var rearWeightCordMaterial = new THREE.LineBasicMaterial({
+    color: "#f5fffb",
+    transparent: true,
+    opacity: 0.54,
+  });
+  var rearWeightCord = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-RAPIER_GOAL.halfWidth - 0.28, 0.11, RAPIER_GOAL.netPlaneZ + 0.76),
+      new THREE.Vector3(RAPIER_GOAL.halfWidth + 0.28, 0.11, RAPIER_GOAL.netPlaneZ + 0.76),
+    ]),
+    rearWeightCordMaterial,
+  );
+  rearWeightCord.name = "goal-net-rear-weight-cord-main";
+  group.add(registerDynamicNetDetail(rearWeightCord, 0.42, 0.22));
 
   var sleeveMaterial = new THREE.MeshStandardMaterial({ color: "#fbfff4", roughness: 0.4, metalness: 0.02 });
   [

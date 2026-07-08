@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import {
   createFieldGroup,
-  createFootballTexture,
+  createFootballMaterial,
   createGloveMesh,
   createGoalAndNet,
   createShooterModel,
@@ -683,14 +683,14 @@ export function createGoalkeeperScene(canvas) {
   var dynamicNetDetails = goal.dynamicNetDetails || [];
   var netBasePositions = Array.from(goal.net.geometry.attributes.position.array);
   var shooter = createShooterModel();
-  var ballTexture = createFootballTexture();
+  var ballMaterial = createFootballMaterial();
   var ballGeometry = new THREE.SphereGeometry(tuning.ball.radius, 32, 24);
   var haloGeometry = new THREE.CircleGeometry(tuning.ball.haloRadius, 32);
   var shadowGeometry = new THREE.CircleGeometry(tuning.ball.shadowRadius, 24);
   function createBallView(name) {
     var mesh = new THREE.Mesh(
       ballGeometry,
-      new THREE.MeshStandardMaterial({ map: ballTexture, roughness: 0.42, metalness: 0.02 }),
+      ballMaterial.clone(),
     );
     var halo = new THREE.Mesh(
       haloGeometry,
