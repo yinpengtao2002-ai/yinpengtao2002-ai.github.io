@@ -101,6 +101,9 @@ export const SCENE_TUNING = {
     goalWaveMaxOpacity: 0.42,
     streakPulseCount: 2,
     streakPulseMaxOpacity: 0.62,
+    dynamicNetDetailSystem: "reactive-woven-net-recoil",
+    dynamicNetDetailMaxTravel: 0.12,
+    dynamicNetDetailOpacityBoost: 0.2,
   },
   depth: {
     originZ: SHOT_3D.origin.z,
@@ -409,6 +412,32 @@ export function getFrameReboundFeedbackPlan(contact, tuning = SCENE_TUNING.feedb
   };
 }
 
+export function getDynamicNetDetailMotionPlan(detail, pulse, contactPoint, tuning = SCENE_TUNING.feedback) {
+  var base = detail?.basePosition || detail?.object?.position || { x: 0, y: 0, z: 0 };
+  var life = clamp01(pulse || 0);
+  var contact = contactPoint || { x: 0, y: RAPIER_GOAL.height * 0.5, z: RAPIER_GOAL.netPlaneZ };
+  var motionScale = Number.isFinite(detail?.motionScale) ? detail.motionScale : detail?.object?.userData?.dynamicNetMotionScale || 1;
+  var dx = (base.x || 0) - (contact.x || 0);
+  var dy = (base.y || 0) - (contact.y || 0);
+  var distance = Math.hypot(dx, dy);
+  var falloff = Math.max(0.22, 1 - distance / (RAPIER_GOAL.halfWidth * 1.08));
+  var wave = life > 0 ? Math.sin(life * Math.PI) : 0;
+  var recoil = tuning.dynamicNetDetailMaxTravel * wave * falloff * motionScale;
+  var lateral = wave * falloff * 0.024 * motionScale;
+  var lift = wave * falloff * 0.018 * motionScale;
+
+  return {
+    marker: "feedback-dynamic-net-detail-recoil",
+    name: detail?.name || detail?.object?.name || "",
+    position: {
+      x: (base.x || 0) + (dx >= 0 ? lateral : -lateral),
+      y: (base.y || 0) + (dy >= 0 ? lift : -lift * 0.5),
+      z: (base.z || 0) + recoil,
+    },
+    opacityBoost: tuning.dynamicNetDetailOpacityBoost * life * falloff * (detail?.opacityScale ?? 1),
+  };
+}
+
 function applyCameraTuning(camera, aspect, tuning) {
   var portraitMix = clamp01((1.25 - aspect) / 0.75);
   var base = tuning.camera;
@@ -446,6 +475,7 @@ export function createGoalkeeperScene(canvas) {
   scene.userData.netPocketAssetSystem = tuning.feedback.netPocketAssetSystem;
   scene.userData.frameReboundSystem = tuning.feedback.frameReboundSystem;
   scene.userData.saveAfterimageSystem = tuning.feedback.saveAfterimageSystem;
+  scene.userData.dynamicNetDetailSystem = tuning.feedback.dynamicNetDetailSystem;
   scene.userData.ballShadowAssetSystem = tuning.ball.shadowAssetSystem;
   scene.userData.gloveImpactSystem = tuning.gloves.impactSystem;
   scene.fog = new THREE.Fog("#8ed7ff", 28, 58);
@@ -465,6 +495,7 @@ export function createGoalkeeperScene(canvas) {
 
   var field = createFieldGroup();
   var goal = createGoalAndNet();
+  var dynamicNetDetails = goal.dynamicNetDetails || [];
   var netBasePositions = Array.from(goal.net.geometry.attributes.position.array);
   var shooter = createShooterModel();
   var ballTexture = createFootballTexture();
@@ -708,6 +739,7 @@ export function createGoalkeeperScene(canvas) {
   );
 
   var netPulse = 0;
+  var netPulseContactPoint = null;
   var lastContactSignature = "";
   var cameraShake = 0;
   var feedbackSignature = "";
@@ -906,6 +938,7 @@ export function createGoalkeeperScene(canvas) {
     goalFlash.scale.setScalar(1);
     triggerImpact("goal", { ...position, x: contactX, y: contactY }, 1);
     netPulse = 1;
+    netPulseContactPoint = { x: contactX, y: contactY, z: contactZ };
     goalWaves.forEach((wave, index) => {
       wave.position.set(contactX, Math.max(0.16, contactY), position.z + 0.06 + index * 0.012);
       wave.scale.setScalar(1 + index * 0.12);
@@ -1119,7 +1152,15 @@ export function createGoalkeeperScene(canvas) {
       goal.net.position.z = RAPIER_GOAL.netPlaneZ + 0.1;
       goal.net.material.opacity = 0.16;
       goal.grid.position.z = 0;
+      netPulseContactPoint = null;
     }
+    dynamicNetDetails.forEach((detail) => {
+      var plan = getDynamicNetDetailMotionPlan(detail, netPulse, netPulseContactPoint, tuning.feedback);
+      detail.object.position.set(plan.position.x, plan.position.y, plan.position.z);
+      if (Number.isFinite(detail.baseOpacity) && detail.object.material) {
+        detail.object.material.opacity = detail.baseOpacity + plan.opacityBoost;
+      }
+    });
     updateNetPocketVisuals();
 
     impactRings.forEach((ring, index) => {

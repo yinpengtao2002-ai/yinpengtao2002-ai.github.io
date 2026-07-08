@@ -651,6 +651,23 @@ export function createGoalAndNet() {
   group.userData.netPocketSystem = "localized-net-pocket-deformation";
   group.userData.netHardwareSystem = "weighted-net-label-and-clip-kit";
   group.userData.netWeaveSystem = "knotted-diagonal-net-weave";
+  group.userData.dynamicNetDetailSystem = "reactive-woven-net-detail-kit";
+  var dynamicNetDetails = [];
+
+  function registerDynamicNetDetail(object, motionScale, opacityScale) {
+    object.userData.dynamicNetDetailSystem = "reactive-woven-net-detail-kit";
+    object.userData.dynamicNetMotionScale = motionScale;
+    dynamicNetDetails.push({
+      name: object.name,
+      object,
+      basePosition: object.position.clone(),
+      baseOpacity: Number.isFinite(object.material?.opacity) ? object.material.opacity : null,
+      motionScale,
+      opacityScale,
+    });
+    return object;
+  }
+
   var frameMaterial = new THREE.MeshStandardMaterial({ color: "#f5fff7", roughness: 0.34, metalness: 0.04 });
   var trimMaterial = new THREE.MeshStandardMaterial({ color: "#f0782f", roughness: 0.36, metalness: 0.02 });
   var postGeometry = new THREE.CylinderGeometry(0.065, 0.065, 1, 24);
@@ -739,7 +756,7 @@ export function createGoalAndNet() {
     }
     var weave = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(diagonalPoints), diagonalMaterial.clone());
     weave.name = "goal-net-diagonal-weave-" + name;
-    group.add(weave);
+    group.add(registerDynamicNetDetail(weave, 1.08, 0.78));
   }
   addDiagonalWeave("rising", 1);
   addDiagonalWeave("falling", -1);
@@ -752,7 +769,7 @@ export function createGoalAndNet() {
     sideNet.name = "goal-net-side-" + side;
     sideNet.position.set(sign * RAPIER_GOAL.halfWidth, RAPIER_GOAL.height / 2, RAPIER_GOAL.netPlaneZ + 0.48);
     sideNet.rotation.y = sign > 0 ? -Math.PI / 2 : Math.PI / 2;
-    group.add(sideNet);
+    group.add(registerDynamicNetDetail(sideNet, 0.72, 0.52));
 
     var stanchion = makeLimb("#edf9f2", 0.038);
     stanchion.name = "goal-depth-stanchion-" + side;
@@ -788,12 +805,12 @@ export function createGoalAndNet() {
       cordMaterial.clone(),
     );
     cord.name = "goal-net-tension-cord-" + item[0];
-    group.add(cord);
+    group.add(registerDynamicNetDetail(cord, 0.86, 0.42));
 
     var knot = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 8), cordMaterial.clone());
     knot.name = "goal-net-rope-knot-" + item[0];
     knot.position.set(item[4], item[5], item[6]);
-    group.add(knot);
+    group.add(registerDynamicNetDetail(knot, 0.62, 0.36));
   });
 
   var sleeveMaterial = new THREE.MeshStandardMaterial({ color: "#fbfff4", roughness: 0.4, metalness: 0.02 });
@@ -807,7 +824,7 @@ export function createGoalAndNet() {
     sleeve.name = "goal-net-corner-sleeve-" + item[0];
     sleeve.rotation.z = Math.PI / 2;
     sleeve.position.set(item[1], item[2], item[3]);
-    group.add(sleeve);
+    group.add(registerDynamicNetDetail(sleeve, 0.42, 0.22));
   });
 
   var weaveKnotMaterial = new THREE.MeshBasicMaterial({ color: "#fafff7", transparent: true, opacity: 0.54 });
@@ -817,7 +834,7 @@ export function createGoalAndNet() {
     var weaveKnot = new THREE.Mesh(new THREE.SphereGeometry(0.018, 8, 6), weaveKnotMaterial.clone());
     weaveKnot.name = "goal-net-weave-knot-" + weaveKnotIndex;
     weaveKnot.position.set(knotX, knotY, RAPIER_GOAL.netPlaneZ + 0.12);
-    group.add(weaveKnot);
+    group.add(registerDynamicNetDetail(weaveKnot, 0.76, 0.42));
   }
 
   var netWeightMaterial = new THREE.MeshStandardMaterial({ color: "#eef4e9", roughness: 0.46, metalness: 0.05 });
@@ -826,7 +843,7 @@ export function createGoalAndNet() {
     weight.name = "goal-net-bottom-weight-" + weightIndex;
     weight.rotation.z = Math.PI / 2;
     weight.position.set(-RAPIER_GOAL.halfWidth + 0.72 + weightIndex * 1.48, 0.055, RAPIER_GOAL.netPlaneZ + 0.13);
-    group.add(weight);
+    group.add(registerDynamicNetDetail(weight, 0.34, 0.16));
   }
 
   var clipMaterial = new THREE.MeshStandardMaterial({ color: "#f9fff4", roughness: 0.36, metalness: 0.04 });
@@ -868,7 +885,7 @@ export function createGoalAndNet() {
     group.add(anchor);
   });
 
-  return { group, net, grid };
+  return { group, net, grid, dynamicNetDetails };
 }
 
 function makeLimb(color, radius = 0.055) {

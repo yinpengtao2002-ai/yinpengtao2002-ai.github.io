@@ -139,6 +139,45 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.feedback.goalWaveMaxOpacity).toBeLessThanOrEqual(0.48);
     expect(SCENE_TUNING.feedback.streakPulseCount).toBeGreaterThanOrEqual(2);
     expect(SCENE_TUNING.feedback.streakPulseMaxOpacity).toBeLessThanOrEqual(0.7);
+    expect(SCENE_TUNING.feedback.dynamicNetDetailSystem).toBe("reactive-woven-net-recoil");
+    expect(SCENE_TUNING.feedback.dynamicNetDetailMaxTravel).toBeGreaterThanOrEqual(0.08);
+    expect(SCENE_TUNING.feedback.dynamicNetDetailMaxTravel).toBeLessThanOrEqual(0.18);
+  });
+
+  it("plans reactive woven-net recoil for diagonal net and rope details", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.getDynamicNetDetailMotionPlan).toBeTypeOf("function");
+
+    const plan = sceneModule.getDynamicNetDetailMotionPlan(
+      {
+        name: "goal-net-diagonal-weave-rising",
+        basePosition: { x: 0.45, y: 1.35, z: 4.72 },
+        motionScale: 1.1,
+      },
+      0.82,
+      { x: 0.2, y: 1.24, z: SHOT_3D.netPlaneZ },
+    );
+
+    expect(plan.marker).toBe("feedback-dynamic-net-detail-recoil");
+    expect(plan.name).toBe("goal-net-diagonal-weave-rising");
+    expect(plan.position.z).toBeGreaterThan(4.72);
+    expect(plan.position.x).not.toBeCloseTo(0.45);
+    expect(plan.opacityBoost).toBeGreaterThan(0);
+    expect(plan.opacityBoost).toBeLessThanOrEqual(0.24);
+
+    const quiet = sceneModule.getDynamicNetDetailMotionPlan(
+      {
+        name: "goal-net-side-left",
+        basePosition: { x: -3.4, y: 1.1, z: 5.1 },
+        motionScale: 0.7,
+      },
+      0,
+      { x: 0, y: 1.2, z: SHOT_3D.netPlaneZ },
+    );
+
+    expect(quiet.position).toEqual({ x: -3.4, y: 1.1, z: 5.1 });
+    expect(quiet.opacityBoost).toBe(0);
   });
 
   it("plans a localized net pocket deformation around the ball impact", async () => {

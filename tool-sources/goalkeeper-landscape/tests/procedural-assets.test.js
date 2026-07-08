@@ -228,6 +228,18 @@ describe("procedural 3D assets", () => {
     expect(collectByName(goal.group, /^goal-net-weave-knot-/).length).toBeGreaterThanOrEqual(8);
   });
 
+  it("registers woven net details as a reusable reactive asset layer", () => {
+    const goal = createGoalAndNet();
+
+    expect(goal.group.userData.dynamicNetDetailSystem).toBe("reactive-woven-net-detail-kit");
+    expect(goal.dynamicNetDetails.length).toBeGreaterThanOrEqual(10);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-diagonal-weave-"))).toBe(true);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-side-"))).toBe(true);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-tension-cord-"))).toBe(true);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-weave-knot-"))).toBe(true);
+    expect(goal.dynamicNetDetails.every((detail) => detail.object.userData.dynamicNetDetailSystem)).toBe(true);
+  });
+
   it("adds close-range glove protection ridges and ball surface storytelling details", () => {
     const glove = createGloveMesh("left");
     const ballTexture = createFootballTexture();
