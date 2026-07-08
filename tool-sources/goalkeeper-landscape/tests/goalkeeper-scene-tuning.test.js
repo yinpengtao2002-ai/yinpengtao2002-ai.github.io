@@ -118,6 +118,11 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.feedback.turfFleckTriggerAge).toBeLessThanOrEqual(0.16);
     expect(SCENE_TUNING.feedback.saveSparkCount).toBeGreaterThanOrEqual(6);
     expect(SCENE_TUNING.feedback.saveSparkMaxOpacity).toBeLessThanOrEqual(0.74);
+    expect(SCENE_TUNING.feedback.saveAfterimageSystem).toBe("directional-glove-save-afterimage");
+    expect(SCENE_TUNING.feedback.saveAfterimageCount).toBeGreaterThanOrEqual(3);
+    expect(SCENE_TUNING.feedback.saveAfterimageCount).toBeLessThanOrEqual(5);
+    expect(SCENE_TUNING.feedback.saveAfterimageMaxOpacity).toBeLessThanOrEqual(0.42);
+    expect(SCENE_TUNING.feedback.saveAfterimageDecay).toBeGreaterThanOrEqual(0.04);
     expect(SCENE_TUNING.feedback.netRippleLineCount).toBeGreaterThanOrEqual(4);
     expect(SCENE_TUNING.feedback.netRippleMaxOpacity).toBeLessThanOrEqual(0.42);
     expect(SCENE_TUNING.feedback.netRippleAssetSystem).toBe("localized-net-ripple");
@@ -224,6 +229,40 @@ describe("goalkeeper 3D scene tuning", () => {
 
     expect(sceneModule.getTurfContactFleckPlan({ active: false })).toEqual([]);
     expect(sceneModule.getTurfContactFleckPlan({ active: true, age: 0.4, point: { x: 0, y: 0, z: 0 } })).toEqual([]);
+  });
+
+  it("plans directional glove save afterimages without turning saves into noisy effects", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.getSaveAfterimagePlan).toBeTypeOf("function");
+
+    const afterimages = sceneModule.getSaveAfterimagePlan(
+      {
+        type: "glove",
+        side: "right",
+        point: { x: 0.46, y: 1.28, z: 3.14 },
+        normal: { x: 0.55, y: 0.08, z: -0.78 },
+        strength: 24,
+      },
+      {
+        left: { x: -0.34, y: 1.2, z: 3.15 },
+        right: { x: 0.34, y: 1.2, z: 3.15 },
+        center: { x: 0, y: 1.2, z: 3.15 },
+        velocity: { x: 3.2, y: 0.45, z: 0 },
+      },
+    );
+
+    expect(afterimages).toHaveLength(SCENE_TUNING.feedback.saveAfterimageCount);
+    expect(afterimages[0].marker).toBe("feedback-save-afterimage");
+    expect(afterimages[0].position.x).toBeGreaterThan(afterimages[afterimages.length - 1].position.x);
+    expect(afterimages[0].position.z).toBeLessThanOrEqual(3.14);
+    expect(afterimages[0].opacity).toBeLessThanOrEqual(SCENE_TUNING.feedback.saveAfterimageMaxOpacity);
+    expect(afterimages[0].opacity).toBeGreaterThan(afterimages[afterimages.length - 1].opacity);
+    expect(afterimages[0].scale.x).toBeGreaterThan(0);
+    expect(afterimages[0].scale.y).toBeGreaterThan(afterimages[0].scale.x);
+    expect(afterimages[0].life).toBeGreaterThan(0.38);
+
+    expect(sceneModule.getSaveAfterimagePlan({ type: "net" }, null)).toEqual([]);
   });
 
   it("uses a warm stadium lighting rig instead of flat prototype lighting", () => {

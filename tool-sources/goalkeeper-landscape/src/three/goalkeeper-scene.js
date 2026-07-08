@@ -78,6 +78,11 @@ export const SCENE_TUNING = {
     saveSparkCount: 10,
     saveSparkColor: "#fff7ba",
     saveSparkMaxOpacity: 0.68,
+    saveAfterimageSystem: "directional-glove-save-afterimage",
+    saveAfterimageCount: 4,
+    saveAfterimageMaxOpacity: 0.34,
+    saveAfterimageDecay: 0.052,
+    saveAfterimageSpacing: 0.072,
     netRippleLineCount: 5,
     netRippleMaxOpacity: 0.34,
     netRippleAssetSystem: "localized-net-ripple",
@@ -261,6 +266,47 @@ export function getTurfContactFleckPlan(feedback, tuning = SCENE_TUNING.feedback
   });
 }
 
+export function getSaveAfterimagePlan(contact, gloves, tuning = SCENE_TUNING.feedback) {
+  if (!contact || (contact.type !== "glove" && contact.type !== "catch")) return [];
+
+  var count = tuning.saveAfterimageCount || 0;
+  if (count <= 0) return [];
+
+  var point = contact.point || gloves?.center || { x: 0, y: 1.2, z: 3.15 };
+  var velocity = gloves?.velocity || {};
+  var sideSign = contact.side === "left" ? -1 : contact.side === "right" ? 1 : Math.sign(point.x || 1);
+  var rawX = Number.isFinite(velocity.x) && Math.abs(velocity.x) > 0.08 ? velocity.x : sideSign * 0.72;
+  var rawY = Number.isFinite(velocity.y) && Math.abs(velocity.y) > 0.04 ? velocity.y : contact.normal?.y || 0.08;
+  var length = Math.hypot(rawX, rawY) || 1;
+  var direction = {
+    x: rawX / length,
+    y: rawY / length,
+  };
+  var strength = clamp01((Number.isFinite(contact.strength) ? contact.strength : contact.type === "catch" ? 14 : 20) / 30);
+
+  return Array.from({ length: count }, (_, index) => {
+    var t = count <= 1 ? 0 : index / (count - 1);
+    var offset = tuning.saveAfterimageSpacing * (index + 0.35) * (0.82 + strength * 0.36);
+    var opacity = tuning.saveAfterimageMaxOpacity * (0.92 - t * 0.58) * (0.78 + strength * 0.22);
+
+    return {
+      marker: "feedback-save-afterimage",
+      position: {
+        x: point.x - direction.x * offset,
+        y: point.y - direction.y * offset * 0.42 + t * 0.012,
+        z: point.z - index * 0.014,
+      },
+      scale: {
+        x: 0.12 + strength * 0.045 + t * 0.018,
+        y: 0.42 + strength * 0.12 - t * 0.04,
+      },
+      opacity,
+      life: Math.max(0.42, 0.72 - index * 0.08),
+      rotation: Math.atan2(direction.y, direction.x) - Math.PI / 2,
+    };
+  });
+}
+
 export function createNetPocketState() {
   return {
     life: 0,
@@ -399,6 +445,7 @@ export function createGoalkeeperScene(canvas) {
   scene.userData.netRippleAssetSystem = tuning.feedback.netRippleAssetSystem;
   scene.userData.netPocketAssetSystem = tuning.feedback.netPocketAssetSystem;
   scene.userData.frameReboundSystem = tuning.feedback.frameReboundSystem;
+  scene.userData.saveAfterimageSystem = tuning.feedback.saveAfterimageSystem;
   scene.userData.ballShadowAssetSystem = tuning.ball.shadowAssetSystem;
   scene.userData.gloveImpactSystem = tuning.gloves.impactSystem;
   scene.fog = new THREE.Fog("#8ed7ff", 28, 58);
@@ -518,6 +565,23 @@ export function createGoalkeeperScene(canvas) {
     spark.userData.velocity = { x: 0, y: 0, z: 0 };
     return spark;
   });
+  var saveAfterimageGeometry = new THREE.PlaneGeometry(0.16, 0.5);
+  var saveAfterimages = Array.from({ length: tuning.feedback.saveAfterimageCount }, (_, index) => {
+    var afterimage = new THREE.Mesh(
+      saveAfterimageGeometry,
+      new THREE.MeshBasicMaterial({
+        color: index % 2 === 0 ? "#fff5bd" : "#ffffff",
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    );
+    afterimage.name = "feedback-save-afterimage-" + index;
+    afterimage.userData.life = 0;
+    afterimage.userData.baseOpacity = 0;
+    return afterimage;
+  });
   var goalFlash = new THREE.Mesh(
     new THREE.CircleGeometry(0.42, 36),
     new THREE.MeshBasicMaterial({
@@ -633,6 +697,7 @@ export function createGoalkeeperScene(canvas) {
     rightGlove,
     ...impactRings,
     ...saveSparks,
+    ...saveAfterimages,
     goalFlash,
     streakFlash,
     ...netRippleLines,
@@ -789,7 +854,7 @@ export function createGoalkeeperScene(canvas) {
     cameraShake = Math.max(cameraShake, tuning.feedback.maxCameraShake * pulseStrength);
   }
 
-  function triggerSaveFeedback(position, strength) {
+  function triggerSaveFeedback(position, strength, contact = null, gloves = null) {
     var pulseStrength = strength || 1;
     triggerImpact("save", position, pulseStrength);
     saveSparks.forEach((spark, index) => {
@@ -809,6 +874,16 @@ export function createGoalkeeperScene(canvas) {
         y: Math.sin(angle) * 0.006,
         z: -0.002,
       };
+    });
+    getSaveAfterimagePlan(contact, gloves, tuning.feedback).forEach((plan, index) => {
+      var afterimage = saveAfterimages[index % saveAfterimages.length];
+      afterimage.visible = true;
+      afterimage.position.set(plan.position.x, plan.position.y, plan.position.z);
+      afterimage.rotation.set(0, 0, plan.rotation);
+      afterimage.scale.set(plan.scale.x, plan.scale.y, 1);
+      afterimage.material.opacity = plan.opacity;
+      afterimage.userData.life = plan.life;
+      afterimage.userData.baseOpacity = plan.opacity;
     });
   }
 
@@ -918,7 +993,7 @@ export function createGoalkeeperScene(canvas) {
       lastContactSignature = contactSignature;
       if (ballState.lastContact.type === "glove" || ballState.lastContact.type === "catch") {
         var position = contactPoint;
-        triggerSaveFeedback(position, ballState.lastContact.type === "catch" ? 0.95 : 0.82);
+        triggerSaveFeedback(position, ballState.lastContact.type === "catch" ? 0.95 : 0.82, ballState.lastContact, snapshot.gloves);
         triggerGloveImpactState(gloveImpactState, ballState.lastContact, snapshot.gloves, tuning.gloves);
       }
       if (ballState.lastContact.type === "net") {
@@ -1071,6 +1146,18 @@ export function createGoalkeeperScene(canvas) {
       spark.material.opacity = spark.userData.life * tuning.feedback.saveSparkMaxOpacity;
       spark.scale.multiplyScalar(0.992);
       spark.lookAt(camera.position);
+    });
+
+    saveAfterimages.forEach((afterimage, index) => {
+      if (afterimage.userData.life <= 0) {
+        afterimage.material.opacity = 0;
+        afterimage.visible = false;
+        return;
+      }
+      afterimage.userData.life = Math.max(0, afterimage.userData.life - tuning.feedback.saveAfterimageDecay - index * 0.003);
+      afterimage.material.opacity = Math.max(0, afterimage.userData.life * (afterimage.userData.baseOpacity || 0));
+      afterimage.scale.multiplyScalar(1.006 + index * 0.002);
+      afterimage.lookAt(camera.position);
     });
 
     turfFlecks.forEach((fleck, index) => {
