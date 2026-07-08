@@ -56,6 +56,55 @@ describe("procedural 3D assets", () => {
     expect(launcher.muzzleFlash.material.opacity).toBe(0);
   });
 
+  it("adds a professional training rig and operator silhouette around the launcher", () => {
+    const launcher = createShooterModel();
+
+    expect(launcher.group.userData.launcherRigSystem).toBe("pro-matchday-machine-rig");
+    expect(collectByName(launcher.group, /^launcher-control-console$/)).toHaveLength(1);
+    expect(collectByName(launcher.group, /^launcher-control-screen$/)).toHaveLength(1);
+    expect(collectByName(launcher.group, /^launcher-status-led-/).length).toBeGreaterThanOrEqual(4);
+    expect(collectByName(launcher.group, /^launcher-safety-guard-/)).toHaveLength(2);
+    expect(collectByName(launcher.group, /^launcher-calibration-beam-/)).toHaveLength(2);
+    expect(collectByName(launcher.group, /^launcher-ground-anchor-/).length).toBeGreaterThanOrEqual(4);
+    expect(collectByName(launcher.group, /^launcher-pressure-hose-/).length).toBeGreaterThanOrEqual(2);
+    expect(collectByName(launcher.group, /^launcher-service-panel-screw-/).length).toBeGreaterThanOrEqual(4);
+    expect(collectByName(launcher.group, /^launcher-number-plate$/)).toHaveLength(1);
+
+    expect(collectByName(launcher.group, /^launcher-operator-/).length).toBeGreaterThanOrEqual(7);
+    expect(collectByName(launcher.group, /^launcher-operator-tablet$/)).toHaveLength(1);
+    expect(launcher.controlScreen.material.transparent).toBe(true);
+    expect(launcher.calibrationBeams).toHaveLength(2);
+    expect(launcher.statusLeds.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("animates the professional launcher rig without adding noisy shot helper lines", () => {
+    const launcher = createShooterModel();
+
+    updateShooterModel(launcher, {
+      phase: "cue",
+      phaseTime: 0.58,
+      currentShot: { cueDuration: 1, cue: { side: 1 } },
+    });
+
+    const cueScreenOpacity = launcher.controlScreen.material.opacity;
+    const cueBeamOpacity = launcher.calibrationBeams[0].material.opacity;
+    expect(cueScreenOpacity).toBeGreaterThan(0.42);
+    expect(cueBeamOpacity).toBeGreaterThan(0.18);
+    expect(launcher.calibrationBeams[0].visible).toBe(true);
+    expect(launcher.operatorTablet.material.opacity).toBeGreaterThan(0.38);
+
+    updateShooterModel(launcher, {
+      phase: "live",
+      phaseTime: 0.06,
+      currentShot: { cueDuration: 1, cue: { side: 1 } },
+    });
+
+    expect(launcher.controlScreen.material.opacity).toBeGreaterThan(cueScreenOpacity);
+    expect(launcher.calibrationBeams[0].material.opacity).toBeLessThanOrEqual(0.55);
+    expect(launcher.statusLeds.some((led) => led.material.opacity > 0.8)).toBe(true);
+    expect(launcher.safetyGuards[0].rotation.y).not.toBe(0);
+  });
+
   it("pulses the launcher muzzle only at the moment the shot leaves", () => {
     const launcher = createShooterModel();
     updateShooterModel(launcher, {

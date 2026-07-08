@@ -1110,6 +1110,7 @@ export function createShooterModel() {
   var group = new THREE.Group();
   group.userData.visualStyle = "polished-ball-launcher";
   group.userData.launcherStationSystem = "animated-launch-bay-with-ball-feed";
+  group.userData.launcherRigSystem = "pro-matchday-machine-rig";
   group.position.set(0, 0, SHOT_3D.origin.z);
   group.scale.setScalar(1.45);
 
@@ -1124,6 +1125,11 @@ export function createShooterModel() {
   var shadowMat = new THREE.MeshBasicMaterial({ color: "#14351f", transparent: true, opacity: 0.2, depthWrite: false });
   var laneMat = new THREE.MeshBasicMaterial({ color: "#f8fff0", transparent: true, opacity: 0.18, depthWrite: false });
   var cableMat = new THREE.LineBasicMaterial({ color: "#20323a", transparent: true, opacity: 0.68 });
+  var guardMat = new THREE.MeshBasicMaterial({ color: "#d8fbff", transparent: true, opacity: 0.18, depthWrite: false, side: THREE.DoubleSide });
+  var screenMat = new THREE.MeshBasicMaterial({ color: "#61f0ff", transparent: true, opacity: 0.42, depthWrite: false });
+  var ledMat = new THREE.MeshBasicMaterial({ color: "#fff1a8", transparent: true, opacity: 0.42, depthWrite: false });
+  var operatorMat = new THREE.MeshStandardMaterial({ color: "#203039", roughness: 0.68, metalness: 0.02 });
+  var operatorAccentMat = new THREE.MeshStandardMaterial({ color: "#ff8b3d", roughness: 0.46, metalness: 0.02 });
   var flashMat = new THREE.MeshBasicMaterial({
     color: "#fff1a8",
     transparent: true,
@@ -1269,6 +1275,112 @@ export function createShooterModel() {
   );
   controlCable.name = "launcher-cable-control";
 
+  var controlConsole = makeRoundedPart("launcher-control-console", 0.36, 0.24, 0.045, 0.22, chassisMat, -0.82, 0.34, 0.58);
+  controlConsole.rotation.x = -0.18;
+  controlConsole.rotation.y = 0.28;
+  var controlScreen = makeRoundedPart("launcher-control-screen", 0.25, 0.12, 0.024, 0.012, screenMat, -0.82, 0.39, 0.7);
+  controlScreen.rotation.x = -0.18;
+  controlScreen.rotation.y = 0.28;
+  var statusLeds = Array.from({ length: 4 }, (_, index) => {
+    var led = new THREE.Mesh(new THREE.CircleGeometry(0.026, 16), ledMat.clone());
+    led.name = "launcher-status-led-" + index;
+    led.position.set(-0.94 + index * 0.075, 0.295, 0.702);
+    led.rotation.x = -0.18;
+    led.rotation.y = 0.28;
+    return led;
+  });
+
+  var safetyGuards = [-1, 1].map((sign) => {
+    var guard = makeRoundedPart("launcher-safety-guard-" + (sign < 0 ? "left" : "right"), 0.12, 0.42, 0.035, 0.012, guardMat.clone(), sign * 0.42, 0.82, 0.52);
+    guard.rotation.y = sign * 0.12;
+    return guard;
+  });
+
+  var calibrationBeams = [-1, 1].map((sign) => {
+    var beam = makeLimb("#61f0ff", 0.008);
+    beam.name = "launcher-calibration-beam-" + (sign < 0 ? "left" : "right");
+    beam.material = new THREE.MeshBasicMaterial({ color: "#61f0ff", transparent: true, opacity: 0.2, depthWrite: false });
+    setLimb(beam, { x: sign * 0.1, y: 1.1, z: 0.76 }, { x: sign * 0.58, y: 0.42, z: 1.58 });
+    return beam;
+  });
+
+  var anchorPositions = [
+    [-0.44, 0.035, 0.22],
+    [0.44, 0.035, 0.22],
+    [0, 0.035, -0.44],
+    [-0.82, 0.032, -0.18],
+  ];
+  var groundAnchors = anchorPositions.map((position, index) => {
+    var anchor = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.009, 8, 18), barrelMat);
+    anchor.name = "launcher-ground-anchor-" + index;
+    anchor.rotation.x = -Math.PI / 2;
+    anchor.position.set(position[0], position[1], position[2]);
+    return anchor;
+  });
+
+  var pressureHoseLeft = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-0.18, 0.62, -0.12),
+      new THREE.Vector3(-0.54, 0.28, 0.04),
+      new THREE.Vector3(-0.82, 0.34, 0.56),
+    ]),
+    cableMat.clone(),
+  );
+  pressureHoseLeft.name = "launcher-pressure-hose-left";
+  var pressureHoseRight = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0.22, 0.62, -0.12),
+      new THREE.Vector3(0.56, 0.24, 0.08),
+      new THREE.Vector3(0.78, 0.08, 0.32),
+    ]),
+    cableMat.clone(),
+  );
+  pressureHoseRight.name = "launcher-pressure-hose-right";
+
+  var serviceScrews = [
+    [-0.26, 0.98],
+    [0.26, 0.98],
+    [-0.26, 0.74],
+    [0.26, 0.74],
+  ].map((position, index) => {
+    var screw = new THREE.Mesh(new THREE.CircleGeometry(0.024, 14), barrelMat);
+    screw.name = "launcher-service-panel-screw-" + index;
+    screw.position.set(position[0], position[1], 0.218);
+    return screw;
+  });
+
+  var numberPlate = makeRoundedPart("launcher-number-plate", 0.22, 0.095, 0.018, 0.012, orangeAccentMat.clone(), 0, 0.7, 0.218);
+  numberPlate.material.opacity = 0.82;
+
+  var operator = new THREE.Group();
+  operator.name = "launcher-operator-context";
+  operator.position.set(1.04, 0, -0.18);
+  operator.scale.setScalar(0.72);
+  var operatorShadow = new THREE.Mesh(new THREE.CircleGeometry(0.34, 24), shadowMat.clone());
+  operatorShadow.name = "launcher-operator-shadow";
+  operatorShadow.rotation.x = -Math.PI / 2;
+  operatorShadow.scale.set(1, 0.44, 1);
+  operatorShadow.position.set(0, 0.012, 0);
+  var operatorTorso = makeRoundedPart("launcher-operator-torso", 0.24, 0.5, 0.06, 0.13, operatorMat, 0, 0.84, 0);
+  var operatorHead = new THREE.Mesh(new THREE.SphereGeometry(0.12, 18, 12), new THREE.MeshStandardMaterial({ color: "#d6b18a", roughness: 0.58 }));
+  operatorHead.name = "launcher-operator-head";
+  operatorHead.position.set(0, 1.18, 0);
+  var operatorCap = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.12, 0.055, 18), operatorAccentMat);
+  operatorCap.name = "launcher-operator-cap";
+  operatorCap.position.set(0, 1.29, 0);
+  var operatorLegLeft = makeLimb("#182226", 0.04);
+  operatorLegLeft.name = "launcher-operator-leg-left";
+  setLimb(operatorLegLeft, { x: -0.055, y: 0.58, z: 0 }, { x: -0.14, y: 0.08, z: 0.07 });
+  var operatorLegRight = makeLimb("#182226", 0.04);
+  operatorLegRight.name = "launcher-operator-leg-right";
+  setLimb(operatorLegRight, { x: 0.055, y: 0.58, z: 0 }, { x: 0.14, y: 0.08, z: -0.04 });
+  var operatorArm = makeLimb("#203039", 0.032);
+  operatorArm.name = "launcher-operator-arm-tablet";
+  setLimb(operatorArm, { x: -0.09, y: 0.94, z: 0.03 }, { x: -0.3, y: 0.78, z: 0.14 });
+  var operatorTablet = makeRoundedPart("launcher-operator-tablet", 0.18, 0.13, 0.02, 0.012, screenMat.clone(), -0.35, 0.76, 0.16);
+  operatorTablet.rotation.y = -0.35;
+  operator.add(operatorShadow, operatorTorso, operatorHead, operatorCap, operatorLegLeft, operatorLegRight, operatorArm, operatorTablet);
+
   group.add(
     kickPad,
     aimRailLeft,
@@ -1283,11 +1395,16 @@ export function createShooterModel() {
     baseFootLeft,
     baseFootRight,
     baseFootBack,
+    ...groundAnchors,
+    ...safetyGuards,
+    ...calibrationBeams,
     standHub,
     body,
     facePanel,
     statusLight,
     powerLight,
+    numberPlate,
+    ...serviceScrews,
     turret,
     wheelLeft,
     wheelRight,
@@ -1295,6 +1412,12 @@ export function createShooterModel() {
     feedRack,
     ...queueBalls,
     feedBall,
+    controlConsole,
+    controlScreen,
+    ...statusLeds,
+    pressureHoseLeft,
+    pressureHoseRight,
+    operator,
   );
   return {
     group,
@@ -1314,6 +1437,11 @@ export function createShooterModel() {
     muzzleFlash,
     statusLight,
     powerLight,
+    controlScreen,
+    statusLeds,
+    calibrationBeams,
+    safetyGuards,
+    operatorTablet,
     shadow,
   };
 }
@@ -1349,6 +1477,28 @@ export function updateShooterModel(model, director) {
   model.wheelRight.rotation.y = -spin;
   model.statusLight.material.opacity = 0.52 + charge * 0.42;
   model.powerLight.material.opacity = director.phase === "live" ? 0.95 : 0.58 + cueProgress * 0.28;
+  if (model.controlScreen) {
+    model.controlScreen.material.opacity = 0.36 + charge * 0.18 + muzzlePulse * 0.34;
+  }
+  model.statusLeds?.forEach((led, index) => {
+    var phaseOffset = (index / Math.max(1, model.statusLeds.length - 1)) * 0.4;
+    var ledPulse = Math.max(0, Math.sin((activeProgress + phaseOffset) * Math.PI));
+    led.material.opacity = 0.24 + ledPulse * 0.4 + (director.phase === "live" && index === 0 ? muzzlePulse * 0.95 : 0);
+    led.scale.setScalar(1 + ledPulse * 0.16 + muzzlePulse * (index === 0 ? 0.26 : 0.08));
+  });
+  model.calibrationBeams?.forEach((beam, index) => {
+    var beamPulse = director.phase === "live" ? muzzlePulse : charge;
+    beam.visible = beamPulse > 0.04;
+    beam.material.opacity = Math.min(0.52, 0.12 + beamPulse * 0.34 - index * 0.03);
+  });
+  model.safetyGuards?.forEach((guard, index) => {
+    var sign = index === 0 ? -1 : 1;
+    guard.rotation.y = sign * (0.12 + charge * 0.055 + muzzlePulse * 0.045);
+    guard.material.opacity = 0.14 + charge * 0.08 + muzzlePulse * 0.06;
+  });
+  if (model.operatorTablet) {
+    model.operatorTablet.material.opacity = 0.34 + charge * 0.18 + muzzlePulse * 0.12;
+  }
   model.chargeRing.material.opacity = 0.26 + charge * 0.36 + muzzlePulse * 0.28;
   model.chargeRing.scale.setScalar(1 + charge * 0.08 + muzzlePulse * 0.22);
   model.muzzleFlash.visible = muzzlePulse > 0.02;
