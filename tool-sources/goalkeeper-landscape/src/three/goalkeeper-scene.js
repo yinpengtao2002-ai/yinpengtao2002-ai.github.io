@@ -47,12 +47,18 @@ export const SCENE_TUNING = {
   gloves: {
     scale: 0.64,
     impactSystem: "glove-impact-compression-rebound",
+    contactDeformationSystem: "localized-glove-palm-deformation",
     impactDecay: 0.055,
     impactCompression: 0.16,
     impactRebound: 0.075,
     impactTwist: 0.075,
     impactKickback: 0.035,
     impactStrengthScale: 0.035,
+    contactDeformationDecay: 0.058,
+    contactDimpleMaxOpacity: 0.44,
+    contactHighlightMaxOpacity: 0.42,
+    contactCreaseCount: 3,
+    contactCreaseMaxOpacity: 0.36,
   },
   lighting: {
     assetSystem: "warm-stadium-three-point",
@@ -223,6 +229,83 @@ export function getGloveVisualTransform(side, baseScale, impact, tuning = SCENE_
       y: 0,
       z: tuning.impactKickback * amount,
     },
+  };
+}
+
+export function getGloveContactDeformationPlan(contact, gloves, tuning = SCENE_TUNING.gloves) {
+  var system = tuning.contactDeformationSystem || "localized-glove-palm-deformation";
+  var empty = { system, side: null, dimple: null, highlight: null, creases: [] };
+  if (!contact || (contact.type !== "glove" && contact.type !== "catch")) return empty;
+
+  var impact = getGloveImpactForContact(contact, gloves, tuning);
+  if (!impact) return empty;
+
+  var point = impact.point || gloves?.center || { x: 0, y: 1.2, z: 3.15 };
+  var side = impact.side;
+  var sideSign = side === "left" ? -1 : side === "right" ? 1 : Math.sign(point.x || 1);
+  var normal = contact.normal || { x: sideSign * 0.46, y: 0.08, z: -0.72 };
+  var velocity = gloves?.velocity || {};
+  var compression = clamp01(Number.isFinite(contact.compression) ? contact.compression : impact.strength * 0.74);
+  var rebound = clamp01((Number.isFinite(contact.reboundSpeed) ? contact.reboundSpeed : contact.strength || 0) / 36);
+  var strength = clamp01(Math.max(impact.strength, compression * 0.82, rebound * 0.62));
+  var sweep = Math.atan2(
+    Number.isFinite(velocity.y) && Math.abs(velocity.y) > 0.04 ? velocity.y : normal.y || 0.08,
+    Number.isFinite(velocity.x) && Math.abs(velocity.x) > 0.08 ? velocity.x : normal.x || sideSign * 0.45,
+  );
+  var count = tuning.contactCreaseCount || 0;
+
+  return {
+    system,
+    side,
+    dimple: {
+      marker: "feedback-glove-contact-dimple",
+      position: {
+        x: point.x,
+        y: point.y,
+        z: point.z - 0.024,
+      },
+      scale: {
+        x: 0.18 + compression * 0.12 + strength * 0.05,
+        y: 0.062 + compression * 0.05 + strength * 0.018,
+      },
+      rotation: sweep + sideSign * 0.12,
+      opacity: tuning.contactDimpleMaxOpacity * (0.68 + strength * 0.32),
+      life: 0.62,
+    },
+    highlight: {
+      marker: "feedback-glove-latex-rebound-highlight",
+      position: {
+        x: point.x - (normal.x || 0) * 0.035 + sideSign * 0.012,
+        y: point.y + 0.018 + (normal.y || 0) * 0.028,
+        z: point.z - 0.038,
+      },
+      scale: {
+        x: 0.16 + rebound * 0.1 + strength * 0.04,
+        y: 0.034 + compression * 0.022,
+      },
+      rotation: sweep - sideSign * 0.18,
+      opacity: tuning.contactHighlightMaxOpacity * (0.62 + rebound * 0.38),
+      life: 0.52,
+    },
+    creases: Array.from({ length: count }, (_, index) => {
+      var t = count <= 1 ? 0 : index / (count - 1);
+      var fan = index - (count - 1) / 2;
+      return {
+        marker: "feedback-glove-palm-crease",
+        position: {
+          x: point.x + sideSign * fan * 0.026,
+          y: point.y + (t - 0.5) * 0.046,
+          z: point.z - 0.032 - index * 0.004,
+        },
+        scale: {
+          x: 0.11 + strength * 0.06 + index * 0.012,
+          y: 0.026 + compression * 0.014,
+        },
+        rotation: sweep + sideSign * fan * 0.34,
+        opacity: tuning.contactCreaseMaxOpacity * (0.88 - index * 0.12) * (0.72 + strength * 0.28),
+        life: Math.max(0.38, 0.58 - index * 0.045),
+      };
+    }),
   };
 }
 
@@ -579,6 +662,7 @@ export function createGoalkeeperScene(canvas) {
   scene.userData.ballShadowAssetSystem = tuning.ball.shadowAssetSystem;
   scene.userData.ballSpinGlintSystem = tuning.ball.flightSpinGlintSystem;
   scene.userData.gloveImpactSystem = tuning.gloves.impactSystem;
+  scene.userData.gloveContactDeformationSystem = tuning.gloves.contactDeformationSystem;
   scene.fog = new THREE.Fog("#8ed7ff", 28, 58);
 
   var camera = new THREE.PerspectiveCamera(tuning.camera.fov, 16 / 9, 0.05, 90);
@@ -746,6 +830,54 @@ export function createGoalkeeperScene(canvas) {
     arc.userData.rotation = 0;
     return arc;
   });
+  var gloveContactDimple = new THREE.Mesh(
+    new THREE.CircleGeometry(0.5, 34),
+    new THREE.MeshBasicMaterial({
+      color: "#ffb46e",
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    }),
+  );
+  gloveContactDimple.name = "feedback-glove-contact-dimple";
+  gloveContactDimple.visible = false;
+  gloveContactDimple.userData.life = 0;
+  gloveContactDimple.userData.baseOpacity = 0;
+  gloveContactDimple.userData.rotation = 0;
+  var gloveContactHighlight = new THREE.Mesh(
+    new THREE.CircleGeometry(0.5, 34),
+    new THREE.MeshBasicMaterial({
+      color: "#fff8cf",
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    }),
+  );
+  gloveContactHighlight.name = "feedback-glove-latex-rebound-highlight";
+  gloveContactHighlight.visible = false;
+  gloveContactHighlight.userData.life = 0;
+  gloveContactHighlight.userData.baseOpacity = 0;
+  gloveContactHighlight.userData.rotation = 0;
+  var glovePalmCreaseGeometry = new THREE.TorusGeometry(0.5, 0.012, 8, 28, Math.PI * 0.62);
+  var glovePalmCreases = Array.from({ length: tuning.gloves.contactCreaseCount }, (_, index) => {
+    var crease = new THREE.Mesh(
+      glovePalmCreaseGeometry,
+      new THREE.MeshBasicMaterial({
+        color: index === 0 ? "#fffdf0" : "#ffe7a2",
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      }),
+    );
+    crease.name = "feedback-glove-palm-crease-" + index;
+    crease.visible = false;
+    crease.userData.life = 0;
+    crease.userData.baseOpacity = 0;
+    crease.userData.rotation = 0;
+    return crease;
+  });
   var goalFlash = new THREE.Mesh(
     new THREE.CircleGeometry(0.42, 36),
     new THREE.MeshBasicMaterial({
@@ -864,6 +996,9 @@ export function createGoalkeeperScene(canvas) {
     ...saveSparks,
     ...saveAfterimages,
     ...savePressureArcs,
+    gloveContactDimple,
+    gloveContactHighlight,
+    ...glovePalmCreases,
     goalFlash,
     streakFlash,
     ...netRippleLines,
@@ -1061,6 +1196,43 @@ export function createGoalkeeperScene(canvas) {
       arc.userData.life = plan.life;
       arc.userData.baseOpacity = plan.opacity;
       arc.userData.rotation = plan.rotation;
+    });
+    var deformation = getGloveContactDeformationPlan(contact, gloves, tuning.gloves);
+    if (deformation.dimple) {
+      gloveContactDimple.visible = true;
+      gloveContactDimple.position.set(
+        deformation.dimple.position.x,
+        deformation.dimple.position.y,
+        deformation.dimple.position.z,
+      );
+      gloveContactDimple.scale.set(deformation.dimple.scale.x, deformation.dimple.scale.y, 1);
+      gloveContactDimple.material.opacity = deformation.dimple.opacity;
+      gloveContactDimple.userData.life = deformation.dimple.life;
+      gloveContactDimple.userData.baseOpacity = deformation.dimple.opacity;
+      gloveContactDimple.userData.rotation = deformation.dimple.rotation;
+    }
+    if (deformation.highlight) {
+      gloveContactHighlight.visible = true;
+      gloveContactHighlight.position.set(
+        deformation.highlight.position.x,
+        deformation.highlight.position.y,
+        deformation.highlight.position.z,
+      );
+      gloveContactHighlight.scale.set(deformation.highlight.scale.x, deformation.highlight.scale.y, 1);
+      gloveContactHighlight.material.opacity = deformation.highlight.opacity;
+      gloveContactHighlight.userData.life = deformation.highlight.life;
+      gloveContactHighlight.userData.baseOpacity = deformation.highlight.opacity;
+      gloveContactHighlight.userData.rotation = deformation.highlight.rotation;
+    }
+    deformation.creases.forEach((plan, index) => {
+      var crease = glovePalmCreases[index % glovePalmCreases.length];
+      crease.visible = true;
+      crease.position.set(plan.position.x, plan.position.y, plan.position.z);
+      crease.scale.set(plan.scale.x, plan.scale.y, 1);
+      crease.material.opacity = plan.opacity;
+      crease.userData.life = plan.life;
+      crease.userData.baseOpacity = plan.opacity;
+      crease.userData.rotation = plan.rotation;
     });
   }
 
@@ -1376,6 +1548,23 @@ export function createGoalkeeperScene(canvas) {
       arc.scale.multiplyScalar(1.012 + index * 0.004);
       arc.lookAt(camera.position);
       arc.rotateZ(arc.userData.rotation || 0);
+    });
+
+    [
+      { object: gloveContactDimple, decayOffset: 0, growth: 1.004 },
+      { object: gloveContactHighlight, decayOffset: 0.004, growth: 1.012 },
+      ...glovePalmCreases.map((object, index) => ({ object, decayOffset: 0.004 + index * 0.003, growth: 1.006 + index * 0.002 })),
+    ].forEach(({ object, decayOffset, growth }) => {
+      if (object.userData.life <= 0) {
+        object.material.opacity = 0;
+        object.visible = false;
+        return;
+      }
+      object.userData.life = Math.max(0, object.userData.life - tuning.gloves.contactDeformationDecay - decayOffset);
+      object.material.opacity = Math.max(0, object.userData.life * (object.userData.baseOpacity || 0));
+      object.scale.multiplyScalar(growth);
+      object.lookAt(camera.position);
+      object.rotateZ(object.userData.rotation || 0);
     });
 
     turfFlecks.forEach((fleck, index) => {

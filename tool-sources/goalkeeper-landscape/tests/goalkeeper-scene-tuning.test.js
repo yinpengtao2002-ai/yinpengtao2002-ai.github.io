@@ -374,6 +374,52 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(sceneModule.getSaveContactPressurePlan({ type: "net" }, null)).toEqual({ system: "glove-ball-contact-pressure-kit", arcs: [] });
   });
 
+  it("plans a localized glove palm deformation so saves feel materially connected", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.getGloveContactDeformationPlan).toBeTypeOf("function");
+
+    const deformation = sceneModule.getGloveContactDeformationPlan(
+      {
+        type: "glove",
+        side: "right",
+        part: "palm",
+        point: { x: 0.38, y: 1.22, z: 3.14 },
+        normal: { x: 0.42, y: 0.1, z: -0.72 },
+        strength: 30,
+        compression: 0.58,
+        reboundSpeed: 28,
+      },
+      {
+        left: { x: -0.34, y: 1.18, z: 3.15 },
+        right: { x: 0.34, y: 1.18, z: 3.15 },
+        center: { x: 0, y: 1.18, z: 3.15 },
+        velocity: { x: 4.6, y: 0.8, z: 0 },
+      },
+    );
+
+    expect(deformation.system).toBe("localized-glove-palm-deformation");
+    expect(deformation.side).toBe("right");
+    expect(deformation.dimple.marker).toBe("feedback-glove-contact-dimple");
+    expect(deformation.dimple.position.x).toBeCloseTo(0.38, 2);
+    expect(deformation.dimple.position.z).toBeLessThanOrEqual(3.14);
+    expect(deformation.dimple.scale.x).toBeGreaterThan(deformation.dimple.scale.y);
+    expect(deformation.dimple.opacity).toBeLessThanOrEqual(SCENE_TUNING.gloves.contactDimpleMaxOpacity);
+    expect(deformation.highlight.marker).toBe("feedback-glove-latex-rebound-highlight");
+    expect(deformation.highlight.opacity).toBeGreaterThan(0.18);
+    expect(deformation.creases).toHaveLength(SCENE_TUNING.gloves.contactCreaseCount);
+    expect(deformation.creases[0].marker).toBe("feedback-glove-palm-crease");
+    expect(deformation.creases[0].rotation).not.toBe(deformation.creases[deformation.creases.length - 1].rotation);
+
+    expect(sceneModule.getGloveContactDeformationPlan({ type: "net" }, null)).toEqual({
+      system: "localized-glove-palm-deformation",
+      side: null,
+      dimple: null,
+      highlight: null,
+      creases: [],
+    });
+  });
+
   it("uses a warm stadium lighting rig instead of flat prototype lighting", () => {
     expect(SCENE_TUNING.lighting.assetSystem).toBe("warm-stadium-three-point");
     expect(SCENE_TUNING.lighting.hemisphereIntensity).toBeGreaterThanOrEqual(2);
