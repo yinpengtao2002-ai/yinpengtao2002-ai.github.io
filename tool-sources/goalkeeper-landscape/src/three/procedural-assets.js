@@ -652,6 +652,7 @@ export function createGoalAndNet() {
   group.userData.netHardwareSystem = "weighted-net-label-and-clip-kit";
   group.userData.netWeaveSystem = "knotted-diagonal-net-weave";
   group.userData.dynamicNetDetailSystem = "reactive-woven-net-detail-kit";
+  group.userData.frameAssemblySystem = "manufactured-goal-frame-hardware";
   var dynamicNetDetails = [];
 
   function registerDynamicNetDetail(object, motionScale, opacityScale) {
@@ -714,6 +715,28 @@ export function createGoalAndNet() {
   rightTrim.name = "goal-brand-trim-right-post";
   rightTrim.position.x = RAPIER_GOAL.halfWidth;
   group.add(leftTrim, rightTrim);
+
+  var collarMaterial = new THREE.MeshStandardMaterial({ color: "#e7efe7", roughness: 0.34, metalness: 0.12 });
+  var boltMaterial = new THREE.MeshStandardMaterial({ color: "#cfd9d2", roughness: 0.32, metalness: 0.18 });
+  [
+    ["left-top", -RAPIER_GOAL.halfWidth, RAPIER_GOAL.height - 0.12, RAPIER_GOAL.netPlaneZ],
+    ["right-top", RAPIER_GOAL.halfWidth, RAPIER_GOAL.height - 0.12, RAPIER_GOAL.netPlaneZ],
+    ["left-base", -RAPIER_GOAL.halfWidth, 0.16, RAPIER_GOAL.netPlaneZ],
+    ["right-base", RAPIER_GOAL.halfWidth, 0.16, RAPIER_GOAL.netPlaneZ],
+  ].forEach(function addFrameCollar(item, index) {
+    var collar = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.088, 0.095, 18), collarMaterial);
+    collar.name = "goal-frame-corner-collar-" + item[0];
+    collar.position.set(item[1], item[2], item[3]);
+    collar.rotation.x = Math.PI / 2;
+    group.add(collar);
+
+    [-1, 1].forEach(function addCollarBolt(side) {
+      var bolt = new THREE.Mesh(new THREE.SphereGeometry(0.018, 10, 8), boltMaterial);
+      bolt.name = "goal-frame-fastener-bolt-collar-" + index + "-" + (side > 0 ? "outer" : "inner");
+      bolt.position.set(item[1] + side * 0.054, item[2], item[3] - 0.05);
+      group.add(bolt);
+    });
+  });
 
   var netMaterial = new THREE.MeshBasicMaterial({
     color: "#dff8ff",
@@ -846,6 +869,28 @@ export function createGoalAndNet() {
     group.add(registerDynamicNetDetail(weight, 0.34, 0.16));
   }
 
+  var strapMaterial = new THREE.MeshBasicMaterial({
+    color: "#fff6d8",
+    transparent: true,
+    opacity: 0.7,
+    side: THREE.DoubleSide,
+  });
+  for (var strapIndex = 0; strapIndex < 10; strapIndex += 1) {
+    var topStrap = strapIndex < 5;
+    var sideSign = strapIndex % 2 === 0 ? -1 : 1;
+    var strap = new THREE.Mesh(new THREE.BoxGeometry(topStrap ? 0.035 : 0.028, topStrap ? 0.14 : 0.16, 0.016), strapMaterial.clone());
+    strap.name = "goal-net-tie-strap-" + strapIndex;
+    if (topStrap) {
+      strap.position.set(-RAPIER_GOAL.halfWidth + 0.52 + strapIndex * 0.52, RAPIER_GOAL.height - 0.02, RAPIER_GOAL.netPlaneZ + 0.09);
+      strap.rotation.z = Math.PI / 2;
+    } else {
+      var sideOrder = Math.floor((strapIndex - 5) / 2);
+      strap.position.set(sideSign * RAPIER_GOAL.halfWidth, 0.52 + sideOrder * 0.52, RAPIER_GOAL.netPlaneZ + 0.08);
+      strap.rotation.y = sideSign > 0 ? -Math.PI / 2 : Math.PI / 2;
+    }
+    group.add(registerDynamicNetDetail(strap, 0.48, 0.22));
+  }
+
   var clipMaterial = new THREE.MeshStandardMaterial({ color: "#f9fff4", roughness: 0.36, metalness: 0.04 });
   for (var clipIndex = 0; clipIndex < 8; clipIndex += 1) {
     var clip = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.045, 0.028), clipMaterial);
@@ -873,16 +918,38 @@ export function createGoalAndNet() {
   });
 
   var anchorMaterial = new THREE.MeshStandardMaterial({ color: "#dbe8dd", roughness: 0.48, metalness: 0.04 });
+  var footPadMaterial = new THREE.MeshStandardMaterial({ color: "#26312d", roughness: 0.66, metalness: 0.02 });
   [
     ["front-left", -RAPIER_GOAL.halfWidth, 0, RAPIER_GOAL.netPlaneZ],
     ["front-right", RAPIER_GOAL.halfWidth, 0, RAPIER_GOAL.netPlaneZ],
     ["back-left", -RAPIER_GOAL.halfWidth - 0.42, 0, RAPIER_GOAL.netPlaneZ + 0.92],
     ["back-right", RAPIER_GOAL.halfWidth + 0.42, 0, RAPIER_GOAL.netPlaneZ + 0.92],
-  ].forEach(function addAnchor(item) {
+  ].forEach(function addAnchor(item, anchorIndex) {
     var anchor = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.085, 0.055, 14), anchorMaterial);
     anchor.name = "goal-net-anchor-" + item[0];
     anchor.position.set(item[1], 0.03, item[3]);
     group.add(anchor);
+
+    var footPad = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.13, 0.032, 20), footPadMaterial);
+    footPad.name = "goal-frame-ground-foot-pad-" + item[0];
+    footPad.position.set(item[1], 0.018, item[3]);
+    footPad.scale.set(item[0].startsWith("front") ? 1.12 : 0.92, 1, item[0].startsWith("front") ? 0.72 : 0.86);
+    group.add(footPad);
+
+    var footBolt = new THREE.Mesh(new THREE.SphereGeometry(0.016, 10, 8), boltMaterial);
+    footBolt.name = "goal-frame-fastener-bolt-foot-" + anchorIndex;
+    footBolt.position.set(item[1] + (item[0].includes("left") ? -0.048 : 0.048), 0.052, item[3] + 0.014);
+    group.add(footBolt);
+  });
+
+  var hingeMaterial = new THREE.MeshStandardMaterial({ color: "#d9e6dc", roughness: 0.38, metalness: 0.12 });
+  ["left", "right"].forEach(function addDepthHinge(side) {
+    var sign = side === "left" ? -1 : 1;
+    var hinge = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.075, 0.05), hingeMaterial);
+    hinge.name = "goal-depth-hinge-bracket-" + side;
+    hinge.position.set(sign * (RAPIER_GOAL.halfWidth + 0.26), 0.13, RAPIER_GOAL.netPlaneZ + 0.72);
+    hinge.rotation.y = sign * 0.34;
+    group.add(hinge);
   });
 
   return { group, net, grid, dynamicNetDetails };

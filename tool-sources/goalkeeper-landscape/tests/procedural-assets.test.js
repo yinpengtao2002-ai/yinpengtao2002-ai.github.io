@@ -228,6 +228,17 @@ describe("procedural 3D assets", () => {
     expect(collectByName(goal.group, /^goal-net-weave-knot-/).length).toBeGreaterThanOrEqual(8);
   });
 
+  it("adds assembled goal hardware details so the frame feels manufactured rather than procedural", () => {
+    const goal = createGoalAndNet();
+
+    expect(goal.group.userData.frameAssemblySystem).toBe("manufactured-goal-frame-hardware");
+    expect(collectByName(goal.group, /^goal-frame-corner-collar-/)).toHaveLength(4);
+    expect(collectByName(goal.group, /^goal-frame-ground-foot-pad-/)).toHaveLength(4);
+    expect(collectByName(goal.group, /^goal-net-tie-strap-/).length).toBeGreaterThanOrEqual(8);
+    expect(collectByName(goal.group, /^goal-depth-hinge-bracket-/)).toHaveLength(2);
+    expect(collectByName(goal.group, /^goal-frame-fastener-bolt-/).length).toBeGreaterThanOrEqual(8);
+  });
+
   it("registers woven net details as a reusable reactive asset layer", () => {
     const goal = createGoalAndNet();
 
