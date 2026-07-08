@@ -145,6 +145,12 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.feedback.cameraShakeFalloff).toBeGreaterThanOrEqual(0.0035);
     expect(SCENE_TUNING.feedback.cameraShakeFalloff).toBeLessThanOrEqual(0.008);
     expect(SCENE_TUNING.feedback.netPulseDecay).toBeGreaterThanOrEqual(0.025);
+    expect(SCENE_TUNING.feedback.netRecoilSystem).toBe("damped-net-spring-rebound");
+    expect(SCENE_TUNING.feedback.netRecoilMaxTravel).toBeGreaterThanOrEqual(0.12);
+    expect(SCENE_TUNING.feedback.netRecoilMaxTravel).toBeLessThanOrEqual(0.26);
+    expect(SCENE_TUNING.feedback.netRecoilStiffness).toBeGreaterThanOrEqual(40);
+    expect(SCENE_TUNING.feedback.netRecoilDamping).toBeGreaterThan(0.9);
+    expect(SCENE_TUNING.feedback.netRecoilDamping).toBeLessThan(0.99);
     expect(SCENE_TUNING.feedback.groundSkidCount).toBeGreaterThanOrEqual(4);
     expect(SCENE_TUNING.feedback.groundSkidColor).toBe("#e7d5a7");
     expect(SCENE_TUNING.feedback.groundSkidMaxOpacity).toBeLessThanOrEqual(0.42);
@@ -236,6 +242,44 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(frame.kind).toBe("frame-rebound");
     expect(frame.flashColor).toBe(SCENE_TUNING.feedback.frameFlashColor);
     expect(frame.cameraShake).toBeLessThanOrEqual(SCENE_TUNING.feedback.maxCameraShake);
+  });
+
+  it("advances a damped spring net recoil so goals push the net then rebound and settle", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.createNetRecoilState).toBeTypeOf("function");
+    expect(sceneModule.triggerNetRecoilState).toBeTypeOf("function");
+    expect(sceneModule.advanceNetRecoilState).toBeTypeOf("function");
+    expect(sceneModule.getNetRecoilMotionPlan).toBeTypeOf("function");
+
+    const state = sceneModule.createNetRecoilState();
+    sceneModule.triggerNetRecoilState(state, {
+      point: { x: 0.82, y: 1.36, z: SHOT_3D.netPlaneZ },
+      strength: 0.94,
+    });
+
+    const initialPlan = sceneModule.getNetRecoilMotionPlan(state);
+    expect(initialPlan.marker).toBe("feedback-net-spring-rebound");
+    expect(initialPlan.system).toBe("damped-net-spring-rebound");
+    expect(initialPlan.point.x).toBeCloseTo(0.82);
+    expect(initialPlan.netZOffset).toBeGreaterThan(0.1);
+    expect(initialPlan.detailPulse).toBeGreaterThan(0.5);
+
+    const samples = [];
+    for (let index = 0; index < 44; index += 1) {
+      sceneModule.advanceNetRecoilState(state, 1 / 60);
+      samples.push(sceneModule.getNetRecoilMotionPlan(state).netZOffset);
+    }
+
+    expect(samples.some((offset) => offset < -0.01)).toBe(true);
+    expect(Math.max(...samples)).toBeLessThanOrEqual(SCENE_TUNING.feedback.netRecoilMaxTravel);
+
+    for (let index = 0; index < 160; index += 1) {
+      sceneModule.advanceNetRecoilState(state, 1 / 60);
+    }
+    const settledPlan = sceneModule.getNetRecoilMotionPlan(state);
+    expect(Math.abs(settledPlan.netZOffset)).toBeLessThan(0.012);
+    expect(settledPlan.active).toBe(false);
   });
 
   it("plans reactive woven-net recoil for diagonal net and rope details", async () => {

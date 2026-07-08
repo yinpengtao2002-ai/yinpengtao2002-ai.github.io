@@ -169,6 +169,54 @@ describe("three game runtime timing", () => {
     expect(settled.groundFeedback.intensity).toBe(0);
   });
 
+  it("lets deflected saves roll across the turf instead of stopping on the first grounded frame", () => {
+    const rollingSave = {
+      live: false,
+      outcome: "saved",
+      saveReplayStyle: "parried-save-deflection-replay",
+      replayInitialized: true,
+      position: { x: -0.35, y: 0.11, z: 2.95 },
+      velocity: { x: 4.8, y: 0, z: -2.1 },
+      angularVelocity: { x: -9.5, y: 6.4, z: 1.2 },
+      radius: 0.11,
+      age: 0,
+      duration: 5,
+      groundFeedback: {
+        active: true,
+        age: 0.08,
+        duration: 0.62,
+        intensity: 0.42,
+        baseIntensity: 0.58,
+        speed: 5.2,
+        point: { x: -0.35, y: 0.012, z: 2.95 },
+        direction: { x: 0.91, y: 0, z: -0.4 },
+        impactSpeed: 1.1,
+        skidLength: 0.68,
+      },
+    };
+
+    const afterOneSecond = advanceLingeringBalls([rollingSave], 1)[0];
+    const travel = Math.hypot(
+      afterOneSecond.position.x - rollingSave.position.x,
+      afterOneSecond.position.z - rollingSave.position.z,
+    );
+    const rollingSpeed = Math.hypot(afterOneSecond.velocity.x, afterOneSecond.velocity.z);
+
+    expect(afterOneSecond.position.y).toBeCloseTo(rollingSave.radius, 3);
+    expect(Math.abs(afterOneSecond.velocity.y)).toBeLessThan(0.08);
+    expect(travel).toBeGreaterThan(1.4);
+    expect(rollingSpeed).toBeGreaterThan(0.75);
+    expect(rollingSpeed).toBeLessThan(Math.hypot(rollingSave.velocity.x, rollingSave.velocity.z));
+
+    const afterThreeSeconds = Array.from({ length: 4 }).reduce(
+      (balls) => advanceLingeringBalls(balls, 0.5),
+      [afterOneSecond],
+    )[0];
+    expect(afterThreeSeconds.position.y).toBeCloseTo(rollingSave.radius, 3);
+    expect(Math.abs(afterThreeSeconds.velocity.y)).toBeLessThan(0.08);
+    expect(Math.hypot(afterThreeSeconds.velocity.x, afterThreeSeconds.velocity.z)).toBeLessThan(rollingSpeed);
+  });
+
   it("turns caught saves into a soft drop replay instead of inheriting wild contact velocity", () => {
     const caughtSave = {
       live: false,

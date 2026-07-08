@@ -189,6 +189,38 @@ function createGroundFeedback(position, velocity, impactSpeed) {
   };
 }
 
+function createRollingGroundFeedback(position, velocity, existingFeedback = null) {
+  var horizontalSpeed = Math.hypot(velocity.x || 0, velocity.z || 0);
+  if (horizontalSpeed < 0.42) return {
+    ...(existingFeedback || {}),
+    active: false,
+    intensity: 0,
+    speed: horizontalSpeed,
+  };
+
+  var baseIntensity = clamp01(horizontalSpeed / 10) * 0.42;
+  return {
+    active: true,
+    age: 0.12,
+    duration: GROUND_FEEDBACK_DURATION,
+    intensity: Math.max(0.06, baseIntensity),
+    baseIntensity: Math.max(0.08, baseIntensity),
+    speed: horizontalSpeed,
+    point: {
+      x: position.x || 0,
+      y: 0.012,
+      z: position.z || 0,
+    },
+    direction: {
+      x: horizontalSpeed > 0.001 ? (velocity.x || 0) / horizontalSpeed : 0,
+      y: 0,
+      z: horizontalSpeed > 0.001 ? (velocity.z || 0) / horizontalSpeed : -1,
+    },
+    impactSpeed: 0,
+    skidLength: 0.28 + clamp01(horizontalSpeed / 9) * 0.52,
+  };
+}
+
 function getSaveReplayStyle(ball) {
   if (ball?.saveReplayStyle) return ball.saveReplayStyle;
   var outcome = ball?.outcome;
@@ -260,6 +292,38 @@ function advanceLingeringBall(ball, dt) {
 
   while (remaining > 0) {
     var h = Math.min(step, remaining);
+    var horizontalSpeed = Math.hypot(velocity.x || 0, velocity.z || 0);
+    var rollingOnGround = position.y <= radius + 0.002 && Math.abs(velocity.y || 0) < 0.08;
+
+    if (rollingOnGround) {
+      position.y = radius;
+      velocity.y = 0;
+      position.x += velocity.x * h;
+      position.z += velocity.z * h;
+
+      var rollingDamping = ball.saveReplayStyle === CAUGHT_SAVE_REPLAY_STYLE ? 0.946 : 0.976;
+      var rollingSpinDamping = ball.saveReplayStyle === CAUGHT_SAVE_REPLAY_STYLE ? 0.962 : 0.988;
+      var dampingFactor = Math.pow(rollingDamping, h * 60);
+      var spinDampingFactor = Math.pow(rollingSpinDamping, h * 60);
+      velocity.x *= dampingFactor;
+      velocity.z *= dampingFactor;
+      angularVelocity.x *= spinDampingFactor;
+      angularVelocity.y *= spinDampingFactor;
+      angularVelocity.z *= spinDampingFactor;
+
+      if (horizontalSpeed < 0.12) {
+        velocity.x = 0;
+        velocity.z = 0;
+        angularVelocity.x *= 0.82;
+        angularVelocity.y *= 0.82;
+        angularVelocity.z *= 0.82;
+      }
+
+      groundFeedback = createRollingGroundFeedback(position, velocity, groundFeedback);
+      remaining -= h;
+      continue;
+    }
+
     var verticalImpactSpeed = velocity.y < 0 ? Math.abs(velocity.y) : 0;
     velocity.y += -9.81 * h;
     position.x += velocity.x * h;

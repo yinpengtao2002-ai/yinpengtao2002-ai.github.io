@@ -116,6 +116,11 @@ export const SCENE_TUNING = {
     netPocketMaxDepth: 0.28,
     netPocketMaxOpacity: 0.58,
     netPocketDecay: 0.042,
+    netRecoilSystem: "damped-net-spring-rebound",
+    netRecoilMaxTravel: 0.19,
+    netRecoilStiffness: 58,
+    netRecoilDamping: 0.962,
+    netRecoilSettleThreshold: 0.006,
     frameReboundSystem: "post-crossbar-rebound-highlight",
     frameReboundMaxOpacity: 0.62,
     frameReboundDecay: 0.052,
@@ -578,6 +583,77 @@ export function getNetPocketFeedbackPlan(state, tuning = SCENE_TUNING.feedback) 
   };
 }
 
+export function createNetRecoilState() {
+  return {
+    active: false,
+    displacement: 0,
+    velocity: 0,
+    strength: 0,
+    point: null,
+  };
+}
+
+export function triggerNetRecoilState(state, contact, tuning = SCENE_TUNING.feedback) {
+  if (!state || !contact) return state;
+  var strength = clamp01(Number.isFinite(contact.strength) ? contact.strength : 0.78);
+  var point = contact.point || contact;
+  state.active = true;
+  state.strength = Math.max(state.strength || 0, strength);
+  state.point = {
+    x: Math.max(-RAPIER_GOAL.halfWidth + 0.16, Math.min(RAPIER_GOAL.halfWidth - 0.16, point.x || 0)),
+    y: Math.max(0.16, Math.min(RAPIER_GOAL.height - 0.08, point.y || 1.2)),
+    z: point.z || RAPIER_GOAL.netPlaneZ,
+  };
+  state.displacement = Math.max(
+    state.displacement || 0,
+    tuning.netRecoilMaxTravel * (0.58 + strength * 0.42),
+  );
+  state.velocity = Math.max(state.velocity || 0, tuning.netRecoilMaxTravel * (0.9 + strength * 0.56));
+  return state;
+}
+
+export function advanceNetRecoilState(state, dt, tuning = SCENE_TUNING.feedback) {
+  if (!state) return state;
+  var remaining = Math.max(0, Math.min(dt || 0, 0.25));
+  var step = 1 / 60;
+  while (remaining > 0) {
+    var h = Math.min(step, remaining);
+    var acceleration = -(state.displacement || 0) * tuning.netRecoilStiffness;
+    state.velocity = ((state.velocity || 0) + acceleration * h) * Math.pow(tuning.netRecoilDamping, h * 60);
+    state.displacement = (state.displacement || 0) + state.velocity * h;
+    remaining -= h;
+  }
+
+  var threshold = tuning.netRecoilSettleThreshold || 0.006;
+  if (Math.abs(state.displacement || 0) < threshold && Math.abs(state.velocity || 0) < threshold * 8) {
+    state.active = false;
+    state.displacement = 0;
+    state.velocity = 0;
+    state.strength = 0;
+  } else {
+    state.active = true;
+  }
+  return state;
+}
+
+export function getNetRecoilMotionPlan(state, tuning = SCENE_TUNING.feedback) {
+  var displacement = clampNumber(
+    state?.displacement || 0,
+    -tuning.netRecoilMaxTravel * 0.48,
+    tuning.netRecoilMaxTravel,
+  );
+  var detailPulse = clamp01(Math.abs(displacement) / Math.max(0.001, tuning.netRecoilMaxTravel));
+  return {
+    marker: "feedback-net-spring-rebound",
+    system: tuning.netRecoilSystem,
+    active: Boolean(state?.active && (Math.abs(displacement) > 0 || Math.abs(state.velocity || 0) > 0)),
+    point: state?.point || { x: 0, y: RAPIER_GOAL.height * 0.5, z: RAPIER_GOAL.netPlaneZ },
+    netZOffset: displacement,
+    detailPulse,
+    opacityBoost: tuning.dynamicNetDetailOpacityBoost * detailPulse,
+  };
+}
+
 export function getFrameReboundFeedbackPlan(contact, tuning = SCENE_TUNING.feedback) {
   if (!contact || contact.type !== "frame") return null;
   var raw = contact.point || contact;
@@ -726,6 +802,7 @@ export function createGoalkeeperScene(canvas) {
   scene.userData.feedbackAssetSystem = tuning.feedback.assetSystem;
   scene.userData.netRippleAssetSystem = tuning.feedback.netRippleAssetSystem;
   scene.userData.netPocketAssetSystem = tuning.feedback.netPocketAssetSystem;
+  scene.userData.netRecoilSystem = tuning.feedback.netRecoilSystem;
   scene.userData.frameReboundSystem = tuning.feedback.frameReboundSystem;
   scene.userData.saveAfterimageSystem = tuning.feedback.saveAfterimageSystem;
   scene.userData.dynamicNetDetailSystem = tuning.feedback.dynamicNetDetailSystem;
@@ -1086,6 +1163,7 @@ export function createGoalkeeperScene(canvas) {
   var feedbackFrame = 0;
   var gloveImpactState = createGloveImpactState();
   var netPocketState = createNetPocketState();
+  var netRecoilState = createNetRecoilState();
   var lastTurfContactSignature = "";
 
   function resize(bounds) {
@@ -1330,6 +1408,14 @@ export function createGoalkeeperScene(canvas) {
     triggerImpact("goal", { ...position, x: contactX, y: contactY }, profile.impactStrength, profile);
     netPulse = Math.max(netPulse, profile.netPulse);
     netPulseContactPoint = { x: contactX, y: contactY, z: contactZ };
+    triggerNetRecoilState(
+      netRecoilState,
+      {
+        point: netPulseContactPoint,
+        strength: profile.netPulse,
+      },
+      tuning.feedback,
+    );
     goalWaves.forEach((wave, index) => {
       wave.material.color.set(profile.flashColor);
       wave.position.set(contactX, Math.max(0.16, contactY), position.z + 0.06 + index * 0.012);
@@ -1562,25 +1648,40 @@ export function createGoalkeeperScene(canvas) {
   }
 
   function updateNetAndEffects() {
+    var recoilPlan = getNetRecoilMotionPlan(netRecoilState, tuning.feedback);
+    var recoilOffset = recoilPlan.netZOffset || 0;
+    var recoilPulse = recoilPlan.detailPulse || 0;
+    var recoilContactPoint = recoilPlan.point;
     if (netPulse > 0) {
       netPulse = Math.max(0, netPulse - tuning.feedback.netPulseDecay);
-      goal.net.position.z = RAPIER_GOAL.netPlaneZ + 0.1 + Math.sin(netPulse * Math.PI) * 0.18;
-      goal.net.material.opacity = 0.16 + netPulse * 0.24;
-      goal.grid.position.z = Math.sin(netPulse * Math.PI) * 0.1;
+      var pulseOffset = Math.sin(netPulse * Math.PI) * 0.11;
+      goal.net.position.z = RAPIER_GOAL.netPlaneZ + 0.1 + pulseOffset + recoilOffset;
+      goal.net.material.opacity = 0.16 + Math.max(netPulse, recoilPulse) * 0.24;
+      goal.grid.position.z = pulseOffset * 0.56 + recoilOffset * 0.48;
     } else {
-      goal.net.position.z = RAPIER_GOAL.netPlaneZ + 0.1;
-      goal.net.material.opacity = 0.16;
-      goal.grid.position.z = 0;
+      goal.net.position.z = RAPIER_GOAL.netPlaneZ + 0.1 + recoilOffset;
+      goal.net.material.opacity = 0.16 + recoilPulse * 0.18;
+      goal.grid.position.z = recoilOffset * 0.48;
       netPulseContactPoint = null;
     }
     dynamicNetDetails.forEach((detail) => {
-      var plan = getDynamicNetDetailMotionPlan(detail, netPulse, netPulseContactPoint, tuning.feedback);
-      detail.object.position.set(plan.position.x, plan.position.y, plan.position.z);
+      var plan = getDynamicNetDetailMotionPlan(
+        detail,
+        Math.max(netPulse, recoilPulse),
+        netPulseContactPoint || recoilContactPoint,
+        tuning.feedback,
+      );
+      detail.object.position.set(
+        plan.position.x,
+        plan.position.y,
+        plan.position.z + recoilOffset * 0.34 * (detail.motionScale || 1),
+      );
       if (Number.isFinite(detail.baseOpacity) && detail.object.material) {
-        detail.object.material.opacity = detail.baseOpacity + plan.opacityBoost;
+        detail.object.material.opacity = detail.baseOpacity + plan.opacityBoost + recoilPlan.opacityBoost * 0.45;
       }
     });
     updateNetPocketVisuals();
+    advanceNetRecoilState(netRecoilState, 1 / 60, tuning.feedback);
 
     impactRings.forEach((ring, index) => {
       if (ring.userData.life <= 0) {
