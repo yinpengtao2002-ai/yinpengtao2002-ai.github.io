@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import GoalkeeperLandscapeRuntime, { GOALKEEPER_SCRIPT_SRC } from "./GoalkeeperLandscapeRuntime";
 
-const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-B5UnGDgz.css";
+const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-C2ocTVih.css";
 
 export const metadata: Metadata = {
   title: "弹力手套守门挑战｜Lucas Yin",
@@ -25,25 +25,25 @@ export default function GoalkeeperLandscapePage() {
 
             <section className="game-hud" aria-label="比赛状态">
               <div className="glass-panel hud-score">
-                <span className="hud-icon" aria-hidden="true">PTS</span>
+                <span className="hud-icon hud-icon-score" aria-hidden="true" />
                 <span>扑救分</span>
                 <strong id="scoreValue">0</strong>
               </div>
 
               <div className="glass-panel hud-time">
-                <span className="hud-icon" aria-hidden="true">TIME</span>
+                <span className="hud-icon hud-icon-time" aria-hidden="true" />
                 <span>时间</span>
                 <strong id="timeValue">60</strong>
               </div>
 
               <div className="hud-actions">
                 <div className="glass-panel hud-streak">
-                  <span className="hud-icon" aria-hidden="true">STK</span>
+                  <span className="hud-icon hud-icon-streak" aria-hidden="true" />
                   <span>连扑</span>
                   <strong id="streakValue">0</strong>
                 </div>
                 <div className="glass-panel hud-goals">
-                  <span className="hud-icon" aria-hidden="true">GA</span>
+                  <span className="hud-icon hud-icon-goals" aria-hidden="true" />
                   <span>失球</span>
                   <strong id="concededValue">0/5</strong>
                 </div>
@@ -53,6 +53,7 @@ export default function GoalkeeperLandscapePage() {
 
             <div className="feedback-toast" id="feedbackToast" aria-live="polite" />
             <div className="match-status" id="matchStatus" aria-live="polite" />
+            <div className="pressure-cue" id="pressureCue" aria-live="polite" />
 
             <div className="bottom-controls" aria-label="游戏控制">
               <div className="difficulty-control glass-panel" role="group" aria-label="难度">

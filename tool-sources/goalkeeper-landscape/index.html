@@ -19,25 +19,25 @@
 
           <section class="game-hud" aria-label="比赛状态">
             <div class="glass-panel hud-score">
-              <span class="hud-icon" aria-hidden="true">PTS</span>
+              <span class="hud-icon hud-icon-score" aria-hidden="true"></span>
               <span>扑救分</span>
               <strong id="scoreValue">0</strong>
             </div>
 
             <div class="glass-panel hud-time">
-              <span class="hud-icon" aria-hidden="true">TIME</span>
+              <span class="hud-icon hud-icon-time" aria-hidden="true"></span>
               <span>时间</span>
               <strong id="timeValue">60</strong>
             </div>
 
             <div class="hud-actions">
               <div class="glass-panel hud-streak">
-                <span class="hud-icon" aria-hidden="true">STK</span>
+                <span class="hud-icon hud-icon-streak" aria-hidden="true"></span>
                 <span>连扑</span>
                 <strong id="streakValue">0</strong>
               </div>
               <div class="glass-panel hud-goals">
-                <span class="hud-icon" aria-hidden="true">GA</span>
+                <span class="hud-icon hud-icon-goals" aria-hidden="true"></span>
                 <span>失球</span>
                 <strong id="concededValue">0/5</strong>
               </div>
@@ -47,6 +47,7 @@
 
           <div class="feedback-toast" id="feedbackToast" aria-live="polite"></div>
           <div class="match-status" id="matchStatus" aria-live="polite"></div>
+          <div class="pressure-cue" id="pressureCue" aria-live="polite"></div>
 
           <div class="bottom-controls" aria-label="游戏控制">
             <div class="difficulty-control glass-panel" role="group" aria-label="难度">

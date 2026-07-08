@@ -153,6 +153,16 @@ button {
   animation-name: streakPulse;
 }
 
+.glass-panel strong.is-low-time {
+  color: #b84c22;
+  text-shadow: 0 0 14px rgba(255, 129, 70, 0.34);
+}
+
+.glass-panel strong.is-match-point {
+  color: #a84727;
+  text-shadow: 0 0 14px rgba(255, 120, 70, 0.32);
+}
+
 .hud-icon {
   min-width: clamp(31px, 2.8vw, 46px);
   padding: 0 7px;
@@ -160,13 +170,79 @@ button {
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
+  position: relative;
   border-radius: 999px;
   background: linear-gradient(180deg, rgba(25, 49, 42, 0.96), rgba(17, 31, 28, 0.86));
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 5px 10px rgba(20,33,28,0.12);
   color: #f5fff1;
-  font-size: clamp(9px, 0.75vw, 12px);
-  font-weight: 950;
   line-height: 1;
+}
+
+.hud-icon::before,
+.hud-icon::after {
+  content: "";
+  position: absolute;
+  display: block;
+  background: currentColor;
+}
+
+.hud-icon-score::before {
+  width: 44%;
+  height: 3px;
+  border-radius: 999px;
+}
+
+.hud-icon-score::after {
+  width: 3px;
+  height: 44%;
+  border-radius: 999px;
+}
+
+.hud-icon-time::before {
+  width: 48%;
+  height: 48%;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.hud-icon-time::after {
+  width: 2px;
+  height: 31%;
+  border-radius: 999px;
+  transform: translateY(-2px) rotate(-35deg);
+  transform-origin: 50% 88%;
+}
+
+.hud-icon-streak::before {
+  width: 44%;
+  height: 3px;
+  border-radius: 999px;
+  transform: rotate(-24deg);
+}
+
+.hud-icon-streak::after {
+  width: 18%;
+  height: 18%;
+  border: 3px solid currentColor;
+  border-left: 0;
+  border-bottom: 0;
+  background: transparent;
+  transform: translate(9px, -4px) rotate(21deg);
+}
+
+.hud-icon-goals::before {
+  width: 3px;
+  height: 43%;
+  border-radius: 999px;
+  transform: translateY(-3px);
+}
+
+.hud-icon-goals::after {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  transform: translateY(10px);
 }
 
 .glass-button {
@@ -330,6 +406,44 @@ button {
   min-width: clamp(112px, 10vw, 154px);
   min-height: clamp(48px, 4.8vw, 66px);
   font-size: clamp(22px, 3vw, 42px);
+}
+
+.pressure-cue {
+  --match-pressure-hud: 1;
+  position: absolute;
+  right: max(clamp(14px, 2.1vw, 34px), env(safe-area-inset-right));
+  top: max(clamp(66px, 8.4svh, 92px), calc(env(safe-area-inset-top) + 54px));
+  z-index: 4;
+  max-width: min(250px, 42vw);
+  min-height: clamp(28px, 3vw, 38px);
+  padding: 7px clamp(12px, 1.25vw, 18px);
+  border: 1px solid rgba(255, 255, 255, 0.66);
+  border-radius: 999px;
+  color: #fff7ee;
+  background: linear-gradient(180deg, rgba(30, 53, 46, 0.7), rgba(14, 29, 25, 0.56));
+  box-shadow: 0 14px 30px rgba(15, 35, 29, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(14px);
+  font-size: clamp(12px, 1.05vw, 15px);
+  font-weight: 920;
+  line-height: 1.1;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 160ms ease, transform 160ms ease;
+  pointer-events: none;
+}
+
+.pressure-cue.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.pressure-cue.is-low-time {
+  background: linear-gradient(180deg, rgba(217, 95, 44, 0.84), rgba(123, 45, 26, 0.7));
+}
+
+.pressure-cue.is-match-point {
+  box-shadow: 0 0 0 3px rgba(255, 204, 166, 0.16), 0 14px 30px rgba(15, 35, 29, 0.18);
 }
 
 .difficulty-control {
@@ -717,6 +831,15 @@ button {
     padding: 0 14px;
   }
 
+  .pressure-cue {
+    right: max(10px, env(safe-area-inset-right));
+    top: max(86px, calc(env(safe-area-inset-top) + 74px));
+    max-width: 44vw;
+    min-height: 28px;
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
   .match-status {
     min-width: 70px;
     min-height: 70px;
@@ -844,6 +967,10 @@ button {
     gap: 10px;
   }
 
+  .pressure-cue {
+    max-width: 46vw;
+  }
+
   #finalScore {
     font-size: 46px;
   }
@@ -918,6 +1045,15 @@ button {
 
   .feedback-toast {
     top: max(clamp(48px, 9svh, 78px), calc(env(safe-area-inset-top) + 42px));
+  }
+
+  .pressure-cue {
+    right: max(clamp(10px, 2.1svh, 24px), env(safe-area-inset-right));
+    top: max(clamp(50px, 9.2svh, 78px), calc(env(safe-area-inset-top) + 42px));
+    max-width: min(220px, 34svh);
+    min-height: clamp(24px, 4.5svh, 32px);
+    padding: 5px 9px;
+    font-size: clamp(10px, 1.75svh, 12px);
   }
 
   .match-status {

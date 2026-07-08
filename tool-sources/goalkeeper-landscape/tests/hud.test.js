@@ -56,6 +56,7 @@ function createDocument() {
     "resultSummary",
     "feedbackToast",
     "matchStatus",
+    "pressureCue",
     "finalSaves",
     "finalBestStreak",
     "finalConceded",
@@ -211,6 +212,41 @@ describe("hud", () => {
 
     expect(documentRef.elements.matchStatus.textContent).toBe("");
     expect(documentRef.elements.matchStatus.classList.contains("is-visible")).toBe(false);
+  });
+
+  it("surfaces last-seconds and match-point pressure without turning the HUD into a debug panel", () => {
+    expect(HudModule.getPressureCueText).toBeTypeOf("function");
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    const pressureState = {
+      ...createGameState(),
+      running: true,
+      timeLeft: 9.2,
+      conceded: 4,
+    };
+
+    hud.update(pressureState, true);
+
+    expect(HudModule.getPressureCueText(pressureState)).toBe("最后 10 秒 · 别再丢");
+    expect(documentRef.elements.pressureCue.textContent).toBe("最后 10 秒 · 别再丢");
+    expect(documentRef.elements.pressureCue.classList.contains("is-visible")).toBe(true);
+    expect(documentRef.elements.pressureCue.dataset.hudSystem).toBe("match-pressure-hud");
+    expect(documentRef.elements.timeValue.classList.contains("is-low-time")).toBe(true);
+    expect(documentRef.elements.timeValue.getAttribute("aria-label")).toBe("剩余 10 秒，最后 10 秒");
+    expect(documentRef.elements.concededValue.classList.contains("is-match-point")).toBe(true);
+    expect(documentRef.elements.concededValue.getAttribute("aria-label")).toBe("失球 4/5，再丢一球结束");
+
+    hud.update({
+      ...createGameState(),
+      running: true,
+      timeLeft: 42,
+      conceded: 1,
+    }, true);
+
+    expect(documentRef.elements.pressureCue.textContent).toBe("");
+    expect(documentRef.elements.pressureCue.classList.contains("is-visible")).toBe(false);
+    expect(documentRef.elements.timeValue.classList.contains("is-low-time")).toBe(false);
+    expect(documentRef.elements.concededValue.classList.contains("is-match-point")).toBe(false);
   });
 
   it("uses a dedicated pause overlay and keeps the resume action reachable", () => {

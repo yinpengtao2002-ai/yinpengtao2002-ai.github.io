@@ -2,6 +2,12 @@ import { MAX_CONCEDED } from "../config/game-config.js";
 
 export const ROUND_RESULT_SUMMARY_MARKER = "round-result-summary";
 export const HUD_FLOW_POLISH_MARKER = "match-hud-flow-polish";
+export const MATCH_PRESSURE_HUD_MARKER = "match-pressure-hud";
+const LOW_TIME_SECONDS = 10;
+
+function getSecondsLeft(state) {
+  return Math.max(0, Math.ceil(Number.isFinite(state?.timeLeft) ? state.timeLeft : 0));
+}
 
 export function getResultGrade(state) {
   var score = state?.score || 0;
@@ -36,6 +42,19 @@ export function getResultSummaryText(state) {
   return "再来一局，读准球路";
 }
 
+export function getPressureCueText(state) {
+  if (!state?.running || state.paused || state.ended) return "";
+
+  var secondsLeft = getSecondsLeft(state);
+  var lowTime = secondsLeft <= LOW_TIME_SECONDS;
+  var matchPoint = (state.conceded || 0) >= MAX_CONCEDED - 1;
+
+  if (lowTime && matchPoint) return "最后 10 秒 · 别再丢";
+  if (lowTime) return "最后 10 秒";
+  if (matchPoint) return "再丢一球结束";
+  return "";
+}
+
 export function createHud(documentRef) {
   var refs = {
     scoreValue: documentRef.getElementById("scoreValue"),
@@ -58,6 +77,7 @@ export function createHud(documentRef) {
     resultSummary: documentRef.getElementById("resultSummary"),
     feedbackToast: documentRef.getElementById("feedbackToast"),
     matchStatus: documentRef.getElementById("matchStatus"),
+    pressureCue: documentRef.getElementById("pressureCue"),
     finalSaves: documentRef.getElementById("finalSaves"),
     finalBestStreak: documentRef.getElementById("finalBestStreak"),
     finalConceded: documentRef.getElementById("finalConceded"),
@@ -126,6 +146,38 @@ export function createHud(documentRef) {
     setClass(status, "is-countdown", isCountdown);
   }
 
+  function updatePressureCue(state) {
+    var cue = refs.pressureCue;
+    var secondsLeft = getSecondsLeft(state);
+    var lowTime = state.running && !state.paused && !state.ended && secondsLeft <= LOW_TIME_SECONDS;
+    var matchPoint = state.running && !state.paused && !state.ended && (state.conceded || 0) >= MAX_CONCEDED - 1;
+    var cueText = getPressureCueText(state);
+
+    if (refs.timeValue) {
+      setClass(refs.timeValue, "is-low-time", lowTime);
+      refs.timeValue.setAttribute(
+        "aria-label",
+        lowTime ? "剩余 " + String(secondsLeft) + " 秒，最后 10 秒" : "剩余 " + String(secondsLeft) + " 秒",
+      );
+    }
+
+    if (refs.concededValue) {
+      setClass(refs.concededValue, "is-match-point", matchPoint);
+      refs.concededValue.setAttribute(
+        "aria-label",
+        "失球 " + String(state.conceded || 0) + "/" + String(MAX_CONCEDED) + (matchPoint ? "，再丢一球结束" : ""),
+      );
+    }
+
+    if (cue) {
+      cue.textContent = cueText;
+      cue.dataset.hudSystem = MATCH_PRESSURE_HUD_MARKER;
+      setClass(cue, "is-visible", Boolean(cueText));
+      setClass(cue, "is-low-time", lowTime);
+      setClass(cue, "is-match-point", matchPoint);
+    }
+  }
+
   return {
     refs,
     bind(actions) {
@@ -147,7 +199,7 @@ export function createHud(documentRef) {
     },
     update(state, soundEnabled, context = {}) {
       if (refs.scoreValue) refs.scoreValue.textContent = String(state.score);
-      if (refs.timeValue) refs.timeValue.textContent = String(Math.max(0, Math.ceil(state.timeLeft)));
+      if (refs.timeValue) refs.timeValue.textContent = String(getSecondsLeft(state));
       if (refs.streakValue) refs.streakValue.textContent = "x" + String(state.streak || 0);
       if (refs.concededValue) refs.concededValue.textContent = state.conceded + "/" + MAX_CONCEDED;
       if (refs.pauseButton) {
@@ -176,6 +228,7 @@ export function createHud(documentRef) {
       if (refs.finalConceded) refs.finalConceded.textContent = state.conceded + "/" + MAX_CONCEDED;
       updateFeedback(state);
       updateMatchStatus(state, context);
+      updatePressureCue(state);
       setVisible(refs.startOverlay, !state.running && !state.ended);
       setVisible(refs.pauseOverlay, state.running && state.paused && !state.ended);
       setVisible(refs.endOverlay, state.ended);

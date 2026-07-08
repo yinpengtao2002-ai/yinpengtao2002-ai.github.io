@@ -9,8 +9,8 @@
     <meta name="full-screen" content="yes">
     <title>弹力手套守门挑战</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2369c97a'/%3E%3Ccircle cx='32' cy='32' r='16' fill='%23fffdf2'/%3E%3Cpath d='M20 32h24M32 20v24' stroke='%23222' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
-    <script type="module" crossorigin src="/tools/goalkeeper-landscape/assets/index-C5AY9ik4.js"></script>
-    <link rel="stylesheet" crossorigin href="/tools/goalkeeper-landscape/assets/index-B5UnGDgz.css">
+    <script type="module" crossorigin src="/tools/goalkeeper-landscape/assets/index-WtSOZ_DZ.js"></script>
+    <link rel="stylesheet" crossorigin href="/tools/goalkeeper-landscape/assets/index-C2ocTVih.css">
   </head>
   <body>
     <main class="app" aria-label="弹力手套守门挑战">
@@ -20,25 +20,25 @@
 
           <section class="game-hud" aria-label="比赛状态">
             <div class="glass-panel hud-score">
-              <span class="hud-icon" aria-hidden="true">PTS</span>
+              <span class="hud-icon hud-icon-score" aria-hidden="true"></span>
               <span>扑救分</span>
               <strong id="scoreValue">0</strong>
             </div>
 
             <div class="glass-panel hud-time">
-              <span class="hud-icon" aria-hidden="true">TIME</span>
+              <span class="hud-icon hud-icon-time" aria-hidden="true"></span>
               <span>时间</span>
               <strong id="timeValue">60</strong>
             </div>
 
             <div class="hud-actions">
               <div class="glass-panel hud-streak">
-                <span class="hud-icon" aria-hidden="true">STK</span>
+                <span class="hud-icon hud-icon-streak" aria-hidden="true"></span>
                 <span>连扑</span>
                 <strong id="streakValue">0</strong>
               </div>
               <div class="glass-panel hud-goals">
-                <span class="hud-icon" aria-hidden="true">GA</span>
+                <span class="hud-icon hud-icon-goals" aria-hidden="true"></span>
                 <span>失球</span>
                 <strong id="concededValue">0/5</strong>
               </div>
@@ -48,6 +48,7 @@
 
           <div class="feedback-toast" id="feedbackToast" aria-live="polite"></div>
           <div class="match-status" id="matchStatus" aria-live="polite"></div>
+          <div class="pressure-cue" id="pressureCue" aria-live="polite"></div>
 
           <div class="bottom-controls" aria-label="游戏控制">
             <div class="difficulty-control glass-panel" role="group" aria-label="难度">
