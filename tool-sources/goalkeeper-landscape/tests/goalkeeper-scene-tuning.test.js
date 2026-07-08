@@ -123,6 +123,10 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.feedback.saveAfterimageCount).toBeLessThanOrEqual(5);
     expect(SCENE_TUNING.feedback.saveAfterimageMaxOpacity).toBeLessThanOrEqual(0.42);
     expect(SCENE_TUNING.feedback.saveAfterimageDecay).toBeGreaterThanOrEqual(0.04);
+    expect(SCENE_TUNING.feedback.saveContactPressureSystem).toBe("glove-ball-contact-pressure-kit");
+    expect(SCENE_TUNING.feedback.savePressureArcCount).toBeGreaterThanOrEqual(3);
+    expect(SCENE_TUNING.feedback.savePressureArcCount).toBeLessThanOrEqual(5);
+    expect(SCENE_TUNING.feedback.savePressureMaxOpacity).toBeLessThanOrEqual(0.52);
     expect(SCENE_TUNING.feedback.netRippleLineCount).toBeGreaterThanOrEqual(4);
     expect(SCENE_TUNING.feedback.netRippleMaxOpacity).toBeLessThanOrEqual(0.42);
     expect(SCENE_TUNING.feedback.netRippleAssetSystem).toBe("localized-net-ripple");
@@ -302,6 +306,41 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(afterimages[0].life).toBeGreaterThan(0.38);
 
     expect(sceneModule.getSaveAfterimagePlan({ type: "net" }, null)).toEqual([]);
+  });
+
+  it("plans a restrained glove-ball contact pressure face for save impact readability", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.getSaveContactPressurePlan).toBeTypeOf("function");
+
+    const pressure = sceneModule.getSaveContactPressurePlan(
+      {
+        type: "glove",
+        side: "left",
+        point: { x: -0.42, y: 1.18, z: 3.16 },
+        normal: { x: -0.5, y: 0.08, z: -0.74 },
+        strength: 26,
+      },
+      {
+        left: { x: -0.34, y: 1.15, z: 3.15 },
+        right: { x: 0.34, y: 1.15, z: 3.15 },
+        center: { x: 0, y: 1.15, z: 3.15 },
+        velocity: { x: -2.8, y: 0.2, z: 0 },
+      },
+    );
+
+    expect(pressure.system).toBe("glove-ball-contact-pressure-kit");
+    expect(pressure.arcs).toHaveLength(SCENE_TUNING.feedback.savePressureArcCount);
+    expect(pressure.arcs[0].marker).toBe("feedback-save-pressure-arc");
+    expect(pressure.arcs[0].position.x).toBeCloseTo(-0.42, 1);
+    expect(pressure.arcs[0].position.z).toBeLessThanOrEqual(3.17);
+    expect(pressure.arcs[0].opacity).toBeLessThanOrEqual(SCENE_TUNING.feedback.savePressureMaxOpacity);
+    expect(pressure.arcs[0].scale.x).toBeGreaterThan(0.18);
+    expect(pressure.arcs[0].scale.y).toBeLessThan(pressure.arcs[0].scale.x);
+    expect(pressure.arcs[0].life).toBeGreaterThan(0.34);
+    expect(pressure.arcs[0].rotation).not.toBe(pressure.arcs[pressure.arcs.length - 1].rotation);
+
+    expect(sceneModule.getSaveContactPressurePlan({ type: "net" }, null)).toEqual({ system: "glove-ball-contact-pressure-kit", arcs: [] });
   });
 
   it("uses a warm stadium lighting rig instead of flat prototype lighting", () => {

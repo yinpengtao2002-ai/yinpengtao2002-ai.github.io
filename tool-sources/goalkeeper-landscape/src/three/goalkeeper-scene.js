@@ -83,6 +83,10 @@ export const SCENE_TUNING = {
     saveAfterimageMaxOpacity: 0.34,
     saveAfterimageDecay: 0.052,
     saveAfterimageSpacing: 0.072,
+    saveContactPressureSystem: "glove-ball-contact-pressure-kit",
+    savePressureArcCount: 3,
+    savePressureMaxOpacity: 0.48,
+    savePressureDecay: 0.064,
     netRippleLineCount: 5,
     netRippleMaxOpacity: 0.34,
     netRippleAssetSystem: "localized-net-ripple",
@@ -308,6 +312,46 @@ export function getSaveAfterimagePlan(contact, gloves, tuning = SCENE_TUNING.fee
       rotation: Math.atan2(direction.y, direction.x) - Math.PI / 2,
     };
   });
+}
+
+export function getSaveContactPressurePlan(contact, gloves, tuning = SCENE_TUNING.feedback) {
+  var system = tuning.saveContactPressureSystem || "glove-ball-contact-pressure-kit";
+  if (!contact || (contact.type !== "glove" && contact.type !== "catch")) return { system, arcs: [] };
+
+  var point = contact.point || gloves?.center || { x: 0, y: 1.2, z: 3.15 };
+  var normal = contact.normal || { x: contact.side === "left" ? -0.54 : 0.54, y: 0.06, z: -0.72 };
+  var velocity = gloves?.velocity || {};
+  var strength = clamp01((Number.isFinite(contact.strength) ? contact.strength : contact.type === "catch" ? 14 : 22) / 30);
+  var sideSign = contact.side === "left" ? -1 : contact.side === "right" ? 1 : Math.sign(point.x || normal.x || 1);
+  var sweep = Math.atan2(
+    Number.isFinite(velocity.y) && Math.abs(velocity.y) > 0.04 ? velocity.y : normal.y || 0.08,
+    Number.isFinite(velocity.x) && Math.abs(velocity.x) > 0.08 ? velocity.x : normal.x || sideSign * 0.4,
+  );
+  var count = tuning.savePressureArcCount || 0;
+
+  return {
+    system,
+    arcs: Array.from({ length: count }, (_, index) => {
+      var t = count <= 1 ? 0 : index / (count - 1);
+      var sideOffset = (index - (count - 1) / 2) * 0.034;
+      var scaleX = 0.22 + strength * 0.1 + index * 0.025;
+      return {
+        marker: "feedback-save-pressure-arc",
+        position: {
+          x: point.x + sideOffset * sideSign,
+          y: point.y + (t - 0.5) * 0.035,
+          z: point.z - 0.018 - index * 0.006,
+        },
+        scale: {
+          x: scaleX,
+          y: 0.075 + strength * 0.035 + index * 0.006,
+        },
+        rotation: sweep + sideSign * (index - 1) * 0.32,
+        opacity: tuning.savePressureMaxOpacity * (0.74 + strength * 0.26) * (1 - index * 0.13),
+        life: Math.max(0.38, 0.66 - index * 0.07),
+      };
+    }),
+  };
 }
 
 export function createNetPocketState() {
@@ -613,6 +657,23 @@ export function createGoalkeeperScene(canvas) {
     afterimage.userData.baseOpacity = 0;
     return afterimage;
   });
+  var savePressureArcGeometry = new THREE.TorusGeometry(0.5, 0.018, 8, 34, Math.PI * 1.1);
+  var savePressureArcs = Array.from({ length: tuning.feedback.savePressureArcCount }, (_, index) => {
+    var arc = new THREE.Mesh(
+      savePressureArcGeometry,
+      new THREE.MeshBasicMaterial({
+        color: index === 0 ? "#fffdf0" : "#ffe89b",
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      }),
+    );
+    arc.name = "feedback-save-pressure-arc-" + index;
+    arc.userData.life = 0;
+    arc.userData.baseOpacity = 0;
+    arc.userData.rotation = 0;
+    return arc;
+  });
   var goalFlash = new THREE.Mesh(
     new THREE.CircleGeometry(0.42, 36),
     new THREE.MeshBasicMaterial({
@@ -729,6 +790,7 @@ export function createGoalkeeperScene(canvas) {
     ...impactRings,
     ...saveSparks,
     ...saveAfterimages,
+    ...savePressureArcs,
     goalFlash,
     streakFlash,
     ...netRippleLines,
@@ -916,6 +978,16 @@ export function createGoalkeeperScene(canvas) {
       afterimage.material.opacity = plan.opacity;
       afterimage.userData.life = plan.life;
       afterimage.userData.baseOpacity = plan.opacity;
+    });
+    getSaveContactPressurePlan(contact, gloves, tuning.feedback).arcs.forEach((plan, index) => {
+      var arc = savePressureArcs[index % savePressureArcs.length];
+      arc.visible = true;
+      arc.position.set(plan.position.x, plan.position.y, plan.position.z);
+      arc.scale.set(plan.scale.x, plan.scale.y, 1);
+      arc.material.opacity = plan.opacity;
+      arc.userData.life = plan.life;
+      arc.userData.baseOpacity = plan.opacity;
+      arc.userData.rotation = plan.rotation;
     });
   }
 
@@ -1199,6 +1271,19 @@ export function createGoalkeeperScene(canvas) {
       afterimage.material.opacity = Math.max(0, afterimage.userData.life * (afterimage.userData.baseOpacity || 0));
       afterimage.scale.multiplyScalar(1.006 + index * 0.002);
       afterimage.lookAt(camera.position);
+    });
+
+    savePressureArcs.forEach((arc, index) => {
+      if (arc.userData.life <= 0) {
+        arc.material.opacity = 0;
+        arc.visible = false;
+        return;
+      }
+      arc.userData.life = Math.max(0, arc.userData.life - tuning.feedback.savePressureDecay - index * 0.004);
+      arc.material.opacity = Math.max(0, arc.userData.life * (arc.userData.baseOpacity || 0));
+      arc.scale.multiplyScalar(1.012 + index * 0.004);
+      arc.lookAt(camera.position);
+      arc.rotateZ(arc.userData.rotation || 0);
     });
 
     turfFlecks.forEach((fleck, index) => {
