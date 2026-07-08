@@ -6,6 +6,7 @@ import {
   createGloveMesh,
   createGoalAndNet,
   createShooterModel,
+  updateShooterModel,
 } from "../src/three/procedural-assets.js";
 
 function collectByName(root, pattern) {
@@ -37,6 +38,52 @@ describe("procedural 3D assets", () => {
     expect(collectByName(launcher.group, /^launcher-stand-/).length).toBeGreaterThanOrEqual(3);
     expect(collectByName(launcher.group, /^launcher-accent-/).length).toBeGreaterThanOrEqual(3);
     expect(collectByName(launcher.group, /^shooter-head|^shooter-neck|^shooter-jersey-/)).toHaveLength(0);
+  });
+
+  it("grounds the launcher in a finished launch bay with feed balls and restrained firing feedback", () => {
+    const launcher = createShooterModel();
+
+    expect(launcher.group.userData.launcherStationSystem).toBe("animated-launch-bay-with-ball-feed");
+    expect(collectByName(launcher.group, /^launcher-kick-pad$/)).toHaveLength(1);
+    expect(collectByName(launcher.group, /^launcher-aim-rail-/)).toHaveLength(2);
+    expect(collectByName(launcher.group, /^launcher-lane-chevron-/).length).toBeGreaterThanOrEqual(3);
+    expect(collectByName(launcher.group, /^launcher-feed-queue-ball-/)).toHaveLength(3);
+    expect(collectByName(launcher.group, /^launcher-cable-/).length).toBeGreaterThanOrEqual(2);
+    expect(collectByName(launcher.group, /^launcher-charge-ring$/)).toHaveLength(1);
+    expect(collectByName(launcher.group, /^launcher-muzzle-flash$/)).toHaveLength(1);
+    expect(launcher.muzzleFlash.material.transparent).toBe(true);
+    expect(launcher.muzzleFlash.material.opacity).toBe(0);
+  });
+
+  it("pulses the launcher muzzle only at the moment the shot leaves", () => {
+    const launcher = createShooterModel();
+    updateShooterModel(launcher, {
+      phase: "cue",
+      phaseTime: 0.72,
+      currentShot: { cueDuration: 1, cue: { side: -1 } },
+    });
+
+    expect(launcher.muzzleFlash.visible).toBe(false);
+    expect(launcher.chargeRing.material.opacity).toBeGreaterThan(0.36);
+
+    updateShooterModel(launcher, {
+      phase: "live",
+      phaseTime: 0.08,
+      currentShot: { cueDuration: 1, cue: { side: -1 } },
+    });
+
+    expect(launcher.muzzleFlash.visible).toBe(true);
+    expect(launcher.muzzleFlash.material.opacity).toBeGreaterThan(0.28);
+    expect(launcher.chargeRing.material.opacity).toBeGreaterThan(0.4);
+
+    updateShooterModel(launcher, {
+      phase: "live",
+      phaseTime: 0.5,
+      currentShot: { cueDuration: 1, cue: { side: -1 } },
+    });
+
+    expect(launcher.muzzleFlash.visible).toBe(false);
+    expect(launcher.muzzleFlash.material.opacity).toBe(0);
   });
 
   it("builds polished orange gloves with highlights and black cuffs", () => {

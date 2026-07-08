@@ -125,7 +125,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
     new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
     "utf8"
   );
-  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-Dyr-Yzw8.js", import.meta.url);
+  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-CGXpFJGY.js", import.meta.url);
   const gameScript = await stat(gameScriptPath);
   const gameScriptSource = await readFile(gameScriptPath, "utf8");
   const gameStyles = await stat(new URL("../public/tools/goalkeeper-landscape/assets/index-BQjV__DA.css", import.meta.url));
@@ -135,7 +135,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(goalkeeperPage, /import GoalkeeperLandscapeRuntime/);
   assert.match(goalkeeperPage, /GOALKEEPER_SCRIPT_SRC/);
   assert.match(goalkeeperPage, /GOALKEEPER_STYLESHEET_HREF/);
-  assert.match(goalkeeperRuntime, /index-Dyr-Yzw8\.js/);
+  assert.match(goalkeeperRuntime, /index-CGXpFJGY\.js/);
   assert.match(goalkeeperPage, /index-BQjV__DA\.css/);
   assert.match(goalkeeperPage, /<GoalkeeperLandscapeRuntime \/>/);
   assert.match(goalkeeperPage, /弹力手套守门挑战/);
@@ -166,7 +166,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(thinkingClient, /横屏守门挑战/);
   assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-Dyr-Yzw8\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-CGXpFJGY\.js/);
   assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-BQjV__DA\.css/);
   assert.match(gameIndex, /id="feedbackToast"/);
   assert.match(gameIndex, /id="matchStatus"/);
@@ -236,6 +236,8 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /round-end-audio-cue/);
   assert.match(gameScriptSource, /round-result-summary/);
   assert.match(gameScriptSource, /round-result-performance-tags/);
+  assert.match(gameScriptSource, /animated-launch-bay-with-ball-feed/);
+  assert.match(gameScriptSource, /launcher-muzzle-flash/);
   assert.match(gameScriptSource, /match-hud-flow-polish/);
   assert.match(gameScriptSource, /match-pressure-hud/);
   assert.match(gameScriptSource, /forceFrame/);

@@ -759,6 +759,7 @@ export function setLimb(mesh, start, end) {
 export function createShooterModel() {
   var group = new THREE.Group();
   group.userData.visualStyle = "polished-ball-launcher";
+  group.userData.launcherStationSystem = "animated-launch-bay-with-ball-feed";
   group.position.set(0, 0, SHOT_3D.origin.z);
   group.scale.setScalar(1.45);
 
@@ -771,6 +772,51 @@ export function createShooterModel() {
   var orangeAccentMat = new THREE.MeshBasicMaterial({ color: "#ff8b3d", transparent: true, opacity: 0.9 });
   var ballMat = new THREE.MeshStandardMaterial({ color: "#f8f5e8", roughness: 0.42, metalness: 0.01 });
   var shadowMat = new THREE.MeshBasicMaterial({ color: "#14351f", transparent: true, opacity: 0.2, depthWrite: false });
+  var laneMat = new THREE.MeshBasicMaterial({ color: "#f8fff0", transparent: true, opacity: 0.18, depthWrite: false });
+  var cableMat = new THREE.LineBasicMaterial({ color: "#20323a", transparent: true, opacity: 0.68 });
+  var flashMat = new THREE.MeshBasicMaterial({
+    color: "#fff1a8",
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+
+  var kickPad = new THREE.Mesh(new THREE.CircleGeometry(0.72, 36), laneMat.clone());
+  kickPad.name = "launcher-kick-pad";
+  kickPad.rotation.x = -Math.PI / 2;
+  kickPad.scale.set(1.22, 0.52, 1);
+  kickPad.position.set(0, 0.012, 0.42);
+
+  var aimRailLeft = makeLimb("#f8fff0", 0.012);
+  aimRailLeft.name = "launcher-aim-rail-left";
+  aimRailLeft.material.transparent = true;
+  aimRailLeft.material.opacity = 0.46;
+  setLimb(aimRailLeft, { x: -0.19, y: 0.035, z: 0.28 }, { x: -0.34, y: 0.035, z: 1.35 });
+  var aimRailRight = makeLimb("#f8fff0", 0.012);
+  aimRailRight.name = "launcher-aim-rail-right";
+  aimRailRight.material.transparent = true;
+  aimRailRight.material.opacity = 0.46;
+  setLimb(aimRailRight, { x: 0.19, y: 0.035, z: 0.28 }, { x: 0.34, y: 0.035, z: 1.35 });
+
+  var chevronShape = new THREE.Shape();
+  chevronShape.moveTo(0, 0.09);
+  chevronShape.lineTo(0.18, -0.08);
+  chevronShape.lineTo(0.08, -0.08);
+  chevronShape.lineTo(0, -0.005);
+  chevronShape.lineTo(-0.08, -0.08);
+  chevronShape.lineTo(-0.18, -0.08);
+  chevronShape.lineTo(0, 0.09);
+  var chevronGeometry = new THREE.ShapeGeometry(chevronShape);
+  var laneChevrons = Array.from({ length: 3 }, (_, index) => {
+    var chevron = new THREE.Mesh(chevronGeometry, orangeAccentMat.clone());
+    chevron.name = "launcher-lane-chevron-" + index;
+    chevron.rotation.x = -Math.PI / 2;
+    chevron.position.set(0, 0.02, 0.58 + index * 0.34);
+    chevron.scale.setScalar(0.72 + index * 0.1);
+    chevron.material.opacity = 0.36 + index * 0.1;
+    return chevron;
+  });
 
   var shadow = new THREE.Mesh(new THREE.CircleGeometry(0.58, 32), shadowMat);
   shadow.name = "launcher-shadow";
@@ -798,7 +844,14 @@ export function createShooterModel() {
   var muzzle = new THREE.Mesh(new THREE.TorusGeometry(0.125, 0.018, 8, 24), orangeAccentMat);
   muzzle.name = "launcher-accent-muzzle-ring";
   muzzle.position.set(0, 0, 0.71);
-  turret.add(barrel, muzzle);
+  var chargeRing = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.01, 8, 28), accentMat.clone());
+  chargeRing.name = "launcher-charge-ring";
+  chargeRing.position.set(0, 0, 0.735);
+  var muzzleFlash = new THREE.Mesh(new THREE.CircleGeometry(0.19, 28), flashMat);
+  muzzleFlash.name = "launcher-muzzle-flash";
+  muzzleFlash.position.set(0, 0, 0.765);
+  muzzleFlash.visible = false;
+  turret.add(barrel, muzzle, chargeRing, muzzleFlash);
 
   var wheelLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.105, 28), wheelMat);
   wheelLeft.name = "launcher-wheel-left";
@@ -819,6 +872,14 @@ export function createShooterModel() {
   hopper.name = "launcher-hopper";
   hopper.position.set(0, 1.38, -0.16);
   hopper.rotation.x = -0.16;
+  var feedRack = makeRoundedPart("launcher-feed-rack", 0.72, 0.08, 0.024, 0.08, chassisMat, 0, 1.55, -0.22);
+  feedRack.rotation.x = -0.1;
+  var queueBalls = [-0.24, 0, 0.24].map((x, index) => {
+    var queueBall = new THREE.Mesh(new THREE.SphereGeometry(0.095, 18, 12), ballMat);
+    queueBall.name = "launcher-feed-queue-ball-" + index;
+    queueBall.position.set(x, 1.6 + (index % 2) * 0.015, -0.23 - index * 0.035);
+    return queueBall;
+  });
   var feedBall = new THREE.Mesh(new THREE.SphereGeometry(0.11, 22, 16), ballMat);
   feedBall.name = "launcher-feed-ball";
   feedBall.position.set(0, 1.2, -0.12);
@@ -839,8 +900,32 @@ export function createShooterModel() {
   var baseFootLeft = makeRoundedPart("launcher-stand-foot-left", 0.28, 0.055, 0.018, 0.1, chassisMat, -0.44, 0.045, 0.22);
   var baseFootRight = makeRoundedPart("launcher-stand-foot-right", 0.28, 0.055, 0.018, 0.1, chassisMat, 0.44, 0.045, 0.22);
   var baseFootBack = makeRoundedPart("launcher-stand-foot-back", 0.3, 0.055, 0.018, 0.1, chassisMat, 0, 0.045, -0.44);
+  var powerCable = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-0.28, 0.14, -0.26),
+      new THREE.Vector3(-0.6, 0.055, -0.42),
+      new THREE.Vector3(-0.82, 0.035, -0.18),
+    ]),
+    cableMat,
+  );
+  powerCable.name = "launcher-cable-power";
+  var controlCable = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0.28, 0.13, -0.24),
+      new THREE.Vector3(0.58, 0.05, -0.38),
+      new THREE.Vector3(0.76, 0.035, 0.05),
+    ]),
+    cableMat.clone(),
+  );
+  controlCable.name = "launcher-cable-control";
 
   group.add(
+    kickPad,
+    aimRailLeft,
+    aimRailRight,
+    ...laneChevrons,
+    powerCable,
+    controlCable,
     shadow,
     standLeft,
     standRight,
@@ -857,6 +942,8 @@ export function createShooterModel() {
     wheelLeft,
     wheelRight,
     hopper,
+    feedRack,
+    ...queueBalls,
     feedBall,
   );
   return {
@@ -869,6 +956,12 @@ export function createShooterModel() {
     wheelRight,
     hopper,
     feedBall,
+    queueBalls,
+    laneChevrons,
+    aimRails: [aimRailLeft, aimRailRight],
+    kickPad,
+    chargeRing,
+    muzzleFlash,
     statusLight,
     powerLight,
     shadow,
@@ -882,6 +975,7 @@ export function updateShooterModel(model, director) {
   var liveProgress = director.phase === "live" ? Math.min(1, director.phaseTime / 0.65) : 0;
   var activeProgress = director.phase === "live" ? Math.max(0, 1 - liveProgress) : cueProgress;
   var charge = Math.sin(activeProgress * Math.PI);
+  var muzzlePulse = director.phase === "live" ? Math.max(0, 1 - liveProgress / 0.2) : 0;
   var aimYaw = side * (0.08 + charge * 0.045);
   var aimPitch = -0.08 - charge * 0.04;
   var spin = director.phaseTime * (director.phase === "live" ? 32 : 18) + cueProgress * 12;
@@ -891,10 +985,25 @@ export function updateShooterModel(model, director) {
   model.feedBall.visible = director.phase !== "live" || liveProgress > 0.35;
   model.feedBall.position.set(side * charge * 0.025, 1.2 - cueProgress * 0.02, -0.12 + cueProgress * 0.17);
   model.feedBall.scale.setScalar(1 - (director.phase === "live" && liveProgress < 0.22 ? liveProgress * 2.8 : 0));
+  model.queueBalls?.forEach((ball, index) => {
+    var readyOffset = director.phase === "cue" ? cueProgress * 0.025 : Math.max(0, 0.05 - liveProgress * 0.04);
+    ball.position.x = -0.24 + index * 0.24 + side * charge * 0.006;
+    ball.position.z = -0.23 - index * 0.035 + readyOffset;
+    ball.rotation.y += 0.01 + index * 0.002;
+  });
+  model.laneChevrons?.forEach((chevron, index) => {
+    chevron.material.opacity = 0.24 + charge * 0.18 + (index / Math.max(1, model.laneChevrons.length - 1)) * 0.12;
+    chevron.scale.setScalar(0.72 + index * 0.1 + muzzlePulse * 0.08);
+  });
   model.wheelLeft.rotation.y = spin;
   model.wheelRight.rotation.y = -spin;
   model.statusLight.material.opacity = 0.52 + charge * 0.42;
   model.powerLight.material.opacity = director.phase === "live" ? 0.95 : 0.58 + cueProgress * 0.28;
+  model.chargeRing.material.opacity = 0.26 + charge * 0.36 + muzzlePulse * 0.28;
+  model.chargeRing.scale.setScalar(1 + charge * 0.08 + muzzlePulse * 0.22);
+  model.muzzleFlash.visible = muzzlePulse > 0.02;
+  model.muzzleFlash.material.opacity = model.muzzleFlash.visible ? muzzlePulse * 0.78 : 0;
+  model.muzzleFlash.scale.setScalar(0.85 + muzzlePulse * 0.8);
   model.shadow.scale.set(1.5 + charge * 0.08, 0.48 + charge * 0.04, 1);
 }
 
