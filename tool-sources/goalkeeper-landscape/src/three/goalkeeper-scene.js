@@ -7,6 +7,7 @@ import {
   createShooterModel,
   updateShooterModel,
 } from "./procedural-assets.js";
+import { MAX_CONCEDED } from "../config/game-config.js";
 import { SHOT_3D } from "../game/shot-3d-director.js";
 import { RAPIER_GOAL } from "../physics/rapier-world.js";
 
@@ -72,10 +73,17 @@ export const SCENE_TUNING = {
     impactRingCount: 3,
     saveFlashColor: "#fff1a8",
     goalFlashColor: "#ff7846",
+    dangerGoalFlashColor: "#ff3f2f",
     streakFlashColor: "#61f0ff",
     frameFlashColor: "#f8fff2",
+    catchSaveStrength: 0.95,
+    parrySaveStrength: 0.82,
+    saveImpactStrength: 0.86,
+    goalImpactStrength: 1,
+    dangerGoalImpactStrength: 1.18,
     frameImpactStrength: 0.82,
     maxCameraShake: 0.045,
+    cameraShakeFalloff: 0.0048,
     netPulseDecay: 0.032,
     groundSkidCount: 5,
     groundSkidColor: "#e7d5a7",
@@ -128,6 +136,10 @@ export const SCENE_TUNING = {
 
 function clamp01(value) {
   return Math.max(0, Math.min(1, value));
+}
+
+function clampNumber(value, min, max) {
+  return Math.max(min, Math.min(max, value));
 }
 
 function lerpNumber(start, end, amount) {
@@ -592,6 +604,64 @@ export function getFrameReboundFeedbackPlan(contact, tuning = SCENE_TUNING.feedb
     strength,
     opacity: tuning.frameReboundMaxOpacity * strength,
     shake: tuning.maxCameraShake * tuning.frameReboundShake * strength,
+  };
+}
+
+export function getMatchFeedbackProfile(event = {}, tuning = SCENE_TUNING.feedback) {
+  var type = event.type || event.contact?.type || "save";
+  var contact = event.contact || {};
+  var state = event.state || {};
+  var contactStrength = Number.isFinite(contact.strength) ? contact.strength : null;
+
+  if (type === "save" || type === "glove" || type === "catch") {
+    var isCatch = contact.type === "catch" || type === "catch";
+    var baseStrength = isCatch ? tuning.catchSaveStrength : tuning.parrySaveStrength;
+    var scaledContact = contactStrength === null ? baseStrength : clampNumber(contactStrength / 36, 0.42, 1.02);
+    var impactStrength = clampNumber(Math.max(baseStrength, scaledContact), 0.58, 1.06);
+    return {
+      kind: isCatch ? "catch-save" : "parry-save",
+      flashColor: tuning.saveFlashColor,
+      impactStrength,
+      cameraShake: tuning.maxCameraShake * impactStrength * 0.68,
+      netPocketStrength: 0,
+      netPulse: 0,
+    };
+  }
+
+  if (type === "goal" || type === "net") {
+    var isDanger = Boolean(event.danger) || (state.conceded || 0) >= MAX_CONCEDED - 1;
+    var baseGoalStrength = isDanger ? tuning.dangerGoalImpactStrength : tuning.goalImpactStrength;
+    var goalContactStrength = contactStrength === null ? 0.78 : clampNumber(contactStrength, 0.58, 1.08);
+    var impactStrengthForGoal = clampNumber(baseGoalStrength * (0.9 + goalContactStrength * 0.16), 0.82, 1.24);
+    return {
+      kind: isDanger ? "danger-goal" : "goal",
+      flashColor: isDanger ? tuning.dangerGoalFlashColor : tuning.goalFlashColor,
+      impactStrength: impactStrengthForGoal,
+      cameraShake: tuning.maxCameraShake * impactStrengthForGoal * (isDanger ? 1 : 0.86),
+      netPocketStrength: clampNumber(goalContactStrength + (isDanger ? 0.18 : 0), 0.72, 1.12),
+      netPulse: clampNumber(0.82 + goalContactStrength * 0.16 + (isDanger ? 0.12 : 0), 0.82, 1.12),
+    };
+  }
+
+  if (type === "frame") {
+    var frameStrength = clampNumber(contactStrength ?? tuning.frameImpactStrength, 0.45, tuning.frameImpactStrength);
+    return {
+      kind: "frame-rebound",
+      flashColor: tuning.frameFlashColor,
+      impactStrength: frameStrength,
+      cameraShake: tuning.maxCameraShake * frameStrength,
+      netPocketStrength: 0,
+      netPulse: 0,
+    };
+  }
+
+  return {
+    kind: "ambient",
+    flashColor: tuning.saveFlashColor,
+    impactStrength: tuning.saveImpactStrength,
+    cameraShake: tuning.maxCameraShake * 0.42,
+    netPocketStrength: 0,
+    netPulse: 0,
   };
 }
 
@@ -1136,15 +1206,16 @@ export function createGoalkeeperScene(canvas) {
     });
   }
 
-  function triggerImpact(type, position, strength) {
+  function triggerImpact(type, position, strength, profile = null) {
     var color =
-      type === "goal"
+      profile?.flashColor ||
+      (type === "goal"
         ? tuning.feedback.goalFlashColor
         : type === "streak"
           ? tuning.feedback.streakFlashColor
           : type === "frame"
             ? tuning.feedback.frameFlashColor
-            : tuning.feedback.saveFlashColor;
+            : tuning.feedback.saveFlashColor);
     var pulseStrength = strength || 1;
     impactRings.forEach((ring, index) => {
       ring.position.set(position.x, position.y, position.z);
@@ -1153,12 +1224,13 @@ export function createGoalkeeperScene(canvas) {
       ring.scale.setScalar(1 + index * 0.12);
       ring.userData.life = Math.max(0.35, 1 - index * 0.12);
     });
-    cameraShake = Math.max(cameraShake, tuning.feedback.maxCameraShake * pulseStrength);
+    cameraShake = Math.max(cameraShake, profile?.cameraShake ?? tuning.feedback.maxCameraShake * pulseStrength);
   }
 
   function triggerSaveFeedback(position, strength, contact = null, gloves = null) {
-    var pulseStrength = strength || 1;
-    triggerImpact("save", position, pulseStrength);
+    var profile = getMatchFeedbackProfile({ type: "save", contact }, tuning.feedback);
+    var pulseStrength = strength || profile.impactStrength || 1;
+    triggerImpact("save", position, profile.impactStrength || pulseStrength, profile);
     saveSparks.forEach((spark, index) => {
       var angle = (index / saveSparks.length) * Math.PI * 2 + (index % 2 ? 0.26 : -0.18);
       var radius = 0.08 + (index % 3) * 0.026;
@@ -1236,7 +1308,8 @@ export function createGoalkeeperScene(canvas) {
     });
   }
 
-  function triggerGoalFeedback(position, contact = null) {
+  function triggerGoalFeedback(position, contact = null, state = null) {
+    var profile = getMatchFeedbackProfile({ type: "goal", contact, state }, tuning.feedback);
     var contactX = Math.max(-RAPIER_GOAL.halfWidth + 0.18, Math.min(RAPIER_GOAL.halfWidth - 0.18, position.x || 0));
     var contactY = Math.max(0.18, Math.min(RAPIER_GOAL.height - 0.08, position.y || 1));
     var contactZ = position.z || RAPIER_GOAL.netPlaneZ;
@@ -1246,20 +1319,22 @@ export function createGoalkeeperScene(canvas) {
         x: contactX,
         y: contactY,
         z: contactZ,
-        strength: Number.isFinite(contact?.strength) ? contact.strength : 0.82,
+        strength: profile.netPocketStrength,
       },
       tuning.feedback,
     );
+    goalFlash.material.color.set(profile.flashColor);
     goalFlash.position.set(contactX, Math.max(0.08, contactY), contactZ + 0.05);
-    goalFlash.material.opacity = 0.38;
+    goalFlash.material.opacity = Math.min(0.52, 0.34 * profile.impactStrength + (profile.kind === "danger-goal" ? 0.08 : 0));
     goalFlash.scale.setScalar(1);
-    triggerImpact("goal", { ...position, x: contactX, y: contactY }, 1);
-    netPulse = 1;
+    triggerImpact("goal", { ...position, x: contactX, y: contactY }, profile.impactStrength, profile);
+    netPulse = Math.max(netPulse, profile.netPulse);
     netPulseContactPoint = { x: contactX, y: contactY, z: contactZ };
     goalWaves.forEach((wave, index) => {
+      wave.material.color.set(profile.flashColor);
       wave.position.set(contactX, Math.max(0.16, contactY), position.z + 0.06 + index * 0.012);
       wave.scale.setScalar(1 + index * 0.12);
-      wave.material.opacity = tuning.feedback.goalWaveMaxOpacity * (1 - index * 0.16);
+      wave.material.opacity = tuning.feedback.goalWaveMaxOpacity * profile.impactStrength * (1 - index * 0.16);
       wave.userData.life = Math.max(0.42, 0.74 - index * 0.12);
     });
     netRippleLines.forEach((line, index) => {
@@ -1278,6 +1353,13 @@ export function createGoalkeeperScene(canvas) {
   }
 
   function triggerFrameReboundFeedback(contact, fallbackPosition) {
+    var feedbackProfile = getMatchFeedbackProfile(
+      {
+        type: "frame",
+        contact,
+      },
+      tuning.feedback,
+    );
     var plan = getFrameReboundFeedbackPlan(
       {
         ...(contact || {}),
@@ -1288,7 +1370,7 @@ export function createGoalkeeperScene(canvas) {
     );
     if (!plan) return;
 
-    cameraShake = Math.max(cameraShake, plan.shake);
+    cameraShake = Math.max(cameraShake, feedbackProfile.cameraShake, plan.shake);
     frameReboundHighlights.forEach((highlight, index) => {
       var offset = (index - 1) * 0.045;
       var isCrossbar = plan.part === "crossbar";
@@ -1344,14 +1426,15 @@ export function createGoalkeeperScene(canvas) {
       lastContactSignature = contactSignature;
       if (ballState.lastContact.type === "glove" || ballState.lastContact.type === "catch") {
         var position = contactPoint;
-        triggerSaveFeedback(position, ballState.lastContact.type === "catch" ? 0.95 : 0.82, ballState.lastContact, snapshot.gloves);
+        triggerSaveFeedback(position, null, ballState.lastContact, snapshot.gloves);
         triggerGloveImpactState(gloveImpactState, ballState.lastContact, snapshot.gloves, tuning.gloves);
       }
       if (ballState.lastContact.type === "net") {
-        triggerGoalFeedback(contactPoint, ballState.lastContact);
+        triggerGoalFeedback(contactPoint, ballState.lastContact, snapshot.state);
       }
       if (ballState.lastContact.type === "frame") {
-        triggerImpact("frame", contactPoint, tuning.feedback.frameImpactStrength);
+        var frameProfile = getMatchFeedbackProfile({ type: "frame", contact: ballState.lastContact }, tuning.feedback);
+        triggerImpact("frame", contactPoint, frameProfile.impactStrength, frameProfile);
         triggerFrameReboundFeedback(ballState.lastContact, contactPoint);
       }
     }
@@ -1384,7 +1467,7 @@ export function createGoalkeeperScene(canvas) {
       triggerStreakFeedback(snapshot.gloves);
     }
     if (state.message === "goal" && snapshot.ball?.position) {
-      triggerGoalFeedback(snapshot.ball.position);
+      triggerGoalFeedback(snapshot.ball.position, snapshot.ball.lastContact, state);
     }
   }
 
@@ -1659,7 +1742,7 @@ export function createGoalkeeperScene(canvas) {
       cameraFraming.position.z,
     );
     camera.lookAt(cameraFraming.lookAt);
-    cameraShake = Math.max(0, cameraShake - 0.0048);
+    cameraShake = Math.max(0, cameraShake - tuning.feedback.cameraShakeFalloff);
   }
 
   function updateVisuals(snapshot) {

@@ -134,10 +134,16 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.feedback.impactRingCount).toBeGreaterThanOrEqual(3);
     expect(SCENE_TUNING.feedback.saveFlashColor).toBe("#fff1a8");
     expect(SCENE_TUNING.feedback.goalFlashColor).toBe("#ff7846");
+    expect(SCENE_TUNING.feedback.dangerGoalFlashColor).toBe("#ff3f2f");
     expect(SCENE_TUNING.feedback.streakFlashColor).toBe("#61f0ff");
     expect(SCENE_TUNING.feedback.frameFlashColor).toBe("#f8fff2");
+    expect(SCENE_TUNING.feedback.catchSaveStrength).toBeGreaterThan(SCENE_TUNING.feedback.parrySaveStrength);
+    expect(SCENE_TUNING.feedback.goalImpactStrength).toBeGreaterThan(SCENE_TUNING.feedback.saveImpactStrength);
+    expect(SCENE_TUNING.feedback.dangerGoalImpactStrength).toBeGreaterThan(SCENE_TUNING.feedback.goalImpactStrength);
     expect(SCENE_TUNING.feedback.frameImpactStrength).toBeLessThanOrEqual(0.85);
     expect(SCENE_TUNING.feedback.maxCameraShake).toBeLessThanOrEqual(0.055);
+    expect(SCENE_TUNING.feedback.cameraShakeFalloff).toBeGreaterThanOrEqual(0.0035);
+    expect(SCENE_TUNING.feedback.cameraShakeFalloff).toBeLessThanOrEqual(0.008);
     expect(SCENE_TUNING.feedback.netPulseDecay).toBeGreaterThanOrEqual(0.025);
     expect(SCENE_TUNING.feedback.groundSkidCount).toBeGreaterThanOrEqual(4);
     expect(SCENE_TUNING.feedback.groundSkidColor).toBe("#e7d5a7");
@@ -177,6 +183,59 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.feedback.dynamicNetDetailSystem).toBe("reactive-woven-net-recoil");
     expect(SCENE_TUNING.feedback.dynamicNetDetailMaxTravel).toBeGreaterThanOrEqual(0.08);
     expect(SCENE_TUNING.feedback.dynamicNetDetailMaxTravel).toBeLessThanOrEqual(0.18);
+  });
+
+  it("maps match events to distinct visual feedback profiles instead of one generic flash", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.getMatchFeedbackProfile).toBeTypeOf("function");
+
+    const catchSave = sceneModule.getMatchFeedbackProfile({
+      type: "save",
+      contact: { type: "catch", strength: 14 },
+      state: { streak: 1, conceded: 0 },
+    });
+    const parrySave = sceneModule.getMatchFeedbackProfile({
+      type: "save",
+      contact: { type: "glove", strength: 24 },
+      state: { streak: 1, conceded: 0 },
+    });
+    const normalGoal = sceneModule.getMatchFeedbackProfile({
+      type: "goal",
+      contact: { type: "net", strength: 0.72 },
+      state: { conceded: 1 },
+    });
+    const dangerGoal = sceneModule.getMatchFeedbackProfile({
+      type: "goal",
+      contact: { type: "net", strength: 0.88 },
+      state: { conceded: 4 },
+    });
+    const frame = sceneModule.getMatchFeedbackProfile({
+      type: "frame",
+      contact: { type: "frame", strength: 0.7 },
+      state: { conceded: 0 },
+    });
+
+    expect(catchSave.kind).toBe("catch-save");
+    expect(parrySave.kind).toBe("parry-save");
+    expect(catchSave.impactStrength).toBeGreaterThan(parrySave.impactStrength);
+    expect(catchSave.cameraShake).toBeLessThan(normalGoal.cameraShake);
+    expect(parrySave.flashColor).toBe(SCENE_TUNING.feedback.saveFlashColor);
+
+    expect(normalGoal.kind).toBe("goal");
+    expect(normalGoal.flashColor).toBe(SCENE_TUNING.feedback.goalFlashColor);
+    expect(normalGoal.netPocketStrength).toBeGreaterThanOrEqual(0.72);
+    expect(normalGoal.netPulse).toBeGreaterThanOrEqual(0.82);
+
+    expect(dangerGoal.kind).toBe("danger-goal");
+    expect(dangerGoal.flashColor).toBe(SCENE_TUNING.feedback.dangerGoalFlashColor);
+    expect(dangerGoal.impactStrength).toBeGreaterThan(normalGoal.impactStrength);
+    expect(dangerGoal.cameraShake).toBeGreaterThan(normalGoal.cameraShake);
+    expect(dangerGoal.netPocketStrength).toBeGreaterThan(normalGoal.netPocketStrength);
+
+    expect(frame.kind).toBe("frame-rebound");
+    expect(frame.flashColor).toBe(SCENE_TUNING.feedback.frameFlashColor);
+    expect(frame.cameraShake).toBeLessThanOrEqual(SCENE_TUNING.feedback.maxCameraShake);
   });
 
   it("plans reactive woven-net recoil for diagonal net and rope details", async () => {
