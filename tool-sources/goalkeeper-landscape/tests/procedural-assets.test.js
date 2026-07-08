@@ -135,4 +135,29 @@ describe("procedural 3D assets", () => {
     expect(collectByName(goal.group, /^goal-net-tension-cord-/).length).toBeGreaterThanOrEqual(4);
     expect(collectByName(goal.group, /^goal-net-rope-knot-/).length).toBeGreaterThanOrEqual(4);
   });
+
+  it("adds near-camera asset finishing details for turf, net hardware, gloves, and match ball material", () => {
+    const field = createFieldGroup();
+    const goal = createGoalAndNet();
+    const glove = createGloveMesh("right");
+    const ballTexture = createFootballTexture();
+
+    expect(field.userData.surfaceFinishSystem).toBe("multi-layer-turf-edge-divot-kit");
+    expect(collectByName(field, /^field-edge-tuft-cluster-/).length).toBeGreaterThanOrEqual(14);
+    expect(collectByName(field, /^field-divot-scar-/).length).toBeGreaterThanOrEqual(10);
+    expect(collectByName(field, /^field-line-chalk-dust-/).length).toBeGreaterThanOrEqual(6);
+
+    expect(goal.group.userData.netHardwareSystem).toBe("weighted-net-label-and-clip-kit");
+    expect(collectByName(goal.group, /^goal-net-bottom-weight-/).length).toBeGreaterThanOrEqual(4);
+    expect(collectByName(goal.group, /^goal-net-label-tab-/)).toHaveLength(2);
+    expect(collectByName(goal.group, /^goal-frame-net-clip-/).length).toBeGreaterThanOrEqual(6);
+
+    expect(glove.userData.materialSystem).toBe("stitched-padded-match-glove");
+    expect(collectByName(glove, /^glove-vent-perforation-/).length).toBeGreaterThanOrEqual(8);
+    expect(collectByName(glove, /^glove-wrist-strap-/)).toHaveLength(1);
+    expect(collectByName(glove, /^glove-brand-patch-/)).toHaveLength(1);
+
+    expect(ballTexture.userData.materialSystem).toBe("raised-seam-accent-match-ball");
+    expect(ballTexture.userData.finishSystem).toBe("micro-scuffed-satin-panels");
+  });
 });
