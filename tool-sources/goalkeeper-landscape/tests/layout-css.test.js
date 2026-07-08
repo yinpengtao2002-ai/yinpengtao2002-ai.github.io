@@ -46,4 +46,20 @@ describe("responsive layout css", () => {
     expect(css).toContain(".match-progress.is-low-time");
     expect(css).toContain(".match-progress.is-match-point");
   });
+
+  it("styles audio readiness and coach-note surfaces as compact HUD details", () => {
+    const css = readFileSync(stylesPath, "utf8");
+
+    expect(css).toContain("match-audio-status-chip");
+    expect(css).toContain(".sound-status");
+    expect(css).toContain(".utility-button.is-sound-ready");
+    expect(css).toContain(".utility-button.is-sound-muted");
+    expect(css).toContain("match-pause-coach-hint");
+    expect(css).toContain(".pause-hint");
+    expect(css).toContain("round-result-coach-note");
+    expect(css).toContain(".result-coach");
+    expect(css).toContain("@media (max-height: 520px) and (orientation: landscape)");
+    expect(css).toContain(".sound-status");
+    expect(css).toContain("max-width: min(260px, 42vw);");
+  });
 });

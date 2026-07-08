@@ -47,14 +47,17 @@ function createDocument() {
     "startButton",
     "restartButton",
     "pauseResumeButton",
+    "soundStatus",
     "startOverlay",
     "pauseOverlay",
     "endOverlay",
+    "pauseHint",
     "finalScore",
     "resultGrade",
     "resultReason",
     "resultVerdict",
     "resultSummary",
+    "resultCoach",
     "feedbackToast",
     "matchStatus",
     "pressureCue",
@@ -92,19 +95,41 @@ function createDocument() {
 }
 
 describe("hud", () => {
-  it("labels enabled sound as a state instead of a play prompt", () => {
+  it("surfaces browser audio readiness instead of pretending sound is already audible", () => {
+    expect(HudModule.getSoundStatusLabel).toBeTypeOf("function");
     const documentRef = createDocument();
     const hud = createHud(documentRef);
 
-    hud.update(createGameState(), true);
+    hud.update(createGameState(), true, { audioStatus: "locked" });
 
-    expect(documentRef.elements.soundButton.textContent).toBe("音效开");
-    expect(documentRef.elements.soundButton.getAttribute("aria-label")).toBe("关闭音效");
+    expect(HudModule.getSoundStatusLabel(true, "locked")).toEqual({
+      button: "待启用",
+      detail: "点开始后启用音效",
+      aria: "音效待启用，开始挑战后会解锁",
+      status: "locked",
+    });
+    expect(documentRef.elements.soundButton.textContent).toBe("待启用");
+    expect(documentRef.elements.soundButton.getAttribute("aria-label")).toBe("音效待启用，开始挑战后会解锁");
+    expect(documentRef.elements.soundButton.dataset.soundStatus).toBe("locked");
+    expect(documentRef.elements.soundButton.classList.contains("is-sound-locked")).toBe(true);
+    expect(documentRef.elements.soundStatus.textContent).toBe("点开始后启用音效");
+    expect(documentRef.elements.soundStatus.dataset.audioStatusSystem).toBe("match-audio-status-chip");
 
-    hud.update(createGameState(), false);
+    hud.update(createGameState(), true, { audioStatus: "ready" });
+
+    expect(documentRef.elements.soundButton.textContent).toBe("音效就绪");
+    expect(documentRef.elements.soundButton.getAttribute("aria-label")).toBe("音效已就绪，点击静音");
+    expect(documentRef.elements.soundButton.dataset.soundStatus).toBe("ready");
+    expect(documentRef.elements.soundButton.classList.contains("is-sound-ready")).toBe(true);
+    expect(documentRef.elements.soundButton.classList.contains("is-sound-locked")).toBe(false);
+
+    hud.update(createGameState(), false, { audioStatus: "muted" });
 
     expect(documentRef.elements.soundButton.textContent).toBe("静音");
-    expect(documentRef.elements.soundButton.getAttribute("aria-label")).toBe("开启音效");
+    expect(documentRef.elements.soundButton.getAttribute("aria-label")).toBe("音效已静音，点击开启");
+    expect(documentRef.elements.soundButton.dataset.soundStatus).toBe("muted");
+    expect(documentRef.elements.soundButton.classList.contains("is-sound-muted")).toBe(true);
+    expect(documentRef.elements.soundStatus.textContent).toBe("当前静音");
   });
 
   it("highlights the selected difficulty and reports difficulty changes", () => {
@@ -318,9 +343,35 @@ describe("hud", () => {
     expect(documentRef.elements.pauseOverlay.classList.contains("hidden")).toBe(false);
     expect(documentRef.elements.pauseButton.textContent).toBe("▶ 继续");
     expect(documentRef.elements.pauseButton.getAttribute("aria-label")).toBe("继续挑战");
+    expect(documentRef.elements.pauseHint.textContent).toBe("先盯球速，再移动手套");
+    expect(documentRef.elements.pauseHint.dataset.pauseHintSystem).toBe("match-pause-coach-hint");
 
     documentRef.elements.pauseResumeButton.click();
     expect(pauseClicks).toBe(1);
+  });
+
+  it("gives context-aware pause hints without blocking the resume action", () => {
+    expect(HudModule.getPauseHintText).toBeTypeOf("function");
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    const pressureState = {
+      ...createGameState(),
+      running: true,
+      paused: true,
+      timeLeft: 8.4,
+      conceded: 4,
+    };
+
+    expect(HudModule.getPauseHintText(pressureState)).toBe("最后几秒，先守中路");
+
+    hud.update(pressureState, true, { audioStatus: "ready" });
+
+    expect(documentRef.elements.pauseHint.textContent).toBe("最后几秒，先守中路");
+    expect(documentRef.elements.pauseOverlay.classList.contains("hidden")).toBe(false);
+
+    hud.update({ ...pressureState, timeLeft: 34, conceded: 1, streak: 3 }, true, { audioStatus: "ready" });
+
+    expect(documentRef.elements.pauseHint.textContent).toBe("连扑手感在线，继续压近角");
   });
 
   it("fills the end overlay with useful round statistics", () => {
@@ -372,6 +423,42 @@ describe("hud", () => {
     }, true);
 
     expect(documentRef.elements.resultSummary.textContent).toBe("再守一轮，先稳近角");
+  });
+
+  it("adds a compact coach note to the result screen so the next round has direction", () => {
+    expect(HudModule.getResultCoachText).toBeTypeOf("function");
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    const strongRound = {
+      ...createGameState(),
+      ended: true,
+      score: 1280,
+      saves: 9,
+      conceded: 0,
+      bestStreak: 7,
+      endReason: "time",
+    };
+    const lostRound = {
+      ...createGameState(),
+      ended: true,
+      score: 120,
+      saves: 1,
+      conceded: 5,
+      bestStreak: 1,
+      endReason: "conceded",
+    };
+
+    expect(HudModule.getResultCoachText(strongRound)).toBe("下一局可以切到困难，练边角反应");
+    expect(HudModule.getResultCoachText(lostRound)).toBe("下一局先守中路，边角球再提前压手套");
+
+    hud.update(strongRound, true, { audioStatus: "ready" });
+
+    expect(documentRef.elements.resultCoach.textContent).toBe("下一局可以切到困难，练边角反应");
+    expect(documentRef.elements.resultCoach.dataset.resultCoachSystem).toBe("round-result-coach-note");
+
+    hud.update(lostRound, true, { audioStatus: "ready" });
+
+    expect(documentRef.elements.resultCoach.textContent).toBe("下一局先守中路，边角球再提前压手套");
   });
 
   it("grades the round so the end screen feels like a complete game result", () => {

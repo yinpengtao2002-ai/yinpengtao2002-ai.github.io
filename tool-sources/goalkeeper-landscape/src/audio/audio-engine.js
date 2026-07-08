@@ -206,6 +206,7 @@ export function createAudioEngine(root = window) {
     source.connect(gain);
     gain.connect(ctx.destination);
     source.start(ctx.currentTime);
+    unlocked = true;
     return true;
   }
 
@@ -273,6 +274,13 @@ export function createAudioEngine(root = window) {
     return enabled;
   }
 
+  function getStatus() {
+    if (!AudioContextCtor) return "unavailable";
+    if (!enabled) return "muted";
+    if (unlocked || context?.state === "running") return "ready";
+    return "locked";
+  }
+
   return {
     prime,
     preload,
@@ -280,6 +288,7 @@ export function createAudioEngine(root = window) {
     playEvent,
     pulseHaptic,
     toggle,
+    getStatus,
     isEnabled() {
       return enabled;
     },

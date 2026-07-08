@@ -597,6 +597,7 @@ export async function createThreeGameRuntime(options) {
 
   function getHudContext() {
     return {
+      audioStatus: audio.getStatus?.() || (audio.isEnabled() ? "locked" : "muted"),
       roundIntroCue: getRoundIntroCue(roundIntroTimer),
     };
   }

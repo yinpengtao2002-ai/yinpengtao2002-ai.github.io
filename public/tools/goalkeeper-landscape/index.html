@@ -9,8 +9,8 @@
     <meta name="full-screen" content="yes">
     <title>弹力手套守门挑战</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2369c97a'/%3E%3Ccircle cx='32' cy='32' r='16' fill='%23fffdf2'/%3E%3Cpath d='M20 32h24M32 20v24' stroke='%23222' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
-    <script type="module" crossorigin src="/tools/goalkeeper-landscape/assets/index-Cb5CBqzY.js"></script>
-    <link rel="stylesheet" crossorigin href="/tools/goalkeeper-landscape/assets/index-ClfLlhjs.css">
+    <script type="module" crossorigin src="/tools/goalkeeper-landscape/assets/index-t07CV0Ye.js"></script>
+    <link rel="stylesheet" crossorigin href="/tools/goalkeeper-landscape/assets/index-CtIPRZhv.css">
   </head>
   <body>
     <main class="app" aria-label="弹力手套守门挑战">
@@ -59,7 +59,8 @@
               <button class="difficulty-button is-active" type="button" data-difficulty="medium" aria-pressed="true">中等</button>
               <button class="difficulty-button" type="button" data-difficulty="hard" aria-pressed="false">困难</button>
             </div>
-            <button class="glass-button utility-button" id="soundButton" type="button" aria-label="关闭音效">音效开</button>
+            <button class="glass-button utility-button" id="soundButton" type="button" aria-label="音效待启用，开始挑战后会解锁">待启用</button>
+            <span class="sound-status" id="soundStatus" data-audio-status-system="match-audio-status-chip" aria-live="polite">点开始后启用音效</span>
           </div>
 
           <div class="overlay start-overlay" id="startOverlay">
@@ -80,7 +81,10 @@
 
           <div class="overlay pause-overlay hidden" id="pauseOverlay" aria-live="polite">
             <div class="pause-panel">
-              <span>比赛暂停</span>
+              <div class="pause-copy">
+                <span>比赛暂停</span>
+                <p class="pause-hint" id="pauseHint" data-pause-hint-system="match-pause-coach-hint">先盯球速，再移动手套</p>
+              </div>
               <button class="glass-button pause-resume-button" id="pauseResumeButton" type="button" aria-label="继续挑战">▶ 继续</button>
             </div>
           </div>
@@ -92,6 +96,7 @@
               <strong id="finalScore">0</strong>
               <p class="result-verdict" id="resultVerdict">先守住中路，再去赌边角</p>
               <p class="result-summary" id="resultSummary">再来一局，读准球路</p>
+              <p class="result-coach" id="resultCoach" data-result-coach-system="round-result-coach-note">下一局先等球过半，再做大幅移动</p>
               <div class="result-stats" aria-label="本局统计">
                 <span>扑救 <strong id="finalSaves">0</strong></span>
                 <span>连扑 <strong id="finalBestStreak">x0</strong></span>

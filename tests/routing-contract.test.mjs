@@ -125,18 +125,18 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
     new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
     "utf8"
   );
-  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-Cb5CBqzY.js", import.meta.url);
+  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-t07CV0Ye.js", import.meta.url);
   const gameScript = await stat(gameScriptPath);
   const gameScriptSource = await readFile(gameScriptPath, "utf8");
-  const gameStyles = await stat(new URL("../public/tools/goalkeeper-landscape/assets/index-ClfLlhjs.css", import.meta.url));
+  const gameStyles = await stat(new URL("../public/tools/goalkeeper-landscape/assets/index-CtIPRZhv.css", import.meta.url));
   const gameWasm = await stat(new URL("../public/tools/goalkeeper-landscape/vendor/rapier_wasm3d_bg.wasm", import.meta.url));
 
   assert.doesNotMatch(goalkeeperPage, /redirect\(/);
   assert.match(goalkeeperPage, /import GoalkeeperLandscapeRuntime/);
   assert.match(goalkeeperPage, /GOALKEEPER_SCRIPT_SRC/);
   assert.match(goalkeeperPage, /GOALKEEPER_STYLESHEET_HREF/);
-  assert.match(goalkeeperRuntime, /index-Cb5CBqzY\.js/);
-  assert.match(goalkeeperPage, /index-ClfLlhjs\.css/);
+  assert.match(goalkeeperRuntime, /index-t07CV0Ye\.js/);
+  assert.match(goalkeeperPage, /index-CtIPRZhv\.css/);
   assert.match(goalkeeperPage, /<GoalkeeperLandscapeRuntime \/>/);
   assert.match(goalkeeperPage, /弹力手套守门挑战/);
   assert.match(goalkeeperPage, /id="gameCanvas"/);
@@ -147,11 +147,17 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(goalkeeperPage, /id="matchProgress"/);
   assert.match(goalkeeperPage, /id="matchProgressFill"/);
   assert.match(goalkeeperPage, /match-progress-hud/);
+  assert.match(goalkeeperPage, /id="soundStatus"/);
+  assert.match(goalkeeperPage, /match-audio-status-chip/);
   assert.match(goalkeeperPage, /data-ui-system="match-hud-flow-polish"/);
   assert.match(goalkeeperPage, /id="pauseOverlay"/);
   assert.match(goalkeeperPage, /id="pauseResumeButton"/);
+  assert.match(goalkeeperPage, /id="pauseHint"/);
+  assert.match(goalkeeperPage, /match-pause-coach-hint/);
   assert.match(goalkeeperPage, /id="resultGrade"/);
   assert.match(goalkeeperPage, /id="resultVerdict"/);
+  assert.match(goalkeeperPage, /id="resultCoach"/);
+  assert.match(goalkeeperPage, /round-result-coach-note/);
   assert.match(goalkeeperPage, /id="finalSaves"/);
   assert.match(goalkeeperPage, /id="finalBestStreak"/);
   assert.match(goalkeeperPage, /id="finalConceded"/);
@@ -170,19 +176,25 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(thinkingClient, /横屏守门挑战/);
   assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-Cb5CBqzY\.js/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-ClfLlhjs\.css/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-t07CV0Ye\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-CtIPRZhv\.css/);
   assert.match(gameIndex, /id="feedbackToast"/);
   assert.match(gameIndex, /id="matchStatus"/);
   assert.match(gameIndex, /id="pressureCue"/);
   assert.match(gameIndex, /id="matchProgress"/);
   assert.match(gameIndex, /id="matchProgressFill"/);
   assert.match(gameIndex, /match-progress-hud/);
+  assert.match(gameIndex, /id="soundStatus"/);
+  assert.match(gameIndex, /match-audio-status-chip/);
   assert.match(gameIndex, /data-ui-system="match-hud-flow-polish"/);
   assert.match(gameIndex, /id="pauseOverlay"/);
   assert.match(gameIndex, /id="pauseResumeButton"/);
+  assert.match(gameIndex, /id="pauseHint"/);
+  assert.match(gameIndex, /match-pause-coach-hint/);
   assert.match(gameIndex, /id="resultGrade"/);
   assert.match(gameIndex, /id="resultVerdict"/);
+  assert.match(gameIndex, /id="resultCoach"/);
+  assert.match(gameIndex, /round-result-coach-note/);
   assert.match(gameIndex, /id="finalSaves"/);
   assert.match(gameIndex, /id="resultSummary"/);
   assert.match(gameIndex, /id="resultTags"/);
@@ -201,6 +213,9 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /matchday-feedback-kit/);
   assert.match(gameScriptSource, /match-progress-hud/);
   assert.match(gameScriptSource, /matchProgressFill/);
+  assert.match(gameScriptSource, /match-audio-status-chip/);
+  assert.match(gameScriptSource, /match-pause-coach-hint/);
+  assert.match(gameScriptSource, /round-result-coach-note/);
   assert.match(gameScriptSource, /caught-save-drop-replay/);
   assert.match(gameScriptSource, /parried-save-deflection-replay/);
   assert.match(gameScriptSource, /height-aware-ball-shadow/);

@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import GoalkeeperLandscapeRuntime, { GOALKEEPER_SCRIPT_SRC } from "./GoalkeeperLandscapeRuntime";
 
-const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-ClfLlhjs.css";
+const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-CtIPRZhv.css";
 
 export const metadata: Metadata = {
   title: "弹力手套守门挑战｜Lucas Yin",
@@ -73,7 +73,10 @@ export default function GoalkeeperLandscapePage() {
                 <button className="difficulty-button is-active" type="button" data-difficulty="medium" aria-pressed="true">中等</button>
                 <button className="difficulty-button" type="button" data-difficulty="hard" aria-pressed="false">困难</button>
               </div>
-              <button className="glass-button utility-button" id="soundButton" type="button" aria-label="关闭音效">音效开</button>
+              <button className="glass-button utility-button" id="soundButton" type="button" aria-label="音效待启用，开始挑战后会解锁">待启用</button>
+              <span className="sound-status" id="soundStatus" data-audio-status-system="match-audio-status-chip" aria-live="polite">
+                点开始后启用音效
+              </span>
             </div>
 
             <div className="overlay start-overlay" id="startOverlay">
@@ -94,7 +97,12 @@ export default function GoalkeeperLandscapePage() {
 
             <div className="overlay pause-overlay hidden" id="pauseOverlay" aria-live="polite">
               <div className="pause-panel">
-                <span>比赛暂停</span>
+                <div className="pause-copy">
+                  <span>比赛暂停</span>
+                  <p className="pause-hint" id="pauseHint" data-pause-hint-system="match-pause-coach-hint">
+                    先盯球速，再移动手套
+                  </p>
+                </div>
                 <button className="glass-button pause-resume-button" id="pauseResumeButton" type="button" aria-label="继续挑战">▶ 继续</button>
               </div>
             </div>
@@ -106,6 +114,9 @@ export default function GoalkeeperLandscapePage() {
                 <strong id="finalScore">0</strong>
                 <p className="result-verdict" id="resultVerdict">先守住中路，再去赌边角</p>
                 <p className="result-summary" id="resultSummary">再来一局，读准球路</p>
+                <p className="result-coach" id="resultCoach" data-result-coach-system="round-result-coach-note">
+                  下一局先等球过半，再做大幅移动
+                </p>
                 <div className="result-stats" aria-label="本局统计">
                   <span>扑救 <strong id="finalSaves">0</strong></span>
                   <span>连扑 <strong id="finalBestStreak">x0</strong></span>

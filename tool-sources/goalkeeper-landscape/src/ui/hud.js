@@ -5,6 +5,9 @@ export const HUD_FLOW_POLISH_MARKER = "match-hud-flow-polish";
 export const MATCH_PRESSURE_HUD_MARKER = "match-pressure-hud";
 export const MATCH_PROGRESS_HUD_MARKER = "match-progress-hud";
 export const ROUND_RESULT_TAGS_MARKER = "round-result-performance-tags";
+export const MATCH_AUDIO_STATUS_MARKER = "match-audio-status-chip";
+export const MATCH_PAUSE_HINT_MARKER = "match-pause-coach-hint";
+export const ROUND_RESULT_COACH_MARKER = "round-result-coach-note";
 const LOW_TIME_SECONDS = 10;
 
 function getSecondsLeft(state) {
@@ -53,6 +56,20 @@ export function getResultSummaryText(state) {
   return "再来一局，读准球路";
 }
 
+export function getResultCoachText(state) {
+  if (!state?.ended) return "";
+  var grade = getResultGrade(state);
+  var saves = state.saves || 0;
+  var conceded = state.conceded || 0;
+  var bestStreak = state.bestStreak || 0;
+
+  if (grade === "S") return "下一局可以切到困难，练边角反应";
+  if (state.endReason === "conceded" || conceded >= MAX_CONCEDED - 1) return "下一局先守中路，边角球再提前压手套";
+  if (conceded <= 1 && saves >= 5) return "保持站位，下一局可以多赌远角";
+  if (bestStreak >= 3) return "连扑节奏不错，继续提前读球路";
+  return "下一局先等球过半，再做大幅移动";
+}
+
 export function getResultPerformanceTags(state) {
   var saves = state?.saves || 0;
   var conceded = state?.conceded || 0;
@@ -95,6 +112,54 @@ export function getPressureCueText(state) {
   return "";
 }
 
+export function getPauseHintText(state) {
+  var secondsLeft = getSecondsLeft(state);
+  var conceded = state?.conceded || 0;
+  var streak = state?.streak || 0;
+
+  if (secondsLeft <= LOW_TIME_SECONDS && conceded >= MAX_CONCEDED - 1) return "最后几秒，先守中路";
+  if (secondsLeft <= LOW_TIME_SECONDS) return "最后几秒，手套别追太远";
+  if (conceded >= MAX_CONCEDED - 1) return "再丢一球结束，优先守近角";
+  if (streak >= 3) return "连扑手感在线，继续压近角";
+  return "先盯球速，再移动手套";
+}
+
+export function getSoundStatusLabel(enabled, audioStatus = "locked") {
+  if (!enabled || audioStatus === "muted") {
+    return {
+      button: "静音",
+      detail: "当前静音",
+      aria: "音效已静音，点击开启",
+      status: "muted",
+    };
+  }
+
+  if (audioStatus === "ready") {
+    return {
+      button: "音效就绪",
+      detail: "音效已就绪",
+      aria: "音效已就绪，点击静音",
+      status: "ready",
+    };
+  }
+
+  if (audioStatus === "unavailable") {
+    return {
+      button: "无音效",
+      detail: "此浏览器不支持音效",
+      aria: "当前浏览器不支持音效",
+      status: "unavailable",
+    };
+  }
+
+  return {
+    button: "待启用",
+    detail: "点开始后启用音效",
+    aria: "音效待启用，开始挑战后会解锁",
+    status: "locked",
+  };
+}
+
 export function createHud(documentRef) {
   var refs = {
     scoreValue: documentRef.getElementById("scoreValue"),
@@ -103,6 +168,7 @@ export function createHud(documentRef) {
     concededValue: documentRef.getElementById("concededValue"),
     pauseButton: documentRef.getElementById("pauseButton"),
     soundButton: documentRef.getElementById("soundButton"),
+    soundStatus: documentRef.getElementById("soundStatus"),
     startButton: documentRef.getElementById("startButton"),
     restartButton: documentRef.getElementById("restartButton"),
     pauseResumeButton: documentRef.getElementById("pauseResumeButton"),
@@ -110,11 +176,13 @@ export function createHud(documentRef) {
     startOverlay: documentRef.getElementById("startOverlay"),
     pauseOverlay: documentRef.getElementById("pauseOverlay"),
     endOverlay: documentRef.getElementById("endOverlay"),
+    pauseHint: documentRef.getElementById("pauseHint"),
     finalScore: documentRef.getElementById("finalScore"),
     resultGrade: documentRef.getElementById("resultGrade"),
     resultReason: documentRef.getElementById("resultReason"),
     resultVerdict: documentRef.getElementById("resultVerdict"),
     resultSummary: documentRef.getElementById("resultSummary"),
+    resultCoach: documentRef.getElementById("resultCoach"),
     feedbackToast: documentRef.getElementById("feedbackToast"),
     matchStatus: documentRef.getElementById("matchStatus"),
     pressureCue: documentRef.getElementById("pressureCue"),
@@ -278,8 +346,18 @@ export function createHud(documentRef) {
         refs.pauseButton.setAttribute("aria-label", state.paused ? "继续挑战" : "暂停挑战");
       }
       if (refs.soundButton) {
-        refs.soundButton.textContent = soundEnabled ? "音效开" : "静音";
-        refs.soundButton.setAttribute("aria-label", soundEnabled ? "关闭音效" : "开启音效");
+        var soundLabel = getSoundStatusLabel(soundEnabled, context.audioStatus || (soundEnabled ? "locked" : "muted"));
+        refs.soundButton.textContent = soundLabel.button;
+        refs.soundButton.setAttribute("aria-label", soundLabel.aria);
+        refs.soundButton.dataset.soundStatus = soundLabel.status;
+        ["locked", "ready", "muted", "unavailable"].forEach((status) => {
+          setClass(refs.soundButton, "is-sound-" + status, soundLabel.status === status);
+        });
+        if (refs.soundStatus) {
+          refs.soundStatus.textContent = soundLabel.detail;
+          refs.soundStatus.dataset.audioStatusSystem = MATCH_AUDIO_STATUS_MARKER;
+          refs.soundStatus.dataset.soundStatus = soundLabel.status;
+        }
       }
       if (refs.finalScore) refs.finalScore.textContent = String(state.score);
       if (refs.resultGrade) {
@@ -292,6 +370,14 @@ export function createHud(documentRef) {
       if (refs.resultSummary) {
         refs.resultSummary.textContent = getResultSummaryText(state);
         refs.resultSummary.dataset.summarySystem = ROUND_RESULT_SUMMARY_MARKER;
+      }
+      if (refs.resultCoach) {
+        refs.resultCoach.textContent = getResultCoachText(state);
+        refs.resultCoach.dataset.resultCoachSystem = ROUND_RESULT_COACH_MARKER;
+      }
+      if (refs.pauseHint) {
+        refs.pauseHint.textContent = getPauseHintText(state);
+        refs.pauseHint.dataset.pauseHintSystem = MATCH_PAUSE_HINT_MARKER;
       }
       if (refs.startOverlay) refs.startOverlay.dataset.uiSystem = HUD_FLOW_POLISH_MARKER;
       if (refs.finalSaves) refs.finalSaves.textContent = String(state.saves || 0);

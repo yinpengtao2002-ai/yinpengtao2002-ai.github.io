@@ -277,6 +277,30 @@ describe("audio engine", () => {
     expect(root.gainValues).toContain(0.0001);
   });
 
+  it("reports whether audio is locked, ready, muted, or unavailable for the HUD", () => {
+    const root = createUnlockAudioRoot();
+    const audio = createAudioEngine(root);
+
+    expect(audio.getStatus).toBeTypeOf("function");
+    expect(audio.getStatus()).toBe("locked");
+
+    audio.prime();
+
+    expect(audio.getStatus()).toBe("ready");
+
+    audio.toggle();
+
+    expect(audio.getStatus()).toBe("muted");
+
+    audio.toggle();
+
+    expect(audio.getStatus()).toBe("ready");
+
+    const unavailableAudio = createAudioEngine({});
+
+    expect(unavailableAudio.getStatus()).toBe("unavailable");
+  });
+
   it("exposes restrained layered audio plans for high-value match events", () => {
     expect(AudioModule.getAudioEventPlan).toBeTypeOf("function");
 
