@@ -8,6 +8,7 @@ function createElement() {
     textContent: "",
     attributes: {},
     dataset: {},
+    style: {},
     listeners: {},
     classList: {
       values: new Set(),
@@ -57,11 +58,14 @@ function createDocument() {
     "feedbackToast",
     "matchStatus",
     "pressureCue",
+    "matchProgress",
+    "matchProgressFill",
     "finalSaves",
     "finalBestStreak",
     "finalConceded",
     "resultTags",
     "finalSaveRate",
+    "finalRhythmTag",
     "finalControlTag",
   ].forEach((id) => {
     elements[id] = createElement();
@@ -252,6 +256,38 @@ describe("hud", () => {
     expect(documentRef.elements.concededValue.classList.contains("is-match-point")).toBe(false);
   });
 
+  it("renders a slim match progress meter that supports pressure states without covering play", () => {
+    expect(HudModule.getMatchProgressPercent).toBeTypeOf("function");
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    const state = {
+      ...createGameState(),
+      running: true,
+      timeLeft: 30.4,
+      conceded: 1,
+    };
+
+    hud.update(state, true);
+
+    expect(HudModule.getMatchProgressPercent(state)).toBe(51);
+    expect(documentRef.elements.matchProgress.dataset.hudSystem).toBe("match-progress-hud");
+    expect(documentRef.elements.matchProgress.getAttribute("aria-valuemin")).toBe("0");
+    expect(documentRef.elements.matchProgress.getAttribute("aria-valuemax")).toBe("60");
+    expect(documentRef.elements.matchProgress.getAttribute("aria-valuenow")).toBe("31");
+    expect(documentRef.elements.matchProgress.getAttribute("aria-valuetext")).toBe("剩余 31 秒");
+    expect(documentRef.elements.matchProgressFill.style.width).toBe("51%");
+    expect(documentRef.elements.matchProgress.classList.contains("is-low-time")).toBe(false);
+    expect(documentRef.elements.matchProgress.classList.contains("is-match-point")).toBe(false);
+
+    hud.update({ ...state, timeLeft: 9.2, conceded: 4 }, true);
+
+    expect(documentRef.elements.matchProgressFill.style.width).toBe("15%");
+    expect(documentRef.elements.matchProgress.getAttribute("aria-valuenow")).toBe("10");
+    expect(documentRef.elements.matchProgress.getAttribute("aria-valuetext")).toBe("剩余 10 秒");
+    expect(documentRef.elements.matchProgress.classList.contains("is-low-time")).toBe(true);
+    expect(documentRef.elements.matchProgress.classList.contains("is-match-point")).toBe(true);
+  });
+
   it("uses a dedicated pause overlay and keeps the resume action reachable", () => {
     const documentRef = createDocument();
     const hud = createHud(documentRef);
@@ -388,7 +424,7 @@ describe("hud", () => {
     const tags = HudModule.getResultPerformanceTags(state);
     expect(tags).toEqual([
       { label: "扑救率", value: "80%" },
-      { label: "最佳连扑", value: "x4" },
+      { label: "节奏", value: "连扑 x4" },
       { label: "失球控制", value: "稳住" },
     ]);
 
@@ -396,6 +432,7 @@ describe("hud", () => {
 
     expect(documentRef.elements.resultTags.dataset.resultTagsSystem).toBe("round-result-performance-tags");
     expect(documentRef.elements.finalSaveRate.textContent).toBe("80%");
+    expect(documentRef.elements.finalRhythmTag.textContent).toBe("连扑 x4");
     expect(documentRef.elements.finalControlTag.textContent).toBe("稳住");
 
     hud.update({
@@ -408,6 +445,7 @@ describe("hud", () => {
     }, true);
 
     expect(documentRef.elements.finalSaveRate.textContent).toBe("17%");
+    expect(documentRef.elements.finalRhythmTag.textContent).toBe("启动");
     expect(documentRef.elements.finalControlTag.textContent).toBe("吃紧");
   });
 });

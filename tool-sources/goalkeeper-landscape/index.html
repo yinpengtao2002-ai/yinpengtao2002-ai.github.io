@@ -48,6 +48,9 @@
           <div class="feedback-toast" id="feedbackToast" aria-live="polite"></div>
           <div class="match-status" id="matchStatus" aria-live="polite"></div>
           <div class="pressure-cue" id="pressureCue" aria-live="polite"></div>
+          <div class="match-progress" id="matchProgress" role="progressbar" aria-valuemin="0" aria-valuemax="60" aria-valuenow="60" aria-valuetext="剩余 60 秒" data-hud-system="match-progress-hud">
+            <span class="match-progress-fill" id="matchProgressFill"></span>
+          </div>
 
           <div class="bottom-controls" aria-label="游戏控制">
             <div class="difficulty-control glass-panel" role="group" aria-label="难度">
@@ -95,7 +98,7 @@
               </div>
               <div class="result-tags" id="resultTags" data-result-tags-system="round-result-performance-tags" aria-label="表现标签">
                 <span>扑救率 <strong id="finalSaveRate">0%</strong></span>
-                <span>节奏 <strong>连扑</strong></span>
+                <span>节奏 <strong id="finalRhythmTag">待机</strong></span>
                 <span>防线 <strong id="finalControlTag">稳住</strong></span>
               </div>
               <button id="restartButton" type="button">再来一局</button>

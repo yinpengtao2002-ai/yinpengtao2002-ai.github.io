@@ -446,6 +446,41 @@ button {
   box-shadow: 0 0 0 3px rgba(255, 204, 166, 0.16), 0 14px 30px rgba(15, 35, 29, 0.18);
 }
 
+.match-progress {
+  --match-progress-hud: 1;
+  position: absolute;
+  left: 50%;
+  bottom: max(clamp(72px, 9svh, 106px), calc(env(safe-area-inset-bottom) + 76px));
+  z-index: 4;
+  width: min(360px, 42vw);
+  height: clamp(6px, 0.75vw, 10px);
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(15, 36, 30, 0.26);
+  box-shadow: 0 8px 18px rgba(15, 35, 29, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.match-progress-fill {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  display: block;
+  background: linear-gradient(90deg, #f8fff0, #9ce6b0);
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.24);
+  transition: width 180ms linear, background 160ms ease;
+}
+
+.match-progress.is-low-time .match-progress-fill {
+  background: linear-gradient(90deg, #fff0c8, #f0782f);
+}
+
+.match-progress.is-match-point {
+  box-shadow: 0 0 0 3px rgba(255, 196, 140, 0.14), 0 8px 18px rgba(15, 35, 29, 0.14);
+}
+
 .difficulty-control {
   min-width: 0;
   min-height: clamp(44px, 4.4vw, 66px);
@@ -870,6 +905,11 @@ button {
     font-size: 11px;
   }
 
+  .match-progress {
+    bottom: max(62px, calc(env(safe-area-inset-bottom) + 58px));
+    width: min(260px, 38vw);
+  }
+
   .match-status {
     min-width: 70px;
     min-height: 70px;
@@ -1001,6 +1041,10 @@ button {
     max-width: 46vw;
   }
 
+  .match-progress {
+    width: min(250px, 45vw);
+  }
+
   #finalScore {
     font-size: 46px;
   }
@@ -1035,6 +1079,11 @@ button {
 @media (max-height: 520px) and (orientation: landscape) {
   .bottom-controls {
     left: max(64px, env(safe-area-inset-left));
+  }
+
+  .match-progress {
+    bottom: max(62px, calc(env(safe-area-inset-bottom) + 58px));
+    width: min(300px, 36vw);
   }
 
   .end-overlay {
@@ -1169,6 +1218,12 @@ button {
     min-height: clamp(24px, 4.5svh, 32px);
     padding: 5px 9px;
     font-size: clamp(10px, 1.75svh, 12px);
+  }
+
+  .match-progress {
+    bottom: max(clamp(58px, 10svh, 76px), calc(env(safe-area-inset-bottom) + 54px));
+    width: min(300px, 42svh);
+    height: clamp(5px, 1.1svh, 8px);
   }
 
   .match-status {

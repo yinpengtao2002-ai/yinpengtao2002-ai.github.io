@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import GoalkeeperLandscapeRuntime, { GOALKEEPER_SCRIPT_SRC } from "./GoalkeeperLandscapeRuntime";
 
-const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-BQjV__DA.css";
+const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-ClfLlhjs.css";
 
 export const metadata: Metadata = {
   title: "弹力手套守门挑战｜Lucas Yin",
@@ -54,6 +54,18 @@ export default function GoalkeeperLandscapePage() {
             <div className="feedback-toast" id="feedbackToast" aria-live="polite" />
             <div className="match-status" id="matchStatus" aria-live="polite" />
             <div className="pressure-cue" id="pressureCue" aria-live="polite" />
+            <div
+              className="match-progress"
+              id="matchProgress"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={60}
+              aria-valuenow={60}
+              aria-valuetext="剩余 60 秒"
+              data-hud-system="match-progress-hud"
+            >
+              <span className="match-progress-fill" id="matchProgressFill" />
+            </div>
 
             <div className="bottom-controls" aria-label="游戏控制">
               <div className="difficulty-control glass-panel" role="group" aria-label="难度">
@@ -101,7 +113,7 @@ export default function GoalkeeperLandscapePage() {
                 </div>
                 <div className="result-tags" id="resultTags" data-result-tags-system="round-result-performance-tags" aria-label="表现标签">
                   <span>扑救率 <strong id="finalSaveRate">0%</strong></span>
-                  <span>节奏 <strong>连扑</strong></span>
+                  <span>节奏 <strong id="finalRhythmTag">待机</strong></span>
                   <span>防线 <strong id="finalControlTag">稳住</strong></span>
                 </div>
                 <button id="restartButton" type="button">再来一局</button>

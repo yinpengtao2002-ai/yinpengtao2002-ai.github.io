@@ -34,4 +34,16 @@ describe("responsive layout css", () => {
     expect(css).toContain("#restartButton");
     expect(css).toContain("height: 38px;");
   });
+
+  it("keeps the match progress meter slim, safe-area aware, and away from the ball path", () => {
+    const css = readFileSync(stylesPath, "utf8");
+
+    expect(css).toContain("match-progress-hud");
+    expect(css).toContain(".match-progress");
+    expect(css).toContain(".match-progress-fill");
+    expect(css).toContain("bottom: max(clamp(72px, 9svh, 106px), calc(env(safe-area-inset-bottom) + 76px));");
+    expect(css).toContain("height: clamp(6px, 0.75vw, 10px);");
+    expect(css).toContain(".match-progress.is-low-time");
+    expect(css).toContain(".match-progress.is-match-point");
+  });
 });

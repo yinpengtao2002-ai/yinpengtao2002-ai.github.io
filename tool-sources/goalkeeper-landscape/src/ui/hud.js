@@ -1,13 +1,23 @@
-import { MAX_CONCEDED } from "../config/game-config.js";
+import { MAX_CONCEDED, ROUND_SECONDS } from "../config/game-config.js";
 
 export const ROUND_RESULT_SUMMARY_MARKER = "round-result-summary";
 export const HUD_FLOW_POLISH_MARKER = "match-hud-flow-polish";
 export const MATCH_PRESSURE_HUD_MARKER = "match-pressure-hud";
+export const MATCH_PROGRESS_HUD_MARKER = "match-progress-hud";
 export const ROUND_RESULT_TAGS_MARKER = "round-result-performance-tags";
 const LOW_TIME_SECONDS = 10;
 
 function getSecondsLeft(state) {
   return Math.max(0, Math.ceil(Number.isFinite(state?.timeLeft) ? state.timeLeft : 0));
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+export function getMatchProgressPercent(state) {
+  var timeLeft = Number.isFinite(state?.timeLeft) ? state.timeLeft : ROUND_SECONDS;
+  return Math.round((clamp(timeLeft, 0, ROUND_SECONDS) / ROUND_SECONDS) * 100);
 }
 
 export function getResultGrade(state) {
@@ -56,10 +66,18 @@ export function getResultPerformanceTags(state) {
         : conceded >= MAX_CONCEDED - 1
           ? "吃紧"
           : "承压";
+  var rhythm =
+    (state?.bestStreak || 0) >= 3
+      ? "连扑 x" + String(state.bestStreak)
+      : saves >= 3
+        ? "稳定"
+        : saves > 0
+          ? "启动"
+          : "待机";
 
   return [
     { label: "扑救率", value: String(saveRate) + "%" },
-    { label: "最佳连扑", value: "x" + String(state?.bestStreak || 0) },
+    { label: "节奏", value: rhythm },
     { label: "失球控制", value: control },
   ];
 }
@@ -100,11 +118,14 @@ export function createHud(documentRef) {
     feedbackToast: documentRef.getElementById("feedbackToast"),
     matchStatus: documentRef.getElementById("matchStatus"),
     pressureCue: documentRef.getElementById("pressureCue"),
+    matchProgress: documentRef.getElementById("matchProgress"),
+    matchProgressFill: documentRef.getElementById("matchProgressFill"),
     finalSaves: documentRef.getElementById("finalSaves"),
     finalBestStreak: documentRef.getElementById("finalBestStreak"),
     finalConceded: documentRef.getElementById("finalConceded"),
     resultTags: documentRef.getElementById("resultTags"),
     finalSaveRate: documentRef.getElementById("finalSaveRate"),
+    finalRhythmTag: documentRef.getElementById("finalRhythmTag"),
     finalControlTag: documentRef.getElementById("finalControlTag"),
   };
 
@@ -203,6 +224,31 @@ export function createHud(documentRef) {
     }
   }
 
+  function updateMatchProgress(state) {
+    var progress = refs.matchProgress;
+    var fill = refs.matchProgressFill;
+    var secondsLeft = getSecondsLeft(state);
+    var percent = getMatchProgressPercent(state);
+    var lowTime = state.running && !state.paused && !state.ended && secondsLeft <= LOW_TIME_SECONDS;
+    var matchPoint = state.running && !state.paused && !state.ended && (state.conceded || 0) >= MAX_CONCEDED - 1;
+    var text = "剩余 " + String(secondsLeft) + " 秒";
+
+    if (progress) {
+      progress.dataset.hudSystem = MATCH_PROGRESS_HUD_MARKER;
+      progress.setAttribute("aria-valuemin", "0");
+      progress.setAttribute("aria-valuemax", String(ROUND_SECONDS));
+      progress.setAttribute("aria-valuenow", String(secondsLeft));
+      progress.setAttribute("aria-valuetext", text);
+      progress.setAttribute("aria-label", text);
+      setClass(progress, "is-low-time", lowTime);
+      setClass(progress, "is-match-point", matchPoint);
+    }
+
+    if (fill) {
+      fill.style.width = String(percent) + "%";
+    }
+  }
+
   return {
     refs,
     bind(actions) {
@@ -254,10 +300,12 @@ export function createHud(documentRef) {
       if (refs.resultTags) refs.resultTags.dataset.resultTagsSystem = ROUND_RESULT_TAGS_MARKER;
       var resultTags = getResultPerformanceTags(state);
       if (refs.finalSaveRate) refs.finalSaveRate.textContent = resultTags[0].value;
+      if (refs.finalRhythmTag) refs.finalRhythmTag.textContent = resultTags[1].value;
       if (refs.finalControlTag) refs.finalControlTag.textContent = resultTags[2].value;
       updateFeedback(state);
       updateMatchStatus(state, context);
       updatePressureCue(state);
+      updateMatchProgress(state);
       setVisible(refs.startOverlay, !state.running && !state.ended);
       setVisible(refs.pauseOverlay, state.running && state.paused && !state.ended);
       setVisible(refs.endOverlay, state.ended);
