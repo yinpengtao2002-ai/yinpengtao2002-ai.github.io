@@ -98,6 +98,37 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.ball.shadowHeightFade).toBeGreaterThanOrEqual(1.2);
   });
 
+  it("adds close-to-ball spin glints without reintroducing shot helper lines", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(SCENE_TUNING.ball.showShotTrail).toBe(false);
+    expect(SCENE_TUNING.ball.flightSpinGlintSystem).toBe("attached-ball-spin-glint-kit");
+    expect(SCENE_TUNING.ball.flightSpinGlintCount).toBeGreaterThanOrEqual(2);
+    expect(SCENE_TUNING.ball.flightSpinGlintMaxOpacity).toBeLessThanOrEqual(0.38);
+    expect(sceneModule.getBallSpinGlintPlan).toBeTypeOf("function");
+
+    const plan = sceneModule.getBallSpinGlintPlan({
+      live: true,
+      position: { x: 0.26, y: 1.2, z: -6.5 },
+      velocity: { x: 2.4, y: 0.2, z: 19.5 },
+      angularVelocity: { x: -6, y: 13, z: 2 },
+      radius: 0.12,
+    });
+
+    expect(plan.system).toBe("attached-ball-spin-glint-kit");
+    expect(plan.glints).toHaveLength(SCENE_TUNING.ball.flightSpinGlintCount);
+    expect(plan.glints[0].marker).toBe("feedback-ball-spin-glint");
+    expect(plan.glints[0].position.x).toBeCloseTo(0.26, 1);
+    expect(Math.abs(plan.glints[0].position.z + 6.5)).toBeLessThanOrEqual(0.12);
+    expect(plan.glints[0].opacity).toBeLessThanOrEqual(SCENE_TUNING.ball.flightSpinGlintMaxOpacity);
+    expect(plan.glints[0].scale.x).toBeLessThanOrEqual(0.24);
+    expect(plan.glints[0].scale.y).toBeLessThan(plan.glints[0].scale.x);
+    expect(plan.glints[0].rotation).not.toBe(plan.glints[plan.glints.length - 1].rotation);
+
+    expect(sceneModule.getBallSpinGlintPlan({ live: true, position: { x: 0, y: 0.2, z: 0 }, velocity: { x: 0.2, y: 0, z: 1.2 } }).glints).toEqual([]);
+    expect(sceneModule.getBallSpinGlintPlan({ live: false, position: { x: 0, y: 1.1, z: 0 }, velocity: { x: 0, y: 0, z: 20 } }).glints).toEqual([]);
+  });
+
   it("defines a restrained matchday feedback layer for saves, goals, streaks, and camera shake", () => {
     expect(SCENE_TUNING.feedback.assetSystem).toBe("matchday-feedback-kit");
     expect(SCENE_TUNING.feedback.impactRingCount).toBeGreaterThanOrEqual(3);

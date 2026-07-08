@@ -37,6 +37,11 @@ export const SCENE_TUNING = {
     goalScale: 1.12,
     deflectedScale: 1.06,
     showShotTrail: false,
+    flightSpinGlintSystem: "attached-ball-spin-glint-kit",
+    flightSpinGlintCount: 2,
+    flightSpinGlintMinSpeed: 8,
+    flightSpinGlintFullSpeed: 22,
+    flightSpinGlintMaxOpacity: 0.24,
     maxLingeringBalls: 6,
   },
   gloves: {
@@ -271,6 +276,57 @@ export function getTurfContactFleckPlan(feedback, tuning = SCENE_TUNING.feedback
       life: Math.max(0.36, 0.72 - index * 0.012),
     };
   });
+}
+
+export function getBallSpinGlintPlan(ballState, shot = null, tuning = SCENE_TUNING.ball) {
+  var system = tuning.flightSpinGlintSystem || "attached-ball-spin-glint-kit";
+  if (!ballState?.live || !ballState.position) return { system, glints: [] };
+
+  var velocity = ballState.velocity || shot?.ballPlan?.velocity || {};
+  var speed = Math.hypot(velocity.x || 0, velocity.y || 0, velocity.z || 0);
+  var minSpeed = tuning.flightSpinGlintMinSpeed || 8;
+  if (speed < minSpeed) return { system, glints: [] };
+
+  var radius = ballState.radius || tuning.radius || 0.12;
+  var heightAboveTurf = (ballState.position.y || 0) - radius;
+  if (heightAboveTurf < radius * 1.25) return { system, glints: [] };
+
+  var fullSpeed = Math.max(minSpeed + 0.1, tuning.flightSpinGlintFullSpeed || 22);
+  var intensity = clamp01((speed - minSpeed) / (fullSpeed - minSpeed));
+  var length = speed || 1;
+  var direction = {
+    x: (velocity.x || 0) / length,
+    y: (velocity.y || 0) / length,
+    z: (velocity.z || 0) / length,
+  };
+  var angular = ballState.angularVelocity || shot?.ballPlan?.angularVelocity || {};
+  var spinAngle = Math.atan2(angular.y || velocity.y || 0.1, angular.x || velocity.x || 0.1);
+  var count = tuning.flightSpinGlintCount || 0;
+
+  return {
+    system,
+    glints: Array.from({ length: count }, (_, index) => {
+      var t = count <= 1 ? 0 : index / (count - 1);
+      var side = index - (count - 1) / 2;
+      var trailOffset = radius * (0.18 + index * 0.04);
+      var liftOffset = side * radius * 0.18;
+      var scaleX = Math.min(0.18, radius * (0.78 + intensity * 0.24) + index * 0.012);
+      return {
+        marker: "feedback-ball-spin-glint",
+        position: {
+          x: ballState.position.x - direction.x * trailOffset + side * radius * 0.045,
+          y: ballState.position.y - direction.y * trailOffset + liftOffset,
+          z: ballState.position.z - direction.z * trailOffset,
+        },
+        scale: {
+          x: scaleX,
+          y: Math.max(0.028, scaleX * (0.18 + t * 0.04)),
+        },
+        rotation: spinAngle + side * 0.58 + intensity * 0.18,
+        opacity: tuning.flightSpinGlintMaxOpacity * (0.62 + intensity * 0.38) * (1 - index * 0.16),
+      };
+    }),
+  };
 }
 
 export function getSaveAfterimagePlan(contact, gloves, tuning = SCENE_TUNING.feedback) {
@@ -521,6 +577,7 @@ export function createGoalkeeperScene(canvas) {
   scene.userData.saveAfterimageSystem = tuning.feedback.saveAfterimageSystem;
   scene.userData.dynamicNetDetailSystem = tuning.feedback.dynamicNetDetailSystem;
   scene.userData.ballShadowAssetSystem = tuning.ball.shadowAssetSystem;
+  scene.userData.ballSpinGlintSystem = tuning.ball.flightSpinGlintSystem;
   scene.userData.gloveImpactSystem = tuning.gloves.impactSystem;
   scene.fog = new THREE.Fog("#8ed7ff", 28, 58);
 
@@ -572,6 +629,21 @@ export function createGoalkeeperScene(canvas) {
   var lingeringBallViews = Array.from({ length: tuning.ball.maxLingeringBalls }, (_, index) =>
     createBallView("lingering-" + index),
   );
+  var ballSpinGlintGeometry = new THREE.TorusGeometry(0.5, 0.012, 8, 24, Math.PI * 0.42);
+  var ballSpinGlints = Array.from({ length: tuning.ball.flightSpinGlintCount }, (_, index) => {
+    var glint = new THREE.Mesh(
+      ballSpinGlintGeometry,
+      new THREE.MeshBasicMaterial({
+        color: index === 0 ? "#ffffff" : "#fff1a8",
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      }),
+    );
+    glint.name = "feedback-ball-spin-glint-" + index;
+    glint.visible = false;
+    return glint;
+  });
   var groundSkidGeometry = new THREE.CircleGeometry(0.22, 28);
   var groundSkids = Array.from({ length: tuning.feedback.groundSkidCount }, (_, index) => {
     var skid = new THREE.Mesh(
@@ -782,6 +854,7 @@ export function createGoalkeeperScene(canvas) {
     activeBall.halo,
     activeBall.mesh,
     activeBall.shadow,
+    ...ballSpinGlints,
     ...lingeringBallViews.flatMap((view) => [view.halo, view.mesh, view.shadow]),
     ...groundSkids,
     ...turfFlecks,
@@ -1084,6 +1157,7 @@ export function createGoalkeeperScene(canvas) {
     var ballState = snapshot.ball;
     var shot = snapshot.director?.currentShot;
     updateBallView(activeBall, ballState, shot);
+    updateBallSpinGlints(ballState, shot);
 
     if (ballState?.lastContact?.type) {
       var contactPoint = ballState.lastContact.point || ballState.position || { x: 0, y: 0, z: 0 };
@@ -1109,6 +1183,24 @@ export function createGoalkeeperScene(canvas) {
         triggerFrameReboundFeedback(ballState.lastContact, contactPoint);
       }
     }
+  }
+
+  function updateBallSpinGlints(ballState, shot) {
+    var plan = getBallSpinGlintPlan(ballState, shot, tuning.ball);
+    ballSpinGlints.forEach((glint, index) => {
+      var glintPlan = plan.glints[index];
+      if (!glintPlan) {
+        glint.visible = false;
+        glint.material.opacity = 0;
+        return;
+      }
+      glint.visible = true;
+      glint.position.set(glintPlan.position.x, glintPlan.position.y, glintPlan.position.z);
+      glint.scale.set(glintPlan.scale.x, glintPlan.scale.y, 1);
+      glint.material.opacity = glintPlan.opacity;
+      glint.lookAt(camera.position);
+      glint.rotateZ(glintPlan.rotation);
+    });
   }
 
   function updateStateFeedback(snapshot) {
