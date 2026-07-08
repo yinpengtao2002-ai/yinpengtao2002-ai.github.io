@@ -60,6 +60,9 @@ function createDocument() {
     "finalSaves",
     "finalBestStreak",
     "finalConceded",
+    "resultTags",
+    "finalSaveRate",
+    "finalControlTag",
   ].forEach((id) => {
     elements[id] = createElement();
   });
@@ -366,5 +369,45 @@ describe("hud", () => {
 
     expect(documentRef.elements.resultGrade.textContent).toBe("C级");
     expect(documentRef.elements.resultVerdict.textContent).toBe("先守住中路，再去赌边角");
+  });
+
+  it("adds compact performance tags to make the end screen read like a match report", () => {
+    expect(HudModule.getResultPerformanceTags).toBeTypeOf("function");
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    const state = {
+      ...createGameState(),
+      ended: true,
+      score: 860,
+      saves: 8,
+      conceded: 2,
+      bestStreak: 4,
+      endReason: "time",
+    };
+
+    const tags = HudModule.getResultPerformanceTags(state);
+    expect(tags).toEqual([
+      { label: "扑救率", value: "80%" },
+      { label: "最佳连扑", value: "x4" },
+      { label: "失球控制", value: "稳住" },
+    ]);
+
+    hud.update(state, true);
+
+    expect(documentRef.elements.resultTags.dataset.resultTagsSystem).toBe("round-result-performance-tags");
+    expect(documentRef.elements.finalSaveRate.textContent).toBe("80%");
+    expect(documentRef.elements.finalControlTag.textContent).toBe("稳住");
+
+    hud.update({
+      ...createGameState(),
+      ended: true,
+      saves: 1,
+      conceded: 5,
+      bestStreak: 1,
+      endReason: "conceded",
+    }, true);
+
+    expect(documentRef.elements.finalSaveRate.textContent).toBe("17%");
+    expect(documentRef.elements.finalControlTag.textContent).toBe("吃紧");
   });
 });

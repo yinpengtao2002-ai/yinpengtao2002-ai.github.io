@@ -125,18 +125,18 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
     new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
     "utf8"
   );
-  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-iohtv3bI.js", import.meta.url);
+  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-Dyr-Yzw8.js", import.meta.url);
   const gameScript = await stat(gameScriptPath);
   const gameScriptSource = await readFile(gameScriptPath, "utf8");
-  const gameStyles = await stat(new URL("../public/tools/goalkeeper-landscape/assets/index-C2ocTVih.css", import.meta.url));
+  const gameStyles = await stat(new URL("../public/tools/goalkeeper-landscape/assets/index-BQjV__DA.css", import.meta.url));
   const gameWasm = await stat(new URL("../public/tools/goalkeeper-landscape/vendor/rapier_wasm3d_bg.wasm", import.meta.url));
 
   assert.doesNotMatch(goalkeeperPage, /redirect\(/);
   assert.match(goalkeeperPage, /import GoalkeeperLandscapeRuntime/);
   assert.match(goalkeeperPage, /GOALKEEPER_SCRIPT_SRC/);
   assert.match(goalkeeperPage, /GOALKEEPER_STYLESHEET_HREF/);
-  assert.match(goalkeeperRuntime, /index-iohtv3bI\.js/);
-  assert.match(goalkeeperPage, /index-C2ocTVih\.css/);
+  assert.match(goalkeeperRuntime, /index-Dyr-Yzw8\.js/);
+  assert.match(goalkeeperPage, /index-BQjV__DA\.css/);
   assert.match(goalkeeperPage, /<GoalkeeperLandscapeRuntime \/>/);
   assert.match(goalkeeperPage, /弹力手套守门挑战/);
   assert.match(goalkeeperPage, /id="gameCanvas"/);
@@ -153,6 +153,10 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(goalkeeperPage, /id="finalBestStreak"/);
   assert.match(goalkeeperPage, /id="finalConceded"/);
   assert.match(goalkeeperPage, /id="resultSummary"/);
+  assert.match(goalkeeperPage, /id="resultTags"/);
+  assert.match(goalkeeperPage, /id="finalSaveRate"/);
+  assert.match(goalkeeperPage, /id="finalControlTag"/);
+  assert.match(goalkeeperPage, /round-result-performance-tags/);
   assert.match(goalkeeperPage, /data-difficulty="easy"/);
   assert.match(goalkeeperPage, /data-difficulty="medium"/);
   assert.match(goalkeeperPage, /data-difficulty="hard"/);
@@ -162,8 +166,8 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(thinkingClient, /横屏守门挑战/);
   assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-iohtv3bI\.js/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-C2ocTVih\.css/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-Dyr-Yzw8\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-BQjV__DA\.css/);
   assert.match(gameIndex, /id="feedbackToast"/);
   assert.match(gameIndex, /id="matchStatus"/);
   assert.match(gameIndex, /id="pressureCue"/);
@@ -174,6 +178,10 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameIndex, /id="resultVerdict"/);
   assert.match(gameIndex, /id="finalSaves"/);
   assert.match(gameIndex, /id="resultSummary"/);
+  assert.match(gameIndex, /id="resultTags"/);
+  assert.match(gameIndex, /id="finalSaveRate"/);
+  assert.match(gameIndex, /id="finalControlTag"/);
+  assert.match(gameIndex, /round-result-performance-tags/);
   assert.match(gameScriptSource, /difficulty/);
   assert.match(gameScriptSource, /medium/);
   assert.match(gameScriptSource, /stylized-reusable-matchday-kit/);
@@ -227,6 +235,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /danger-goal-audio-cue/);
   assert.match(gameScriptSource, /round-end-audio-cue/);
   assert.match(gameScriptSource, /round-result-summary/);
+  assert.match(gameScriptSource, /round-result-performance-tags/);
   assert.match(gameScriptSource, /match-hud-flow-polish/);
   assert.match(gameScriptSource, /match-pressure-hud/);
   assert.match(gameScriptSource, /forceFrame/);

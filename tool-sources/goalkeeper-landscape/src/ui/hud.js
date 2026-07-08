@@ -3,6 +3,7 @@ import { MAX_CONCEDED } from "../config/game-config.js";
 export const ROUND_RESULT_SUMMARY_MARKER = "round-result-summary";
 export const HUD_FLOW_POLISH_MARKER = "match-hud-flow-polish";
 export const MATCH_PRESSURE_HUD_MARKER = "match-pressure-hud";
+export const ROUND_RESULT_TAGS_MARKER = "round-result-performance-tags";
 const LOW_TIME_SECONDS = 10;
 
 function getSecondsLeft(state) {
@@ -40,6 +41,27 @@ export function getResultSummaryText(state) {
   if (conceded <= 1 && saves >= 5) return "扑救 " + String(saves) + " 次，防线很稳";
   if (saves > 0) return "扑救 " + String(saves) + " 次，继续提速";
   return "再来一局，读准球路";
+}
+
+export function getResultPerformanceTags(state) {
+  var saves = state?.saves || 0;
+  var conceded = state?.conceded || 0;
+  var attempts = saves + conceded;
+  var saveRate = attempts > 0 ? Math.round((saves / attempts) * 100) : 0;
+  var control =
+    conceded <= 1 && saves >= 3
+      ? "压制"
+      : conceded <= 2
+        ? "稳住"
+        : conceded >= MAX_CONCEDED - 1
+          ? "吃紧"
+          : "承压";
+
+  return [
+    { label: "扑救率", value: String(saveRate) + "%" },
+    { label: "最佳连扑", value: "x" + String(state?.bestStreak || 0) },
+    { label: "失球控制", value: control },
+  ];
 }
 
 export function getPressureCueText(state) {
@@ -81,6 +103,9 @@ export function createHud(documentRef) {
     finalSaves: documentRef.getElementById("finalSaves"),
     finalBestStreak: documentRef.getElementById("finalBestStreak"),
     finalConceded: documentRef.getElementById("finalConceded"),
+    resultTags: documentRef.getElementById("resultTags"),
+    finalSaveRate: documentRef.getElementById("finalSaveRate"),
+    finalControlTag: documentRef.getElementById("finalControlTag"),
   };
 
   function setVisible(element, visible) {
@@ -226,6 +251,10 @@ export function createHud(documentRef) {
       if (refs.finalSaves) refs.finalSaves.textContent = String(state.saves || 0);
       if (refs.finalBestStreak) refs.finalBestStreak.textContent = "x" + String(state.bestStreak || 0);
       if (refs.finalConceded) refs.finalConceded.textContent = state.conceded + "/" + MAX_CONCEDED;
+      if (refs.resultTags) refs.resultTags.dataset.resultTagsSystem = ROUND_RESULT_TAGS_MARKER;
+      var resultTags = getResultPerformanceTags(state);
+      if (refs.finalSaveRate) refs.finalSaveRate.textContent = resultTags[0].value;
+      if (refs.finalControlTag) refs.finalControlTag.textContent = resultTags[2].value;
       updateFeedback(state);
       updateMatchStatus(state, context);
       updatePressureCue(state);

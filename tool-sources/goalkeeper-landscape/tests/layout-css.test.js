@@ -24,4 +24,14 @@ describe("responsive layout css", () => {
     expect(css).toContain(".result-grade");
     expect(css).toContain(".result-verdict");
   });
+
+  it("keeps the result panel fully reachable on short mobile landscape screens", () => {
+    const css = readFileSync(stylesPath, "utf8");
+
+    expect(css).toContain("short-landscape-result-panel");
+    expect(css).toContain(".end-overlay");
+    expect(css).toContain("max-height: calc(100svh - 16px);");
+    expect(css).toContain("#restartButton");
+    expect(css).toContain("height: 38px;");
+  });
 });

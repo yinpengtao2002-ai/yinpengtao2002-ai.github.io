@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import GoalkeeperLandscapeRuntime, { GOALKEEPER_SCRIPT_SRC } from "./GoalkeeperLandscapeRuntime";
 
-const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-C2ocTVih.css";
+const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-BQjV__DA.css";
 
 export const metadata: Metadata = {
   title: "弹力手套守门挑战｜Lucas Yin",
@@ -98,6 +98,11 @@ export default function GoalkeeperLandscapePage() {
                   <span>扑救 <strong id="finalSaves">0</strong></span>
                   <span>连扑 <strong id="finalBestStreak">x0</strong></span>
                   <span>失球 <strong id="finalConceded">0/5</strong></span>
+                </div>
+                <div className="result-tags" id="resultTags" data-result-tags-system="round-result-performance-tags" aria-label="表现标签">
+                  <span>扑救率 <strong id="finalSaveRate">0%</strong></span>
+                  <span>节奏 <strong>连扑</strong></span>
+                  <span>防线 <strong id="finalControlTag">稳住</strong></span>
                 </div>
                 <button id="restartButton" type="button">再来一局</button>
               </div>

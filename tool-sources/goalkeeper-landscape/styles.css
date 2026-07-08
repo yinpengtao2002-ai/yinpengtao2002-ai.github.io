@@ -717,6 +717,36 @@ button {
   line-height: 1;
 }
 
+.result-tags {
+  --round-result-performance-tags: 1;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.result-tags span {
+  min-width: 0;
+  border: 1px solid rgba(70, 102, 92, 0.12);
+  border-radius: 12px;
+  padding: 7px 8px;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  color: #5d7068;
+  background: rgba(250, 255, 246, 0.72);
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.result-tags strong {
+  color: #172326;
+  font-size: 14px;
+  font-weight: 950;
+  line-height: 1;
+}
+
 #restartButton {
   min-width: 136px;
   height: 48px;
@@ -979,19 +1009,104 @@ button {
     gap: 6px;
   }
 
+  .result-tags {
+    gap: 5px;
+  }
+
   .result-stats span {
     padding: 7px 6px;
     font-size: 10px;
   }
 
+  .result-tags span {
+    padding: 6px 5px;
+    font-size: 9px;
+  }
+
   .result-stats strong {
     font-size: 15px;
+  }
+
+  .result-tags strong {
+    font-size: 12px;
   }
 }
 
 @media (max-height: 520px) and (orientation: landscape) {
   .bottom-controls {
     left: max(64px, env(safe-area-inset-left));
+  }
+
+  .end-overlay {
+    --short-landscape-result-panel: 1;
+    padding: 8px max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left));
+  }
+
+  .result-panel {
+    min-width: min(350px, calc(100vw - 44px));
+    max-height: calc(100svh - 16px);
+    padding: 14px 18px;
+    gap: 8px;
+    border-radius: 22px;
+    overflow: hidden;
+  }
+
+  .result-grade {
+    min-height: 24px;
+    padding: 4px 12px;
+    font-size: 12px;
+  }
+
+  .result-kicker {
+    font-size: 12px;
+  }
+
+  #finalScore {
+    font-size: 42px;
+  }
+
+  .result-verdict,
+  .result-summary {
+    max-width: min(300px, 66vw);
+    margin-top: 0;
+    line-height: 1.2;
+  }
+
+  .result-verdict {
+    font-size: 13px;
+  }
+
+  .result-summary {
+    font-size: 12px;
+  }
+
+  .result-stats,
+  .result-tags {
+    gap: 5px;
+  }
+
+  .result-stats span {
+    padding: 6px 6px;
+    font-size: 10px;
+  }
+
+  .result-stats strong {
+    font-size: 14px;
+  }
+
+  .result-tags span {
+    padding: 5px;
+    font-size: 9px;
+  }
+
+  .result-tags strong {
+    font-size: 11px;
+  }
+
+  #restartButton {
+    min-width: 128px;
+    height: 38px;
+    font-size: 14px;
   }
 }
 
