@@ -20,6 +20,7 @@ export const DEBUG_FORCE_GLOVE_HOLD_SECONDS = 0.45;
 export const ROUND_INTRO_SECONDS = 1.8;
 export const CAUGHT_SAVE_REPLAY_STYLE = "caught-save-drop-replay";
 export const PARRIED_SAVE_REPLAY_STYLE = "parried-save-deflection-replay";
+export const GROUND_CONTACT_AUDIO_COOLDOWN = 0.28;
 const GROUND_FEEDBACK_DURATION = 0.62;
 
 function clamp01(value) {
@@ -124,6 +125,14 @@ export function getOutcomeAudioEvent(state, previousState = null) {
   if (state.message === "goal") return "goal-net";
   if (state.message === "frame") return "frame-rattle";
   return null;
+}
+
+export function getGroundContactAudioEvent(feedback) {
+  if (!feedback?.active || !feedback.point) return null;
+  if ((feedback.age || 0) > 0.08) return null;
+  if ((feedback.intensity || 0) < 0.18) return null;
+  if ((feedback.speed || 0) < 1.2 && (feedback.impactSpeed || 0) < 0.8) return null;
+  return "turf-skid";
 }
 
 export function getMissMessageForBall(ball) {
@@ -342,6 +351,8 @@ export async function createThreeGameRuntime(options) {
   var handledOutcome = null;
   var handledContactAudio = null;
   var handledRoundEndAudio = false;
+  var handledGroundContactAudio = "";
+  var groundContactAudioCooldown = 0;
   var outcomeTimer = 0;
   var lingeringBalls = [];
   var forcedGloveTarget = null;
@@ -375,6 +386,8 @@ export async function createThreeGameRuntime(options) {
     handledOutcome = null;
     handledContactAudio = null;
     handledRoundEndAudio = false;
+    handledGroundContactAudio = "";
+    groundContactAudioCooldown = 0;
     outcomeTimer = 0;
     lingeringBalls = [];
     forcedGloveTarget = null;
@@ -406,6 +419,29 @@ export async function createThreeGameRuntime(options) {
   function updateLingeringBalls(dt) {
     if (!lingeringBalls.length) return;
     lingeringBalls = advanceLingeringBalls(lingeringBalls, dt);
+    playGroundContactAudio(dt);
+  }
+
+  function playGroundContactAudio(dt) {
+    groundContactAudioCooldown = Math.max(0, groundContactAudioCooldown - Math.max(0, dt || 0));
+    if (groundContactAudioCooldown > 0) return;
+
+    var candidate = lingeringBalls.find((ball) => getGroundContactAudioEvent(ball?.groundFeedback));
+    var feedback = candidate?.groundFeedback;
+    var eventName = getGroundContactAudioEvent(feedback);
+    if (!eventName || !feedback?.point) return;
+
+    var signature = [
+      eventName,
+      Math.round((feedback.point.x || 0) * 8),
+      Math.round((feedback.point.z || 0) * 8),
+      Math.round((feedback.speed || 0) * 2),
+    ].join(":");
+    if (signature === handledGroundContactAudio) return;
+
+    handledGroundContactAudio = signature;
+    groundContactAudioCooldown = GROUND_CONTACT_AUDIO_COOLDOWN;
+    audio.playEvent(eventName);
   }
 
   function finishCurrentShotAfterReplay(dt) {
@@ -608,6 +644,8 @@ export async function createThreeGameRuntime(options) {
     launchedShotId = null;
     handledOutcome = null;
     handledContactAudio = null;
+    handledGroundContactAudio = "";
+    groundContactAudioCooldown = 0;
     outcomeTimer = 0;
     forcedGloveTarget = gloveTarget;
     forcedGloveTimer = DEBUG_FORCE_GLOVE_HOLD_SECONDS;

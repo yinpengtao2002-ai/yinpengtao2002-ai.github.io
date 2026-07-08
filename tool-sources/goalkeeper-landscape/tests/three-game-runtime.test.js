@@ -14,6 +14,7 @@ import {
   getNextShotDelayForOutcome,
   getReplayDurationForOutcome,
   getAudioCueForContactType,
+  getGroundContactAudioEvent,
   getMissMessageForBall,
   resolveRuntimeDifficulty,
 } from "../src/game/three-game-runtime.js";
@@ -76,6 +77,31 @@ describe("three game runtime timing", () => {
       { message: "miss", streak: 0, ended: false },
       { message: "miss", streak: 0, ended: false },
     )).toBeNull();
+  });
+
+  it("maps fresh grounded save skid feedback to a restrained turf audio event", () => {
+    expect(RuntimeModule.getGroundContactAudioEvent).toBeTypeOf("function");
+    expect(getGroundContactAudioEvent({
+      active: true,
+      age: 0.02,
+      intensity: 0.52,
+      speed: 4.2,
+      point: { x: -0.4, y: 0.012, z: 2.9 },
+    })).toBe("turf-skid");
+    expect(getGroundContactAudioEvent({
+      active: true,
+      age: 0.24,
+      intensity: 0.52,
+      speed: 4.2,
+      point: { x: -0.4, y: 0.012, z: 2.9 },
+    })).toBeNull();
+    expect(getGroundContactAudioEvent({
+      active: true,
+      age: 0.01,
+      intensity: 0.08,
+      speed: 0.8,
+      point: { x: -0.4, y: 0.012, z: 2.9 },
+    })).toBeNull();
   });
 
   it("turns frame misses into a distinct HUD message instead of a silent generic miss", () => {

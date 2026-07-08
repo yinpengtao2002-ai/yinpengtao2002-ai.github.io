@@ -32,6 +32,7 @@ const SYNTH_PROFILE = {
   catch: { frequency: 190, endFrequency: 90, duration: 0.13, gain: 0.1, type: "triangle" },
   frame: { frequency: 340, endFrequency: 190, duration: 0.12, gain: 0.11, type: "square" },
   goal: { frequency: 82, endFrequency: 42, duration: 0.28, gain: 0.1, type: "triangle" },
+  turf: { frequency: 95, endFrequency: 58, duration: 0.11, gain: 0.045, type: "sawtooth" },
   tick: { frequency: 180, endFrequency: 110, duration: 0.08, gain: 0.06, type: "sine" },
 };
 
@@ -49,6 +50,10 @@ const AUDIO_EVENT_PLANS = {
   "goal-net": [
     { name: "goal", delay: 0, gainScale: 0.74, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "goal-net-audio-cue" },
     { name: "tick", delay: 0.1, gainScale: 0.22, playbackRateOffset: -0.08 },
+  ],
+  "turf-skid": [
+    { name: "turf", delay: 0, gainScale: 0.56, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "turf-skid-audio-cue" },
+    { name: "tick", delay: 0.038, gainScale: 0.18, playbackRateOffset: -0.18 },
   ],
   "save-streak": [
     { name: "save", delay: 0, gainScale: 0.92, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "save-streak-audio-cue" },
@@ -73,6 +78,7 @@ const HAPTIC_PATTERNS = {
   "frame-rattle": [24, 32, 16],
   goal: [42, 35, 58],
   "goal-net": [42, 35, 58],
+  "turf-skid": [9],
   "danger-goal": [48, 35, 82],
   "save-streak": [16, 30, 16],
   "round-end": [32, 42, 32],
