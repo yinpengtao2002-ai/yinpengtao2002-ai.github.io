@@ -7,6 +7,7 @@ import {
   createGloveMesh,
   createGoalAndNet,
   createShooterModel,
+  getStadiumScoreboardPlan,
   updateShooterModel,
 } from "../src/three/procedural-assets.js";
 
@@ -196,6 +197,58 @@ describe("procedural 3D assets", () => {
     expect(collectByName(field, /^stadium-ad-board-/).length).toBeGreaterThanOrEqual(6);
     expect(collectByName(field, /^stadium-floodlight-/).length).toBeGreaterThanOrEqual(4);
     expect(collectByName(field, /^field-goalmouth-wear-/)).toHaveLength(3);
+  });
+
+  it("adds a live stadium scoreboard display that mirrors match state without covering play", () => {
+    const field = createFieldGroup();
+    const display = collectByName(field, /^stadium-scoreboard-display$/)[0];
+
+    expect(field.userData.stadiumScoreboardSystem).toBe("live-stadium-scoreboard-display");
+    expect(display).toBeTruthy();
+    expect(display.userData.scoreboardSystem).toBe("live-stadium-scoreboard-display");
+    expect(display.material.map).toBeTruthy();
+    expect(display.material.map.userData.scoreboardSystem).toBe("live-stadium-scoreboard-display");
+    expect(display.position.z).toBeGreaterThan(-24.72);
+
+    const livePlan = getStadiumScoreboardPlan({
+      running: true,
+      paused: false,
+      ended: false,
+      score: 480,
+      saves: 4,
+      conceded: 1,
+      streak: 2,
+      timeLeft: 37.2,
+      message: "save",
+    }, { difficulty: "medium" });
+
+    expect(livePlan.system).toBe("live-stadium-scoreboard-display");
+    expect(livePlan.status).toBe("LIVE");
+    expect(livePlan.scoreText).toBe("480");
+    expect(livePlan.timeText).toBe("00:38");
+    expect(livePlan.detailText).toBe("SAVES 4  LOST 1");
+    expect(livePlan.accentColor).toBe("#61f0ff");
+    expect(livePlan.signature).toContain("480");
+
+    const pressurePlan = getStadiumScoreboardPlan({
+      running: true,
+      paused: false,
+      ended: false,
+      score: 620,
+      saves: 5,
+      conceded: 4,
+      streak: 3,
+      timeLeft: 8.1,
+      message: "save",
+    }, { difficulty: "hard" });
+
+    expect(pressurePlan.status).toBe("HOLD");
+    expect(pressurePlan.detailText).toContain("STREAK 3");
+    expect(pressurePlan.accentColor).toBe("#ff7846");
+    expect(pressurePlan.signature).not.toBe(livePlan.signature);
+
+    expect(getStadiumScoreboardPlan({ running: true, paused: true, timeLeft: 22 }).status).toBe("PAUSED");
+    expect(getStadiumScoreboardPlan({ ended: true, score: 1200, timeLeft: 0 }).status).toBe("FULL TIME");
   });
 
   it("adds foreground turf blade clusters and pitch depth shadows for a finished match surface", () => {

@@ -125,7 +125,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
     new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
     "utf8"
   );
-  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-Bb-C4P4N.js", import.meta.url);
+  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-Kj3zoP3g.js", import.meta.url);
   const gameScript = await stat(gameScriptPath);
   const gameScriptSource = await readFile(gameScriptPath, "utf8");
   const gameStyles = await stat(new URL("../public/tools/goalkeeper-landscape/assets/index-CtIPRZhv.css", import.meta.url));
@@ -135,7 +135,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(goalkeeperPage, /import GoalkeeperLandscapeRuntime/);
   assert.match(goalkeeperPage, /GOALKEEPER_SCRIPT_SRC/);
   assert.match(goalkeeperPage, /GOALKEEPER_STYLESHEET_HREF/);
-  assert.match(goalkeeperRuntime, /index-Bb-C4P4N\.js/);
+  assert.match(goalkeeperRuntime, /index-Kj3zoP3g\.js/);
   assert.match(goalkeeperPage, /index-CtIPRZhv\.css/);
   assert.match(goalkeeperPage, /<GoalkeeperLandscapeRuntime \/>/);
   assert.match(goalkeeperPage, /弹力手套守门挑战/);
@@ -176,7 +176,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(thinkingClient, /横屏守门挑战/);
   assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-Bb-C4P4N\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-Kj3zoP3g\.js/);
   assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-CtIPRZhv\.css/);
   assert.match(gameIndex, /id="feedbackToast"/);
   assert.match(gameIndex, /id="matchStatus"/);

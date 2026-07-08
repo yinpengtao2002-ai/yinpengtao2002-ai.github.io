@@ -5,6 +5,8 @@ import {
   createGloveMesh,
   createGoalAndNet,
   createShooterModel,
+  getStadiumScoreboardPlan,
+  updateStadiumScoreboardTexture,
   updateShooterModel,
 } from "./procedural-assets.js";
 import { MAX_CONCEDED } from "../config/game-config.js";
@@ -826,6 +828,7 @@ export function createGoalkeeperScene(canvas) {
   scene.add(hemi, sun, rim, fill);
 
   var field = createFieldGroup();
+  var stadiumScoreboardDisplay = field.getObjectByName("stadium-scoreboard-display");
   var goal = createGoalAndNet();
   var dynamicNetDetails = goal.dynamicNetDetails || [];
   var netBasePositions = Array.from(goal.net.geometry.attributes.position.array);
@@ -1165,6 +1168,7 @@ export function createGoalkeeperScene(canvas) {
   var netPocketState = createNetPocketState();
   var netRecoilState = createNetRecoilState();
   var lastTurfContactSignature = "";
+  var lastScoreboardSignature = "";
 
   function resize(bounds) {
     var width = Math.max(1, Math.round(bounds.width || canvas.clientWidth || 1280));
@@ -1557,6 +1561,17 @@ export function createGoalkeeperScene(canvas) {
     }
   }
 
+  function updateStadiumScoreboard(snapshot) {
+    var texture = stadiumScoreboardDisplay?.material?.map;
+    if (!texture) return;
+    var plan = getStadiumScoreboardPlan(snapshot.state || {}, {
+      difficulty: snapshot.director?.difficulty || snapshot.director?.currentShot?.difficulty || "medium",
+    });
+    if (plan.signature === lastScoreboardSignature) return;
+    lastScoreboardSignature = plan.signature;
+    updateStadiumScoreboardTexture(texture, plan);
+  }
+
   function updateGloves(gloves) {
     var left = gloves?.left || { x: -0.34, y: 1.2, z: 3.15 };
     var right = gloves?.right || { x: 0.34, y: 1.2, z: 3.15 };
@@ -1848,6 +1863,7 @@ export function createGoalkeeperScene(canvas) {
 
   function updateVisuals(snapshot) {
     updateShooterModel(shooter, snapshot.director || { phase: "cue", phaseTime: 0, currentShot: null });
+    updateStadiumScoreboard(snapshot);
     updateStateFeedback(snapshot);
     updateBall(snapshot);
     updateLingeringBalls(snapshot);

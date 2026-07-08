@@ -1,6 +1,55 @@
 import * as THREE from "three";
+import { MAX_CONCEDED, ROUND_SECONDS } from "../config/game-config.js";
 import { SHOT_3D } from "../game/shot-3d-director.js";
 import { RAPIER_GOAL } from "../physics/rapier-world.js";
+
+export const STADIUM_SCOREBOARD_DISPLAY_SYSTEM = "live-stadium-scoreboard-display";
+
+function pad2(value) {
+  return String(Math.max(0, Math.floor(value))).padStart(2, "0");
+}
+
+function formatScoreboardTime(seconds) {
+  var safeSeconds = Math.max(0, Math.ceil(Number.isFinite(seconds) ? seconds : ROUND_SECONDS));
+  return pad2(safeSeconds / 60) + ":" + pad2(safeSeconds % 60);
+}
+
+export function getStadiumScoreboardPlan(state = {}, context = {}) {
+  var secondsLeft = Math.max(0, Math.ceil(Number.isFinite(state.timeLeft) ? state.timeLeft : ROUND_SECONDS));
+  var running = Boolean(state.running);
+  var paused = Boolean(state.paused);
+  var ended = Boolean(state.ended);
+  var conceded = Math.max(0, state.conceded || 0);
+  var saves = Math.max(0, state.saves || 0);
+  var streak = Math.max(0, state.streak || 0);
+  var scoreText = String(Math.max(0, state.score || 0));
+  var lowTime = running && !paused && !ended && secondsLeft <= 10;
+  var matchPoint = running && !paused && !ended && conceded >= MAX_CONCEDED - 1;
+  var pressure = lowTime || matchPoint;
+  var status = ended ? "FULL TIME" : paused ? "PAUSED" : running ? (pressure ? "HOLD" : "LIVE") : "READY";
+  var difficulty = String(context.difficulty || "medium").toUpperCase();
+  var detailText = streak >= 3 ? "STREAK " + String(streak) + "  LOST " + String(conceded) : "SAVES " + String(saves) + "  LOST " + String(conceded);
+  var accentColor =
+    ended
+      ? "#f6f1df"
+      : pressure || state.message === "goal"
+        ? "#ff7846"
+        : state.message === "save" || streak > 0
+          ? "#61f0ff"
+          : "#fff1a8";
+
+  return {
+    system: STADIUM_SCOREBOARD_DISPLAY_SYSTEM,
+    status,
+    scoreText,
+    timeText: formatScoreboardTime(secondsLeft),
+    detailText,
+    difficultyText: difficulty,
+    accentColor,
+    pressure,
+    signature: [status, scoreText, formatScoreboardTime(secondsLeft), detailText, difficulty, accentColor].join("|"),
+  };
+}
 
 function createGrassTexture() {
   var size = 256;
@@ -78,6 +127,102 @@ function createFootballSurfaceMap(kind) {
     if (kind === "roughness") return seam ? 238 : 158 + panel * 44 + noise * 22;
     return seam ? 228 : 118 + panel * 46 + noise * 32;
   });
+}
+
+function createFallbackScoreboardTexture(plan) {
+  var data = new Uint8Array([
+    18, 30, 31, 255,
+    28, 53, 50, 255,
+    255, 241, 168, 255,
+    17, 25, 24, 255,
+  ]);
+  var texture = new THREE.DataTexture(data, 2, 2, THREE.RGBAFormat);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  texture.userData.scoreboardSystem = STADIUM_SCOREBOARD_DISPLAY_SYSTEM;
+  texture.userData.signature = plan.signature;
+  texture.userData.plan = plan;
+  return texture;
+}
+
+function drawScoreboardTexture(canvas, plan) {
+  var ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#111d1e";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  var gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  gradient.addColorStop(0, "rgba(31, 67, 62, 0.96)");
+  gradient.addColorStop(0.56, "rgba(18, 35, 34, 0.98)");
+  gradient.addColorStop(1, "rgba(10, 18, 18, 1)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(10, 10, canvas.width - 20, canvas.height - 20);
+
+  ctx.fillStyle = plan.accentColor;
+  ctx.fillRect(10, 10, canvas.width - 20, 10);
+  ctx.globalAlpha = plan.pressure ? 0.34 : 0.18;
+  ctx.fillRect(26, 34, canvas.width - 52, canvas.height - 66);
+  ctx.globalAlpha = 1;
+
+  ctx.fillStyle = "#f8fff0";
+  ctx.font = "900 34px Inter, Arial, sans-serif";
+  ctx.textBaseline = "top";
+  ctx.fillText(plan.status, 28, 32);
+
+  ctx.fillStyle = plan.accentColor;
+  ctx.font = "950 76px Inter, Arial, sans-serif";
+  ctx.fillText(plan.scoreText, 28, 78);
+
+  ctx.fillStyle = "#f8fff0";
+  ctx.textAlign = "right";
+  ctx.font = "900 40px Inter, Arial, sans-serif";
+  ctx.fillText(plan.timeText, canvas.width - 28, 44);
+
+  ctx.fillStyle = "rgba(248,255,240,0.82)";
+  ctx.font = "800 22px Inter, Arial, sans-serif";
+  ctx.fillText(plan.difficultyText, canvas.width - 30, 92);
+
+  ctx.textAlign = "left";
+  ctx.fillStyle = "rgba(248,255,240,0.86)";
+  ctx.font = "850 24px Inter, Arial, sans-serif";
+  ctx.fillText(plan.detailText, 30, 154);
+}
+
+export function createStadiumScoreboardTexture(plan = getStadiumScoreboardPlan()) {
+  var scoreboardPlan = plan?.system === STADIUM_SCOREBOARD_DISPLAY_SYSTEM ? plan : getStadiumScoreboardPlan(plan);
+  if (typeof document === "undefined" || !document.createElement) {
+    return createFallbackScoreboardTexture(scoreboardPlan);
+  }
+
+  var canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 192;
+  var texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+  texture.userData.scoreboardSystem = STADIUM_SCOREBOARD_DISPLAY_SYSTEM;
+  updateStadiumScoreboardTexture(texture, scoreboardPlan);
+  return texture;
+}
+
+export function updateStadiumScoreboardTexture(texture, plan = getStadiumScoreboardPlan()) {
+  var scoreboardPlan = plan?.system === STADIUM_SCOREBOARD_DISPLAY_SYSTEM ? plan : getStadiumScoreboardPlan(plan);
+  if (!texture) return scoreboardPlan;
+  if (texture.userData.signature === scoreboardPlan.signature) return scoreboardPlan;
+
+  texture.userData.scoreboardSystem = STADIUM_SCOREBOARD_DISPLAY_SYSTEM;
+  texture.userData.signature = scoreboardPlan.signature;
+  texture.userData.plan = scoreboardPlan;
+
+  if (texture.image?.getContext) {
+    drawScoreboardTexture(texture.image, scoreboardPlan);
+  }
+  texture.needsUpdate = true;
+  return scoreboardPlan;
 }
 
 function createTurfMaterial() {
@@ -286,6 +431,7 @@ export function createFieldGroup() {
   group.userData.surfaceDetailSystem = "layered-turf-with-foreground-blades";
   group.userData.surfaceFinishSystem = "multi-layer-turf-edge-divot-kit";
   group.userData.stadiumDressingSystem = "crowd-scoreboard-flags-matchday-dressing";
+  group.userData.stadiumScoreboardSystem = STADIUM_SCOREBOARD_DISPLAY_SYSTEM;
   group.userData.reusableAssetTechnique = "instanced-turf-and-layered-material-kit";
   var turf = new THREE.Mesh(
     new THREE.PlaneGeometry(18, 52, 1, 1),
@@ -658,6 +804,18 @@ export function createFieldGroup() {
   scoreboard.name = "stadium-scoreboard-panel";
   scoreboard.position.set(0, 1.78, -24.72);
   group.add(scoreboard);
+  var scoreboardDisplayTexture = createStadiumScoreboardTexture();
+  var scoreboardDisplay = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.46, 0.48),
+    new THREE.MeshBasicMaterial({
+      map: scoreboardDisplayTexture,
+      toneMapped: false,
+    }),
+  );
+  scoreboardDisplay.name = "stadium-scoreboard-display";
+  scoreboardDisplay.userData.scoreboardSystem = STADIUM_SCOREBOARD_DISPLAY_SYSTEM;
+  scoreboardDisplay.position.set(0, 1.78, -24.655);
+  group.add(scoreboardDisplay);
   for (var digit = 0; digit < 6; digit += 1) {
     var tile = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.012), scoreboardGlow.clone());
     tile.name = "stadium-scoreboard-light-tile-" + digit;
