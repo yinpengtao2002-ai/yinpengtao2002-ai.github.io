@@ -305,28 +305,23 @@ describe("audio engine", () => {
     expect(AudioModule.getAudioEventPlan).toBeTypeOf("function");
 
     expect(AudioModule.getAudioEventPlan("clean-save")).toEqual([
-      expect.objectContaining({ name: "save", marker: "clean-save-audio-cue" }),
-      expect.objectContaining({ name: "tick", delay: expect.any(Number), gainScale: expect.any(Number) }),
+      expect.objectContaining({ name: "tick", marker: "clean-save-audio-cue", gainScale: expect.any(Number) }),
     ]);
     expect(AudioModule.getAudioEventPlan("frame-rattle")).toEqual([
-      expect.objectContaining({ name: "frame", marker: "frame-rattle-audio-cue" }),
-      expect.objectContaining({ name: "tick", delay: expect.any(Number), gainScale: expect.any(Number) }),
+      expect.objectContaining({ name: "tick", marker: "frame-rattle-audio-cue", gainScale: expect.any(Number) }),
     ]);
     expect(AudioModule.getAudioEventPlan("goal-net")).toEqual([
-      expect.objectContaining({ name: "goal", marker: "goal-net-audio-cue" }),
-      expect.objectContaining({ name: "tick", delay: expect.any(Number), gainScale: expect.any(Number) }),
+      expect.objectContaining({ name: "tick", marker: "goal-net-audio-cue", gainScale: expect.any(Number) }),
     ]);
     expect(AudioModule.getAudioEventPlan("turf-skid")).toEqual([
       expect.objectContaining({ name: "turf", marker: "turf-skid-audio-cue" }),
       expect.objectContaining({ name: "tick", delay: expect.any(Number), gainScale: expect.any(Number) }),
     ]);
     expect(AudioModule.getAudioEventPlan("save-streak")).toEqual([
-      expect.objectContaining({ name: "save", marker: "save-streak-audio-cue" }),
-      expect.objectContaining({ name: "tick", delay: expect.any(Number), gainScale: expect.any(Number) }),
+      expect.objectContaining({ name: "tick", marker: "save-streak-audio-cue", gainScale: expect.any(Number) }),
     ]);
     expect(AudioModule.getAudioEventPlan("danger-goal")).toEqual([
-      expect.objectContaining({ name: "goal", marker: "danger-goal-audio-cue" }),
-      expect.objectContaining({ name: "frame", delay: expect.any(Number), gainScale: expect.any(Number) }),
+      expect.objectContaining({ name: "tick", marker: "danger-goal-audio-cue", gainScale: expect.any(Number) }),
     ]);
     expect(AudioModule.getAudioEventPlan("round-end")).toEqual([
       expect.objectContaining({ name: "frame", marker: "round-end-audio-cue" }),
@@ -356,9 +351,17 @@ describe("audio engine", () => {
     expect(audio.playEvent).toBeTypeOf("function");
     audio.playEvent("save-streak");
 
-    expect(root.startedSources).toHaveLength(1);
+    expect(root.startedSources).toHaveLength(0);
     expect(root.startedOscillators).toHaveLength(1);
-    expect(root.scheduledDelays).toEqual([60]);
+    expect(root.scheduledDelays).toEqual([40]);
     expect(root.vibrationPatterns).toEqual([[16, 30, 16]]);
+  });
+
+  it("does not replay the same physical impact sample for outcome confirmation events", () => {
+    expect(AudioModule.getAudioEventPlan("clean-save").map((cue) => cue.name)).not.toContain("save");
+    expect(AudioModule.getAudioEventPlan("save-streak").map((cue) => cue.name)).not.toContain("save");
+    expect(AudioModule.getAudioEventPlan("goal-net").map((cue) => cue.name)).not.toContain("goal");
+    expect(AudioModule.getAudioEventPlan("danger-goal").map((cue) => cue.name)).not.toContain("goal");
+    expect(AudioModule.getAudioEventPlan("frame-rattle").map((cue) => cue.name)).not.toContain("frame");
   });
 });

@@ -432,6 +432,36 @@ export function getBallSpinGlintPlan(ballState, shot = null, tuning = SCENE_TUNI
   };
 }
 
+export function getSceneBallRenderPlan(snapshot = {}) {
+  var ball = snapshot.ball || null;
+  var lingeringBalls = Array.isArray(snapshot.lingeringBalls) ? snapshot.lingeringBalls.filter(Boolean) : [];
+  var hideActiveBallForReplay = Boolean(ball && ball.outcome === "saved" && lingeringBalls.length > 0);
+  var activeBall = hideActiveBallForReplay
+    ? {
+        ...ball,
+        live: false,
+        position: null,
+        velocity: null,
+        angularVelocity: null,
+        hiddenByReplay: true,
+      }
+    : ball;
+  var groundSkidBalls = [
+    ...(hideActiveBallForReplay || !ball ? [] : [ball]),
+    ...lingeringBalls,
+  ].filter(Boolean);
+  var visibleBallCount = (activeBall?.position ? 1 : 0) + lingeringBalls.filter((lingeringBall) => lingeringBall?.position).length;
+
+  return {
+    activeBall,
+    contactBall: ball,
+    lingeringBalls,
+    groundSkidBalls,
+    visibleBallCount,
+    hideActiveBallForReplay,
+  };
+}
+
 export function getSaveAfterimagePlan(contact, gloves, tuning = SCENE_TUNING.feedback) {
   if (!contact || (contact.type !== "glove" && contact.type !== "catch")) return [];
 
@@ -1370,7 +1400,7 @@ export function createGoalkeeperScene(canvas) {
   }
 
   function updateLingeringBalls(snapshot) {
-    var lingeringBalls = snapshot.lingeringBalls || [];
+    var lingeringBalls = getSceneBallRenderPlan(snapshot).lingeringBalls;
     lingeringBallViews.forEach((view, index) => {
       updateBallView(view, lingeringBalls[index], null);
     });
@@ -1396,7 +1426,7 @@ export function createGoalkeeperScene(canvas) {
   }
 
   function updateGroundSkids(snapshot) {
-    var candidates = [snapshot.ball, ...(snapshot.lingeringBalls || [])].filter((ballState) => ballState?.groundFeedback?.active);
+    var candidates = getSceneBallRenderPlan(snapshot).groundSkidBalls.filter((ballState) => ballState?.groundFeedback?.active);
     groundSkids.forEach((skid, index) => {
       updateGroundSkid(skid, candidates[index]);
     });
@@ -1662,35 +1692,37 @@ export function createGoalkeeperScene(canvas) {
   }
 
   function updateBall(snapshot) {
-    var ballState = snapshot.ball;
+    var renderPlan = getSceneBallRenderPlan(snapshot);
+    var ballState = renderPlan.activeBall;
+    var contactBall = renderPlan.contactBall;
     var shot = snapshot.director?.currentShot;
     updateBallView(activeBall, ballState, shot);
     updateBallSpinGlints(ballState, shot);
 
-    if (ballState?.lastContact?.type) {
-      var contactPoint = ballState.lastContact.point || ballState.position || { x: 0, y: 0, z: 0 };
+    if (contactBall?.lastContact?.type) {
+      var contactPoint = contactBall.lastContact.point || contactBall.position || { x: 0, y: 0, z: 0 };
       var contactSignature = [
         shot?.shotId ?? "",
-        ballState.lastContact.type,
+        contactBall.lastContact.type,
         Math.round((contactPoint.x || 0) * 10),
         Math.round((contactPoint.y || 0) * 10),
         Math.round((contactPoint.z || 0) * 10),
       ].join(":");
       if (contactSignature === lastContactSignature) return;
       lastContactSignature = contactSignature;
-      if (ballState.lastContact.type === "glove" || ballState.lastContact.type === "catch") {
+      if (contactBall.lastContact.type === "glove" || contactBall.lastContact.type === "catch") {
         var position = contactPoint;
-        triggerSaveFeedback(position, null, ballState.lastContact, snapshot.gloves, snapshot.state);
-        triggerGloveImpactState(gloveImpactState, ballState.lastContact, snapshot.gloves, tuning.gloves);
+        triggerSaveFeedback(position, null, contactBall.lastContact, snapshot.gloves, snapshot.state);
+        triggerGloveImpactState(gloveImpactState, contactBall.lastContact, snapshot.gloves, tuning.gloves);
       }
-      if (ballState.lastContact.type === "net") {
-        triggerGoalFeedback(contactPoint, ballState.lastContact, snapshot.state);
+      if (contactBall.lastContact.type === "net") {
+        triggerGoalFeedback(contactPoint, contactBall.lastContact, snapshot.state);
       }
-      if (ballState.lastContact.type === "frame") {
-        var framePlan = getMatchEventFeedbackPlan({ type: "frame", contact: ballState.lastContact, state: snapshot.state }, tuning.feedback);
-        var frameProfile = framePlan.profile || getMatchFeedbackProfile({ type: "frame", contact: ballState.lastContact }, tuning.feedback);
+      if (contactBall.lastContact.type === "frame") {
+        var framePlan = getMatchEventFeedbackPlan({ type: "frame", contact: contactBall.lastContact, state: snapshot.state }, tuning.feedback);
+        var frameProfile = framePlan.profile || getMatchFeedbackProfile({ type: "frame", contact: contactBall.lastContact }, tuning.feedback);
         triggerImpact("frame", contactPoint, frameProfile.impactStrength, frameProfile, framePlan);
-        triggerFrameReboundFeedback(ballState.lastContact, contactPoint);
+        triggerFrameReboundFeedback(contactBall.lastContact, contactPoint);
       }
     }
   }
@@ -2027,6 +2059,11 @@ export function createGoalkeeperScene(canvas) {
   }
 
   function updateVisuals(snapshot) {
+    var ballRenderPlan = getSceneBallRenderPlan(snapshot);
+    if (canvas.dataset) {
+      canvas.dataset.renderVisibleBalls = String(ballRenderPlan.visibleBallCount);
+      canvas.dataset.hideActiveBallForReplay = ballRenderPlan.hideActiveBallForReplay ? "true" : "false";
+    }
     updateShooterModel(shooter, snapshot.director || { phase: "cue", phaseTime: 0, currentShot: null });
     updateStadiumScoreboard(snapshot);
     updateStateFeedback(snapshot);

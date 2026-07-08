@@ -129,6 +129,58 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(sceneModule.getBallSpinGlintPlan({ live: false, position: { x: 0, y: 1.1, z: 0 }, velocity: { x: 0, y: 0, z: 20 } }).glints).toEqual([]);
   });
 
+  it("renders a saved replay ball without also drawing the retired active physics ball", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.getSceneBallRenderPlan).toBeTypeOf("function");
+
+    const savedActiveBall = {
+      live: false,
+      outcome: "saved",
+      position: { x: 0.22, y: 1.35, z: 3.08 },
+      velocity: { x: 3.4, y: 1.2, z: -3.8 },
+      radius: 0.11,
+      lastContact: {
+        type: "glove",
+        point: { x: 0.2, y: 1.32, z: 3.12 },
+      },
+    };
+    const replayBall = {
+      live: false,
+      outcome: "saved",
+      position: { x: 0.24, y: 1.3, z: 3.02 },
+      velocity: { x: 3.2, y: 1.1, z: -3.6 },
+      radius: 0.11,
+      age: 0,
+      duration: 5,
+    };
+
+    const plan = sceneModule.getSceneBallRenderPlan({
+      ball: savedActiveBall,
+      lingeringBalls: [replayBall],
+    });
+
+    expect(plan.activeBall.position).toBeNull();
+    expect(plan.activeBall.live).toBe(false);
+    expect(plan.activeBall.hiddenByReplay).toBe(true);
+    expect(plan.lingeringBalls).toHaveLength(1);
+    expect(plan.groundSkidBalls).toEqual([replayBall]);
+    expect(plan.contactBall.lastContact).toBe(savedActiveBall.lastContact);
+    expect(plan.visibleBallCount).toBe(1);
+
+    const livePlan = sceneModule.getSceneBallRenderPlan({
+      ball: {
+        live: true,
+        outcome: "deflected",
+        position: { x: -0.2, y: 1.1, z: 2.9 },
+      },
+      lingeringBalls: [],
+    });
+    expect(livePlan.activeBall.position).toEqual({ x: -0.2, y: 1.1, z: 2.9 });
+    expect(livePlan.groundSkidBalls).toHaveLength(1);
+    expect(livePlan.visibleBallCount).toBe(1);
+  });
+
   it("defines a restrained matchday feedback layer for saves, goals, streaks, and camera shake", () => {
     expect(SCENE_TUNING.feedback.assetSystem).toBe("matchday-feedback-kit");
     expect(SCENE_TUNING.feedback.impactRingCount).toBeGreaterThanOrEqual(3);

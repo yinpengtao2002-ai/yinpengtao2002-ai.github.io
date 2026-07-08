@@ -40,28 +40,23 @@ export const MATCHDAY_AUDIO_EVENT_LAYER = "matchday-audio-event-layer";
 
 const AUDIO_EVENT_PLANS = {
   "clean-save": [
-    { name: "save", delay: 0, gainScale: 0.74, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "clean-save-audio-cue" },
-    { name: "tick", delay: 0.045, gainScale: 0.34, playbackRateOffset: 0.08 },
+    { name: "tick", delay: 0.035, gainScale: 0.42, playbackRateOffset: 0.08, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "clean-save-audio-cue" },
   ],
   "frame-rattle": [
-    { name: "frame", delay: 0, gainScale: 0.68, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "frame-rattle-audio-cue" },
-    { name: "tick", delay: 0.055, gainScale: 0.24, playbackRateOffset: -0.12 },
+    { name: "tick", delay: 0.05, gainScale: 0.32, playbackRateOffset: -0.12, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "frame-rattle-audio-cue" },
   ],
   "goal-net": [
-    { name: "goal", delay: 0, gainScale: 0.74, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "goal-net-audio-cue" },
-    { name: "tick", delay: 0.1, gainScale: 0.22, playbackRateOffset: -0.08 },
+    { name: "tick", delay: 0.09, gainScale: 0.3, playbackRateOffset: -0.08, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "goal-net-audio-cue" },
   ],
   "turf-skid": [
     { name: "turf", delay: 0, gainScale: 0.56, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "turf-skid-audio-cue" },
     { name: "tick", delay: 0.038, gainScale: 0.18, playbackRateOffset: -0.18 },
   ],
   "save-streak": [
-    { name: "save", delay: 0, gainScale: 0.92, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "save-streak-audio-cue" },
-    { name: "tick", delay: 0.06, gainScale: 0.52, playbackRateOffset: 0 },
+    { name: "tick", delay: 0.04, gainScale: 0.62, playbackRateOffset: 0.06, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "save-streak-audio-cue" },
   ],
   "danger-goal": [
-    { name: "goal", delay: 0, gainScale: 0.82, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "danger-goal-audio-cue" },
-    { name: "frame", delay: 0.08, gainScale: 0.32, playbackRateOffset: -0.08 },
+    { name: "tick", delay: 0.08, gainScale: 0.46, playbackRateOffset: -0.14, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "danger-goal-audio-cue" },
   ],
   "round-end": [
     { name: "frame", delay: 0, gainScale: 0.36, playbackRateOffset: -0.16, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "round-end-audio-cue" },
