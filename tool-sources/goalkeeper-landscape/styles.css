@@ -277,22 +277,24 @@ button {
 
 .bottom-controls {
   --broadcast-control-rail-hud: 1;
+  --corner-control-clusters: 1;
   position: absolute;
   left: clamp(18px, 3vw, 42px);
   right: clamp(18px, 3vw, 42px);
   bottom: max(clamp(14px, 2vw, 28px), env(safe-area-inset-bottom));
   z-index: 4;
-  max-width: min(760px, calc(100vw - 32px));
-  display: flex;
+  max-width: none;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: clamp(8px, 1.1vw, 14px);
-  justify-content: flex-start;
   margin: 0 auto;
   pointer-events: none;
 }
 
 .bottom-controls::before {
   content: "";
+  display: none;
   position: absolute;
   inset: -5px -7px;
   z-index: -1;
@@ -539,6 +541,8 @@ button {
 .utility-button {
   min-width: clamp(96px, 10vw, 148px);
   min-height: clamp(44px, 4.4vw, 66px);
+  grid-column: 3;
+  justify-self: end;
 }
 
 .utility-button.is-sound-ready {
@@ -563,36 +567,41 @@ button {
 
 .sound-status {
   --match-audio-status-chip: 1;
+  position: absolute;
+  width: 1px;
+  height: 1px;
   max-width: min(260px, 42vw);
-  min-height: clamp(32px, 3.4vw, 46px);
-  border: 1px solid rgba(255, 255, 255, 0.54);
-  border-radius: 999px;
-  padding: 7px clamp(10px, 1.2vw, 16px);
-  display: inline-flex;
+  min-height: 1px;
+  margin: -1px;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  display: block;
   align-items: center;
   justify-content: center;
   color: rgba(248, 255, 242, 0.9);
-  background: linear-gradient(180deg, rgba(22, 42, 36, 0.5), rgba(12, 27, 23, 0.34));
-  box-shadow: 0 10px 22px rgba(15, 35, 29, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(14px);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
   font-size: clamp(11px, 0.9vw, 13px);
   font-weight: 850;
   line-height: 1;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: clip;
+  clip-path: inset(50%);
   pointer-events: none;
 }
 
 .sound-status[data-sound-status="ready"] {
-  color: #f4fff1;
-  background: linear-gradient(180deg, rgba(18, 89, 59, 0.54), rgba(9, 45, 35, 0.42));
+  color: transparent;
+  background: transparent;
 }
 
 .sound-status[data-sound-status="muted"],
 .sound-status[data-sound-status="unavailable"] {
-  color: rgba(255, 248, 237, 0.84);
-  background: linear-gradient(180deg, rgba(79, 56, 45, 0.44), rgba(38, 31, 27, 0.34));
+  color: transparent;
+  background: transparent;
 }
 
 .overlay {
@@ -609,26 +618,27 @@ button {
 }
 
 .start-overlay {
-  place-items: end center;
-  padding: 0 max(18px, env(safe-area-inset-right)) clamp(58px, 12%, 104px) max(18px, env(safe-area-inset-left));
+  place-items: end start;
+  padding: 0 max(18px, env(safe-area-inset-right)) max(clamp(76px, 12%, 112px), calc(env(safe-area-inset-bottom) + 78px)) max(clamp(18px, 3vw, 42px), env(safe-area-inset-left));
   pointer-events: none;
 }
 
 .start-panel {
   --match-hud-flow-polish: 1;
-  width: min(590px, calc(100vw - 36px));
+  --playfield-safe-start-dock: 1;
+  width: min(450px, calc(100vw - 44px));
   border: 1px solid rgba(255, 255, 255, 0.58);
-  border-radius: 24px;
-  padding: clamp(15px, 1.7vw, 22px);
+  border-radius: 20px;
+  padding: clamp(12px, 1.3vw, 18px);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  column-gap: clamp(14px, 2vw, 26px);
-  row-gap: 8px;
+  column-gap: clamp(12px, 1.5vw, 20px);
+  row-gap: 7px;
   color: #f9fff3;
-  background: linear-gradient(180deg, rgba(25, 48, 41, 0.58), rgba(12, 27, 23, 0.42));
-  box-shadow: 0 20px 44px rgba(15, 35, 29, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(14px);
+  background: linear-gradient(180deg, rgba(22, 44, 38, 0.5), rgba(11, 26, 22, 0.34));
+  box-shadow: 0 16px 34px rgba(15, 35, 29, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(12px);
   pointer-events: auto;
 }
 
@@ -643,9 +653,9 @@ button {
 .start-panel h1 {
   margin: 0;
   color: #ffffff;
-  font-size: clamp(30px, 3.2vw, 46px);
+  font-size: clamp(24px, 2.5vw, 36px);
   font-weight: 950;
-  line-height: 0.96;
+  line-height: 1;
   letter-spacing: 0;
   text-shadow: 0 3px 16px rgba(10, 23, 20, 0.34);
 }
@@ -657,10 +667,10 @@ button {
 }
 
 .start-rules span {
-  min-height: 30px;
+  min-height: 28px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 999px;
-  padding: 6px 10px;
+  padding: 5px 9px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -680,8 +690,8 @@ button {
 .start-disc {
   grid-column: 2;
   grid-row: 1 / span 3;
-  width: clamp(118px, 11vw, 164px);
-  height: clamp(118px, 11vw, 164px);
+  width: clamp(94px, 8.2vw, 126px);
+  height: clamp(94px, 8.2vw, 126px);
   border: 2px solid rgba(255, 255, 255, 0.78);
   border-radius: 50%;
   color: #ffffff;

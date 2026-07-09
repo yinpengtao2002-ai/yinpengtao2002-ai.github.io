@@ -75,4 +75,18 @@ describe("responsive layout css", () => {
     expect(css).toContain("@media (max-height: 520px) and (orientation: landscape)");
     expect(css).toContain("max-width: min(680px, calc(100vw - 96px));");
   });
+
+  it("uses playfield-safe start and control docks instead of a center-blocking debug panel", () => {
+    const css = readFileSync(stylesPath, "utf8");
+
+    expect(css).toContain("playfield-safe-start-dock");
+    expect(css).toContain("corner-control-clusters");
+    expect(css).toContain("place-items: end start;");
+    expect(css).toContain("width: min(450px, calc(100vw - 44px));");
+    expect(css).toContain("grid-template-columns: auto minmax(0, 1fr) auto;");
+    expect(css).toContain(".bottom-controls::before");
+    expect(css).toContain("display: none;");
+    expect(css).toContain(".sound-status");
+    expect(css).toContain("clip-path: inset(50%);");
+  });
 });
