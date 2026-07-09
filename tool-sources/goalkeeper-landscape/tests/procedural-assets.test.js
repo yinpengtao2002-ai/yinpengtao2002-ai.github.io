@@ -349,7 +349,9 @@ describe("procedural 3D assets", () => {
     expect(collectByName(field, /^stadium-depth-vignette-/)).toHaveLength(2);
 
     const lightCones = collectByName(field, /^stadium-light-cone-/);
-    expect(lightCones.every((cone) => cone.material.transparent && cone.material.opacity <= 0.2)).toBe(true);
+    const depthVignettes = collectByName(field, /^stadium-depth-vignette-/);
+    expect(lightCones.every((cone) => cone.material.transparent && cone.material.opacity <= 0.006)).toBe(true);
+    expect(depthVignettes.every((vignette) => vignette.material.transparent && vignette.material.opacity <= 0.02)).toBe(true);
     expect(lightCones.every((cone) => cone.position.z < 0)).toBe(true);
   });
 
@@ -455,7 +457,7 @@ describe("procedural 3D assets", () => {
     expect(goal.net.geometry.attributes.position.count).toBeGreaterThanOrEqual(120);
     expect(collectByName(goal.group, /^goal-frame-(left-post|right-post|crossbar)$/)).toHaveLength(3);
     expect(collectByName(goal.group, /^goal-depth-stanchion-/)).toHaveLength(2);
-    expect(collectByName(goal.group, /^goal-net-side-/)).toHaveLength(2);
+    expect(collectByName(goal.group, /^goal-net-side-(left|right)$/)).toHaveLength(2);
     expect(collectByName(goal.group, /^goal-net-anchor-/).length).toBeGreaterThanOrEqual(4);
     expect(goal.net.name).toBe("goal-net-back-panel");
     expect(goal.grid.name).toBe("goal-net-back-grid");
@@ -566,22 +568,20 @@ describe("procedural 3D assets", () => {
 
   it("keeps the net readable without turning the back panel into a ball-blocking veil", () => {
     const goal = createGoalAndNet();
-    const sideNets = collectByName(goal.group, /^goal-net-side-/);
+    const sideNets = collectByName(goal.group, /^goal-net-side-(left|right)$/);
     const depthHaze = collectByName(goal.group, /^goal-net-depth-haze-/);
     const raisedCords = collectByName(goal.group, /^goal-net-raised-(vertical|horizontal)-cord-/);
     const borderRopes = collectByName(goal.group, /^goal-net-raised-border-rope-/);
     const diagonalWeave = collectByName(goal.group, /^goal-net-diagonal-weave-/);
 
     expect(goal.group.userData.netReadabilitySystem).toBe("ball-first-ultra-light-net-cords");
-    expect(goal.net.material.opacity).toBeGreaterThanOrEqual(0.002);
-    expect(goal.net.material.opacity).toBeLessThanOrEqual(0.006);
-    expect(goal.grid.material.opacity).toBeGreaterThanOrEqual(0.1);
-    expect(goal.grid.material.opacity).toBeLessThanOrEqual(0.14);
-    expect(depthHaze.every((haze) => haze.material.opacity <= 0.004)).toBe(true);
-    expect(sideNets.every((net) => net.material.opacity >= 0.004 && net.material.opacity <= 0.01)).toBe(true);
-    expect(raisedCords.every((cord) => cord.material.opacity >= 0.18 && cord.material.opacity <= 0.22)).toBe(true);
+    expect(goal.net.material.opacity).toBeLessThanOrEqual(0.0001);
+    expect(goal.grid.material.opacity).toBeLessThanOrEqual(0.008);
+    expect(depthHaze.every((haze) => haze.material.opacity <= 0.0001)).toBe(true);
+    expect(sideNets.every((net) => net.material.opacity <= 0.0001)).toBe(true);
+    expect(raisedCords.every((cord) => cord.material.opacity >= 0.07 && cord.material.opacity <= 0.16)).toBe(true);
     expect(borderRopes.every((rope) => rope.material.opacity >= 0.24 && rope.material.opacity <= 0.28)).toBe(true);
-    expect(diagonalWeave.every((weave) => weave.material.opacity >= 0.08 && weave.material.opacity <= 0.12)).toBe(true);
+    expect(diagonalWeave.every((weave) => weave.material.opacity >= 0.014 && weave.material.opacity <= 0.026)).toBe(true);
   });
 
   it("uses an open diamond rope net instead of a translucent curtain in the goal mouth", () => {
@@ -591,11 +591,33 @@ describe("procedural 3D assets", () => {
     expect(goal.group.userData.netRealismSystem).toBe("open-diamond-rope-net-ball-first");
     expect(diamondRopes.length).toBeGreaterThanOrEqual(12);
     expect(diamondRopes.every((rope) => rope.geometry.type === "TubeGeometry")).toBe(true);
-    expect(diamondRopes.every((rope) => rope.material.opacity >= 0.12 && rope.material.opacity <= 0.22)).toBe(true);
+    expect(diamondRopes.every((rope) => rope.material.opacity >= 0.03 && rope.material.opacity <= 0.14)).toBe(true);
     expect(diamondRopes.every((rope) => rope.material.depthWrite === false)).toBe(true);
-    expect(goal.net.material.opacity).toBeLessThanOrEqual(0.006);
-    expect(goal.grid.material.opacity).toBeLessThanOrEqual(0.14);
+    expect(goal.net.material.opacity).toBeLessThanOrEqual(0.0001);
+    expect(goal.grid.material.opacity).toBeLessThanOrEqual(0.008);
     expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-open-diamond-rope-"))).toBe(true);
+  });
+
+  it("uses braided cord material and a low-occlusion keeper sightline for the net", () => {
+    const goal = createGoalAndNet();
+    const diamondRopes = collectByName(goal.group, /^goal-net-open-diamond-rope-/);
+    const rearDrapeCords = collectByName(goal.group, /^goal-net-rear-drape-cord-/);
+    const sideDepthCords = collectByName(goal.group, /^goal-net-side-depth-cord-/);
+    const crossingRopes = diamondRopes.filter((rope) => rope.userData.crossesKeeperSightline);
+    const peripheralRopes = diamondRopes.filter((rope) => !rope.userData.crossesKeeperSightline);
+
+    expect(goal.group.userData.netTextureSystem).toBe("procedural-braided-cord-net-material");
+    expect(goal.group.userData.netSightlineSystem).toBe("central-shot-lane-low-occlusion-net");
+    expect(goal.group.userData.netDepthSystem).toBe("rear-draped-side-net-volume");
+    expect(goal.net.material.opacity).toBeLessThanOrEqual(0.0001);
+    expect(goal.grid.material.opacity).toBeLessThanOrEqual(0.055);
+    expect(rearDrapeCords.length).toBeGreaterThanOrEqual(6);
+    expect(sideDepthCords.length).toBeGreaterThanOrEqual(6);
+    expect(crossingRopes.length).toBeGreaterThan(0);
+    expect(crossingRopes.every((rope) => rope.material.opacity <= 0.04)).toBe(true);
+    expect(peripheralRopes.some((rope) => rope.material.opacity >= 0.12)).toBe(true);
+    expect(diamondRopes.every((rope) => rope.material.userData.netMaterialSystem === "braided-nylon-cord-pbr")).toBe(true);
+    expect(diamondRopes.every((rope) => rope.material.bumpMap?.userData.assetSystem === "procedural-braided-cord-net-material")).toBe(true);
   });
 
   it("adds assembled goal hardware details so the frame feels manufactured rather than procedural", () => {
