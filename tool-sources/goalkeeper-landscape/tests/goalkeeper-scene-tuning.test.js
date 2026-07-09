@@ -841,9 +841,34 @@ describe("goalkeeper 3D scene tuning", () => {
   it("uses a warm stadium lighting rig instead of flat prototype lighting", () => {
     expect(SCENE_TUNING.lighting.assetSystem).toBe("warm-stadium-three-point");
     expect(SCENE_TUNING.lighting.hemisphereIntensity).toBeGreaterThanOrEqual(2);
+    expect(SCENE_TUNING.lighting.hemisphereGroundColor).toBe("#68737b");
     expect(SCENE_TUNING.lighting.sunIntensity).toBeGreaterThanOrEqual(2);
     expect(SCENE_TUNING.lighting.rimIntensity).toBeGreaterThanOrEqual(0.55);
     expect(SCENE_TUNING.lighting.fillIntensity).toBeLessThanOrEqual(0.9);
+  });
+
+  it("uses the reusable Three Sky shader for a restrained training-ground atmosphere", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(SCENE_TUNING.environment.system).toBe("three-sky-atmospheric-training-ground");
+    expect(SCENE_TUNING.environment.technique).toBe("three-official-sky-shader");
+    expect(SCENE_TUNING.environment.addonSource).toBe("three/addons/objects/Sky");
+    expect(SCENE_TUNING.environment.scale).toBeGreaterThanOrEqual(60);
+    expect(SCENE_TUNING.environment.scale).toBeLessThanOrEqual(100);
+    expect(SCENE_TUNING.environment.turbidity).toBeLessThanOrEqual(2.2);
+    expect(SCENE_TUNING.environment.rayleigh).toBeLessThanOrEqual(0.7);
+    expect(SCENE_TUNING.environment.mieCoefficient).toBeLessThanOrEqual(0.003);
+    expect(SCENE_TUNING.environment.showSunDisc).toBe(false);
+    expect(SCENE_TUNING.environment.fogColor).toBe("#dfe6e8");
+
+    expect(sceneModule.createSkyEnvironment).toBeTypeOf("function");
+    const environment = sceneModule.createSkyEnvironment(SCENE_TUNING.environment);
+    expect(environment.system).toBe(SCENE_TUNING.environment.system);
+    expect(environment.sky.name).toBe("training-ground-atmospheric-sky");
+    expect(environment.sky.userData.environmentSystem).toBe(SCENE_TUNING.environment.system);
+    expect(environment.sky.userData.addonSource).toBe("three/addons/objects/Sky");
+    expect(environment.sky.material.uniforms.showSunDisc.value).toBe(0);
+    expect(environment.sunVector.length()).toBeCloseTo(1, 4);
   });
 
   it("uses reusable Three postprocessing bloom for event polish without making ambient play flashy", async () => {

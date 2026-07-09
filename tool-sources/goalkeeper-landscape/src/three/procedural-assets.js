@@ -207,13 +207,13 @@ export function updateStadiumScoreboardTexture(texture, plan = getStadiumScorebo
 
 function createTrainingSurfaceMaterial() {
   var material = new THREE.MeshStandardMaterial({
-    color: "#626f75",
+    color: "#7f878e",
     bumpScale: 0,
     roughness: 0.91,
     metalness: 0,
   });
   material.userData.materialPipelineSystem = "clean-matte-training-surface-material";
-  material.userData.surfacePaletteSystem = "neutral-court-no-grass-green";
+  material.userData.surfacePaletteSystem = "neutral-gray-court-no-grass";
   return material;
 }
 
@@ -547,7 +547,7 @@ export function createFieldGroup() {
 
   var standMatA = new THREE.MeshStandardMaterial({ color: "#264c54", roughness: 0.64, metalness: 0.02 });
   var standMatB = new THREE.MeshStandardMaterial({ color: "#f2f0df", roughness: 0.7, metalness: 0.01 });
-  var crowdColors = ["#f0782f", "#f5f0df", "#2d5963", "#61b979", "#23383d"];
+  var crowdColors = ["#f0782f", "#f5f0df", "#2d5963", "#7d8b91", "#23383d"];
   for (var s = 0; s < 5; s += 1) {
     var stand = new THREE.Mesh(new THREE.BoxGeometry(2.35, 0.64, 0.62), s % 2 ? standMatB : standMatA);
     stand.name = "stadium-stand-back-" + s;
@@ -626,7 +626,7 @@ export function createFieldGroup() {
     group.add(flag);
   });
 
-  var boardMaterials = ["#f0782f", "#203f52", "#f6f1df", "#3f8f62"].map(
+  var boardMaterials = ["#f0782f", "#203f52", "#f6f1df", "#6d7478"].map(
     (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.02 }),
   );
   for (var b = 0; b < 8; b += 1) {
@@ -707,7 +707,7 @@ export function createFieldGroup() {
   });
 
   var vignetteMaterial = new THREE.MeshBasicMaterial({
-    color: "#0c1614",
+    color: "#111b21",
     transparent: true,
     opacity: 0.16,
     depthWrite: false,
@@ -778,7 +778,7 @@ export function createFieldGroup() {
   var benchBack = makeBeveledBox("training-ground-coach-bench-back", 1.18, 0.32, 0.07, 0.032, facilityMat);
   benchBack.position.set(6.1, 0.56, -4.48);
   var benchShadow = new THREE.Mesh(new THREE.CircleGeometry(1, 28), new THREE.MeshBasicMaterial({
-    color: "#10281b",
+    color: "#182226",
     transparent: true,
     opacity: 0.18,
     depthWrite: false,
@@ -938,7 +938,7 @@ export function createGoalAndNet() {
   group.add(net);
 
   var frameContactShadowMaterial = new THREE.MeshBasicMaterial({
-    color: "#102f24",
+    color: "#17242b",
     transparent: true,
     opacity: 0.22,
     depthWrite: false,
@@ -1176,7 +1176,7 @@ export function createGoalAndNet() {
   });
 
   var anchorMaterial = new THREE.MeshStandardMaterial({ color: "#dbe8dd", roughness: 0.48, metalness: 0.04 });
-  var footPadMaterial = new THREE.MeshStandardMaterial({ color: "#26312d", roughness: 0.66, metalness: 0.02 });
+  var footPadMaterial = new THREE.MeshStandardMaterial({ color: "#2f363a", roughness: 0.66, metalness: 0.02 });
   [
     ["front-left", -RAPIER_GOAL.halfWidth, 0, RAPIER_GOAL.netPlaneZ],
     ["front-right", RAPIER_GOAL.halfWidth, 0, RAPIER_GOAL.netPlaneZ],
@@ -1200,7 +1200,7 @@ export function createGoalAndNet() {
   });
 
   var groundShadowPadMaterial = new THREE.MeshBasicMaterial({
-    color: "#0b221a",
+    color: "#172226",
     transparent: true,
     opacity: 0.2,
     depthWrite: false,
@@ -1255,7 +1255,7 @@ export function createGoalAndNet() {
   }
 
   var pegShadowMaterial = new THREE.MeshBasicMaterial({
-    color: "#0b2018",
+    color: "#121f25",
     transparent: true,
     opacity: 0.22,
     depthWrite: false,
@@ -1321,7 +1321,7 @@ export function createShooterModel() {
   var accentMat = new THREE.MeshBasicMaterial({ color: "#61f0ff", transparent: true, opacity: 0.86 });
   var orangeAccentMat = new THREE.MeshBasicMaterial({ color: "#ff8b3d", transparent: true, opacity: 0.9 });
   var ballMat = new THREE.MeshStandardMaterial({ color: "#f8f5e8", roughness: 0.42, metalness: 0.01 });
-  var shadowMat = new THREE.MeshBasicMaterial({ color: "#14351f", transparent: true, opacity: 0.2, depthWrite: false });
+  var shadowMat = new THREE.MeshBasicMaterial({ color: "#1b252b", transparent: true, opacity: 0.2, depthWrite: false });
   var laneMat = new THREE.MeshBasicMaterial({ color: "#f8fff0", transparent: true, opacity: 0.18, depthWrite: false });
   var cableMat = new THREE.LineBasicMaterial({ color: "#20323a", transparent: true, opacity: 0.68 });
   var guardMat = new THREE.MeshBasicMaterial({ color: "#d8fbff", transparent: true, opacity: 0.18, depthWrite: false, side: THREE.DoubleSide });
@@ -1376,7 +1376,7 @@ export function createShooterModel() {
   shadow.position.set(0, 0.01, 0.12);
 
   var treadShadowMat = new THREE.MeshBasicMaterial({
-    color: "#10281b",
+    color: "#182226",
     transparent: true,
     opacity: 0.2,
     depthWrite: false,
@@ -1394,7 +1394,7 @@ export function createShooterModel() {
   });
 
   var serviceMat = makeBeveledBox("launcher-service-mat", 0.82, 0.018, 0.42, 0.06, new THREE.MeshBasicMaterial({
-    color: "#2e4134",
+    color: "#2f3d44",
     transparent: true,
     opacity: 0.28,
     depthWrite: false,

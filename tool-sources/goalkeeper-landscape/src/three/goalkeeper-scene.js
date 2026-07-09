@@ -3,6 +3,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { Sky } from "three/addons/objects/Sky.js";
 import {
   createFieldGroup,
   createFootballMaterial,
@@ -23,6 +24,8 @@ export const POSTPROCESSING_ADDON_SOURCES = [
   "three/addons/postprocessing/UnrealBloomPass",
   "three/addons/postprocessing/OutputPass",
 ];
+
+export const SKY_ENVIRONMENT_ADDON_SOURCE = "three/addons/objects/Sky";
 
 export const SCENE_TUNING = {
   camera: {
@@ -79,12 +82,30 @@ export const SCENE_TUNING = {
     assetSystem: "warm-stadium-three-point",
     stadiumRigSystem: "three-spotlight-broadcast-rig",
     hemisphereIntensity: 2.35,
+    hemisphereSkyColor: "#fff7da",
+    hemisphereGroundColor: "#68737b",
     sunIntensity: 2.25,
     rimIntensity: 0.72,
     fillIntensity: 0.62,
     spotlightIntensity: 0.58,
     spotlightAngle: 0.62,
     spotlightPenumbra: 0.58,
+  },
+  environment: {
+    system: "three-sky-atmospheric-training-ground",
+    technique: "three-official-sky-shader",
+    addonSource: SKY_ENVIRONMENT_ADDON_SOURCE,
+    enabled: true,
+    scale: 80,
+    turbidity: 2.2,
+    rayleigh: 0.26,
+    mieCoefficient: 0.0012,
+    mieDirectionalG: 0.52,
+    showSunDisc: false,
+    sunPosition: { x: -0.58, y: 0.2, z: -0.79 },
+    fogColor: "#dfe6e8",
+    fogNear: 30,
+    fogFar: 64,
   },
   presentation: {
     system: "camera-attached-broadcast-presentation-layer",
@@ -1385,10 +1406,41 @@ export function createStadiumLightingRig(tuning = SCENE_TUNING.lighting) {
   };
 }
 
+export function createSkyEnvironment(tuning = SCENE_TUNING.environment) {
+  var system = tuning.system || "three-sky-atmospheric-training-ground";
+  var sky = new Sky();
+  sky.name = "training-ground-atmospheric-sky";
+  sky.scale.setScalar(tuning.scale || 80);
+  sky.frustumCulled = false;
+  sky.userData.environmentSystem = system;
+  sky.userData.environmentTechnique = tuning.technique;
+  sky.userData.addonSource = tuning.addonSource || SKY_ENVIRONMENT_ADDON_SOURCE;
+
+  var sunVector = new THREE.Vector3(
+    tuning.sunPosition?.x ?? -0.28,
+    tuning.sunPosition?.y ?? 0.42,
+    tuning.sunPosition?.z ?? -0.86,
+  ).normalize();
+  var uniforms = sky.material.uniforms;
+  uniforms.turbidity.value = tuning.turbidity;
+  uniforms.rayleigh.value = tuning.rayleigh;
+  uniforms.mieCoefficient.value = tuning.mieCoefficient;
+  uniforms.mieDirectionalG.value = tuning.mieDirectionalG;
+  uniforms.sunPosition.value.copy(sunVector);
+  if (uniforms.showSunDisc) uniforms.showSunDisc.value = tuning.showSunDisc === false ? 0 : 1;
+  if (uniforms.up) uniforms.up.value.set(0, 1, 0);
+
+  return {
+    system,
+    sky,
+    sunVector,
+  };
+}
+
 export function createGoalkeeperScene(canvas) {
   var tuning = SCENE_TUNING;
   var renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
-  renderer.setClearColor("#8ed7ff", 1);
+  renderer.setClearColor(tuning.environment.fogColor, 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.04;
@@ -1411,15 +1463,23 @@ export function createGoalkeeperScene(canvas) {
   scene.userData.presentationLayerTechnique = tuning.presentation.technique;
   scene.userData.postprocessingSystem = tuning.postprocessing.system;
   scene.userData.postprocessingTechnique = tuning.postprocessing.technique;
-  scene.fog = new THREE.Fog("#8ed7ff", 28, 58);
+  var skyEnvironment = createSkyEnvironment(tuning.environment);
+  scene.userData.environmentSystem = skyEnvironment.system;
+  scene.userData.environmentTechnique = tuning.environment.technique;
+  scene.userData.environmentAddonSource = tuning.environment.addonSource;
+  scene.fog = new THREE.Fog(tuning.environment.fogColor, tuning.environment.fogNear, tuning.environment.fogFar);
 
   var camera = new THREE.PerspectiveCamera(tuning.camera.fov, 16 / 9, 0.05, 90);
   var cameraFraming = applyCameraTuning(camera, 16 / 9, tuning);
   var postprocessingPipeline = createPostprocessingPipeline(renderer, scene, camera, tuning.postprocessing);
-  scene.add(camera);
+  scene.add(skyEnvironment.sky, camera);
 
   scene.userData.lightingAssetSystem = tuning.lighting.assetSystem;
-  var hemi = new THREE.HemisphereLight("#fff7da", "#2d6b40", tuning.lighting.hemisphereIntensity);
+  var hemi = new THREE.HemisphereLight(
+    tuning.lighting.hemisphereSkyColor || "#fff7da",
+    tuning.lighting.hemisphereGroundColor || "#68737b",
+    tuning.lighting.hemisphereIntensity,
+  );
   var sun = new THREE.DirectionalLight("#fff4cf", tuning.lighting.sunIntensity);
   sun.position.set(-3, 7, 5);
   var rim = new THREE.DirectionalLight("#dffcff", tuning.lighting.rimIntensity);
@@ -1498,7 +1558,7 @@ export function createGoalkeeperScene(canvas) {
     );
     var shadow = new THREE.Mesh(
       shadowGeometry,
-      new THREE.MeshBasicMaterial({ color: "#173720", transparent: true, opacity: 0.28, depthWrite: false }),
+      new THREE.MeshBasicMaterial({ color: "#1b2930", transparent: true, opacity: 0.28, depthWrite: false }),
     );
     mesh.name = name + "-ball";
     halo.name = name + "-halo";
@@ -2594,6 +2654,8 @@ export function createGoalkeeperScene(canvas) {
     if (canvas.dataset) {
       canvas.dataset.renderVisibleBalls = String(ballRenderPlan.visibleBallCount);
       canvas.dataset.hideActiveBallForReplay = ballRenderPlan.hideActiveBallForReplay ? "true" : "false";
+      canvas.dataset.environmentSystem = tuning.environment.system;
+      canvas.dataset.environmentTechnique = tuning.environment.technique;
     }
     updateShooterModel(shooter, snapshot.director || { phase: "cue", phaseTime: 0, currentShot: null });
     updateStadiumScoreboard(snapshot);

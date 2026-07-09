@@ -156,7 +156,8 @@ describe("procedural 3D assets", () => {
     const markings = collectByName(field, /^field-standard-/);
 
     expect(field.userData.visualStyle).toBe("professional-keeper-training-court");
-    expect(surface.material.color.getHexString()).toBe("626f75");
+    expect(surface.material.color.getHexString()).toBe("7f878e");
+    expect(surface.material.color.b).toBeGreaterThan(surface.material.color.g);
     expect(surface.material.map).toBeNull();
     expect(surface.material.bumpMap).toBeNull();
     expect(surface.material.roughnessMap).toBeNull();
@@ -405,8 +406,9 @@ describe("procedural 3D assets", () => {
 
     expect(field.userData.materialPipelineSystem).toBe("procedural-pbr-material-stack");
     expect(surface.material.userData.materialPipelineSystem).toBe("clean-matte-training-surface-material");
-    expect(surface.material.userData.surfacePaletteSystem).toBe("neutral-court-no-grass-green");
-    expect(surface.material.color.getHexString()).toBe("626f75");
+    expect(surface.material.userData.surfacePaletteSystem).toBe("neutral-gray-court-no-grass");
+    expect(surface.material.color.getHexString()).toBe("7f878e");
+    expect(surface.material.color.b).toBeGreaterThan(surface.material.color.g);
     expect(surface.material.map).toBeNull();
     expect(surface.material.bumpMap).toBeNull();
     expect(surface.material.roughnessMap).toBeNull();
