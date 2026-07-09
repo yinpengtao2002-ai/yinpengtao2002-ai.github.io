@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 import { SCENE_TUNING } from "../src/three/goalkeeper-scene.js";
 import { SHOT_3D } from "../src/game/shot-3d-director.js";
@@ -843,6 +844,27 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.lighting.sunIntensity).toBeGreaterThanOrEqual(2);
     expect(SCENE_TUNING.lighting.rimIntensity).toBeGreaterThanOrEqual(0.55);
     expect(SCENE_TUNING.lighting.fillIntensity).toBeLessThanOrEqual(0.9);
+  });
+
+  it("adds real Three spotlights that line up with the stadium floodlight props", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.createStadiumLightingRig).toBeTypeOf("function");
+    expect(SCENE_TUNING.lighting.stadiumRigSystem).toBe("three-spotlight-broadcast-rig");
+
+    const rig = sceneModule.createStadiumLightingRig(SCENE_TUNING.lighting);
+
+    expect(rig.system).toBe("three-spotlight-broadcast-rig");
+    expect(rig.group.name).toBe("stadium-spotlight-rig");
+    expect(rig.lights).toHaveLength(4);
+    expect(rig.targets).toHaveLength(4);
+    expect(rig.lights.every((light) => light instanceof THREE.SpotLight)).toBe(true);
+    expect(rig.lights.every((light) => light.userData.lightingSystem === "three-spotlight-broadcast-rig")).toBe(true);
+    expect(rig.lights.every((light) => light.target?.name.startsWith("stadium-spotlight-target-"))).toBe(true);
+    expect(rig.lights.every((light) => light.angle <= 0.7 && light.penumbra >= 0.45)).toBe(true);
+    expect(rig.lights.some((light) => light.position.x < 0)).toBe(true);
+    expect(rig.lights.some((light) => light.position.x > 0)).toBe(true);
+    expect(rig.targets.every((target) => target.position.z > -3 && target.position.z < 3.8)).toBe(true);
   });
 
   it("keeps one canonical framing instead of composition demo presets", async () => {

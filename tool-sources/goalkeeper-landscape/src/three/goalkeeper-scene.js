@@ -66,10 +66,14 @@ export const SCENE_TUNING = {
   },
   lighting: {
     assetSystem: "warm-stadium-three-point",
+    stadiumRigSystem: "three-spotlight-broadcast-rig",
     hemisphereIntensity: 2.35,
     sunIntensity: 2.25,
     rimIntensity: 0.72,
     fillIntensity: 0.62,
+    spotlightIntensity: 0.58,
+    spotlightAngle: 0.62,
+    spotlightPenumbra: 0.58,
   },
   presentation: {
     system: "camera-attached-broadcast-presentation-layer",
@@ -1175,6 +1179,53 @@ function applyCameraTuning(camera, aspect, tuning) {
   };
 }
 
+export function createStadiumLightingRig(tuning = SCENE_TUNING.lighting) {
+  var system = tuning.stadiumRigSystem || "three-spotlight-broadcast-rig";
+  var group = new THREE.Group();
+  group.name = "stadium-spotlight-rig";
+  group.userData.lightingSystem = system;
+
+  var lights = [];
+  var targets = [];
+  [
+    ["left-back", -6.4, 5.25, -18.4, -1.05, 1.26, 1.55, "#fff4cc"],
+    ["right-back", 6.4, 5.25, -18.4, 1.05, 1.26, 1.55, "#fff4cc"],
+    ["left-mid", -6.15, 4.15, -8.2, -0.62, 1.18, 2.55, "#e7ffff"],
+    ["right-mid", 6.15, 4.15, -8.2, 0.62, 1.18, 2.55, "#e7ffff"],
+  ].forEach(function addSpotlight(item) {
+    var target = new THREE.Object3D();
+    target.name = "stadium-spotlight-target-" + item[0];
+    target.position.set(item[4], item[5], item[6]);
+    target.userData.lightingSystem = system;
+
+    var light = new THREE.SpotLight(
+      item[7],
+      tuning.spotlightIntensity || 0.58,
+      42,
+      tuning.spotlightAngle || 0.62,
+      tuning.spotlightPenumbra || 0.58,
+      1.1,
+    );
+    light.name = "stadium-spotlight-" + item[0];
+    light.position.set(item[1], item[2], item[3]);
+    light.target = target;
+    light.castShadow = false;
+    light.userData.lightingSystem = system;
+    light.userData.sourcePropName = "stadium-floodlight-head-" + item[0];
+
+    lights.push(light);
+    targets.push(target);
+    group.add(target, light);
+  });
+
+  return {
+    system,
+    group,
+    lights,
+    targets,
+  };
+}
+
 export function createGoalkeeperScene(canvas) {
   var tuning = SCENE_TUNING;
   var renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
@@ -1213,7 +1264,9 @@ export function createGoalkeeperScene(canvas) {
   rim.position.set(4.8, 3.1, -8.6);
   var fill = new THREE.DirectionalLight("#fff0dd", tuning.lighting.fillIntensity);
   fill.position.set(3.4, 2.2, 4.6);
-  scene.add(hemi, sun, rim, fill);
+  var stadiumLighting = createStadiumLightingRig(tuning.lighting);
+  scene.userData.stadiumLightingSystem = stadiumLighting.system;
+  scene.add(hemi, sun, rim, fill, stadiumLighting.group);
 
   var presentationWash = new THREE.Mesh(
     new THREE.PlaneGeometry(1, 1),
