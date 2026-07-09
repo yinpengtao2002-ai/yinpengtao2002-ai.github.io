@@ -71,6 +71,17 @@ export const SCENE_TUNING = {
     rimIntensity: 0.72,
     fillIntensity: 0.62,
   },
+  presentation: {
+    system: "camera-attached-broadcast-presentation-layer",
+    technique: "three-camera-transparent-overlay-kit",
+    overlayDistance: 0.18,
+    maxScreenWashOpacity: 0.22,
+    vignetteBaseOpacity: 0.13,
+    maxVignetteBoost: 0.08,
+    focusRingMaxOpacity: 0.16,
+    decay: 0.058,
+    focusRingBaseScale: 0.72,
+  },
   feedback: {
     assetSystem: "matchday-feedback-kit",
     eventOrchestratorSystem: "keeper-event-feedback-orchestrator",
@@ -857,6 +868,113 @@ export function getBroadcastEventPresentationPlan(event = {}, plan = {}) {
   return base;
 }
 
+function getEmptyCameraPresentationPlan(tuning = SCENE_TUNING.presentation) {
+  return {
+    system: tuning.system,
+    technique: tuning.technique,
+    active: false,
+    tier: "ambient",
+    cameraShakeMode: "none",
+    color: SCENE_TUNING.feedback.saveFlashColor,
+    life: 0,
+    screenWashOpacity: 0,
+    vignetteOpacity: tuning.vignetteBaseOpacity,
+    vignetteBoost: 0,
+    focusRingOpacity: 0,
+    focusRingScale: tuning.focusRingBaseScale,
+  };
+}
+
+export function getCameraPresentationOverlayPlan(eventPlan = {}, tuning = SCENE_TUNING.presentation) {
+  var presentation = eventPlan?.presentation || {};
+  var sourceOpacity = clamp01(presentation.screenWashOpacity || 0);
+  if (sourceOpacity <= 0) return getEmptyCameraPresentationPlan(tuning);
+
+  var tier = presentation.tier || "ambient";
+  var tierWeight = tier === "critical" ? 1 : tier === "highlight" ? 0.78 : tier === "core" ? 0.56 : 0;
+  var screenWashOpacity = Math.min(tuning.maxScreenWashOpacity, sourceOpacity);
+  var vignetteBoost = Math.min(tuning.maxVignetteBoost, screenWashOpacity * 0.45 + tierWeight * 0.018);
+  var focusRingOpacity = Math.min(tuning.focusRingMaxOpacity, screenWashOpacity * 0.58 + tierWeight * 0.036);
+
+  return {
+    system: tuning.system,
+    technique: tuning.technique,
+    active: true,
+    tier,
+    cameraShakeMode: presentation.cameraShakeMode || "none",
+    color: eventPlan.flashColor || SCENE_TUNING.feedback.saveFlashColor,
+    life: 1,
+    screenWashOpacity,
+    vignetteOpacity: tuning.vignetteBaseOpacity + vignetteBoost,
+    vignetteBoost,
+    focusRingOpacity,
+    focusRingScale: tuning.focusRingBaseScale + tierWeight * 0.18,
+  };
+}
+
+export function createCameraPresentationState() {
+  return {
+    life: 0,
+    tier: "ambient",
+    cameraShakeMode: "none",
+    color: SCENE_TUNING.feedback.saveFlashColor,
+    screenWashOpacity: 0,
+    vignetteBoost: 0,
+    focusRingOpacity: 0,
+    focusRingScale: SCENE_TUNING.presentation.focusRingBaseScale,
+  };
+}
+
+export function triggerCameraPresentationState(state, eventPlan, tuning = SCENE_TUNING.presentation) {
+  if (!state) return state;
+  var plan = getCameraPresentationOverlayPlan(eventPlan, tuning);
+  if (!plan.active) return state;
+
+  state.life = 1;
+  state.tier = plan.tier;
+  state.cameraShakeMode = plan.cameraShakeMode;
+  state.color = plan.color;
+  state.screenWashOpacity = Math.max(state.screenWashOpacity || 0, plan.screenWashOpacity);
+  state.vignetteBoost = Math.max(state.vignetteBoost || 0, plan.vignetteBoost);
+  state.focusRingOpacity = Math.max(state.focusRingOpacity || 0, plan.focusRingOpacity);
+  state.focusRingScale = Math.max(state.focusRingScale || tuning.focusRingBaseScale, plan.focusRingScale);
+  return state;
+}
+
+export function advanceCameraPresentationState(state, tuning = SCENE_TUNING.presentation) {
+  if (!state) return state;
+  state.life = Math.max(0, (state.life || 0) - tuning.decay);
+  if (state.life <= 0) {
+    state.tier = "ambient";
+    state.cameraShakeMode = "none";
+    state.screenWashOpacity = 0;
+    state.vignetteBoost = 0;
+    state.focusRingOpacity = 0;
+    state.focusRingScale = tuning.focusRingBaseScale;
+  }
+  return state;
+}
+
+export function getCameraPresentationStatePlan(state, tuning = SCENE_TUNING.presentation) {
+  if (!state || (state.life || 0) <= 0) return getEmptyCameraPresentationPlan(tuning);
+  var life = clamp01(state.life);
+  var eased = life * life * (3 - 2 * life);
+  return {
+    system: tuning.system,
+    technique: tuning.technique,
+    active: life > 0,
+    tier: state.tier || "ambient",
+    cameraShakeMode: state.cameraShakeMode || "none",
+    color: state.color || SCENE_TUNING.feedback.saveFlashColor,
+    life,
+    screenWashOpacity: Math.min(tuning.maxScreenWashOpacity, (state.screenWashOpacity || 0) * eased),
+    vignetteOpacity: tuning.vignetteBaseOpacity + Math.min(tuning.maxVignetteBoost, (state.vignetteBoost || 0) * eased),
+    vignetteBoost: Math.min(tuning.maxVignetteBoost, (state.vignetteBoost || 0) * eased),
+    focusRingOpacity: Math.min(tuning.focusRingMaxOpacity, (state.focusRingOpacity || 0) * eased),
+    focusRingScale: (state.focusRingScale || tuning.focusRingBaseScale) + (1 - life) * 0.08,
+  };
+}
+
 export function getMatchEventFeedbackPlan(event = {}, tuning = SCENE_TUNING.feedback) {
   var system = tuning.eventOrchestratorSystem || "keeper-event-feedback-orchestrator";
   var type = event.type || event.contact?.type || "ambient";
@@ -1079,10 +1197,13 @@ export function createGoalkeeperScene(canvas) {
   scene.userData.ballSpinGlintSystem = tuning.ball.flightSpinGlintSystem;
   scene.userData.gloveImpactSystem = tuning.gloves.impactSystem;
   scene.userData.gloveContactDeformationSystem = tuning.gloves.contactDeformationSystem;
+  scene.userData.presentationLayerSystem = tuning.presentation.system;
+  scene.userData.presentationLayerTechnique = tuning.presentation.technique;
   scene.fog = new THREE.Fog("#8ed7ff", 28, 58);
 
   var camera = new THREE.PerspectiveCamera(tuning.camera.fov, 16 / 9, 0.05, 90);
   var cameraFraming = applyCameraTuning(camera, 16 / 9, tuning);
+  scene.add(camera);
 
   scene.userData.lightingAssetSystem = tuning.lighting.assetSystem;
   var hemi = new THREE.HemisphereLight("#fff7da", "#2d6b40", tuning.lighting.hemisphereIntensity);
@@ -1093,6 +1214,53 @@ export function createGoalkeeperScene(canvas) {
   var fill = new THREE.DirectionalLight("#fff0dd", tuning.lighting.fillIntensity);
   fill.position.set(3.4, 2.2, 4.6);
   scene.add(hemi, sun, rim, fill);
+
+  var presentationWash = new THREE.Mesh(
+    new THREE.PlaneGeometry(1, 1),
+    new THREE.MeshBasicMaterial({
+      color: tuning.feedback.saveFlashColor,
+      transparent: true,
+      opacity: 0,
+      depthTest: false,
+      depthWrite: false,
+    }),
+  );
+  presentationWash.name = "presentation-screen-wash";
+  presentationWash.userData.presentationSystem = tuning.presentation.system;
+  presentationWash.position.z = -tuning.presentation.overlayDistance;
+  presentationWash.renderOrder = 1000;
+
+  var presentationVignette = new THREE.Mesh(
+    new THREE.RingGeometry(0.62, 1.05, 96),
+    new THREE.MeshBasicMaterial({
+      color: "#0b1f20",
+      transparent: true,
+      opacity: tuning.presentation.vignetteBaseOpacity,
+      depthTest: false,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    }),
+  );
+  presentationVignette.name = "presentation-vignette";
+  presentationVignette.userData.presentationSystem = tuning.presentation.system;
+  presentationVignette.position.z = -tuning.presentation.overlayDistance + 0.002;
+  presentationVignette.renderOrder = 1001;
+
+  var presentationFocusRing = new THREE.Mesh(
+    new THREE.TorusGeometry(0.5, 0.006, 8, 72),
+    new THREE.MeshBasicMaterial({
+      color: tuning.feedback.saveFlashColor,
+      transparent: true,
+      opacity: 0,
+      depthTest: false,
+      depthWrite: false,
+    }),
+  );
+  presentationFocusRing.name = "presentation-event-focus-ring";
+  presentationFocusRing.userData.presentationSystem = tuning.presentation.system;
+  presentationFocusRing.position.z = -tuning.presentation.overlayDistance + 0.004;
+  presentationFocusRing.renderOrder = 1002;
+  camera.add(presentationWash, presentationVignette, presentationFocusRing);
 
   var field = createFieldGroup();
   var stadiumScoreboardDisplay = field.getObjectByName("stadium-scoreboard-display");
@@ -1434,8 +1602,21 @@ export function createGoalkeeperScene(canvas) {
   var gloveImpactState = createGloveImpactState();
   var netPocketState = createNetPocketState();
   var netRecoilState = createNetRecoilState();
+  var cameraPresentationState = createCameraPresentationState();
   var lastTurfContactSignature = "";
   var lastScoreboardSignature = "";
+
+  function resizePresentationLayer() {
+    var distance = tuning.presentation.overlayDistance;
+    var heightAtDepth = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5)) * distance;
+    var widthAtDepth = heightAtDepth * camera.aspect;
+    presentationWash.position.z = -distance;
+    presentationVignette.position.z = -distance + 0.002;
+    presentationFocusRing.position.z = -distance + 0.004;
+    presentationWash.scale.set(widthAtDepth, heightAtDepth, 1);
+    presentationVignette.scale.set(widthAtDepth * 0.98, heightAtDepth * 0.98, 1);
+    presentationFocusRing.scale.setScalar(Math.min(widthAtDepth, heightAtDepth));
+  }
 
   function resize(bounds) {
     var width = Math.max(1, Math.round(bounds.width || canvas.clientWidth || 1280));
@@ -1445,6 +1626,7 @@ export function createGoalkeeperScene(canvas) {
     camera.aspect = width / height;
     cameraFraming = applyCameraTuning(camera, camera.aspect, tuning);
     camera.updateProjectionMatrix();
+    resizePresentationLayer();
   }
 
   function setBallViewVisible(view, visible) {
@@ -1585,6 +1767,7 @@ export function createGoalkeeperScene(canvas) {
       cameraShake,
       eventPlan?.cameraShake ?? profile?.cameraShake ?? tuning.feedback.maxCameraShake * pulseStrength,
     );
+    triggerCameraPresentationState(cameraPresentationState, eventPlan, tuning.presentation);
   }
 
   function triggerSaveFeedback(position, strength, contact = null, gloves = null, state = null) {
@@ -2151,6 +2334,29 @@ export function createGoalkeeperScene(canvas) {
     cameraShake = Math.max(0, cameraShake - tuning.feedback.cameraShakeFalloff);
   }
 
+  function updatePresentationLayer() {
+    var plan = getCameraPresentationStatePlan(cameraPresentationState, tuning.presentation);
+    presentationWash.material.color.set(plan.color);
+    presentationWash.material.opacity = plan.screenWashOpacity;
+    presentationWash.visible = plan.screenWashOpacity > 0.002;
+
+    presentationVignette.material.opacity = plan.vignetteOpacity;
+    presentationVignette.visible = plan.vignetteOpacity > 0.002;
+
+    presentationFocusRing.material.color.set(plan.color);
+    presentationFocusRing.material.opacity = plan.focusRingOpacity;
+    presentationFocusRing.visible = plan.focusRingOpacity > 0.002;
+    presentationFocusRing.scale.setScalar(Math.min(presentationWash.scale.x, presentationWash.scale.y) * plan.focusRingScale);
+
+    if (canvas.dataset) {
+      canvas.dataset.presentationLayerSystem = plan.system;
+      canvas.dataset.presentationTier = plan.active ? plan.tier : "ambient";
+      canvas.dataset.presentationWash = String(Math.round(plan.screenWashOpacity * 1000) / 1000);
+    }
+
+    advanceCameraPresentationState(cameraPresentationState, tuning.presentation);
+  }
+
   function updateVisuals(snapshot) {
     var ballRenderPlan = getSceneBallRenderPlan(snapshot);
     if (canvas.dataset) {
@@ -2166,6 +2372,7 @@ export function createGoalkeeperScene(canvas) {
     updateGloves(snapshot.gloves);
     updateNetAndEffects();
     applyFeedbackCamera();
+    updatePresentationLayer();
     renderer.render(scene, camera);
   }
 

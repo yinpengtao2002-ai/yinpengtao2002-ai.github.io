@@ -125,7 +125,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
     new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
     "utf8"
   );
-  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-CS-H8UxQ.js", import.meta.url);
+  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-CNSyQgDE.js", import.meta.url);
   const gameScript = await stat(gameScriptPath);
   const gameScriptSource = await readFile(gameScriptPath, "utf8");
   const gameStylePath = new URL("../public/tools/goalkeeper-landscape/assets/index-CniF0f5A.css", import.meta.url);
@@ -137,7 +137,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(goalkeeperPage, /import GoalkeeperLandscapeRuntime/);
   assert.match(goalkeeperPage, /GOALKEEPER_SCRIPT_SRC/);
   assert.match(goalkeeperPage, /GOALKEEPER_STYLESHEET_HREF/);
-  assert.match(goalkeeperRuntime, /index-CS-H8UxQ\.js/);
+  assert.match(goalkeeperRuntime, /index-CNSyQgDE\.js/);
   assert.match(goalkeeperPage, /index-CniF0f5A\.css/);
   assert.match(goalkeeperPage, /<GoalkeeperLandscapeRuntime \/>/);
   assert.match(goalkeeperPage, /弹力手套守门挑战/);
@@ -180,7 +180,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(thinkingClient, /横屏守门挑战/);
   assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-CS-H8UxQ\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-CNSyQgDE\.js/);
   assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-CniF0f5A\.css/);
   assert.match(gameIndex, /id="feedbackToast"/);
   assert.match(gameIndex, /id="eventRibbon"/);
@@ -326,6 +326,11 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /match-hud-flow-polish/);
   assert.match(gameScriptSource, /match-pressure-hud/);
   assert.match(gameScriptSource, /broadcast-event-feedback-presentation/);
+  assert.match(gameScriptSource, /camera-attached-broadcast-presentation-layer/);
+  assert.match(gameScriptSource, /three-camera-transparent-overlay-kit/);
+  assert.match(gameScriptSource, /presentation-screen-wash/);
+  assert.match(gameScriptSource, /presentation-vignette/);
+  assert.match(gameScriptSource, /presentation-event-focus-ring/);
   assert.match(gameScriptSource, /broadcast-event-ribbon-hud/);
   assert.match(gameStyleSource, /broadcast-control-rail-hud/);
   assert.match(gameStyleSource, /broadcast-event-ribbon-hud/);

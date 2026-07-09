@@ -488,6 +488,74 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(turf.presentation.screenWashOpacity).toBe(0);
   });
 
+  it("defines a camera-attached broadcast presentation layer that stays subtle", () => {
+    expect(SCENE_TUNING.presentation.system).toBe("camera-attached-broadcast-presentation-layer");
+    expect(SCENE_TUNING.presentation.technique).toBe("three-camera-transparent-overlay-kit");
+    expect(SCENE_TUNING.presentation.maxScreenWashOpacity).toBeLessThanOrEqual(0.24);
+    expect(SCENE_TUNING.presentation.vignetteBaseOpacity).toBeLessThanOrEqual(0.18);
+    expect(SCENE_TUNING.presentation.maxVignetteBoost).toBeLessThanOrEqual(0.1);
+    expect(SCENE_TUNING.presentation.focusRingMaxOpacity).toBeLessThanOrEqual(0.18);
+    expect(SCENE_TUNING.presentation.decay).toBeGreaterThanOrEqual(0.045);
+    expect(SCENE_TUNING.presentation.decay).toBeLessThanOrEqual(0.085);
+  });
+
+  it("turns broadcast event plans into a short-lived screen presentation pulse", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.createCameraPresentationState).toBeTypeOf("function");
+    expect(sceneModule.triggerCameraPresentationState).toBeTypeOf("function");
+    expect(sceneModule.advanceCameraPresentationState).toBeTypeOf("function");
+    expect(sceneModule.getCameraPresentationOverlayPlan).toBeTypeOf("function");
+    expect(sceneModule.getCameraPresentationStatePlan).toBeTypeOf("function");
+
+    const save = sceneModule.getMatchEventFeedbackPlan({
+      type: "save",
+      contact: { type: "glove", strength: 22, point: { x: 0.22, y: 1.22, z: 3.14 } },
+      state: { streak: 1, conceded: 0 },
+    });
+    const dangerGoal = sceneModule.getMatchEventFeedbackPlan({
+      type: "goal",
+      contact: { type: "net", strength: 1, point: { x: 0.5, y: 1.32, z: SHOT_3D.netPlaneZ } },
+      state: { conceded: 4 },
+    });
+    const ground = sceneModule.getMatchEventFeedbackPlan({
+      type: "ground",
+      groundFeedback: { active: true, intensity: 0.52, speed: 4.8, point: { x: 0, y: 0.01, z: 2.6 } },
+    });
+
+    const saveOverlay = sceneModule.getCameraPresentationOverlayPlan(save);
+    const dangerOverlay = sceneModule.getCameraPresentationOverlayPlan(dangerGoal);
+    const groundOverlay = sceneModule.getCameraPresentationOverlayPlan(ground);
+
+    expect(saveOverlay.system).toBe("camera-attached-broadcast-presentation-layer");
+    expect(saveOverlay.technique).toBe("three-camera-transparent-overlay-kit");
+    expect(saveOverlay.active).toBe(true);
+    expect(saveOverlay.screenWashOpacity).toBeGreaterThan(0);
+    expect(saveOverlay.screenWashOpacity).toBeLessThanOrEqual(SCENE_TUNING.presentation.maxScreenWashOpacity);
+    expect(saveOverlay.focusRingOpacity).toBeGreaterThan(0);
+    expect(saveOverlay.vignetteOpacity).toBeGreaterThan(SCENE_TUNING.presentation.vignetteBaseOpacity);
+
+    expect(dangerOverlay.screenWashOpacity).toBeGreaterThan(saveOverlay.screenWashOpacity);
+    expect(dangerOverlay.focusRingOpacity).toBeGreaterThan(saveOverlay.focusRingOpacity);
+    expect(dangerOverlay.tier).toBe("critical");
+    expect(dangerOverlay.color).toBe(SCENE_TUNING.feedback.dangerGoalFlashColor);
+
+    expect(groundOverlay.active).toBe(false);
+    expect(groundOverlay.screenWashOpacity).toBe(0);
+    expect(groundOverlay.focusRingOpacity).toBe(0);
+
+    const state = sceneModule.createCameraPresentationState();
+    sceneModule.triggerCameraPresentationState(state, dangerGoal);
+    const livePlan = sceneModule.getCameraPresentationStatePlan(state);
+    expect(livePlan.active).toBe(true);
+    expect(livePlan.screenWashOpacity).toBeGreaterThan(0.1);
+
+    sceneModule.advanceCameraPresentationState(state);
+    const fadedPlan = sceneModule.getCameraPresentationStatePlan(state);
+    expect(fadedPlan.life).toBeLessThan(livePlan.life);
+    expect(fadedPlan.screenWashOpacity).toBeLessThan(livePlan.screenWashOpacity);
+  });
+
   it("advances a damped spring net recoil so goals push the net then rebound and settle", async () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
 
