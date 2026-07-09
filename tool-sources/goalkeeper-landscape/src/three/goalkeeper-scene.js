@@ -502,7 +502,16 @@ export function getSceneBallRenderPlan(snapshot = {}) {
   var lingeringBalls = candidateLingeringBalls.filter((lingeringBall) => shouldRenderLingeringBall(lingeringBall, snapshot));
   var visibleLingeringSet = new Set(lingeringBalls);
   var hiddenLingeringBalls = allLingeringBalls.filter((lingeringBall) => !visibleLingeringSet.has(lingeringBall));
-  var hideActiveBallForReplay = Boolean(ball && ball.outcome === "saved" && lingeringBalls.length > 0);
+  var contactType = ball?.lastContact?.type;
+  var replaySourceOutcome = ball?.outcome === "saved" || ball?.outcome === "deflected";
+  var replaySourceContact = contactType === "glove" || contactType === "catch";
+  var hideActiveBallForReplay = Boolean(
+    ball &&
+    !ball.live &&
+    replaySourceOutcome &&
+    replaySourceContact &&
+    lingeringBalls.length > 0,
+  );
   var activeBall = hideActiveBallForReplay
     ? {
         ...ball,

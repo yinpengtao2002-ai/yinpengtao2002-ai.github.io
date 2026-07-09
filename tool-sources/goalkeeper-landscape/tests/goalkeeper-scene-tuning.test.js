@@ -241,6 +241,44 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(sceneModule.shouldRenderLingeringBall(settledReplay, { director: { phase: "live" }, ball: activeShot })).toBe(false);
   });
 
+  it("keeps deflected save replays from drawing a second active ball during shot transitions", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+    const deflectedActiveBall = {
+      live: false,
+      outcome: "deflected",
+      position: { x: 1.45, y: 1.8, z: 2.52 },
+      velocity: { x: 4.8, y: 2.4, z: -3.1 },
+      radius: 0.11,
+      lastContact: {
+        type: "glove",
+        point: { x: 1.1, y: 1.34, z: 3.08 },
+      },
+    };
+    const replayBall = {
+      live: false,
+      outcome: "saved",
+      position: { x: 1.35, y: 1.64, z: 2.45 },
+      velocity: { x: 4.2, y: 2.1, z: -3 },
+      radius: 0.11,
+      age: 0.18,
+      duration: 5,
+      lastContact: deflectedActiveBall.lastContact,
+    };
+
+    const plan = sceneModule.getSceneBallRenderPlan({
+      director: { phase: "cooldown" },
+      ball: deflectedActiveBall,
+      lingeringBalls: [replayBall],
+    });
+
+    expect(plan.hideActiveBallForReplay).toBe(true);
+    expect(plan.activeBall.position).toBeNull();
+    expect(plan.activeBall.hiddenByReplay).toBe(true);
+    expect(plan.lingeringBalls).toEqual([replayBall]);
+    expect(plan.groundSkidBalls).toEqual([replayBall]);
+    expect(plan.visibleBallCount).toBe(1);
+  });
+
   it("defines a restrained matchday feedback layer for saves, goals, streaks, and camera shake", () => {
     expect(SCENE_TUNING.feedback.assetSystem).toBe("matchday-feedback-kit");
     expect(SCENE_TUNING.feedback.impactRingCount).toBeGreaterThanOrEqual(3);
