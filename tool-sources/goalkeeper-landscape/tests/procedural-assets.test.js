@@ -438,6 +438,24 @@ describe("procedural 3D assets", () => {
     expect(collectByName(goal.group, /^goal-net-weave-knot-/).length).toBeGreaterThanOrEqual(8);
   });
 
+  it("adds a raised rope net layer so the goal reads as woven cord instead of a flat line grid", () => {
+    const goal = createGoalAndNet();
+    const verticalCords = collectByName(goal.group, /^goal-net-raised-vertical-cord-/);
+    const horizontalCords = collectByName(goal.group, /^goal-net-raised-horizontal-cord-/);
+    const borderRopes = collectByName(goal.group, /^goal-net-raised-border-rope-/);
+    const allRaisedCords = [...verticalCords, ...horizontalCords, ...borderRopes];
+
+    expect(goal.group.userData.netCordVolumeSystem).toBe("raised-rope-net-cord-layer");
+    expect(verticalCords.length).toBeGreaterThanOrEqual(5);
+    expect(horizontalCords.length).toBeGreaterThanOrEqual(4);
+    expect(borderRopes).toHaveLength(4);
+    expect(allRaisedCords.every((cord) => cord.geometry.type === "TubeGeometry")).toBe(true);
+    expect(allRaisedCords.every((cord) => cord.material.opacity <= 0.42)).toBe(true);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-raised-vertical-cord-"))).toBe(true);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-raised-horizontal-cord-"))).toBe(true);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-raised-border-rope-"))).toBe(true);
+  });
+
   it("adds assembled goal hardware details so the frame feels manufactured rather than procedural", () => {
     const goal = createGoalAndNet();
 

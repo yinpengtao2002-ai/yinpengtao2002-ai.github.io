@@ -730,6 +730,7 @@ export function createGoalAndNet() {
   group.userData.netPocketSystem = "localized-net-pocket-deformation";
   group.userData.netHardwareSystem = "weighted-net-label-and-clip-kit";
   group.userData.netWeaveSystem = "knotted-diagonal-net-weave";
+  group.userData.netCordVolumeSystem = "raised-rope-net-cord-layer";
   group.userData.dynamicNetDetailSystem = "reactive-woven-net-detail-kit";
   group.userData.frameAssemblySystem = "manufactured-goal-frame-hardware";
   group.userData.goalEquipmentPolishSystem = "weighted-pro-goal-equipment-kit";
@@ -881,6 +882,64 @@ export function createGoalAndNet() {
   var grid = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(linePoints), gridMaterial);
   grid.name = "goal-net-back-grid";
   group.add(grid);
+
+  var raisedRopeMaterial = new THREE.MeshStandardMaterial({
+    color: "#f6fffb",
+    transparent: true,
+    opacity: 0.36,
+    roughness: 0.62,
+    metalness: 0,
+  });
+  function makeRaisedRope(name, points, radius = 0.0085, opacity = 0.36) {
+    var curve = new THREE.CatmullRomCurve3(points.map((point) => new THREE.Vector3(point.x, point.y, point.z)));
+    var rope = new THREE.Mesh(
+      new THREE.TubeGeometry(curve, Math.max(5, points.length * 5), radius, 6, false),
+      raisedRopeMaterial.clone(),
+    );
+    rope.name = name;
+    rope.material.opacity = opacity;
+    rope.userData.netCordVolumeSystem = "raised-rope-net-cord-layer";
+    rope.userData.geometrySource = "three-tube-geometry-raised-net-rope";
+    return rope;
+  }
+  for (var ropeX = -RAPIER_GOAL.halfWidth + 0.5, raisedVerticalIndex = 0; ropeX <= RAPIER_GOAL.halfWidth - 0.49; ropeX += 0.78, raisedVerticalIndex += 1) {
+    group.add(registerDynamicNetDetail(makeRaisedRope("goal-net-raised-vertical-cord-" + raisedVerticalIndex, [
+      { x: ropeX, y: 0.1, z: RAPIER_GOAL.netPlaneZ + 0.118 },
+      { x: ropeX + (raisedVerticalIndex % 2 ? -0.018 : 0.018), y: RAPIER_GOAL.height * 0.52, z: RAPIER_GOAL.netPlaneZ + 0.142 },
+      { x: ropeX, y: RAPIER_GOAL.height - 0.12, z: RAPIER_GOAL.netPlaneZ + 0.118 },
+    ], 0.0075, 0.32), 0.92, 0.52));
+  }
+  for (var ropeY = 0.42, raisedHorizontalIndex = 0; ropeY <= RAPIER_GOAL.height - 0.32; ropeY += 0.42, raisedHorizontalIndex += 1) {
+    group.add(registerDynamicNetDetail(makeRaisedRope("goal-net-raised-horizontal-cord-" + raisedHorizontalIndex, [
+      { x: -RAPIER_GOAL.halfWidth + 0.16, y: ropeY, z: RAPIER_GOAL.netPlaneZ + 0.122 },
+      { x: 0, y: ropeY + (raisedHorizontalIndex % 2 ? 0.012 : -0.012), z: RAPIER_GOAL.netPlaneZ + 0.148 },
+      { x: RAPIER_GOAL.halfWidth - 0.16, y: ropeY, z: RAPIER_GOAL.netPlaneZ + 0.122 },
+    ], 0.0075, 0.3), 0.82, 0.48));
+  }
+  [
+    ["top", [
+      { x: -RAPIER_GOAL.halfWidth + 0.05, y: RAPIER_GOAL.height - 0.05, z: RAPIER_GOAL.netPlaneZ + 0.132 },
+      { x: 0, y: RAPIER_GOAL.height - 0.06, z: RAPIER_GOAL.netPlaneZ + 0.154 },
+      { x: RAPIER_GOAL.halfWidth - 0.05, y: RAPIER_GOAL.height - 0.05, z: RAPIER_GOAL.netPlaneZ + 0.132 },
+    ]],
+    ["bottom", [
+      { x: -RAPIER_GOAL.halfWidth + 0.12, y: 0.12, z: RAPIER_GOAL.netPlaneZ + 0.13 },
+      { x: 0, y: 0.1, z: RAPIER_GOAL.netPlaneZ + 0.154 },
+      { x: RAPIER_GOAL.halfWidth - 0.12, y: 0.12, z: RAPIER_GOAL.netPlaneZ + 0.13 },
+    ]],
+    ["left", [
+      { x: -RAPIER_GOAL.halfWidth + 0.08, y: 0.16, z: RAPIER_GOAL.netPlaneZ + 0.13 },
+      { x: -RAPIER_GOAL.halfWidth + 0.06, y: RAPIER_GOAL.height * 0.5, z: RAPIER_GOAL.netPlaneZ + 0.154 },
+      { x: -RAPIER_GOAL.halfWidth + 0.08, y: RAPIER_GOAL.height - 0.12, z: RAPIER_GOAL.netPlaneZ + 0.13 },
+    ]],
+    ["right", [
+      { x: RAPIER_GOAL.halfWidth - 0.08, y: 0.16, z: RAPIER_GOAL.netPlaneZ + 0.13 },
+      { x: RAPIER_GOAL.halfWidth - 0.06, y: RAPIER_GOAL.height * 0.5, z: RAPIER_GOAL.netPlaneZ + 0.154 },
+      { x: RAPIER_GOAL.halfWidth - 0.08, y: RAPIER_GOAL.height - 0.12, z: RAPIER_GOAL.netPlaneZ + 0.13 },
+    ]],
+  ].forEach(function addRaisedBorderRope(item) {
+    group.add(registerDynamicNetDetail(makeRaisedRope("goal-net-raised-border-rope-" + item[0], item[1], 0.011, 0.4), 0.72, 0.42));
+  });
 
   var diagonalMaterial = new THREE.LineBasicMaterial({ color: "#f7ffff", transparent: true, opacity: 0.22 });
   function addDiagonalWeave(name, direction) {
