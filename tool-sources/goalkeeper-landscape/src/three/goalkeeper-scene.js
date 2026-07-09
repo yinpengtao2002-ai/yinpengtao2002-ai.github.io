@@ -180,6 +180,11 @@ export const SCENE_TUNING = {
     netPocketMaxDepth: 0.28,
     netPocketMaxOpacity: 0.58,
     netPocketDecay: 0.042,
+    netCordTensionAssetSystem: "localized-net-cord-tension-shimmer",
+    netCordTensionCount: 8,
+    netCordTensionMaxOpacity: 0.36,
+    netCordTensionTravel: 0.065,
+    netCordTensionDecay: 0.044,
     netRecoilSystem: "damped-net-spring-rebound",
     netRecoilMaxTravel: 0.19,
     netRecoilStiffness: 58,
@@ -701,6 +706,57 @@ export function getNetPocketFeedbackPlan(state, tuning = SCENE_TUNING.feedback) 
         },
         opacity: tuning.netPocketMaxOpacity * life * (0.92 - index * 0.16),
         rotation: (index - 1) * 0.06,
+      };
+    }),
+  };
+}
+
+export function getNetCordTensionFeedbackPlan(state, tuning = SCENE_TUNING.feedback) {
+  if (!state?.point || (state.life || 0) <= 0) return null;
+  var life = clamp01(state.life);
+  var strength = clamp01(state.strength || 0.72);
+  var count = Math.max(0, Math.floor(tuning.netCordTensionCount || 0));
+  var radius = Math.max(0.28, (tuning.netRippleContactRadius || 0.62) * (0.82 + strength * 0.28));
+  var travel = (tuning.netCordTensionTravel || 0.055) * life * (0.72 + strength * 0.28);
+  var shimmer = 0.74 + Math.sin((1 - life) * Math.PI) * 0.26;
+  var point = {
+    x: Math.max(-RAPIER_GOAL.halfWidth + 0.18, Math.min(RAPIER_GOAL.halfWidth - 0.18, state.point.x || 0)),
+    y: Math.max(0.18, Math.min(RAPIER_GOAL.height - 0.12, state.point.y || 1.2)),
+    z: state.point.z || RAPIER_GOAL.netPlaneZ,
+  };
+
+  return {
+    marker: "feedback-net-cord-tension-shimmer",
+    system: tuning.netCordTensionAssetSystem || "localized-net-cord-tension-shimmer",
+    point,
+    radius,
+    life,
+    strength,
+    segments: Array.from({ length: count }, (_, index) => {
+      var horizontal = index % 2 === 0;
+      var pairIndex = Math.floor(index / 2);
+      var pairCount = Math.max(1, Math.ceil(count / 2));
+      var t = pairCount <= 1 ? 0.5 : pairIndex / (pairCount - 1);
+      var offset = (t - 0.5) * radius * 1.12;
+      var wave = Math.sin((1 - life) * Math.PI * 2.4 + index * 0.72);
+      var falloff = 1 - Math.min(0.82, Math.abs(offset) / Math.max(0.001, radius));
+      var length = radius * (0.72 + falloff * 0.56) * (horizontal ? 1 : 0.82);
+      var opacity = (tuning.netCordTensionMaxOpacity || 0.34) * life * shimmer * (0.56 + falloff * 0.44);
+      return {
+        marker: "feedback-net-cord-tension-segment",
+        orientation: horizontal ? "horizontal" : "vertical",
+        position: {
+          x: horizontal ? point.x + wave * travel * 0.28 : point.x + offset,
+          y: horizontal ? point.y + offset : point.y + wave * travel * 0.24,
+          z: point.z + 0.16 + travel * (0.8 + falloff * 0.72),
+        },
+        scale: {
+          x: length,
+          y: 0.018 + strength * 0.006,
+        },
+        rotation: horizontal ? wave * 0.045 : Math.PI / 2 + wave * 0.045,
+        opacity,
+        life: Math.max(0.28, life - index * 0.018),
       };
     }),
   };
@@ -1316,6 +1372,7 @@ export function getMatchEventFeedbackPlan(event = {}, tuning = SCENE_TUNING.feed
         "feedback-net-pocket-deformation",
         "feedback-net-ripple-line",
         "feedback-dynamic-net-detail-recoil",
+        "feedback-net-cord-tension-shimmer",
       ],
       flashColor: profile.flashColor,
       effectIntensity: goalIntensity,
@@ -1552,6 +1609,7 @@ export function createGoalkeeperScene(canvas) {
   scene.userData.feedbackOrchestratorSystem = tuning.feedback.eventOrchestratorSystem;
   scene.userData.netRippleAssetSystem = tuning.feedback.netRippleAssetSystem;
   scene.userData.netPocketAssetSystem = tuning.feedback.netPocketAssetSystem;
+  scene.userData.netCordTensionAssetSystem = tuning.feedback.netCordTensionAssetSystem;
   scene.userData.netRecoilSystem = tuning.feedback.netRecoilSystem;
   scene.userData.frameReboundSystem = tuning.feedback.frameReboundSystem;
   scene.userData.saveAfterimageSystem = tuning.feedback.saveAfterimageSystem;
@@ -1894,6 +1952,22 @@ export function createGoalkeeperScene(canvas) {
     patch.userData.life = 0;
     return patch;
   });
+  var netCordTensionGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
+  var netCordTensionSegments = Array.from({ length: tuning.feedback.netCordTensionCount }, (_, index) => {
+    var segment = new THREE.Mesh(
+      netCordTensionGeometry,
+      new THREE.MeshBasicMaterial({
+        color: index % 2 === 0 ? "#fff8d6" : "#dff8ff",
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    );
+    segment.name = "feedback-net-cord-tension-shimmer-" + index;
+    segment.userData.life = 0;
+    return segment;
+  });
   var frameReboundGeometry = new THREE.SphereGeometry(0.09, 16, 10);
   var frameReboundHighlights = Array.from({ length: 3 }, (_, index) => {
     var highlight = new THREE.Mesh(
@@ -1964,6 +2038,7 @@ export function createGoalkeeperScene(canvas) {
     streakFlash,
     ...netRippleLines,
     ...netPocketPatches,
+    ...netCordTensionSegments,
     ...frameReboundHighlights,
     ...goalWaves,
     ...streakPulses,
@@ -2484,6 +2559,7 @@ export function createGoalkeeperScene(canvas) {
 
   function updateNetPocketVisuals() {
     var plan = getNetPocketFeedbackPlan(netPocketState, tuning.feedback);
+    var cordPlan = getNetCordTensionFeedbackPlan(netPocketState, tuning.feedback);
     applyNetPocketGeometry(plan);
 
     netPocketPatches.forEach((patch, index) => {
@@ -2499,6 +2575,21 @@ export function createGoalkeeperScene(canvas) {
       patch.scale.set(patchPlan.scale.x, patchPlan.scale.y, 1);
       patch.material.opacity = patchPlan.opacity;
       patch.userData.life = netPocketState.life;
+    });
+
+    netCordTensionSegments.forEach((segment, index) => {
+      var segmentPlan = cordPlan?.segments?.[index];
+      if (!segmentPlan) {
+        segment.visible = false;
+        segment.material.opacity = 0;
+        return;
+      }
+      segment.visible = true;
+      segment.position.set(segmentPlan.position.x, segmentPlan.position.y, segmentPlan.position.z);
+      segment.rotation.set(0, 0, segmentPlan.rotation);
+      segment.scale.set(segmentPlan.scale.x, segmentPlan.scale.y, 1);
+      segment.material.opacity = segmentPlan.opacity;
+      segment.userData.life = segmentPlan.life;
     });
 
     advanceNetPocketState(netPocketState, tuning.feedback);

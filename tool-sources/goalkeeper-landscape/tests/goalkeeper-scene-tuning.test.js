@@ -330,6 +330,11 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.feedback.netPocketPatchCount).toBeGreaterThanOrEqual(2);
     expect(SCENE_TUNING.feedback.netPocketMaxDepth).toBeGreaterThanOrEqual(0.18);
     expect(SCENE_TUNING.feedback.netPocketMaxDepth).toBeLessThanOrEqual(0.36);
+    expect(SCENE_TUNING.feedback.netCordTensionAssetSystem).toBe("localized-net-cord-tension-shimmer");
+    expect(SCENE_TUNING.feedback.netCordTensionCount).toBeGreaterThanOrEqual(6);
+    expect(SCENE_TUNING.feedback.netCordTensionMaxOpacity).toBeLessThanOrEqual(0.42);
+    expect(SCENE_TUNING.feedback.netCordTensionTravel).toBeGreaterThanOrEqual(0.04);
+    expect(SCENE_TUNING.feedback.netCordTensionDecay).toBeGreaterThanOrEqual(0.035);
     expect(SCENE_TUNING.feedback.frameReboundSystem).toBe("post-crossbar-rebound-highlight");
     expect(SCENE_TUNING.feedback.frameReboundMaxOpacity).toBeLessThanOrEqual(0.72);
     expect(SCENE_TUNING.feedback.goalWaveCount).toBeGreaterThanOrEqual(2);
@@ -463,6 +468,7 @@ describe("goalkeeper 3D scene tuning", () => {
       "feedback-net-pocket-deformation",
       "feedback-net-ripple-line",
       "feedback-dynamic-net-detail-recoil",
+      "feedback-net-cord-tension-shimmer",
     ]));
     expect(dangerGoal.net.recoilStrength).toBeGreaterThan(streakSave.net.recoilStrength);
     expect(dangerGoal.net.pocketStrength).toBeGreaterThanOrEqual(0.9);
@@ -749,6 +755,43 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(state.life).toBeLessThan(1);
 
     expect(sceneModule.getNetPocketFeedbackPlan(sceneModule.createNetPocketState())).toBeNull();
+  });
+
+  it("plans localized cord tension shimmer around a net impact point", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.getNetCordTensionFeedbackPlan).toBeTypeOf("function");
+
+    const plan = sceneModule.getNetCordTensionFeedbackPlan(
+      {
+        point: { x: -0.68, y: 1.34, z: SHOT_3D.netPlaneZ },
+        life: 0.92,
+        strength: 0.88,
+      },
+      SCENE_TUNING.feedback,
+    );
+
+    expect(plan.marker).toBe("feedback-net-cord-tension-shimmer");
+    expect(plan.system).toBe("localized-net-cord-tension-shimmer");
+    expect(plan.segments).toHaveLength(SCENE_TUNING.feedback.netCordTensionCount);
+
+    const horizontal = plan.segments.filter((segment) => segment.orientation === "horizontal");
+    const vertical = plan.segments.filter((segment) => segment.orientation === "vertical");
+    expect(horizontal.length).toBeGreaterThan(0);
+    expect(vertical.length).toBeGreaterThan(0);
+
+    plan.segments.forEach((segment) => {
+      expect(segment.marker).toBe("feedback-net-cord-tension-segment");
+      expect(segment.opacity).toBeGreaterThan(0);
+      expect(segment.opacity).toBeLessThanOrEqual(SCENE_TUNING.feedback.netCordTensionMaxOpacity);
+      expect(Math.abs(segment.position.x - plan.point.x)).toBeLessThanOrEqual(plan.radius + 0.02);
+      expect(Math.abs(segment.position.y - plan.point.y)).toBeLessThanOrEqual(plan.radius + 0.02);
+      expect(segment.position.z).toBeGreaterThan(SHOT_3D.netPlaneZ);
+      expect(segment.scale.x).toBeGreaterThan(segment.scale.y);
+    });
+
+    const quiet = sceneModule.getNetCordTensionFeedbackPlan({ life: 0, point: plan.point }, SCENE_TUNING.feedback);
+    expect(quiet).toBeNull();
   });
 
   it("plans post and crossbar rebound highlights from frame contacts", async () => {
