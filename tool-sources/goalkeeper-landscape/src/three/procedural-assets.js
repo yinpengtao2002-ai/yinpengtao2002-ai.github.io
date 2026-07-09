@@ -14,6 +14,8 @@ const NET_SIGHTLINE_SYSTEM = "central-shot-lane-low-occlusion-net";
 const NET_DEPTH_SYSTEM = "rear-draped-side-net-volume";
 const NET_PROFESSIONAL_SYSTEM = "slack-knotted-pro-goal-net";
 const NET_OCCLUSION_BUDGET_SYSTEM = "keeper-view-low-opacity-center-window";
+const NET_CENTER_WINDOW_SYSTEM = "true-open-center-shot-window";
+const NET_REALISM_UPGRADE_SYSTEM = "layered-rear-pocket-braided-net";
 
 export function getMatchdayAssetPolishProfile() {
   return {
@@ -837,13 +839,23 @@ export function createGoalAndNet() {
   group.userData.netDepthSystem = NET_DEPTH_SYSTEM;
   group.userData.netProfessionalSystem = NET_PROFESSIONAL_SYSTEM;
   group.userData.netOcclusionBudgetSystem = NET_OCCLUSION_BUDGET_SYSTEM;
+  group.userData.netCenterWindowSystem = NET_CENTER_WINDOW_SYSTEM;
+  group.userData.netRealismUpgradeSystem = NET_REALISM_UPGRADE_SYSTEM;
   group.userData.matchUseDetailSystem = "match-use-equipment-wear-layer";
   var dynamicNetDetails = [];
   var keeperSightline = {
-    halfWidth: 1.05,
-    minY: 0.5,
-    maxY: Math.min(RAPIER_GOAL.height - 0.22, 2.02),
+    halfWidth: 1.24,
+    minY: 0.36,
+    maxY: Math.min(RAPIER_GOAL.height - 0.14, 2.18),
   };
+
+  function isInKeeperSightline(point) {
+    return (
+      Math.abs(point.x) < keeperSightline.halfWidth &&
+      point.y > keeperSightline.minY &&
+      point.y < keeperSightline.maxY
+    );
+  }
 
   function registerDynamicNetDetail(object, motionScale, opacityScale) {
     object.userData.dynamicNetDetailSystem = "reactive-woven-net-detail-kit";
@@ -1168,21 +1180,18 @@ export function createGoalAndNet() {
       }
       if (points.length < 2) continue;
 
-      var crossesGoalMouth = points.some((point) =>
-        Math.abs(point.x) < keeperSightline.halfWidth &&
-        point.y > keeperSightline.minY &&
-        point.y < keeperSightline.maxY
-      );
+      var crossesGoalMouth = points.some((point) => isInKeeperSightline(point));
       var sideBias = points.reduce((total, point) => total + Math.abs(point.x) / RAPIER_GOAL.halfWidth, 0) / points.length;
-      var opacity = crossesGoalMouth ? 0.008 : 0.118 + sideBias * 0.01;
-      var radius = crossesGoalMouth ? 0.0032 : 0.0052;
+      var opacity = crossesGoalMouth ? 0.0024 : 0.106 + sideBias * 0.022;
+      var radius = crossesGoalMouth ? 0.0024 : 0.0052;
       var diamondRope = makeRaisedRope("goal-net-open-diamond-rope-" + label + "-" + ropeIndex, points, radius, opacity);
       diamondRope.userData.crossesKeeperSightline = crossesGoalMouth;
       diamondRope.userData.netOcclusionBudgetSystem = NET_OCCLUSION_BUDGET_SYSTEM;
+      diamondRope.userData.netCenterWindowSystem = NET_CENTER_WINDOW_SYSTEM;
       group.add(registerDynamicNetDetail(
         diamondRope,
         1.04,
-        crossesGoalMouth ? 0.16 : 0.42,
+        crossesGoalMouth ? 0.06 : 0.42,
       ));
       ropeIndex += 1;
     }
@@ -1210,6 +1219,65 @@ export function createGoalAndNet() {
     group.add(registerDynamicNetDetail(rearSagCord, 0.56, 0.22));
   });
 
+  function makeRearPocketRope(name, points, radius, opacity, baseZ) {
+    var rope = makeRaisedRope(name, points, radius, opacity);
+    rope.position.z = baseZ;
+    rope.userData.netRealismUpgradeSystem = NET_REALISM_UPGRADE_SYSTEM;
+    rope.userData.netCenterWindowSystem = NET_CENTER_WINDOW_SYSTEM;
+    return rope;
+  }
+
+  function addRearPocketDiamondRopeSet(label, direction) {
+    var slope = 0.92;
+    var ropeIndex = 0;
+    for (
+      var offset = -RAPIER_GOAL.halfWidth - RAPIER_GOAL.height * slope;
+      offset <= RAPIER_GOAL.halfWidth + RAPIER_GOAL.height * slope;
+      offset += 0.72
+    ) {
+      var points = [];
+      for (var sample = 0; sample <= 12; sample += 1) {
+        var t = sample / 12;
+        var x = -RAPIER_GOAL.halfWidth + 0.34 + ((RAPIER_GOAL.halfWidth * 2 - 0.68) * sample) / 12;
+        var y = direction > 0
+          ? (x - offset) / slope
+          : RAPIER_GOAL.height - (x - offset) / slope;
+        if (y < 0.2 || y > RAPIER_GOAL.height - 0.16) continue;
+        var sideBias = Math.abs(x) / RAPIER_GOAL.halfWidth;
+        points.push({
+          x,
+          y: y - Math.sin(t * Math.PI) * 0.06,
+          z: -0.055 + Math.sin(t * Math.PI) * (0.08 + sideBias * 0.018),
+        });
+      }
+      if (points.length < 2) continue;
+
+      var averageSideBias = points.reduce((total, point) => total + Math.abs(point.x) / RAPIER_GOAL.halfWidth, 0) / points.length;
+      var rope = makeRearPocketRope(
+        "goal-net-rear-pocket-diamond-rope-" + label + "-" + ropeIndex,
+        points,
+        0.0042,
+        0.044 + averageSideBias * 0.026,
+        RAPIER_GOAL.netPlaneZ + 0.72 + (ropeIndex % 3) * 0.035,
+      );
+      group.add(registerDynamicNetDetail(rope, 0.5, 0.18));
+      ropeIndex += 1;
+    }
+  }
+  addRearPocketDiamondRopeSet("rising", 1);
+  addRearPocketDiamondRopeSet("falling", -1);
+
+  [0.36, 0.86, 1.38, 1.9].forEach(function addRearDepthRow(rowY, rowIndex) {
+    var rowRope = makeRearPocketRope("goal-net-rear-depth-row-cord-" + rowIndex, [
+      { x: -RAPIER_GOAL.halfWidth + 0.4, y: rowY, z: -0.035 },
+      { x: -RAPIER_GOAL.halfWidth * 0.38, y: rowY - 0.045, z: 0.052 },
+      { x: 0, y: rowY - 0.075, z: 0.076 },
+      { x: RAPIER_GOAL.halfWidth * 0.38, y: rowY - 0.045, z: 0.052 },
+      { x: RAPIER_GOAL.halfWidth - 0.4, y: rowY, z: -0.035 },
+    ], 0.005, 0.058 + rowIndex * 0.006, RAPIER_GOAL.netPlaneZ + 0.86);
+    group.add(registerDynamicNetDetail(rowRope, 0.46, 0.16));
+  });
+
   ["left", "right"].forEach(function addSideReturnCord(side) {
     var sign = side === "left" ? -1 : 1;
     [0.62, 1.42].forEach(function addSideReturnRow(rowY, rowIndex) {
@@ -1233,6 +1301,7 @@ export function createGoalAndNet() {
         Math.abs(knotX) < keeperSightline.halfWidth &&
         knotY > keeperSightline.minY &&
         knotY < keeperSightline.maxY;
+      if (crossesSightline) return;
       var knotMaterial = raisedRopeMaterial.clone();
       knotMaterial.opacity = crossesSightline ? 0.024 : 0.078 + Math.abs(knotX) / RAPIER_GOAL.halfWidth * 0.036;
       knotMaterial.depthWrite = false;

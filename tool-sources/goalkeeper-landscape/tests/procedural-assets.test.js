@@ -656,6 +656,28 @@ describe("procedural 3D assets", () => {
     expect(sidePlaneDetails.every((detail) => detail.opacityScale === 0)).toBe(true);
   });
 
+  it("uses a true open center window with the detailed net carried by the rear pocket", () => {
+    const goal = createGoalAndNet();
+    const diamondRopes = collectByName(goal.group, /^goal-net-open-diamond-rope-/);
+    const centralGhostRopes = diamondRopes.filter((rope) => rope.userData.crossesKeeperSightline);
+    const rearPocketDiamondRopes = collectByName(goal.group, /^goal-net-rear-pocket-diamond-rope-/);
+    const rearDepthRows = collectByName(goal.group, /^goal-net-rear-depth-row-cord-/);
+    const centerKnots = collectByName(goal.group, /^goal-net-slack-knot-/).filter((knot) => knot.userData.crossesKeeperSightline);
+
+    expect(goal.group.userData.netCenterWindowSystem).toBe("true-open-center-shot-window");
+    expect(goal.group.userData.netRealismUpgradeSystem).toBe("layered-rear-pocket-braided-net");
+    expect(centralGhostRopes.length).toBeGreaterThan(0);
+    expect(centralGhostRopes.every((rope) => rope.material.opacity <= 0.004)).toBe(true);
+    expect(centralGhostRopes.every((rope) => rope.userData.ropeRadius <= 0.0026)).toBe(true);
+    expect(centerKnots).toHaveLength(0);
+    expect(rearPocketDiamondRopes.length).toBeGreaterThanOrEqual(10);
+    expect(rearPocketDiamondRopes.every((rope) => rope.geometry.type === "TubeGeometry")).toBe(true);
+    expect(rearPocketDiamondRopes.every((rope) => rope.material.opacity >= 0.035 && rope.material.opacity <= 0.082)).toBe(true);
+    expect(rearPocketDiamondRopes.every((rope) => rope.position.z > 0.24)).toBe(true);
+    expect(rearDepthRows.length).toBeGreaterThanOrEqual(3);
+    expect(rearDepthRows.every((rope) => rope.material.opacity <= 0.09)).toBe(true);
+  });
+
   it("adds assembled goal hardware details so the frame feels manufactured rather than procedural", () => {
     const goal = createGoalAndNet();
 

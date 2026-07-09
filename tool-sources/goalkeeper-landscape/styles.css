@@ -275,6 +275,84 @@ button {
   transform: translateY(2px) scale(0.98);
 }
 
+.broadcast-scorebug {
+  --broadcast-scorebug-compact-hud: 1;
+  left: 50%;
+  right: auto;
+  top: max(clamp(10px, 1.45vw, 18px), env(safe-area-inset-top));
+  width: min(620px, calc(100vw - 28px));
+  max-width: min(620px, calc(100vw - 28px));
+  height: clamp(38px, 4.2svh, 50px);
+  padding: 4px 6px;
+  border: 1px solid rgba(242, 255, 242, 0.18);
+  border-radius: 999px;
+  grid-template-columns: auto auto auto;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: linear-gradient(180deg, rgba(10, 24, 22, 0.78), rgba(6, 16, 15, 0.58));
+  box-shadow: 0 12px 26px rgba(4, 14, 12, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  transform: translateX(-50%);
+}
+
+.broadcast-scorebug::before {
+  display: none;
+}
+
+.broadcast-scorebug .hud-actions {
+  justify-self: auto;
+  align-items: center;
+  gap: 5px;
+}
+
+.broadcast-scorebug .glass-panel,
+.broadcast-scorebug .glass-button {
+  min-height: clamp(30px, 3.3svh, 38px);
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.055);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.broadcast-scorebug .glass-panel {
+  min-width: auto;
+  padding: 4px 8px;
+  gap: 5px;
+}
+
+.broadcast-scorebug .hud-metric {
+  min-width: min(104px, 18vw);
+}
+
+.broadcast-scorebug .hud-label {
+  color: rgba(239, 255, 242, 0.62);
+  font-size: clamp(8px, 0.74vw, 10px);
+  font-weight: 820;
+}
+
+.broadcast-scorebug .hud-value {
+  color: #fbfff2;
+  font-size: clamp(16px, 1.35vw, 21px);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.2);
+}
+
+.broadcast-scorebug .hud-icon {
+  min-width: clamp(21px, 2vw, 27px);
+  height: clamp(18px, 1.7vw, 23px);
+  padding: 0 5px;
+  color: #dfffee;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+
+.broadcast-scorebug .glass-button {
+  min-width: 56px;
+  padding: 0 9px;
+  color: #f8fff0;
+  font-size: clamp(10px, 0.86vw, 12px);
+}
+
 .bottom-controls {
   --broadcast-control-rail-hud: 1;
   --corner-control-clusters: 1;
@@ -1485,6 +1563,28 @@ button {
 }
 
 @media (max-height: 520px) and (orientation: landscape) {
+  .broadcast-scorebug {
+    width: min(520px, calc(100vw - 96px));
+    max-width: min(520px, calc(100vw - 96px));
+    height: clamp(34px, 5.5svh, 42px);
+    top: max(clamp(8px, 1.8svh, 14px), env(safe-area-inset-top));
+    gap: 4px;
+  }
+
+  .broadcast-scorebug .hud-label {
+    display: none;
+  }
+
+  .broadcast-scorebug .hud-metric {
+    min-width: auto;
+    padding: 4px 7px;
+  }
+
+  .broadcast-scorebug .glass-button {
+    min-width: 48px;
+    padding: 0 8px;
+  }
+
   .bottom-controls {
     left: max(64px, env(safe-area-inset-left));
     max-width: min(680px, calc(100vw - 96px));

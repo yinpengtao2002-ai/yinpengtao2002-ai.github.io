@@ -84,6 +84,27 @@ describe("responsive layout css", () => {
     expect(css).toContain("max-width: min(680px, calc(100vw - 96px));");
   });
 
+  it("uses a compact broadcast scorebug instead of oversized temporary HUD capsules", () => {
+    const css = readFileSync(stylesPath, "utf8");
+
+    expect(css).toContain("broadcast-scorebug-compact-hud");
+    expect(css).toContain(".broadcast-scorebug");
+    expect(css).toContain(".hud-metric");
+    expect(css).toContain(".hud-label");
+    expect(css).toContain(".hud-value");
+    expect(css).toContain("width: min(620px, calc(100vw - 28px));");
+    expect(css).toContain("max-width: min(620px, calc(100vw - 28px));");
+    expect(css).toContain("height: clamp(38px, 4.2svh, 50px);");
+    expect(css).toContain("background: linear-gradient(180deg, rgba(10, 24, 22, 0.78), rgba(6, 16, 15, 0.58));");
+    expect(css).toContain(".broadcast-scorebug .glass-panel");
+    expect(css).toContain("min-height: clamp(30px, 3.3svh, 38px);");
+    expect(css).toContain(".broadcast-scorebug .glass-button");
+    expect(css).toContain("@media (max-height: 520px) and (orientation: landscape)");
+    expect(css).toContain("width: min(520px, calc(100vw - 96px));");
+    expect(css).toContain(".broadcast-scorebug .hud-label");
+    expect(css).toContain("display: none;");
+  });
+
   it("adds an edge-anchored event ribbon and moves mobile controls away from the save lane", () => {
     const css = readFileSync(stylesPath, "utf8");
 

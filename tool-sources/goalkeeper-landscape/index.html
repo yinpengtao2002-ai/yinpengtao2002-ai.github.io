@@ -17,31 +17,31 @@
         <div class="stage" id="stage">
           <canvas id="gameCanvas" width="1280" height="720" aria-label="弹力手套守门挑战游戏"></canvas>
 
-          <section class="game-hud" aria-label="比赛状态">
-            <div class="glass-panel hud-score">
+          <section class="game-hud broadcast-scorebug" data-hud-system="broadcast-scorebug-compact-hud" aria-label="比赛状态">
+            <div class="glass-panel hud-score hud-metric">
               <span class="hud-icon hud-icon-score" aria-hidden="true"></span>
-              <span>扑救分</span>
-              <strong id="scoreValue">0</strong>
+              <span class="hud-label">扑救分</span>
+              <strong class="hud-value" id="scoreValue">0</strong>
             </div>
 
-            <div class="glass-panel hud-time">
+            <div class="glass-panel hud-time hud-metric">
               <span class="hud-icon hud-icon-time" aria-hidden="true"></span>
-              <span>时间</span>
-              <strong id="timeValue">60</strong>
+              <span class="hud-label">时间</span>
+              <strong class="hud-value" id="timeValue">60</strong>
             </div>
 
             <div class="hud-actions">
-              <div class="glass-panel hud-streak">
+              <div class="glass-panel hud-streak hud-metric">
                 <span class="hud-icon hud-icon-streak" aria-hidden="true"></span>
-                <span>连扑</span>
-                <strong id="streakValue">0</strong>
+                <span class="hud-label">连扑</span>
+                <strong class="hud-value" id="streakValue">0</strong>
               </div>
-              <div class="glass-panel hud-goals">
+              <div class="glass-panel hud-goals hud-metric">
                 <span class="hud-icon hud-icon-goals" aria-hidden="true"></span>
-                <span>失球</span>
-                <strong id="concededValue">0/5</strong>
+                <span class="hud-label">失球</span>
+                <strong class="hud-value" id="concededValue">0/5</strong>
               </div>
-                <button class="glass-button" id="pauseButton" type="button" aria-label="暂停挑战">Ⅱ 暂停</button>
+                <button class="glass-button hud-pause-button" id="pauseButton" type="button" aria-label="暂停挑战">Ⅱ 暂停</button>
             </div>
           </section>
 

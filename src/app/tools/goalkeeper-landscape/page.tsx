@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import GoalkeeperLandscapeRuntime, { GOALKEEPER_SCRIPT_SRC } from "./GoalkeeperLandscapeRuntime";
 
-const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-BqC_uVM0.css";
+const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-Bbig4_qq.css";
 
 export const metadata: Metadata = {
   title: "弹力手套守门挑战｜Lucas Yin",
@@ -23,31 +23,31 @@ export default function GoalkeeperLandscapePage() {
           <div className="stage" id="stage">
             <canvas id="gameCanvas" width="1280" height="720" aria-label="弹力手套守门挑战游戏" />
 
-            <section className="game-hud" aria-label="比赛状态">
-              <div className="glass-panel hud-score">
+            <section className="game-hud broadcast-scorebug" data-hud-system="broadcast-scorebug-compact-hud" aria-label="比赛状态">
+              <div className="glass-panel hud-score hud-metric">
                 <span className="hud-icon hud-icon-score" aria-hidden="true" />
-                <span>扑救分</span>
-                <strong id="scoreValue">0</strong>
+                <span className="hud-label">扑救分</span>
+                <strong className="hud-value" id="scoreValue">0</strong>
               </div>
 
-              <div className="glass-panel hud-time">
+              <div className="glass-panel hud-time hud-metric">
                 <span className="hud-icon hud-icon-time" aria-hidden="true" />
-                <span>时间</span>
-                <strong id="timeValue">60</strong>
+                <span className="hud-label">时间</span>
+                <strong className="hud-value" id="timeValue">60</strong>
               </div>
 
               <div className="hud-actions">
-                <div className="glass-panel hud-streak">
+                <div className="glass-panel hud-streak hud-metric">
                   <span className="hud-icon hud-icon-streak" aria-hidden="true" />
-                  <span>连扑</span>
-                  <strong id="streakValue">0</strong>
+                  <span className="hud-label">连扑</span>
+                  <strong className="hud-value" id="streakValue">0</strong>
                 </div>
-                <div className="glass-panel hud-goals">
+                <div className="glass-panel hud-goals hud-metric">
                   <span className="hud-icon hud-icon-goals" aria-hidden="true" />
-                  <span>失球</span>
-                  <strong id="concededValue">0/5</strong>
+                  <span className="hud-label">失球</span>
+                  <strong className="hud-value" id="concededValue">0/5</strong>
                 </div>
-                <button className="glass-button" id="pauseButton" type="button" aria-label="暂停挑战">Ⅱ 暂停</button>
+                <button className="glass-button hud-pause-button" id="pauseButton" type="button" aria-label="暂停挑战">Ⅱ 暂停</button>
               </div>
             </section>
 
