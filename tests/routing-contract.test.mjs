@@ -125,7 +125,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
     new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
     "utf8"
   );
-  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-k1r-1xMi.js", import.meta.url);
+  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-CMJubzWD.js", import.meta.url);
   const gameScript = await stat(gameScriptPath);
   const gameScriptSource = await readFile(gameScriptPath, "utf8");
   const gameStylePath = new URL("../public/tools/goalkeeper-landscape/assets/index-aiq5nNfG.css", import.meta.url);
@@ -137,7 +137,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(goalkeeperPage, /import GoalkeeperLandscapeRuntime/);
   assert.match(goalkeeperPage, /GOALKEEPER_SCRIPT_SRC/);
   assert.match(goalkeeperPage, /GOALKEEPER_STYLESHEET_HREF/);
-  assert.match(goalkeeperRuntime, /index-k1r-1xMi\.js/);
+  assert.match(goalkeeperRuntime, /index-CMJubzWD\.js/);
   assert.match(goalkeeperPage, /index-aiq5nNfG\.css/);
   assert.match(goalkeeperPage, /<GoalkeeperLandscapeRuntime \/>/);
   assert.match(goalkeeperPage, /弹力手套守门挑战/);
@@ -190,7 +190,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(thinkingClient, /横屏守门挑战/);
   assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-k1r-1xMi\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-CMJubzWD\.js/);
   assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-aiq5nNfG\.css/);
   assert.match(gameIndex, /id="feedbackToast"/);
   assert.match(gameIndex, /id="eventRibbon"/);
@@ -231,9 +231,10 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /medium/);
   assert.match(gameScriptSource, /stylized-reusable-matchday-kit/);
   assert.match(gameScriptSource, /professional-keeper-training-court/);
-  assert.match(gameScriptSource, /plain-neutral-training-floor-depth-shadows/);
+  assert.match(gameScriptSource, /plain-neutral-training-floor-goalmouth-shadows/);
   assert.match(gameScriptSource, /clean-matte-training-surface-material/);
   assert.match(gameScriptSource, /neutral-gray-court-no-grass/);
+  assert.match(gameScriptSource, /minimal-keeper-training-floor/);
   assert.match(gameScriptSource, /field-training-surface/);
   assert.match(gameScriptSource, /modern-panel-match-ball-texture/);
   assert.match(gameScriptSource, /crowd-scoreboard-flags-matchday-dressing/);
@@ -258,7 +259,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /training-ground-atmospheric-sky/);
   assert.match(gameScriptSource, /environmentSystem/);
   assert.match(gameScriptSource, /neutral-gray-court-no-grass/);
-  assert.match(gameScriptSource, /#7f878e/);
+  assert.match(gameScriptSource, /#8c9296/);
   assert.match(gameScriptSource, /#68737b/);
   assert.match(gameScriptSource, /three-spotlight-broadcast-rig/);
   assert.match(gameScriptSource, /stadium-spotlight-rig/);
@@ -286,6 +287,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /feedback-impact-ring/);
   assert.match(gameScriptSource, /feedback-ground-skid/);
   assert.match(gameScriptSource, /feedback-court-dust-fleck/);
+  assert.match(gameScriptSource, /event-weighted-camera-impulse/);
   assert.doesNotMatch(gameScriptSource, /feedback-turf-fleck/);
   assert.doesNotMatch(gameScriptSource, /rolling-turf-contact-flecks/);
   assert.match(gameScriptSource, /feedback-save-spark/);
@@ -305,7 +307,11 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.doesNotMatch(gameScriptSource, /field-surface-panel/);
   assert.doesNotMatch(gameScriptSource, /field-depth-band/);
   assert.doesNotMatch(gameScriptSource, /field-turf-maintenance-brush/);
-  assert.match(gameScriptSource, /plain-training-floor-no-grass-stripes/);
+  assert.doesNotMatch(gameScriptSource, /standard-football-pitch/);
+  assert.doesNotMatch(gameScriptSource, /field-standard-/);
+  assert.doesNotMatch(gameScriptSource, /field-penalty-spot/);
+  assert.doesNotMatch(gameScriptSource, /field-touchline-shadow/);
+  assert.match(gameScriptSource, /plain-training-floor-no-grass-or-pitch-stripes/);
   assert.match(gameScriptSource, /plain-field-no-grass-clutter/);
   assert.match(gameScriptSource, /plain-matte-training-floor-kit/);
   assert.doesNotMatch(gameScriptSource, /clean-non-grass-training-floor-depth-shadows/);

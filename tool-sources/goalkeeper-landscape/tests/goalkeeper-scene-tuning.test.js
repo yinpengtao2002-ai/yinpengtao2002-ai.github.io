@@ -558,6 +558,53 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(fadedPlan.screenWashOpacity).toBeLessThan(livePlan.screenWashOpacity);
   });
 
+  it("converts event feedback into restrained camera impulse modes instead of one generic shake", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.createCameraImpulseState).toBeTypeOf("function");
+    expect(sceneModule.triggerCameraImpulseState).toBeTypeOf("function");
+    expect(sceneModule.advanceCameraImpulseState).toBeTypeOf("function");
+    expect(sceneModule.getCameraImpulseOffsetPlan).toBeTypeOf("function");
+
+    const save = sceneModule.getMatchEventFeedbackPlan({
+      type: "save",
+      contact: { type: "glove", strength: 24, point: { x: 0.22, y: 1.22, z: 3.14 } },
+      state: { streak: 1 },
+    });
+    const dangerGoal = sceneModule.getMatchEventFeedbackPlan({
+      type: "goal",
+      contact: { type: "net", strength: 1, point: { x: 0.7, y: 1.4, z: SHOT_3D.netPlaneZ } },
+      state: { conceded: 4 },
+    });
+
+    const state = sceneModule.createCameraImpulseState();
+    sceneModule.triggerCameraImpulseState(state, save);
+    const saveImpulse = sceneModule.getCameraImpulseOffsetPlan(state, 7);
+
+    expect(saveImpulse.system).toBe("event-weighted-camera-impulse");
+    expect(saveImpulse.active).toBe(true);
+    expect(saveImpulse.mode).toBe("micro");
+    expect(Math.abs(saveImpulse.offset.x)).toBeGreaterThan(0);
+    expect(Math.abs(saveImpulse.offset.y)).toBeGreaterThan(0);
+    expect(Math.abs(saveImpulse.offset.z)).toBeLessThanOrEqual(SCENE_TUNING.feedback.maxCameraShake * 0.18);
+    expect(Math.abs(saveImpulse.roll)).toBeLessThanOrEqual(0.008);
+    expect(saveImpulse.amount).toBeLessThanOrEqual(SCENE_TUNING.feedback.maxCameraShake);
+
+    sceneModule.triggerCameraImpulseState(state, dangerGoal);
+    const dangerImpulse = sceneModule.getCameraImpulseOffsetPlan(state, 8);
+
+    expect(dangerImpulse.mode).toBe("recoil");
+    expect(dangerImpulse.amount).toBeGreaterThan(saveImpulse.amount);
+    expect(dangerImpulse.offset.z).toBeGreaterThan(Math.abs(saveImpulse.offset.z));
+    expect(Math.abs(dangerImpulse.roll)).toBeGreaterThan(Math.abs(saveImpulse.roll));
+    expect(dangerImpulse.amount).toBeLessThanOrEqual(SCENE_TUNING.feedback.maxCameraShake * 1.24);
+
+    sceneModule.advanceCameraImpulseState(state);
+    const fadedImpulse = sceneModule.getCameraImpulseOffsetPlan(state, 9);
+    expect(fadedImpulse.life).toBeLessThan(dangerImpulse.life);
+    expect(fadedImpulse.amount).toBeLessThan(dangerImpulse.amount);
+  });
+
   it("advances a damped spring net recoil so goals push the net then rebound and settle", async () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
 

@@ -1024,6 +1024,98 @@ export function getCameraPresentationStatePlan(state, tuning = SCENE_TUNING.pres
   };
 }
 
+export function createCameraImpulseState() {
+  return {
+    system: "event-weighted-camera-impulse",
+    life: 0,
+    amount: 0,
+    mode: "none",
+    phase: 0,
+  };
+}
+
+export function triggerCameraImpulseState(state, eventPlan = {}, tuning = SCENE_TUNING.feedback) {
+  if (!state) return state;
+  var mode = eventPlan?.presentation?.cameraShakeMode || "none";
+  var requestedAmount = Number.isFinite(eventPlan?.cameraShake) ? eventPlan.cameraShake : 0;
+  if (mode === "none" || requestedAmount <= 0) return state;
+
+  var maxShake = tuning.maxCameraShake || 0.045;
+  var modeCeiling = mode === "recoil" ? maxShake * 1.24 : mode === "push" ? maxShake * 1.08 : maxShake;
+  state.system = "event-weighted-camera-impulse";
+  state.life = 1;
+  state.mode = mode;
+  state.amount = Math.max(state.amount || 0, Math.min(modeCeiling, requestedAmount));
+  state.phase = ((state.phase || 0) + 0.73) % (Math.PI * 2);
+  return state;
+}
+
+export function advanceCameraImpulseState(state, tuning = SCENE_TUNING.feedback) {
+  if (!state) return state;
+  var maxShake = Math.max(0.001, tuning.maxCameraShake || 0.045);
+  var decay = Math.max(0.045, (tuning.cameraShakeFalloff || 0.0048) / maxShake);
+  state.life = Math.max(0, (state.life || 0) - decay);
+  if (state.life <= 0) {
+    state.amount = 0;
+    state.mode = "none";
+  }
+  return state;
+}
+
+export function getCameraImpulseOffsetPlan(state, frame = 0, tuning = SCENE_TUNING.feedback) {
+  var system = "event-weighted-camera-impulse";
+  var life = clamp01(state?.life || 0);
+  var mode = state?.mode || "none";
+  if (life <= 0 || mode === "none" || (state?.amount || 0) <= 0) {
+    return {
+      system,
+      active: false,
+      mode: "none",
+      life: 0,
+      amount: 0,
+      offset: { x: 0, y: 0, z: 0 },
+      roll: 0,
+    };
+  }
+
+  var maxShake = tuning.maxCameraShake || 0.045;
+  var amount = Math.min(maxShake * 1.24, (state.amount || 0) * life * life * (3 - 2 * life));
+  var phase = state.phase || 0;
+  var xWave = Math.sin(frame * 1.7 + phase);
+  var yWave = Math.cos(frame * 1.13 + phase * 0.7);
+  var zWave = Math.sin(frame * 0.92 + phase * 1.3);
+  var rollWave = Math.sin(frame * 1.29 + phase * 0.5);
+  var offset = { x: 0, y: 0, z: 0 };
+  var roll = 0;
+
+  if (mode === "micro") {
+    offset.x = xWave * amount;
+    offset.y = yWave * amount * 0.62;
+    offset.z = zWave * amount * 0.12;
+    roll = rollWave * amount * 0.1;
+  } else if (mode === "push") {
+    offset.x = xWave * amount * 0.34;
+    offset.y = yWave * amount * 0.18;
+    offset.z = amount * 0.48 + zWave * amount * 0.08;
+    roll = rollWave * amount * 0.13;
+  } else if (mode === "recoil") {
+    offset.x = xWave * amount * 0.5;
+    offset.y = yWave * amount * 0.28;
+    offset.z = amount * 0.82 + Math.abs(zWave) * amount * 0.12;
+    roll = rollWave * amount * 0.24;
+  }
+
+  return {
+    system,
+    active: true,
+    mode,
+    life,
+    amount,
+    offset,
+    roll,
+  };
+}
+
 export function getEventBloomPlan(eventPlan = {}, tuning = SCENE_TUNING.postprocessing) {
   var baseStrength = tuning.baseStrength || 0;
   var priority = eventPlan.priority || "ambient";
@@ -1871,7 +1963,7 @@ export function createGoalkeeperScene(canvas) {
   var netPulse = 0;
   var netPulseContactPoint = null;
   var lastContactSignature = "";
-  var cameraShake = 0;
+  var cameraImpulseState = createCameraImpulseState();
   var feedbackSignature = "";
   var feedbackFrame = 0;
   var gloveImpactState = createGloveImpactState();
@@ -2041,9 +2133,13 @@ export function createGoalkeeperScene(canvas) {
       ring.scale.setScalar(1 + index * 0.12);
       ring.userData.life = Math.max(0.35, 1 - index * 0.12);
     });
-    cameraShake = Math.max(
-      cameraShake,
-      eventPlan?.cameraShake ?? profile?.cameraShake ?? tuning.feedback.maxCameraShake * pulseStrength,
+    triggerCameraImpulseState(
+      cameraImpulseState,
+      eventPlan || {
+        cameraShake: profile?.cameraShake ?? tuning.feedback.maxCameraShake * pulseStrength,
+        presentation: { cameraShakeMode: type === "goal" ? "push" : "micro" },
+      },
+      tuning.feedback,
     );
     triggerCameraPresentationState(cameraPresentationState, eventPlan, tuning.presentation);
     triggerPostprocessingBloomState(postprocessingBloomState, eventPlan, tuning.postprocessing);
@@ -2209,7 +2305,14 @@ export function createGoalkeeperScene(canvas) {
     );
     if (!plan) return;
 
-    cameraShake = Math.max(cameraShake, eventPlan.cameraShake, feedbackProfile.cameraShake, plan.shake);
+    triggerCameraImpulseState(
+      cameraImpulseState,
+      {
+        ...eventPlan,
+        cameraShake: Math.max(eventPlan.cameraShake || 0, feedbackProfile.cameraShake || 0, plan.shake || 0),
+      },
+      tuning.feedback,
+    );
     frameReboundHighlights.forEach((highlight, index) => {
       var offset = (index - 1) * 0.045;
       var isCrossbar = plan.part === "crossbar";
@@ -2598,19 +2701,20 @@ export function createGoalkeeperScene(canvas) {
 
   function applyFeedbackCamera() {
     feedbackFrame += 1;
-    if (cameraShake <= 0) {
+    var impulse = getCameraImpulseOffsetPlan(cameraImpulseState, feedbackFrame, tuning.feedback);
+    if (!impulse.active) {
       camera.position.copy(cameraFraming.position);
       camera.lookAt(cameraFraming.lookAt);
       return;
     }
-    var amount = cameraShake;
     camera.position.set(
-      cameraFraming.position.x + Math.sin(feedbackFrame * 1.7) * amount,
-      cameraFraming.position.y + Math.cos(feedbackFrame * 1.13) * amount * 0.62,
-      cameraFraming.position.z,
+      cameraFraming.position.x + impulse.offset.x,
+      cameraFraming.position.y + impulse.offset.y,
+      cameraFraming.position.z + impulse.offset.z,
     );
     camera.lookAt(cameraFraming.lookAt);
-    cameraShake = Math.max(0, cameraShake - tuning.feedback.cameraShakeFalloff);
+    camera.rotation.z += impulse.roll;
+    advanceCameraImpulseState(cameraImpulseState, tuning.feedback);
   }
 
   function updatePresentationLayer() {

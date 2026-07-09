@@ -14,7 +14,7 @@ export function getMatchdayAssetPolishProfile() {
     system: MATCHDAY_ASSET_POLISH_SYSTEM,
     reusableTechnique: "procedural-threejs-matchday-assets",
     assetFamilies: [
-      "pitch",
+      "training-floor",
       "goal-net",
       "ball",
       "gloves",
@@ -207,7 +207,7 @@ export function updateStadiumScoreboardTexture(texture, plan = getStadiumScorebo
 
 function createTrainingSurfaceMaterial() {
   var material = new THREE.MeshStandardMaterial({
-    color: "#7f878e",
+    color: "#8c9296",
     bumpScale: 0,
     roughness: 0.91,
     metalness: 0,
@@ -403,9 +403,9 @@ export function createFieldGroup() {
   group.userData.geometryPolishSystem = ROUNDED_BOX_BEVELED_PROP_SYSTEM;
   group.userData.assetSystem = "stylized-reusable-matchday-kit";
   group.userData.materialPipelineSystem = "procedural-pbr-material-stack";
-  group.userData.markingSystem = "standard-football-pitch";
-  group.userData.surfaceDetailSystem = "plain-neutral-training-floor-depth-shadows";
-  group.userData.surfaceFinishSystem = "plain-training-floor-no-grass-stripes";
+  group.userData.markingSystem = "minimal-keeper-training-floor";
+  group.userData.surfaceDetailSystem = "plain-neutral-training-floor-goalmouth-shadows";
+  group.userData.surfaceFinishSystem = "plain-training-floor-no-grass-or-pitch-stripes";
   group.userData.stadiumDressingSystem = "crowd-scoreboard-flags-matchday-dressing";
   group.userData.broadcastDressingSystem = "sideline-camera-light-and-safety-pad-kit";
   group.userData.stadiumScoreboardSystem = STADIUM_SCOREBOARD_DISPLAY_SYSTEM;
@@ -420,112 +420,6 @@ export function createFieldGroup() {
   surface.rotation.x = -Math.PI / 2;
   surface.position.set(0, -0.025, -14);
   group.add(surface);
-
-  var spot = new THREE.Mesh(
-    new THREE.CircleGeometry(0.09, 24),
-    new THREE.MeshBasicMaterial({ color: "#fafff4", transparent: true, opacity: 0.82, depthWrite: false }),
-  );
-  spot.name = "field-penalty-spot";
-  spot.rotation.x = -Math.PI / 2;
-  spot.position.set(0, 0.011, -6.35);
-  group.add(spot);
-
-  var lineMaterial = new THREE.LineBasicMaterial({ color: "#f7fff2", transparent: true, opacity: 0.88 });
-  function addStandardLine(name, points, opacity) {
-    var material = opacity === undefined ? lineMaterial : lineMaterial.clone();
-    material.opacity = opacity === undefined ? lineMaterial.opacity : opacity;
-    var line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), material);
-    line.name = "field-standard-" + name;
-    group.add(line);
-  }
-
-  var pitchHalfWidth = 7.35;
-  var goalLineZ = RAPIER_GOAL.netPlaneZ;
-  var farLineZ = -22.4;
-  var centerLineZ = SHOT_3D.origin.z;
-  addStandardLine("goal-line", [
-    new THREE.Vector3(-pitchHalfWidth, 0.012, goalLineZ),
-    new THREE.Vector3(pitchHalfWidth, 0.012, goalLineZ),
-  ]);
-  addStandardLine("touchline-left", [
-    new THREE.Vector3(-pitchHalfWidth, 0.012, goalLineZ),
-    new THREE.Vector3(-pitchHalfWidth, 0.012, farLineZ),
-  ], 0.72);
-  addStandardLine("touchline-right", [
-    new THREE.Vector3(pitchHalfWidth, 0.012, goalLineZ),
-    new THREE.Vector3(pitchHalfWidth, 0.012, farLineZ),
-  ], 0.72);
-  addStandardLine("center-line", [
-    new THREE.Vector3(-pitchHalfWidth, 0.012, centerLineZ),
-    new THREE.Vector3(pitchHalfWidth, 0.012, centerLineZ),
-  ], 0.62);
-
-  var penaltyHalfWidth = 4.95;
-  var penaltyTopZ = goalLineZ - 6.4;
-  addStandardLine("penalty-area-left", [
-    new THREE.Vector3(-penaltyHalfWidth, 0.013, goalLineZ),
-    new THREE.Vector3(-penaltyHalfWidth, 0.013, penaltyTopZ),
-  ]);
-  addStandardLine("penalty-area-right", [
-    new THREE.Vector3(penaltyHalfWidth, 0.013, goalLineZ),
-    new THREE.Vector3(penaltyHalfWidth, 0.013, penaltyTopZ),
-  ]);
-  addStandardLine("penalty-area-top", [
-    new THREE.Vector3(-penaltyHalfWidth, 0.013, penaltyTopZ),
-    new THREE.Vector3(penaltyHalfWidth, 0.013, penaltyTopZ),
-  ]);
-
-  var goalAreaHalfWidth = 2.55;
-  var goalAreaTopZ = goalLineZ - 2.45;
-  addStandardLine("goal-area-left", [
-    new THREE.Vector3(-goalAreaHalfWidth, 0.014, goalLineZ),
-    new THREE.Vector3(-goalAreaHalfWidth, 0.014, goalAreaTopZ),
-  ], 0.82);
-  addStandardLine("goal-area-right", [
-    new THREE.Vector3(goalAreaHalfWidth, 0.014, goalLineZ),
-    new THREE.Vector3(goalAreaHalfWidth, 0.014, goalAreaTopZ),
-  ], 0.82);
-  addStandardLine("goal-area-top", [
-    new THREE.Vector3(-goalAreaHalfWidth, 0.014, goalAreaTopZ),
-    new THREE.Vector3(goalAreaHalfWidth, 0.014, goalAreaTopZ),
-  ], 0.82);
-
-  var centerCirclePoints = [];
-  for (var c = 0; c <= Math.PI * 2 + 0.01; c += Math.PI / 40) {
-    centerCirclePoints.push(new THREE.Vector3(Math.cos(c) * 1.42, 0.012, centerLineZ + Math.sin(c) * 1.42));
-  }
-  addStandardLine("center-circle", centerCirclePoints, 0.58);
-
-  var penaltyArcPoints = [];
-  for (var a = Math.PI * 0.18; a <= Math.PI * 0.82; a += Math.PI / 32) {
-    penaltyArcPoints.push(new THREE.Vector3(Math.cos(a) * 1.55, 0.012, -6.35 - Math.sin(a) * 1.55));
-  }
-  addStandardLine("penalty-arc", penaltyArcPoints, 0.58);
-
-  [
-    ["left", -pitchHalfWidth, goalLineZ, 0, Math.PI / 2],
-    ["right", pitchHalfWidth, goalLineZ, Math.PI / 2, Math.PI],
-  ].forEach(function addCornerArc(item) {
-    var points = [];
-    for (var angle = item[3]; angle <= item[4] + 0.01; angle += Math.PI / 18) {
-      points.push(new THREE.Vector3(item[1] + Math.cos(angle) * 0.36, 0.013, item[2] - Math.sin(angle) * 0.36));
-    }
-    addStandardLine("corner-arc-" + item[0], points, 0.7);
-  });
-
-  var touchlineShadowMaterial = new THREE.MeshBasicMaterial({
-    color: "#2d3f44",
-    transparent: true,
-    opacity: 0.16,
-    depthWrite: false,
-  });
-  [-1, 1].forEach(function addTouchlineShadow(side) {
-    var shadow = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 18), touchlineShadowMaterial);
-    shadow.name = "field-touchline-shadow-" + (side < 0 ? "left" : "right");
-    shadow.rotation.x = -Math.PI / 2;
-    shadow.position.set(side * (pitchHalfWidth - 0.16), 0.006, -7.8);
-    group.add(shadow);
-  });
 
   var mouthShadowMaterial = new THREE.MeshBasicMaterial({
     color: "#283b40",
