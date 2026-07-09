@@ -53,6 +53,11 @@ export const SCENE_TUNING = {
     nearScale: 1.32,
     goalScale: 1.12,
     deflectedScale: 1.06,
+    netReadabilitySystem: "near-net-ball-priority-halo",
+    renderOrder: 12,
+    haloRenderOrder: 13,
+    nearNetHaloBoost: 0.12,
+    nearNetHaloMaxOpacity: 0.46,
     showShotTrail: false,
     flightSpinGlintSystem: "attached-ball-spin-glint-kit",
     flightSpinGlintCount: 2,
@@ -155,6 +160,9 @@ export const SCENE_TUNING = {
     maxCameraShake: 0.045,
     cameraShakeFalloff: 0.0048,
     netPulseDecay: 0.032,
+    netBaseOpacity: 0.06,
+    netPulseOpacityBoost: 0.14,
+    netRecoilOpacityBoost: 0.1,
     groundSkidCount: 5,
     groundSkidColor: "#e7d5a7",
     groundSkidMaxOpacity: 0.34,
@@ -1780,6 +1788,9 @@ export function createGoalkeeperScene(canvas) {
     mesh.name = name + "-ball";
     halo.name = name + "-halo";
     shadow.name = name + "-shadow";
+    mesh.renderOrder = tuning.ball.renderOrder;
+    halo.renderOrder = tuning.ball.haloRenderOrder;
+    halo.material.depthTest = false;
     shadow.rotation.x = -Math.PI / 2;
     mesh.visible = false;
     halo.visible = false;
@@ -2194,7 +2205,12 @@ export function createGoalkeeperScene(canvas) {
     view.halo.position.set(position.x, position.y, position.z - 0.025);
     view.halo.lookAt(camera.position);
     view.halo.scale.setScalar(0.22 + depth * 0.64);
-    view.halo.material.opacity = ballState?.outcome === "goal" ? 0.34 : ballState?.live ? 0.28 : 0.18;
+    var baseHaloOpacity = ballState?.outcome === "goal" ? 0.34 : ballState?.live ? 0.28 : 0.18;
+    var nearNetMix = clamp01((position.z - (tuning.depth.netPlaneZ - 1.35)) / 1.35);
+    view.halo.material.opacity = Math.min(
+      tuning.ball.nearNetHaloMaxOpacity,
+      baseHaloOpacity + nearNetMix * tuning.ball.nearNetHaloBoost,
+    );
 
     view.shadow.position.set(position.x, 0.012, position.z);
     var heightAboveFloor = Math.max(0, position.y - (ballState?.radius || tuning.ball.radius));
@@ -2723,11 +2739,13 @@ export function createGoalkeeperScene(canvas) {
       netPulse = Math.max(0, netPulse - tuning.feedback.netPulseDecay);
       var pulseOffset = Math.sin(netPulse * Math.PI) * 0.11;
       goal.net.position.z = RAPIER_GOAL.netPlaneZ + 0.1 + pulseOffset + recoilOffset;
-      goal.net.material.opacity = 0.16 + Math.max(netPulse, recoilPulse) * 0.24;
+      goal.net.material.opacity =
+        tuning.feedback.netBaseOpacity +
+        Math.max(netPulse * tuning.feedback.netPulseOpacityBoost, recoilPulse * tuning.feedback.netRecoilOpacityBoost);
       goal.grid.position.z = pulseOffset * 0.56 + recoilOffset * 0.48;
     } else {
       goal.net.position.z = RAPIER_GOAL.netPlaneZ + 0.1 + recoilOffset;
-      goal.net.material.opacity = 0.16 + recoilPulse * 0.18;
+      goal.net.material.opacity = tuning.feedback.netBaseOpacity + recoilPulse * tuning.feedback.netRecoilOpacityBoost;
       goal.grid.position.z = recoilOffset * 0.48;
       netPulseContactPoint = null;
     }

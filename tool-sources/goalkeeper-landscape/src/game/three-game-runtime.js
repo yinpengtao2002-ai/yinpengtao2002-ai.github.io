@@ -21,6 +21,7 @@ export const ROUND_INTRO_SECONDS = 1.8;
 export const CAUGHT_SAVE_REPLAY_STYLE = "caught-save-drop-replay";
 export const PARRIED_SAVE_REPLAY_STYLE = "parried-save-deflection-replay";
 export const GROUND_CONTACT_AUDIO_COOLDOWN = 0.28;
+export const OUTCOME_HUD_HOLD_SECONDS = 0.82;
 const GROUND_FEEDBACK_DURATION = 0.62;
 
 function clamp01(value) {
@@ -104,8 +105,20 @@ export function getLingeringBallDurationForOutcome(outcome) {
 
 export function getNextShotDelayForOutcome(outcome) {
   if (outcome === "goal") return 1.08;
-  if (outcome === "save") return 1.12;
+  if (outcome === "save") return 1.32;
   return 0.58;
+}
+
+export function getHudStateForOutcomeHold(state, handledOutcome, outcomeTimer) {
+  if (!state || state.ended || !handledOutcome) return state;
+  if ((outcomeTimer || 0) <= OUTCOME_HUD_HOLD_SECONDS) return state;
+  if (!["save", "goal", "miss", "frame"].includes(state.message)) return state;
+
+  return {
+    ...state,
+    message: "play",
+    lastSavePoints: state.message === "save" ? 0 : state.lastSavePoints,
+  };
 }
 
 export function getAudioCueForContactType(type) {
@@ -672,7 +685,7 @@ export async function createThreeGameRuntime(options) {
   }
 
   function updateHud() {
-    hud.update(state, audio.isEnabled(), getHudContext());
+    hud.update(getHudStateForOutcomeHold(state, handledOutcome, outcomeTimer), audio.isEnabled(), getHudContext());
   }
 
   function render() {

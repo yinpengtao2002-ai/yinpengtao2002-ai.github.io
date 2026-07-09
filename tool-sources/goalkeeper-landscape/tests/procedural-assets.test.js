@@ -178,6 +178,43 @@ describe("procedural 3D assets", () => {
     expect(launcher.muzzleFlash.material.opacity).toBe(0);
   });
 
+  it("adds restrained launcher exhaust and floor shock feedback at shot release", () => {
+    const launcher = createShooterModel();
+
+    expect(launcher.group.userData.launcherReleaseFeedbackSystem).toBe("recoil-exhaust-floor-shock-kit");
+    expect(collectByName(launcher.group, /^launcher-exhaust-puff-/)).toHaveLength(2);
+    expect(collectByName(launcher.group, /^launcher-floor-shock-ring$/)).toHaveLength(1);
+    expect(collectByName(launcher.group, /^launcher-release-dust-fleck-/)).toHaveLength(6);
+    expect(launcher.exhaustPuffs).toHaveLength(2);
+    expect(launcher.releaseDustFlecks).toHaveLength(6);
+    expect(launcher.floorShockRing.material.transparent).toBe(true);
+    expect(launcher.floorShockRing.material.opacity).toBe(0);
+
+    updateShooterModel(launcher, {
+      phase: "live",
+      phaseTime: 0.06,
+      currentShot: { cueDuration: 1, cue: { side: 1 } },
+    });
+
+    expect(launcher.floorShockRing.visible).toBe(true);
+    expect(launcher.floorShockRing.material.opacity).toBeGreaterThan(0.08);
+    expect(launcher.floorShockRing.material.opacity).toBeLessThanOrEqual(0.24);
+    expect(launcher.floorShockRing.scale.x).toBeGreaterThan(1.1);
+    expect(launcher.exhaustPuffs.every((puff) => puff.visible)).toBe(true);
+    expect(launcher.exhaustPuffs.every((puff) => puff.material.opacity > 0.08 && puff.material.opacity <= 0.32)).toBe(true);
+    expect(launcher.releaseDustFlecks.some((fleck) => fleck.material.opacity > 0.06)).toBe(true);
+
+    updateShooterModel(launcher, {
+      phase: "live",
+      phaseTime: 0.48,
+      currentShot: { cueDuration: 1, cue: { side: 1 } },
+    });
+
+    expect(launcher.floorShockRing.visible).toBe(false);
+    expect(launcher.floorShockRing.material.opacity).toBe(0);
+    expect(launcher.exhaustPuffs.every((puff) => !puff.visible && puff.material.opacity === 0)).toBe(true);
+  });
+
   it("builds polished orange gloves with highlights and black cuffs", () => {
     const glove = createGloveMesh("left");
 
@@ -527,21 +564,22 @@ describe("procedural 3D assets", () => {
     expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-raised-border-rope-"))).toBe(true);
   });
 
-  it("keeps the net cords readable without turning the back panel into a ball-blocking veil", () => {
+  it("keeps the net readable without turning the back panel into a ball-blocking veil", () => {
     const goal = createGoalAndNet();
     const sideNets = collectByName(goal.group, /^goal-net-side-/);
     const raisedCords = collectByName(goal.group, /^goal-net-raised-(vertical|horizontal)-cord-/);
     const borderRopes = collectByName(goal.group, /^goal-net-raised-border-rope-/);
     const diagonalWeave = collectByName(goal.group, /^goal-net-diagonal-weave-/);
 
-    expect(goal.group.userData.netReadabilitySystem).toBe("high-contrast-readable-net-cords");
-    expect(goal.net.material.opacity).toBeGreaterThanOrEqual(0.12);
-    expect(goal.net.material.opacity).toBeLessThanOrEqual(0.16);
-    expect(goal.grid.material.opacity).toBeGreaterThanOrEqual(0.4);
-    expect(sideNets.every((net) => net.material.opacity >= 0.15 && net.material.opacity <= 0.2)).toBe(true);
-    expect(raisedCords.every((cord) => cord.material.opacity >= 0.38 && cord.material.opacity <= 0.48)).toBe(true);
-    expect(borderRopes.every((rope) => rope.material.opacity >= 0.44 && rope.material.opacity <= 0.5)).toBe(true);
-    expect(diagonalWeave.every((weave) => weave.material.opacity >= 0.3 && weave.material.opacity <= 0.36)).toBe(true);
+    expect(goal.group.userData.netReadabilitySystem).toBe("ball-first-ultra-light-net-cords");
+    expect(goal.net.material.opacity).toBeGreaterThanOrEqual(0.045);
+    expect(goal.net.material.opacity).toBeLessThanOrEqual(0.07);
+    expect(goal.grid.material.opacity).toBeGreaterThanOrEqual(0.2);
+    expect(goal.grid.material.opacity).toBeLessThanOrEqual(0.26);
+    expect(sideNets.every((net) => net.material.opacity >= 0.06 && net.material.opacity <= 0.09)).toBe(true);
+    expect(raisedCords.every((cord) => cord.material.opacity >= 0.22 && cord.material.opacity <= 0.3)).toBe(true);
+    expect(borderRopes.every((rope) => rope.material.opacity >= 0.28 && rope.material.opacity <= 0.34)).toBe(true);
+    expect(diagonalWeave.every((weave) => weave.material.opacity >= 0.14 && weave.material.opacity <= 0.2)).toBe(true);
   });
 
   it("adds assembled goal hardware details so the frame feels manufactured rather than procedural", () => {

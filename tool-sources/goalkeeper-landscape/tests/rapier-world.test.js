@@ -144,6 +144,33 @@ describe("Rapier goalkeeper world", () => {
     world.dispose();
   });
 
+  it("credits lower-edge visual glove overlaps instead of letting them become goals", async () => {
+    const world = await createRapierGoalkeeperWorld();
+
+    world.setGloveTarget({ x: 0, y: 1.53, z: 3.15 });
+    world.step(1 / 30);
+    world.launchShot({
+      origin: { x: 0, y: 1.25, z: 2.35 },
+      target: { x: 0, y: 1.25, z: 4.65 },
+      velocity: { x: 0, y: 0, z: 28 },
+      angularVelocity: { x: 0, y: 10, z: 0 },
+      curveForce: { x: 0, y: 0, z: 0 },
+      radius: 0.11,
+    });
+
+    for (let i = 0; i < 80; i += 1) {
+      world.step(1 / 120);
+    }
+    const ball = world.getBallState();
+
+    expect(ball.outcome).toBe("saved");
+    expect(ball.lastContact?.type).toBe("glove");
+    expect(ball.lastContact?.part).toBe("visual-pocket");
+    expect(ball.lastContact?.saveResolution).toBe("glove-deflected-away-from-goal");
+
+    world.dispose();
+  });
+
   it("adds a controlled sideways slap only when the glove swipes quickly into the save", async () => {
     const world = await createRapierGoalkeeperWorld();
 
@@ -297,6 +324,32 @@ describe("Rapier goalkeeper world", () => {
     expect(ball.outcome).toBe("goal");
     expect(ball.lastContact?.type).toBe("net");
     expect(ball.position.z).toBeGreaterThanOrEqual(4.55);
+
+    world.dispose();
+  });
+
+  it("does not count a ball skimming the floor as a conceded goal", async () => {
+    const world = await createRapierGoalkeeperWorld();
+
+    world.setGloveTarget({ x: 0, y: 3, z: 3.15 });
+    world.launchShot({
+      origin: { x: 0, y: 0.05, z: 3.5 },
+      target: { x: 0, y: 0.05, z: 4.65 },
+      velocity: { x: 0, y: 0, z: 22 },
+      angularVelocity: { x: 0, y: 10, z: 0 },
+      curveForce: { x: 0, y: 0, z: 0 },
+      radius: 0.11,
+    });
+
+    for (let i = 0; i < 30; i += 1) {
+      world.step(1 / 120);
+    }
+    const ball = world.getBallState();
+
+    expect(ball.outcome).toBe("missed");
+    expect(ball.live).toBe(false);
+    expect(ball.lastContact?.type).toBe("wide");
+    expect(ball.lastContact?.reason).toBe("whole-ball-outside-goal-mouth");
 
     world.dispose();
   });

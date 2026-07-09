@@ -787,7 +787,7 @@ export function createGoalAndNet() {
   group.userData.frameAssemblySystem = "manufactured-goal-frame-hardware";
   group.userData.goalEquipmentPolishSystem = "weighted-pro-goal-equipment-kit";
   group.userData.depthReadabilitySystem = "goal-net-depth-contact-shadow-kit";
-  group.userData.netReadabilitySystem = "high-contrast-readable-net-cords";
+  group.userData.netReadabilitySystem = "ball-first-ultra-light-net-cords";
   group.userData.matchUseDetailSystem = "match-use-equipment-wear-layer";
   var dynamicNetDetails = [];
 
@@ -875,7 +875,7 @@ export function createGoalAndNet() {
   var netMaterial = new THREE.MeshBasicMaterial({
     color: "#dff8ff",
     transparent: true,
-    opacity: 0.14,
+    opacity: 0.06,
     side: THREE.DoubleSide,
     depthWrite: false,
   });
@@ -922,7 +922,7 @@ export function createGoalAndNet() {
     group.add(haze);
   });
 
-  var gridMaterial = new THREE.LineBasicMaterial({ color: "#f5ffff", transparent: true, opacity: 0.42 });
+  var gridMaterial = new THREE.LineBasicMaterial({ color: "#f5ffff", transparent: true, opacity: 0.24 });
   var linePoints = [];
   for (var x = -RAPIER_GOAL.halfWidth; x <= RAPIER_GOAL.halfWidth + 0.01; x += 0.42) {
     linePoints.push(new THREE.Vector3(x, 0, RAPIER_GOAL.netPlaneZ + 0.09));
@@ -960,14 +960,14 @@ export function createGoalAndNet() {
       { x: ropeX, y: 0.1, z: RAPIER_GOAL.netPlaneZ + 0.118 },
       { x: ropeX + (raisedVerticalIndex % 2 ? -0.018 : 0.018), y: RAPIER_GOAL.height * 0.52, z: RAPIER_GOAL.netPlaneZ + 0.142 },
       { x: ropeX, y: RAPIER_GOAL.height - 0.12, z: RAPIER_GOAL.netPlaneZ + 0.118 },
-    ], 0.0075, 0.42), 0.92, 0.52));
+    ], 0.0075, 0.26), 0.92, 0.52));
   }
   for (var ropeY = 0.42, raisedHorizontalIndex = 0; ropeY <= RAPIER_GOAL.height - 0.32; ropeY += 0.42, raisedHorizontalIndex += 1) {
     group.add(registerDynamicNetDetail(makeRaisedRope("goal-net-raised-horizontal-cord-" + raisedHorizontalIndex, [
       { x: -RAPIER_GOAL.halfWidth + 0.16, y: ropeY, z: RAPIER_GOAL.netPlaneZ + 0.122 },
       { x: 0, y: ropeY + (raisedHorizontalIndex % 2 ? 0.012 : -0.012), z: RAPIER_GOAL.netPlaneZ + 0.148 },
       { x: RAPIER_GOAL.halfWidth - 0.16, y: ropeY, z: RAPIER_GOAL.netPlaneZ + 0.122 },
-    ], 0.0075, 0.4), 0.82, 0.48));
+    ], 0.0075, 0.25), 0.82, 0.48));
   }
   [
     ["top", [
@@ -991,10 +991,10 @@ export function createGoalAndNet() {
       { x: RAPIER_GOAL.halfWidth - 0.08, y: RAPIER_GOAL.height - 0.12, z: RAPIER_GOAL.netPlaneZ + 0.13 },
     ]],
   ].forEach(function addRaisedBorderRope(item) {
-    group.add(registerDynamicNetDetail(makeRaisedRope("goal-net-raised-border-rope-" + item[0], item[1], 0.011, 0.46), 0.72, 0.42));
+    group.add(registerDynamicNetDetail(makeRaisedRope("goal-net-raised-border-rope-" + item[0], item[1], 0.011, 0.31), 0.72, 0.42));
   });
 
-  var diagonalMaterial = new THREE.LineBasicMaterial({ color: "#f7ffff", transparent: true, opacity: 0.32 });
+  var diagonalMaterial = new THREE.LineBasicMaterial({ color: "#f7ffff", transparent: true, opacity: 0.17 });
   function addDiagonalWeave(name, direction) {
     var diagonalPoints = [];
     for (var offset = -RAPIER_GOAL.halfWidth - RAPIER_GOAL.height; offset <= RAPIER_GOAL.halfWidth; offset += 0.64) {
@@ -1014,7 +1014,7 @@ export function createGoalAndNet() {
   addDiagonalWeave("falling", -1);
 
   var sideNetMaterial = netMaterial.clone();
-  sideNetMaterial.opacity = 0.16;
+  sideNetMaterial.opacity = 0.08;
   ["left", "right"].forEach(function addSideNet(side) {
     var sign = side === "left" ? -1 : 1;
     var sideNet = new THREE.Mesh(new THREE.PlaneGeometry(0.95, RAPIER_GOAL.height, 5, 8), sideNetMaterial.clone());
@@ -1316,6 +1316,7 @@ export function createShooterModel() {
   group.userData.launcherStationSystem = "animated-launch-bay-with-ball-feed";
   group.userData.launcherRigSystem = "pro-matchday-machine-rig";
   group.userData.launcherMechanismSystem = "hydraulic-recoil-aiming-cradle";
+  group.userData.launcherReleaseFeedbackSystem = "recoil-exhaust-floor-shock-kit";
   group.userData.matchUseDetailSystem = "launcher-ground-contact-wear-layer";
   group.position.set(0, 0, SHOT_3D.origin.z);
   group.scale.setScalar(1.45);
@@ -1339,6 +1340,29 @@ export function createShooterModel() {
   var operatorAccentMat = new THREE.MeshStandardMaterial({ color: "#ff8b3d", roughness: 0.46, metalness: 0.02 });
   var flashMat = new THREE.MeshBasicMaterial({
     color: "#fff1a8",
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  var exhaustPuffMat = new THREE.MeshBasicMaterial({
+    color: "#dff8ff",
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+  });
+  var floorShockMat = new THREE.MeshBasicMaterial({
+    color: "#fff1a8",
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+  });
+  var releaseDustMat = new THREE.MeshBasicMaterial({
+    color: "#e7d5a7",
     transparent: true,
     opacity: 0,
     depthWrite: false,
@@ -1486,6 +1510,37 @@ export function createShooterModel() {
   muzzleFlash.visible = false;
   recoilSled.add(barrel, ...heatSleeves, muzzle, chargeRing, muzzleFlash);
   turret.add(...recoilRails, ...recoilBuffers, recoilSled);
+
+  var exhaustPuffs = [-1, 1].map((sign) => {
+    var puff = new THREE.Mesh(new THREE.CircleGeometry(0.16, 24), exhaustPuffMat.clone());
+    puff.name = "launcher-exhaust-puff-" + (sign < 0 ? "left" : "right");
+    puff.position.set(sign * 0.24, 1.02, 0.68);
+    puff.rotation.y = sign * 0.28;
+    puff.visible = false;
+    return puff;
+  });
+  var floorShockRing = new THREE.Mesh(new THREE.RingGeometry(0.24, 0.34, 36), floorShockMat.clone());
+  floorShockRing.name = "launcher-floor-shock-ring";
+  floorShockRing.rotation.x = -Math.PI / 2;
+  floorShockRing.position.set(0, 0.026, 0.8);
+  floorShockRing.visible = false;
+  var releaseDustFlecks = [
+    [-0.46, 0.54, -0.08],
+    [-0.26, 0.84, 0.18],
+    [-0.08, 0.62, -0.18],
+    [0.16, 0.86, 0.1],
+    [0.34, 0.58, 0.22],
+    [0.48, 0.76, -0.12],
+  ].map((item, index) => {
+    var fleck = new THREE.Mesh(new THREE.CircleGeometry(0.05, 12), releaseDustMat.clone());
+    fleck.name = "launcher-release-dust-fleck-" + index;
+    fleck.rotation.x = -Math.PI / 2;
+    fleck.rotation.z = item[2];
+    fleck.position.set(item[0], 0.032, item[1]);
+    fleck.scale.set(1.1 + (index % 2) * 0.32, 0.42 + (index % 3) * 0.08, 1);
+    fleck.visible = false;
+    return fleck;
+  });
 
   var wheelLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.105, 28), wheelMat);
   wheelLeft.name = "launcher-wheel-left";
@@ -1672,6 +1727,8 @@ export function createShooterModel() {
     aimRailLeft,
     aimRailRight,
     ...laneChevrons,
+    floorShockRing,
+    ...releaseDustFlecks,
     powerCable,
     controlCable,
     shadow,
@@ -1696,6 +1753,7 @@ export function createShooterModel() {
     ...serviceScrews,
     yawBearing,
     turret,
+    ...exhaustPuffs,
     wheelLeft,
     wheelRight,
     hopper,
@@ -1731,6 +1789,9 @@ export function createShooterModel() {
     kickPad,
     chargeRing,
     muzzleFlash,
+    exhaustPuffs,
+    floorShockRing,
+    releaseDustFlecks,
     statusLight,
     powerLight,
     controlScreen,
@@ -1750,6 +1811,7 @@ export function updateShooterModel(model, director) {
   var activeProgress = director.phase === "live" ? Math.max(0, 1 - liveProgress) : cueProgress;
   var charge = Math.sin(activeProgress * Math.PI);
   var muzzlePulse = director.phase === "live" ? Math.max(0, 1 - liveProgress / 0.2) : 0;
+  var releasePulse = director.phase === "live" ? Math.max(0, 1 - liveProgress / 0.28) : 0;
   var aimYaw = side * (0.08 + charge * 0.045);
   var aimPitch = -0.08 - charge * 0.04;
   var spin = director.phaseTime * (director.phase === "live" ? 32 : 18) + cueProgress * 12;
@@ -1813,6 +1875,25 @@ export function updateShooterModel(model, director) {
   model.muzzleFlash.visible = muzzlePulse > 0.02;
   model.muzzleFlash.material.opacity = model.muzzleFlash.visible ? muzzlePulse * 0.78 : 0;
   model.muzzleFlash.scale.setScalar(0.85 + muzzlePulse * 0.8);
+  if (model.floorShockRing) {
+    model.floorShockRing.visible = releasePulse > 0.03;
+    model.floorShockRing.material.opacity = model.floorShockRing.visible ? releasePulse * 0.22 : 0;
+    model.floorShockRing.scale.setScalar(1 + (1 - releasePulse) * 0.72 + releasePulse * 0.16);
+  }
+  model.exhaustPuffs?.forEach((puff, index) => {
+    var puffPulse = releasePulse * (1 - index * 0.08);
+    puff.visible = puffPulse > 0.03;
+    puff.material.opacity = puff.visible ? Math.min(0.3, puffPulse * 0.28) : 0;
+    puff.scale.setScalar(0.7 + (1 - puffPulse) * 0.46 + puffPulse * 0.36);
+    puff.position.z = 0.68 - (1 - puffPulse) * 0.08;
+  });
+  model.releaseDustFlecks?.forEach((fleck, index) => {
+    var fleckPulse = Math.max(0, releasePulse - index * 0.018);
+    fleck.visible = fleckPulse > 0.025;
+    fleck.material.opacity = fleck.visible ? Math.min(0.18, fleckPulse * (0.14 + (index % 3) * 0.018)) : 0;
+    fleck.scale.x = 1.1 + (index % 2) * 0.32 + (1 - fleckPulse) * 0.45;
+    fleck.scale.y = 0.42 + (index % 3) * 0.08 + (1 - fleckPulse) * 0.2;
+  });
   model.shadow.scale.set(1.5 + charge * 0.08, 0.48 + charge * 0.04, 1);
 }
 

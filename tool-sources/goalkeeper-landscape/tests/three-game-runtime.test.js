@@ -13,9 +13,11 @@ import {
   getLingeringBallDurationForOutcome,
   getNextShotDelayForOutcome,
   getReplayDurationForOutcome,
+  getHudStateForOutcomeHold,
   getAudioCueForContactType,
   getGroundContactAudioEvent,
   getMissMessageForBall,
+  OUTCOME_HUD_HOLD_SECONDS,
   resolveRuntimeDifficulty,
   shouldPlayLingeringGroundAudio,
 } from "../src/game/three-game-runtime.js";
@@ -34,11 +36,57 @@ describe("three game runtime timing", () => {
 
   it("keeps blocked saves visible without making the next shot wait five seconds", () => {
     expect(getLingeringBallDurationForOutcome("save")).toBe(5);
-    expect(getNextShotDelayForOutcome("save")).toBeGreaterThanOrEqual(1);
-    expect(getNextShotDelayForOutcome("save")).toBeLessThanOrEqual(1.4);
+    expect(getNextShotDelayForOutcome("save")).toBeGreaterThanOrEqual(1.25);
+    expect(getNextShotDelayForOutcome("save")).toBeLessThanOrEqual(1.55);
     expect(getNextShotDelayForOutcome("save")).toBeLessThan(getLingeringBallDurationForOutcome("save"));
     expect(getReplayDurationForOutcome("goal")).toBeCloseTo(1.08);
     expect(getReplayDurationForOutcome("miss")).toBeCloseTo(0.58);
+  });
+
+  it("lets outcome HUD feedback retire before the next shot without changing the real score", () => {
+    const saveState = {
+      message: "save",
+      score: 225,
+      saves: 2,
+      conceded: 0,
+      streak: 2,
+      bestStreak: 2,
+      lastSavePoints: 125,
+      ended: false,
+    };
+    const goalState = {
+      ...saveState,
+      message: "goal",
+      score: 225,
+      saves: 2,
+      conceded: 1,
+      streak: 0,
+      lastSavePoints: 0,
+    };
+
+    expect(OUTCOME_HUD_HOLD_SECONDS).toBeGreaterThanOrEqual(0.7);
+    expect(OUTCOME_HUD_HOLD_SECONDS).toBeLessThan(getNextShotDelayForOutcome("save"));
+    expect(getHudStateForOutcomeHold(saveState, "save", OUTCOME_HUD_HOLD_SECONDS - 0.05).message).toBe("save");
+
+    const settledSaveHudState = getHudStateForOutcomeHold(saveState, "save", OUTCOME_HUD_HOLD_SECONDS + 0.08);
+    expect(settledSaveHudState).toMatchObject({
+      message: "play",
+      score: 225,
+      saves: 2,
+      conceded: 0,
+      streak: 2,
+      bestStreak: 2,
+    });
+    expect(settledSaveHudState.lastSavePoints).toBe(0);
+
+    const settledGoalHudState = getHudStateForOutcomeHold(goalState, "goal", OUTCOME_HUD_HOLD_SECONDS + 0.08);
+    expect(settledGoalHudState).toMatchObject({
+      message: "play",
+      score: 225,
+      saves: 2,
+      conceded: 1,
+      streak: 0,
+    });
   });
 
   it("maps frame contacts to a distinct restrained impact sound", () => {

@@ -99,6 +99,14 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.ball.shadowHeightFade).toBeGreaterThanOrEqual(1.2);
   });
 
+  it("keeps the ball visually above the back net near the goal mouth", () => {
+    expect(SCENE_TUNING.ball.netReadabilitySystem).toBe("near-net-ball-priority-halo");
+    expect(SCENE_TUNING.ball.renderOrder).toBeGreaterThanOrEqual(12);
+    expect(SCENE_TUNING.ball.haloRenderOrder).toBeGreaterThanOrEqual(SCENE_TUNING.ball.renderOrder);
+    expect(SCENE_TUNING.ball.nearNetHaloBoost).toBeGreaterThanOrEqual(0.1);
+    expect(SCENE_TUNING.ball.nearNetHaloMaxOpacity).toBeLessThanOrEqual(0.48);
+  });
+
   it("adds close-to-ball spin glints without reintroducing shot helper lines", async () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
 
@@ -339,6 +347,9 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.feedback.cameraShakeFalloff).toBeGreaterThanOrEqual(0.0035);
     expect(SCENE_TUNING.feedback.cameraShakeFalloff).toBeLessThanOrEqual(0.008);
     expect(SCENE_TUNING.feedback.netPulseDecay).toBeGreaterThanOrEqual(0.025);
+    expect(SCENE_TUNING.feedback.netBaseOpacity).toBeLessThanOrEqual(0.07);
+    expect(SCENE_TUNING.feedback.netPulseOpacityBoost).toBeLessThanOrEqual(0.16);
+    expect(SCENE_TUNING.feedback.netRecoilOpacityBoost).toBeLessThanOrEqual(0.12);
     expect(SCENE_TUNING.feedback.netRecoilSystem).toBe("damped-net-spring-rebound");
     expect(SCENE_TUNING.feedback.netRecoilMaxTravel).toBeGreaterThanOrEqual(0.12);
     expect(SCENE_TUNING.feedback.netRecoilMaxTravel).toBeLessThanOrEqual(0.26);

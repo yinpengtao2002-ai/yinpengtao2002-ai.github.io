@@ -70,6 +70,51 @@ function isStrongVelocityChange(previousVelocity, velocity) {
   return length3(delta) > 8 && previousVelocity.z > 4 && velocity.z < previousVelocity.z - 8;
 }
 
+function getGoalLineCrossing(previousPosition, position) {
+  if (!previousPosition || !position) return null;
+  if (previousPosition.z >= RAPIER_GOAL.netPlaneZ || position.z < RAPIER_GOAL.netPlaneZ) return null;
+  var travelZ = position.z - previousPosition.z;
+  var t = Math.abs(travelZ) < 0.0001 ? 1 : clamp((RAPIER_GOAL.netPlaneZ - previousPosition.z) / travelZ, 0, 1);
+  return {
+    x: previousPosition.x + (position.x - previousPosition.x) * t,
+    y: previousPosition.y + (position.y - previousPosition.y) * t,
+    z: RAPIER_GOAL.netPlaneZ,
+  };
+}
+
+function isBallCenterInsideGoalMouth(point) {
+  return Math.abs(point.x) <= RAPIER_GOAL.halfWidth && point.y >= 0 && point.y <= RAPIER_GOAL.height;
+}
+
+function isWholeBallInsideGoalMouth(point, radius) {
+  var margin = Math.max(0.06, radius * 0.9);
+  return Math.abs(point.x) <= RAPIER_GOAL.halfWidth - margin && point.y >= margin && point.y <= RAPIER_GOAL.height - margin;
+}
+
+function getVisualPocketContact(previousPosition, ballPosition, gloveTarget, ballRadius) {
+  if (!previousPosition || !ballPosition || !gloveTarget?.center) return null;
+  var closest = closestPointOnSegment(gloveTarget.center, previousPosition, ballPosition);
+  var delta = subtract3(closest.point, gloveTarget.center);
+  var horizontalReach = GLOVE_3D.spread + GLOVE_3D.colliderRadius + ballRadius * 0.82;
+  var verticalReach = delta.y < 0 ? 0.36 : 0.31;
+  var zReach = ballRadius + 0.08;
+  var normalizedPocket =
+    (delta.x * delta.x) / (horizontalReach * horizontalReach) +
+    (delta.y * delta.y) / (verticalReach * verticalReach);
+
+  if (normalizedPocket > 1 || Math.abs(delta.z) > zReach) return null;
+
+  var planarDistance = Math.hypot(delta.x, delta.y);
+  return {
+    part: { side: "both", part: "visual-pocket", radius: verticalReach },
+    center: gloveTarget.center,
+    point: closest.point,
+    delta: delta,
+    distance: Math.max(planarDistance, Math.abs(delta.z)),
+    limit: Math.max(ballRadius + 0.2, planarDistance + 0.018),
+  };
+}
+
 function createPartOffsets(side) {
   var thumbSide = side === "left" ? 1 : -1;
   var palmRadius = GLOVE_3D.colliderRadius;
@@ -308,6 +353,9 @@ class RapierGoalkeeperWorld {
         };
       }
     });
+    if (!best) {
+      best = getVisualPocketContact(previousPosition, ballPosition, this.gloveTarget, this.ballRadius);
+    }
 
     if (!best) return;
 
@@ -427,13 +475,8 @@ class RapierGoalkeeperWorld {
     if (!this.ballBody) return;
     var position = vector(this.ballBody.translation());
     var velocity = vector(this.ballBody.linvel());
-    var crossedNet =
-      previousPosition &&
-      previousPosition.z < RAPIER_GOAL.netPlaneZ &&
-      position.z >= RAPIER_GOAL.netPlaneZ &&
-      Math.abs(position.x) <= RAPIER_GOAL.halfWidth &&
-      position.y >= 0 &&
-      position.y <= RAPIER_GOAL.height;
+    var goalLineCrossing = getGoalLineCrossing(previousPosition, position);
+    var crossedNet = goalLineCrossing && isBallCenterInsideGoalMouth(goalLineCrossing);
 
     if (this.outcome === "deflected" && crossedNet) {
       this.outcome = "saved";
@@ -446,14 +489,21 @@ class RapierGoalkeeperWorld {
     }
 
     if (this.outcome === "live" && crossedNet) {
+      if (!isWholeBallInsideGoalMouth(goalLineCrossing, this.ballRadius)) {
+        this.outcome = "missed";
+        this.lastContact = {
+          type: "wide",
+          point: goalLineCrossing,
+          strength: Math.abs(velocity.z),
+          reason: "whole-ball-outside-goal-mouth",
+        };
+        return;
+      }
+
       this.outcome = "goal";
       this.lastContact = {
         type: "net",
-        point: {
-          x: position.x,
-          y: position.y,
-          z: RAPIER_GOAL.netPlaneZ,
-        },
+        point: goalLineCrossing,
         strength: Math.abs(velocity.z),
       };
       this.ballBody.setTranslation({ x: position.x, y: position.y, z: RAPIER_GOAL.netPlaneZ }, true);
@@ -482,8 +532,15 @@ class RapierGoalkeeperWorld {
         Math.abs(position.x) > RAPIER_GOAL.halfWidth + 0.55 ||
         position.y > RAPIER_GOAL.height + 0.6 ||
         position.y < -0.35;
+      var travelingAwayFromGoal = velocity.z < -0.8 && position.z < RAPIER_GOAL.glovePlaneZ - 0.25;
       if (escaped && this.deflectionAge > 0.28) {
         this.outcome = "saved";
+      } else if (travelingAwayFromGoal && this.deflectionAge > 0.32) {
+        this.outcome = "saved";
+        this.lastContact = {
+          ...(this.lastContact || {}),
+          saveResolution: "glove-deflected-away-from-goal",
+        };
       }
     }
   }
