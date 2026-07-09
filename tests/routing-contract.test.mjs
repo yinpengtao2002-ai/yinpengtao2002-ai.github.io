@@ -125,7 +125,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
     new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
     "utf8"
   );
-  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-C8JPX_Pk.js", import.meta.url);
+  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-DkJuMNXJ.js", import.meta.url);
   const gameScript = await stat(gameScriptPath);
   const gameScriptSource = await readFile(gameScriptPath, "utf8");
   const gameStylePath = new URL("../public/tools/goalkeeper-landscape/assets/index-C_3_ZRGc.css", import.meta.url);
@@ -137,7 +137,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(goalkeeperPage, /import GoalkeeperLandscapeRuntime/);
   assert.match(goalkeeperPage, /GOALKEEPER_SCRIPT_SRC/);
   assert.match(goalkeeperPage, /GOALKEEPER_STYLESHEET_HREF/);
-  assert.match(goalkeeperRuntime, /index-C8JPX_Pk\.js/);
+  assert.match(goalkeeperRuntime, /index-DkJuMNXJ\.js/);
   assert.match(goalkeeperPage, /index-C_3_ZRGc\.css/);
   assert.match(goalkeeperPage, /<GoalkeeperLandscapeRuntime \/>/);
   assert.match(goalkeeperPage, /弹力手套守门挑战/);
@@ -196,7 +196,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(thinkingClient, /横屏守门挑战/);
   assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-C8JPX_Pk\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-DkJuMNXJ\.js/);
   assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-C_3_ZRGc\.css/);
   assert.match(gameIndex, /id="gameHud"/);
   assert.match(gameIndex, /id="feedbackToast"/);
@@ -378,6 +378,12 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /goal-net-landscape-rear-knot-tuft/);
   assert.match(gameScriptSource, /procedural-match-net-alpha-weave-clear-lane/);
   assert.match(gameScriptSource, /procedural-real-match-net-alpha-texture/);
+  assert.match(gameScriptSource, /wide-open-diamond-cord-alpha/);
+  assert.match(gameScriptSource, /mobile-landscape-center-window/);
+  assert.match(gameScriptSource, /broadcast-safe-rear-mesh-net-clear-mobile-landscape/);
+  assert.match(gameScriptSource, /split-rear-net-around-mobile-shot-window/);
+  assert.match(gameScriptSource, /goal-net-broadcast-rear-mesh-cord/);
+  assert.match(gameScriptSource, /goal-net-broadcast-rear-mesh-knot/);
   assert.match(gameScriptSource, /goal-net-match-alpha-weave-panel/);
   assert.match(gameScriptSource, /goal-net-rear-hex-pocket-thread/);
   assert.match(gameScriptSource, /goal-net-rear-hex-pocket-knot/);

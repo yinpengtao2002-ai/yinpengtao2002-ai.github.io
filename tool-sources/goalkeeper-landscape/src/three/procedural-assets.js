@@ -25,6 +25,8 @@ const NET_PHOTOREAL_TEXTURE_SYSTEM = "braided-hex-rear-pocket-net-clear-lane";
 const NET_LANDSCAPE_SIGHTLINE_SYSTEM = "landscape-keeper-view-real-net-clear-shot-lane";
 const NET_VISUAL_UPGRADE_SYSTEM = "procedural-match-net-alpha-weave-clear-lane";
 const NET_ALPHA_TEXTURE_SYSTEM = "procedural-real-match-net-alpha-texture";
+const NET_BROADCAST_SIGHTLINE_SYSTEM = "broadcast-safe-rear-mesh-net-clear-mobile-landscape";
+const NET_LANE_CUTOUT_SYSTEM = "split-rear-net-around-mobile-shot-window";
 const GLOVE_PBR_MATERIAL_SYSTEM = "pbr-latex-textile-match-glove-materials";
 const GLOVE_LATEX_TEXTURE_SYSTEM = "procedural-latex-micrograin-glove-texture";
 const GLOVE_TEXTILE_TEXTURE_SYSTEM = "procedural-woven-cuff-glove-texture";
@@ -141,20 +143,23 @@ function createNetCordSurfaceMap(kind) {
 function createMatchNetAlphaTexture(variant = "edge") {
   var size = 256;
   var data = new Uint8Array(size * size * 4);
-  var lineGain = variant === "center" ? 118 : 178;
-  var knotGain = variant === "center" ? 58 : 86;
+  var lineGain = variant === "center" ? 46 : 136;
+  var knotGain = variant === "center" ? 18 : 72;
+  var cellX = variant === "center" ? 4.7 : 6.6;
+  var cellY = variant === "center" ? 3.2 : 4.45;
+  var cordWidth = variant === "center" ? 0.021 : 0.027;
 
   for (var y = 0; y < size; y += 1) {
     for (var x = 0; x < size; x += 1) {
       var nx = x / size;
       var ny = y / size;
-      var diagonalA = Math.abs(((nx * 8.5 + ny * 5.25 + 0.08) % 1) - 0.5);
-      var diagonalB = Math.abs(((nx * 8.5 - ny * 5.25 + 0.38) % 1) - 0.5);
-      var cord = Math.exp(-Math.pow(Math.min(diagonalA, diagonalB) / 0.032, 2));
+      var diagonalA = Math.abs(((nx * cellX + ny * cellY + 0.08) % 1) - 0.5);
+      var diagonalB = Math.abs(((nx * cellX - ny * cellY + 0.38) % 1) - 0.5);
+      var cord = Math.exp(-Math.pow(Math.min(diagonalA, diagonalB) / cordWidth, 2));
       var fiber = (Math.sin(x * 0.63 + y * 1.97) * 0.5 + 0.5) * 0.18;
-      var knotGridX = Math.abs(((nx * 8.5 + 0.08) % 1) - 0.5);
-      var knotGridY = Math.abs(((ny * 5.25 + 0.38) % 1) - 0.5);
-      var knot = Math.exp(-((knotGridX * knotGridX + knotGridY * knotGridY) / 0.0048));
+      var knotGridX = Math.abs(((nx * cellX + 0.08) % 1) - 0.5);
+      var knotGridY = Math.abs(((ny * cellY + 0.38) % 1) - 0.5);
+      var knot = Math.exp(-((knotGridX * knotGridX + knotGridY * knotGridY) / (variant === "center" ? 0.0068 : 0.0048)));
       var alpha = Math.min(235, Math.round(cord * lineGain + knot * knotGain));
       var shade = 232 + Math.round((cord + fiber) * 18);
       var index = (y * size + x) * 4;
@@ -168,12 +173,14 @@ function createMatchNetAlphaTexture(variant = "edge") {
   var texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(1.35, 1.08);
+  texture.repeat.set(variant === "center" ? 0.86 : 1.08, variant === "center" ? 0.74 : 0.94);
   texture.magFilter = THREE.LinearFilter;
   texture.minFilter = THREE.LinearFilter;
   texture.needsUpdate = true;
   texture.userData.assetSystem = NET_ALPHA_TEXTURE_SYSTEM;
   texture.userData.netVisualUpgradeSystem = NET_VISUAL_UPGRADE_SYSTEM;
+  texture.userData.alphaMeshPattern = "wide-open-diamond-cord-alpha";
+  texture.userData.visibilityBudget = variant === "center" ? "mobile-landscape-center-window" : "peripheral-rear-pocket-window";
   texture.userData.variant = variant;
   return texture;
 }
@@ -998,6 +1005,8 @@ export function createGoalAndNet() {
   group.userData.netPhotorealTextureSystem = NET_PHOTOREAL_TEXTURE_SYSTEM;
   group.userData.netLandscapeSightlineSystem = NET_LANDSCAPE_SIGHTLINE_SYSTEM;
   group.userData.netVisualUpgradeSystem = NET_VISUAL_UPGRADE_SYSTEM;
+  group.userData.netBroadcastSightlineSystem = NET_BROADCAST_SIGHTLINE_SYSTEM;
+  group.userData.netLaneCutoutSystem = NET_LANE_CUTOUT_SYSTEM;
   group.userData.matchUseDetailSystem = "match-use-equipment-wear-layer";
   var dynamicNetDetails = [];
   var keeperSightline = {
@@ -1011,6 +1020,14 @@ export function createGoalAndNet() {
       Math.abs(point.x) < keeperSightline.halfWidth &&
       point.y > keeperSightline.minY &&
       point.y < keeperSightline.maxY
+    );
+  }
+
+  function isInMobileLandscapeSightline(point) {
+    return (
+      Math.abs(point.x) < 1.34 &&
+      point.y > 0.28 &&
+      point.y < 2.24
     );
   }
 
@@ -1261,6 +1278,17 @@ export function createGoalAndNet() {
     object.userData.netLaneGuardSystem = NET_LANE_GUARD_SYSTEM;
     object.userData.behindShotLane = true;
     object.userData.frontShotLaneOcclusion = 0;
+    return object;
+  }
+  function markBroadcastSightlineNetDetail(object, options = {}) {
+    object.userData.netBroadcastSightlineSystem = NET_BROADCAST_SIGHTLINE_SYSTEM;
+    object.userData.netLandscapeSightlineSystem = NET_LANDSCAPE_SIGHTLINE_SYSTEM;
+    object.userData.netLaneGuardSystem = NET_LANE_GUARD_SYSTEM;
+    object.userData.behindShotLane = true;
+    object.userData.frontShotLaneOcclusion = 0;
+    if (typeof options.crossesKeeperSightline === "boolean") {
+      object.userData.crossesKeeperSightline = options.crossesKeeperSightline;
+    }
     return object;
   }
   function makeMatchWeaveThread(name, points, options = {}) {
@@ -1626,7 +1654,7 @@ export function createGoalAndNet() {
 
       var crossesSightline = points.some((point) => isInKeeperSightline(point));
       var averageSideBias = points.reduce((total, point) => total + Math.abs(point.x) / RAPIER_GOAL.halfWidth, 0) / points.length;
-      var opacity = crossesSightline ? 0.034 + averageSideBias * 0.006 : 0.052 + averageSideBias * 0.028;
+      var opacity = crossesSightline ? 0.016 + averageSideBias * 0.004 : 0.052 + averageSideBias * 0.028;
       var thread = makeMatchWeaveThread(
         "goal-net-match-weave-rear-pocket-thread-" + label + "-" + threadIndex,
         points,
@@ -1660,7 +1688,7 @@ export function createGoalAndNet() {
         y,
         RAPIER_GOAL.netPlaneZ + 0.74 + (rowIndex % 3) * 0.035 + Math.sin(columnIndex * 0.62) * 0.012,
         crossesSightline ? 0.0062 : 0.0095,
-        crossesSightline ? 0.038 : 0.058 + sideBias * 0.022,
+        crossesSightline ? 0.02 : 0.058 + sideBias * 0.022,
         {
           rearPocketLayer: crossesSightline ? "center-depth-detail" : "peripheral-depth-detail",
           behindShotLane: true,
@@ -1682,7 +1710,7 @@ export function createGoalAndNet() {
     var knotIndex = 0;
 
     function addHexThread(points, crossesSightline, sideBias) {
-      var opacity = crossesSightline ? 0.032 + sideBias * 0.004 : 0.052 + sideBias * 0.026;
+      var opacity = crossesSightline ? 0.016 + sideBias * 0.003 : 0.052 + sideBias * 0.026;
       var thread = makeMatchWeaveThread(
         "goal-net-rear-hex-pocket-thread-" + threadIndex,
         points,
@@ -1746,7 +1774,7 @@ export function createGoalAndNet() {
           y,
           RAPIER_GOAL.netPlaneZ + 0.8 + (rowIndex % 3) * 0.026 + Math.sin(columnIndex * 0.58) * 0.012,
           crossesSightline ? 0.0048 : 0.0074,
-          crossesSightline ? 0.034 : 0.046 + sideBias * 0.014,
+          crossesSightline ? 0.02 : 0.046 + sideBias * 0.014,
           {
             rearPocketLayer: crossesSightline ? "center-depth-detail" : "peripheral-depth-detail",
             behindShotLane: true,
@@ -1765,27 +1793,32 @@ export function createGoalAndNet() {
 
   function addLandscapeRearNetTextureLayer() {
     var rowYs = [0.42, 0.74, 1.06, 1.38, 1.7, 2.02].filter((rowY) => rowY < RAPIER_GOAL.height - 0.2);
-    var columnXs = [-2.4, -1.44, -0.48, 0.48, 1.44, 2.4].filter((columnX) => Math.abs(columnX) < RAPIER_GOAL.halfWidth - 0.32);
+    var columnXs = [-2.4, -1.44, 1.44, 2.4].filter((columnX) => Math.abs(columnX) < RAPIER_GOAL.halfWidth - 0.32);
 
     rowYs.forEach(function addLandscapeRearRow(rowY, rowIndex) {
       var rowSag = 0.035 + rowIndex * 0.006;
-      var cord = makeRearPocketRope(
-        "goal-net-landscape-rear-catenary-cord-row-" + rowIndex,
-        [
-          { x: -RAPIER_GOAL.halfWidth + 0.52, y: rowY, z: -0.018 },
-          { x: -RAPIER_GOAL.halfWidth * 0.48, y: rowY - rowSag * 0.62, z: 0.052 },
-          { x: 0, y: rowY - rowSag, z: 0.092 },
-          { x: RAPIER_GOAL.halfWidth * 0.48, y: rowY - rowSag * 0.62, z: 0.052 },
-          { x: RAPIER_GOAL.halfWidth - 0.52, y: rowY, z: -0.018 },
-        ],
-        0.0038,
-        0.046 + rowIndex * 0.007,
-        RAPIER_GOAL.netPlaneZ + 0.58 + (rowIndex % 2) * 0.035,
-      );
-      markLandscapeSightlineNetDetail(cord);
-      cord.userData.rearPocketLayer = "landscape-catenary-depth-detail";
-      cord.userData.crossesKeeperSightline = false;
-      group.add(registerDynamicNetDetail(cord, 0.36, 0.1));
+      [
+        ["left", -RAPIER_GOAL.halfWidth + 0.52, -keeperSightline.halfWidth - 0.24],
+        ["right", keeperSightline.halfWidth + 0.24, RAPIER_GOAL.halfWidth - 0.52],
+      ].forEach(function addSplitRearRow(segment) {
+        var midX = (segment[1] + segment[2]) * 0.5;
+        var cord = makeRearPocketRope(
+          "goal-net-landscape-rear-catenary-cord-row-" + segment[0] + "-" + rowIndex,
+          [
+            { x: segment[1], y: rowY, z: -0.018 },
+            { x: midX, y: rowY - rowSag, z: 0.074 },
+            { x: segment[2], y: rowY - rowSag * 0.58, z: 0.034 },
+          ],
+          0.0038,
+          0.046 + rowIndex * 0.007,
+          RAPIER_GOAL.netPlaneZ + 0.58 + (rowIndex % 2) * 0.035,
+        );
+        markLandscapeSightlineNetDetail(cord);
+        cord.userData.netLaneCutoutSystem = NET_LANE_CUTOUT_SYSTEM;
+        cord.userData.rearPocketLayer = "landscape-catenary-depth-detail";
+        cord.userData.crossesKeeperSightline = false;
+        group.add(registerDynamicNetDetail(cord, 0.36, 0.1));
+      });
     });
 
     columnXs.forEach(function addLandscapeRearColumn(columnX, columnIndex) {
@@ -1802,6 +1835,7 @@ export function createGoalAndNet() {
         RAPIER_GOAL.netPlaneZ + 0.64 + (columnIndex % 3) * 0.025,
       );
       markLandscapeSightlineNetDetail(cord);
+      cord.userData.netLaneCutoutSystem = NET_LANE_CUTOUT_SYSTEM;
       cord.userData.rearPocketLayer = "landscape-catenary-depth-detail";
       cord.userData.crossesKeeperSightline = false;
       group.add(registerDynamicNetDetail(cord, 0.32, 0.08));
@@ -1827,12 +1861,98 @@ export function createGoalAndNet() {
           },
         );
         markLandscapeSightlineNetDetail(knot);
+        knot.userData.netLaneCutoutSystem = NET_LANE_CUTOUT_SYSTEM;
         group.add(registerDynamicNetDetail(knot, 0.18, 0.06));
         tuftIndex += 1;
       });
     });
   }
   addLandscapeRearNetTextureLayer();
+
+  function addBroadcastRearPocketMeshLayer() {
+    var meshWidth = RAPIER_GOAL.halfWidth * 2 - 1.04;
+    var baseLeft = -RAPIER_GOAL.halfWidth + 0.52;
+    var rearBaseZ = RAPIER_GOAL.netPlaneZ + 0.82;
+    var cordIndex = 0;
+
+    function addBroadcastCordSet(label, direction) {
+      var slope = 0.78;
+      for (
+        var offset = -RAPIER_GOAL.halfWidth - RAPIER_GOAL.height * slope;
+        offset <= RAPIER_GOAL.halfWidth + RAPIER_GOAL.height * slope;
+        offset += 0.48
+      ) {
+        var points = [];
+        for (var sample = 0; sample <= 14; sample += 1) {
+          var t = sample / 14;
+          var x = baseLeft + meshWidth * t;
+          var y = direction > 0
+            ? (x - offset) / slope
+            : RAPIER_GOAL.height - (x - offset) / slope;
+          if (y < 0.28 || y > RAPIER_GOAL.height - 0.2) continue;
+          var sideBias = Math.abs(x) / RAPIER_GOAL.halfWidth;
+          var rearSag = Math.sin(t * Math.PI) * (0.075 + sideBias * 0.022);
+          points.push({
+            x: x + Math.sin(sample * 0.52 + cordIndex * 0.31) * 0.01,
+            y: y - rearSag * 0.42,
+            z: 0.02 + rearSag + Math.sin(sample * 0.84 + cordIndex) * 0.012,
+          });
+        }
+        if (points.length < 2) continue;
+
+        var crossesSightline = points.some((point) => isInKeeperSightline(point));
+        var averageSideBias = points.reduce((total, point) => total + Math.abs(point.x) / RAPIER_GOAL.halfWidth, 0) / points.length;
+        var opacity = crossesSightline ? 0.016 + averageSideBias * 0.004 : 0.056 + averageSideBias * 0.042;
+        var cord = makeRearPocketRope(
+          "goal-net-broadcast-rear-mesh-cord-" + label + "-" + cordIndex,
+          points,
+          crossesSightline ? 0.0028 : 0.0039,
+          Math.min(0.112, opacity),
+          rearBaseZ + (cordIndex % 3) * 0.045,
+        );
+        cord.material.color.set(crossesSightline ? "#f7fffb" : "#fffdf2");
+        cord.renderOrder = crossesSightline ? 4 : 5;
+        markBroadcastSightlineNetDetail(cord, { crossesKeeperSightline: crossesSightline });
+        cord.userData.rearPocketLayer = crossesSightline ? "broadcast-center-rear-pocket-mesh" : "broadcast-peripheral-rear-pocket-mesh";
+        group.add(registerDynamicNetDetail(cord, crossesSightline ? 0.22 : 0.36, crossesSightline ? 0.035 : 0.09));
+        cordIndex += 1;
+      }
+    }
+
+    addBroadcastCordSet("rising", 1);
+    addBroadcastCordSet("falling", -1);
+
+    var knotIndex = 0;
+    [0.46, 0.78, 1.1, 1.42, 1.74, 2.06].forEach(function addBroadcastKnotRow(knotY, rowIndex) {
+      [-2.42, -1.74, -1.06, -0.38, 0.38, 1.06, 1.74, 2.42].forEach(function addBroadcastKnotColumn(knotX, columnIndex) {
+        var x = knotX + (rowIndex % 2 ? 0.035 : -0.035);
+        var y = knotY + (columnIndex % 2 ? 0.008 : -0.008);
+        var crossesSightline = isInKeeperSightline({ x, y, z: rearBaseZ + 0.06 });
+        var sideBias = Math.abs(x) / RAPIER_GOAL.halfWidth;
+        var knot = makeMatchWeaveKnot(
+          "goal-net-broadcast-rear-mesh-knot-" + knotIndex,
+          x,
+          y,
+          rearBaseZ + 0.08 + (rowIndex % 3) * 0.026 + sideBias * 0.032,
+          crossesSightline ? 0.0042 : 0.0066,
+          crossesSightline ? 0.016 + sideBias * 0.004 : 0.038 + sideBias * 0.028,
+          {
+            rearPocketLayer: crossesSightline ? "broadcast-center-rear-pocket-mesh" : "broadcast-peripheral-rear-pocket-mesh",
+            behindShotLane: true,
+            crossesKeeperSightline: crossesSightline,
+            frontShotLaneOcclusion: 0,
+            netPhotorealTextureSystem: NET_PHOTOREAL_TEXTURE_SYSTEM,
+            renderOrder: 6,
+          },
+        );
+        knot.material.color.set(crossesSightline ? "#f7fffb" : "#fffdf2");
+        markBroadcastSightlineNetDetail(knot, { crossesKeeperSightline: crossesSightline });
+        group.add(registerDynamicNetDetail(knot, crossesSightline ? 0.12 : 0.22, crossesSightline ? 0.025 : 0.055));
+        knotIndex += 1;
+      });
+    });
+  }
+  addBroadcastRearPocketMeshLayer();
 
   function makeMatchAlphaWeavePanel(name, width, height, x, y, z, opacity, options = {}) {
     var material = new THREE.MeshBasicMaterial({
@@ -1864,7 +1984,7 @@ export function createGoalAndNet() {
   }
 
   [
-    ["center-depth", 2.28, 1.58, 0, 1.24, RAPIER_GOAL.netPlaneZ + 0.86, 0.064, {
+    ["center-depth", 2.28, 1.58, 0, 1.24, RAPIER_GOAL.netPlaneZ + 0.9, 0.02, {
       rearPocketLayer: "center-depth-texture",
       crossesKeeperSightline: true,
       textureVariant: "center",
@@ -1966,26 +2086,32 @@ export function createGoalAndNet() {
   var slackKnotIndex = 0;
   knotRows.forEach(function addSlackKnotRow(knotY, rowIndex) {
     knotColumns.forEach(function addSlackKnot(knotX, columnIndex) {
+      var finalKnotX = knotX + (rowIndex % 2 ? 0.035 : -0.025);
+      var finalKnotY = knotY + (columnIndex % 2 ? -0.012 : 0.012);
       var crossesSightline =
-        Math.abs(knotX) < keeperSightline.halfWidth &&
-        knotY > keeperSightline.minY &&
-        knotY < keeperSightline.maxY;
+        Math.abs(finalKnotX) < keeperSightline.halfWidth &&
+        finalKnotY > keeperSightline.minY &&
+        finalKnotY < keeperSightline.maxY;
       if (crossesSightline) return;
+      var isMobileLandscapeKnot = isInMobileLandscapeSightline({ x: finalKnotX, y: finalKnotY });
       var knotMaterial = raisedRopeMaterial.clone();
-      knotMaterial.opacity = crossesSightline ? 0.024 : 0.078 + Math.abs(knotX) / RAPIER_GOAL.halfWidth * 0.036;
+      knotMaterial.opacity = isMobileLandscapeKnot ? 0.034 : 0.078 + Math.abs(finalKnotX) / RAPIER_GOAL.halfWidth * 0.036;
       knotMaterial.depthWrite = false;
       knotMaterial.transparent = true;
       var knot = new THREE.Mesh(slackKnotGeometry, knotMaterial);
       knot.name = "goal-net-slack-knot-" + slackKnotIndex;
       knot.position.set(
-        knotX + (rowIndex % 2 ? 0.035 : -0.025),
-        knotY + (columnIndex % 2 ? -0.012 : 0.012),
+        finalKnotX,
+        finalKnotY,
         RAPIER_GOAL.netPlaneZ + 0.162 + Math.sin(rowIndex * 0.78 + columnIndex * 0.46) * 0.018,
       );
       knot.scale.setScalar(crossesSightline ? 0.76 : 1);
       knot.renderOrder = 4;
       knot.userData.netProfessionalSystem = NET_PROFESSIONAL_SYSTEM;
       knot.userData.netOcclusionBudgetSystem = NET_OCCLUSION_BUDGET_SYSTEM;
+      if (isMobileLandscapeKnot) {
+        knot.userData.netBroadcastSightlineSystem = NET_BROADCAST_SIGHTLINE_SYSTEM;
+      }
       knot.userData.crossesKeeperSightline = crossesSightline;
       group.add(registerDynamicNetDetail(knot, crossesSightline ? 0.34 : 0.52, crossesSightline ? 0.12 : 0.18));
       slackKnotIndex += 1;
@@ -2104,9 +2230,15 @@ export function createGoalAndNet() {
   for (var weaveKnotIndex = 0; weaveKnotIndex < 10; weaveKnotIndex += 1) {
     var knotX = -RAPIER_GOAL.halfWidth + 0.52 + (weaveKnotIndex % 5) * 1.42;
     var knotY = 0.46 + Math.floor(weaveKnotIndex / 5) * 0.96 + (weaveKnotIndex % 2) * 0.12;
-    var weaveKnot = new THREE.Mesh(new THREE.SphereGeometry(0.018, 8, 6), weaveKnotMaterial.clone());
+    var isMobileLandscapeKnot = isInMobileLandscapeSightline({ x: knotX, y: knotY });
+    var weaveKnotNodeMaterial = weaveKnotMaterial.clone();
+    weaveKnotNodeMaterial.opacity = isMobileLandscapeKnot ? 0.034 : weaveKnotMaterial.opacity;
+    var weaveKnot = new THREE.Mesh(new THREE.SphereGeometry(0.018, 8, 6), weaveKnotNodeMaterial);
     weaveKnot.name = "goal-net-weave-knot-" + weaveKnotIndex;
     weaveKnot.position.set(knotX, knotY, RAPIER_GOAL.netPlaneZ + 0.12);
+    if (isMobileLandscapeKnot) {
+      weaveKnot.userData.netBroadcastSightlineSystem = NET_BROADCAST_SIGHTLINE_SYSTEM;
+    }
     group.add(registerDynamicNetDetail(weaveKnot, 0.76, 0.42));
   }
 

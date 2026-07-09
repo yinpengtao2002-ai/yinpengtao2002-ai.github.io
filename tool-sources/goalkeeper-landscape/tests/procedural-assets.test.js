@@ -919,6 +919,75 @@ describe("procedural 3D assets", () => {
     expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-match-alpha-weave-panel-"))).toBe(true);
   });
 
+  it("adds a broadcast-safe rear pocket rope mesh so the net looks real in mobile landscape without veiling shots", () => {
+    const goal = createGoalAndNet();
+    const rearMeshCords = collectByName(goal.group, /^goal-net-broadcast-rear-mesh-cord-/);
+    const rearMeshKnots = collectByName(goal.group, /^goal-net-broadcast-rear-mesh-knot-/);
+    const centerTexturePanels = collectByName(goal.group, /^goal-net-match-alpha-weave-panel-center-depth$/);
+    const visibleLaneBlockers = [];
+    const worldPosition = new THREE.Vector3();
+
+    goal.group.traverse((node) => {
+      if (!node.name?.startsWith("goal-net-") || !node.material || node.visible === false) return;
+      node.getWorldPosition(worldPosition);
+      const materialList = Array.isArray(node.material) ? node.material : [node.material];
+      const maxOpacity = Math.max(...materialList.map((material) => material.opacity ?? 1));
+      const isInMobileLandscapeShotWindow =
+        Math.abs(worldPosition.x) < 1.34 &&
+        worldPosition.y > 0.28 &&
+        worldPosition.y < 2.24 &&
+        worldPosition.z <= goal.net.position.z + 0.46;
+      if (isInMobileLandscapeShotWindow && maxOpacity > 0.045) {
+        visibleLaneBlockers.push(`${node.name}:${maxOpacity.toFixed(3)}`);
+      }
+    });
+
+    expect(goal.group.userData.netBroadcastSightlineSystem).toBe("broadcast-safe-rear-mesh-net-clear-mobile-landscape");
+    expect(visibleLaneBlockers).toEqual([]);
+    expect(rearMeshCords.length).toBeGreaterThanOrEqual(16);
+    expect(rearMeshKnots.length).toBeGreaterThanOrEqual(18);
+    expect(rearMeshCords.every((cord) => cord.geometry.type === "TubeGeometry")).toBe(true);
+    expect(rearMeshCords.every((cord) => cord.material.userData.netMaterialSystem === "braided-nylon-cord-pbr")).toBe(true);
+    expect(rearMeshCords.every((cord) => cord.material.bumpMap?.userData.assetSystem === "procedural-braided-cord-net-material")).toBe(true);
+    expect([...rearMeshCords, ...rearMeshKnots].every((detail) => detail.userData.netBroadcastSightlineSystem === "broadcast-safe-rear-mesh-net-clear-mobile-landscape")).toBe(true);
+    expect([...rearMeshCords, ...rearMeshKnots].every((detail) => detail.userData.behindShotLane === true)).toBe(true);
+    expect([...rearMeshCords, ...rearMeshKnots].every((detail) => detail.userData.frontShotLaneOcclusion === 0)).toBe(true);
+    expect(rearMeshCords.every((cord) => cord.position.z >= goal.net.position.z + 0.5)).toBe(true);
+    expect(rearMeshCords.every((cord) => cord.material.opacity <= 0.115)).toBe(true);
+    expect(rearMeshKnots.every((knot) => knot.material.transparent && knot.material.opacity <= 0.07)).toBe(true);
+    expect(centerTexturePanels).toHaveLength(1);
+    expect(centerTexturePanels[0].material.opacity).toBeLessThanOrEqual(0.045);
+    expect(centerTexturePanels[0].material.map.userData.alphaMeshPattern).toBe("wide-open-diamond-cord-alpha");
+    expect(centerTexturePanels[0].material.map.userData.visibilityBudget).toBe("mobile-landscape-center-window");
+    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-broadcast-rear-mesh-cord-"))).toBe(true);
+  });
+
+  it("cuts the rear net around the mobile landscape shot window instead of drawing a full center curtain", () => {
+    const goal = createGoalAndNet();
+    const rearCatenaryCords = collectByName(goal.group, /^goal-net-landscape-rear-catenary-cord-/);
+    const rearKnottedTufts = collectByName(goal.group, /^goal-net-landscape-rear-knot-tuft-/);
+    const centerVeilDetails = [];
+
+    goal.group.traverse((node) => {
+      if (!node.name?.startsWith("goal-net-") || !node.material || node.visible === false) return;
+      const materialList = Array.isArray(node.material) ? node.material : [node.material];
+      const maxOpacity = Math.max(...materialList.map((material) => material.opacity ?? 1));
+      const centerTagged =
+        node.userData.crossesKeeperSightline === true ||
+        String(node.userData.rearPocketLayer || "").includes("center");
+      if (centerTagged && maxOpacity > 0.026) {
+        centerVeilDetails.push(`${node.name}:${maxOpacity.toFixed(3)}`);
+      }
+    });
+
+    expect(goal.group.userData.netLaneCutoutSystem).toBe("split-rear-net-around-mobile-shot-window");
+    expect(centerVeilDetails).toEqual([]);
+    expect(rearCatenaryCords.length).toBeGreaterThanOrEqual(12);
+    expect(rearCatenaryCords.every((cord) => cord.userData.netLaneCutoutSystem === "split-rear-net-around-mobile-shot-window")).toBe(true);
+    expect(rearCatenaryCords.every((cord) => cord.userData.crossesKeeperSightline === false)).toBe(true);
+    expect(rearKnottedTufts.every((knot) => Math.abs(knot.position.x) >= 1.34)).toBe(true);
+  });
+
   it("adds assembled goal hardware details so the frame feels manufactured rather than procedural", () => {
     const goal = createGoalAndNet();
 
