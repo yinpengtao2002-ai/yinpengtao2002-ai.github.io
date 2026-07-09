@@ -59,6 +59,7 @@ function createDocument() {
     "resultSummary",
     "resultCoach",
     "feedbackToast",
+    "eventRibbon",
     "matchStatus",
     "pressureCue",
     "matchProgress",
@@ -212,6 +213,47 @@ describe("hud", () => {
     expect(documentRef.elements.feedbackToast.textContent).toBe("偏出");
     expect(documentRef.elements.feedbackToast.classList.contains("is-miss")).toBe(true);
     expect(documentRef.elements.feedbackToast.classList.contains("is-frame")).toBe(false);
+  });
+
+  it("adds a broadcast-style event ribbon for key moments without replacing the play field", () => {
+    expect(HudModule.getEventRibbonPlan).toBeTypeOf("function");
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    const saveState = {
+      ...createGameState(),
+      running: true,
+      message: "save",
+      streak: 1,
+      lastSavePoints: 110,
+    };
+
+    expect(HudModule.getEventRibbonPlan(saveState)).toEqual({
+      visible: true,
+      tone: "save",
+      kicker: "SAVE",
+      text: "+110",
+      marker: "broadcast-event-ribbon-hud",
+    });
+
+    hud.update(saveState, true);
+    expect(documentRef.elements.eventRibbon.dataset.hudSystem).toBe("broadcast-event-ribbon-hud");
+    expect(documentRef.elements.eventRibbon.dataset.tone).toBe("save");
+    expect(documentRef.elements.eventRibbon.textContent).toBe("SAVE +110");
+    expect(documentRef.elements.eventRibbon.classList.contains("is-visible")).toBe(true);
+    expect(documentRef.elements.eventRibbon.classList.contains("is-save")).toBe(true);
+
+    hud.update({ ...saveState, message: "save", streak: 4, lastSavePoints: 180 }, true);
+    expect(documentRef.elements.eventRibbon.dataset.tone).toBe("streak");
+    expect(documentRef.elements.eventRibbon.textContent).toBe("STREAK x4 +180");
+    expect(documentRef.elements.eventRibbon.classList.contains("is-streak")).toBe(true);
+
+    hud.update({ ...saveState, message: "goal", conceded: 4, streak: 0, lastSavePoints: 0 }, true);
+    expect(documentRef.elements.eventRibbon.dataset.tone).toBe("danger");
+    expect(documentRef.elements.eventRibbon.textContent).toBe("DANGER 4/5");
+    expect(documentRef.elements.eventRibbon.classList.contains("is-danger")).toBe(true);
+
+    hud.update({ ...saveState, message: "" }, true);
+    expect(documentRef.elements.eventRibbon.classList.contains("is-visible")).toBe(false);
   });
 
   it("shows match flow states without replacing the playable field", () => {

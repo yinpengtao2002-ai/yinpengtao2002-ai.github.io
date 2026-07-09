@@ -8,6 +8,7 @@ export const ROUND_RESULT_TAGS_MARKER = "round-result-performance-tags";
 export const MATCH_AUDIO_STATUS_MARKER = "match-audio-status-chip";
 export const MATCH_PAUSE_HINT_MARKER = "match-pause-coach-hint";
 export const ROUND_RESULT_COACH_MARKER = "round-result-coach-note";
+export const MATCH_EVENT_RIBBON_MARKER = "broadcast-event-ribbon-hud";
 const LOW_TIME_SECONDS = 10;
 
 function getSecondsLeft(state) {
@@ -112,6 +113,71 @@ export function getPressureCueText(state) {
   return "";
 }
 
+export function getEventRibbonPlan(state) {
+  var empty = {
+    visible: false,
+    tone: "idle",
+    kicker: "",
+    text: "",
+    marker: MATCH_EVENT_RIBBON_MARKER,
+  };
+  if (!state?.running || state.paused || state.ended) return empty;
+
+  if (state.message === "save") {
+    var points = Math.max(0, state.lastSavePoints || 0);
+    if ((state.streak || 0) >= 3) {
+      return {
+        visible: true,
+        tone: "streak",
+        kicker: "STREAK x" + String(state.streak),
+        text: "+" + String(points),
+        marker: MATCH_EVENT_RIBBON_MARKER,
+      };
+    }
+    return {
+      visible: true,
+      tone: "save",
+      kicker: "SAVE",
+      text: "+" + String(points),
+      marker: MATCH_EVENT_RIBBON_MARKER,
+    };
+  }
+
+  if (state.message === "goal") {
+    var conceded = Math.max(0, state.conceded || 0);
+    var danger = conceded >= MAX_CONCEDED - 1;
+    return {
+      visible: true,
+      tone: danger ? "danger" : "goal",
+      kicker: danger ? "DANGER" : "GOAL",
+      text: String(conceded) + "/" + String(MAX_CONCEDED),
+      marker: MATCH_EVENT_RIBBON_MARKER,
+    };
+  }
+
+  if (state.message === "frame") {
+    return {
+      visible: true,
+      tone: "frame",
+      kicker: "POST",
+      text: "REBOUND",
+      marker: MATCH_EVENT_RIBBON_MARKER,
+    };
+  }
+
+  if (state.message === "miss") {
+    return {
+      visible: true,
+      tone: "miss",
+      kicker: "WIDE",
+      text: "RESET",
+      marker: MATCH_EVENT_RIBBON_MARKER,
+    };
+  }
+
+  return empty;
+}
+
 export function getPauseHintText(state) {
   var secondsLeft = getSecondsLeft(state);
   var conceded = state?.conceded || 0;
@@ -184,6 +250,7 @@ export function createHud(documentRef) {
     resultSummary: documentRef.getElementById("resultSummary"),
     resultCoach: documentRef.getElementById("resultCoach"),
     feedbackToast: documentRef.getElementById("feedbackToast"),
+    eventRibbon: documentRef.getElementById("eventRibbon"),
     matchStatus: documentRef.getElementById("matchStatus"),
     pressureCue: documentRef.getElementById("pressureCue"),
     matchProgress: documentRef.getElementById("matchProgress"),
@@ -237,6 +304,20 @@ export function createHud(documentRef) {
     setClass(refs.scoreValue, "is-score-pulse", isSave);
     setClass(refs.streakValue, "is-streak-pop", isStreak);
     setClass(refs.concededValue, "is-danger-pulse", isGoal);
+  }
+
+  function updateEventRibbon(state) {
+    var ribbon = refs.eventRibbon;
+    if (!ribbon) return;
+
+    var plan = getEventRibbonPlan(state);
+    ribbon.dataset.hudSystem = plan.marker;
+    ribbon.dataset.tone = plan.tone;
+    ribbon.textContent = plan.visible ? (plan.kicker + " " + plan.text).trim() : "";
+    setClass(ribbon, "is-visible", plan.visible);
+    ["save", "streak", "goal", "danger", "frame", "miss"].forEach((tone) => {
+      setClass(ribbon, "is-" + tone, plan.visible && plan.tone === tone);
+    });
   }
 
   function getResultReasonText(endReason) {
@@ -389,6 +470,7 @@ export function createHud(documentRef) {
       if (refs.finalRhythmTag) refs.finalRhythmTag.textContent = resultTags[1].value;
       if (refs.finalControlTag) refs.finalControlTag.textContent = resultTags[2].value;
       updateFeedback(state);
+      updateEventRibbon(state);
       updateMatchStatus(state, context);
       updatePressureCue(state);
       updateMatchProgress(state);

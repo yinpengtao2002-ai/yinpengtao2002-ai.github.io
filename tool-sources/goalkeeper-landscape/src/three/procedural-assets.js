@@ -202,14 +202,14 @@ export function updateStadiumScoreboardTexture(texture, plan = getStadiumScorebo
   return scoreboardPlan;
 }
 
-function createTurfMaterial() {
+function createTrainingSurfaceMaterial() {
   var material = new THREE.MeshStandardMaterial({
-    color: "#69bd53",
+    color: "#657476",
     bumpScale: 0,
-    roughness: 0.93,
+    roughness: 0.91,
     metalness: 0,
   });
-  material.userData.materialPipelineSystem = "clean-synthetic-pitch-solid-material";
+  material.userData.materialPipelineSystem = "clean-matte-training-surface-material";
   return material;
 }
 
@@ -401,64 +401,58 @@ function createFallbackFootballTexture() {
 
 export function createFieldGroup() {
   var group = new THREE.Group();
-  group.userData.visualStyle = "standard-football-match-pitch";
+  group.userData.visualStyle = "professional-keeper-training-court";
   group.userData.polishSystem = MATCHDAY_ASSET_POLISH_SYSTEM;
   group.userData.assetSystem = "stylized-reusable-matchday-kit";
   group.userData.materialPipelineSystem = "procedural-pbr-material-stack";
   group.userData.markingSystem = "standard-football-pitch";
-  group.userData.surfaceDetailSystem = "clean-synthetic-pitch-depth-shadows";
-  group.userData.surfaceFinishSystem = "clean-pitch-wear-and-chalk-kit";
+  group.userData.surfaceDetailSystem = "clean-non-grass-training-floor-depth-shadows";
+  group.userData.surfaceFinishSystem = "clean-training-floor-scuff-and-line-kit";
   group.userData.stadiumDressingSystem = "crowd-scoreboard-flags-matchday-dressing";
   group.userData.broadcastDressingSystem = "sideline-camera-light-and-safety-pad-kit";
   group.userData.stadiumScoreboardSystem = STADIUM_SCOREBOARD_DISPLAY_SYSTEM;
-  group.userData.reusableAssetTechnique = "flat-pitch-detail-and-wear-kit";
+  group.userData.reusableAssetTechnique = "flat-training-floor-detail-kit";
   group.userData.matchUseDetailSystem = "match-use-trace-layer";
-  var turf = new THREE.Mesh(
+  group.userData.trainingFacilitySystem = "professional-keeper-training-ground-kit";
+  var surface = new THREE.Mesh(
     new THREE.PlaneGeometry(18, 52, 1, 1),
-    createTurfMaterial(),
+    createTrainingSurfaceMaterial(),
   );
-  turf.name = "field-turf";
-  turf.rotation.x = -Math.PI / 2;
-  turf.position.set(0, -0.025, -14);
-  group.add(turf);
+  surface.name = "field-training-surface";
+  surface.rotation.x = -Math.PI / 2;
+  surface.position.set(0, -0.025, -14);
+  group.add(surface);
 
-  var patchMaterial = new THREE.MeshBasicMaterial({
-    color: "#74c95b",
-    transparent: true,
-    opacity: 0.12,
-    depthWrite: false,
-  });
-  for (var patchIndex = 0; patchIndex < 8; patchIndex += 1) {
-    var patch = new THREE.Mesh(new THREE.CircleGeometry(1, 28), patchMaterial.clone());
-    patch.name = "field-turf-color-variation-patch-" + patchIndex;
-    patch.rotation.x = -Math.PI / 2;
-    patch.rotation.z = patchIndex * 0.37;
-    patch.scale.set(0.72 + (patchIndex % 3) * 0.18, 0.18 + (patchIndex % 4) * 0.06, 1);
-    patch.material.color.set(patchIndex % 2 ? "#4fab4d" : "#a6df70");
-    patch.material.opacity = 0.075 + (patchIndex % 4) * 0.018;
-    patch.position.set(-4.9 + (patchIndex % 4) * 3.2, -0.014, -15.8 + Math.floor(patchIndex / 4) * 8.2);
-    group.add(patch);
+  var panelMaterials = [
+    new THREE.MeshBasicMaterial({ color: "#7b8788", transparent: true, opacity: 0.1, depthWrite: false }),
+    new THREE.MeshBasicMaterial({ color: "#556467", transparent: true, opacity: 0.12, depthWrite: false }),
+  ];
+  for (var panelIndex = 0; panelIndex < 8; panelIndex += 1) {
+    var panel = new THREE.Mesh(new THREE.PlaneGeometry(18, 4.15), panelMaterials[panelIndex % panelMaterials.length]);
+    panel.name = "field-surface-panel-" + panelIndex;
+    panel.rotation.x = -Math.PI / 2;
+    panel.position.set(0, -0.018, -35.8 + panelIndex * 5.35);
+    group.add(panel);
   }
 
-  var stripeMaterial = new THREE.MeshBasicMaterial({ color: "#9ee87d", transparent: true, opacity: 0.14, depthWrite: false });
-  var shadowStripeMaterial = new THREE.MeshBasicMaterial({
-    color: "#3e9845",
+  var seamMaterial = new THREE.MeshBasicMaterial({
+    color: "#dfe9df",
     transparent: true,
-    opacity: 0.1,
+    opacity: 0.11,
     depthWrite: false,
   });
-  for (var i = 0; i < 10; i += 1) {
-    var stripe = new THREE.Mesh(new THREE.PlaneGeometry(18, 2.65), i % 2 ? shadowStripeMaterial : stripeMaterial);
-    stripe.name = "field-mowing-stripe-" + i;
-    stripe.rotation.x = -Math.PI / 2;
-    stripe.position.set(0, -0.018, -38 + i * 5.9);
-    group.add(stripe);
+  for (var seamIndex = 0; seamIndex < 7; seamIndex += 1) {
+    var seam = new THREE.Mesh(new THREE.PlaneGeometry(16.4, 0.035), seamMaterial);
+    seam.name = "field-surface-panel-seam-" + seamIndex;
+    seam.rotation.x = -Math.PI / 2;
+    seam.position.set(0, -0.014, -33.15 + seamIndex * 5.35);
+    group.add(seam);
   }
 
   var depthBandMaterial = new THREE.MeshBasicMaterial({
-    color: "#1f7f42",
+    color: "#34494f",
     transparent: true,
-    opacity: 0.13,
+    opacity: 0.18,
     depthWrite: false,
   });
   [-15.6, -11.8, -8.0, -4.2, -0.4].forEach(function addDepthBand(z, index) {
@@ -470,9 +464,9 @@ export function createFieldGroup() {
   });
 
   var wearMaterial = new THREE.MeshBasicMaterial({
-    color: "#d6c486",
+    color: "#8ea1a2",
     transparent: true,
-    opacity: 0.24,
+    opacity: 0.2,
     depthWrite: false,
   });
   [
@@ -581,7 +575,7 @@ export function createFieldGroup() {
   });
 
   var touchlineShadowMaterial = new THREE.MeshBasicMaterial({
-    color: "#184c2c",
+    color: "#2d3f44",
     transparent: true,
     opacity: 0.16,
     depthWrite: false,
@@ -595,7 +589,7 @@ export function createFieldGroup() {
   });
 
   var mouthShadowMaterial = new THREE.MeshBasicMaterial({
-    color: "#123d24",
+    color: "#283b40",
     transparent: true,
     opacity: 0.18,
     depthWrite: false,
@@ -612,27 +606,27 @@ export function createFieldGroup() {
     group.add(shadow);
   });
 
-  var divotMaterial = new THREE.MeshBasicMaterial({
-    color: "#cab77a",
+  var floorScuffMaterial = new THREE.MeshBasicMaterial({
+    color: "#c9d1ca",
     transparent: true,
-    opacity: 0.2,
+    opacity: 0.16,
     depthWrite: false,
   });
-  for (var divotIndex = 0; divotIndex < 12; divotIndex += 1) {
-    var divot = new THREE.Mesh(new THREE.CircleGeometry(1, 22), divotMaterial.clone());
-    divot.name = "field-divot-scar-" + divotIndex;
-    divot.rotation.x = -Math.PI / 2;
-    divot.rotation.z = (divotIndex % 5) * 0.34;
-    divot.scale.set(0.12 + (divotIndex % 4) * 0.022, 0.032 + (divotIndex % 3) * 0.012, 1);
-    divot.material.opacity = 0.12 + (divotIndex % 4) * 0.025;
-    divot.position.set(-2.9 + (divotIndex % 6) * 1.12, 0.018, 0.8 + Math.floor(divotIndex / 6) * 1.25);
-    group.add(divot);
+  for (var scuffIndex = 0; scuffIndex < 12; scuffIndex += 1) {
+    var floorScuff = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.055), floorScuffMaterial.clone());
+    floorScuff.name = "field-floor-scuff-" + scuffIndex;
+    floorScuff.rotation.x = -Math.PI / 2;
+    floorScuff.rotation.z = (scuffIndex % 5) * 0.21;
+    floorScuff.scale.set(0.7 + (scuffIndex % 4) * 0.12, 0.7 + (scuffIndex % 3) * 0.08, 1);
+    floorScuff.material.opacity = 0.08 + (scuffIndex % 4) * 0.018;
+    floorScuff.position.set(-2.9 + (scuffIndex % 6) * 1.12, 0.018, 0.8 + Math.floor(scuffIndex / 6) * 1.25);
+    group.add(floorScuff);
   }
 
   var shotLaneCompressionMaterial = new THREE.MeshBasicMaterial({
-    color: "#4b8c45",
+    color: "#86a1a4",
     transparent: true,
-    opacity: 0.16,
+    opacity: 0.14,
     depthWrite: false,
   });
   for (var laneWearIndex = 0; laneWearIndex < 7; laneWearIndex += 1) {
@@ -647,9 +641,9 @@ export function createFieldGroup() {
   }
 
   var keeperScuffMaterial = new THREE.MeshBasicMaterial({
-    color: "#d1bd7a",
+    color: "#d6ded8",
     transparent: true,
-    opacity: 0.18,
+    opacity: 0.16,
     depthWrite: false,
   });
   [
@@ -667,20 +661,20 @@ export function createFieldGroup() {
     group.add(scuff);
   });
 
-  var studTearMaterial = new THREE.MeshBasicMaterial({
-    color: "#5b6d32",
+  var bootScuffMaterial = new THREE.MeshBasicMaterial({
+    color: "#93a6a6",
     transparent: true,
-    opacity: 0.2,
+    opacity: 0.14,
     depthWrite: false,
   });
-  for (var studTearIndex = 0; studTearIndex < 10; studTearIndex += 1) {
-    var studTear = new THREE.Mesh(new THREE.PlaneGeometry(0.22 + (studTearIndex % 3) * 0.04, 0.026), studTearMaterial.clone());
-    studTear.name = "field-stud-tear-" + studTearIndex;
-    studTear.rotation.x = -Math.PI / 2;
-    studTear.rotation.z = -0.36 + (studTearIndex % 5) * 0.18;
-    studTear.material.opacity = 0.12 + (studTearIndex % 4) * 0.02;
-    studTear.position.set(-2.3 + (studTearIndex % 5) * 1.15, 0.023, -0.2 - Math.floor(studTearIndex / 5) * 1.26);
-    group.add(studTear);
+  for (var bootScuffIndex = 0; bootScuffIndex < 10; bootScuffIndex += 1) {
+    var bootScuff = new THREE.Mesh(new THREE.PlaneGeometry(0.24 + (bootScuffIndex % 3) * 0.04, 0.022), bootScuffMaterial.clone());
+    bootScuff.name = "field-boot-scuff-" + bootScuffIndex;
+    bootScuff.rotation.x = -Math.PI / 2;
+    bootScuff.rotation.z = -0.36 + (bootScuffIndex % 5) * 0.18;
+    bootScuff.material.opacity = 0.08 + (bootScuffIndex % 4) * 0.018;
+    bootScuff.position.set(-2.3 + (bootScuffIndex % 5) * 1.15, 0.023, -0.2 - Math.floor(bootScuffIndex / 5) * 1.26);
+    group.add(bootScuff);
   }
 
   var chalkDustMaterial = new THREE.MeshBasicMaterial({
@@ -876,6 +870,113 @@ export function createFieldGroup() {
     vignette.position.set(sign * 8.05, 0.62, -11.8);
     vignette.rotation.y = sign > 0 ? -Math.PI / 2 : Math.PI / 2;
     group.add(vignette);
+  });
+
+  var facilityMat = new THREE.MeshStandardMaterial({ color: "#22343b", roughness: 0.58, metalness: 0.04 });
+  var facilityPanelMat = new THREE.MeshStandardMaterial({ color: "#f4f1dc", roughness: 0.62, metalness: 0.01 });
+  var facilityAccentMat = new THREE.MeshBasicMaterial({ color: "#ff8b3d", transparent: true, opacity: 0.88 });
+  var facilityGlowMat = new THREE.MeshBasicMaterial({ color: "#61f0ff", transparent: true, opacity: 0.28, depthWrite: false });
+  [
+    ["left", -1.05, 0.72, -24.36, 0.12, 1.42, 0.12],
+    ["right", 1.05, 0.72, -24.36, 0.12, 1.42, 0.12],
+    ["header", 0, 1.46, -24.36, 2.32, 0.18, 0.12],
+  ].forEach(function addTunnelPart(item) {
+    var part = new THREE.Mesh(new THREE.BoxGeometry(item[4], item[5], item[6]), facilityMat);
+    part.name = "training-ground-tunnel-" + item[0];
+    part.position.set(item[1], item[2], item[3]);
+    group.add(part);
+  });
+  var tunnelGlow = new THREE.Mesh(new THREE.PlaneGeometry(1.82, 1.08), facilityGlowMat);
+  tunnelGlow.name = "training-ground-tunnel-glow";
+  tunnelGlow.position.set(0, 0.86, -24.28);
+  group.add(tunnelGlow);
+
+  var equipmentCart = new THREE.Group();
+  equipmentCart.name = "training-ground-equipment-cart";
+  equipmentCart.position.set(-6.28, 0.12, -5.6);
+  equipmentCart.rotation.y = 0.18;
+  var cartBase = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.16, 0.44), facilityMat);
+  cartBase.name = "training-ground-equipment-cart-base";
+  cartBase.position.set(0, 0.18, 0);
+  var cartBasket = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.32, 0.36), new THREE.MeshBasicMaterial({
+    color: "#f8fff0",
+    transparent: true,
+    opacity: 0.22,
+    wireframe: true,
+  }));
+  cartBasket.name = "training-ground-equipment-cart-basket";
+  cartBasket.position.set(0, 0.43, 0);
+  equipmentCart.add(cartBase, cartBasket);
+  [-0.28, 0.28].forEach(function addCartWheel(x, index) {
+    var wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.045, 14), new THREE.MeshStandardMaterial({ color: "#11191e", roughness: 0.52 }));
+    wheel.name = "training-ground-equipment-cart-wheel-" + index;
+    wheel.rotation.z = Math.PI / 2;
+    wheel.position.set(x, 0.05, 0.22);
+    equipmentCart.add(wheel);
+  });
+  group.add(equipmentCart);
+
+  var spareBallMat = new THREE.MeshStandardMaterial({ color: "#f8f4e7", roughness: 0.42, metalness: 0.01 });
+  for (var spareBallIndex = 0; spareBallIndex < 5; spareBallIndex += 1) {
+    var spareBall = new THREE.Mesh(new THREE.SphereGeometry(0.095, 20, 14), spareBallMat.clone());
+    spareBall.name = "training-ground-spare-ball-" + spareBallIndex;
+    spareBall.position.set(-6.55 + (spareBallIndex % 3) * 0.24, 0.28 + Math.floor(spareBallIndex / 3) * 0.13, -5.72 + (spareBallIndex % 2) * 0.18);
+    group.add(spareBall);
+  }
+
+  var benchSeat = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.08, 0.24), facilityPanelMat);
+  benchSeat.name = "training-ground-coach-bench-seat";
+  benchSeat.position.set(6.1, 0.32, -4.35);
+  var benchBack = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.32, 0.07), facilityMat);
+  benchBack.name = "training-ground-coach-bench-back";
+  benchBack.position.set(6.1, 0.56, -4.48);
+  var benchShadow = new THREE.Mesh(new THREE.CircleGeometry(1, 28), new THREE.MeshBasicMaterial({
+    color: "#10281b",
+    transparent: true,
+    opacity: 0.18,
+    depthWrite: false,
+  }));
+  benchShadow.name = "training-ground-coach-bench-shadow";
+  benchShadow.rotation.x = -Math.PI / 2;
+  benchShadow.scale.set(0.78, 0.18, 1);
+  benchShadow.position.set(6.1, 0.01, -4.28);
+  group.add(benchSeat, benchBack, benchShadow);
+
+  var cooler = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.34, 0.28), new THREE.MeshStandardMaterial({ color: "#61f0ff", roughness: 0.46, metalness: 0.01 }));
+  cooler.name = "training-ground-hydration-cooler";
+  cooler.position.set(5.32, 0.22, -3.82);
+  var coolerLid = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.055, 0.3), facilityPanelMat);
+  coolerLid.name = "training-ground-hydration-cooler-lid";
+  coolerLid.position.set(5.32, 0.42, -3.82);
+  group.add(cooler, coolerLid);
+
+  var tacticBoard = new THREE.Mesh(new THREE.PlaneGeometry(0.78, 0.46), new THREE.MeshBasicMaterial({
+    color: "#f8fff0",
+    transparent: true,
+    opacity: 0.76,
+    side: THREE.DoubleSide,
+  }));
+  tacticBoard.name = "training-ground-tactic-board";
+  tacticBoard.position.set(6.6, 0.76, -3.72);
+  tacticBoard.rotation.y = -0.62;
+  group.add(tacticBoard);
+  for (var tacticDot = 0; tacticDot < 5; tacticDot += 1) {
+    var dot = new THREE.Mesh(new THREE.CircleGeometry(0.025, 12), tacticDot % 2 ? facilityAccentMat.clone() : new THREE.MeshBasicMaterial({ color: "#203f52" }));
+    dot.name = "training-ground-tactic-board-marker-" + tacticDot;
+    dot.position.set(6.6 - 0.23 + tacticDot * 0.095, 0.77 + (tacticDot % 2 ? 0.07 : -0.06), -3.715);
+    dot.rotation.y = -0.62;
+    group.add(dot);
+  }
+
+  [
+    ["left", -4.4],
+    ["right", 4.4],
+  ].forEach(function addIdentityBanner(item) {
+    var banner = new THREE.Mesh(new THREE.PlaneGeometry(1.34, 0.28), facilityAccentMat.clone());
+    banner.name = "training-ground-identity-banner-" + item[0];
+    banner.position.set(item[1], 1.36, -24.18);
+    banner.material.opacity = 0.66;
+    group.add(banner);
   });
 
   return group;

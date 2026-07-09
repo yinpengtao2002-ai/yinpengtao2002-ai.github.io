@@ -76,6 +76,21 @@ describe("responsive layout css", () => {
     expect(css).toContain("max-width: min(680px, calc(100vw - 96px));");
   });
 
+  it("adds an edge-anchored event ribbon and moves mobile controls away from the save lane", () => {
+    const css = readFileSync(stylesPath, "utf8");
+
+    expect(css).toContain("broadcast-event-ribbon-hud");
+    expect(css).toContain(".event-ribbon");
+    expect(css).toContain(".event-ribbon.is-save");
+    expect(css).toContain(".event-ribbon.is-streak");
+    expect(css).toContain(".event-ribbon.is-danger");
+    expect(css).toContain("left: max(clamp(14px, 2.1vw, 34px), env(safe-area-inset-left));");
+    expect(css).toContain("top: max(clamp(68px, 9svh, 104px), calc(env(safe-area-inset-top) + 58px));");
+    expect(css).toContain("match-mobile-corner-controls");
+    expect(css).toContain("grid-template-columns: auto auto;");
+    expect(css).toContain("justify-content: space-between;");
+  });
+
   it("uses playfield-safe start and control docks instead of a center-blocking debug panel", () => {
     const css = readFileSync(stylesPath, "utf8");
 

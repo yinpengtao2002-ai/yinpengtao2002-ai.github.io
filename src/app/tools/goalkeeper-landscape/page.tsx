@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import GoalkeeperLandscapeRuntime, { GOALKEEPER_SCRIPT_SRC } from "./GoalkeeperLandscapeRuntime";
 
-const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-DywLK59F.css";
+const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-CniF0f5A.css";
 
 export const metadata: Metadata = {
   title: "弹力手套守门挑战｜Lucas Yin",
@@ -52,6 +52,7 @@ export default function GoalkeeperLandscapePage() {
             </section>
 
             <div className="feedback-toast" id="feedbackToast" aria-live="polite" />
+            <div className="event-ribbon" id="eventRibbon" data-hud-system="broadcast-event-ribbon-hud" aria-live="polite" />
             <div className="match-status" id="matchStatus" aria-live="polite" />
             <div className="pressure-cue" id="pressureCue" aria-live="polite" />
             <div
