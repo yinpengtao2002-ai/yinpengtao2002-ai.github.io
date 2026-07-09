@@ -125,7 +125,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
     new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
     "utf8"
   );
-  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-3wbfdtI5.js", import.meta.url);
+  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-yh-hc7C6.js", import.meta.url);
   const gameScript = await stat(gameScriptPath);
   const gameScriptSource = await readFile(gameScriptPath, "utf8");
   const gameStylePath = new URL("../public/tools/goalkeeper-landscape/assets/index-C_3_ZRGc.css", import.meta.url);
@@ -137,7 +137,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(goalkeeperPage, /import GoalkeeperLandscapeRuntime/);
   assert.match(goalkeeperPage, /GOALKEEPER_SCRIPT_SRC/);
   assert.match(goalkeeperPage, /GOALKEEPER_STYLESHEET_HREF/);
-  assert.match(goalkeeperRuntime, /index-3wbfdtI5\.js/);
+  assert.match(goalkeeperRuntime, /index-yh-hc7C6\.js/);
   assert.match(goalkeeperPage, /index-C_3_ZRGc\.css/);
   assert.match(goalkeeperPage, /<GoalkeeperLandscapeRuntime \/>/);
   assert.match(goalkeeperPage, /弹力手套守门挑战/);
@@ -196,7 +196,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(thinkingClient, /横屏守门挑战/);
   assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-3wbfdtI5\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-yh-hc7C6\.js/);
   assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-C_3_ZRGc\.css/);
   assert.match(gameIndex, /id="gameHud"/);
   assert.match(gameIndex, /id="feedbackToast"/);
@@ -373,6 +373,9 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /match-grade-woven-net-texture-clear-sightline/);
   assert.match(gameScriptSource, /center-lane-ball-first-net-budget/);
   assert.match(gameScriptSource, /braided-hex-rear-pocket-net-clear-lane/);
+  assert.match(gameScriptSource, /landscape-keeper-view-real-net-clear-shot-lane/);
+  assert.match(gameScriptSource, /goal-net-landscape-rear-catenary-cord/);
+  assert.match(gameScriptSource, /goal-net-landscape-rear-knot-tuft/);
   assert.match(gameScriptSource, /goal-net-rear-hex-pocket-thread/);
   assert.match(gameScriptSource, /goal-net-rear-hex-pocket-knot/);
   assert.match(gameScriptSource, /goal-net-match-weave-rear-pocket-thread/);
@@ -404,6 +407,13 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /goal-net-bottom-weight/);
   assert.match(gameScriptSource, /goal-frame-net-clip/);
   assert.match(gameScriptSource, /stitched-padded-match-glove/);
+  assert.match(gameScriptSource, /pbr-latex-textile-match-glove-materials/);
+  assert.match(gameScriptSource, /procedural-latex-micrograin-glove-texture/);
+  assert.match(gameScriptSource, /procedural-woven-cuff-glove-texture/);
+  assert.match(gameScriptSource, /subtle-match-use-glove-wear/);
+  assert.match(gameScriptSource, /glove-latex-wear-scuff/);
+  assert.match(gameScriptSource, /glove-textile-knit-rib/);
+  assert.match(gameScriptSource, /glove-latex-edge-rolled-seam/);
   assert.match(gameScriptSource, /latex-ridge-and-stitched-fingerback/);
   assert.match(gameScriptSource, /glove-fingerback-protection-ridge/);
   assert.match(gameScriptSource, /glove-latex-grip-ridge/);

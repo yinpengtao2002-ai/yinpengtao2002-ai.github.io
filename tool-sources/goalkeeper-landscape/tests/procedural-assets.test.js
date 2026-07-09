@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 import {
   createFieldGroup,
@@ -262,6 +263,33 @@ describe("procedural 3D assets", () => {
     expect(collectByName(glove, /^glove-highlight-/).length).toBeGreaterThanOrEqual(3);
     expect(collectByName(glove, /^glove-cuff$/)).toHaveLength(1);
     expect(collectByName(glove, /^glove-palm-pad/)).toHaveLength(1);
+  });
+
+  it("uses reusable PBR latex and textile material detail on gloves instead of flat prototype color", () => {
+    const glove = createGloveMesh("right");
+    const palm = collectByName(glove, /^glove-palm-shell$/)[0];
+    const pad = collectByName(glove, /^glove-palm-pad$/)[0];
+    const cuff = collectByName(glove, /^glove-cuff$/)[0];
+    const strap = collectByName(glove, /^glove-wrist-strap-main$/)[0];
+    const scuffs = collectByName(glove, /^glove-latex-wear-scuff-/);
+    const textileRibs = collectByName(glove, /^glove-textile-knit-rib-/);
+    const latexEdges = collectByName(glove, /^glove-latex-edge-rolled-seam-/);
+
+    expect(glove.userData.pbrMaterialSystem).toBe("pbr-latex-textile-match-glove-materials");
+    expect(glove.userData.wearDetailSystem).toBe("subtle-match-use-glove-wear");
+    expect(palm.material.userData.gloveMaterialSystem).toBe("pbr-latex-textile-match-glove-materials");
+    expect(palm.material.bumpMap?.userData.assetSystem).toBe("procedural-latex-micrograin-glove-texture");
+    expect(palm.material.roughnessMap?.userData.assetSystem).toBe("procedural-latex-micrograin-glove-texture");
+    expect(palm.material.bumpScale).toBeGreaterThan(0.004);
+    expect(palm.material.bumpScale).toBeLessThanOrEqual(0.014);
+    expect(pad.material.bumpMap?.userData.assetSystem).toBe("procedural-latex-micrograin-glove-texture");
+    expect(cuff.material.bumpMap?.userData.assetSystem).toBe("procedural-woven-cuff-glove-texture");
+    expect(strap.material.roughnessMap?.userData.assetSystem).toBe("procedural-woven-cuff-glove-texture");
+    expect(scuffs.length).toBeGreaterThanOrEqual(5);
+    expect(scuffs.every((scuff) => scuff.material.transparent && scuff.material.opacity <= 0.18)).toBe(true);
+    expect(textileRibs.length).toBeGreaterThanOrEqual(6);
+    expect(latexEdges.length).toBeGreaterThanOrEqual(4);
+    expect([...textileRibs, ...latexEdges].every((detail) => detail.userData.pbrMaterialSystem === "pbr-latex-textile-match-glove-materials")).toBe(true);
   });
 
   it("uses a plain non-grass training floor without pitch striping", () => {
@@ -800,6 +828,42 @@ describe("procedural 3D assets", () => {
     expect(goal.net.material.opacity).toBeLessThanOrEqual(0.0001);
     expect(goal.grid.visible).toBe(false);
     expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-rear-hex-pocket-thread-"))).toBe(true);
+  });
+
+  it("keeps the landscape keeper view clear while moving realistic net texture into the rear pocket", () => {
+    const goal = createGoalAndNet();
+    const rearCatenaryCords = collectByName(goal.group, /^goal-net-landscape-rear-catenary-cord-/);
+    const rearKnottedTufts = collectByName(goal.group, /^goal-net-landscape-rear-knot-tuft-/);
+    const keeperLaneBlockers = [];
+    const worldPosition = new THREE.Vector3();
+
+    goal.group.traverse((node) => {
+      if (!node.name?.startsWith("goal-net-") || !node.material || node.visible === false) return;
+      node.getWorldPosition(worldPosition);
+      const materialList = Array.isArray(node.material) ? node.material : [node.material];
+      const maxOpacity = Math.max(...materialList.map((material) => material.opacity ?? 1));
+      const isInLandscapeLane =
+        Math.abs(worldPosition.x) < 1.1 &&
+        worldPosition.y > 0.38 &&
+        worldPosition.y < 2.12 &&
+        worldPosition.z <= goal.net.position.z + 0.18;
+      if (isInLandscapeLane && maxOpacity > 0.075) {
+        keeperLaneBlockers.push(`${node.name}:${maxOpacity.toFixed(3)}`);
+      }
+    });
+
+    expect(goal.group.userData.netLandscapeSightlineSystem).toBe("landscape-keeper-view-real-net-clear-shot-lane");
+    expect(keeperLaneBlockers).toEqual([]);
+    expect(rearCatenaryCords.length).toBeGreaterThanOrEqual(8);
+    expect(rearCatenaryCords.every((cord) => cord.geometry.type === "TubeGeometry")).toBe(true);
+    expect(rearCatenaryCords.every((cord) => cord.material.userData.netMaterialSystem === "braided-nylon-cord-pbr")).toBe(true);
+    expect(rearCatenaryCords.every((cord) => cord.material.bumpMap?.userData.assetSystem === "procedural-braided-cord-net-material")).toBe(true);
+    expect(rearCatenaryCords.every((cord) => cord.position.z >= goal.net.position.z + 0.38)).toBe(true);
+    expect(rearCatenaryCords.every((cord) => cord.material.opacity >= 0.04 && cord.material.opacity <= 0.115)).toBe(true);
+    expect(rearKnottedTufts.length).toBeGreaterThanOrEqual(18);
+    expect(rearKnottedTufts.every((knot) => knot.material.transparent && knot.material.opacity <= 0.08)).toBe(true);
+    expect([...rearCatenaryCords, ...rearKnottedTufts].every((detail) => detail.userData.netLaneGuardSystem === "peripheral-net-detail-open-shot-lane")).toBe(true);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-landscape-rear-catenary-cord-"))).toBe(true);
   });
 
   it("adds assembled goal hardware details so the frame feels manufactured rather than procedural", () => {

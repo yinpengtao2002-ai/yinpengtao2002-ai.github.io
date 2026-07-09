@@ -21,6 +21,11 @@ const NET_LANE_GUARD_SYSTEM = "peripheral-net-detail-open-shot-lane";
 const NET_MATCH_GRADE_TEXTURE_SYSTEM = "match-grade-woven-net-texture-clear-sightline";
 const NET_SHOT_LANE_VISIBILITY_SYSTEM = "center-lane-ball-first-net-budget";
 const NET_PHOTOREAL_TEXTURE_SYSTEM = "braided-hex-rear-pocket-net-clear-lane";
+const NET_LANDSCAPE_SIGHTLINE_SYSTEM = "landscape-keeper-view-real-net-clear-shot-lane";
+const GLOVE_PBR_MATERIAL_SYSTEM = "pbr-latex-textile-match-glove-materials";
+const GLOVE_LATEX_TEXTURE_SYSTEM = "procedural-latex-micrograin-glove-texture";
+const GLOVE_TEXTILE_TEXTURE_SYSTEM = "procedural-woven-cuff-glove-texture";
+const GLOVE_WEAR_DETAIL_SYSTEM = "subtle-match-use-glove-wear";
 
 export function getMatchdayAssetPolishProfile() {
   return {
@@ -157,6 +162,48 @@ function createFootballSurfaceMap(kind) {
     if (kind === "roughness") return seam ? 238 : 158 + panel * 44 + noise * 22;
     return seam ? 228 : 118 + panel * 46 + noise * 32;
   });
+}
+
+function createGloveLatexSurfaceMap(kind) {
+  var texture = createSurfaceDetailTexture(128, (x, y, size) => {
+    var nx = x / size;
+    var ny = y / size;
+    var grain = Math.sin(x * 17.13 + y * 31.71) * 0.5 + 0.5;
+    var pore = Math.sin((nx * 42 + Math.sin(ny * 8) * 0.35) * Math.PI * 2) * 0.5 + 0.5;
+    var gripWave = Math.sin((ny * 18 + Math.sin(nx * 6) * 0.28) * Math.PI * 2) * 0.5 + 0.5;
+    if (kind === "roughness") return 156 + grain * 34 + pore * 28;
+    if (kind === "bump") return 118 + gripWave * 72 + grain * 24;
+    return 208 + grain * 22 + pore * 18;
+  }, 3.2, 3.2);
+  texture.userData.assetSystem = GLOVE_LATEX_TEXTURE_SYSTEM;
+  texture.userData.surfaceKind = kind;
+  return texture;
+}
+
+function createGloveTextileSurfaceMap(kind) {
+  var texture = createSurfaceDetailTexture(128, (x, y, size) => {
+    var nx = x / size;
+    var ny = y / size;
+    var warp = Math.sin(nx * Math.PI * 2 * 20) * 0.5 + 0.5;
+    var weft = Math.sin(ny * Math.PI * 2 * 14) * 0.5 + 0.5;
+    var twill = Math.sin((nx * 10 + ny * 10) * Math.PI * 2) * 0.5 + 0.5;
+    if (kind === "roughness") return 182 + (1 - twill) * 38 + weft * 22;
+    if (kind === "bump") return 104 + Math.max(warp, weft) * 86 + twill * 20;
+    return 178 + warp * 18 + weft * 16;
+  }, 2.4, 1.8);
+  texture.userData.assetSystem = GLOVE_TEXTILE_TEXTURE_SYSTEM;
+  texture.userData.surfaceKind = kind;
+  return texture;
+}
+
+function applyGloveMaterialMaps(material, surface, bumpScale) {
+  var latex = surface === "latex";
+  material.bumpMap = latex ? createGloveLatexSurfaceMap("bump") : createGloveTextileSurfaceMap("bump");
+  material.roughnessMap = latex ? createGloveLatexSurfaceMap("roughness") : createGloveTextileSurfaceMap("roughness");
+  material.bumpScale = bumpScale;
+  material.userData.gloveMaterialSystem = GLOVE_PBR_MATERIAL_SYSTEM;
+  material.userData.gloveSurfaceTextureSystem = latex ? GLOVE_LATEX_TEXTURE_SYSTEM : GLOVE_TEXTILE_TEXTURE_SYSTEM;
+  return material;
 }
 
 function createFallbackScoreboardTexture(plan) {
@@ -851,6 +898,7 @@ export function createGoalAndNet() {
   group.userData.netMatchGradeTextureSystem = NET_MATCH_GRADE_TEXTURE_SYSTEM;
   group.userData.netShotLaneVisibilitySystem = NET_SHOT_LANE_VISIBILITY_SYSTEM;
   group.userData.netPhotorealTextureSystem = NET_PHOTOREAL_TEXTURE_SYSTEM;
+  group.userData.netLandscapeSightlineSystem = NET_LANDSCAPE_SIGHTLINE_SYSTEM;
   group.userData.matchUseDetailSystem = "match-use-equipment-wear-layer";
   var dynamicNetDetails = [];
   var keeperSightline = {
@@ -1107,6 +1155,13 @@ export function createGoalAndNet() {
     if (typeof options.crossesKeeperSightline === "boolean") {
       object.userData.crossesKeeperSightline = options.crossesKeeperSightline;
     }
+    return object;
+  }
+  function markLandscapeSightlineNetDetail(object) {
+    object.userData.netLandscapeSightlineSystem = NET_LANDSCAPE_SIGHTLINE_SYSTEM;
+    object.userData.netLaneGuardSystem = NET_LANE_GUARD_SYSTEM;
+    object.userData.behindShotLane = true;
+    object.userData.frontShotLaneOcclusion = 0;
     return object;
   }
   function makeMatchWeaveThread(name, points, options = {}) {
@@ -1609,6 +1664,77 @@ export function createGoalAndNet() {
   }
   addRearHexPocketLayer();
 
+  function addLandscapeRearNetTextureLayer() {
+    var rowYs = [0.42, 0.74, 1.06, 1.38, 1.7, 2.02].filter((rowY) => rowY < RAPIER_GOAL.height - 0.2);
+    var columnXs = [-2.4, -1.44, -0.48, 0.48, 1.44, 2.4].filter((columnX) => Math.abs(columnX) < RAPIER_GOAL.halfWidth - 0.32);
+
+    rowYs.forEach(function addLandscapeRearRow(rowY, rowIndex) {
+      var rowSag = 0.035 + rowIndex * 0.006;
+      var cord = makeRearPocketRope(
+        "goal-net-landscape-rear-catenary-cord-row-" + rowIndex,
+        [
+          { x: -RAPIER_GOAL.halfWidth + 0.52, y: rowY, z: -0.018 },
+          { x: -RAPIER_GOAL.halfWidth * 0.48, y: rowY - rowSag * 0.62, z: 0.052 },
+          { x: 0, y: rowY - rowSag, z: 0.092 },
+          { x: RAPIER_GOAL.halfWidth * 0.48, y: rowY - rowSag * 0.62, z: 0.052 },
+          { x: RAPIER_GOAL.halfWidth - 0.52, y: rowY, z: -0.018 },
+        ],
+        0.0038,
+        0.046 + rowIndex * 0.007,
+        RAPIER_GOAL.netPlaneZ + 0.58 + (rowIndex % 2) * 0.035,
+      );
+      markLandscapeSightlineNetDetail(cord);
+      cord.userData.rearPocketLayer = "landscape-catenary-depth-detail";
+      cord.userData.crossesKeeperSightline = false;
+      group.add(registerDynamicNetDetail(cord, 0.36, 0.1));
+    });
+
+    columnXs.forEach(function addLandscapeRearColumn(columnX, columnIndex) {
+      var sideBias = Math.abs(columnX) / RAPIER_GOAL.halfWidth;
+      var cord = makeRearPocketRope(
+        "goal-net-landscape-rear-catenary-cord-column-" + columnIndex,
+        [
+          { x: columnX, y: 0.34, z: -0.026 },
+          { x: columnX + Math.sin(columnIndex * 0.9) * 0.025, y: 1.18, z: 0.074 + sideBias * 0.018 },
+          { x: columnX + Math.cos(columnIndex * 0.7) * 0.018, y: RAPIER_GOAL.height - 0.22, z: -0.012 },
+        ],
+        0.0035,
+        0.043 + sideBias * 0.026,
+        RAPIER_GOAL.netPlaneZ + 0.64 + (columnIndex % 3) * 0.025,
+      );
+      markLandscapeSightlineNetDetail(cord);
+      cord.userData.rearPocketLayer = "landscape-catenary-depth-detail";
+      cord.userData.crossesKeeperSightline = false;
+      group.add(registerDynamicNetDetail(cord, 0.32, 0.08));
+    });
+
+    var tuftIndex = 0;
+    rowYs.slice(0, 5).forEach(function addLandscapeTuftRow(rowY, rowIndex) {
+      columnXs.forEach(function addLandscapeTuft(columnX, columnIndex) {
+        var sideBias = Math.abs(columnX) / RAPIER_GOAL.halfWidth;
+        var knot = makeMatchWeaveKnot(
+          "goal-net-landscape-rear-knot-tuft-" + tuftIndex,
+          columnX + (rowIndex % 2 ? 0.045 : -0.035),
+          rowY + (columnIndex % 2 ? 0.01 : -0.01),
+          RAPIER_GOAL.netPlaneZ + 0.62 + (rowIndex % 3) * 0.035 + sideBias * 0.04,
+          0.0048 + sideBias * 0.0012,
+          0.034 + sideBias * 0.034,
+          {
+            rearPocketLayer: "landscape-knotted-depth-detail",
+            behindShotLane: true,
+            crossesKeeperSightline: false,
+            frontShotLaneOcclusion: 0,
+            netPhotorealTextureSystem: NET_PHOTOREAL_TEXTURE_SYSTEM,
+          },
+        );
+        markLandscapeSightlineNetDetail(knot);
+        group.add(registerDynamicNetDetail(knot, 0.18, 0.06));
+        tuftIndex += 1;
+      });
+    });
+  }
+  addLandscapeRearNetTextureLayer();
+
   [
     ["top-left", [
       { x: -RAPIER_GOAL.halfWidth + 0.18, y: RAPIER_GOAL.height - 0.03, z: RAPIER_GOAL.netPlaneZ + 0.16 },
@@ -1748,7 +1874,7 @@ export function createGoalAndNet() {
     });
   });
 
-  var cordMaterial = new THREE.MeshBasicMaterial({ color: "#f5fffb", transparent: true, opacity: 0.68 });
+  var cordMaterial = new THREE.MeshBasicMaterial({ color: "#f5fffb", transparent: true, opacity: 0.32, depthWrite: false });
   [
     ["top-left", -RAPIER_GOAL.halfWidth, RAPIER_GOAL.height, RAPIER_GOAL.netPlaneZ, -RAPIER_GOAL.halfWidth - 0.42, 0.18, RAPIER_GOAL.netPlaneZ + 0.92],
     ["top-right", RAPIER_GOAL.halfWidth, RAPIER_GOAL.height, RAPIER_GOAL.netPlaneZ, RAPIER_GOAL.halfWidth + 0.42, 0.18, RAPIER_GOAL.netPlaneZ + 0.92],
@@ -1774,7 +1900,7 @@ export function createGoalAndNet() {
   var rearWeightCordMaterial = new THREE.LineBasicMaterial({
     color: "#f5fffb",
     transparent: true,
-    opacity: 0.54,
+    opacity: 0.28,
   });
   var rearWeightCord = new THREE.Line(
     new THREE.BufferGeometry().setFromPoints([
@@ -1800,7 +1926,11 @@ export function createGoalAndNet() {
     group.add(registerDynamicNetDetail(sleeve, 0.42, 0.22));
   });
 
-  var weaveKnotMaterial = new THREE.MeshBasicMaterial({ color: "#fafff7", transparent: true, opacity: 0.54 });
+  var weaveKnotMaterial = raisedRopeMaterial.clone();
+  weaveKnotMaterial.color.set("#fafff7");
+  weaveKnotMaterial.opacity = 0.056;
+  weaveKnotMaterial.depthWrite = false;
+  weaveKnotMaterial.transparent = true;
   for (var weaveKnotIndex = 0; weaveKnotIndex < 10; weaveKnotIndex += 1) {
     var knotX = -RAPIER_GOAL.halfWidth + 0.52 + (weaveKnotIndex % 5) * 1.42;
     var knotY = 0.46 + Math.floor(weaveKnotIndex / 5) * 0.96 + (weaveKnotIndex % 2) * 0.12;
@@ -1822,8 +1952,9 @@ export function createGoalAndNet() {
   var strapMaterial = new THREE.MeshBasicMaterial({
     color: "#fff6d8",
     transparent: true,
-    opacity: 0.7,
+    opacity: 0.5,
     side: THREE.DoubleSide,
+    depthWrite: false,
   });
   for (var strapIndex = 0; strapIndex < 10; strapIndex += 1) {
     var topStrap = strapIndex < 5;
@@ -2670,6 +2801,8 @@ export function createGloveMesh(side) {
   group.userData.polishSystem = MATCHDAY_ASSET_POLISH_SYSTEM;
   group.userData.materialSystem = "stitched-padded-match-glove";
   group.userData.gripSystem = "latex-ridge-and-stitched-fingerback";
+  group.userData.pbrMaterialSystem = GLOVE_PBR_MATERIAL_SYSTEM;
+  group.userData.wearDetailSystem = GLOVE_WEAR_DETAIL_SYSTEM;
   var palmMat = new THREE.MeshStandardMaterial({
     color: side === "left" ? "#ff6339" : "#ff7244",
     roughness: 0.42,
@@ -2680,10 +2813,36 @@ export function createGloveMesh(side) {
   var highlightMat = new THREE.MeshBasicMaterial({ color: "#fff0c8", transparent: true, opacity: 0.62 });
   var trimMat = new THREE.MeshStandardMaterial({ color: "#1c2528", roughness: 0.5 });
   var cuffTrimMat = new THREE.MeshStandardMaterial({ color: "#ff7543", roughness: 0.44 });
+  applyGloveMaterialMaps(palmMat, "latex", 0.008);
+  applyGloveMaterialMaps(padMat, "latex", 0.006);
+  applyGloveMaterialMaps(seamMat, "latex", 0.0045);
+  applyGloveMaterialMaps(trimMat, "textile", 0.01);
+  applyGloveMaterialMaps(cuffTrimMat, "textile", 0.007);
 
   var palm = makeRoundedPart("glove-palm-shell", 0.38, 0.43, 0.085, 0.12, palmMat, 0, 0, 0);
   var pad = makeRoundedPart("glove-palm-pad", 0.27, 0.28, 0.06, 0.026, padMat, 0, -0.005, 0.07);
   group.add(palm, pad);
+
+  [
+    ["top", 0, 0.236, 0.093, 0.31, 0.018],
+    ["bottom", 0, -0.198, 0.094, 0.29, 0.016],
+    ["left", -0.194, 0.01, 0.092, 0.018, 0.35],
+    ["right", 0.194, 0.01, 0.092, 0.018, 0.35],
+  ].forEach(function addRolledLatexEdge(item) {
+    var edge = makeRoundedPart(
+      "glove-latex-edge-rolled-seam-" + item[0],
+      item[4],
+      item[5],
+      0.01,
+      0.014,
+      seamMat,
+      item[1],
+      item[2],
+      item[3],
+    );
+    edge.userData.pbrMaterialSystem = GLOVE_PBR_MATERIAL_SYSTEM;
+    group.add(edge);
+  });
 
   for (var i = 0; i < 4; i += 1) {
     var finger = new THREE.Mesh(new THREE.CapsuleGeometry(0.043, 0.16, 8, 14), palmMat);
@@ -2748,6 +2907,29 @@ export function createGloveMesh(side) {
     group.add(grip);
   }
 
+  var scuffMaterial = new THREE.MeshBasicMaterial({
+    color: "#fff1d6",
+    transparent: true,
+    opacity: 0.13,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  [
+    [-0.11, 0.055, 0.082, 0.038, 0.012, -0.32],
+    [0.055, 0.032, 0.104, 0.05, 0.012, 0.18],
+    [0.108, -0.074, 0.092, 0.042, 0.01, -0.14],
+    [-0.046, -0.128, 0.108, 0.052, 0.011, 0.28],
+    [0.012, 0.17, 0.102, 0.045, 0.01, -0.08],
+  ].forEach(function addLatexWearScuff(item, scuffIndex) {
+    var scuff = new THREE.Mesh(new THREE.PlaneGeometry(item[3], item[4]), scuffMaterial.clone());
+    scuff.name = "glove-latex-wear-scuff-" + scuffIndex;
+    scuff.material.opacity = 0.09 + (scuffIndex % 3) * 0.025;
+    scuff.position.set(item[0], item[1], item[2]);
+    scuff.rotation.z = item[5];
+    scuff.userData.wearDetailSystem = GLOVE_WEAR_DETAIL_SYSTEM;
+    group.add(scuff);
+  });
+
   [
     ["palm-sheen-a", -0.085, 0.07, 0.09],
     ["palm-sheen-b", 0.055, -0.055, 0.078],
@@ -2761,6 +2943,15 @@ export function createGloveMesh(side) {
 
   var wrist = makeRoundedPart("glove-cuff", 0.36, 0.105, 0.026, 0.12, trimMat, 0, -0.285, 0.002);
   group.add(wrist);
+
+  for (var ribIndex = 0; ribIndex < 7; ribIndex += 1) {
+    var rib = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.09, 0.008), cuffTrimMat);
+    rib.name = "glove-textile-knit-rib-" + ribIndex;
+    rib.position.set(-0.145 + ribIndex * 0.048, -0.286, 0.068);
+    rib.rotation.z = (ribIndex - 3) * 0.018;
+    rib.userData.pbrMaterialSystem = GLOVE_PBR_MATERIAL_SYSTEM;
+    group.add(rib);
+  }
 
   var cuffTrim = new THREE.Mesh(new THREE.BoxGeometry(0.31, 0.018, 0.126), cuffTrimMat);
   cuffTrim.name = "glove-cuff-trim";
