@@ -109,9 +109,9 @@ describe("goalkeeper 3D scene tuning", () => {
 
   it("keeps runtime net feedback below the ball-first occlusion budget", () => {
     expect(SCENE_TUNING.feedback.netBaseOpacity).toBeLessThanOrEqual(0.0001);
-    expect(SCENE_TUNING.feedback.netPulseOpacityBoost).toBeLessThanOrEqual(0.014);
-    expect(SCENE_TUNING.feedback.netRecoilOpacityBoost).toBeLessThanOrEqual(0.01);
-    expect(SCENE_TUNING.feedback.dynamicNetDetailOpacityBoost).toBeLessThanOrEqual(0.13);
+    expect(SCENE_TUNING.feedback.netPulseOpacityBoost).toBeLessThanOrEqual(0.0001);
+    expect(SCENE_TUNING.feedback.netRecoilOpacityBoost).toBeLessThanOrEqual(0.0001);
+    expect(SCENE_TUNING.feedback.dynamicNetDetailOpacityBoost).toBeLessThanOrEqual(0.08);
   });
 
   it("adds close-to-ball spin glints without reintroducing shot helper lines", async () => {

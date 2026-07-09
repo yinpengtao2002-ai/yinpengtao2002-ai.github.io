@@ -581,17 +581,20 @@ describe("procedural 3D assets", () => {
     expect(sideNets.every((net) => net.material.opacity <= 0.0001)).toBe(true);
     expect(raisedCords.every((cord) => cord.material.opacity >= 0.07 && cord.material.opacity <= 0.16)).toBe(true);
     expect(borderRopes.every((rope) => rope.material.opacity >= 0.24 && rope.material.opacity <= 0.28)).toBe(true);
-    expect(diagonalWeave.every((weave) => weave.material.opacity >= 0.014 && weave.material.opacity <= 0.026)).toBe(true);
+    expect(diagonalWeave.every((weave) => weave.material.opacity >= 0.004 && weave.material.opacity <= 0.01)).toBe(true);
   });
 
   it("uses an open diamond rope net instead of a translucent curtain in the goal mouth", () => {
     const goal = createGoalAndNet();
     const diamondRopes = collectByName(goal.group, /^goal-net-open-diamond-rope-/);
+    const crossingRopes = diamondRopes.filter((rope) => rope.userData.crossesKeeperSightline);
+    const peripheralRopes = diamondRopes.filter((rope) => !rope.userData.crossesKeeperSightline);
 
     expect(goal.group.userData.netRealismSystem).toBe("open-diamond-rope-net-ball-first");
     expect(diamondRopes.length).toBeGreaterThanOrEqual(12);
     expect(diamondRopes.every((rope) => rope.geometry.type === "TubeGeometry")).toBe(true);
-    expect(diamondRopes.every((rope) => rope.material.opacity >= 0.03 && rope.material.opacity <= 0.14)).toBe(true);
+    expect(crossingRopes.every((rope) => rope.material.opacity <= 0.012)).toBe(true);
+    expect(peripheralRopes.every((rope) => rope.material.opacity >= 0.09 && rope.material.opacity <= 0.14)).toBe(true);
     expect(diamondRopes.every((rope) => rope.material.depthWrite === false)).toBe(true);
     expect(goal.net.material.opacity).toBeLessThanOrEqual(0.0001);
     expect(goal.grid.material.opacity).toBeLessThanOrEqual(0.008);
@@ -618,6 +621,39 @@ describe("procedural 3D assets", () => {
     expect(peripheralRopes.some((rope) => rope.material.opacity >= 0.12)).toBe(true);
     expect(diamondRopes.every((rope) => rope.material.userData.netMaterialSystem === "braided-nylon-cord-pbr")).toBe(true);
     expect(diamondRopes.every((rope) => rope.material.bumpMap?.userData.assetSystem === "procedural-braided-cord-net-material")).toBe(true);
+  });
+
+  it("builds a slack knotted pro net without covering the central shot lane", () => {
+    const goal = createGoalAndNet();
+    const diamondRopes = collectByName(goal.group, /^goal-net-open-diamond-rope-/);
+    const crossingRopes = diamondRopes.filter((rope) => rope.userData.crossesKeeperSightline);
+    const peripheralRopes = diamondRopes.filter((rope) => !rope.userData.crossesKeeperSightline);
+    const slackKnots = collectByName(goal.group, /^goal-net-slack-knot-/);
+    const topSagCords = collectByName(goal.group, /^goal-net-top-sag-cord-/);
+    const rearPocketSagCords = collectByName(goal.group, /^goal-net-rear-pocket-sag-cord-/);
+    const sideReturnCords = collectByName(goal.group, /^goal-net-side-return-cord-/);
+    const diagonalDetails = goal.dynamicNetDetails.filter((detail) => detail.name.startsWith("goal-net-diagonal-weave-"));
+    const sidePlaneDetails = goal.dynamicNetDetails.filter((detail) => /^goal-net-side-(left|right)$/.test(detail.name));
+
+    expect(goal.group.userData.netProfessionalSystem).toBe("slack-knotted-pro-goal-net");
+    expect(goal.group.userData.netOcclusionBudgetSystem).toBe("keeper-view-low-opacity-center-window");
+    expect(goal.grid.visible).toBe(false);
+    expect(goal.grid.material.opacity).toBeLessThanOrEqual(0.001);
+    expect(crossingRopes.length).toBeGreaterThan(0);
+    expect(crossingRopes.every((rope) => rope.material.opacity <= 0.012)).toBe(true);
+    expect(crossingRopes.every((rope) => rope.userData.ropeRadius <= 0.0036)).toBe(true);
+    expect(peripheralRopes.some((rope) => rope.material.opacity >= 0.09 && rope.material.opacity <= 0.128)).toBe(true);
+    expect(slackKnots.length).toBeGreaterThanOrEqual(18);
+    expect(slackKnots.every((knot) => knot.userData.netProfessionalSystem === "slack-knotted-pro-goal-net")).toBe(true);
+    expect(slackKnots.every((knot) => knot.material.transparent && knot.material.opacity <= 0.13)).toBe(true);
+    expect(topSagCords).toHaveLength(1);
+    expect(rearPocketSagCords.length).toBeGreaterThanOrEqual(2);
+    expect(sideReturnCords.length).toBeGreaterThanOrEqual(4);
+    expect([...topSagCords, ...rearPocketSagCords, ...sideReturnCords].every((rope) => rope.geometry.type === "TubeGeometry")).toBe(true);
+    expect(diagonalDetails.length).toBeGreaterThanOrEqual(2);
+    expect(diagonalDetails.every((detail) => detail.opacityScale <= 0.16)).toBe(true);
+    expect(sidePlaneDetails).toHaveLength(2);
+    expect(sidePlaneDetails.every((detail) => detail.opacityScale === 0)).toBe(true);
   });
 
   it("adds assembled goal hardware details so the frame feels manufactured rather than procedural", () => {
