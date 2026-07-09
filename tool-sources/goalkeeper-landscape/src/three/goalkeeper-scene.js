@@ -184,6 +184,11 @@ export const SCENE_TUNING = {
     savePressureArcCount: 3,
     savePressureMaxOpacity: 0.48,
     savePressureDecay: 0.064,
+    saveContactShockwaveSystem: "close-contact-glove-ball-shockwave",
+    saveContactShockwaveCount: 3,
+    saveContactShockwaveMaxOpacity: 0.3,
+    saveContactShockwaveMaxRadius: 0.42,
+    saveContactShockwaveDecay: 0.07,
     netRippleLineCount: 5,
     netRippleMaxOpacity: 0.34,
     netRippleAssetSystem: "localized-net-ripple",
@@ -698,6 +703,50 @@ export function getSaveContactPressurePlan(contact, gloves, tuning = SCENE_TUNIN
         rotation: sweep + sideSign * (index - 1) * 0.32,
         opacity: tuning.savePressureMaxOpacity * (0.74 + strength * 0.26) * (1 - index * 0.13),
         life: Math.max(0.38, 0.66 - index * 0.07),
+      };
+    }),
+  };
+}
+
+export function getSaveContactShockwavePlan(contact, gloves, tuning = SCENE_TUNING.feedback) {
+  var system = tuning.saveContactShockwaveSystem || "close-contact-glove-ball-shockwave";
+  if (!contact || (contact.type !== "glove" && contact.type !== "catch")) return { system, rings: [] };
+
+  var count = tuning.saveContactShockwaveCount || 0;
+  if (count <= 0) return { system, rings: [] };
+
+  var point = contact.point || gloves?.center || { x: 0, y: 1.2, z: 3.15 };
+  var normal = contact.normal || { x: contact.side === "left" ? -0.48 : 0.48, y: 0.06, z: -0.74 };
+  var velocity = gloves?.velocity || {};
+  var sideSign = contact.side === "left" ? -1 : contact.side === "right" ? 1 : Math.sign(point.x || normal.x || 1);
+  var strength = clamp01((Number.isFinite(contact.strength) ? contact.strength : contact.type === "catch" ? 14 : 22) / 30);
+  var pushX = Number.isFinite(velocity.x) && Math.abs(velocity.x) > 0.08 ? velocity.x * 0.01 : (normal.x || sideSign) * 0.018;
+  var pushY = Number.isFinite(velocity.y) && Math.abs(velocity.y) > 0.04 ? velocity.y * 0.012 : (normal.y || 0.06) * 0.04;
+  var sweep = Math.atan2(
+    Number.isFinite(velocity.y) && Math.abs(velocity.y) > 0.04 ? velocity.y : normal.y || 0.06,
+    Number.isFinite(velocity.x) && Math.abs(velocity.x) > 0.08 ? velocity.x : normal.x || sideSign * 0.42,
+  );
+  var maxRadius = tuning.saveContactShockwaveMaxRadius || 0.42;
+
+  return {
+    system,
+    rings: Array.from({ length: count }, (_, index) => {
+      var t = count <= 1 ? 0 : index / (count - 1);
+      var radius = Math.min(maxRadius, 0.2 + strength * 0.07 + index * 0.07);
+      return {
+        marker: "feedback-save-contact-shockwave",
+        position: {
+          x: point.x + pushX * (index + 0.45),
+          y: point.y + pushY * (index + 0.45),
+          z: point.z - 0.026 - index * 0.008,
+        },
+        scale: {
+          x: radius,
+          y: 0.06 + strength * 0.026 + t * 0.018,
+        },
+        rotation: sweep + sideSign * (0.18 + index * 0.12),
+        opacity: tuning.saveContactShockwaveMaxOpacity * (0.96 - t * 0.38) * (0.7 + strength * 0.3),
+        life: Math.max(0.32, 0.62 - index * 0.075),
       };
     }),
   };
@@ -1403,6 +1452,7 @@ export function getMatchEventFeedbackPlan(event = {}, tuning = SCENE_TUNING.feed
       visualEffects: [
         "feedback-impact-ring",
         "feedback-save-spark",
+        "feedback-save-contact-shockwave",
         "feedback-save-pressure-arc",
         "feedback-save-afterimage",
         ...(isStreak ? ["feedback-streak-pulse"] : []),
@@ -1938,6 +1988,24 @@ export function createGoalkeeperScene(canvas) {
     arc.userData.rotation = 0;
     return arc;
   });
+  var saveContactShockwaveGeometry = new THREE.TorusGeometry(0.5, 0.012, 8, 40, Math.PI * 1.86);
+  var saveContactShockwaves = Array.from({ length: tuning.feedback.saveContactShockwaveCount }, (_, index) => {
+    var shockwave = new THREE.Mesh(
+      saveContactShockwaveGeometry,
+      new THREE.MeshBasicMaterial({
+        color: index === 0 ? "#ffffff" : "#fff2a8",
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      }),
+    );
+    shockwave.name = "feedback-save-contact-shockwave-" + index;
+    shockwave.visible = false;
+    shockwave.userData.life = 0;
+    shockwave.userData.baseOpacity = 0;
+    shockwave.userData.rotation = 0;
+    return shockwave;
+  });
   var gloveContactDimple = new THREE.Mesh(
     new THREE.CircleGeometry(0.5, 34),
     new THREE.MeshBasicMaterial({
@@ -2121,6 +2189,7 @@ export function createGoalkeeperScene(canvas) {
     ...saveSparks,
     ...saveAfterimages,
     ...savePressureArcs,
+    ...saveContactShockwaves,
     gloveContactDimple,
     gloveContactHighlight,
     ...glovePalmCreases,
@@ -2366,6 +2435,16 @@ export function createGoalkeeperScene(canvas) {
       arc.userData.life = plan.life;
       arc.userData.baseOpacity = plan.opacity;
       arc.userData.rotation = plan.rotation;
+    });
+    getSaveContactShockwavePlan(contact, gloves, tuning.feedback).rings.forEach((plan, index) => {
+      var shockwave = saveContactShockwaves[index % saveContactShockwaves.length];
+      shockwave.visible = true;
+      shockwave.position.set(plan.position.x, plan.position.y, plan.position.z);
+      shockwave.scale.set(plan.scale.x, plan.scale.y, 1);
+      shockwave.material.opacity = plan.opacity;
+      shockwave.userData.life = plan.life;
+      shockwave.userData.baseOpacity = plan.opacity;
+      shockwave.userData.rotation = plan.rotation;
     });
     var deformation = getGloveContactDeformationPlan(contact, gloves, tuning.gloves);
     if (deformation.dimple) {
@@ -2818,6 +2897,19 @@ export function createGoalkeeperScene(canvas) {
       arc.scale.multiplyScalar(1.012 + index * 0.004);
       arc.lookAt(camera.position);
       arc.rotateZ(arc.userData.rotation || 0);
+    });
+
+    saveContactShockwaves.forEach((shockwave, index) => {
+      if (shockwave.userData.life <= 0) {
+        shockwave.material.opacity = 0;
+        shockwave.visible = false;
+        return;
+      }
+      shockwave.userData.life = Math.max(0, shockwave.userData.life - tuning.feedback.saveContactShockwaveDecay - index * 0.005);
+      shockwave.material.opacity = Math.max(0, shockwave.userData.life * (shockwave.userData.baseOpacity || 0));
+      shockwave.scale.multiplyScalar(1.018 + index * 0.004);
+      shockwave.lookAt(camera.position);
+      shockwave.rotateZ(shockwave.userData.rotation || 0);
     });
 
     [

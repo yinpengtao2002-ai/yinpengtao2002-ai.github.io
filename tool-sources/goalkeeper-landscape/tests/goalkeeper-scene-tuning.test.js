@@ -189,6 +189,56 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(sceneModule.getBallSpeedRibbonPlan({ ...ball, live: false }).ribbons).toEqual([]);
   });
 
+  it("plans a restrained close-contact shockwave when the glove saves the ball", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(SCENE_TUNING.feedback.saveContactShockwaveSystem).toBe("close-contact-glove-ball-shockwave");
+    expect(SCENE_TUNING.feedback.saveContactShockwaveCount).toBeGreaterThanOrEqual(2);
+    expect(SCENE_TUNING.feedback.saveContactShockwaveCount).toBeLessThanOrEqual(4);
+    expect(SCENE_TUNING.feedback.saveContactShockwaveMaxOpacity).toBeLessThanOrEqual(0.34);
+    expect(SCENE_TUNING.feedback.saveContactShockwaveMaxRadius).toBeLessThanOrEqual(0.48);
+    expect(sceneModule.getSaveContactShockwavePlan).toBeTypeOf("function");
+
+    const contact = {
+      type: "glove",
+      side: "right",
+      point: { x: 0.38, y: 1.34, z: 3.12 },
+      normal: { x: 0.42, y: 0.05, z: -0.76 },
+      strength: 24,
+    };
+    const gloves = {
+      center: { x: 0.3, y: 1.28, z: 3.16 },
+      velocity: { x: 1.2, y: 0.28, z: -0.4 },
+    };
+    const plan = sceneModule.getSaveContactShockwavePlan(contact, gloves);
+
+    expect(plan.system).toBe("close-contact-glove-ball-shockwave");
+    expect(plan.rings).toHaveLength(SCENE_TUNING.feedback.saveContactShockwaveCount);
+    plan.rings.forEach((ring, index) => {
+      const distanceFromContact = Math.hypot(
+        ring.position.x - contact.point.x,
+        ring.position.y - contact.point.y,
+        ring.position.z - contact.point.z,
+      );
+      expect(ring.marker).toBe("feedback-save-contact-shockwave");
+      expect(distanceFromContact).toBeLessThanOrEqual(0.08);
+      expect(ring.opacity).toBeGreaterThan(0);
+      expect(ring.opacity).toBeLessThanOrEqual(SCENE_TUNING.feedback.saveContactShockwaveMaxOpacity);
+      expect(ring.scale.x).toBeLessThanOrEqual(SCENE_TUNING.feedback.saveContactShockwaveMaxRadius);
+      expect(ring.scale.y).toBeLessThan(ring.scale.x);
+      expect(ring.life).toBeGreaterThan(0.28);
+      if (index > 0) {
+        expect(ring.opacity).toBeLessThan(plan.rings[index - 1].opacity);
+        expect(ring.scale.x).toBeGreaterThan(plan.rings[index - 1].scale.x);
+      }
+    });
+
+    expect(sceneModule.getSaveContactShockwavePlan({ type: "net", point: contact.point }, gloves).rings).toEqual([]);
+    expect(sceneModule.getMatchEventFeedbackPlan({ type: "save", contact, state: { streak: 1 } }).visualEffects).toContain(
+      "feedback-save-contact-shockwave",
+    );
+  });
+
   it("renders a saved replay ball without also drawing the retired active physics ball", async () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
 
