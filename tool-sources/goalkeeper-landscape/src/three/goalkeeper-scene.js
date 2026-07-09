@@ -103,12 +103,12 @@ export const SCENE_TUNING = {
     groundSkidCount: 5,
     groundSkidColor: "#e7d5a7",
     groundSkidMaxOpacity: 0.34,
-    turfContactAssetSystem: "rolling-turf-contact-flecks",
-    turfFleckCount: 14,
-    turfFleckMaxOpacity: 0.46,
-    turfFleckTriggerAge: 0.12,
-    turfFleckDecay: 0.052,
-    turfFleckRise: 0.028,
+    courtContactAssetSystem: "rolling-court-dust-skid-flecks",
+    courtDustFleckCount: 12,
+    courtDustFleckMaxOpacity: 0.32,
+    courtDustFleckTriggerAge: 0.12,
+    courtDustFleckDecay: 0.048,
+    courtDustFleckRise: 0.014,
     saveSparkCount: 10,
     saveSparkColor: "#fff7ba",
     saveSparkMaxOpacity: 0.68,
@@ -341,9 +341,9 @@ export function getGloveContactDeformationPlan(contact, gloves, tuning = SCENE_T
   };
 }
 
-export function getTurfContactFleckPlan(feedback, tuning = SCENE_TUNING.feedback) {
+export function getCourtDustFleckPlan(feedback, tuning = SCENE_TUNING.feedback) {
   if (!feedback?.active || !feedback.point) return [];
-  if ((feedback.age || 0) > tuning.turfFleckTriggerAge) return [];
+  if ((feedback.age || 0) > tuning.courtDustFleckTriggerAge) return [];
 
   var intensity = clamp01(feedback.intensity || 0);
   if (intensity <= 0.04) return [];
@@ -359,22 +359,22 @@ export function getTurfContactFleckPlan(feedback, tuning = SCENE_TUNING.feedback
     z: forward.x,
   };
   var speedMix = clamp01((feedback.speed || 0) / 8);
-  var count = tuning.turfFleckCount;
+  var count = tuning.courtDustFleckCount;
 
   return Array.from({ length: count }, (_, index) => {
     var t = count <= 1 ? 0 : index / (count - 1);
     var fan = (t - 0.5) * 2;
     var stagger = index % 3;
-    var lateral = fan * (0.035 + intensity * 0.11);
+    var lateral = fan * (0.045 + intensity * 0.08);
     var forwardOffset = (0.018 + stagger * 0.008) * (0.35 + speedMix);
-    var lift = tuning.turfFleckRise * (0.72 + intensity * 0.82 + stagger * 0.18);
-    var fleckSpeed = (0.012 + index * 0.0007) * (0.7 + intensity + speedMix * 0.6);
+    var lift = tuning.courtDustFleckRise * (0.62 + intensity * 0.56 + stagger * 0.12);
+    var fleckSpeed = (0.008 + index * 0.00045) * (0.62 + intensity + speedMix * 0.42);
 
     return {
-      marker: "feedback-turf-fleck",
+      marker: "feedback-court-dust-fleck",
       position: {
         x: feedback.point.x + side.x * lateral + forward.x * forwardOffset,
-        y: feedback.point.y + 0.018 + stagger * 0.006,
+        y: feedback.point.y + 0.012 + stagger * 0.004,
         z: feedback.point.z + side.z * lateral + forward.z * forwardOffset,
       },
       velocity: {
@@ -383,12 +383,12 @@ export function getTurfContactFleckPlan(feedback, tuning = SCENE_TUNING.feedback
         z: forward.z * fleckSpeed + side.z * fan * fleckSpeed * 0.56,
       },
       scale: {
-        x: 0.48 + stagger * 0.08,
-        y: 0.86 + intensity * 0.44 + t * 0.18,
+        x: 0.62 + stagger * 0.1 + intensity * 0.16,
+        y: 0.22 + intensity * 0.18 + t * 0.08,
       },
       rotation: Math.atan2(forward.x, forward.z) + fan * 0.42,
-      opacity: tuning.turfFleckMaxOpacity * intensity * (0.74 + (1 - Math.abs(fan)) * 0.26),
-      life: Math.max(0.36, 0.72 - index * 0.012),
+      opacity: tuning.courtDustFleckMaxOpacity * intensity * (0.68 + (1 - Math.abs(fan)) * 0.22),
+      life: Math.max(0.28, 0.58 - index * 0.01),
     };
   });
 }
@@ -403,8 +403,8 @@ export function getBallSpinGlintPlan(ballState, shot = null, tuning = SCENE_TUNI
   if (speed < minSpeed) return { system, glints: [] };
 
   var radius = ballState.radius || tuning.radius || 0.12;
-  var heightAboveTurf = (ballState.position.y || 0) - radius;
-  if (heightAboveTurf < radius * 1.25) return { system, glints: [] };
+  var heightAboveFloor = (ballState.position.y || 0) - radius;
+  if (heightAboveFloor < radius * 1.25) return { system, glints: [] };
 
   var fullSpeed = Math.max(minSpeed + 0.1, tuning.flightSpinGlintFullSpeed || 22);
   var intensity = clamp01((speed - minSpeed) / (fullSpeed - minSpeed));
@@ -490,8 +490,8 @@ export function shouldRenderLingeringBall(lingeringBall, snapshot = {}, tuning =
   }
 
   var radius = lingeringBall.radius || tuning.radius || 0.12;
-  var heightAboveTurf = (lingeringBall.position.y || 0) - radius;
-  return heightAboveTurf <= (tuning.retiredReplayAirHideHeight || 0.24) || snapshot.director?.phase !== "live";
+  var heightAboveFloor = (lingeringBall.position.y || 0) - radius;
+  return heightAboveFloor <= (tuning.retiredReplayAirHideHeight || 0.24) || snapshot.director?.phase !== "live";
 }
 
 export function getSaveAfterimagePlan(contact, gloves, tuning = SCENE_TUNING.feedback) {
@@ -854,7 +854,7 @@ export function getBroadcastEventPresentationPlan(event = {}, plan = {}) {
     };
   }
 
-  if (type === "ground" || type === "turf") {
+  if (type === "ground" || type === "court") {
     return {
       ...base,
       tier: "ambient",
@@ -1075,7 +1075,7 @@ export function getMatchEventFeedbackPlan(event = {}, tuning = SCENE_TUNING.feed
     return framePlan;
   }
 
-  if (type === "ground" || type === "turf") {
+  if (type === "ground" || type === "court") {
     var feedback = event.groundFeedback || {};
     var intensity = clamp01(Math.max(feedback.intensity || 0, (feedback.speed || 0) / 10));
     var groundPlan = {
@@ -1084,10 +1084,10 @@ export function getMatchEventFeedbackPlan(event = {}, tuning = SCENE_TUNING.feed
       profile,
       priority: "ambient",
       hudTone: "ambient",
-      audioEvent: intensity >= 0.18 && feedback.active ? "turf-skid" : null,
+      audioEvent: intensity >= 0.18 && feedback.active ? "court-skid" : null,
       visualEffects: [
         "feedback-ground-skid",
-        "feedback-turf-fleck",
+        "feedback-court-dust-fleck",
       ],
       flashColor: tuning.groundSkidColor,
       effectIntensity: intensity,
@@ -1329,19 +1329,19 @@ export function createGoalkeeperScene(canvas) {
     skid.visible = false;
     return skid;
   });
-  var turfFleckGeometry = new THREE.PlaneGeometry(0.035, 0.11);
-  var turfFlecks = Array.from({ length: tuning.feedback.turfFleckCount }, (_, index) => {
+  var courtDustFleckGeometry = new THREE.CircleGeometry(0.038, 14);
+  var courtDustFlecks = Array.from({ length: tuning.feedback.courtDustFleckCount }, (_, index) => {
     var fleck = new THREE.Mesh(
-      turfFleckGeometry,
+      courtDustFleckGeometry,
       new THREE.MeshBasicMaterial({
-        color: index % 3 === 0 ? "#c8d36f" : index % 3 === 1 ? "#e2c779" : "#8fcf5d",
+        color: index % 3 === 0 ? "#f2ead8" : index % 3 === 1 ? "#d8c8aa" : "#bfc1b5",
         transparent: true,
         opacity: 0,
         depthWrite: false,
         side: THREE.DoubleSide,
       }),
     );
-    fleck.name = "feedback-turf-fleck-" + index;
+    fleck.name = "feedback-court-dust-fleck-" + index;
     fleck.userData.life = 0;
     fleck.userData.velocity = { x: 0, y: 0, z: 0 };
     return fleck;
@@ -1574,7 +1574,7 @@ export function createGoalkeeperScene(canvas) {
     ...ballSpinGlints,
     ...lingeringBallViews.flatMap((view) => [view.halo, view.mesh, view.shadow]),
     ...groundSkids,
-    ...turfFlecks,
+    ...courtDustFlecks,
     leftGlove,
     rightGlove,
     ...impactRings,
@@ -1603,7 +1603,7 @@ export function createGoalkeeperScene(canvas) {
   var netPocketState = createNetPocketState();
   var netRecoilState = createNetRecoilState();
   var cameraPresentationState = createCameraPresentationState();
-  var lastTurfContactSignature = "";
+  var lastCourtContactSignature = "";
   var lastScoreboardSignature = "";
 
   function resizePresentationLayer() {
@@ -1665,8 +1665,8 @@ export function createGoalkeeperScene(canvas) {
     view.halo.material.opacity = ballState?.outcome === "goal" ? 0.34 : ballState?.live ? 0.28 : 0.18;
 
     view.shadow.position.set(position.x, 0.012, position.z);
-    var heightAboveTurf = Math.max(0, position.y - (ballState?.radius || tuning.ball.radius));
-    var airMix = clamp01(heightAboveTurf / tuning.ball.shadowHeightFade);
+    var heightAboveFloor = Math.max(0, position.y - (ballState?.radius || tuning.ball.radius));
+    var airMix = clamp01(heightAboveFloor / tuning.ball.shadowHeightFade);
     var shadowScale = lerpNumber(tuning.ball.shadowGroundScale, tuning.ball.shadowAirScale, airMix);
     var shadowOpacity = lerpNumber(tuning.ball.shadowGroundOpacity, tuning.ball.shadowAirOpacity, airMix);
     var depthBoost = 1 + depth * 0.14;
@@ -1706,13 +1706,13 @@ export function createGoalkeeperScene(canvas) {
       updateGroundSkid(skid, candidates[index]);
     });
     candidates.forEach((ballState, index) => {
-      triggerTurfContactFeedback(ballState, index);
+      triggerCourtDustContactFeedback(ballState, index);
     });
   }
 
-  function triggerTurfContactFeedback(ballState, ballIndex) {
+  function triggerCourtDustContactFeedback(ballState, ballIndex) {
     var feedback = ballState?.groundFeedback;
-    var fleckPlan = getTurfContactFleckPlan(feedback, tuning.feedback);
+    var fleckPlan = getCourtDustFleckPlan(feedback, tuning.feedback);
     if (!fleckPlan.length) return;
 
     var point = feedback.point;
@@ -1722,11 +1722,11 @@ export function createGoalkeeperScene(canvas) {
       Math.round((point.z || 0) * 14),
       Math.round((feedback.speed || 0) * 10),
     ].join(":");
-    if (signature === lastTurfContactSignature) return;
-    lastTurfContactSignature = signature;
+    if (signature === lastCourtContactSignature) return;
+    lastCourtContactSignature = signature;
 
     fleckPlan.forEach((plan, index) => {
-      var fleck = turfFlecks[index % turfFlecks.length];
+      var fleck = courtDustFlecks[index % courtDustFlecks.length];
       fleck.visible = true;
       fleck.position.set(plan.position.x, plan.position.y, plan.position.z);
       fleck.rotation.set(-Math.PI / 2 + 0.22, 0, plan.rotation);
@@ -2239,24 +2239,24 @@ export function createGoalkeeperScene(canvas) {
       object.rotateZ(object.userData.rotation || 0);
     });
 
-    turfFlecks.forEach((fleck, index) => {
+    courtDustFlecks.forEach((fleck, index) => {
       if (fleck.userData.life <= 0) {
         fleck.material.opacity = 0;
         fleck.visible = false;
         return;
       }
-      fleck.userData.life = Math.max(0, fleck.userData.life - tuning.feedback.turfFleckDecay - index * 0.001);
+      fleck.userData.life = Math.max(0, fleck.userData.life - tuning.feedback.courtDustFleckDecay - index * 0.001);
       var velocity = fleck.userData.velocity || { x: 0, y: 0, z: 0 };
       fleck.position.x += velocity.x;
       fleck.position.y += velocity.y;
       fleck.position.z += velocity.z;
       fleck.userData.velocity = {
         x: velocity.x * 0.96,
-        y: velocity.y * 0.82 - 0.0012,
+        y: velocity.y * 0.78 - 0.001,
         z: velocity.z * 0.96,
       };
-      fleck.material.opacity = Math.max(0, fleck.userData.life * (fleck.userData.baseOpacity || tuning.feedback.turfFleckMaxOpacity));
-      fleck.scale.multiplyScalar(0.994);
+      fleck.material.opacity = Math.max(0, fleck.userData.life * (fleck.userData.baseOpacity || tuning.feedback.courtDustFleckMaxOpacity));
+      fleck.scale.multiplyScalar(1.002);
       fleck.lookAt(camera.position);
     });
 

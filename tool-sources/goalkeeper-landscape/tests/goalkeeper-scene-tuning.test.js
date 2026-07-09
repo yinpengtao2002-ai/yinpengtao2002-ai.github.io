@@ -265,11 +265,11 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.feedback.groundSkidCount).toBeGreaterThanOrEqual(4);
     expect(SCENE_TUNING.feedback.groundSkidColor).toBe("#e7d5a7");
     expect(SCENE_TUNING.feedback.groundSkidMaxOpacity).toBeLessThanOrEqual(0.42);
-    expect(SCENE_TUNING.feedback.turfContactAssetSystem).toBe("rolling-turf-contact-flecks");
-    expect(SCENE_TUNING.feedback.turfFleckCount).toBeGreaterThanOrEqual(8);
-    expect(SCENE_TUNING.feedback.turfFleckCount).toBeLessThanOrEqual(18);
-    expect(SCENE_TUNING.feedback.turfFleckMaxOpacity).toBeLessThanOrEqual(0.5);
-    expect(SCENE_TUNING.feedback.turfFleckTriggerAge).toBeLessThanOrEqual(0.16);
+    expect(SCENE_TUNING.feedback.courtContactAssetSystem).toBe("rolling-court-dust-skid-flecks");
+    expect(SCENE_TUNING.feedback.courtDustFleckCount).toBeGreaterThanOrEqual(8);
+    expect(SCENE_TUNING.feedback.courtDustFleckCount).toBeLessThanOrEqual(18);
+    expect(SCENE_TUNING.feedback.courtDustFleckMaxOpacity).toBeLessThanOrEqual(0.36);
+    expect(SCENE_TUNING.feedback.courtDustFleckTriggerAge).toBeLessThanOrEqual(0.16);
     expect(SCENE_TUNING.feedback.saveSparkCount).toBeGreaterThanOrEqual(6);
     expect(SCENE_TUNING.feedback.saveSparkMaxOpacity).toBeLessThanOrEqual(0.74);
     expect(SCENE_TUNING.feedback.saveAfterimageSystem).toBe("directional-glove-save-afterimage");
@@ -434,14 +434,15 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(frame.visualEffects).toEqual(expect.arrayContaining(["feedback-frame-rebound-highlight"]));
     expect(frame.cameraShake).toBeLessThan(dangerGoal.cameraShake);
 
-    expect(turf.audioEvent).toBe("turf-skid");
+    expect(turf.audioEvent).toBe("court-skid");
     expect(turf.hudTone).toBe("ambient");
-    expect(turf.visualEffects).toEqual(expect.arrayContaining(["feedback-ground-skid", "feedback-turf-fleck"]));
+    expect(turf.visualEffects).toEqual(expect.arrayContaining(["feedback-ground-skid", "feedback-court-dust-fleck"]));
+    expect(turf.visualEffects.join(" ")).not.toMatch(/turf|grass|mowing/i);
     expect(turf.cameraShake).toBe(0);
     expect(turf.priority).toBe("ambient");
   });
 
-  it("assigns restrained broadcast presentation tiers for save, goal, frame, and turf events", async () => {
+  it("assigns restrained broadcast presentation tiers for save, goal, frame, and ground events", async () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
 
     const normalSave = sceneModule.getMatchEventFeedbackPlan({
@@ -463,7 +464,7 @@ describe("goalkeeper 3D scene tuning", () => {
       type: "frame",
       contact: { type: "frame", strength: 0.78, point: { x: -0.7, y: 2.32, z: SHOT_3D.netPlaneZ } },
     });
-    const turf = sceneModule.getMatchEventFeedbackPlan({
+    const ground = sceneModule.getMatchEventFeedbackPlan({
       type: "ground",
       groundFeedback: { active: true, intensity: 0.4, speed: 4.2, point: { x: 0, y: 0.01, z: 2.6 } },
     });
@@ -484,8 +485,8 @@ describe("goalkeeper 3D scene tuning", () => {
 
     expect(frame.presentation.tier).toBe("core");
     expect(frame.presentation.hudBurst).toBe("frame-chip");
-    expect(turf.presentation.tier).toBe("ambient");
-    expect(turf.presentation.screenWashOpacity).toBe(0);
+    expect(ground.presentation.tier).toBe("ambient");
+    expect(ground.presentation.screenWashOpacity).toBe(0);
   });
 
   it("defines a camera-attached broadcast presentation layer that stays subtle", () => {
@@ -692,12 +693,12 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(crossbar.position.y).toBeCloseTo(2.44, 1);
   });
 
-  it("plans directional turf flecks for fresh rolling ground contact", async () => {
+  it("plans restrained court dust flecks for fresh rolling ground contact", async () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
 
-    expect(sceneModule.getTurfContactFleckPlan).toBeTypeOf("function");
+    expect(sceneModule.getCourtDustFleckPlan).toBeTypeOf("function");
 
-    const flecks = sceneModule.getTurfContactFleckPlan({
+    const flecks = sceneModule.getCourtDustFleckPlan({
       active: true,
       age: 0.02,
       intensity: 0.72,
@@ -706,18 +707,19 @@ describe("goalkeeper 3D scene tuning", () => {
       direction: { x: 0.56, y: 0, z: -0.83 },
     });
 
-    expect(flecks).toHaveLength(SCENE_TUNING.feedback.turfFleckCount);
-    expect(flecks[0].marker).toBe("feedback-turf-fleck");
+    expect(flecks).toHaveLength(SCENE_TUNING.feedback.courtDustFleckCount);
+    expect(flecks[0].marker).toBe("feedback-court-dust-fleck");
     expect(flecks[0].position.y).toBeGreaterThan(0.012);
     expect(flecks[0].velocity.y).toBeGreaterThan(0);
-    expect(flecks[0].opacity).toBeLessThanOrEqual(SCENE_TUNING.feedback.turfFleckMaxOpacity);
+    expect(flecks[0].opacity).toBeLessThanOrEqual(SCENE_TUNING.feedback.courtDustFleckMaxOpacity);
     expect(flecks[0].scale.x).toBeGreaterThan(0);
-    expect(flecks[0].scale.y).toBeGreaterThan(flecks[0].scale.x);
+    expect(flecks[0].scale.y).toBeLessThanOrEqual(flecks[0].scale.x);
     expect(flecks.some((fleck) => fleck.velocity.x > 0)).toBe(true);
     expect(flecks.some((fleck) => fleck.velocity.z < 0)).toBe(true);
+    expect(flecks.map((fleck) => fleck.marker).join(" ")).not.toMatch(/turf|grass|mowing/i);
 
-    expect(sceneModule.getTurfContactFleckPlan({ active: false })).toEqual([]);
-    expect(sceneModule.getTurfContactFleckPlan({ active: true, age: 0.4, point: { x: 0, y: 0, z: 0 } })).toEqual([]);
+    expect(sceneModule.getCourtDustFleckPlan({ active: false })).toEqual([]);
+    expect(sceneModule.getCourtDustFleckPlan({ active: true, age: 0.4, point: { x: 0, y: 0, z: 0 } })).toEqual([]);
   });
 
   it("plans directional glove save afterimages without turning saves into noisy effects", async () => {

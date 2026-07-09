@@ -80,7 +80,7 @@ describe("three game runtime timing", () => {
     )).toBeNull();
   });
 
-  it("maps fresh grounded save skid feedback to a restrained turf audio event", () => {
+  it("maps fresh grounded save skid feedback to a restrained court audio event", () => {
     expect(RuntimeModule.getGroundContactAudioEvent).toBeTypeOf("function");
     expect(getGroundContactAudioEvent({
       active: true,
@@ -88,7 +88,7 @@ describe("three game runtime timing", () => {
       intensity: 0.52,
       speed: 4.2,
       point: { x: -0.4, y: 0.012, z: 2.9 },
-    })).toBe("turf-skid");
+    })).toBe("court-skid");
     expect(getGroundContactAudioEvent({
       active: true,
       age: 0.24,
@@ -105,7 +105,7 @@ describe("three game runtime timing", () => {
     })).toBeNull();
   });
 
-  it("keeps retired replay turf audio quiet while the next live shot is in flight", () => {
+  it("keeps retired replay court-skid audio quiet while the next live shot is in flight", () => {
     expect(RuntimeModule.shouldPlayLingeringGroundAudio).toBeTypeOf("function");
     expect(shouldPlayLingeringGroundAudio({ phase: "live" }, { live: true, outcome: "live" })).toBe(false);
     expect(shouldPlayLingeringGroundAudio({ phase: "live" }, { live: true, outcome: "deflected" })).toBe(false);
@@ -147,7 +147,7 @@ describe("three game runtime timing", () => {
     expect(afterTwoSeconds.velocity.y).toBeLessThan(0.5);
   });
 
-  it("marks lingering saves with grounded skid feedback after the first turf bounce", () => {
+  it("marks lingering saves with grounded skid feedback after the first floor bounce", () => {
     const landingSave = {
       live: false,
       outcome: "saved",
@@ -180,7 +180,7 @@ describe("three game runtime timing", () => {
     expect(settled.groundFeedback.intensity).toBe(0);
   });
 
-  it("lets deflected saves roll across the turf instead of stopping on the first grounded frame", () => {
+  it("lets deflected saves roll across the floor instead of stopping on the first grounded frame", () => {
     const rollingSave = {
       live: false,
       outcome: "saved",

@@ -132,7 +132,7 @@ export function getGroundContactAudioEvent(feedback) {
   if ((feedback.age || 0) > 0.08) return null;
   if ((feedback.intensity || 0) < 0.18) return null;
   if ((feedback.speed || 0) < 1.2 && (feedback.impactSpeed || 0) < 0.8) return null;
-  return "turf-skid";
+  return "court-skid";
 }
 
 export function shouldPlayLingeringGroundAudio(director) {
