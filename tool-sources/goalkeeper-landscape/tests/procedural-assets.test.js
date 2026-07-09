@@ -489,4 +489,42 @@ describe("procedural 3D assets", () => {
     expect(collectByName(launcher.group, /^launcher-service-mat$/)).toHaveLength(1);
     expect(collectByName(launcher.group, /^launcher-footprint-scuff-/).length).toBeGreaterThanOrEqual(4);
   });
+
+  it("uses reusable rounded-box geometry on near-field props instead of hard prototype cubes", () => {
+    const field = createFieldGroup();
+    const goal = createGoalAndNet();
+    const launcher = createShooterModel();
+
+    expect(field.userData.geometryPolishSystem).toBe("three-rounded-box-beveled-prop-kit");
+    expect(goal.group.userData.geometryPolishSystem).toBe("three-rounded-box-beveled-prop-kit");
+    expect(launcher.group.userData.geometryPolishSystem).toBe("three-rounded-box-beveled-prop-kit");
+
+    const roundedFieldProps = [
+      ...collectByName(field, /^stadium-ad-board-/),
+      ...collectByName(field, /^broadcast-sideline-safety-pad-/),
+      ...collectByName(field, /^training-ground-equipment-cart-base$/),
+      ...collectByName(field, /^training-ground-coach-bench-(seat|back)$/),
+      ...collectByName(field, /^training-ground-hydration-cooler(-lid)?$/),
+    ];
+    const roundedGoalProps = [
+      ...collectByName(goal.group, /^goal-brand-trim-/),
+      ...collectByName(goal.group, /^goal-frame-crossbar-sleeve-/),
+      ...collectByName(goal.group, /^goal-frame-ground-foot-pad-/),
+      ...collectByName(goal.group, /^goal-net-rope-tensioner-/),
+      ...collectByName(goal.group, /^goal-depth-hinge-bracket-/),
+    ];
+    const roundedLauncherProps = [
+      ...collectByName(launcher.group, /^launcher-body$/),
+      ...collectByName(launcher.group, /^launcher-hopper$/),
+      ...collectByName(launcher.group, /^launcher-control-console$/),
+      ...collectByName(launcher.group, /^launcher-service-mat$/),
+      ...collectByName(launcher.group, /^launcher-kick-pad$/),
+    ];
+
+    const allRoundedProps = [...roundedFieldProps, ...roundedGoalProps, ...roundedLauncherProps];
+    expect(allRoundedProps.length).toBeGreaterThanOrEqual(24);
+    expect(allRoundedProps.every((prop) => prop.geometry?.type === "RoundedBoxGeometry")).toBe(true);
+    expect(allRoundedProps.every((prop) => prop.userData.geometrySource === "three/addons/geometries/RoundedBoxGeometry")).toBe(true);
+    expect(allRoundedProps.every((prop) => prop.userData.beveledAssetSystem === "three-rounded-box-beveled-prop-kit")).toBe(true);
+  });
 });

@@ -1,10 +1,13 @@
 import * as THREE from "three";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { MAX_CONCEDED, ROUND_SECONDS } from "../config/game-config.js";
 import { SHOT_3D } from "../game/shot-3d-director.js";
 import { RAPIER_GOAL } from "../physics/rapier-world.js";
 
 export const STADIUM_SCOREBOARD_DISPLAY_SYSTEM = "live-stadium-scoreboard-display";
 export const MATCHDAY_ASSET_POLISH_SYSTEM = "broadcast-matchday-polish-kit";
+export const ROUNDED_BOX_BEVELED_PROP_SYSTEM = "three-rounded-box-beveled-prop-kit";
+export const ROUNDED_BOX_GEOMETRY_SOURCE = "three/addons/geometries/RoundedBoxGeometry";
 
 export function getMatchdayAssetPolishProfile() {
   return {
@@ -213,36 +216,29 @@ function createTrainingSurfaceMaterial() {
   return material;
 }
 
-function createRoundedRectGeometry(width, height, radius, depth) {
-  var x = -width / 2;
-  var y = -height / 2;
-  var shape = new THREE.Shape();
-  shape.moveTo(x + radius, y);
-  shape.lineTo(x + width - radius, y);
-  shape.quadraticCurveTo(x + width, y, x + width, y + radius);
-  shape.lineTo(x + width, y + height - radius);
-  shape.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  shape.lineTo(x + radius, y + height);
-  shape.quadraticCurveTo(x, y + height, x, y + height - radius);
-  shape.lineTo(x, y + radius);
-  shape.quadraticCurveTo(x, y, x + radius, y);
-  var geometry = new THREE.ExtrudeGeometry(shape, {
-    depth: depth,
-    bevelEnabled: true,
-    bevelThickness: Math.min(0.018, depth * 0.24),
-    bevelSize: Math.min(radius * 0.45, 0.022),
-    bevelSegments: 5,
-    curveSegments: 8,
-  });
-  geometry.translate(0, 0, -depth / 2);
+function createBeveledBoxGeometry(width, height, depth, radius = 0.04, segments = 3) {
+  var safeRadius = Math.max(0.001, Math.min(radius, width * 0.48, height * 0.48, depth * 0.48));
+  var geometry = new RoundedBoxGeometry(width, height, depth, segments, safeRadius);
+  geometry.userData.beveledAssetSystem = ROUNDED_BOX_BEVELED_PROP_SYSTEM;
+  geometry.userData.geometrySource = ROUNDED_BOX_GEOMETRY_SOURCE;
   return geometry;
 }
 
-function makeRoundedPart(name, width, height, radius, depth, material, x, y, z) {
-  var mesh = new THREE.Mesh(createRoundedRectGeometry(width, height, radius, depth), material);
+function markBeveledProp(mesh) {
+  mesh.userData.beveledAssetSystem = ROUNDED_BOX_BEVELED_PROP_SYSTEM;
+  mesh.userData.geometrySource = ROUNDED_BOX_GEOMETRY_SOURCE;
+  return mesh;
+}
+
+function makeBeveledBox(name, width, height, depth, radius, material, x, y, z, segments = 3) {
+  var mesh = new THREE.Mesh(createBeveledBoxGeometry(width, height, depth, radius, segments), material);
   mesh.name = name;
   mesh.position.set(x || 0, y || 0, z || 0);
-  return mesh;
+  return markBeveledProp(mesh);
+}
+
+function makeRoundedPart(name, width, height, radius, depth, material, x, y, z) {
+  return makeBeveledBox(name, width, height, depth, radius, material, x, y, z, 4);
 }
 
 export function createFootballTexture() {
@@ -403,6 +399,7 @@ export function createFieldGroup() {
   var group = new THREE.Group();
   group.userData.visualStyle = "professional-keeper-training-court";
   group.userData.polishSystem = MATCHDAY_ASSET_POLISH_SYSTEM;
+  group.userData.geometryPolishSystem = ROUNDED_BOX_BEVELED_PROP_SYSTEM;
   group.userData.assetSystem = "stylized-reusable-matchday-kit";
   group.userData.materialPipelineSystem = "procedural-pbr-material-stack";
   group.userData.markingSystem = "standard-football-pitch";
@@ -778,8 +775,7 @@ export function createFieldGroup() {
     (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.02 }),
   );
   for (var b = 0; b < 8; b += 1) {
-    var board = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.34, 0.055), boardMaterials[b % boardMaterials.length]);
-    board.name = "stadium-ad-board-" + b;
+    var board = makeBeveledBox("stadium-ad-board-" + b, 1.25, 0.34, 0.055, 0.035, boardMaterials[b % boardMaterials.length]);
     var side = b % 2 === 0 ? -1 : 1;
     board.position.set(side * 7.08, 0.22, -8.8 + Math.floor(b / 2) * 3.6);
     board.rotation.y = side > 0 ? -Math.PI / 2 + 0.04 : Math.PI / 2 - 0.04;
@@ -809,8 +805,7 @@ export function createFieldGroup() {
   var broadcastPadMaterial = new THREE.MeshStandardMaterial({ color: "#1f3435", roughness: 0.58, metalness: 0.02 });
   for (var padIndex = 0; padIndex < 4; padIndex += 1) {
     var padSide = padIndex % 2 === 0 ? -1 : 1;
-    var pad = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.18, 1.35), broadcastPadMaterial.clone());
-    pad.name = "broadcast-sideline-safety-pad-" + padIndex;
+    var pad = makeBeveledBox("broadcast-sideline-safety-pad-" + padIndex, 0.22, 0.18, 1.35, 0.045, broadcastPadMaterial.clone());
     pad.position.set(padSide * 7.52, 0.11, -4.8 - Math.floor(padIndex / 2) * 4.2);
     pad.rotation.y = padSide > 0 ? -0.05 : 0.05;
     group.add(pad);
@@ -895,8 +890,7 @@ export function createFieldGroup() {
   equipmentCart.name = "training-ground-equipment-cart";
   equipmentCart.position.set(-6.28, 0.12, -5.6);
   equipmentCart.rotation.y = 0.18;
-  var cartBase = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.16, 0.44), facilityMat);
-  cartBase.name = "training-ground-equipment-cart-base";
+  var cartBase = makeBeveledBox("training-ground-equipment-cart-base", 0.74, 0.16, 0.44, 0.055, facilityMat);
   cartBase.position.set(0, 0.18, 0);
   var cartBasket = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.32, 0.36), new THREE.MeshBasicMaterial({
     color: "#f8fff0",
@@ -924,11 +918,9 @@ export function createFieldGroup() {
     group.add(spareBall);
   }
 
-  var benchSeat = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.08, 0.24), facilityPanelMat);
-  benchSeat.name = "training-ground-coach-bench-seat";
+  var benchSeat = makeBeveledBox("training-ground-coach-bench-seat", 1.18, 0.08, 0.24, 0.035, facilityPanelMat);
   benchSeat.position.set(6.1, 0.32, -4.35);
-  var benchBack = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.32, 0.07), facilityMat);
-  benchBack.name = "training-ground-coach-bench-back";
+  var benchBack = makeBeveledBox("training-ground-coach-bench-back", 1.18, 0.32, 0.07, 0.032, facilityMat);
   benchBack.position.set(6.1, 0.56, -4.48);
   var benchShadow = new THREE.Mesh(new THREE.CircleGeometry(1, 28), new THREE.MeshBasicMaterial({
     color: "#10281b",
@@ -942,11 +934,9 @@ export function createFieldGroup() {
   benchShadow.position.set(6.1, 0.01, -4.28);
   group.add(benchSeat, benchBack, benchShadow);
 
-  var cooler = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.34, 0.28), new THREE.MeshStandardMaterial({ color: "#61f0ff", roughness: 0.46, metalness: 0.01 }));
-  cooler.name = "training-ground-hydration-cooler";
+  var cooler = makeBeveledBox("training-ground-hydration-cooler", 0.32, 0.34, 0.28, 0.052, new THREE.MeshStandardMaterial({ color: "#61f0ff", roughness: 0.46, metalness: 0.01 }));
   cooler.position.set(5.32, 0.22, -3.82);
-  var coolerLid = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.055, 0.3), facilityPanelMat);
-  coolerLid.name = "training-ground-hydration-cooler-lid";
+  var coolerLid = makeBeveledBox("training-ground-hydration-cooler-lid", 0.34, 0.055, 0.3, 0.026, facilityPanelMat);
   coolerLid.position.set(5.32, 0.42, -3.82);
   group.add(cooler, coolerLid);
 
@@ -985,6 +975,7 @@ export function createFieldGroup() {
 export function createGoalAndNet() {
   var group = new THREE.Group();
   group.userData.polishSystem = MATCHDAY_ASSET_POLISH_SYSTEM;
+  group.userData.geometryPolishSystem = ROUNDED_BOX_BEVELED_PROP_SYSTEM;
   group.userData.assetSystem = "layered-goal-and-net-kit";
   group.userData.frameDetailSystem = "rounded-posts-with-tensioned-net";
   group.userData.netPocketSystem = "localized-net-pocket-deformation";
@@ -1050,12 +1041,10 @@ export function createGoalAndNet() {
     group.add(cap);
   });
 
-  var leftTrim = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.28, 0.135), trimMaterial);
-  leftTrim.name = "goal-brand-trim-left-post";
+  var leftTrim = makeBeveledBox("goal-brand-trim-left-post", 0.15, 0.28, 0.135, 0.025, trimMaterial);
   leftTrim.position.set(-RAPIER_GOAL.halfWidth, 0.42, RAPIER_GOAL.netPlaneZ - 0.005);
-  var rightTrim = leftTrim.clone();
-  rightTrim.name = "goal-brand-trim-right-post";
-  rightTrim.position.x = RAPIER_GOAL.halfWidth;
+  var rightTrim = makeBeveledBox("goal-brand-trim-right-post", 0.15, 0.28, 0.135, 0.025, trimMaterial);
+  rightTrim.position.set(RAPIER_GOAL.halfWidth, 0.42, RAPIER_GOAL.netPlaneZ - 0.005);
   group.add(leftTrim, rightTrim);
 
   var collarMaterial = new THREE.MeshStandardMaterial({ color: "#e7efe7", roughness: 0.34, metalness: 0.12 });
@@ -1301,9 +1290,7 @@ export function createGoalAndNet() {
 
   var crossbarSleeveMaterial = new THREE.MeshStandardMaterial({ color: "#fff4d2", roughness: 0.34, metalness: 0.03 });
   [-1, 0, 1].forEach(function addCrossbarSleeve(offset, index) {
-    var sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.073, 0.076, 0.28, 18), crossbarSleeveMaterial);
-    sleeve.name = "goal-frame-crossbar-sleeve-" + index;
-    sleeve.rotation.z = Math.PI / 2;
+    var sleeve = makeBeveledBox("goal-frame-crossbar-sleeve-" + index, 0.28, 0.13, 0.08, 0.026, crossbarSleeveMaterial);
     sleeve.position.set(offset * RAPIER_GOAL.halfWidth * 0.48, RAPIER_GOAL.height, RAPIER_GOAL.netPlaneZ + 0.002);
     group.add(sleeve);
   });
@@ -1315,8 +1302,7 @@ export function createGoalAndNet() {
     ["rear-left", -RAPIER_GOAL.halfWidth - 0.34, 0.3, RAPIER_GOAL.netPlaneZ + 0.72],
     ["rear-right", RAPIER_GOAL.halfWidth + 0.34, 0.3, RAPIER_GOAL.netPlaneZ + 0.72],
   ].forEach(function addRopeTensioner(item) {
-    var tensioner = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.052, 0.04), tensionerMaterial);
-    tensioner.name = "goal-net-rope-tensioner-" + item[0];
+    var tensioner = makeBeveledBox("goal-net-rope-tensioner-" + item[0], 0.12, 0.052, 0.04, 0.014, tensionerMaterial);
     tensioner.position.set(item[1], item[2], item[3]);
     tensioner.rotation.y = item[1] < 0 ? 0.28 : -0.28;
     group.add(registerDynamicNetDetail(tensioner, 0.38, 0.18));
@@ -1347,8 +1333,7 @@ export function createGoalAndNet() {
     anchor.position.set(item[1], 0.03, item[3]);
     group.add(anchor);
 
-    var footPad = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.13, 0.032, 20), footPadMaterial);
-    footPad.name = "goal-frame-ground-foot-pad-" + item[0];
+    var footPad = makeBeveledBox("goal-frame-ground-foot-pad-" + item[0], 0.28, 0.034, 0.18, 0.028, footPadMaterial);
     footPad.position.set(item[1], 0.018, item[3]);
     footPad.scale.set(item[0].startsWith("front") ? 1.12 : 0.92, 1, item[0].startsWith("front") ? 0.72 : 0.86);
     group.add(footPad);
@@ -1437,8 +1422,7 @@ export function createGoalAndNet() {
   var hingeMaterial = new THREE.MeshStandardMaterial({ color: "#d9e6dc", roughness: 0.38, metalness: 0.12 });
   ["left", "right"].forEach(function addDepthHinge(side) {
     var sign = side === "left" ? -1 : 1;
-    var hinge = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.075, 0.05), hingeMaterial);
-    hinge.name = "goal-depth-hinge-bracket-" + side;
+    var hinge = makeBeveledBox("goal-depth-hinge-bracket-" + side, 0.14, 0.075, 0.05, 0.016, hingeMaterial);
     hinge.position.set(sign * (RAPIER_GOAL.halfWidth + 0.26), 0.13, RAPIER_GOAL.netPlaneZ + 0.72);
     hinge.rotation.y = sign * 0.34;
     group.add(hinge);
@@ -1467,6 +1451,7 @@ export function setLimb(mesh, start, end) {
 export function createShooterModel() {
   var group = new THREE.Group();
   group.userData.visualStyle = "polished-ball-launcher";
+  group.userData.geometryPolishSystem = ROUNDED_BOX_BEVELED_PROP_SYSTEM;
   group.userData.launcherStationSystem = "animated-launch-bay-with-ball-feed";
   group.userData.launcherRigSystem = "pro-matchday-machine-rig";
   group.userData.matchUseDetailSystem = "launcher-ground-contact-wear-layer";
@@ -1497,11 +1482,7 @@ export function createShooterModel() {
     side: THREE.DoubleSide,
   });
 
-  var kickPad = new THREE.Mesh(new THREE.CircleGeometry(0.72, 36), laneMat.clone());
-  kickPad.name = "launcher-kick-pad";
-  kickPad.rotation.x = -Math.PI / 2;
-  kickPad.scale.set(1.22, 0.52, 1);
-  kickPad.position.set(0, 0.012, 0.42);
+  var kickPad = makeBeveledBox("launcher-kick-pad", 1.22, 0.018, 0.52, 0.12, laneMat.clone(), 0, 0.012, 0.42, 8);
 
   var aimRailLeft = makeLimb("#f8fff0", 0.012);
   aimRailLeft.name = "launcher-aim-rail-left";
@@ -1557,17 +1538,14 @@ export function createShooterModel() {
     return treadShadow;
   });
 
-  var serviceMat = new THREE.Mesh(new THREE.PlaneGeometry(0.82, 0.42), new THREE.MeshBasicMaterial({
+  var serviceMat = makeBeveledBox("launcher-service-mat", 0.82, 0.018, 0.42, 0.06, new THREE.MeshBasicMaterial({
     color: "#2e4134",
     transparent: true,
     opacity: 0.28,
     depthWrite: false,
     side: THREE.DoubleSide,
-  }));
-  serviceMat.name = "launcher-service-mat";
-  serviceMat.rotation.x = -Math.PI / 2;
+  }), -0.72, 0.012, 0.42, 6);
   serviceMat.rotation.z = -0.08;
-  serviceMat.position.set(-0.72, 0.012, 0.42);
 
   var footprintScuffMat = new THREE.MeshBasicMaterial({
     color: "#756a42",
@@ -1636,8 +1614,7 @@ export function createShooterModel() {
     wheel.add(groove);
   });
 
-  var hopper = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.17, 0.38, 20), panelMat);
-  hopper.name = "launcher-hopper";
+  var hopper = makeBeveledBox("launcher-hopper", 0.48, 0.34, 0.36, 0.075, panelMat);
   hopper.position.set(0, 1.38, -0.16);
   hopper.rotation.x = -0.16;
   var feedRack = makeRoundedPart("launcher-feed-rack", 0.72, 0.08, 0.024, 0.08, chassisMat, 0, 1.55, -0.22);
