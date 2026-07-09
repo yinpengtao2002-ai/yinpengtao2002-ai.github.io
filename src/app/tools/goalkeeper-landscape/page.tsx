@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import GoalkeeperLandscapeRuntime, { GOALKEEPER_SCRIPT_SRC } from "./GoalkeeperLandscapeRuntime";
 
-const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-_G8vgdsd.css";
+const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-aiq5nNfG.css";
 
 export const metadata: Metadata = {
   title: "弹力手套守门挑战｜Lucas Yin",
@@ -122,6 +122,11 @@ export default function GoalkeeperLandscapePage() {
                 <p className="result-coach" id="resultCoach" data-result-coach-system="round-result-coach-note">
                   下一局先等球过半，再做大幅移动
                 </p>
+                <div className="result-review" id="resultReview" data-result-review-system="round-result-review-cards" aria-label="本局复盘">
+                  <span>亮点 <strong id="finalHighlight">先读第一脚球</strong></span>
+                  <span>短板 <strong id="finalWeakness">出手再慢一点</strong></span>
+                  <span>目标 <strong id="finalNextTarget">先完成 3 次扑救</strong></span>
+                </div>
                 <div className="result-stats" aria-label="本局统计">
                   <span>扑救 <strong id="finalSaves">0</strong></span>
                   <span>连扑 <strong id="finalBestStreak">x0</strong></span>

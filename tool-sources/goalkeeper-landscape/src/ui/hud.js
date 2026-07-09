@@ -8,6 +8,7 @@ export const ROUND_RESULT_TAGS_MARKER = "round-result-performance-tags";
 export const MATCH_AUDIO_STATUS_MARKER = "match-audio-status-chip";
 export const MATCH_PAUSE_HINT_MARKER = "match-pause-coach-hint";
 export const ROUND_RESULT_COACH_MARKER = "round-result-coach-note";
+export const ROUND_RESULT_REVIEW_MARKER = "round-result-review-cards";
 export const MATCH_EVENT_RIBBON_MARKER = "broadcast-event-ribbon-hud";
 export const MATCH_CONTROL_RAIL_MARKER = "live-match-control-rail";
 export const MATCH_ATMOSPHERE_MARKER = "match-atmosphere-event-rail";
@@ -71,6 +72,35 @@ export function getResultCoachText(state) {
   if (conceded <= 1 && saves >= 5) return "保持站位，下一局可以多赌远角";
   if (bestStreak >= 3) return "连扑节奏不错，继续提前读球路";
   return "下一局先等球过半，再做大幅移动";
+}
+
+export function getResultReviewPlan(state) {
+  var grade = getResultGrade(state);
+  var saves = state?.saves || 0;
+  var conceded = state?.conceded || 0;
+  var bestStreak = state?.bestStreak || 0;
+  var highlight = bestStreak >= 3 ? "连续扑救 x" + String(bestStreak) : saves > 0 ? "完成 " + String(saves) + " 次扑救" : "先读第一脚球";
+  var weakness =
+    conceded >= MAX_CONCEDED - 1
+      ? "中路保护不稳"
+      : conceded <= 1 && saves >= 5
+        ? "远角别追太早"
+        : bestStreak >= 3
+          ? "远角别追太早"
+          : "出手再慢一点";
+  var nextTarget =
+    grade === "S" || grade === "A"
+      ? "困难练边角"
+      : state?.endReason === "conceded" || conceded >= MAX_CONCEDED - 1
+        ? "前 3 球守中路"
+        : "先完成 3 次扑救";
+
+  return {
+    marker: ROUND_RESULT_REVIEW_MARKER,
+    highlight: highlight,
+    weakness: weakness,
+    nextTarget: nextTarget,
+  };
 }
 
 export function getResultPerformanceTags(state) {
@@ -334,6 +364,10 @@ export function createHud(documentRef) {
     resultVerdict: documentRef.getElementById("resultVerdict"),
     resultSummary: documentRef.getElementById("resultSummary"),
     resultCoach: documentRef.getElementById("resultCoach"),
+    resultReview: documentRef.getElementById("resultReview"),
+    finalHighlight: documentRef.getElementById("finalHighlight"),
+    finalWeakness: documentRef.getElementById("finalWeakness"),
+    finalNextTarget: documentRef.getElementById("finalNextTarget"),
     feedbackToast: documentRef.getElementById("feedbackToast"),
     eventRibbon: documentRef.getElementById("eventRibbon"),
     matchAtmosphere: documentRef.getElementById("matchAtmosphere"),
@@ -583,6 +617,11 @@ export function createHud(documentRef) {
         refs.resultCoach.textContent = getResultCoachText(state);
         refs.resultCoach.dataset.resultCoachSystem = ROUND_RESULT_COACH_MARKER;
       }
+      var resultReview = getResultReviewPlan(state);
+      if (refs.resultReview) refs.resultReview.dataset.resultReviewSystem = resultReview.marker;
+      if (refs.finalHighlight) refs.finalHighlight.textContent = resultReview.highlight;
+      if (refs.finalWeakness) refs.finalWeakness.textContent = resultReview.weakness;
+      if (refs.finalNextTarget) refs.finalNextTarget.textContent = resultReview.nextTarget;
       if (refs.pauseHint) {
         refs.pauseHint.textContent = getPauseHintText(state);
         refs.pauseHint.dataset.pauseHintSystem = MATCH_PAUSE_HINT_MARKER;

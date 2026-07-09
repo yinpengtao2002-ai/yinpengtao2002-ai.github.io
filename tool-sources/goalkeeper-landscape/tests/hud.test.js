@@ -58,6 +58,10 @@ function createDocument() {
     "resultVerdict",
     "resultSummary",
     "resultCoach",
+    "resultReview",
+    "finalHighlight",
+    "finalWeakness",
+    "finalNextTarget",
     "feedbackToast",
     "eventRibbon",
     "matchAtmosphere",
@@ -678,5 +682,49 @@ describe("hud", () => {
     expect(documentRef.elements.finalSaveRate.textContent).toBe("17%");
     expect(documentRef.elements.finalRhythmTag.textContent).toBe("启动");
     expect(documentRef.elements.finalControlTag.textContent).toBe("吃紧");
+  });
+
+  it("adds a three-part round review so the end screen gives useful next-round direction", () => {
+    expect(HudModule.getResultReviewPlan).toBeTypeOf("function");
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    const strongRound = {
+      ...createGameState(),
+      ended: true,
+      score: 1120,
+      saves: 8,
+      conceded: 1,
+      bestStreak: 5,
+      endReason: "time",
+    };
+    const lostRound = {
+      ...createGameState(),
+      ended: true,
+      score: 150,
+      saves: 2,
+      conceded: 5,
+      bestStreak: 1,
+      endReason: "conceded",
+    };
+
+    expect(HudModule.getResultReviewPlan(strongRound)).toEqual({
+      marker: "round-result-review-cards",
+      highlight: "连续扑救 x5",
+      weakness: "远角别追太早",
+      nextTarget: "困难练边角",
+    });
+
+    hud.update(strongRound, true);
+
+    expect(documentRef.elements.resultReview.dataset.resultReviewSystem).toBe("round-result-review-cards");
+    expect(documentRef.elements.finalHighlight.textContent).toBe("连续扑救 x5");
+    expect(documentRef.elements.finalWeakness.textContent).toBe("远角别追太早");
+    expect(documentRef.elements.finalNextTarget.textContent).toBe("困难练边角");
+
+    hud.update(lostRound, true);
+
+    expect(documentRef.elements.finalHighlight.textContent).toBe("完成 2 次扑救");
+    expect(documentRef.elements.finalWeakness.textContent).toBe("中路保护不稳");
+    expect(documentRef.elements.finalNextTarget.textContent).toBe("前 3 球守中路");
   });
 });

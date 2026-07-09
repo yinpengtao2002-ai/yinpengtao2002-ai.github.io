@@ -31,6 +31,10 @@ describe("responsive layout css", () => {
     expect(css).toContain("short-landscape-result-panel");
     expect(css).toContain(".end-overlay");
     expect(css).toContain("max-height: calc(100svh - 16px);");
+    expect(css).toContain("round-result-review-cards");
+    expect(css).toContain(".result-review");
+    expect(css).toContain(".result-review span");
+    expect(css).toContain(".result-review strong");
     expect(css).toContain("#restartButton");
     expect(css).toContain("height: 38px;");
   });
