@@ -215,6 +215,44 @@ describe("procedural 3D assets", () => {
     expect(launcher.exhaustPuffs.every((puff) => !puff.visible && puff.material.opacity === 0)).toBe(true);
   });
 
+  it("adds an indexed rotary ball-feed servo so the launcher reads as real training equipment", () => {
+    const launcher = createShooterModel();
+
+    expect(launcher.group.userData.launcherFeedSystem).toBe("indexed-rotary-ball-feed-servo");
+    expect(collectByName(launcher.group, /^launcher-feed-carousel$/)).toHaveLength(1);
+    expect(collectByName(launcher.group, /^launcher-feed-carousel-spoke-/)).toHaveLength(4);
+    expect(collectByName(launcher.group, /^launcher-feed-servo-arm$/)).toHaveLength(1);
+    expect(collectByName(launcher.group, /^launcher-feed-guide-chute$/)).toHaveLength(1);
+    expect(collectByName(launcher.group, /^launcher-feed-index-marker-/)).toHaveLength(3);
+    expect(launcher.feedCarousel).toBeTruthy();
+    expect(launcher.feedServoArm).toBeTruthy();
+    expect(launcher.feedGuideChute.material.transparent).toBe(true);
+    expect(launcher.feedIndexMarkers).toHaveLength(3);
+
+    const restRotation = launcher.feedCarousel.rotation.z;
+    const restArmRotation = launcher.feedServoArm.rotation.z;
+
+    updateShooterModel(launcher, {
+      phase: "cue",
+      phaseTime: 0.72,
+      currentShot: { cueDuration: 1, cue: { side: -1 } },
+    });
+
+    expect(launcher.feedCarousel.rotation.z).not.toBe(restRotation);
+    expect(launcher.feedServoArm.rotation.z).not.toBe(restArmRotation);
+    expect(launcher.feedGuideChute.material.opacity).toBeGreaterThan(0.2);
+    expect(launcher.feedIndexMarkers.some((marker) => marker.material.opacity > 0.42)).toBe(true);
+
+    updateShooterModel(launcher, {
+      phase: "live",
+      phaseTime: 0.06,
+      currentShot: { cueDuration: 1, cue: { side: -1 } },
+    });
+
+    expect(Math.abs(launcher.feedServoArm.rotation.z)).toBeGreaterThan(Math.abs(restArmRotation));
+    expect(launcher.feedGuideChute.material.opacity).toBeLessThanOrEqual(0.5);
+  });
+
   it("builds polished orange gloves with highlights and black cuffs", () => {
     const glove = createGloveMesh("left");
 
@@ -676,6 +714,37 @@ describe("procedural 3D assets", () => {
     expect(rearPocketDiamondRopes.every((rope) => rope.position.z > 0.24)).toBe(true);
     expect(rearDepthRows.length).toBeGreaterThanOrEqual(3);
     expect(rearDepthRows.every((rope) => rope.material.opacity <= 0.09)).toBe(true);
+  });
+
+  it("adds an edge-laced rear pocket net that looks woven without blocking the shot lane", () => {
+    const goal = createGoalAndNet();
+    const edgeLaces = collectByName(goal.group, /^goal-net-matchday-edge-lace-/);
+    const sideCheekLaces = collectByName(goal.group, /^goal-net-side-cheek-lace-/);
+    const sideCheekCrossLaces = collectByName(goal.group, /^goal-net-side-cheek-lace-(left|right)-cross-/);
+    const rearDepthLaces = collectByName(goal.group, /^goal-net-rear-pocket-depth-lace-/);
+    const highlightCords = collectByName(goal.group, /^goal-net-cord-highlight-/);
+    const laceKnots = collectByName(goal.group, /^goal-net-lace-knot-/);
+    const allWovenLaces = [...edgeLaces, ...sideCheekLaces, ...rearDepthLaces];
+
+    expect(goal.group.userData.netMatchdayLacingSystem).toBe("edge-laced-rear-pocket-net-clear-lane");
+    expect(goal.group.userData.netLaneGuardSystem).toBe("peripheral-net-detail-open-shot-lane");
+    expect(edgeLaces).toHaveLength(4);
+    expect(sideCheekLaces.length).toBeGreaterThanOrEqual(8);
+    expect(sideCheekCrossLaces.length).toBeGreaterThanOrEqual(4);
+    expect(rearDepthLaces.length).toBeGreaterThanOrEqual(4);
+    expect(highlightCords.length).toBeGreaterThanOrEqual(4);
+    expect(laceKnots.length).toBeGreaterThanOrEqual(12);
+    expect(allWovenLaces.every((rope) => rope.geometry.type === "TubeGeometry")).toBe(true);
+    expect(allWovenLaces.every((rope) => rope.material.userData.netMaterialSystem === "braided-nylon-cord-pbr")).toBe(true);
+    expect(allWovenLaces.every((rope) => rope.material.bumpMap?.userData.assetSystem === "procedural-braided-cord-net-material")).toBe(true);
+    expect(allWovenLaces.every((rope) => rope.material.transparent && rope.material.depthWrite === false)).toBe(true);
+    expect(allWovenLaces.every((rope) => rope.userData.netLaneGuardSystem === "peripheral-net-detail-open-shot-lane")).toBe(true);
+    expect(allWovenLaces.every((rope) => rope.userData.crossesKeeperSightline === false)).toBe(true);
+    expect(allWovenLaces.every((rope) => rope.material.opacity >= 0.075 && rope.material.opacity <= 0.24)).toBe(true);
+    expect(highlightCords.every((cord) => cord.material.transparent && cord.material.opacity <= 0.12)).toBe(true);
+    expect(laceKnots.every((knot) => knot.material.transparent && knot.material.opacity <= 0.16)).toBe(true);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-matchday-edge-lace-"))).toBe(true);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-side-cheek-lace-"))).toBe(true);
   });
 
   it("adds assembled goal hardware details so the frame feels manufactured rather than procedural", () => {

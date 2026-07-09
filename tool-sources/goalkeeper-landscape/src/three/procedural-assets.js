@@ -16,6 +16,8 @@ const NET_PROFESSIONAL_SYSTEM = "slack-knotted-pro-goal-net";
 const NET_OCCLUSION_BUDGET_SYSTEM = "keeper-view-low-opacity-center-window";
 const NET_CENTER_WINDOW_SYSTEM = "true-open-center-shot-window";
 const NET_REALISM_UPGRADE_SYSTEM = "layered-rear-pocket-braided-net";
+const NET_MATCHDAY_LACING_SYSTEM = "edge-laced-rear-pocket-net-clear-lane";
+const NET_LANE_GUARD_SYSTEM = "peripheral-net-detail-open-shot-lane";
 
 export function getMatchdayAssetPolishProfile() {
   return {
@@ -841,6 +843,8 @@ export function createGoalAndNet() {
   group.userData.netOcclusionBudgetSystem = NET_OCCLUSION_BUDGET_SYSTEM;
   group.userData.netCenterWindowSystem = NET_CENTER_WINDOW_SYSTEM;
   group.userData.netRealismUpgradeSystem = NET_REALISM_UPGRADE_SYSTEM;
+  group.userData.netMatchdayLacingSystem = NET_MATCHDAY_LACING_SYSTEM;
+  group.userData.netLaneGuardSystem = NET_LANE_GUARD_SYSTEM;
   group.userData.matchUseDetailSystem = "match-use-equipment-wear-layer";
   var dynamicNetDetails = [];
   var keeperSightline = {
@@ -1064,6 +1068,28 @@ export function createGoalAndNet() {
     rope.userData.geometrySource = "three-tube-geometry-raised-net-rope";
     return rope;
   }
+  function makeMatchdayLace(name, points, radius = 0.0054, opacity = 0.12, motionScale = 0.5, opacityScale = 0.16) {
+    var lace = makeRaisedRope(name, points, radius, opacity);
+    lace.renderOrder = 5;
+    lace.userData.netMatchdayLacingSystem = NET_MATCHDAY_LACING_SYSTEM;
+    lace.userData.netLaneGuardSystem = NET_LANE_GUARD_SYSTEM;
+    lace.userData.crossesKeeperSightline = points.some((point) => isInKeeperSightline(point));
+    return registerDynamicNetDetail(lace, motionScale, opacityScale);
+  }
+  function makeLaceKnot(name, x, y, z, radius = 0.016, opacity = 0.12) {
+    var knotMaterial = raisedRopeMaterial.clone();
+    knotMaterial.opacity = opacity;
+    knotMaterial.depthWrite = false;
+    knotMaterial.transparent = true;
+    var knot = new THREE.Mesh(new THREE.SphereGeometry(radius, 8, 6), knotMaterial);
+    knot.name = name;
+    knot.position.set(x, y, z);
+    knot.renderOrder = 6;
+    knot.userData.netMatchdayLacingSystem = NET_MATCHDAY_LACING_SYSTEM;
+    knot.userData.netLaneGuardSystem = NET_LANE_GUARD_SYSTEM;
+    knot.userData.crossesKeeperSightline = isInKeeperSightline(knot.position);
+    return registerDynamicNetDetail(knot, 0.36, 0.12);
+  }
   for (var ropeX = -RAPIER_GOAL.halfWidth + 0.5, raisedVerticalIndex = 0; ropeX <= RAPIER_GOAL.halfWidth - 0.49; ropeX += 0.78, raisedVerticalIndex += 1) {
     var verticalName = "goal-net-raised-vertical-cord-" + raisedVerticalIndex;
     if (Math.abs(ropeX) < keeperSightline.halfWidth) {
@@ -1276,6 +1302,106 @@ export function createGoalAndNet() {
       { x: RAPIER_GOAL.halfWidth - 0.4, y: rowY, z: -0.035 },
     ], 0.005, 0.058 + rowIndex * 0.006, RAPIER_GOAL.netPlaneZ + 0.86);
     group.add(registerDynamicNetDetail(rowRope, 0.46, 0.16));
+  });
+
+  [
+    ["top-left", [
+      { x: -RAPIER_GOAL.halfWidth + 0.16, y: RAPIER_GOAL.height - 0.085, z: RAPIER_GOAL.netPlaneZ + 0.18 },
+      { x: -RAPIER_GOAL.halfWidth * 0.66, y: RAPIER_GOAL.height - 0.14, z: RAPIER_GOAL.netPlaneZ + 0.32 },
+      { x: -keeperSightline.halfWidth - 0.18, y: RAPIER_GOAL.height - 0.13, z: RAPIER_GOAL.netPlaneZ + 0.26 },
+    ]],
+    ["top-right", [
+      { x: keeperSightline.halfWidth + 0.18, y: RAPIER_GOAL.height - 0.13, z: RAPIER_GOAL.netPlaneZ + 0.26 },
+      { x: RAPIER_GOAL.halfWidth * 0.66, y: RAPIER_GOAL.height - 0.14, z: RAPIER_GOAL.netPlaneZ + 0.32 },
+      { x: RAPIER_GOAL.halfWidth - 0.16, y: RAPIER_GOAL.height - 0.085, z: RAPIER_GOAL.netPlaneZ + 0.18 },
+    ]],
+    ["left-post", [
+      { x: -RAPIER_GOAL.halfWidth + 0.055, y: 0.26, z: RAPIER_GOAL.netPlaneZ + 0.14 },
+      { x: -RAPIER_GOAL.halfWidth + 0.022, y: RAPIER_GOAL.height * 0.5, z: RAPIER_GOAL.netPlaneZ + 0.22 },
+      { x: -RAPIER_GOAL.halfWidth + 0.055, y: RAPIER_GOAL.height - 0.24, z: RAPIER_GOAL.netPlaneZ + 0.14 },
+    ]],
+    ["right-post", [
+      { x: RAPIER_GOAL.halfWidth - 0.055, y: 0.26, z: RAPIER_GOAL.netPlaneZ + 0.14 },
+      { x: RAPIER_GOAL.halfWidth - 0.022, y: RAPIER_GOAL.height * 0.5, z: RAPIER_GOAL.netPlaneZ + 0.22 },
+      { x: RAPIER_GOAL.halfWidth - 0.055, y: RAPIER_GOAL.height - 0.24, z: RAPIER_GOAL.netPlaneZ + 0.14 },
+    ]],
+  ].forEach(function addMatchdayEdgeLace(item, index) {
+    group.add(makeMatchdayLace("goal-net-matchday-edge-lace-" + item[0], item[1], index < 2 ? 0.0068 : 0.006, index < 2 ? 0.205 : 0.176, 0.44, 0.18));
+  });
+
+  ["left", "right"].forEach(function addSideCheekLaces(side) {
+    var sign = side === "left" ? -1 : 1;
+    [0.16, 0.34, 0.54, 0.74].forEach(function addSideCheekLace(depth, index) {
+      group.add(makeMatchdayLace("goal-net-side-cheek-lace-" + side + "-" + index, [
+        { x: sign * (RAPIER_GOAL.halfWidth + depth * 0.12), y: 0.28 + index * 0.035, z: RAPIER_GOAL.netPlaneZ + 0.14 + depth },
+        { x: sign * (RAPIER_GOAL.halfWidth + 0.18 + depth * 0.16), y: RAPIER_GOAL.height * 0.5 - index * 0.028, z: RAPIER_GOAL.netPlaneZ + 0.36 + depth * 0.58 },
+        { x: sign * (RAPIER_GOAL.halfWidth + 0.4), y: RAPIER_GOAL.height - 0.24 - index * 0.025, z: RAPIER_GOAL.netPlaneZ + 0.82 },
+      ], 0.0052, 0.13 + index * 0.012, 0.42, 0.15));
+    });
+    [
+      [
+        { x: sign * (RAPIER_GOAL.halfWidth + 0.04), y: 0.36, z: RAPIER_GOAL.netPlaneZ + 0.18 },
+        { x: sign * (RAPIER_GOAL.halfWidth + 0.28), y: RAPIER_GOAL.height * 0.48, z: RAPIER_GOAL.netPlaneZ + 0.58 },
+        { x: sign * (RAPIER_GOAL.halfWidth + 0.43), y: RAPIER_GOAL.height - 0.28, z: RAPIER_GOAL.netPlaneZ + 0.86 },
+      ],
+      [
+        { x: sign * (RAPIER_GOAL.halfWidth + 0.42), y: 0.42, z: RAPIER_GOAL.netPlaneZ + 0.86 },
+        { x: sign * (RAPIER_GOAL.halfWidth + 0.24), y: RAPIER_GOAL.height * 0.52, z: RAPIER_GOAL.netPlaneZ + 0.58 },
+        { x: sign * (RAPIER_GOAL.halfWidth + 0.04), y: RAPIER_GOAL.height - 0.34, z: RAPIER_GOAL.netPlaneZ + 0.18 },
+      ],
+    ].forEach(function addSideCheekCrossLace(points, crossIndex) {
+      group.add(makeMatchdayLace("goal-net-side-cheek-lace-" + side + "-cross-" + crossIndex, points, 0.0054, 0.158 + crossIndex * 0.018, 0.45, 0.16));
+    });
+  });
+
+  ["left", "right"].forEach(function addRearPocketDepthLaces(side) {
+    var sign = side === "left" ? -1 : 1;
+    [0.42, 0.9, 1.38].forEach(function addRearDepthLace(rowY, rowIndex) {
+      group.add(makeMatchdayLace("goal-net-rear-pocket-depth-lace-" + side + "-" + rowIndex, [
+        { x: sign * (RAPIER_GOAL.halfWidth - 0.22), y: rowY, z: RAPIER_GOAL.netPlaneZ + 0.58 },
+        { x: sign * (RAPIER_GOAL.halfWidth * 0.72), y: rowY - 0.045, z: RAPIER_GOAL.netPlaneZ + 0.82 + rowIndex * 0.025 },
+        { x: sign * (keeperSightline.halfWidth + 0.22), y: rowY - 0.035, z: RAPIER_GOAL.netPlaneZ + 0.74 + rowIndex * 0.018 },
+      ], 0.0048, 0.105 + rowIndex * 0.014, 0.38, 0.12));
+    });
+  });
+
+  [
+    ["top-left", [
+      { x: -RAPIER_GOAL.halfWidth + 0.24, y: RAPIER_GOAL.height - 0.04, z: RAPIER_GOAL.netPlaneZ + 0.105 },
+      { x: -keeperSightline.halfWidth - 0.22, y: RAPIER_GOAL.height - 0.06, z: RAPIER_GOAL.netPlaneZ + 0.12 },
+    ]],
+    ["top-right", [
+      { x: keeperSightline.halfWidth + 0.22, y: RAPIER_GOAL.height - 0.06, z: RAPIER_GOAL.netPlaneZ + 0.12 },
+      { x: RAPIER_GOAL.halfWidth - 0.24, y: RAPIER_GOAL.height - 0.04, z: RAPIER_GOAL.netPlaneZ + 0.105 },
+    ]],
+    ["left-side", [
+      { x: -RAPIER_GOAL.halfWidth + 0.035, y: 0.36, z: RAPIER_GOAL.netPlaneZ + 0.1 },
+      { x: -RAPIER_GOAL.halfWidth + 0.035, y: RAPIER_GOAL.height - 0.32, z: RAPIER_GOAL.netPlaneZ + 0.1 },
+    ]],
+    ["right-side", [
+      { x: RAPIER_GOAL.halfWidth - 0.035, y: 0.36, z: RAPIER_GOAL.netPlaneZ + 0.1 },
+      { x: RAPIER_GOAL.halfWidth - 0.035, y: RAPIER_GOAL.height - 0.32, z: RAPIER_GOAL.netPlaneZ + 0.1 },
+    ]],
+  ].forEach(function addCordHighlight(item) {
+    var highlight = makeMatchdayLace("goal-net-cord-highlight-" + item[0], item[1], 0.003, 0.095, 0.26, 0.08);
+    highlight.material.color.set("#ffffff");
+    group.add(highlight);
+  });
+
+  var laceKnotIndex = 0;
+  ["left", "right"].forEach(function addLaceKnotColumn(side) {
+    var sign = side === "left" ? -1 : 1;
+    [0.42, 0.78, 1.14, 1.5, 1.86, RAPIER_GOAL.height - 0.24].forEach(function addColumnKnot(y, rowIndex) {
+      group.add(makeLaceKnot(
+        "goal-net-lace-knot-" + laceKnotIndex,
+        sign * (RAPIER_GOAL.halfWidth - 0.18 - (rowIndex % 2) * 0.12),
+        y,
+        RAPIER_GOAL.netPlaneZ + 0.18 + (rowIndex % 3) * 0.07,
+        0.013 + (rowIndex % 2) * 0.002,
+        0.095 + (rowIndex % 3) * 0.014,
+      ));
+      laceKnotIndex += 1;
+    });
   });
 
   ["left", "right"].forEach(function addSideReturnCord(side) {
@@ -1650,6 +1776,7 @@ export function createShooterModel() {
   group.userData.launcherRigSystem = "pro-matchday-machine-rig";
   group.userData.launcherMechanismSystem = "hydraulic-recoil-aiming-cradle";
   group.userData.launcherReleaseFeedbackSystem = "recoil-exhaust-floor-shock-kit";
+  group.userData.launcherFeedSystem = "indexed-rotary-ball-feed-servo";
   group.userData.matchUseDetailSystem = "launcher-ground-contact-wear-layer";
   group.position.set(0, 0, SHOT_3D.origin.z);
   group.scale.setScalar(1.45);
@@ -1669,6 +1796,7 @@ export function createShooterModel() {
   var screenMat = new THREE.MeshBasicMaterial({ color: "#61f0ff", transparent: true, opacity: 0.42, depthWrite: false });
   var ledMat = new THREE.MeshBasicMaterial({ color: "#fff1a8", transparent: true, opacity: 0.42, depthWrite: false });
   var railMat = new THREE.MeshBasicMaterial({ color: "#dff8ff", transparent: true, opacity: 0.28, depthWrite: false });
+  var feedChuteMat = new THREE.MeshBasicMaterial({ color: "#dff8ff", transparent: true, opacity: 0.24, depthWrite: false, side: THREE.DoubleSide });
   var operatorMat = new THREE.MeshStandardMaterial({ color: "#203039", roughness: 0.68, metalness: 0.02 });
   var operatorAccentMat = new THREE.MeshStandardMaterial({ color: "#ff8b3d", roughness: 0.46, metalness: 0.02 });
   var flashMat = new THREE.MeshBasicMaterial({
@@ -1895,6 +2023,39 @@ export function createShooterModel() {
   hopper.rotation.x = -0.16;
   var feedRack = makeRoundedPart("launcher-feed-rack", 0.72, 0.08, 0.024, 0.08, chassisMat, 0, 1.55, -0.22);
   feedRack.rotation.x = -0.1;
+  var feedCarousel = new THREE.Group();
+  feedCarousel.name = "launcher-feed-carousel";
+  feedCarousel.position.set(0, 1.5, -0.43);
+  feedCarousel.rotation.x = -0.16;
+  var feedCarouselHub = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.012, 8, 32), barrelMat.clone());
+  feedCarouselHub.name = "launcher-feed-carousel-hub";
+  var feedCarouselSpokes = Array.from({ length: 4 }, (_, index) => {
+    var angle = (index / 4) * Math.PI * 2;
+    var spoke = makeLimb(index % 2 === 0 ? "#dff8ff" : "#fff1a8", 0.006);
+    spoke.name = "launcher-feed-carousel-spoke-" + index;
+    spoke.material.transparent = true;
+    spoke.material.opacity = index % 2 === 0 ? 0.48 : 0.36;
+    setLimb(spoke, { x: 0, y: 0, z: 0 }, { x: Math.cos(angle) * 0.21, y: Math.sin(angle) * 0.21, z: 0 });
+    return spoke;
+  });
+  feedCarousel.add(feedCarouselHub, ...feedCarouselSpokes);
+  var feedServoArm = makeLimb("#ff8b3d", 0.012);
+  feedServoArm.name = "launcher-feed-servo-arm";
+  feedServoArm.material.transparent = true;
+  feedServoArm.material.opacity = 0.78;
+  setLimb(feedServoArm, { x: 0.22, y: 1.46, z: -0.38 }, { x: 0.42, y: 1.34, z: -0.08 });
+  feedServoArm.userData.baseRotationZ = feedServoArm.rotation.z;
+  var feedGuideChute = makeBeveledBox("launcher-feed-guide-chute", 0.54, 0.045, 0.11, 0.026, feedChuteMat.clone(), 0, 1.31, -0.02, 5);
+  feedGuideChute.rotation.x = -0.16;
+  feedGuideChute.rotation.z = 0.04;
+  var feedIndexMarkers = [-0.18, 0, 0.18].map((x, index) => {
+    var marker = new THREE.Mesh(new THREE.CircleGeometry(0.027, 16), index === 1 ? accentMat.clone() : orangeAccentMat.clone());
+    marker.name = "launcher-feed-index-marker-" + index;
+    marker.material.opacity = 0.28 + index * 0.035;
+    marker.position.set(x, 1.39, -0.002);
+    marker.rotation.x = -0.16;
+    return marker;
+  });
   var queueBalls = [-0.24, 0, 0.24].map((x, index) => {
     var queueBall = new THREE.Mesh(new THREE.SphereGeometry(0.095, 18, 12), ballMat);
     queueBall.name = "launcher-feed-queue-ball-" + index;
@@ -2091,6 +2252,10 @@ export function createShooterModel() {
     wheelRight,
     hopper,
     feedRack,
+    feedCarousel,
+    feedServoArm,
+    feedGuideChute,
+    ...feedIndexMarkers,
     ...queueBalls,
     feedBall,
     controlConsole,
@@ -2115,6 +2280,10 @@ export function createShooterModel() {
     wheelLeft,
     wheelRight,
     hopper,
+    feedCarousel,
+    feedServoArm,
+    feedGuideChute,
+    feedIndexMarkers,
     feedBall,
     queueBalls,
     laneChevrons,
@@ -2172,6 +2341,24 @@ export function updateShooterModel(model, director) {
     ball.position.x = -0.24 + index * 0.24 + side * charge * 0.006;
     ball.position.z = -0.23 - index * 0.035 + readyOffset;
     ball.rotation.y += 0.01 + index * 0.002;
+  });
+  if (model.feedCarousel) {
+    var indexAdvance = director.phase === "live" ? 0.42 + muzzlePulse * 0.36 : cueProgress * 0.34;
+    model.feedCarousel.rotation.z = side * (indexAdvance * Math.PI * 2 + charge * 0.18);
+  }
+  if (model.feedServoArm) {
+    var servoBaseRotation = Number.isFinite(model.feedServoArm.userData.baseRotationZ) ? model.feedServoArm.userData.baseRotationZ : 0;
+    var servoDirection = Math.sign(servoBaseRotation || -side || 1);
+    model.feedServoArm.rotation.z = servoBaseRotation + servoDirection * (0.12 + charge * 0.18 + muzzlePulse * 0.32);
+    model.feedServoArm.material.opacity = 0.58 + charge * 0.18 + muzzlePulse * 0.16;
+  }
+  if (model.feedGuideChute) {
+    model.feedGuideChute.material.opacity = Math.min(0.5, 0.18 + charge * 0.18 + muzzlePulse * 0.12);
+  }
+  model.feedIndexMarkers?.forEach((marker, index) => {
+    var markerPulse = Math.max(0, Math.sin((activeProgress + index * 0.16) * Math.PI));
+    marker.material.opacity = 0.22 + markerPulse * 0.28 + (director.phase === "live" && index === 2 ? muzzlePulse * 0.12 : 0);
+    marker.scale.setScalar(1 + markerPulse * 0.16 + muzzlePulse * 0.06);
   });
   model.laneChevrons?.forEach((chevron, index) => {
     chevron.material.opacity = 0.24 + charge * 0.18 + (index / Math.max(1, model.laneChevrons.length - 1)) * 0.12;
