@@ -747,6 +747,38 @@ describe("procedural 3D assets", () => {
     expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-side-cheek-lace-"))).toBe(true);
   });
 
+  it("adds match-grade woven rear pocket texture while keeping the center ball-first", () => {
+    const goal = createGoalAndNet();
+    const rearPocketThreads = collectByName(goal.group, /^goal-net-match-weave-rear-pocket-thread-/);
+    const weaveKnots = collectByName(goal.group, /^goal-net-match-weave-knot-/);
+    const edgeBraids = collectByName(goal.group, /^goal-net-front-edge-braided-strand-/);
+    const allMatchWeaveDetails = [...rearPocketThreads, ...weaveKnots, ...edgeBraids];
+    const centerDepthThreads = rearPocketThreads.filter((thread) => thread.userData.rearPocketLayer === "center-depth-detail");
+    const centerDepthKnots = weaveKnots.filter((knot) => knot.userData.rearPocketLayer === "center-depth-detail");
+    const frontLaneDetails = allMatchWeaveDetails.filter((detail) => detail.userData.frontShotLaneOcclusion > 0);
+
+    expect(goal.group.userData.netMatchGradeTextureSystem).toBe("match-grade-woven-net-texture-clear-sightline");
+    expect(goal.group.userData.netShotLaneVisibilitySystem).toBe("center-lane-ball-first-net-budget");
+    expect(rearPocketThreads.length).toBeGreaterThanOrEqual(18);
+    expect(weaveKnots.length).toBeGreaterThanOrEqual(24);
+    expect(edgeBraids.length).toBeGreaterThanOrEqual(6);
+    expect(rearPocketThreads.every((thread) => thread.geometry.type === "TubeGeometry")).toBe(true);
+    expect(edgeBraids.every((strand) => strand.geometry.type === "TubeGeometry")).toBe(true);
+    expect(allMatchWeaveDetails.every((detail) => detail.userData.netMatchGradeTextureSystem === "match-grade-woven-net-texture-clear-sightline")).toBe(true);
+    expect(allMatchWeaveDetails.every((detail) => detail.userData.netShotLaneVisibilitySystem === "center-lane-ball-first-net-budget")).toBe(true);
+    expect(rearPocketThreads.every((thread) => thread.material.userData.netMaterialSystem === "braided-nylon-cord-pbr")).toBe(true);
+    expect(rearPocketThreads.every((thread) => thread.material.bumpMap?.userData.assetSystem === "procedural-braided-cord-net-material")).toBe(true);
+    expect(centerDepthThreads.length).toBeGreaterThan(0);
+    expect(centerDepthKnots.length).toBeGreaterThan(0);
+    expect([...centerDepthThreads, ...centerDepthKnots].every((detail) => detail.userData.behindShotLane === true)).toBe(true);
+    expect(centerDepthThreads.every((thread) => thread.material.opacity <= 0.064)).toBe(true);
+    expect(centerDepthKnots.every((knot) => knot.material.opacity <= 0.05)).toBe(true);
+    expect(frontLaneDetails).toHaveLength(0);
+    expect(edgeBraids.every((strand) => strand.userData.crossesKeeperSightline === false)).toBe(true);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-match-weave-rear-pocket-thread-"))).toBe(true);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-match-weave-knot-"))).toBe(true);
+  });
+
   it("adds assembled goal hardware details so the frame feels manufactured rather than procedural", () => {
     const goal = createGoalAndNet();
 

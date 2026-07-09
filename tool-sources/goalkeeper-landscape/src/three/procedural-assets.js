@@ -18,6 +18,8 @@ const NET_CENTER_WINDOW_SYSTEM = "true-open-center-shot-window";
 const NET_REALISM_UPGRADE_SYSTEM = "layered-rear-pocket-braided-net";
 const NET_MATCHDAY_LACING_SYSTEM = "edge-laced-rear-pocket-net-clear-lane";
 const NET_LANE_GUARD_SYSTEM = "peripheral-net-detail-open-shot-lane";
+const NET_MATCH_GRADE_TEXTURE_SYSTEM = "match-grade-woven-net-texture-clear-sightline";
+const NET_SHOT_LANE_VISIBILITY_SYSTEM = "center-lane-ball-first-net-budget";
 
 export function getMatchdayAssetPolishProfile() {
   return {
@@ -845,6 +847,8 @@ export function createGoalAndNet() {
   group.userData.netRealismUpgradeSystem = NET_REALISM_UPGRADE_SYSTEM;
   group.userData.netMatchdayLacingSystem = NET_MATCHDAY_LACING_SYSTEM;
   group.userData.netLaneGuardSystem = NET_LANE_GUARD_SYSTEM;
+  group.userData.netMatchGradeTextureSystem = NET_MATCH_GRADE_TEXTURE_SYSTEM;
+  group.userData.netShotLaneVisibilitySystem = NET_SHOT_LANE_VISIBILITY_SYSTEM;
   group.userData.matchUseDetailSystem = "match-use-equipment-wear-layer";
   var dynamicNetDetails = [];
   var keeperSightline = {
@@ -1089,6 +1093,39 @@ export function createGoalAndNet() {
     knot.userData.netLaneGuardSystem = NET_LANE_GUARD_SYSTEM;
     knot.userData.crossesKeeperSightline = isInKeeperSightline(knot.position);
     return registerDynamicNetDetail(knot, 0.36, 0.12);
+  }
+  function markMatchGradeNetDetail(object, options = {}) {
+    object.userData.netMatchGradeTextureSystem = NET_MATCH_GRADE_TEXTURE_SYSTEM;
+    object.userData.netShotLaneVisibilitySystem = NET_SHOT_LANE_VISIBILITY_SYSTEM;
+    object.userData.netLaneGuardSystem = NET_LANE_GUARD_SYSTEM;
+    object.userData.rearPocketLayer = options.rearPocketLayer || "peripheral-depth-detail";
+    object.userData.behindShotLane = Boolean(options.behindShotLane);
+    object.userData.frontShotLaneOcclusion = options.frontShotLaneOcclusion || 0;
+    if (typeof options.crossesKeeperSightline === "boolean") {
+      object.userData.crossesKeeperSightline = options.crossesKeeperSightline;
+    }
+    return object;
+  }
+  function makeMatchWeaveThread(name, points, options = {}) {
+    var thread = makeRaisedRope(name, points, options.radius || 0.0032, options.opacity || 0.052);
+    thread.renderOrder = options.renderOrder || 5;
+    thread.material.color.set(options.color || "#f8fffb");
+    thread.material.opacity = options.opacity || 0.052;
+    thread.material.depthWrite = false;
+    thread.material.transparent = true;
+    return markMatchGradeNetDetail(thread, options);
+  }
+  function makeMatchWeaveKnot(name, x, y, z, radius, opacity, options = {}) {
+    var knotMaterial = raisedRopeMaterial.clone();
+    knotMaterial.color.set(options.color || "#f8fffb");
+    knotMaterial.opacity = opacity;
+    knotMaterial.depthWrite = false;
+    knotMaterial.transparent = true;
+    var knot = new THREE.Mesh(new THREE.SphereGeometry(radius, 8, 6), knotMaterial);
+    knot.name = name;
+    knot.position.set(x, y, z);
+    knot.renderOrder = options.renderOrder || 6;
+    return markMatchGradeNetDetail(knot, options);
   }
   for (var ropeX = -RAPIER_GOAL.halfWidth + 0.5, raisedVerticalIndex = 0; ropeX <= RAPIER_GOAL.halfWidth - 0.49; ropeX += 0.78, raisedVerticalIndex += 1) {
     var verticalName = "goal-net-raised-vertical-cord-" + raisedVerticalIndex;
@@ -1402,6 +1439,123 @@ export function createGoalAndNet() {
       ));
       laceKnotIndex += 1;
     });
+  });
+
+  function addMatchGradeRearPocketThreadSet(label, direction) {
+    var slope = 0.86;
+    var threadIndex = 0;
+    for (
+      var offset = -RAPIER_GOAL.halfWidth - RAPIER_GOAL.height * slope;
+      offset <= RAPIER_GOAL.halfWidth + RAPIER_GOAL.height * slope;
+      offset += 0.54
+    ) {
+      var points = [];
+      for (var sample = 0; sample <= 16; sample += 1) {
+        var t = sample / 16;
+        var x = -RAPIER_GOAL.halfWidth + 0.42 + ((RAPIER_GOAL.halfWidth * 2 - 0.84) * sample) / 16;
+        var y = direction > 0
+          ? (x - offset) / slope
+          : RAPIER_GOAL.height - (x - offset) / slope;
+        if (y < 0.28 || y > RAPIER_GOAL.height - 0.2) continue;
+        var sideBias = Math.abs(x) / RAPIER_GOAL.halfWidth;
+        var pocketSag = Math.sin(t * Math.PI) * (0.045 + sideBias * 0.018);
+        points.push({
+          x,
+          y: y - pocketSag * 0.48 + Math.sin(threadIndex * 0.71 + sample * 0.36) * 0.006,
+          z: RAPIER_GOAL.netPlaneZ + 0.72 + Math.sin(t * Math.PI) * (0.12 + sideBias * 0.02),
+        });
+      }
+      if (points.length < 2) continue;
+
+      var crossesSightline = points.some((point) => isInKeeperSightline(point));
+      var averageSideBias = points.reduce((total, point) => total + Math.abs(point.x) / RAPIER_GOAL.halfWidth, 0) / points.length;
+      var opacity = crossesSightline ? 0.034 + averageSideBias * 0.006 : 0.052 + averageSideBias * 0.028;
+      var thread = makeMatchWeaveThread(
+        "goal-net-match-weave-rear-pocket-thread-" + label + "-" + threadIndex,
+        points,
+        {
+          radius: crossesSightline ? 0.0024 : 0.0033,
+          opacity,
+          rearPocketLayer: crossesSightline ? "center-depth-detail" : "peripheral-depth-detail",
+          behindShotLane: true,
+          crossesKeeperSightline: crossesSightline,
+          frontShotLaneOcclusion: 0,
+          renderOrder: 4,
+        },
+      );
+      group.add(registerDynamicNetDetail(thread, crossesSightline ? 0.32 : 0.44, crossesSightline ? 0.08 : 0.18));
+      threadIndex += 1;
+    }
+  }
+  addMatchGradeRearPocketThreadSet("rising", 1);
+  addMatchGradeRearPocketThreadSet("falling", -1);
+
+  var matchWeaveKnotIndex = 0;
+  [0.44, 0.76, 1.08, 1.4, 1.72, 2.04].forEach(function addMatchWeaveKnotRow(knotY, rowIndex) {
+    [-2.82, -2.12, -1.42, -0.72, 0, 0.72, 1.42, 2.12, 2.82].forEach(function addMatchWeaveKnotColumn(knotX, columnIndex) {
+      var x = knotX + (rowIndex % 2 ? 0.03 : -0.03);
+      var y = knotY + (columnIndex % 2 ? 0.01 : -0.01);
+      var crossesSightline = isInKeeperSightline({ x, y, z: RAPIER_GOAL.netPlaneZ + 0.78 });
+      var sideBias = Math.abs(x) / RAPIER_GOAL.halfWidth;
+      var knot = makeMatchWeaveKnot(
+        "goal-net-match-weave-knot-" + matchWeaveKnotIndex,
+        x,
+        y,
+        RAPIER_GOAL.netPlaneZ + 0.74 + (rowIndex % 3) * 0.035 + Math.sin(columnIndex * 0.62) * 0.012,
+        crossesSightline ? 0.0062 : 0.0095,
+        crossesSightline ? 0.038 : 0.058 + sideBias * 0.022,
+        {
+          rearPocketLayer: crossesSightline ? "center-depth-detail" : "peripheral-depth-detail",
+          behindShotLane: true,
+          crossesKeeperSightline: crossesSightline,
+          frontShotLaneOcclusion: 0,
+        },
+      );
+      group.add(registerDynamicNetDetail(knot, crossesSightline ? 0.24 : 0.34, crossesSightline ? 0.06 : 0.12));
+      matchWeaveKnotIndex += 1;
+    });
+  });
+
+  [
+    ["top-left", [
+      { x: -RAPIER_GOAL.halfWidth + 0.18, y: RAPIER_GOAL.height - 0.03, z: RAPIER_GOAL.netPlaneZ + 0.16 },
+      { x: -keeperSightline.halfWidth - 0.34, y: RAPIER_GOAL.height - 0.075, z: RAPIER_GOAL.netPlaneZ + 0.2 },
+    ], 0.15],
+    ["top-right", [
+      { x: keeperSightline.halfWidth + 0.34, y: RAPIER_GOAL.height - 0.075, z: RAPIER_GOAL.netPlaneZ + 0.2 },
+      { x: RAPIER_GOAL.halfWidth - 0.18, y: RAPIER_GOAL.height - 0.03, z: RAPIER_GOAL.netPlaneZ + 0.16 },
+    ], 0.15],
+    ["bottom-left", [
+      { x: -RAPIER_GOAL.halfWidth + 0.24, y: 0.11, z: RAPIER_GOAL.netPlaneZ + 0.16 },
+      { x: -keeperSightline.halfWidth - 0.26, y: 0.1, z: RAPIER_GOAL.netPlaneZ + 0.2 },
+    ], 0.13],
+    ["bottom-right", [
+      { x: keeperSightline.halfWidth + 0.26, y: 0.1, z: RAPIER_GOAL.netPlaneZ + 0.2 },
+      { x: RAPIER_GOAL.halfWidth - 0.24, y: 0.11, z: RAPIER_GOAL.netPlaneZ + 0.16 },
+    ], 0.13],
+    ["left-post", [
+      { x: -RAPIER_GOAL.halfWidth + 0.035, y: 0.32, z: RAPIER_GOAL.netPlaneZ + 0.13 },
+      { x: -RAPIER_GOAL.halfWidth + 0.01, y: RAPIER_GOAL.height - 0.24, z: RAPIER_GOAL.netPlaneZ + 0.18 },
+    ], 0.16],
+    ["right-post", [
+      { x: RAPIER_GOAL.halfWidth - 0.035, y: 0.32, z: RAPIER_GOAL.netPlaneZ + 0.13 },
+      { x: RAPIER_GOAL.halfWidth - 0.01, y: RAPIER_GOAL.height - 0.24, z: RAPIER_GOAL.netPlaneZ + 0.18 },
+    ], 0.16],
+  ].forEach(function addFrontEdgeBraid(item) {
+    var edgeStrand = makeMatchWeaveThread(
+      "goal-net-front-edge-braided-strand-" + item[0],
+      item[1],
+      {
+        radius: 0.0036,
+        opacity: item[2],
+        rearPocketLayer: "peripheral-edge-detail",
+        behindShotLane: false,
+        crossesKeeperSightline: false,
+        frontShotLaneOcclusion: 0,
+        renderOrder: 6,
+      },
+    );
+    group.add(registerDynamicNetDetail(edgeStrand, 0.38, 0.12));
   });
 
   ["left", "right"].forEach(function addSideReturnCord(side) {
