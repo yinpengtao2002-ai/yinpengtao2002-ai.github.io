@@ -156,6 +156,7 @@ describe("goalkeeper 3D scene tuning", () => {
     };
 
     const plan = sceneModule.getSceneBallRenderPlan({
+      director: { phase: "live" },
       ball: savedActiveBall,
       lingeringBalls: [replayBall],
     });
@@ -181,7 +182,7 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(livePlan.visibleBallCount).toBe(1);
   });
 
-  it("hides airborne retired replay balls while a new live shot is flying", async () => {
+  it("hides retired replay balls while another shot owns the live frame", async () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
 
     expect(sceneModule.shouldRenderLingeringBall).toBeTypeOf("function");
@@ -213,18 +214,30 @@ describe("goalkeeper 3D scene tuning", () => {
         speed: 1.6,
       },
     };
+    const settledReplay = {
+      ...airborneReplay,
+      position: { x: -2.1, y: 0.11, z: 1.8 },
+      velocity: { x: 0.08, y: 0, z: -0.04 },
+      groundFeedback: {
+        active: false,
+        point: { x: -2.1, y: 0.012, z: 1.8 },
+        intensity: 0,
+        speed: 0.09,
+      },
+    };
 
     const plan = sceneModule.getSceneBallRenderPlan({
       director: { phase: "live" },
       ball: activeShot,
-      lingeringBalls: [airborneReplay, groundedReplay],
+      lingeringBalls: [airborneReplay, groundedReplay, settledReplay],
     });
 
-    expect(plan.visibleBallCount).toBe(2);
-    expect(plan.lingeringBalls).toEqual([groundedReplay]);
-    expect(plan.hiddenLingeringBalls).toEqual([airborneReplay]);
+    expect(plan.visibleBallCount).toBe(1);
+    expect(plan.lingeringBalls).toEqual([]);
+    expect(plan.hiddenLingeringBalls).toEqual([airborneReplay, groundedReplay, settledReplay]);
     expect(sceneModule.shouldRenderLingeringBall(airborneReplay, { director: { phase: "live" }, ball: activeShot })).toBe(false);
-    expect(sceneModule.shouldRenderLingeringBall(groundedReplay, { director: { phase: "live" }, ball: activeShot })).toBe(true);
+    expect(sceneModule.shouldRenderLingeringBall(groundedReplay, { director: { phase: "live" }, ball: activeShot })).toBe(false);
+    expect(sceneModule.shouldRenderLingeringBall(settledReplay, { director: { phase: "live" }, ball: activeShot })).toBe(false);
   });
 
   it("defines a restrained matchday feedback layer for saves, goals, streaks, and camera shake", () => {

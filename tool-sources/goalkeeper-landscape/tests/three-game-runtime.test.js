@@ -109,9 +109,10 @@ describe("three game runtime timing", () => {
     expect(RuntimeModule.shouldPlayLingeringGroundAudio).toBeTypeOf("function");
     expect(shouldPlayLingeringGroundAudio({ phase: "live" }, { live: true, outcome: "live" })).toBe(false);
     expect(shouldPlayLingeringGroundAudio({ phase: "live" }, { live: true, outcome: "deflected" })).toBe(false);
+    expect(shouldPlayLingeringGroundAudio({ phase: "live" }, { live: false, outcome: "goal", position: { x: 0, y: 1.1, z: 4.65 } })).toBe(false);
+    expect(shouldPlayLingeringGroundAudio({ phase: "live" }, { live: false, outcome: "saved", position: { x: 0.4, y: 0.11, z: 2.4 } })).toBe(false);
     expect(shouldPlayLingeringGroundAudio({ phase: "cue" }, { live: false, outcome: "idle" })).toBe(true);
     expect(shouldPlayLingeringGroundAudio({ phase: "cooldown" }, { live: false, outcome: "idle" })).toBe(true);
-    expect(shouldPlayLingeringGroundAudio({ phase: "live" }, { live: false, outcome: "goal" })).toBe(true);
   });
 
   it("turns frame misses into a distinct HUD message instead of a silent generic miss", () => {

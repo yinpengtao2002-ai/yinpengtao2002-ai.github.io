@@ -135,8 +135,8 @@ export function getGroundContactAudioEvent(feedback) {
   return "turf-skid";
 }
 
-export function shouldPlayLingeringGroundAudio(director, activeBall) {
-  return !(director?.phase === "live" && activeBall?.live);
+export function shouldPlayLingeringGroundAudio(director) {
+  return director?.phase !== "live";
 }
 
 export function getMissMessageForBall(ball) {

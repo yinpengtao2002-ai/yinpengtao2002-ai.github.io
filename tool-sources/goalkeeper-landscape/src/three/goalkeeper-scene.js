@@ -436,8 +436,12 @@ export function getBallSpinGlintPlan(ballState, shot = null, tuning = SCENE_TUNI
 export function getSceneBallRenderPlan(snapshot = {}) {
   var ball = snapshot.ball || null;
   var allLingeringBalls = Array.isArray(snapshot.lingeringBalls) ? snapshot.lingeringBalls.filter(Boolean) : [];
-  var lingeringBalls = allLingeringBalls.filter((lingeringBall) => shouldRenderLingeringBall(lingeringBall, snapshot));
-  var hiddenLingeringBalls = allLingeringBalls.filter((lingeringBall) => !shouldRenderLingeringBall(lingeringBall, snapshot));
+  var liveFrameHasCurrentBall = Boolean(snapshot.director?.phase === "live" && ball?.position);
+  var currentSavedReplay = Boolean(liveFrameHasCurrentBall && ball.outcome === "saved" && !ball.live);
+  var candidateLingeringBalls = currentSavedReplay ? allLingeringBalls.slice(-1) : allLingeringBalls;
+  var lingeringBalls = candidateLingeringBalls.filter((lingeringBall) => shouldRenderLingeringBall(lingeringBall, snapshot));
+  var visibleLingeringSet = new Set(lingeringBalls);
+  var hiddenLingeringBalls = allLingeringBalls.filter((lingeringBall) => !visibleLingeringSet.has(lingeringBall));
   var hideActiveBallForReplay = Boolean(ball && ball.outcome === "saved" && lingeringBalls.length > 0);
   var activeBall = hideActiveBallForReplay
     ? {
@@ -469,12 +473,14 @@ export function getSceneBallRenderPlan(snapshot = {}) {
 export function shouldRenderLingeringBall(lingeringBall, snapshot = {}, tuning = SCENE_TUNING.ball) {
   if (!lingeringBall?.position) return false;
   var activeBall = snapshot.ball;
-  var activeShotInFlight = Boolean(snapshot.director?.phase === "live" && activeBall?.position && activeBall.live);
-  if (!activeShotInFlight) return true;
+  var liveFrameHasCurrentBall = Boolean(snapshot.director?.phase === "live" && activeBall?.position);
+  if (liveFrameHasCurrentBall) {
+    return Boolean(activeBall.outcome === "saved" && !activeBall.live);
+  }
 
   var radius = lingeringBall.radius || tuning.radius || 0.12;
   var heightAboveTurf = (lingeringBall.position.y || 0) - radius;
-  return heightAboveTurf <= (tuning.retiredReplayAirHideHeight || 0.24);
+  return heightAboveTurf <= (tuning.retiredReplayAirHideHeight || 0.24) || snapshot.director?.phase !== "live";
 }
 
 export function getSaveAfterimagePlan(contact, gloves, tuning = SCENE_TUNING.feedback) {
