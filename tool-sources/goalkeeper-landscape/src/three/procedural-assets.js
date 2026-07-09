@@ -410,6 +410,7 @@ export function createFieldGroup() {
   group.userData.stadiumDressingSystem = "crowd-scoreboard-flags-matchday-dressing";
   group.userData.broadcastDressingSystem = "sideline-camera-light-and-safety-pad-kit";
   group.userData.stadiumScoreboardSystem = STADIUM_SCOREBOARD_DISPLAY_SYSTEM;
+  group.userData.stadiumLightingFinishSystem = "floodlight-lens-and-glare-halo-kit";
   group.userData.reusableAssetTechnique = "plain-matte-training-floor-kit";
   group.userData.matchUseDetailSystem = "plain-field-no-grass-clutter";
   group.userData.trainingFacilitySystem = "professional-keeper-training-ground-kit";
@@ -534,12 +535,35 @@ export function createFieldGroup() {
 
   var poleMat = new THREE.MeshStandardMaterial({ color: "#263538", roughness: 0.42, metalness: 0.12 });
   var lampMat = new THREE.MeshBasicMaterial({ color: "#fff4c8", transparent: true, opacity: 0.84 });
+  var lensCellMaterial = new THREE.MeshBasicMaterial({
+    color: "#fff8d6",
+    transparent: true,
+    opacity: 0.88,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  var glareCoreMaterial = new THREE.MeshBasicMaterial({
+    color: "#fff1a8",
+    transparent: true,
+    opacity: 0.28,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+  });
+  var glareRingMaterial = new THREE.MeshBasicMaterial({
+    color: "#e7ffff",
+    transparent: true,
+    opacity: 0.14,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+  });
   [
     ["left-back", -7.2, -22.0],
     ["right-back", 7.2, -22.0],
     ["left-mid", -7.4, -8.0],
     ["right-mid", 7.4, -8.0],
-  ].forEach(function addFloodlight(item) {
+  ].forEach(function addFloodlight(item, floodlightIndex) {
     var mast = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.052, 2.6, 10), poleMat);
     mast.name = "stadium-floodlight-mast-" + item[0];
     mast.position.set(item[1], 1.28, item[2]);
@@ -550,6 +574,33 @@ export function createFieldGroup() {
     head.position.set(item[1], 2.62, item[2] + 0.08);
     head.rotation.y = item[1] < 0 ? -0.32 : 0.32;
     group.add(head);
+
+    [-0.13, 0.13].forEach(function addLensColumn(offsetX, columnIndex) {
+      [-0.045, 0.045].forEach(function addLensRow(offsetY, rowIndex) {
+        var cell = new THREE.Mesh(new THREE.CircleGeometry(0.046, 16), lensCellMaterial.clone());
+        cell.name = "stadium-floodlight-lens-cell-" + item[0] + "-" + columnIndex + "-" + rowIndex;
+        cell.position.set(item[1] + offsetX, 2.62 + offsetY, item[2] + 0.121);
+        cell.rotation.y = head.rotation.y;
+        cell.userData.lightingFinishSystem = "floodlight-lens-and-glare-halo-kit";
+        group.add(cell);
+      });
+    });
+
+    var glareCore = new THREE.Mesh(new THREE.CircleGeometry(0.34, 28), glareCoreMaterial.clone());
+    glareCore.name = "stadium-floodlight-glare-core-" + item[0];
+    glareCore.position.set(item[1], 2.62, item[2] + 0.136);
+    glareCore.rotation.y = head.rotation.y;
+    glareCore.renderOrder = 2 + floodlightIndex;
+    glareCore.userData.lightingFinishSystem = "floodlight-lens-and-glare-halo-kit";
+    group.add(glareCore);
+
+    var glareRing = new THREE.Mesh(new THREE.RingGeometry(0.26, 0.48, 36), glareRingMaterial.clone());
+    glareRing.name = "stadium-floodlight-glare-ring-" + item[0];
+    glareRing.position.set(item[1], 2.62, item[2] + 0.142);
+    glareRing.rotation.y = head.rotation.y;
+    glareRing.renderOrder = 6 + floodlightIndex;
+    glareRing.userData.lightingFinishSystem = "floodlight-lens-and-glare-halo-kit";
+    group.add(glareRing);
   });
 
   var broadcastPadMaterial = new THREE.MeshStandardMaterial({ color: "#1f3435", roughness: 0.58, metalness: 0.02 });

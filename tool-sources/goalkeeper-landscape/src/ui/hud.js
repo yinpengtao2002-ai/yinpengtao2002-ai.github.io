@@ -232,8 +232,10 @@ export function getEventRibbonPlan(state) {
   var empty = {
     visible: false,
     tone: "idle",
+    priority: "ambient",
     kicker: "",
     text: "",
+    ariaLabel: "",
     marker: MATCH_EVENT_RIBBON_MARKER,
   };
   if (!state?.running || state.paused || state.ended) return empty;
@@ -244,16 +246,20 @@ export function getEventRibbonPlan(state) {
       return {
         visible: true,
         tone: "streak",
+        priority: "highlight",
         kicker: "STREAK x" + String(state.streak),
         text: "+" + String(points),
+        ariaLabel: "连续扑救 " + String(state.streak) + " 次，加 " + String(points) + " 分",
         marker: MATCH_EVENT_RIBBON_MARKER,
       };
     }
     return {
       visible: true,
       tone: "save",
+      priority: "core",
       kicker: "SAVE",
       text: "+" + String(points),
+      ariaLabel: "扑救成功，加 " + String(points) + " 分",
       marker: MATCH_EVENT_RIBBON_MARKER,
     };
   }
@@ -264,8 +270,12 @@ export function getEventRibbonPlan(state) {
     return {
       visible: true,
       tone: danger ? "danger" : "goal",
+      priority: danger ? "critical" : "high",
       kicker: danger ? "DANGER" : "GOAL",
       text: String(conceded) + "/" + String(MAX_CONCEDED),
+      ariaLabel: danger
+        ? "防线吃紧，失球 " + String(conceded) + "/" + String(MAX_CONCEDED)
+        : "失球 " + String(conceded) + "/" + String(MAX_CONCEDED),
       marker: MATCH_EVENT_RIBBON_MARKER,
     };
   }
@@ -274,8 +284,10 @@ export function getEventRibbonPlan(state) {
     return {
       visible: true,
       tone: "frame",
+      priority: "core",
       kicker: "POST",
       text: "REBOUND",
+      ariaLabel: "门框救险",
       marker: MATCH_EVENT_RIBBON_MARKER,
     };
   }
@@ -284,8 +296,10 @@ export function getEventRibbonPlan(state) {
     return {
       visible: true,
       tone: "miss",
+      priority: "ambient",
       kicker: "WIDE",
       text: "RESET",
+      ariaLabel: "射门偏出",
       marker: MATCH_EVENT_RIBBON_MARKER,
     };
   }
@@ -426,6 +440,8 @@ export function createHud(documentRef) {
     var plan = getEventRibbonPlan(state);
     ribbon.dataset.hudSystem = plan.marker;
     ribbon.dataset.tone = plan.tone;
+    ribbon.dataset.priority = plan.priority;
+    ribbon.setAttribute("aria-label", plan.ariaLabel || "");
     ribbon.textContent = plan.visible ? (plan.kicker + " " + plan.text).trim() : "";
     setClass(ribbon, "is-visible", plan.visible);
     ["save", "streak", "goal", "danger", "frame", "miss"].forEach((tone) => {

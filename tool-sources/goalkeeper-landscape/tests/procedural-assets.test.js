@@ -258,6 +258,25 @@ describe("procedural 3D assets", () => {
     expect(collectByName(field, /^field-goalmouth-wear-/)).toHaveLength(0);
   });
 
+  it("finishes the floodlights with lens cells and restrained glare halos", () => {
+    const field = createFieldGroup();
+    const heads = collectByName(field, /^stadium-floodlight-head-/);
+    const lensCells = collectByName(field, /^stadium-floodlight-lens-cell-/);
+    const glareCores = collectByName(field, /^stadium-floodlight-glare-core-/);
+    const glareRings = collectByName(field, /^stadium-floodlight-glare-ring-/);
+
+    expect(field.userData.stadiumLightingFinishSystem).toBe("floodlight-lens-and-glare-halo-kit");
+    expect(heads).toHaveLength(4);
+    expect(lensCells).toHaveLength(16);
+    expect(glareCores).toHaveLength(4);
+    expect(glareRings).toHaveLength(4);
+    expect(lensCells.every((cell) => cell.material.transparent && cell.material.opacity <= 0.92)).toBe(true);
+    expect(glareCores.every((glare) => glare.material.transparent && glare.material.opacity <= 0.34)).toBe(true);
+    expect(glareRings.every((ring) => ring.material.transparent && ring.material.opacity <= 0.2)).toBe(true);
+    expect(glareCores.every((glare) => glare.userData.lightingFinishSystem === "floodlight-lens-and-glare-halo-kit")).toBe(true);
+    expect(glareRings.every((ring) => ring.renderOrder >= 2)).toBe(true);
+  });
+
   it("exposes a reusable broadcast matchday polish profile across scene assets", () => {
     const profile = getMatchdayAssetPolishProfile();
     const field = createFieldGroup();

@@ -281,30 +281,39 @@ describe("hud", () => {
     expect(HudModule.getEventRibbonPlan(saveState)).toEqual({
       visible: true,
       tone: "save",
+      priority: "core",
       kicker: "SAVE",
       text: "+110",
+      ariaLabel: "扑救成功，加 110 分",
       marker: "broadcast-event-ribbon-hud",
     });
 
     hud.update(saveState, true);
     expect(documentRef.elements.eventRibbon.dataset.hudSystem).toBe("broadcast-event-ribbon-hud");
     expect(documentRef.elements.eventRibbon.dataset.tone).toBe("save");
+    expect(documentRef.elements.eventRibbon.dataset.priority).toBe("core");
+    expect(documentRef.elements.eventRibbon.getAttribute("aria-label")).toBe("扑救成功，加 110 分");
     expect(documentRef.elements.eventRibbon.textContent).toBe("SAVE +110");
     expect(documentRef.elements.eventRibbon.classList.contains("is-visible")).toBe(true);
     expect(documentRef.elements.eventRibbon.classList.contains("is-save")).toBe(true);
 
     hud.update({ ...saveState, message: "save", streak: 4, lastSavePoints: 180 }, true);
     expect(documentRef.elements.eventRibbon.dataset.tone).toBe("streak");
+    expect(documentRef.elements.eventRibbon.dataset.priority).toBe("highlight");
+    expect(documentRef.elements.eventRibbon.getAttribute("aria-label")).toBe("连续扑救 4 次，加 180 分");
     expect(documentRef.elements.eventRibbon.textContent).toBe("STREAK x4 +180");
     expect(documentRef.elements.eventRibbon.classList.contains("is-streak")).toBe(true);
 
     hud.update({ ...saveState, message: "goal", conceded: 4, streak: 0, lastSavePoints: 0 }, true);
     expect(documentRef.elements.eventRibbon.dataset.tone).toBe("danger");
+    expect(documentRef.elements.eventRibbon.dataset.priority).toBe("critical");
+    expect(documentRef.elements.eventRibbon.getAttribute("aria-label")).toBe("防线吃紧，失球 4/5");
     expect(documentRef.elements.eventRibbon.textContent).toBe("DANGER 4/5");
     expect(documentRef.elements.eventRibbon.classList.contains("is-danger")).toBe(true);
 
     hud.update({ ...saveState, message: "" }, true);
     expect(documentRef.elements.eventRibbon.classList.contains("is-visible")).toBe(false);
+    expect(documentRef.elements.eventRibbon.dataset.priority).toBe("ambient");
   });
 
   it("adds a slim atmosphere rail that reacts to match events without blocking play", () => {
