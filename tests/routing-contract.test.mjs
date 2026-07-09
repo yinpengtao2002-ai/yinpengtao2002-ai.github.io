@@ -125,10 +125,10 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
     new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
     "utf8"
   );
-  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-ClYE0BDK.js", import.meta.url);
+  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-DUmE9F8C.js", import.meta.url);
   const gameScript = await stat(gameScriptPath);
   const gameScriptSource = await readFile(gameScriptPath, "utf8");
-  const gameStylePath = new URL("../public/tools/goalkeeper-landscape/assets/index-CSQkEMNS.css", import.meta.url);
+  const gameStylePath = new URL("../public/tools/goalkeeper-landscape/assets/index-_G8vgdsd.css", import.meta.url);
   const gameStyles = await stat(gameStylePath);
   const gameStyleSource = await readFile(gameStylePath, "utf8");
   const gameWasm = await stat(new URL("../public/tools/goalkeeper-landscape/vendor/rapier_wasm3d_bg.wasm", import.meta.url));
@@ -137,8 +137,8 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(goalkeeperPage, /import GoalkeeperLandscapeRuntime/);
   assert.match(goalkeeperPage, /GOALKEEPER_SCRIPT_SRC/);
   assert.match(goalkeeperPage, /GOALKEEPER_STYLESHEET_HREF/);
-  assert.match(goalkeeperRuntime, /index-ClYE0BDK\.js/);
-  assert.match(goalkeeperPage, /index-CSQkEMNS\.css/);
+  assert.match(goalkeeperRuntime, /index-DUmE9F8C\.js/);
+  assert.match(goalkeeperPage, /index-_G8vgdsd\.css/);
   assert.match(goalkeeperPage, /<GoalkeeperLandscapeRuntime \/>/);
   assert.match(goalkeeperPage, /弹力手套守门挑战/);
   assert.match(goalkeeperPage, /id="gameCanvas"/);
@@ -148,6 +148,10 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(goalkeeperPage, /broadcast-event-ribbon-hud/);
   assert.match(goalkeeperPage, /id="matchStatus"/);
   assert.match(goalkeeperPage, /id="pressureCue"/);
+  assert.match(goalkeeperPage, /id="matchAtmosphere"/);
+  assert.match(goalkeeperPage, /id="matchAtmosphereFill"/);
+  assert.match(goalkeeperPage, /id="matchAtmosphereCopy"/);
+  assert.match(goalkeeperPage, /match-atmosphere-event-rail/);
   assert.match(goalkeeperPage, /id="bottomControls"/);
   assert.match(goalkeeperPage, /id="matchProgress"/);
   assert.match(goalkeeperPage, /id="matchProgressFill"/);
@@ -181,13 +185,17 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(thinkingClient, /横屏守门挑战/);
   assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-ClYE0BDK\.js/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-CSQkEMNS\.css/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-DUmE9F8C\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-_G8vgdsd\.css/);
   assert.match(gameIndex, /id="feedbackToast"/);
   assert.match(gameIndex, /id="eventRibbon"/);
   assert.match(gameIndex, /broadcast-event-ribbon-hud/);
   assert.match(gameIndex, /id="matchStatus"/);
   assert.match(gameIndex, /id="pressureCue"/);
+  assert.match(gameIndex, /id="matchAtmosphere"/);
+  assert.match(gameIndex, /id="matchAtmosphereFill"/);
+  assert.match(gameIndex, /id="matchAtmosphereCopy"/);
+  assert.match(gameIndex, /match-atmosphere-event-rail/);
   assert.match(gameIndex, /id="matchProgress"/);
   assert.match(gameIndex, /id="matchProgressFill"/);
   assert.match(gameIndex, /match-progress-hud/);
@@ -238,6 +246,9 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /matchday-feedback-kit/);
   assert.match(gameScriptSource, /match-progress-hud/);
   assert.match(gameScriptSource, /matchProgressFill/);
+  assert.match(gameScriptSource, /match-atmosphere-event-rail/);
+  assert.match(gameScriptSource, /matchAtmosphereFill/);
+  assert.match(gameScriptSource, /matchAtmosphereCopy/);
   assert.match(gameScriptSource, /match-audio-status-chip/);
   assert.match(gameScriptSource, /match-pause-coach-hint/);
   assert.match(gameScriptSource, /round-result-coach-note/);

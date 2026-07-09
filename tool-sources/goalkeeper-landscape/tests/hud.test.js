@@ -60,6 +60,9 @@ function createDocument() {
     "resultCoach",
     "feedbackToast",
     "eventRibbon",
+    "matchAtmosphere",
+    "matchAtmosphereFill",
+    "matchAtmosphereCopy",
     "matchStatus",
     "pressureCue",
     "matchProgress",
@@ -294,6 +297,65 @@ describe("hud", () => {
 
     hud.update({ ...saveState, message: "" }, true);
     expect(documentRef.elements.eventRibbon.classList.contains("is-visible")).toBe(false);
+  });
+
+  it("adds a slim atmosphere rail that reacts to match events without blocking play", () => {
+    expect(HudModule.getMatchAtmospherePlan).toBeTypeOf("function");
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    const saveState = {
+      ...createGameState(),
+      running: true,
+      paused: false,
+      ended: false,
+      message: "save",
+      streak: 1,
+      lastSavePoints: 120,
+      conceded: 1,
+      timeLeft: 42,
+    };
+
+    expect(HudModule.getMatchAtmospherePlan(saveState)).toMatchObject({
+      visible: true,
+      tone: "save",
+      label: "扑救成功",
+      detail: "+120",
+      marker: "match-atmosphere-event-rail",
+    });
+
+    hud.update(saveState, true);
+
+    expect(documentRef.elements.matchAtmosphere.dataset.hudSystem).toBe("match-atmosphere-event-rail");
+    expect(documentRef.elements.matchAtmosphere.dataset.tone).toBe("save");
+    expect(documentRef.elements.matchAtmosphere.classList.contains("is-visible")).toBe(true);
+    expect(documentRef.elements.matchAtmosphere.classList.contains("is-save")).toBe(true);
+    expect(documentRef.elements.matchAtmosphereCopy.textContent).toBe("扑救成功 +120");
+    expect(documentRef.elements.matchAtmosphereFill.style.width).toBe("62%");
+
+    hud.update({ ...saveState, streak: 4, lastSavePoints: 190 }, true);
+
+    expect(documentRef.elements.matchAtmosphere.dataset.tone).toBe("streak");
+    expect(documentRef.elements.matchAtmosphere.classList.contains("is-streak")).toBe(true);
+    expect(documentRef.elements.matchAtmosphereCopy.textContent).toBe("连扑压制 x4");
+    expect(documentRef.elements.matchAtmosphereFill.style.width).toBe("86%");
+
+    hud.update({ ...saveState, message: "goal", conceded: 4, streak: 0, lastSavePoints: 0 }, true);
+
+    expect(documentRef.elements.matchAtmosphere.dataset.tone).toBe("danger");
+    expect(documentRef.elements.matchAtmosphereCopy.textContent).toBe("防线吃紧 4/5");
+    expect(documentRef.elements.matchAtmosphereFill.style.width).toBe("96%");
+
+    hud.update({ ...saveState, message: "", timeLeft: 8, conceded: 2 }, true);
+
+    expect(documentRef.elements.matchAtmosphere.dataset.tone).toBe("pressure");
+    expect(documentRef.elements.matchAtmosphereCopy.textContent).toBe("最后守住 8s");
+    expect(documentRef.elements.matchAtmosphereFill.style.width).toBe("72%");
+
+    hud.update(createGameState(), true);
+
+    expect(documentRef.elements.matchAtmosphere.classList.contains("is-visible")).toBe(false);
+    expect(documentRef.elements.matchAtmosphereCopy.textContent).toBe("");
+    expect(documentRef.elements.matchAtmosphereFill.style.width).toBe("0%");
   });
 
   it("shows match flow states without replacing the playable field", () => {

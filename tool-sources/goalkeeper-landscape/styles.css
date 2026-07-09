@@ -542,6 +542,121 @@ button {
   box-shadow: 0 0 0 3px rgba(255, 204, 166, 0.16), 0 14px 30px rgba(15, 35, 29, 0.18);
 }
 
+.match-atmosphere {
+  --match-atmosphere-event-rail: 1;
+  position: absolute;
+  left: 50%;
+  bottom: max(clamp(88px, 11svh, 126px), calc(env(safe-area-inset-bottom) + 96px));
+  z-index: 4;
+  width: min(420px, 42vw);
+  height: clamp(24px, 2.4vw, 34px);
+  border: 1px solid rgba(255, 255, 255, 0.44);
+  border-radius: 999px;
+  overflow: hidden;
+  color: rgba(248, 255, 240, 0.94);
+  background: rgba(12, 27, 23, 0.32);
+  box-shadow: 0 10px 24px rgba(15, 35, 29, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(12px);
+  transform: translate(-50%, 8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease, transform 170ms ease, background 150ms ease, border-color 150ms ease;
+}
+
+.match-atmosphere.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.match-atmosphere-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0%;
+  border-radius: inherit;
+  display: block;
+  background: linear-gradient(90deg, rgba(158, 230, 176, 0.7), rgba(248, 255, 240, 0.28));
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.14);
+  transition: width 180ms ease, background 160ms ease;
+}
+
+.match-atmosphere-copy {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  padding: 0 clamp(12px, 1.2vw, 18px);
+  display: grid;
+  place-items: center;
+  color: currentColor;
+  font-size: clamp(11px, 0.95vw, 14px);
+  font-weight: 920;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 8px rgba(8, 22, 18, 0.2);
+}
+
+.match-atmosphere.is-save {
+  background: rgba(12, 48, 35, 0.42);
+  border-color: rgba(169, 236, 186, 0.5);
+}
+
+.match-atmosphere.is-save .match-atmosphere-fill {
+  background: linear-gradient(90deg, rgba(88, 195, 125, 0.82), rgba(214, 255, 221, 0.34));
+}
+
+.match-atmosphere.is-streak {
+  color: #071b1d;
+  background: rgba(158, 255, 245, 0.58);
+  border-color: rgba(222, 255, 252, 0.68);
+  box-shadow: 0 0 0 4px rgba(97, 240, 255, 0.14), 0 12px 26px rgba(15, 35, 29, 0.14);
+}
+
+.match-atmosphere.is-streak .match-atmosphere-fill {
+  background: linear-gradient(90deg, rgba(97, 240, 255, 0.9), rgba(230, 255, 250, 0.46));
+}
+
+.match-atmosphere.is-goal,
+.match-atmosphere.is-danger {
+  background: rgba(92, 33, 21, 0.5);
+  border-color: rgba(255, 169, 118, 0.56);
+}
+
+.match-atmosphere.is-goal .match-atmosphere-fill {
+  background: linear-gradient(90deg, rgba(239, 127, 58, 0.84), rgba(255, 226, 188, 0.36));
+}
+
+.match-atmosphere.is-danger {
+  box-shadow: 0 0 0 4px rgba(255, 124, 84, 0.15), 0 12px 26px rgba(15, 35, 29, 0.16);
+}
+
+.match-atmosphere.is-danger .match-atmosphere-fill {
+  background: linear-gradient(90deg, rgba(255, 76, 48, 0.9), rgba(255, 201, 170, 0.42));
+}
+
+.match-atmosphere.is-frame,
+.match-atmosphere.is-miss {
+  color: #20312c;
+  background: rgba(250, 255, 239, 0.68);
+  border-color: rgba(255, 255, 245, 0.72);
+}
+
+.match-atmosphere.is-frame .match-atmosphere-fill,
+.match-atmosphere.is-miss .match-atmosphere-fill {
+  background: linear-gradient(90deg, rgba(232, 244, 232, 0.86), rgba(255, 255, 245, 0.42));
+}
+
+.match-atmosphere.is-pressure {
+  background: rgba(77, 46, 25, 0.46);
+  border-color: rgba(255, 213, 166, 0.54);
+}
+
+.match-atmosphere.is-pressure .match-atmosphere-fill {
+  background: linear-gradient(90deg, rgba(255, 198, 112, 0.86), rgba(255, 240, 200, 0.36));
+}
+
 .match-progress {
   --match-progress-hud: 1;
   position: absolute;
@@ -1108,6 +1223,16 @@ button {
     font-size: 11px;
   }
 
+  .match-atmosphere {
+    bottom: max(82px, calc(env(safe-area-inset-bottom) + 76px));
+    width: min(300px, 46vw);
+    height: 24px;
+  }
+
+  .match-atmosphere-copy {
+    font-size: 10px;
+  }
+
   .sound-status {
     max-width: min(220px, 38vw);
     min-height: 30px;
@@ -1275,6 +1400,10 @@ button {
     width: min(250px, 45vw);
   }
 
+  .match-atmosphere {
+    width: min(300px, 50vw);
+  }
+
   #finalScore {
     font-size: 46px;
   }
@@ -1315,6 +1444,11 @@ button {
   .match-progress {
     bottom: max(62px, calc(env(safe-area-inset-bottom) + 58px));
     width: min(300px, 36vw);
+  }
+
+  .match-atmosphere {
+    bottom: max(76px, calc(env(safe-area-inset-bottom) + 70px));
+    width: min(320px, 38vw);
   }
 
   .end-overlay {
@@ -1480,6 +1614,16 @@ button {
     bottom: max(clamp(58px, 10svh, 76px), calc(env(safe-area-inset-bottom) + 54px));
     width: min(300px, 42svh);
     height: clamp(5px, 1.1svh, 8px);
+  }
+
+  .match-atmosphere {
+    bottom: max(clamp(76px, 12svh, 98px), calc(env(safe-area-inset-bottom) + 72px));
+    width: min(320px, 44svh);
+    height: clamp(22px, 4svh, 30px);
+  }
+
+  .match-atmosphere-copy {
+    font-size: clamp(10px, 1.75svh, 12px);
   }
 
   .match-status {

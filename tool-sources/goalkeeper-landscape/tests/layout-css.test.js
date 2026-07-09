@@ -117,4 +117,21 @@ describe("responsive layout css", () => {
     expect(css).toContain("grid-template-columns: auto;");
     expect(css).toContain("justify-content: end;");
   });
+
+  it("adds a slim match atmosphere rail for event feedback without blocking the play field", () => {
+    const css = readFileSync(stylesPath, "utf8");
+
+    expect(css).toContain("match-atmosphere-event-rail");
+    expect(css).toContain(".match-atmosphere");
+    expect(css).toContain(".match-atmosphere-fill");
+    expect(css).toContain(".match-atmosphere-copy");
+    expect(css).toContain("pointer-events: none;");
+    expect(css).toContain(".match-atmosphere.is-save");
+    expect(css).toContain(".match-atmosphere.is-streak");
+    expect(css).toContain(".match-atmosphere.is-goal");
+    expect(css).toContain(".match-atmosphere.is-danger");
+    expect(css).toContain(".match-atmosphere.is-frame");
+    expect(css).toContain(".match-atmosphere.is-pressure");
+    expect(css).toContain("bottom: max(clamp(88px, 11svh, 126px), calc(env(safe-area-inset-bottom) + 96px));");
+  });
 });

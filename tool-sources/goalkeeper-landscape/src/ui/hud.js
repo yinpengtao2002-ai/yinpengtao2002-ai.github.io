@@ -10,6 +10,7 @@ export const MATCH_PAUSE_HINT_MARKER = "match-pause-coach-hint";
 export const ROUND_RESULT_COACH_MARKER = "round-result-coach-note";
 export const MATCH_EVENT_RIBBON_MARKER = "broadcast-event-ribbon-hud";
 export const MATCH_CONTROL_RAIL_MARKER = "live-match-control-rail";
+export const MATCH_ATMOSPHERE_MARKER = "match-atmosphere-event-rail";
 const LOW_TIME_SECONDS = 10;
 
 function getSecondsLeft(state) {
@@ -112,6 +113,89 @@ export function getPressureCueText(state) {
   if (lowTime) return "最后 10 秒";
   if (matchPoint) return "再丢一球结束";
   return "";
+}
+
+export function getMatchAtmospherePlan(state) {
+  var empty = {
+    visible: false,
+    tone: "idle",
+    label: "",
+    detail: "",
+    progress: 0,
+    marker: MATCH_ATMOSPHERE_MARKER,
+  };
+  if (!state?.running || state.paused || state.ended) return empty;
+
+  if (state.message === "save") {
+    var points = Math.max(0, state.lastSavePoints || 0);
+    if ((state.streak || 0) >= 3) {
+      return {
+        visible: true,
+        tone: "streak",
+        label: "连扑压制",
+        detail: "x" + String(state.streak),
+        progress: 86,
+        marker: MATCH_ATMOSPHERE_MARKER,
+      };
+    }
+    return {
+      visible: true,
+      tone: "save",
+      label: "扑救成功",
+      detail: "+" + String(points),
+      progress: 62,
+      marker: MATCH_ATMOSPHERE_MARKER,
+    };
+  }
+
+  if (state.message === "goal") {
+    var conceded = Math.max(0, state.conceded || 0);
+    var danger = conceded >= MAX_CONCEDED - 1;
+    return {
+      visible: true,
+      tone: danger ? "danger" : "goal",
+      label: danger ? "防线吃紧" : "失球",
+      detail: String(conceded) + "/" + String(MAX_CONCEDED),
+      progress: danger ? 96 : 78,
+      marker: MATCH_ATMOSPHERE_MARKER,
+    };
+  }
+
+  if (state.message === "frame") {
+    return {
+      visible: true,
+      tone: "frame",
+      label: "门框救险",
+      detail: "REBOUND",
+      progress: 58,
+      marker: MATCH_ATMOSPHERE_MARKER,
+    };
+  }
+
+  if (state.message === "miss") {
+    return {
+      visible: true,
+      tone: "miss",
+      label: "偏出",
+      detail: "RESET",
+      progress: 42,
+      marker: MATCH_ATMOSPHERE_MARKER,
+    };
+  }
+
+  var secondsLeft = getSecondsLeft(state);
+  if (secondsLeft <= LOW_TIME_SECONDS) {
+    return {
+      visible: true,
+      tone: "pressure",
+      label: "最后守住",
+      detail: String(secondsLeft) + "s",
+      progress: 72,
+      marker: MATCH_ATMOSPHERE_MARKER,
+    };
+  }
+
+  return empty;
 }
 
 export function getEventRibbonPlan(state) {
@@ -252,6 +336,9 @@ export function createHud(documentRef) {
     resultCoach: documentRef.getElementById("resultCoach"),
     feedbackToast: documentRef.getElementById("feedbackToast"),
     eventRibbon: documentRef.getElementById("eventRibbon"),
+    matchAtmosphere: documentRef.getElementById("matchAtmosphere"),
+    matchAtmosphereFill: documentRef.getElementById("matchAtmosphereFill"),
+    matchAtmosphereCopy: documentRef.getElementById("matchAtmosphereCopy"),
     matchStatus: documentRef.getElementById("matchStatus"),
     pressureCue: documentRef.getElementById("pressureCue"),
     matchProgress: documentRef.getElementById("matchProgress"),
@@ -320,6 +407,26 @@ export function createHud(documentRef) {
     ["save", "streak", "goal", "danger", "frame", "miss"].forEach((tone) => {
       setClass(ribbon, "is-" + tone, plan.visible && plan.tone === tone);
     });
+  }
+
+  function updateMatchAtmosphere(state) {
+    var rail = refs.matchAtmosphere;
+    var fill = refs.matchAtmosphereFill;
+    var copy = refs.matchAtmosphereCopy;
+    var plan = getMatchAtmospherePlan(state);
+    var copyText = plan.visible ? (plan.label + " " + plan.detail).trim() : "";
+
+    if (rail) {
+      rail.dataset.hudSystem = plan.marker;
+      rail.dataset.tone = plan.tone;
+      setClass(rail, "is-visible", plan.visible);
+      ["save", "streak", "goal", "danger", "frame", "miss", "pressure"].forEach((tone) => {
+        setClass(rail, "is-" + tone, plan.visible && plan.tone === tone);
+      });
+    }
+
+    if (copy) copy.textContent = copyText;
+    if (fill) fill.style.width = String(plan.progress || 0) + "%";
   }
 
   function getResultReasonText(endReason) {
@@ -491,6 +598,7 @@ export function createHud(documentRef) {
       if (refs.finalControlTag) refs.finalControlTag.textContent = resultTags[2].value;
       updateFeedback(state);
       updateEventRibbon(state);
+      updateMatchAtmosphere(state);
       updateMatchStatus(state, context);
       updatePressureCue(state);
       updateMatchProgress(state);
