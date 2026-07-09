@@ -157,7 +157,7 @@ describe("procedural 3D assets", () => {
 
     expect(field.userData.visualStyle).toBe("professional-keeper-training-court");
     expect(field.userData.markingSystem).toBe("minimal-keeper-training-floor");
-    expect(surface.material.color.getHexString()).toBe("8c9296");
+    expect(surface.material.color.getHexString()).toBe("929aa3");
     expect(surface.material.color.b).toBeGreaterThan(surface.material.color.g);
     expect(surface.material.map).toBeNull();
     expect(surface.material.bumpMap).toBeNull();
@@ -166,6 +166,17 @@ describe("procedural 3D assets", () => {
     expect(turfPatches).toHaveLength(0);
     expect(markings).toHaveLength(0);
     expect(collectByName(field, /^field-penalty-spot$/)).toHaveLength(0);
+  });
+
+  it("uses a cool concrete floor palette so the surface cannot read as grass", () => {
+    const field = createFieldGroup();
+    const surface = collectByName(field, /^field-training-surface$/)[0];
+
+    expect(surface.material.userData.surfacePaletteSystem).toBe("cool-concrete-court-no-grass");
+    expect(surface.material.color.getHexString()).toBe("929aa3");
+    expect(surface.material.color.g).toBeLessThan(surface.material.color.b);
+    expect(surface.material.color.g).toBeLessThanOrEqual(surface.material.color.r + 0.045);
+    expect(surface.material.userData.grassReadabilityGuard).toBe("blue-gray-court-surface-not-turf");
   });
 
   it("uses a modern finished match ball texture instead of a plain prototype pattern", () => {
@@ -411,8 +422,8 @@ describe("procedural 3D assets", () => {
 
     expect(field.userData.materialPipelineSystem).toBe("procedural-pbr-material-stack");
     expect(surface.material.userData.materialPipelineSystem).toBe("clean-matte-training-surface-material");
-    expect(surface.material.userData.surfacePaletteSystem).toBe("neutral-gray-court-no-grass");
-    expect(surface.material.color.getHexString()).toBe("8c9296");
+    expect(surface.material.userData.surfacePaletteSystem).toBe("cool-concrete-court-no-grass");
+    expect(surface.material.color.getHexString()).toBe("929aa3");
     expect(surface.material.color.b).toBeGreaterThan(surface.material.color.g);
     expect(surface.material.map).toBeNull();
     expect(surface.material.bumpMap).toBeNull();

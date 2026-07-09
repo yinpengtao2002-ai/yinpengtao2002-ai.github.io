@@ -207,13 +207,14 @@ export function updateStadiumScoreboardTexture(texture, plan = getStadiumScorebo
 
 function createTrainingSurfaceMaterial() {
   var material = new THREE.MeshStandardMaterial({
-    color: "#8c9296",
+    color: "#929aa3",
     bumpScale: 0,
     roughness: 0.91,
     metalness: 0,
   });
   material.userData.materialPipelineSystem = "clean-matte-training-surface-material";
-  material.userData.surfacePaletteSystem = "neutral-gray-court-no-grass";
+  material.userData.surfacePaletteSystem = "cool-concrete-court-no-grass";
+  material.userData.grassReadabilityGuard = "blue-gray-court-surface-not-turf";
   return material;
 }
 
