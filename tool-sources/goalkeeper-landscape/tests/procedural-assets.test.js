@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import * as THREE from "three";
 import {
   createFieldGroup,
   createFootballMaterial,
@@ -36,7 +35,7 @@ describe("procedural 3D assets", () => {
     expect(collectByName(launcher.group, /^launcher-body/)).toHaveLength(1);
     expect(collectByName(launcher.group, /^launcher-barrel/)).toHaveLength(1);
     expect(collectByName(launcher.group, /^launcher-hopper/)).toHaveLength(1);
-    expect(collectByName(launcher.group, /^launcher-wheel-/)).toHaveLength(2);
+    expect(collectByName(launcher.group, /^launcher-wheel-(left|right)$/)).toHaveLength(2);
     expect(collectByName(launcher.group, /^launcher-feed-ball/)).toHaveLength(1);
     expect(collectByName(launcher.group, /^launcher-stand-/).length).toBeGreaterThanOrEqual(3);
     expect(collectByName(launcher.group, /^launcher-accent-/).length).toBeGreaterThanOrEqual(3);
@@ -149,7 +148,7 @@ describe("procedural 3D assets", () => {
     expect(collectByName(glove, /^glove-palm-pad/)).toHaveLength(1);
   });
 
-  it("uses a textured bright standard football pitch with readable white markings", () => {
+  it("uses a clean bright standard football pitch with readable white markings", () => {
     const field = createFieldGroup();
     const turf = collectByName(field, /^field-turf$/)[0];
     const stripes = collectByName(field, /^field-mowing-stripe-/);
@@ -157,9 +156,9 @@ describe("procedural 3D assets", () => {
 
     expect(field.userData.visualStyle).toBe("standard-football-match-pitch");
     expect(turf.material.color.getHexString()).toBe("69bd53");
-    expect(turf.material.map).toBeTruthy();
-    expect(turf.material.map.image.width).toBeGreaterThanOrEqual(128);
-    expect(turf.material.map.magFilter).toBe(THREE.LinearFilter);
+    expect(turf.material.map).toBeNull();
+    expect(turf.material.bumpMap).toBeNull();
+    expect(turf.material.roughnessMap).toBeNull();
     expect(stripes.length).toBeGreaterThanOrEqual(8);
     expect(markings.length).toBeGreaterThanOrEqual(5);
   });
@@ -291,12 +290,16 @@ describe("procedural 3D assets", () => {
     expect(getStadiumScoreboardPlan({ ended: true, score: 1200, timeLeft: 0 }).status).toBe("FULL TIME");
   });
 
-  it("adds foreground turf blade clusters and pitch depth shadows for a finished match surface", () => {
+  it("keeps the pitch clean and removes awkward decorative grass props", () => {
     const field = createFieldGroup();
 
-    expect(field.userData.surfaceDetailSystem).toBe("layered-turf-with-foreground-blades");
-    expect(collectByName(field, /^field-foreground-blade-cluster-/).length).toBeGreaterThanOrEqual(36);
-    expect(collectByName(field, /^field-turf-maintenance-brush-/).length).toBeGreaterThanOrEqual(8);
+    expect(field.userData.surfaceDetailSystem).toBe("clean-synthetic-pitch-depth-shadows");
+    expect(collectByName(field, /^field-foreground-blade-/)).toHaveLength(0);
+    expect(collectByName(field, /^field-foreground-blade-cluster-/)).toHaveLength(0);
+    expect(collectByName(field, /^field-edge-tuft-/)).toHaveLength(0);
+    expect(collectByName(field, /^field-edge-tuft-cluster-/)).toHaveLength(0);
+    expect(collectByName(field, /^field-instanced-turf-blades-/)).toHaveLength(0);
+    expect(collectByName(field, /^field-turf-maintenance-brush-/)).toHaveLength(0);
     expect(collectByName(field, /^field-goalmouth-depth-shadow-/)).toHaveLength(2);
     expect(collectByName(field, /^field-touchline-shadow-/)).toHaveLength(2);
   });
@@ -326,14 +329,14 @@ describe("procedural 3D assets", () => {
     expect(collectByName(goal.group, /^goal-net-rope-knot-/).length).toBeGreaterThanOrEqual(4);
   });
 
-  it("adds near-camera asset finishing details for turf, net hardware, gloves, and match ball material", () => {
+  it("adds near-camera asset finishing details for the clean pitch, net hardware, gloves, and match ball material", () => {
     const field = createFieldGroup();
     const goal = createGoalAndNet();
     const glove = createGloveMesh("right");
     const ballTexture = createFootballTexture();
 
-    expect(field.userData.surfaceFinishSystem).toBe("multi-layer-turf-edge-divot-kit");
-    expect(collectByName(field, /^field-edge-tuft-cluster-/).length).toBeGreaterThanOrEqual(14);
+    expect(field.userData.surfaceFinishSystem).toBe("clean-pitch-wear-and-chalk-kit");
+    expect(collectByName(field, /^field-edge-tuft-cluster-/)).toHaveLength(0);
     expect(collectByName(field, /^field-divot-scar-/).length).toBeGreaterThanOrEqual(10);
     expect(collectByName(field, /^field-line-chalk-dust-/).length).toBeGreaterThanOrEqual(6);
 
@@ -351,14 +354,12 @@ describe("procedural 3D assets", () => {
     expect(ballTexture.userData.finishSystem).toBe("micro-scuffed-satin-panels");
   });
 
-  it("uses an instanced turf finishing layer so the pitch reads as authored grass without excessive draw calls", () => {
+  it("uses flat pitch detail layers instead of instanced grass geometry", () => {
     const field = createFieldGroup();
     const instancedTurf = collectByName(field, /^field-instanced-turf-blades-/);
 
-    expect(field.userData.reusableAssetTechnique).toBe("instanced-turf-and-layered-material-kit");
-    expect(instancedTurf.length).toBeGreaterThanOrEqual(2);
-    expect(instancedTurf.every((mesh) => mesh.isInstancedMesh)).toBe(true);
-    expect(instancedTurf.reduce((total, mesh) => total + mesh.count, 0)).toBeGreaterThanOrEqual(220);
+    expect(field.userData.reusableAssetTechnique).toBe("flat-pitch-detail-and-wear-kit");
+    expect(instancedTurf).toHaveLength(0);
     expect(collectByName(field, /^field-turf-color-variation-patch-/).length).toBeGreaterThanOrEqual(6);
   });
 
@@ -368,11 +369,11 @@ describe("procedural 3D assets", () => {
     const ballMaterial = createFootballMaterial();
 
     expect(field.userData.materialPipelineSystem).toBe("procedural-pbr-material-stack");
-    expect(turf.material.userData.materialPipelineSystem).toBe("procedural-layered-turf-pbr");
-    expect(turf.material.map).toBeTruthy();
-    expect(turf.material.bumpMap).toBeTruthy();
-    expect(turf.material.roughnessMap).toBeTruthy();
-    expect(turf.material.bumpScale).toBeGreaterThan(0.015);
+    expect(turf.material.userData.materialPipelineSystem).toBe("clean-synthetic-pitch-solid-material");
+    expect(turf.material.map).toBeNull();
+    expect(turf.material.bumpMap).toBeNull();
+    expect(turf.material.roughnessMap).toBeNull();
+    expect(turf.material.bumpScale).toBe(0);
     expect(turf.material.roughness).toBeGreaterThanOrEqual(0.88);
 
     expect(ballMaterial.userData.materialPipelineSystem).toBe("procedural-match-ball-pbr");
@@ -440,5 +441,31 @@ describe("procedural 3D assets", () => {
 
     expect(ballTexture.userData.surfaceDetailSystem).toBe("micro-scuffs-valve-and-panel-depth");
     expect(ballTexture.userData.valveSystem).toBe("painted-rubber-air-valve");
+  });
+
+  it("adds match-use wear traces so the pitch, goal, and launcher feel played on", () => {
+    const field = createFieldGroup();
+    const goal = createGoalAndNet();
+    const launcher = createShooterModel();
+
+    const shotLaneCompression = collectByName(field, /^field-shot-lane-compression-/);
+    const keeperStanceScuffs = collectByName(field, /^field-keeper-stance-scuff-/);
+    const studTears = collectByName(field, /^field-stud-tear-/);
+    expect(field.userData.matchUseDetailSystem).toBe("match-use-trace-layer");
+    expect(shotLaneCompression.length).toBeGreaterThanOrEqual(6);
+    expect(keeperStanceScuffs.length).toBeGreaterThanOrEqual(4);
+    expect(studTears.length).toBeGreaterThanOrEqual(8);
+    expect(shotLaneCompression.every((trace) => trace.material.transparent && trace.material.opacity <= 0.22)).toBe(true);
+    expect(studTears.every((trace) => trace.material.depthWrite === false)).toBe(true);
+
+    expect(goal.group.userData.matchUseDetailSystem).toBe("match-use-equipment-wear-layer");
+    expect(collectByName(goal.group, /^goal-frame-ball-mark-/).length).toBeGreaterThanOrEqual(5);
+    expect(collectByName(goal.group, /^goal-net-bottom-soil-smudge-/).length).toBeGreaterThanOrEqual(4);
+    expect(collectByName(goal.group, /^goal-net-peg-shadow-/).length).toBeGreaterThanOrEqual(4);
+
+    expect(launcher.group.userData.matchUseDetailSystem).toBe("launcher-ground-contact-wear-layer");
+    expect(collectByName(launcher.group, /^launcher-wheel-tread-shadow-/)).toHaveLength(2);
+    expect(collectByName(launcher.group, /^launcher-service-mat$/)).toHaveLength(1);
+    expect(collectByName(launcher.group, /^launcher-footprint-scuff-/).length).toBeGreaterThanOrEqual(4);
   });
 });
