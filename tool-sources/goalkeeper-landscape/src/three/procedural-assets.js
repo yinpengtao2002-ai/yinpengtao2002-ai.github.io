@@ -4,6 +4,24 @@ import { SHOT_3D } from "../game/shot-3d-director.js";
 import { RAPIER_GOAL } from "../physics/rapier-world.js";
 
 export const STADIUM_SCOREBOARD_DISPLAY_SYSTEM = "live-stadium-scoreboard-display";
+export const MATCHDAY_ASSET_POLISH_SYSTEM = "broadcast-matchday-polish-kit";
+
+export function getMatchdayAssetPolishProfile() {
+  return {
+    system: MATCHDAY_ASSET_POLISH_SYSTEM,
+    reusableTechnique: "procedural-threejs-matchday-assets",
+    assetFamilies: [
+      "pitch",
+      "goal-net",
+      "ball",
+      "gloves",
+      "launcher",
+      "lighting",
+      "broadcast-dressing",
+    ],
+    renderingBudget: "mobile-safe-transparent-mesh-layers",
+  };
+}
 
 function pad2(value) {
   return String(Math.max(0, Math.floor(value))).padStart(2, "0");
@@ -374,6 +392,7 @@ export function createFootballTexture() {
   texture.userData.finishSystem = "micro-scuffed-satin-panels";
   texture.userData.surfaceDetailSystem = "micro-scuffs-valve-and-panel-depth";
   texture.userData.valveSystem = "painted-rubber-air-valve";
+  texture.userData.polishSystem = MATCHDAY_ASSET_POLISH_SYSTEM;
   return texture;
 }
 
@@ -388,6 +407,7 @@ export function createFootballMaterial() {
   });
   material.userData.materialPipelineSystem = "procedural-match-ball-pbr";
   material.userData.surfaceDetailSystem = "raised-seam-and-scuffed-panel-relief";
+  material.userData.polishSystem = MATCHDAY_ASSET_POLISH_SYSTEM;
   return material;
 }
 
@@ -419,18 +439,21 @@ function createFallbackFootballTexture() {
   texture.userData.finishSystem = "micro-scuffed-satin-panels";
   texture.userData.surfaceDetailSystem = "micro-scuffs-valve-and-panel-depth";
   texture.userData.valveSystem = "painted-rubber-air-valve";
+  texture.userData.polishSystem = MATCHDAY_ASSET_POLISH_SYSTEM;
   return texture;
 }
 
 export function createFieldGroup() {
   var group = new THREE.Group();
   group.userData.visualStyle = "standard-football-match-pitch";
+  group.userData.polishSystem = MATCHDAY_ASSET_POLISH_SYSTEM;
   group.userData.assetSystem = "stylized-reusable-matchday-kit";
   group.userData.materialPipelineSystem = "procedural-pbr-material-stack";
   group.userData.markingSystem = "standard-football-pitch";
   group.userData.surfaceDetailSystem = "layered-turf-with-foreground-blades";
   group.userData.surfaceFinishSystem = "multi-layer-turf-edge-divot-kit";
   group.userData.stadiumDressingSystem = "crowd-scoreboard-flags-matchday-dressing";
+  group.userData.broadcastDressingSystem = "sideline-camera-light-and-safety-pad-kit";
   group.userData.stadiumScoreboardSystem = STADIUM_SCOREBOARD_DISPLAY_SYSTEM;
   group.userData.reusableAssetTechnique = "instanced-turf-and-layered-material-kit";
   var turf = new THREE.Mesh(
@@ -880,11 +903,78 @@ export function createFieldGroup() {
     group.add(head);
   });
 
+  var broadcastPadMaterial = new THREE.MeshStandardMaterial({ color: "#1f3435", roughness: 0.58, metalness: 0.02 });
+  for (var padIndex = 0; padIndex < 4; padIndex += 1) {
+    var padSide = padIndex % 2 === 0 ? -1 : 1;
+    var pad = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.18, 1.35), broadcastPadMaterial.clone());
+    pad.name = "broadcast-sideline-safety-pad-" + padIndex;
+    pad.position.set(padSide * 7.52, 0.11, -4.8 - Math.floor(padIndex / 2) * 4.2);
+    pad.rotation.y = padSide > 0 ? -0.05 : 0.05;
+    group.add(pad);
+  }
+
+  ["left", "right"].forEach(function addBroadcastCameraPod(side, index) {
+    var sign = side === "left" ? -1 : 1;
+    var pod = new THREE.Group();
+    pod.name = "broadcast-camera-pod-" + side;
+    pod.position.set(sign * 7.62, 0.18, -1.4 - index * 1.8);
+    pod.rotation.y = sign > 0 ? -Math.PI / 2 + 0.16 : Math.PI / 2 - 0.16;
+
+    var base = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.12, 0.28), new THREE.MeshStandardMaterial({ color: "#18262a", roughness: 0.5, metalness: 0.08 }));
+    base.name = "broadcast-camera-pod-base-" + side;
+    var lens = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.062, 0.18, 14), new THREE.MeshStandardMaterial({ color: "#0e171a", roughness: 0.32, metalness: 0.16 }));
+    lens.name = "broadcast-camera-pod-lens-" + side;
+    lens.rotation.x = Math.PI / 2;
+    lens.position.set(0, 0.02, 0.18);
+    var tally = new THREE.Mesh(new THREE.CircleGeometry(0.018, 12), new THREE.MeshBasicMaterial({ color: "#ff7846", transparent: true, opacity: 0.8 }));
+    tally.name = "broadcast-camera-pod-tally-" + side;
+    tally.position.set(0.07 * sign, 0.055, 0.145);
+    pod.add(base, lens, tally);
+    group.add(pod);
+  });
+
+  var lightConeMaterial = new THREE.MeshBasicMaterial({
+    color: "#fff1a8",
+    transparent: true,
+    opacity: 0.12,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  [
+    ["left-back", -5.9, 1.46, -20.2, -0.22],
+    ["right-back", 5.9, 1.46, -20.2, 0.22],
+    ["left-mid", -5.8, 1.18, -9.8, -0.16],
+    ["right-mid", 5.8, 1.18, -9.8, 0.16],
+  ].forEach(function addLightCone(item) {
+    var cone = new THREE.Mesh(new THREE.ConeGeometry(1.6, 3.4, 4, 1, true), lightConeMaterial.clone());
+    cone.name = "stadium-light-cone-" + item[0];
+    cone.position.set(item[1], item[2], item[3]);
+    cone.rotation.set(Math.PI / 2.9, item[4], Math.PI / 4);
+    group.add(cone);
+  });
+
+  var vignetteMaterial = new THREE.MeshBasicMaterial({
+    color: "#0c1614",
+    transparent: true,
+    opacity: 0.16,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  ["left", "right"].forEach(function addDepthVignette(side) {
+    var sign = side === "left" ? -1 : 1;
+    var vignette = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 13.4), vignetteMaterial.clone());
+    vignette.name = "stadium-depth-vignette-" + side;
+    vignette.position.set(sign * 8.05, 0.62, -11.8);
+    vignette.rotation.y = sign > 0 ? -Math.PI / 2 : Math.PI / 2;
+    group.add(vignette);
+  });
+
   return group;
 }
 
 export function createGoalAndNet() {
   var group = new THREE.Group();
+  group.userData.polishSystem = MATCHDAY_ASSET_POLISH_SYSTEM;
   group.userData.assetSystem = "layered-goal-and-net-kit";
   group.userData.frameDetailSystem = "rounded-posts-with-tensioned-net";
   group.userData.netPocketSystem = "localized-net-pocket-deformation";
@@ -892,6 +982,7 @@ export function createGoalAndNet() {
   group.userData.netWeaveSystem = "knotted-diagonal-net-weave";
   group.userData.dynamicNetDetailSystem = "reactive-woven-net-detail-kit";
   group.userData.frameAssemblySystem = "manufactured-goal-frame-hardware";
+  group.userData.goalEquipmentPolishSystem = "weighted-pro-goal-equipment-kit";
   group.userData.depthReadabilitySystem = "goal-net-depth-contact-shadow-kit";
   var dynamicNetDetails = [];
 
@@ -1197,6 +1288,29 @@ export function createGoalAndNet() {
     group.add(clip);
   }
 
+  var crossbarSleeveMaterial = new THREE.MeshStandardMaterial({ color: "#fff4d2", roughness: 0.34, metalness: 0.03 });
+  [-1, 0, 1].forEach(function addCrossbarSleeve(offset, index) {
+    var sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.073, 0.076, 0.28, 18), crossbarSleeveMaterial);
+    sleeve.name = "goal-frame-crossbar-sleeve-" + index;
+    sleeve.rotation.z = Math.PI / 2;
+    sleeve.position.set(offset * RAPIER_GOAL.halfWidth * 0.48, RAPIER_GOAL.height, RAPIER_GOAL.netPlaneZ + 0.002);
+    group.add(sleeve);
+  });
+
+  var tensionerMaterial = new THREE.MeshStandardMaterial({ color: "#cfdad2", roughness: 0.32, metalness: 0.18 });
+  [
+    ["front-left", -RAPIER_GOAL.halfWidth, RAPIER_GOAL.height - 0.34, RAPIER_GOAL.netPlaneZ + 0.08],
+    ["front-right", RAPIER_GOAL.halfWidth, RAPIER_GOAL.height - 0.34, RAPIER_GOAL.netPlaneZ + 0.08],
+    ["rear-left", -RAPIER_GOAL.halfWidth - 0.34, 0.3, RAPIER_GOAL.netPlaneZ + 0.72],
+    ["rear-right", RAPIER_GOAL.halfWidth + 0.34, 0.3, RAPIER_GOAL.netPlaneZ + 0.72],
+  ].forEach(function addRopeTensioner(item) {
+    var tensioner = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.052, 0.04), tensionerMaterial);
+    tensioner.name = "goal-net-rope-tensioner-" + item[0];
+    tensioner.position.set(item[1], item[2], item[3]);
+    tensioner.rotation.y = item[1] < 0 ? 0.28 : -0.28;
+    group.add(registerDynamicNetDetail(tensioner, 0.38, 0.18));
+  });
+
   var labelMaterial = new THREE.MeshBasicMaterial({ color: "#f0782f", transparent: true, opacity: 0.92, side: THREE.DoubleSide });
   [
     ["left", -RAPIER_GOAL.halfWidth - 0.018],
@@ -1232,6 +1346,22 @@ export function createGoalAndNet() {
     footBolt.name = "goal-frame-fastener-bolt-foot-" + anchorIndex;
     footBolt.position.set(item[1] + (item[0].includes("left") ? -0.048 : 0.048), 0.052, item[3] + 0.014);
     group.add(footBolt);
+  });
+
+  var groundShadowPadMaterial = new THREE.MeshBasicMaterial({
+    color: "#0b221a",
+    transparent: true,
+    opacity: 0.2,
+    depthWrite: false,
+  });
+  ["left", "right"].forEach(function addGroundShadowPad(side) {
+    var sign = side === "left" ? -1 : 1;
+    var shadowPad = new THREE.Mesh(new THREE.CircleGeometry(1, 36), groundShadowPadMaterial.clone());
+    shadowPad.name = "goal-frame-ground-shadow-pad-" + side;
+    shadowPad.rotation.x = -Math.PI / 2;
+    shadowPad.scale.set(0.46, 0.16, 1);
+    shadowPad.position.set(sign * RAPIER_GOAL.halfWidth, 0.006, RAPIER_GOAL.netPlaneZ + 0.08);
+    group.add(shadowPad);
   });
 
   var hingeMaterial = new THREE.MeshStandardMaterial({ color: "#d9e6dc", roughness: 0.38, metalness: 0.12 });
@@ -1668,6 +1798,7 @@ export function updateShooterModel(model, director) {
 export function createGloveMesh(side) {
   var group = new THREE.Group();
   group.userData.visualStyle = "polished-orange-reference-glove";
+  group.userData.polishSystem = MATCHDAY_ASSET_POLISH_SYSTEM;
   group.userData.materialSystem = "stitched-padded-match-glove";
   group.userData.gripSystem = "latex-ridge-and-stitched-fingerback";
   var palmMat = new THREE.MeshStandardMaterial({

@@ -17,6 +17,7 @@ import {
   getGroundContactAudioEvent,
   getMissMessageForBall,
   resolveRuntimeDifficulty,
+  shouldPlayLingeringGroundAudio,
 } from "../src/game/three-game-runtime.js";
 import { createRapierGoalkeeperWorld } from "../src/physics/rapier-world.js";
 
@@ -102,6 +103,15 @@ describe("three game runtime timing", () => {
       speed: 0.8,
       point: { x: -0.4, y: 0.012, z: 2.9 },
     })).toBeNull();
+  });
+
+  it("keeps retired replay turf audio quiet while the next live shot is in flight", () => {
+    expect(RuntimeModule.shouldPlayLingeringGroundAudio).toBeTypeOf("function");
+    expect(shouldPlayLingeringGroundAudio({ phase: "live" }, { live: true, outcome: "live" })).toBe(false);
+    expect(shouldPlayLingeringGroundAudio({ phase: "live" }, { live: true, outcome: "deflected" })).toBe(false);
+    expect(shouldPlayLingeringGroundAudio({ phase: "cue" }, { live: false, outcome: "idle" })).toBe(true);
+    expect(shouldPlayLingeringGroundAudio({ phase: "cooldown" }, { live: false, outcome: "idle" })).toBe(true);
+    expect(shouldPlayLingeringGroundAudio({ phase: "live" }, { live: false, outcome: "goal" })).toBe(true);
   });
 
   it("turns frame misses into a distinct HUD message instead of a silent generic miss", () => {

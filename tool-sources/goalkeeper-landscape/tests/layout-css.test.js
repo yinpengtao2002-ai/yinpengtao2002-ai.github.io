@@ -62,4 +62,17 @@ describe("responsive layout css", () => {
     expect(css).toContain(".sound-status");
     expect(css).toContain("max-width: min(260px, 42vw);");
   });
+
+  it("adds a broadcast control rail HUD treatment that stays outside the main ball lane", () => {
+    const css = readFileSync(stylesPath, "utf8");
+
+    expect(css).toContain("broadcast-control-rail-hud");
+    expect(css).toContain(".game-hud::before");
+    expect(css).toContain(".bottom-controls::before");
+    expect(css).toContain("pointer-events: none;");
+    expect(css).toContain("max-width: min(760px, calc(100vw - 32px));");
+    expect(css).toContain("bottom: max(clamp(14px, 2vw, 28px), env(safe-area-inset-bottom));");
+    expect(css).toContain("@media (max-height: 520px) and (orientation: landscape)");
+    expect(css).toContain("max-width: min(680px, calc(100vw - 96px));");
+  });
 });

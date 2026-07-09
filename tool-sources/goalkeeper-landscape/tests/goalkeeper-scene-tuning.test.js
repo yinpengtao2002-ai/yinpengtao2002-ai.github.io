@@ -181,6 +181,52 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(livePlan.visibleBallCount).toBe(1);
   });
 
+  it("hides airborne retired replay balls while a new live shot is flying", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.shouldRenderLingeringBall).toBeTypeOf("function");
+
+    const activeShot = {
+      live: true,
+      outcome: "live",
+      position: { x: 0.18, y: 0.88, z: -8.4 },
+      velocity: { x: 3.2, y: 1.4, z: 34 },
+      radius: 0.11,
+    };
+    const airborneReplay = {
+      live: false,
+      outcome: "saved",
+      position: { x: 1.15, y: 1.86, z: 2.4 },
+      velocity: { x: 2.8, y: 2.6, z: -3.2 },
+      radius: 0.11,
+      age: 1.2,
+      duration: 5,
+    };
+    const groundedReplay = {
+      ...airborneReplay,
+      position: { x: 1.7, y: 0.11, z: 2.1 },
+      velocity: { x: 1.4, y: 0, z: -0.8 },
+      groundFeedback: {
+        active: true,
+        point: { x: 1.7, y: 0.012, z: 2.1 },
+        intensity: 0.32,
+        speed: 1.6,
+      },
+    };
+
+    const plan = sceneModule.getSceneBallRenderPlan({
+      director: { phase: "live" },
+      ball: activeShot,
+      lingeringBalls: [airborneReplay, groundedReplay],
+    });
+
+    expect(plan.visibleBallCount).toBe(2);
+    expect(plan.lingeringBalls).toEqual([groundedReplay]);
+    expect(plan.hiddenLingeringBalls).toEqual([airborneReplay]);
+    expect(sceneModule.shouldRenderLingeringBall(airborneReplay, { director: { phase: "live" }, ball: activeShot })).toBe(false);
+    expect(sceneModule.shouldRenderLingeringBall(groundedReplay, { director: { phase: "live" }, ball: activeShot })).toBe(true);
+  });
+
   it("defines a restrained matchday feedback layer for saves, goals, streaks, and camera shake", () => {
     expect(SCENE_TUNING.feedback.assetSystem).toBe("matchday-feedback-kit");
     expect(SCENE_TUNING.feedback.impactRingCount).toBeGreaterThanOrEqual(3);
@@ -380,6 +426,53 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(turf.visualEffects).toEqual(expect.arrayContaining(["feedback-ground-skid", "feedback-turf-fleck"]));
     expect(turf.cameraShake).toBe(0);
     expect(turf.priority).toBe("ambient");
+  });
+
+  it("assigns restrained broadcast presentation tiers for save, goal, frame, and turf events", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    const normalSave = sceneModule.getMatchEventFeedbackPlan({
+      type: "save",
+      contact: { type: "glove", strength: 20, point: { x: 0.22, y: 1.22, z: 3.14 } },
+      state: { streak: 1, conceded: 0 },
+    });
+    const streakSave = sceneModule.getMatchEventFeedbackPlan({
+      type: "save",
+      contact: { type: "glove", strength: 34, point: { x: -0.18, y: 1.28, z: 3.14 } },
+      state: { streak: 4, conceded: 0 },
+    });
+    const dangerGoal = sceneModule.getMatchEventFeedbackPlan({
+      type: "goal",
+      contact: { type: "net", strength: 1, point: { x: 0.5, y: 1.32, z: SHOT_3D.netPlaneZ } },
+      state: { conceded: 4 },
+    });
+    const frame = sceneModule.getMatchEventFeedbackPlan({
+      type: "frame",
+      contact: { type: "frame", strength: 0.78, point: { x: -0.7, y: 2.32, z: SHOT_3D.netPlaneZ } },
+    });
+    const turf = sceneModule.getMatchEventFeedbackPlan({
+      type: "ground",
+      groundFeedback: { active: true, intensity: 0.4, speed: 4.2, point: { x: 0, y: 0.01, z: 2.6 } },
+    });
+
+    expect(normalSave.presentation.system).toBe("broadcast-event-feedback-presentation");
+    expect(normalSave.presentation.tier).toBe("core");
+    expect(normalSave.presentation.screenWashOpacity).toBeLessThan(0.18);
+    expect(normalSave.presentation.cameraShakeMode).toBe("micro");
+
+    expect(streakSave.presentation.tier).toBe("highlight");
+    expect(streakSave.presentation.screenWashOpacity).toBeGreaterThan(normalSave.presentation.screenWashOpacity);
+    expect(streakSave.presentation.hudBurst).toBe("streak-ribbon");
+
+    expect(dangerGoal.presentation.tier).toBe("critical");
+    expect(dangerGoal.presentation.screenWashOpacity).toBeGreaterThan(streakSave.presentation.screenWashOpacity);
+    expect(dangerGoal.presentation.cameraShakeMode).toBe("recoil");
+    expect(dangerGoal.presentation.slowMoMs).toBeLessThanOrEqual(120);
+
+    expect(frame.presentation.tier).toBe("core");
+    expect(frame.presentation.hudBurst).toBe("frame-chip");
+    expect(turf.presentation.tier).toBe("ambient");
+    expect(turf.presentation.screenWashOpacity).toBe(0);
   });
 
   it("advances a damped spring net recoil so goals push the net then rebound and settle", async () => {

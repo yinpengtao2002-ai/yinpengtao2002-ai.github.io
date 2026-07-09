@@ -135,6 +135,10 @@ export function getGroundContactAudioEvent(feedback) {
   return "turf-skid";
 }
 
+export function shouldPlayLingeringGroundAudio(director, activeBall) {
+  return !(director?.phase === "live" && activeBall?.live);
+}
+
 export function getMissMessageForBall(ball) {
   return ball?.lastContact?.type === "frame" ? "frame" : "miss";
 }
@@ -489,6 +493,7 @@ export async function createThreeGameRuntime(options) {
   function playGroundContactAudio(dt) {
     groundContactAudioCooldown = Math.max(0, groundContactAudioCooldown - Math.max(0, dt || 0));
     if (groundContactAudioCooldown > 0) return;
+    if (!shouldPlayLingeringGroundAudio(director, physics.getBallState())) return;
 
     var candidate = lingeringBalls.find((ball) => getGroundContactAudioEvent(ball?.groundFeedback));
     var feedback = candidate?.groundFeedback;

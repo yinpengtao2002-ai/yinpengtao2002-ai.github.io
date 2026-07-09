@@ -7,6 +7,7 @@ import {
   createGloveMesh,
   createGoalAndNet,
   createShooterModel,
+  getMatchdayAssetPolishProfile,
   getStadiumScoreboardPlan,
   updateShooterModel,
 } from "../src/three/procedural-assets.js";
@@ -199,6 +200,45 @@ describe("procedural 3D assets", () => {
     expect(collectByName(field, /^field-goalmouth-wear-/)).toHaveLength(3);
   });
 
+  it("exposes a reusable broadcast matchday polish profile across scene assets", () => {
+    const profile = getMatchdayAssetPolishProfile();
+    const field = createFieldGroup();
+    const goal = createGoalAndNet();
+    const glove = createGloveMesh("right");
+    const football = createFootballMaterial();
+
+    expect(profile.system).toBe("broadcast-matchday-polish-kit");
+    expect(profile.reusableTechnique).toBe("procedural-threejs-matchday-assets");
+    expect(profile.assetFamilies).toEqual(expect.arrayContaining([
+      "pitch",
+      "goal-net",
+      "ball",
+      "gloves",
+      "launcher",
+      "lighting",
+      "broadcast-dressing",
+    ]));
+
+    expect(field.userData.polishSystem).toBe(profile.system);
+    expect(goal.group.userData.polishSystem).toBe(profile.system);
+    expect(glove.userData.polishSystem).toBe(profile.system);
+    expect(football.userData.polishSystem).toBe(profile.system);
+  });
+
+  it("adds broadcast edge dressing, safety pads, and volumetric light props without blocking play", () => {
+    const field = createFieldGroup();
+
+    expect(field.userData.broadcastDressingSystem).toBe("sideline-camera-light-and-safety-pad-kit");
+    expect(collectByName(field, /^broadcast-camera-pod-(left|right)$/)).toHaveLength(2);
+    expect(collectByName(field, /^broadcast-sideline-safety-pad-/).length).toBeGreaterThanOrEqual(4);
+    expect(collectByName(field, /^stadium-light-cone-/).length).toBeGreaterThanOrEqual(4);
+    expect(collectByName(field, /^stadium-depth-vignette-/)).toHaveLength(2);
+
+    const lightCones = collectByName(field, /^stadium-light-cone-/);
+    expect(lightCones.every((cone) => cone.material.transparent && cone.material.opacity <= 0.2)).toBe(true);
+    expect(lightCones.every((cone) => cone.position.z < 0)).toBe(true);
+  });
+
   it("adds a live stadium scoreboard display that mirrors match state without covering play", () => {
     const field = createFieldGroup();
     const display = collectByName(field, /^stadium-scoreboard-display$/)[0];
@@ -357,11 +397,15 @@ describe("procedural 3D assets", () => {
     const goal = createGoalAndNet();
 
     expect(goal.group.userData.frameAssemblySystem).toBe("manufactured-goal-frame-hardware");
+    expect(goal.group.userData.goalEquipmentPolishSystem).toBe("weighted-pro-goal-equipment-kit");
     expect(collectByName(goal.group, /^goal-frame-corner-collar-/)).toHaveLength(4);
     expect(collectByName(goal.group, /^goal-frame-ground-foot-pad-/)).toHaveLength(4);
     expect(collectByName(goal.group, /^goal-net-tie-strap-/).length).toBeGreaterThanOrEqual(8);
     expect(collectByName(goal.group, /^goal-depth-hinge-bracket-/)).toHaveLength(2);
     expect(collectByName(goal.group, /^goal-frame-fastener-bolt-/).length).toBeGreaterThanOrEqual(8);
+    expect(collectByName(goal.group, /^goal-frame-crossbar-sleeve-/)).toHaveLength(3);
+    expect(collectByName(goal.group, /^goal-net-rope-tensioner-/)).toHaveLength(4);
+    expect(collectByName(goal.group, /^goal-frame-ground-shadow-pad-/)).toHaveLength(2);
   });
 
   it("registers woven net details as a reusable reactive asset layer", () => {

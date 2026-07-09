@@ -46,6 +46,7 @@ export const SCENE_TUNING = {
     flightSpinGlintFullSpeed: 22,
     flightSpinGlintMaxOpacity: 0.24,
     maxLingeringBalls: 6,
+    retiredReplayAirHideHeight: 0.24,
   },
   gloves: {
     scale: 0.64,
@@ -434,7 +435,9 @@ export function getBallSpinGlintPlan(ballState, shot = null, tuning = SCENE_TUNI
 
 export function getSceneBallRenderPlan(snapshot = {}) {
   var ball = snapshot.ball || null;
-  var lingeringBalls = Array.isArray(snapshot.lingeringBalls) ? snapshot.lingeringBalls.filter(Boolean) : [];
+  var allLingeringBalls = Array.isArray(snapshot.lingeringBalls) ? snapshot.lingeringBalls.filter(Boolean) : [];
+  var lingeringBalls = allLingeringBalls.filter((lingeringBall) => shouldRenderLingeringBall(lingeringBall, snapshot));
+  var hiddenLingeringBalls = allLingeringBalls.filter((lingeringBall) => !shouldRenderLingeringBall(lingeringBall, snapshot));
   var hideActiveBallForReplay = Boolean(ball && ball.outcome === "saved" && lingeringBalls.length > 0);
   var activeBall = hideActiveBallForReplay
     ? {
@@ -456,10 +459,22 @@ export function getSceneBallRenderPlan(snapshot = {}) {
     activeBall,
     contactBall: ball,
     lingeringBalls,
+    hiddenLingeringBalls,
     groundSkidBalls,
     visibleBallCount,
     hideActiveBallForReplay,
   };
+}
+
+export function shouldRenderLingeringBall(lingeringBall, snapshot = {}, tuning = SCENE_TUNING.ball) {
+  if (!lingeringBall?.position) return false;
+  var activeBall = snapshot.ball;
+  var activeShotInFlight = Boolean(snapshot.director?.phase === "live" && activeBall?.position && activeBall.live);
+  if (!activeShotInFlight) return true;
+
+  var radius = lingeringBall.radius || tuning.radius || 0.12;
+  var heightAboveTurf = (lingeringBall.position.y || 0) - radius;
+  return heightAboveTurf <= (tuning.retiredReplayAirHideHeight || 0.24);
 }
 
 export function getSaveAfterimagePlan(contact, gloves, tuning = SCENE_TUNING.feedback) {
@@ -774,6 +789,68 @@ export function getMatchFeedbackProfile(event = {}, tuning = SCENE_TUNING.feedba
   };
 }
 
+export function getBroadcastEventPresentationPlan(event = {}, plan = {}) {
+  var type = event.type || event.contact?.type || "ambient";
+  var tier = plan.priority === "critical" ? "critical" : plan.priority === "high" ? "highlight" : plan.priority === "core" ? "core" : "ambient";
+  var intensity = clamp01(plan.effectIntensity || 0);
+  var base = {
+    system: "broadcast-event-feedback-presentation",
+    tier,
+    cameraShakeMode: "none",
+    screenWashOpacity: 0,
+    hudBurst: null,
+    slowMoMs: 0,
+  };
+
+  if (type === "save" || type === "glove" || type === "catch") {
+    var streak = (event.state?.streak || 0) >= 3;
+    return {
+      ...base,
+      tier: streak ? "highlight" : "core",
+      cameraShakeMode: "micro",
+      screenWashOpacity: streak ? Math.min(0.2, 0.11 + intensity * 0.055) : Math.min(0.16, 0.065 + intensity * 0.045),
+      hudBurst: streak ? "streak-ribbon" : "save-chip",
+      slowMoMs: streak ? 60 : 0,
+    };
+  }
+
+  if (type === "goal" || type === "net") {
+    var danger = plan.priority === "critical" || plan.kind === "danger-goal";
+    return {
+      ...base,
+      tier: danger ? "critical" : "highlight",
+      cameraShakeMode: danger ? "recoil" : "push",
+      screenWashOpacity: danger ? Math.min(0.28, 0.18 + intensity * 0.06) : Math.min(0.22, 0.12 + intensity * 0.05),
+      hudBurst: danger ? "danger-loss-ribbon" : "goal-chip",
+      slowMoMs: danger ? 90 : 70,
+    };
+  }
+
+  if (type === "frame") {
+    return {
+      ...base,
+      tier: "core",
+      cameraShakeMode: "micro",
+      screenWashOpacity: Math.min(0.12, 0.045 + intensity * 0.04),
+      hudBurst: "frame-chip",
+      slowMoMs: 40,
+    };
+  }
+
+  if (type === "ground" || type === "turf") {
+    return {
+      ...base,
+      tier: "ambient",
+      cameraShakeMode: "none",
+      screenWashOpacity: 0,
+      hudBurst: null,
+      slowMoMs: 0,
+    };
+  }
+
+  return base;
+}
+
 export function getMatchEventFeedbackPlan(event = {}, tuning = SCENE_TUNING.feedback) {
   var system = tuning.eventOrchestratorSystem || "keeper-event-feedback-orchestrator";
   var type = event.type || event.contact?.type || "ambient";
@@ -785,7 +862,7 @@ export function getMatchEventFeedbackPlan(event = {}, tuning = SCENE_TUNING.feed
     var streak = state.streak || 0;
     var isStreak = streak >= 3;
     var impactStrength = clampNumber(profile.impactStrength || tuning.saveImpactStrength, 0.58, 1.12);
-    return {
+    var savePlan = {
       system,
       kind: profile.kind,
       profile,
@@ -810,12 +887,14 @@ export function getMatchEventFeedbackPlan(event = {}, tuning = SCENE_TUNING.feed
         pulse: 0,
       },
     };
+    savePlan.presentation = getBroadcastEventPresentationPlan(event, savePlan);
+    return savePlan;
   }
 
   if (type === "goal" || type === "net") {
     var isDanger = profile.kind === "danger-goal";
     var goalIntensity = clampNumber(profile.impactStrength || tuning.goalImpactStrength, 0.82, 1.24);
-    return {
+    var goalPlan = {
       system,
       kind: profile.kind,
       profile,
@@ -840,11 +919,13 @@ export function getMatchEventFeedbackPlan(event = {}, tuning = SCENE_TUNING.feed
         pulse: clampNumber(profile.netPulse || 0, 0.82, isDanger ? 1.14 : 1.04),
       },
     };
+    goalPlan.presentation = getBroadcastEventPresentationPlan(event, goalPlan);
+    return goalPlan;
   }
 
   if (type === "frame") {
     var frameIntensity = clampNumber(profile.impactStrength || tuning.frameImpactStrength, 0.42, 0.86);
-    return {
+    var framePlan = {
       system,
       kind: profile.kind,
       profile,
@@ -866,12 +947,14 @@ export function getMatchEventFeedbackPlan(event = {}, tuning = SCENE_TUNING.feed
         pulse: 0,
       },
     };
+    framePlan.presentation = getBroadcastEventPresentationPlan(event, framePlan);
+    return framePlan;
   }
 
   if (type === "ground" || type === "turf") {
     var feedback = event.groundFeedback || {};
     var intensity = clamp01(Math.max(feedback.intensity || 0, (feedback.speed || 0) / 10));
-    return {
+    var groundPlan = {
       system,
       kind: "ground-skid",
       profile,
@@ -893,9 +976,11 @@ export function getMatchEventFeedbackPlan(event = {}, tuning = SCENE_TUNING.feed
         pulse: 0,
       },
     };
+    groundPlan.presentation = getBroadcastEventPresentationPlan(event, groundPlan);
+    return groundPlan;
   }
 
-  return {
+  var ambientPlan = {
     system,
     kind: "ambient",
     profile,
@@ -914,6 +999,8 @@ export function getMatchEventFeedbackPlan(event = {}, tuning = SCENE_TUNING.feed
       pulse: 0,
     },
   };
+  ambientPlan.presentation = getBroadcastEventPresentationPlan(event, ambientPlan);
+  return ambientPlan;
 }
 
 export function getDynamicNetDetailMotionPlan(detail, pulse, contactPoint, tuning = SCENE_TUNING.feedback) {
