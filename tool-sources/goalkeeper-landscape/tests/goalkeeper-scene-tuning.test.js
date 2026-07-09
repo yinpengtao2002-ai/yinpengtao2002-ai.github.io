@@ -347,9 +347,9 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.feedback.cameraShakeFalloff).toBeGreaterThanOrEqual(0.0035);
     expect(SCENE_TUNING.feedback.cameraShakeFalloff).toBeLessThanOrEqual(0.008);
     expect(SCENE_TUNING.feedback.netPulseDecay).toBeGreaterThanOrEqual(0.025);
-    expect(SCENE_TUNING.feedback.netBaseOpacity).toBeLessThanOrEqual(0.07);
-    expect(SCENE_TUNING.feedback.netPulseOpacityBoost).toBeLessThanOrEqual(0.16);
-    expect(SCENE_TUNING.feedback.netRecoilOpacityBoost).toBeLessThanOrEqual(0.12);
+    expect(SCENE_TUNING.feedback.netBaseOpacity).toBeLessThanOrEqual(0.006);
+    expect(SCENE_TUNING.feedback.netPulseOpacityBoost).toBeLessThanOrEqual(0.065);
+    expect(SCENE_TUNING.feedback.netRecoilOpacityBoost).toBeLessThanOrEqual(0.035);
     expect(SCENE_TUNING.feedback.netRecoilSystem).toBe("damped-net-spring-rebound");
     expect(SCENE_TUNING.feedback.netRecoilMaxTravel).toBeGreaterThanOrEqual(0.12);
     expect(SCENE_TUNING.feedback.netRecoilMaxTravel).toBeLessThanOrEqual(0.26);
@@ -399,6 +399,22 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.feedback.dynamicNetDetailSystem).toBe("reactive-woven-net-recoil");
     expect(SCENE_TUNING.feedback.dynamicNetDetailMaxTravel).toBeGreaterThanOrEqual(0.08);
     expect(SCENE_TUNING.feedback.dynamicNetDetailMaxTravel).toBeLessThanOrEqual(0.18);
+  });
+
+  it("keeps streak-only impact feedback from stopping the render loop", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.getEventBloomPlan).toBeTypeOf("function");
+    expect(sceneModule.triggerPostprocessingBloomState).toBeTypeOf("function");
+
+    const bloomState = sceneModule.createPostprocessingBloomState(SCENE_TUNING.postprocessing);
+
+    expect(() => sceneModule.getEventBloomPlan(null, SCENE_TUNING.postprocessing)).not.toThrow();
+    expect(() => sceneModule.triggerPostprocessingBloomState(bloomState, null, SCENE_TUNING.postprocessing)).not.toThrow();
+    expect(sceneModule.getEventBloomPlan(null, SCENE_TUNING.postprocessing)).toMatchObject({
+      active: false,
+      tier: "ambient",
+    });
   });
 
   it("maps match events to distinct visual feedback profiles instead of one generic flash", async () => {

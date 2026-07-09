@@ -160,9 +160,9 @@ export const SCENE_TUNING = {
     maxCameraShake: 0.045,
     cameraShakeFalloff: 0.0048,
     netPulseDecay: 0.032,
-    netBaseOpacity: 0.06,
-    netPulseOpacityBoost: 0.14,
-    netRecoilOpacityBoost: 0.1,
+    netBaseOpacity: 0.004,
+    netPulseOpacityBoost: 0.06,
+    netRecoilOpacityBoost: 0.03,
     groundSkidCount: 5,
     groundSkidColor: "#e7d5a7",
     groundSkidMaxOpacity: 0.34,
@@ -1247,6 +1247,7 @@ export function getCameraImpulseOffsetPlan(state, frame = 0, tuning = SCENE_TUNI
 }
 
 export function getEventBloomPlan(eventPlan = {}, tuning = SCENE_TUNING.postprocessing) {
+  eventPlan = eventPlan || {};
   var baseStrength = tuning.baseStrength || 0;
   var priority = eventPlan.priority || "ambient";
   var isAmbient = priority === "ambient" || !eventPlan.kind || eventPlan.kind === "ambient" || eventPlan.kind === "ground-skid";
@@ -1293,7 +1294,7 @@ export function createPostprocessingBloomState(tuning = SCENE_TUNING.postprocess
 
 export function triggerPostprocessingBloomState(state, eventPlan, tuning = SCENE_TUNING.postprocessing) {
   if (!state || !tuning?.enabled) return state;
-  var plan = eventPlan?.system === tuning.system ? eventPlan : getEventBloomPlan(eventPlan, tuning);
+  var plan = eventPlan?.system === tuning.system ? eventPlan : getEventBloomPlan(eventPlan || {}, tuning);
   if (!plan.active) return state;
 
   state.life = 1;

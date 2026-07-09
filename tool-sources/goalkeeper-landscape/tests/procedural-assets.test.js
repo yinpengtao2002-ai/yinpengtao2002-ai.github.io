@@ -567,19 +567,35 @@ describe("procedural 3D assets", () => {
   it("keeps the net readable without turning the back panel into a ball-blocking veil", () => {
     const goal = createGoalAndNet();
     const sideNets = collectByName(goal.group, /^goal-net-side-/);
+    const depthHaze = collectByName(goal.group, /^goal-net-depth-haze-/);
     const raisedCords = collectByName(goal.group, /^goal-net-raised-(vertical|horizontal)-cord-/);
     const borderRopes = collectByName(goal.group, /^goal-net-raised-border-rope-/);
     const diagonalWeave = collectByName(goal.group, /^goal-net-diagonal-weave-/);
 
     expect(goal.group.userData.netReadabilitySystem).toBe("ball-first-ultra-light-net-cords");
-    expect(goal.net.material.opacity).toBeGreaterThanOrEqual(0.045);
-    expect(goal.net.material.opacity).toBeLessThanOrEqual(0.07);
-    expect(goal.grid.material.opacity).toBeGreaterThanOrEqual(0.2);
-    expect(goal.grid.material.opacity).toBeLessThanOrEqual(0.26);
-    expect(sideNets.every((net) => net.material.opacity >= 0.06 && net.material.opacity <= 0.09)).toBe(true);
-    expect(raisedCords.every((cord) => cord.material.opacity >= 0.22 && cord.material.opacity <= 0.3)).toBe(true);
-    expect(borderRopes.every((rope) => rope.material.opacity >= 0.28 && rope.material.opacity <= 0.34)).toBe(true);
-    expect(diagonalWeave.every((weave) => weave.material.opacity >= 0.14 && weave.material.opacity <= 0.2)).toBe(true);
+    expect(goal.net.material.opacity).toBeGreaterThanOrEqual(0.002);
+    expect(goal.net.material.opacity).toBeLessThanOrEqual(0.006);
+    expect(goal.grid.material.opacity).toBeGreaterThanOrEqual(0.1);
+    expect(goal.grid.material.opacity).toBeLessThanOrEqual(0.14);
+    expect(depthHaze.every((haze) => haze.material.opacity <= 0.004)).toBe(true);
+    expect(sideNets.every((net) => net.material.opacity >= 0.004 && net.material.opacity <= 0.01)).toBe(true);
+    expect(raisedCords.every((cord) => cord.material.opacity >= 0.18 && cord.material.opacity <= 0.22)).toBe(true);
+    expect(borderRopes.every((rope) => rope.material.opacity >= 0.24 && rope.material.opacity <= 0.28)).toBe(true);
+    expect(diagonalWeave.every((weave) => weave.material.opacity >= 0.08 && weave.material.opacity <= 0.12)).toBe(true);
+  });
+
+  it("uses an open diamond rope net instead of a translucent curtain in the goal mouth", () => {
+    const goal = createGoalAndNet();
+    const diamondRopes = collectByName(goal.group, /^goal-net-open-diamond-rope-/);
+
+    expect(goal.group.userData.netRealismSystem).toBe("open-diamond-rope-net-ball-first");
+    expect(diamondRopes.length).toBeGreaterThanOrEqual(12);
+    expect(diamondRopes.every((rope) => rope.geometry.type === "TubeGeometry")).toBe(true);
+    expect(diamondRopes.every((rope) => rope.material.opacity >= 0.12 && rope.material.opacity <= 0.22)).toBe(true);
+    expect(diamondRopes.every((rope) => rope.material.depthWrite === false)).toBe(true);
+    expect(goal.net.material.opacity).toBeLessThanOrEqual(0.006);
+    expect(goal.grid.material.opacity).toBeLessThanOrEqual(0.14);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-open-diamond-rope-"))).toBe(true);
   });
 
   it("adds assembled goal hardware details so the frame feels manufactured rather than procedural", () => {

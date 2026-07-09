@@ -788,6 +788,7 @@ export function createGoalAndNet() {
   group.userData.goalEquipmentPolishSystem = "weighted-pro-goal-equipment-kit";
   group.userData.depthReadabilitySystem = "goal-net-depth-contact-shadow-kit";
   group.userData.netReadabilitySystem = "ball-first-ultra-light-net-cords";
+  group.userData.netRealismSystem = "open-diamond-rope-net-ball-first";
   group.userData.matchUseDetailSystem = "match-use-equipment-wear-layer";
   var dynamicNetDetails = [];
 
@@ -875,7 +876,7 @@ export function createGoalAndNet() {
   var netMaterial = new THREE.MeshBasicMaterial({
     color: "#dff8ff",
     transparent: true,
-    opacity: 0.06,
+    opacity: 0.004,
     side: THREE.DoubleSide,
     depthWrite: false,
   });
@@ -907,7 +908,7 @@ export function createGoalAndNet() {
   var depthHazeMaterial = new THREE.MeshBasicMaterial({
     color: "#dff8ff",
     transparent: true,
-    opacity: 0.06,
+    opacity: 0.003,
     depthWrite: false,
     side: THREE.DoubleSide,
   });
@@ -922,7 +923,12 @@ export function createGoalAndNet() {
     group.add(haze);
   });
 
-  var gridMaterial = new THREE.LineBasicMaterial({ color: "#f5ffff", transparent: true, opacity: 0.24 });
+  var gridMaterial = new THREE.LineBasicMaterial({
+    color: "#f5ffff",
+    transparent: true,
+    opacity: 0.12,
+    depthWrite: false,
+  });
   var linePoints = [];
   for (var x = -RAPIER_GOAL.halfWidth; x <= RAPIER_GOAL.halfWidth + 0.01; x += 0.42) {
     linePoints.push(new THREE.Vector3(x, 0, RAPIER_GOAL.netPlaneZ + 0.09));
@@ -939,9 +945,10 @@ export function createGoalAndNet() {
   var raisedRopeMaterial = new THREE.MeshStandardMaterial({
     color: "#f6fffb",
     transparent: true,
-    opacity: 0.42,
+    opacity: 0.28,
     roughness: 0.62,
     metalness: 0,
+    depthWrite: false,
   });
   function makeRaisedRope(name, points, radius = 0.0085, opacity = 0.36) {
     var curve = new THREE.CatmullRomCurve3(points.map((point) => new THREE.Vector3(point.x, point.y, point.z)));
@@ -951,6 +958,8 @@ export function createGoalAndNet() {
     );
     rope.name = name;
     rope.material.opacity = opacity;
+    rope.material.depthWrite = false;
+    rope.renderOrder = 3;
     rope.userData.netCordVolumeSystem = "raised-rope-net-cord-layer";
     rope.userData.geometrySource = "three-tube-geometry-raised-net-rope";
     return rope;
@@ -960,14 +969,14 @@ export function createGoalAndNet() {
       { x: ropeX, y: 0.1, z: RAPIER_GOAL.netPlaneZ + 0.118 },
       { x: ropeX + (raisedVerticalIndex % 2 ? -0.018 : 0.018), y: RAPIER_GOAL.height * 0.52, z: RAPIER_GOAL.netPlaneZ + 0.142 },
       { x: ropeX, y: RAPIER_GOAL.height - 0.12, z: RAPIER_GOAL.netPlaneZ + 0.118 },
-    ], 0.0075, 0.26), 0.92, 0.52));
+    ], 0.0065, 0.2), 0.92, 0.52));
   }
   for (var ropeY = 0.42, raisedHorizontalIndex = 0; ropeY <= RAPIER_GOAL.height - 0.32; ropeY += 0.42, raisedHorizontalIndex += 1) {
     group.add(registerDynamicNetDetail(makeRaisedRope("goal-net-raised-horizontal-cord-" + raisedHorizontalIndex, [
       { x: -RAPIER_GOAL.halfWidth + 0.16, y: ropeY, z: RAPIER_GOAL.netPlaneZ + 0.122 },
       { x: 0, y: ropeY + (raisedHorizontalIndex % 2 ? 0.012 : -0.012), z: RAPIER_GOAL.netPlaneZ + 0.148 },
       { x: RAPIER_GOAL.halfWidth - 0.16, y: ropeY, z: RAPIER_GOAL.netPlaneZ + 0.122 },
-    ], 0.0075, 0.25), 0.82, 0.48));
+    ], 0.0065, 0.19), 0.82, 0.48));
   }
   [
     ["top", [
@@ -991,10 +1000,15 @@ export function createGoalAndNet() {
       { x: RAPIER_GOAL.halfWidth - 0.08, y: RAPIER_GOAL.height - 0.12, z: RAPIER_GOAL.netPlaneZ + 0.13 },
     ]],
   ].forEach(function addRaisedBorderRope(item) {
-    group.add(registerDynamicNetDetail(makeRaisedRope("goal-net-raised-border-rope-" + item[0], item[1], 0.011, 0.31), 0.72, 0.42));
+    group.add(registerDynamicNetDetail(makeRaisedRope("goal-net-raised-border-rope-" + item[0], item[1], 0.01, 0.27), 0.72, 0.42));
   });
 
-  var diagonalMaterial = new THREE.LineBasicMaterial({ color: "#f7ffff", transparent: true, opacity: 0.17 });
+  var diagonalMaterial = new THREE.LineBasicMaterial({
+    color: "#f7ffff",
+    transparent: true,
+    opacity: 0.11,
+    depthWrite: false,
+  });
   function addDiagonalWeave(name, direction) {
     var diagonalPoints = [];
     for (var offset = -RAPIER_GOAL.halfWidth - RAPIER_GOAL.height; offset <= RAPIER_GOAL.halfWidth; offset += 0.64) {
@@ -1013,8 +1027,46 @@ export function createGoalAndNet() {
   addDiagonalWeave("rising", 1);
   addDiagonalWeave("falling", -1);
 
+  function addOpenDiamondRopeSet(label, direction) {
+    var slope = 1.08;
+    var width = RAPIER_GOAL.halfWidth * 2;
+    var ropeIndex = 0;
+    for (
+      var offset = -RAPIER_GOAL.halfWidth - RAPIER_GOAL.height * slope;
+      offset <= RAPIER_GOAL.halfWidth + RAPIER_GOAL.height * slope;
+      offset += 0.86
+    ) {
+      var points = [];
+      for (var sample = 0; sample <= 14; sample += 1) {
+        var x = -RAPIER_GOAL.halfWidth + (width * sample) / 14;
+        var y = direction > 0
+          ? (x - offset) / slope
+          : RAPIER_GOAL.height - (x - offset) / slope;
+        if (y < 0.1 || y > RAPIER_GOAL.height - 0.1) continue;
+        var wave = Math.sin(sample * 0.74 + ropeIndex * 0.52) * 0.006;
+        points.push({
+          x,
+          y: y + Math.sin((x + offset) * 0.9) * 0.004,
+          z: RAPIER_GOAL.netPlaneZ + 0.136 + wave,
+        });
+      }
+      if (points.length < 2) continue;
+
+      var crossesGoalMouth = points.some((point) => Math.abs(point.x) < 0.62 && point.y > 0.52 && point.y < 1.88);
+      var opacity = crossesGoalMouth ? 0.14 : 0.18;
+      group.add(registerDynamicNetDetail(
+        makeRaisedRope("goal-net-open-diamond-rope-" + label + "-" + ropeIndex, points, 0.0048, opacity),
+        1.04,
+        0.54,
+      ));
+      ropeIndex += 1;
+    }
+  }
+  addOpenDiamondRopeSet("rising", 1);
+  addOpenDiamondRopeSet("falling", -1);
+
   var sideNetMaterial = netMaterial.clone();
-  sideNetMaterial.opacity = 0.08;
+  sideNetMaterial.opacity = 0.008;
   ["left", "right"].forEach(function addSideNet(side) {
     var sign = side === "left" ? -1 : 1;
     var sideNet = new THREE.Mesh(new THREE.PlaneGeometry(0.95, RAPIER_GOAL.height, 5, 8), sideNetMaterial.clone());
