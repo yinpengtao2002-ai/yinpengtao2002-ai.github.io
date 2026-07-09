@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { getBallTrailStyle, getNetPocketStyle, getShooterPose } from "../src/render/renderer.js";
 
@@ -49,5 +50,14 @@ describe("renderer helpers", () => {
     expect(trappedPocket.tension).toBeGreaterThan(0.4);
     expect(trappedPocket.x).toBeGreaterThan(640);
     expect(trappedPocket.y).toBeLessThan(720 * 0.7);
+  });
+
+  it("keeps canvas fallback fields free of green turf fills and blade strokes", () => {
+    const rendererSource = readFileSync(new URL("../src/render/renderer.js", import.meta.url), "utf8");
+    const legacyGameSource = readFileSync(new URL("../game-core.js", import.meta.url), "utf8");
+    const combinedSource = rendererSource + "\n" + legacyGameSource;
+
+    expect(combinedSource).not.toMatch(/#28b856|#35c961|#22b953|#8fd64f|#73c941/i);
+    expect(combinedSource).not.toMatch(/for \(var blade/);
   });
 });

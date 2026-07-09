@@ -760,24 +760,14 @@
       var bottomLeft = -w * 0.16;
       var bottomRight = w * 1.16;
 
-      for (var i = 0; i < 10; i += 1) {
-        var t0 = i / 10;
-        var t1 = (i + 1) / 10;
-        var y0 = lerp(horizon, h, t0);
-        var y1 = lerp(horizon, h, t1);
-        var l0 = lerp(topLeft, bottomLeft, t0);
-        var r0 = lerp(topRight, bottomRight, t0);
-        var l1 = lerp(topLeft, bottomLeft, t1);
-        var r1 = lerp(topRight, bottomRight, t1);
-        ctx.fillStyle = i % 2 === 0 ? "#8fd64f" : "#73c941";
-        ctx.beginPath();
-        ctx.moveTo(l0, y0);
-        ctx.lineTo(r0, y0);
-        ctx.lineTo(r1, y1);
-        ctx.lineTo(l1, y1);
-        ctx.closePath();
-        ctx.fill();
-      }
+      ctx.fillStyle = "#626f75";
+      ctx.beginPath();
+      ctx.moveTo(topLeft, horizon);
+      ctx.lineTo(topRight, horizon);
+      ctx.lineTo(bottomRight, h);
+      ctx.lineTo(bottomLeft, h);
+      ctx.closePath();
+      ctx.fill();
 
       ctx.save();
       ctx.strokeStyle = "rgba(255, 255, 255, 0.34)";
@@ -820,20 +810,6 @@
       ctx.fill();
       ctx.restore();
 
-      ctx.save();
-      ctx.globalAlpha = 0.16;
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 1;
-      for (var blade = 0; blade < 130; blade += 1) {
-        var bx = ((blade * 73) % 1000) / 1000 * w;
-        var by = h * 0.48 + ((blade * 47) % 1000) / 1000 * h * 0.46;
-        var len = h * (0.008 + ((blade * 19) % 7) * 0.001);
-        ctx.beginPath();
-        ctx.moveTo(bx, by);
-        ctx.lineTo(bx + Math.sin(blade) * 4, by - len);
-        ctx.stroke();
-      }
-      ctx.restore();
     }
 
     function drawHexPath(cx, cy, radius) {

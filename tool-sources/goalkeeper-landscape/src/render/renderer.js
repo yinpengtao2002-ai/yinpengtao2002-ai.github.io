@@ -167,30 +167,13 @@ function drawBackground(ctx, bounds) {
   ctx.restore();
 }
 
-function fieldPoint(bounds, t, side) {
-  var w = bounds.width;
-  var h = bounds.height;
-  var isLandscape = w / h > 1.2;
-  var p = Math.pow(clamp01(t), 1.36);
-  var topY = h * (isLandscape ? 0.46 : 0.43);
-  var bottomY = h * 1.04;
-  var topLeft = w * (isLandscape ? 0.405 : 0.365);
-  var topRight = w * (isLandscape ? 0.595 : 0.635);
-  var bottomLeft = -w * (isLandscape ? 0.08 : 0.18);
-  var bottomRight = w * (isLandscape ? 1.08 : 1.18);
-  return {
-    x: side < 0 ? mix(topLeft, bottomLeft, p) : mix(topRight, bottomRight, p),
-    y: mix(topY, bottomY, p),
-  };
-}
-
 function drawField(ctx, bounds) {
   var w = bounds.width;
   var h = bounds.height;
   var horizon = h * (w / h > 1.2 ? 0.46 : 0.43);
 
   ctx.save();
-  ctx.fillStyle = "#28b856";
+  ctx.fillStyle = "#626f75";
   ctx.beginPath();
   ctx.moveTo(w * 0.365, horizon);
   ctx.lineTo(w * 0.635, horizon);
@@ -198,33 +181,6 @@ function drawField(ctx, bounds) {
   ctx.lineTo(-w * 0.18, h * 1.04);
   ctx.closePath();
   ctx.fill();
-
-  for (var i = 0; i < 12; i += 1) {
-    var p0 = fieldPoint(bounds, i / 12, -1);
-    var p1 = fieldPoint(bounds, i / 12, 1);
-    var p2 = fieldPoint(bounds, (i + 1) / 12, 1);
-    var p3 = fieldPoint(bounds, (i + 1) / 12, -1);
-    ctx.fillStyle = i % 2 === 0 ? "#35c961" : "#22b953";
-    ctx.beginPath();
-    ctx.moveTo(p0.x, p0.y);
-    ctx.lineTo(p1.x, p1.y);
-    ctx.lineTo(p2.x, p2.y);
-    ctx.lineTo(p3.x, p3.y);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  ctx.strokeStyle = "rgba(226,255,229,0.34)";
-  ctx.lineWidth = Math.max(1, w * 0.0013);
-  for (var blade = 0; blade < 58; blade += 1) {
-    var t = blade / 57;
-    var left = fieldPoint(bounds, t, -1);
-    var right = fieldPoint(bounds, t, 1);
-    ctx.beginPath();
-    ctx.moveTo(left.x, left.y);
-    ctx.lineTo(right.x, right.y);
-    ctx.stroke();
-  }
 
   ctx.strokeStyle = "rgba(255,255,255,0.72)";
   ctx.lineWidth = Math.max(2, w * 0.0022);

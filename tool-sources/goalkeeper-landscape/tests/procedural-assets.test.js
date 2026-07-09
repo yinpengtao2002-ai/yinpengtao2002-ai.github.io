@@ -156,7 +156,7 @@ describe("procedural 3D assets", () => {
     const markings = collectByName(field, /^field-standard-/);
 
     expect(field.userData.visualStyle).toBe("professional-keeper-training-court");
-    expect(surface.material.color.getHexString()).toBe("657476");
+    expect(surface.material.color.getHexString()).toBe("626f75");
     expect(surface.material.map).toBeNull();
     expect(surface.material.bumpMap).toBeNull();
     expect(surface.material.roughnessMap).toBeNull();
@@ -309,8 +309,8 @@ describe("procedural 3D assets", () => {
   it("keeps the pitch clean and removes awkward decorative grass props", () => {
     const field = createFieldGroup();
 
-    expect(field.userData.surfaceDetailSystem).toBe("clean-non-grass-training-floor-depth-shadows");
-    expect(field.userData.surfaceFinishSystem).toBe("clean-training-floor-no-grass-clutter");
+    expect(field.userData.surfaceDetailSystem).toBe("plain-neutral-training-floor-depth-shadows");
+    expect(field.userData.surfaceFinishSystem).toBe("plain-training-floor-no-grass-stripes");
     expect(collectByName(field, /^field-turf$/)).toHaveLength(0);
     expect(collectByName(field, /^field-foreground-blade-/)).toHaveLength(0);
     expect(collectByName(field, /^field-foreground-blade-cluster-/)).toHaveLength(0);
@@ -326,6 +326,9 @@ describe("procedural 3D assets", () => {
     expect(collectByName(field, /^field-keeper-stance-scuff-/)).toHaveLength(0);
     expect(collectByName(field, /^field-boot-scuff-/)).toHaveLength(0);
     expect(collectByName(field, /^field-line-chalk-dust-/)).toHaveLength(0);
+    expect(collectByName(field, /^field-surface-panel-/)).toHaveLength(0);
+    expect(collectByName(field, /^field-surface-panel-seam-/)).toHaveLength(0);
+    expect(collectByName(field, /^field-depth-band-/)).toHaveLength(0);
     expect(collectByName(field, /^field-goalmouth-depth-shadow-/)).toHaveLength(2);
     expect(collectByName(field, /^field-touchline-shadow-/)).toHaveLength(2);
   });
@@ -361,10 +364,12 @@ describe("procedural 3D assets", () => {
     const glove = createGloveMesh("right");
     const ballTexture = createFootballTexture();
 
-    expect(field.userData.surfaceFinishSystem).toBe("clean-training-floor-no-grass-clutter");
+    expect(field.userData.surfaceFinishSystem).toBe("plain-training-floor-no-grass-stripes");
     expect(collectByName(field, /^field-edge-tuft-cluster-/)).toHaveLength(0);
     expect(collectByName(field, /^field-floor-scuff-/)).toHaveLength(0);
     expect(collectByName(field, /^field-line-chalk-dust-/)).toHaveLength(0);
+    expect(collectByName(field, /^field-surface-panel-/)).toHaveLength(0);
+    expect(collectByName(field, /^field-depth-band-/)).toHaveLength(0);
 
     expect(goal.group.userData.netHardwareSystem).toBe("weighted-net-label-and-clip-kit");
     expect(collectByName(goal.group, /^goal-net-bottom-weight-/).length).toBeGreaterThanOrEqual(4);
@@ -380,13 +385,15 @@ describe("procedural 3D assets", () => {
     expect(ballTexture.userData.finishSystem).toBe("micro-scuffed-satin-panels");
   });
 
-  it("uses flat training-floor detail layers instead of grass geometry", () => {
+  it("uses a plain matte training floor instead of grass-like surface striping", () => {
     const field = createFieldGroup();
     const instancedTurf = collectByName(field, /^field-instanced-turf-blades-/);
 
-    expect(field.userData.reusableAssetTechnique).toBe("flat-training-floor-detail-kit");
+    expect(field.userData.reusableAssetTechnique).toBe("plain-matte-training-floor-kit");
     expect(instancedTurf).toHaveLength(0);
-    expect(collectByName(field, /^field-surface-panel-/).length).toBeGreaterThanOrEqual(6);
+    expect(collectByName(field, /^field-surface-panel-/)).toHaveLength(0);
+    expect(collectByName(field, /^field-surface-panel-seam-/)).toHaveLength(0);
+    expect(collectByName(field, /^field-depth-band-/)).toHaveLength(0);
     expect(collectByName(field, /^field-turf-color-variation-patch-/)).toHaveLength(0);
     expect(collectByName(field, /^field-mowing-stripe-/)).toHaveLength(0);
   });
@@ -398,6 +405,8 @@ describe("procedural 3D assets", () => {
 
     expect(field.userData.materialPipelineSystem).toBe("procedural-pbr-material-stack");
     expect(surface.material.userData.materialPipelineSystem).toBe("clean-matte-training-surface-material");
+    expect(surface.material.userData.surfacePaletteSystem).toBe("neutral-court-no-grass-green");
+    expect(surface.material.color.getHexString()).toBe("626f75");
     expect(surface.material.map).toBeNull();
     expect(surface.material.bumpMap).toBeNull();
     expect(surface.material.roughnessMap).toBeNull();
@@ -479,7 +488,7 @@ describe("procedural 3D assets", () => {
     const shotLaneCompression = collectByName(field, /^field-shot-lane-compression-/);
     const keeperStanceScuffs = collectByName(field, /^field-keeper-stance-scuff-/);
     const bootScuffs = collectByName(field, /^field-boot-scuff-/);
-    expect(field.userData.matchUseDetailSystem).toBe("clean-field-no-grass-clutter");
+    expect(field.userData.matchUseDetailSystem).toBe("plain-field-no-grass-clutter");
     expect(shotLaneCompression).toHaveLength(0);
     expect(keeperStanceScuffs).toHaveLength(0);
     expect(bootScuffs).toHaveLength(0);

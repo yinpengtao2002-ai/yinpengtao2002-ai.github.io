@@ -207,12 +207,13 @@ export function updateStadiumScoreboardTexture(texture, plan = getStadiumScorebo
 
 function createTrainingSurfaceMaterial() {
   var material = new THREE.MeshStandardMaterial({
-    color: "#657476",
+    color: "#626f75",
     bumpScale: 0,
     roughness: 0.91,
     metalness: 0,
   });
   material.userData.materialPipelineSystem = "clean-matte-training-surface-material";
+  material.userData.surfacePaletteSystem = "neutral-court-no-grass-green";
   return material;
 }
 
@@ -403,13 +404,13 @@ export function createFieldGroup() {
   group.userData.assetSystem = "stylized-reusable-matchday-kit";
   group.userData.materialPipelineSystem = "procedural-pbr-material-stack";
   group.userData.markingSystem = "standard-football-pitch";
-  group.userData.surfaceDetailSystem = "clean-non-grass-training-floor-depth-shadows";
-  group.userData.surfaceFinishSystem = "clean-training-floor-no-grass-clutter";
+  group.userData.surfaceDetailSystem = "plain-neutral-training-floor-depth-shadows";
+  group.userData.surfaceFinishSystem = "plain-training-floor-no-grass-stripes";
   group.userData.stadiumDressingSystem = "crowd-scoreboard-flags-matchday-dressing";
   group.userData.broadcastDressingSystem = "sideline-camera-light-and-safety-pad-kit";
   group.userData.stadiumScoreboardSystem = STADIUM_SCOREBOARD_DISPLAY_SYSTEM;
-  group.userData.reusableAssetTechnique = "flat-training-floor-detail-kit";
-  group.userData.matchUseDetailSystem = "clean-field-no-grass-clutter";
+  group.userData.reusableAssetTechnique = "plain-matte-training-floor-kit";
+  group.userData.matchUseDetailSystem = "plain-field-no-grass-clutter";
   group.userData.trainingFacilitySystem = "professional-keeper-training-ground-kit";
   var surface = new THREE.Mesh(
     new THREE.PlaneGeometry(18, 52, 1, 1),
@@ -419,46 +420,6 @@ export function createFieldGroup() {
   surface.rotation.x = -Math.PI / 2;
   surface.position.set(0, -0.025, -14);
   group.add(surface);
-
-  var panelMaterials = [
-    new THREE.MeshBasicMaterial({ color: "#7b8788", transparent: true, opacity: 0.1, depthWrite: false }),
-    new THREE.MeshBasicMaterial({ color: "#556467", transparent: true, opacity: 0.12, depthWrite: false }),
-  ];
-  for (var panelIndex = 0; panelIndex < 8; panelIndex += 1) {
-    var panel = new THREE.Mesh(new THREE.PlaneGeometry(18, 4.15), panelMaterials[panelIndex % panelMaterials.length]);
-    panel.name = "field-surface-panel-" + panelIndex;
-    panel.rotation.x = -Math.PI / 2;
-    panel.position.set(0, -0.018, -35.8 + panelIndex * 5.35);
-    group.add(panel);
-  }
-
-  var seamMaterial = new THREE.MeshBasicMaterial({
-    color: "#dfe9df",
-    transparent: true,
-    opacity: 0.11,
-    depthWrite: false,
-  });
-  for (var seamIndex = 0; seamIndex < 7; seamIndex += 1) {
-    var seam = new THREE.Mesh(new THREE.PlaneGeometry(16.4, 0.035), seamMaterial);
-    seam.name = "field-surface-panel-seam-" + seamIndex;
-    seam.rotation.x = -Math.PI / 2;
-    seam.position.set(0, -0.014, -33.15 + seamIndex * 5.35);
-    group.add(seam);
-  }
-
-  var depthBandMaterial = new THREE.MeshBasicMaterial({
-    color: "#34494f",
-    transparent: true,
-    opacity: 0.18,
-    depthWrite: false,
-  });
-  [-15.6, -11.8, -8.0, -4.2, -0.4].forEach(function addDepthBand(z, index) {
-    var band = new THREE.Mesh(new THREE.PlaneGeometry(14.5 - index * 0.75, 0.34), depthBandMaterial);
-    band.name = "field-depth-band-" + index;
-    band.rotation.x = -Math.PI / 2;
-    band.position.set(0, -0.012, z);
-    group.add(band);
-  });
 
   var spot = new THREE.Mesh(
     new THREE.CircleGeometry(0.09, 24),
