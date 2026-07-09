@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { DecalGeometry } from "three/addons/geometries/DecalGeometry.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { MAX_CONCEDED, ROUND_SECONDS } from "../config/game-config.js";
 import { SHOT_3D } from "../game/shot-3d-director.js";
@@ -22,10 +23,17 @@ const NET_MATCH_GRADE_TEXTURE_SYSTEM = "match-grade-woven-net-texture-clear-sigh
 const NET_SHOT_LANE_VISIBILITY_SYSTEM = "center-lane-ball-first-net-budget";
 const NET_PHOTOREAL_TEXTURE_SYSTEM = "braided-hex-rear-pocket-net-clear-lane";
 const NET_LANDSCAPE_SIGHTLINE_SYSTEM = "landscape-keeper-view-real-net-clear-shot-lane";
+const NET_VISUAL_UPGRADE_SYSTEM = "procedural-match-net-alpha-weave-clear-lane";
+const NET_ALPHA_TEXTURE_SYSTEM = "procedural-real-match-net-alpha-texture";
 const GLOVE_PBR_MATERIAL_SYSTEM = "pbr-latex-textile-match-glove-materials";
 const GLOVE_LATEX_TEXTURE_SYSTEM = "procedural-latex-micrograin-glove-texture";
 const GLOVE_TEXTILE_TEXTURE_SYSTEM = "procedural-woven-cuff-glove-texture";
 const GLOVE_WEAR_DETAIL_SYSTEM = "subtle-match-use-glove-wear";
+const LAUNCHER_PBR_MATERIAL_SYSTEM = "pbr-painted-metal-rubber-launcher-materials";
+const LAUNCHER_DECAL_SYSTEM = "three-decalgeometry-launcher-label-wear-kit";
+const LAUNCHER_PAINT_TEXTURE_SYSTEM = "procedural-painted-metal-launcher-texture";
+const LAUNCHER_GUNMETAL_TEXTURE_SYSTEM = "procedural-gunmetal-launcher-texture";
+const LAUNCHER_RUBBER_TEXTURE_SYSTEM = "procedural-rubber-tire-launcher-texture";
 
 export function getMatchdayAssetPolishProfile() {
   return {
@@ -130,6 +138,46 @@ function createNetCordSurfaceMap(kind) {
   return texture;
 }
 
+function createMatchNetAlphaTexture(variant = "edge") {
+  var size = 256;
+  var data = new Uint8Array(size * size * 4);
+  var lineGain = variant === "center" ? 118 : 178;
+  var knotGain = variant === "center" ? 58 : 86;
+
+  for (var y = 0; y < size; y += 1) {
+    for (var x = 0; x < size; x += 1) {
+      var nx = x / size;
+      var ny = y / size;
+      var diagonalA = Math.abs(((nx * 8.5 + ny * 5.25 + 0.08) % 1) - 0.5);
+      var diagonalB = Math.abs(((nx * 8.5 - ny * 5.25 + 0.38) % 1) - 0.5);
+      var cord = Math.exp(-Math.pow(Math.min(diagonalA, diagonalB) / 0.032, 2));
+      var fiber = (Math.sin(x * 0.63 + y * 1.97) * 0.5 + 0.5) * 0.18;
+      var knotGridX = Math.abs(((nx * 8.5 + 0.08) % 1) - 0.5);
+      var knotGridY = Math.abs(((ny * 5.25 + 0.38) % 1) - 0.5);
+      var knot = Math.exp(-((knotGridX * knotGridX + knotGridY * knotGridY) / 0.0048));
+      var alpha = Math.min(235, Math.round(cord * lineGain + knot * knotGain));
+      var shade = 232 + Math.round((cord + fiber) * 18);
+      var index = (y * size + x) * 4;
+      data[index] = shade;
+      data[index + 1] = Math.min(255, shade + 4);
+      data[index + 2] = Math.min(255, shade + 8);
+      data[index + 3] = alpha;
+    }
+  }
+
+  var texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1.35, 1.08);
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  texture.userData.assetSystem = NET_ALPHA_TEXTURE_SYSTEM;
+  texture.userData.netVisualUpgradeSystem = NET_VISUAL_UPGRADE_SYSTEM;
+  texture.userData.variant = variant;
+  return texture;
+}
+
 function createBraidedNetCordMaterial(options = {}) {
   var material = new THREE.MeshStandardMaterial({
     color: options.color || "#f4fff8",
@@ -146,6 +194,56 @@ function createBraidedNetCordMaterial(options = {}) {
   material.userData.netMaterialSystem = NET_CORD_MATERIAL_SYSTEM;
   material.userData.netTextureSystem = NET_CORD_TEXTURE_SYSTEM;
   material.userData.sightlineSystem = NET_SIGHTLINE_SYSTEM;
+  return material;
+}
+
+function createLauncherSurfaceMap(kind, surface) {
+  var textureSystem = surface === "rubber"
+    ? LAUNCHER_RUBBER_TEXTURE_SYSTEM
+    : surface === "gunmetal"
+      ? LAUNCHER_GUNMETAL_TEXTURE_SYSTEM
+      : LAUNCHER_PAINT_TEXTURE_SYSTEM;
+  var repeat = surface === "rubber" ? 2.8 : surface === "gunmetal" ? 4.2 : 3.4;
+  var texture = createSurfaceDetailTexture(128, (x, y, size) => {
+    var nx = x / size;
+    var ny = y / size;
+    var grain = Math.sin(x * 17.17 + y * 37.31) * 0.5 + 0.5;
+    var brushed = Math.sin((nx * repeat * 8 + Math.sin(ny * 18) * 0.16) * Math.PI * 2) * 0.5 + 0.5;
+    var speckle = Math.sin(x * 91.7 + y * 43.3) * 0.5 + 0.5;
+    var tread = Math.sin((nx * 18 + ny * 2.4) * Math.PI * 2) * 0.5 + 0.5;
+
+    if (surface === "rubber") {
+      if (kind === "roughness") return 194 + tread * 36 + grain * 18;
+      if (kind === "bump") return 104 + tread * 84 + speckle * 18;
+      return 44 + grain * 26;
+    }
+
+    if (surface === "gunmetal") {
+      if (kind === "roughness") return 150 + brushed * 54 + grain * 20;
+      if (kind === "bump") return 118 + brushed * 48 + speckle * 22;
+      return 72 + brushed * 22 + grain * 12;
+    }
+
+    if (kind === "roughness") return 148 + (1 - brushed) * 44 + grain * 28;
+    if (kind === "bump") return 116 + brushed * 42 + speckle * 24;
+    return 154 + brushed * 20 + grain * 10;
+  }, repeat, surface === "rubber" ? 1.2 : 2.1);
+  texture.userData.assetSystem = textureSystem;
+  texture.userData.surfaceKind = kind;
+  texture.userData.launcherMaterialSystem = LAUNCHER_PBR_MATERIAL_SYSTEM;
+  return texture;
+}
+
+function applyLauncherMaterialMaps(material, surface, bumpScale) {
+  material.bumpMap = createLauncherSurfaceMap("bump", surface);
+  material.roughnessMap = createLauncherSurfaceMap("roughness", surface);
+  material.bumpScale = bumpScale;
+  material.userData.launcherMaterialSystem = LAUNCHER_PBR_MATERIAL_SYSTEM;
+  material.userData.launcherSurfaceTextureSystem = surface === "rubber"
+    ? LAUNCHER_RUBBER_TEXTURE_SYSTEM
+    : surface === "gunmetal"
+      ? LAUNCHER_GUNMETAL_TEXTURE_SYSTEM
+      : LAUNCHER_PAINT_TEXTURE_SYSTEM;
   return material;
 }
 
@@ -899,6 +997,7 @@ export function createGoalAndNet() {
   group.userData.netShotLaneVisibilitySystem = NET_SHOT_LANE_VISIBILITY_SYSTEM;
   group.userData.netPhotorealTextureSystem = NET_PHOTOREAL_TEXTURE_SYSTEM;
   group.userData.netLandscapeSightlineSystem = NET_LANDSCAPE_SIGHTLINE_SYSTEM;
+  group.userData.netVisualUpgradeSystem = NET_VISUAL_UPGRADE_SYSTEM;
   group.userData.matchUseDetailSystem = "match-use-equipment-wear-layer";
   var dynamicNetDetails = [];
   var keeperSightline = {
@@ -1735,6 +1834,77 @@ export function createGoalAndNet() {
   }
   addLandscapeRearNetTextureLayer();
 
+  function makeMatchAlphaWeavePanel(name, width, height, x, y, z, opacity, options = {}) {
+    var material = new THREE.MeshBasicMaterial({
+      color: options.color || "#f7fffb",
+      map: createMatchNetAlphaTexture(options.textureVariant || "edge"),
+      transparent: true,
+      opacity,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      alphaTest: options.alphaTest ?? 0.012,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+    });
+    material.userData.netVisualUpgradeSystem = NET_VISUAL_UPGRADE_SYSTEM;
+    material.userData.netAlphaTextureSystem = NET_ALPHA_TEXTURE_SYSTEM;
+    var panel = new THREE.Mesh(new THREE.PlaneGeometry(width, height, 1, 1), material);
+    panel.name = name;
+    panel.position.set(x, y, z);
+    panel.rotation.y = options.rotationY || 0;
+    panel.renderOrder = options.renderOrder || 2;
+    panel.userData.netVisualUpgradeSystem = NET_VISUAL_UPGRADE_SYSTEM;
+    panel.userData.netLandscapeSightlineSystem = NET_LANDSCAPE_SIGHTLINE_SYSTEM;
+    panel.userData.netLaneGuardSystem = NET_LANE_GUARD_SYSTEM;
+    panel.userData.rearPocketLayer = options.rearPocketLayer || "peripheral-edge-texture";
+    panel.userData.behindShotLane = true;
+    panel.userData.crossesKeeperSightline = Boolean(options.crossesKeeperSightline);
+    panel.userData.frontShotLaneOcclusion = 0;
+    return registerDynamicNetDetail(panel, options.motionScale ?? 0.18, options.opacityScale ?? 0.05);
+  }
+
+  [
+    ["center-depth", 2.28, 1.58, 0, 1.24, RAPIER_GOAL.netPlaneZ + 0.86, 0.064, {
+      rearPocketLayer: "center-depth-texture",
+      crossesKeeperSightline: true,
+      textureVariant: "center",
+      renderOrder: 1,
+      motionScale: 0.12,
+      opacityScale: 0.025,
+    }],
+    ["top-drape", RAPIER_GOAL.halfWidth * 1.72, 0.42, 0, RAPIER_GOAL.height - 0.26, RAPIER_GOAL.netPlaneZ + 0.66, 0.18, {
+      textureVariant: "edge",
+      motionScale: 0.22,
+      opacityScale: 0.08,
+    }],
+    ["bottom-weighted", RAPIER_GOAL.halfWidth * 1.68, 0.34, 0, 0.28, RAPIER_GOAL.netPlaneZ + 0.72, 0.14, {
+      textureVariant: "edge",
+      motionScale: 0.18,
+      opacityScale: 0.06,
+    }],
+    ["left-cheek", 0.78, 1.78, -RAPIER_GOAL.halfWidth + 0.34, 1.22, RAPIER_GOAL.netPlaneZ + 0.68, 0.22, {
+      textureVariant: "edge",
+      motionScale: 0.2,
+      opacityScale: 0.08,
+    }],
+    ["right-cheek", 0.78, 1.78, RAPIER_GOAL.halfWidth - 0.34, 1.22, RAPIER_GOAL.netPlaneZ + 0.68, 0.22, {
+      textureVariant: "edge",
+      motionScale: 0.2,
+      opacityScale: 0.08,
+    }],
+  ].forEach(function addMatchAlphaWeavePanel(item) {
+    group.add(makeMatchAlphaWeavePanel(
+      "goal-net-match-alpha-weave-panel-" + item[0],
+      item[1],
+      item[2],
+      item[3],
+      item[4],
+      item[5],
+      item[6],
+      item[7],
+    ));
+  });
+
   [
     ["top-left", [
       { x: -RAPIER_GOAL.halfWidth + 0.18, y: RAPIER_GOAL.height - 0.03, z: RAPIER_GOAL.netPlaneZ + 0.16 },
@@ -2155,6 +2325,8 @@ export function createShooterModel() {
   group.userData.launcherMechanismSystem = "hydraulic-recoil-aiming-cradle";
   group.userData.launcherReleaseFeedbackSystem = "recoil-exhaust-floor-shock-kit";
   group.userData.launcherFeedSystem = "indexed-rotary-ball-feed-servo";
+  group.userData.launcherMaterialSystem = LAUNCHER_PBR_MATERIAL_SYSTEM;
+  group.userData.launcherDecalSystem = LAUNCHER_DECAL_SYSTEM;
   group.userData.matchUseDetailSystem = "launcher-ground-contact-wear-layer";
   group.position.set(0, 0, SHOT_3D.origin.z);
   group.scale.setScalar(1.45);
@@ -2164,6 +2336,11 @@ export function createShooterModel() {
   var barrelMat = new THREE.MeshStandardMaterial({ color: "#19242a", roughness: 0.38, metalness: 0.16 });
   var wheelMat = new THREE.MeshStandardMaterial({ color: "#11191e", roughness: 0.5, metalness: 0.04 });
   var tireGrooveMat = new THREE.MeshStandardMaterial({ color: "#2f444d", roughness: 0.5 });
+  applyLauncherMaterialMaps(chassisMat, "paint", 0.01);
+  applyLauncherMaterialMaps(panelMat, "paint", 0.008);
+  applyLauncherMaterialMaps(barrelMat, "gunmetal", 0.011);
+  applyLauncherMaterialMaps(wheelMat, "rubber", 0.013);
+  applyLauncherMaterialMaps(tireGrooveMat, "rubber", 0.011);
   var accentMat = new THREE.MeshBasicMaterial({ color: "#61f0ff", transparent: true, opacity: 0.86 });
   var orangeAccentMat = new THREE.MeshBasicMaterial({ color: "#ff8b3d", transparent: true, opacity: 0.9 });
   var ballMat = new THREE.MeshStandardMaterial({ color: "#f8f5e8", roughness: 0.42, metalness: 0.01 });
@@ -2644,6 +2821,60 @@ export function createShooterModel() {
     ...hydraulicPistons,
     operator,
   );
+  group.updateMatrixWorld(true);
+
+  function makeLauncherDecal(targetMesh, name, localPosition, localOrientation, localSize, color, opacity) {
+    targetMesh.updateMatrixWorld(true);
+    var worldPosition = targetMesh.localToWorld(new THREE.Vector3(localPosition[0], localPosition[1], localPosition[2]));
+    var targetWorldQuaternion = targetMesh.getWorldQuaternion(new THREE.Quaternion());
+    var localQuaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+      localOrientation[0],
+      localOrientation[1],
+      localOrientation[2],
+    ));
+    var worldOrientation = new THREE.Euler().setFromQuaternion(targetWorldQuaternion.multiply(localQuaternion));
+    var worldScale = group.getWorldScale(new THREE.Vector3());
+    var decalSize = new THREE.Vector3(
+      localSize[0] * worldScale.x,
+      localSize[1] * worldScale.y,
+      localSize[2] * worldScale.z,
+    );
+    var geometry = new DecalGeometry(targetMesh, worldPosition, worldOrientation, decalSize);
+    geometry.type = "DecalGeometry";
+    geometry.userData.geometrySource = "three/addons/geometries/DecalGeometry";
+    geometry.applyMatrix4(new THREE.Matrix4().copy(group.matrixWorld).invert());
+    var material = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity,
+      depthWrite: false,
+      depthTest: true,
+      polygonOffset: true,
+      polygonOffsetFactor: -4,
+      side: THREE.DoubleSide,
+    });
+    material.userData.launcherDecalSystem = LAUNCHER_DECAL_SYSTEM;
+    var decal = new THREE.Mesh(geometry, material);
+    decal.name = name;
+    decal.renderOrder = 7;
+    decal.userData.geometrySource = "three/addons/geometries/DecalGeometry";
+    decal.userData.launcherDecalSystem = LAUNCHER_DECAL_SYSTEM;
+    return decal;
+  }
+
+  var decals = [
+    makeLauncherDecal(facePanel, "launcher-decal-serial-plate-main", [0, -0.02, 0.016], [0, 0, 0], [0.28, 0.075, 0.045], "#10191c", 0.42),
+    makeLauncherDecal(body, "launcher-decal-caution-stripe-left", [-0.24, 0.12, 0.196], [0, 0, -0.18], [0.2, 0.055, 0.045], "#ffb23d", 0.46),
+    makeLauncherDecal(body, "launcher-decal-caution-stripe-right", [0.24, 0.12, 0.196], [0, 0, 0.18], [0.2, 0.055, 0.045], "#ffb23d", 0.46),
+    makeLauncherDecal(body, "launcher-decal-paint-wear-body-left", [-0.29, -0.12, 0.198], [0, 0, -0.12], [0.24, 0.04, 0.04], "#f3fbf0", 0.18),
+    makeLauncherDecal(body, "launcher-decal-paint-wear-body-right", [0.28, -0.08, 0.198], [0, 0, 0.12], [0.22, 0.038, 0.04], "#f3fbf0", 0.16),
+    makeLauncherDecal(hopper, "launcher-decal-service-arrow-hopper", [0.08, -0.04, 0.186], [0, 0, 0.08], [0.16, 0.052, 0.04], "#61f0ff", 0.34),
+    makeLauncherDecal(barrel, "launcher-decal-muzzle-index-ring", [0, 0.09, 0.42], [Math.PI / 2, 0, 0], [0.18, 0.028, 0.035], "#fff1a8", 0.28),
+    makeLauncherDecal(wheelLeft, "launcher-decal-wheel-sidewall-left", [0, 0.058, 0], [Math.PI / 2, 0, 0], [0.15, 0.15, 0.035], "#2f444d", 0.36),
+    makeLauncherDecal(wheelRight, "launcher-decal-wheel-sidewall-right", [0, 0.058, 0], [Math.PI / 2, 0, 0], [0.15, 0.15, 0.035], "#2f444d", 0.36),
+  ];
+  group.add(...decals);
+
   return {
     group,
     body,
@@ -2680,6 +2911,7 @@ export function createShooterModel() {
     safetyGuards,
     operatorTablet,
     shadow,
+    decals,
   };
 }
 

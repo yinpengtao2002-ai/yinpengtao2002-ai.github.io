@@ -254,6 +254,35 @@ describe("procedural 3D assets", () => {
     expect(launcher.feedGuideChute.material.opacity).toBeLessThanOrEqual(0.5);
   });
 
+  it("uses reusable PBR paint, rubber, and official decal geometry so the launcher no longer reads as flat primitives", () => {
+    const launcher = createShooterModel();
+    const decals = collectByName(launcher.group, /^launcher-decal-/);
+    const body = collectByName(launcher.group, /^launcher-body$/)[0];
+    const barrel = collectByName(launcher.group, /^launcher-barrel$/)[0];
+    const hopper = collectByName(launcher.group, /^launcher-hopper$/)[0];
+    const wheels = collectByName(launcher.group, /^launcher-wheel-(left|right)$/);
+
+    expect(launcher.group.userData.launcherMaterialSystem).toBe("pbr-painted-metal-rubber-launcher-materials");
+    expect(launcher.group.userData.launcherDecalSystem).toBe("three-decalgeometry-launcher-label-wear-kit");
+    expect(body.material.userData.launcherMaterialSystem).toBe("pbr-painted-metal-rubber-launcher-materials");
+    expect(body.material.bumpMap?.userData.assetSystem).toBe("procedural-painted-metal-launcher-texture");
+    expect(body.material.roughnessMap?.userData.assetSystem).toBe("procedural-painted-metal-launcher-texture");
+    expect(body.material.bumpScale).toBeGreaterThan(0.004);
+    expect(body.material.bumpScale).toBeLessThanOrEqual(0.016);
+    expect(hopper.material.bumpMap?.userData.assetSystem).toBe("procedural-painted-metal-launcher-texture");
+    expect(barrel.material.bumpMap?.userData.assetSystem).toBe("procedural-gunmetal-launcher-texture");
+    expect(wheels.every((wheel) => wheel.material.roughnessMap?.userData.assetSystem === "procedural-rubber-tire-launcher-texture")).toBe(true);
+    expect(decals.length).toBeGreaterThanOrEqual(8);
+    expect(decals.every((decal) => decal.geometry.type === "DecalGeometry")).toBe(true);
+    expect(decals.every((decal) => decal.userData.geometrySource === "three/addons/geometries/DecalGeometry")).toBe(true);
+    expect(decals.every((decal) => decal.material.transparent && decal.material.depthWrite === false)).toBe(true);
+    expect(decals.every((decal) => decal.userData.launcherDecalSystem === "three-decalgeometry-launcher-label-wear-kit")).toBe(true);
+    expect(decals.some((decal) => decal.name.includes("serial"))).toBe(true);
+    expect(decals.some((decal) => decal.name.includes("caution"))).toBe(true);
+    expect(decals.some((decal) => decal.name.includes("paint-wear"))).toBe(true);
+    expect(launcher.decals).toHaveLength(decals.length);
+  });
+
   it("builds polished orange gloves with highlights and black cuffs", () => {
     const glove = createGloveMesh("left");
 
@@ -864,6 +893,30 @@ describe("procedural 3D assets", () => {
     expect(rearKnottedTufts.every((knot) => knot.material.transparent && knot.material.opacity <= 0.08)).toBe(true);
     expect([...rearCatenaryCords, ...rearKnottedTufts].every((detail) => detail.userData.netLaneGuardSystem === "peripheral-net-detail-open-shot-lane")).toBe(true);
     expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-landscape-rear-catenary-cord-"))).toBe(true);
+  });
+
+  it("uses a procedural match-net texture layer that reads like real mesh without covering the shot lane", () => {
+    const goal = createGoalAndNet();
+    const texturedPanels = collectByName(goal.group, /^goal-net-match-alpha-weave-panel-/);
+    const centerPanels = texturedPanels.filter((panel) => panel.userData.rearPocketLayer === "center-depth-texture");
+    const edgePanels = texturedPanels.filter((panel) => panel.userData.rearPocketLayer === "peripheral-edge-texture");
+    const laneIntruders = texturedPanels.filter((panel) => {
+      const crossesLane = panel.userData.crossesKeeperSightline === true;
+      const opacity = panel.material.opacity ?? 1;
+      return crossesLane && (opacity > 0.08 || panel.position.z <= goal.net.position.z + 0.36);
+    });
+
+    expect(goal.group.userData.netVisualUpgradeSystem).toBe("procedural-match-net-alpha-weave-clear-lane");
+    expect(texturedPanels.length).toBeGreaterThanOrEqual(4);
+    expect(centerPanels.length).toBeGreaterThanOrEqual(1);
+    expect(edgePanels.length).toBeGreaterThanOrEqual(3);
+    expect(laneIntruders).toHaveLength(0);
+    expect(texturedPanels.every((panel) => panel.material.map?.userData.assetSystem === "procedural-real-match-net-alpha-texture")).toBe(true);
+    expect(texturedPanels.every((panel) => panel.material.transparent && panel.material.depthWrite === false)).toBe(true);
+    expect(texturedPanels.every((panel) => panel.userData.frontShotLaneOcclusion === 0)).toBe(true);
+    expect(centerPanels.every((panel) => panel.material.opacity <= 0.08)).toBe(true);
+    expect(edgePanels.every((panel) => panel.material.opacity >= 0.12 && panel.material.opacity <= 0.28)).toBe(true);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-match-alpha-weave-panel-"))).toBe(true);
   });
 
   it("adds assembled goal hardware details so the frame feels manufactured rather than procedural", () => {
