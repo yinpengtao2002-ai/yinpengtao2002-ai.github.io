@@ -130,14 +130,24 @@ function getCage(bounds) {
   };
 }
 
+export function getCanvasFallbackSurfacePalette() {
+  return {
+    system: "canvas-fallback-neutral-concrete-no-grass",
+    wallStops: ["#d7d6cf", "#aaaeb1", "#5c646a", "#232a30"],
+    sideWall: "#1d252b",
+    fieldFill: "#626f75",
+  };
+}
+
 function drawBackground(ctx, bounds) {
   var w = bounds.width;
   var h = bounds.height;
+  var palette = getCanvasFallbackSurfacePalette();
   var wall = ctx.createLinearGradient(0, 0, 0, h);
-  wall.addColorStop(0, "#cbd5c7");
-  wall.addColorStop(0.38, "#879384");
-  wall.addColorStop(0.7, "#39433a");
-  wall.addColorStop(1, "#17211a");
+  wall.addColorStop(0, palette.wallStops[0]);
+  wall.addColorStop(0.38, palette.wallStops[1]);
+  wall.addColorStop(0.7, palette.wallStops[2]);
+  wall.addColorStop(1, palette.wallStops[3]);
   ctx.fillStyle = wall;
   ctx.fillRect(0, 0, w, h);
 
@@ -153,7 +163,7 @@ function drawBackground(ctx, bounds) {
 
   ctx.save();
   ctx.globalAlpha = 0.42;
-  ctx.fillStyle = "#121917";
+  ctx.fillStyle = palette.sideWall;
   ctx.fillRect(0, 0, w * 0.08, h);
   ctx.fillRect(w * 0.92, 0, w * 0.08, h);
   ctx.restore();
@@ -171,9 +181,10 @@ function drawField(ctx, bounds) {
   var w = bounds.width;
   var h = bounds.height;
   var horizon = h * (w / h > 1.2 ? 0.46 : 0.43);
+  var palette = getCanvasFallbackSurfacePalette();
 
   ctx.save();
-  ctx.fillStyle = "#626f75";
+  ctx.fillStyle = palette.fieldFill;
   ctx.beginPath();
   ctx.moveTo(w * 0.365, horizon);
   ctx.lineTo(w * 0.635, horizon);

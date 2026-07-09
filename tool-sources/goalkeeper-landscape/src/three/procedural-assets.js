@@ -207,14 +207,14 @@ export function updateStadiumScoreboardTexture(texture, plan = getStadiumScorebo
 
 function createTrainingSurfaceMaterial() {
   var material = new THREE.MeshStandardMaterial({
-    color: "#929aa3",
+    color: "#8e9295",
     bumpScale: 0,
     roughness: 0.91,
     metalness: 0,
   });
   material.userData.materialPipelineSystem = "clean-matte-training-surface-material";
-  material.userData.surfacePaletteSystem = "cool-concrete-court-no-grass";
-  material.userData.grassReadabilityGuard = "blue-gray-court-surface-not-turf";
+  material.userData.surfacePaletteSystem = "neutral-concrete-court-no-grass";
+  material.userData.grassReadabilityGuard = "gray-concrete-floor-not-turf";
   return material;
 }
 
@@ -1263,6 +1263,7 @@ export function createShooterModel() {
   group.userData.geometryPolishSystem = ROUNDED_BOX_BEVELED_PROP_SYSTEM;
   group.userData.launcherStationSystem = "animated-launch-bay-with-ball-feed";
   group.userData.launcherRigSystem = "pro-matchday-machine-rig";
+  group.userData.launcherMechanismSystem = "hydraulic-recoil-aiming-cradle";
   group.userData.matchUseDetailSystem = "launcher-ground-contact-wear-layer";
   group.position.set(0, 0, SHOT_3D.origin.z);
   group.scale.setScalar(1.45);
@@ -1281,6 +1282,7 @@ export function createShooterModel() {
   var guardMat = new THREE.MeshBasicMaterial({ color: "#d8fbff", transparent: true, opacity: 0.18, depthWrite: false, side: THREE.DoubleSide });
   var screenMat = new THREE.MeshBasicMaterial({ color: "#61f0ff", transparent: true, opacity: 0.42, depthWrite: false });
   var ledMat = new THREE.MeshBasicMaterial({ color: "#fff1a8", transparent: true, opacity: 0.42, depthWrite: false });
+  var railMat = new THREE.MeshBasicMaterial({ color: "#dff8ff", transparent: true, opacity: 0.28, depthWrite: false });
   var operatorMat = new THREE.MeshStandardMaterial({ color: "#203039", roughness: 0.68, metalness: 0.02 });
   var operatorAccentMat = new THREE.MeshStandardMaterial({ color: "#ff8b3d", roughness: 0.46, metalness: 0.02 });
   var flashMat = new THREE.MeshBasicMaterial({
@@ -1392,10 +1394,34 @@ export function createShooterModel() {
   var turret = new THREE.Group();
   turret.name = "launcher-turret";
   turret.position.set(0, 1.1, 0.12);
+  var yawBearing = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.018, 8, 36), barrelMat.clone());
+  yawBearing.name = "launcher-turret-yaw-bearing";
+  yawBearing.rotation.x = Math.PI / 2;
+  yawBearing.position.set(0, 1.055, 0.12);
+  var recoilSled = new THREE.Group();
+  recoilSled.name = "launcher-recoil-sled";
+  var recoilRails = [-1, 1].map((sign) => {
+    var rail = makeLimb("#dff8ff", 0.011);
+    rail.name = "launcher-recoil-rail-" + (sign < 0 ? "left" : "right");
+    rail.material = railMat.clone();
+    setLimb(rail, { x: sign * 0.14, y: -0.052, z: 0.08 }, { x: sign * 0.14, y: -0.052, z: 0.75 });
+    return rail;
+  });
+  var recoilBuffers = [-1, 1].map((sign) => {
+    var buffer = makeRoundedPart("launcher-recoil-buffer-" + (sign < 0 ? "left" : "right"), 0.064, 0.055, 0.012, 0.05, wheelMat, sign * 0.14, -0.052, 0.04);
+    buffer.rotation.x = Math.PI / 2;
+    return buffer;
+  });
   var barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 0.72, 20), barrelMat);
   barrel.name = "launcher-barrel";
   barrel.rotation.x = Math.PI / 2;
   barrel.position.set(0, 0, 0.34);
+  var heatSleeves = [0.2, 0.38, 0.56].map((z, index) => {
+    var sleeve = new THREE.Mesh(new THREE.TorusGeometry(0.095, 0.0045, 6, 24), panelMat.clone());
+    sleeve.name = "launcher-heat-sleeve-" + index;
+    sleeve.position.set(0, 0, z);
+    return sleeve;
+  });
   var muzzle = new THREE.Mesh(new THREE.TorusGeometry(0.125, 0.018, 8, 24), orangeAccentMat);
   muzzle.name = "launcher-accent-muzzle-ring";
   muzzle.position.set(0, 0, 0.71);
@@ -1406,7 +1432,8 @@ export function createShooterModel() {
   muzzleFlash.name = "launcher-muzzle-flash";
   muzzleFlash.position.set(0, 0, 0.765);
   muzzleFlash.visible = false;
-  turret.add(barrel, muzzle, chargeRing, muzzleFlash);
+  recoilSled.add(barrel, ...heatSleeves, muzzle, chargeRing, muzzleFlash);
+  turret.add(...recoilRails, ...recoilBuffers, recoilSled);
 
   var wheelLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.105, 28), wheelMat);
   wheelLeft.name = "launcher-wheel-left";
@@ -1535,6 +1562,15 @@ export function createShooterModel() {
   );
   pressureHoseRight.name = "launcher-pressure-hose-right";
 
+  var hydraulicPistons = [-1, 1].map((sign) => {
+    var piston = makeLimb("#dfe6dc", 0.017);
+    piston.name = "launcher-hydraulic-piston-" + (sign < 0 ? "left" : "right");
+    piston.material = new THREE.MeshStandardMaterial({ color: "#dfe6dc", roughness: 0.34, metalness: 0.18 });
+    setLimb(piston, { x: sign * 0.24, y: 0.82, z: -0.04 }, { x: sign * 0.15, y: 1.08, z: 0.46 });
+    piston.userData.baseScaleY = piston.scale.y;
+    return piston;
+  });
+
   var serviceScrews = [
     [-0.26, 0.98],
     [0.26, 0.98],
@@ -1606,6 +1642,7 @@ export function createShooterModel() {
     powerLight,
     numberPlate,
     ...serviceScrews,
+    yawBearing,
     turret,
     wheelLeft,
     wheelRight,
@@ -1618,12 +1655,18 @@ export function createShooterModel() {
     ...statusLeds,
     pressureHoseLeft,
     pressureHoseRight,
+    ...hydraulicPistons,
     operator,
   );
   return {
     group,
     body,
     turret,
+    recoilSled,
+    recoilRails,
+    recoilBuffers,
+    hydraulicPistons,
+    yawBearing,
     barrel,
     muzzle,
     wheelLeft,
@@ -1661,6 +1704,19 @@ export function updateShooterModel(model, director) {
 
   model.turret.rotation.set(aimPitch, aimYaw, 0);
   model.body.rotation.set(-0.05 + charge * 0.025, 0, side * charge * 0.025);
+  if (model.recoilSled) {
+    model.recoilSled.position.z = charge * 0.012 - muzzlePulse * 0.09;
+  }
+  model.recoilRails?.forEach((rail, index) => {
+    rail.material.opacity = 0.24 + charge * 0.1 + muzzlePulse * 0.36 - index * 0.015;
+  });
+  model.recoilBuffers?.forEach((buffer, index) => {
+    buffer.scale.setScalar(1 + muzzlePulse * (0.12 + index * 0.025));
+  });
+  model.hydraulicPistons?.forEach((piston, index) => {
+    var asymmetry = index === 0 ? 0.11 : -0.075;
+    piston.scale.y = (piston.userData.baseScaleY || piston.scale.y || 1) * (1 + charge * 0.025 + muzzlePulse * asymmetry);
+  });
   model.feedBall.visible = director.phase !== "live" || liveProgress > 0.35;
   model.feedBall.position.set(side * charge * 0.025, 1.2 - cueProgress * 0.02, -0.12 + cueProgress * 0.17);
   model.feedBall.scale.setScalar(1 - (director.phase === "live" && liveProgress < 0.22 ? liveProgress * 2.8 : 0));

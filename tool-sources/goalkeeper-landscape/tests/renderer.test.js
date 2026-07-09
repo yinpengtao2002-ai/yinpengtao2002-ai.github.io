@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { getBallTrailStyle, getNetPocketStyle, getShooterPose } from "../src/render/renderer.js";
+import { getBallTrailStyle, getCanvasFallbackSurfacePalette, getNetPocketStyle, getShooterPose } from "../src/render/renderer.js";
 
 describe("renderer helpers", () => {
   it("keeps deflected saves visually traceable after glove contact", () => {
@@ -59,5 +59,16 @@ describe("renderer helpers", () => {
 
     expect(combinedSource).not.toMatch(/#28b856|#35c961|#22b953|#8fd64f|#73c941/i);
     expect(combinedSource).not.toMatch(/for \(var blade/);
+  });
+
+  it("uses a neutral concrete fallback palette instead of grass-like wall and floor tones", () => {
+    const palette = getCanvasFallbackSurfacePalette();
+    const serialized = JSON.stringify(palette);
+
+    expect(palette.system).toBe("canvas-fallback-neutral-concrete-no-grass");
+    expect(palette.wallStops).toEqual(["#d7d6cf", "#aaaeb1", "#5c646a", "#232a30"]);
+    expect(palette.sideWall).toBe("#1d252b");
+    expect(palette.fieldFill).toBe("#626f75");
+    expect(serialized).not.toMatch(/#cbd5c7|#879384|#39433a|#17211a|#121917/i);
   });
 });

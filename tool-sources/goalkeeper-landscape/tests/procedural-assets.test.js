@@ -78,6 +78,23 @@ describe("procedural 3D assets", () => {
     expect(launcher.statusLeds.length).toBeGreaterThanOrEqual(4);
   });
 
+  it("adds a hydraulic recoil aiming cradle so the launcher reads as real equipment", () => {
+    const launcher = createShooterModel();
+
+    expect(launcher.group.userData.launcherMechanismSystem).toBe("hydraulic-recoil-aiming-cradle");
+    expect(collectByName(launcher.group, /^launcher-turret-yaw-bearing$/)).toHaveLength(1);
+    expect(collectByName(launcher.group, /^launcher-recoil-sled$/)).toHaveLength(1);
+    expect(collectByName(launcher.group, /^launcher-recoil-rail-/)).toHaveLength(2);
+    expect(collectByName(launcher.group, /^launcher-hydraulic-piston-/)).toHaveLength(2);
+    expect(collectByName(launcher.group, /^launcher-recoil-buffer-/)).toHaveLength(2);
+    expect(collectByName(launcher.group, /^launcher-heat-sleeve-/).length).toBeGreaterThanOrEqual(3);
+
+    expect(launcher.recoilSled).toBeTruthy();
+    expect(launcher.hydraulicPistons).toHaveLength(2);
+    expect(launcher.recoilRails).toHaveLength(2);
+    expect(launcher.recoilBuffers).toHaveLength(2);
+  });
+
   it("animates the professional launcher rig without adding noisy shot helper lines", () => {
     const launcher = createShooterModel();
 
@@ -104,6 +121,30 @@ describe("procedural 3D assets", () => {
     expect(launcher.calibrationBeams[0].material.opacity).toBeLessThanOrEqual(0.55);
     expect(launcher.statusLeds.some((led) => led.material.opacity > 0.8)).toBe(true);
     expect(launcher.safetyGuards[0].rotation.y).not.toBe(0);
+  });
+
+  it("animates launcher recoil mechanics at the shot release instead of leaving the machine rigid", () => {
+    const launcher = createShooterModel();
+    const restZ = launcher.recoilSled.position.z;
+    const restRailOpacity = launcher.recoilRails[0].material.opacity;
+
+    updateShooterModel(launcher, {
+      phase: "cue",
+      phaseTime: 0.72,
+      currentShot: { cueDuration: 1, cue: { side: -1 } },
+    });
+
+    expect(launcher.recoilSled.position.z).toBeGreaterThanOrEqual(restZ - 0.025);
+
+    updateShooterModel(launcher, {
+      phase: "live",
+      phaseTime: 0.06,
+      currentShot: { cueDuration: 1, cue: { side: -1 } },
+    });
+
+    expect(launcher.recoilSled.position.z).toBeLessThan(restZ - 0.04);
+    expect(launcher.recoilRails[0].material.opacity).toBeGreaterThan(restRailOpacity);
+    expect(launcher.hydraulicPistons[0].scale.y).not.toBe(launcher.hydraulicPistons[1].scale.y);
   });
 
   it("pulses the launcher muzzle only at the moment the shot leaves", () => {
@@ -157,7 +198,7 @@ describe("procedural 3D assets", () => {
 
     expect(field.userData.visualStyle).toBe("professional-keeper-training-court");
     expect(field.userData.markingSystem).toBe("minimal-keeper-training-floor");
-    expect(surface.material.color.getHexString()).toBe("929aa3");
+    expect(surface.material.color.getHexString()).toBe("8e9295");
     expect(surface.material.color.b).toBeGreaterThan(surface.material.color.g);
     expect(surface.material.map).toBeNull();
     expect(surface.material.bumpMap).toBeNull();
@@ -168,15 +209,15 @@ describe("procedural 3D assets", () => {
     expect(collectByName(field, /^field-penalty-spot$/)).toHaveLength(0);
   });
 
-  it("uses a cool concrete floor palette so the surface cannot read as grass", () => {
+  it("uses a neutral concrete floor palette so the surface cannot read as grass", () => {
     const field = createFieldGroup();
     const surface = collectByName(field, /^field-training-surface$/)[0];
 
-    expect(surface.material.userData.surfacePaletteSystem).toBe("cool-concrete-court-no-grass");
-    expect(surface.material.color.getHexString()).toBe("929aa3");
+    expect(surface.material.userData.surfacePaletteSystem).toBe("neutral-concrete-court-no-grass");
+    expect(surface.material.color.getHexString()).toBe("8e9295");
     expect(surface.material.color.g).toBeLessThan(surface.material.color.b);
     expect(surface.material.color.g).toBeLessThanOrEqual(surface.material.color.r + 0.045);
-    expect(surface.material.userData.grassReadabilityGuard).toBe("blue-gray-court-surface-not-turf");
+    expect(surface.material.userData.grassReadabilityGuard).toBe("gray-concrete-floor-not-turf");
   });
 
   it("uses a modern finished match ball texture instead of a plain prototype pattern", () => {
@@ -422,8 +463,8 @@ describe("procedural 3D assets", () => {
 
     expect(field.userData.materialPipelineSystem).toBe("procedural-pbr-material-stack");
     expect(surface.material.userData.materialPipelineSystem).toBe("clean-matte-training-surface-material");
-    expect(surface.material.userData.surfacePaletteSystem).toBe("cool-concrete-court-no-grass");
-    expect(surface.material.color.getHexString()).toBe("929aa3");
+    expect(surface.material.userData.surfacePaletteSystem).toBe("neutral-concrete-court-no-grass");
+    expect(surface.material.color.getHexString()).toBe("8e9295");
     expect(surface.material.color.b).toBeGreaterThan(surface.material.color.g);
     expect(surface.material.map).toBeNull();
     expect(surface.material.bumpMap).toBeNull();
