@@ -59,6 +59,12 @@ export const SCENE_TUNING = {
     flightSpinGlintMinSpeed: 8,
     flightSpinGlintFullSpeed: 22,
     flightSpinGlintMaxOpacity: 0.24,
+    flightSpeedRibbonSystem: "attached-ball-speed-ribbon-kit",
+    flightSpeedRibbonCount: 3,
+    flightSpeedRibbonMinSpeed: 11,
+    flightSpeedRibbonFullSpeed: 28,
+    flightSpeedRibbonMaxOpacity: 0.26,
+    flightSpeedRibbonMaxLength: 0.4,
     maxLingeringBalls: 6,
     retiredReplayAirHideHeight: 0.24,
   },
@@ -493,6 +499,57 @@ export function getBallSpinGlintPlan(ballState, shot = null, tuning = SCENE_TUNI
         },
         rotation: spinAngle + side * 0.58 + intensity * 0.18,
         opacity: tuning.flightSpinGlintMaxOpacity * (0.62 + intensity * 0.38) * (1 - index * 0.16),
+      };
+    }),
+  };
+}
+
+export function getBallSpeedRibbonPlan(ballState, shot = null, tuning = SCENE_TUNING.ball) {
+  var system = tuning.flightSpeedRibbonSystem || "attached-ball-speed-ribbon-kit";
+  if (!ballState?.live || !ballState.position) return { system, ribbons: [] };
+
+  var velocity = ballState.velocity || shot?.ballPlan?.velocity || {};
+  var speed = Math.hypot(velocity.x || 0, velocity.y || 0, velocity.z || 0);
+  var minSpeed = tuning.flightSpeedRibbonMinSpeed || 11;
+  if (speed < minSpeed) return { system, ribbons: [] };
+
+  var radius = ballState.radius || tuning.radius || 0.12;
+  var heightAboveFloor = (ballState.position.y || 0) - radius;
+  if (heightAboveFloor < radius * 1.1) return { system, ribbons: [] };
+
+  var fullSpeed = Math.max(minSpeed + 0.1, tuning.flightSpeedRibbonFullSpeed || 28);
+  var intensity = clamp01((speed - minSpeed) / (fullSpeed - minSpeed));
+  var length = Math.max(speed, 0.001);
+  var direction = {
+    x: (velocity.x || 0) / length,
+    y: (velocity.y || 0) / length,
+    z: (velocity.z || 0) / length,
+  };
+  var count = tuning.flightSpeedRibbonCount || 0;
+  var maxLength = tuning.flightSpeedRibbonMaxLength || 0.34;
+
+  return {
+    system,
+    ribbons: Array.from({ length: count }, (_, index) => {
+      var t = count <= 1 ? 0 : index / (count - 1);
+      var side = index - (count - 1) / 2;
+      var offset = radius * (0.54 + index * 0.2);
+      var sideOffset = side * radius * 0.42;
+      var liftOffset = side * radius * 0.18;
+      var ribbonLength = Math.min(maxLength, radius * (2.1 + intensity * 1.25 - t * 0.2));
+      return {
+        marker: "feedback-ball-speed-ribbon",
+        position: {
+          x: ballState.position.x - direction.x * offset + sideOffset,
+          y: ballState.position.y - direction.y * offset + liftOffset,
+          z: ballState.position.z - direction.z * offset,
+        },
+        scale: {
+          x: ribbonLength,
+          y: Math.max(0.022, radius * (0.22 - t * 0.028)),
+        },
+        rotation: Math.atan2(direction.y, direction.x || 0.001) + side * 0.08,
+        opacity: tuning.flightSpeedRibbonMaxOpacity * (0.58 + intensity * 0.42) * (1 - index * 0.18),
       };
     }),
   };
@@ -1616,6 +1673,7 @@ export function createGoalkeeperScene(canvas) {
   scene.userData.dynamicNetDetailSystem = tuning.feedback.dynamicNetDetailSystem;
   scene.userData.ballShadowAssetSystem = tuning.ball.shadowAssetSystem;
   scene.userData.ballSpinGlintSystem = tuning.ball.flightSpinGlintSystem;
+  scene.userData.ballSpeedRibbonSystem = tuning.ball.flightSpeedRibbonSystem;
   scene.userData.gloveImpactSystem = tuning.gloves.impactSystem;
   scene.userData.gloveContactDeformationSystem = tuning.gloves.contactDeformationSystem;
   scene.userData.presentationLayerSystem = tuning.presentation.system;
@@ -1746,6 +1804,25 @@ export function createGoalkeeperScene(canvas) {
     glint.name = "feedback-ball-spin-glint-" + index;
     glint.visible = false;
     return glint;
+  });
+  var ballSpeedRibbonGeometry = new THREE.PlaneGeometry(1, 1);
+  var ballSpeedRibbons = Array.from({ length: tuning.ball.flightSpeedRibbonCount }, (_, index) => {
+    var ribbon = new THREE.Mesh(
+      ballSpeedRibbonGeometry,
+      new THREE.MeshBasicMaterial({
+        color: index === 0 ? "#61f0ff" : index === 1 ? "#fff1a8" : "#ff8b3d",
+        transparent: true,
+        opacity: 0,
+        depthTest: false,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+      }),
+    );
+    ribbon.name = "feedback-ball-speed-ribbon-" + index;
+    ribbon.renderOrder = 6;
+    ribbon.visible = false;
+    return ribbon;
   });
   var groundSkidGeometry = new THREE.CircleGeometry(0.22, 28);
   var groundSkids = Array.from({ length: tuning.feedback.groundSkidCount }, (_, index) => {
@@ -2022,6 +2099,7 @@ export function createGoalkeeperScene(canvas) {
     activeBall.mesh,
     activeBall.shadow,
     ...ballSpinGlints,
+    ...ballSpeedRibbons,
     ...lingeringBallViews.flatMap((view) => [view.halo, view.mesh, view.shadow]),
     ...groundSkids,
     ...courtDustFlecks,
@@ -2440,6 +2518,7 @@ export function createGoalkeeperScene(canvas) {
     var shot = snapshot.director?.currentShot;
     updateBallView(activeBall, ballState, shot);
     updateBallSpinGlints(ballState, shot);
+    updateBallSpeedRibbons(ballState, shot);
 
     if (contactBall?.lastContact?.type) {
       var contactPoint = contactBall.lastContact.point || contactBall.position || { x: 0, y: 0, z: 0 };
@@ -2484,6 +2563,24 @@ export function createGoalkeeperScene(canvas) {
       glint.material.opacity = glintPlan.opacity;
       glint.lookAt(camera.position);
       glint.rotateZ(glintPlan.rotation);
+    });
+  }
+
+  function updateBallSpeedRibbons(ballState, shot) {
+    var plan = getBallSpeedRibbonPlan(ballState, shot, tuning.ball);
+    ballSpeedRibbons.forEach((ribbon, index) => {
+      var ribbonPlan = plan.ribbons[index];
+      if (!ribbonPlan) {
+        ribbon.visible = false;
+        ribbon.material.opacity = 0;
+        return;
+      }
+      ribbon.visible = true;
+      ribbon.position.set(ribbonPlan.position.x, ribbonPlan.position.y, ribbonPlan.position.z);
+      ribbon.scale.set(ribbonPlan.scale.x, ribbonPlan.scale.y, 1);
+      ribbon.material.opacity = ribbonPlan.opacity;
+      ribbon.lookAt(camera.position);
+      ribbon.rotateZ(ribbonPlan.rotation);
     });
   }
 

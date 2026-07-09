@@ -130,6 +130,50 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(sceneModule.getBallSpinGlintPlan({ live: false, position: { x: 0, y: 1.1, z: 0 }, velocity: { x: 0, y: 0, z: 20 } }).glints).toEqual([]);
   });
 
+  it("adds short attached speed ribbons to fast balls without drawing aiming guides", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(SCENE_TUNING.ball.showShotTrail).toBe(false);
+    expect(SCENE_TUNING.ball.flightSpeedRibbonSystem).toBe("attached-ball-speed-ribbon-kit");
+    expect(SCENE_TUNING.ball.flightSpeedRibbonCount).toBeGreaterThanOrEqual(2);
+    expect(SCENE_TUNING.ball.flightSpeedRibbonMaxOpacity).toBeLessThanOrEqual(0.28);
+    expect(sceneModule.getBallSpeedRibbonPlan).toBeTypeOf("function");
+
+    const ball = {
+      live: true,
+      position: { x: -0.18, y: 1.34, z: -5.6 },
+      velocity: { x: 3.2, y: -0.12, z: 24.5 },
+      radius: 0.12,
+    };
+    const plan = sceneModule.getBallSpeedRibbonPlan(ball);
+
+    expect(plan.system).toBe("attached-ball-speed-ribbon-kit");
+    expect(plan.ribbons).toHaveLength(SCENE_TUNING.ball.flightSpeedRibbonCount);
+    expect(plan.ribbons.map((ribbon) => ribbon.marker).join(" ")).not.toMatch(/aim|guide|helper|trajectory|shot-trail/i);
+
+    plan.ribbons.forEach((ribbon, index) => {
+      const distanceFromBall = Math.hypot(
+        ribbon.position.x - ball.position.x,
+        ribbon.position.y - ball.position.y,
+        ribbon.position.z - ball.position.z,
+      );
+      expect(ribbon.marker).toBe("feedback-ball-speed-ribbon");
+      expect(distanceFromBall).toBeLessThanOrEqual(ball.radius * 1.45);
+      expect(ribbon.opacity).toBeGreaterThan(0);
+      expect(ribbon.opacity).toBeLessThanOrEqual(SCENE_TUNING.ball.flightSpeedRibbonMaxOpacity);
+      expect(ribbon.scale.x).toBeGreaterThan(ball.radius * 1.45);
+      expect(ribbon.scale.x).toBeLessThanOrEqual(SCENE_TUNING.ball.flightSpeedRibbonMaxLength);
+      expect(ribbon.scale.y).toBeLessThan(ribbon.scale.x);
+      expect(ribbon.position.z).toBeGreaterThan(ball.position.z - ball.radius * 1.5);
+      if (index > 0) {
+        expect(ribbon.opacity).toBeLessThan(plan.ribbons[index - 1].opacity);
+      }
+    });
+
+    expect(sceneModule.getBallSpeedRibbonPlan({ ...ball, velocity: { x: 0.4, y: 0, z: 2.5 } }).ribbons).toEqual([]);
+    expect(sceneModule.getBallSpeedRibbonPlan({ ...ball, live: false }).ribbons).toEqual([]);
+  });
+
   it("renders a saved replay ball without also drawing the retired active physics ball", async () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
 

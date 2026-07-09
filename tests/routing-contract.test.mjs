@@ -125,7 +125,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
     new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
     "utf8"
   );
-  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-CX4jcuxa.js", import.meta.url);
+  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-CIduzz4-.js", import.meta.url);
   const gameScript = await stat(gameScriptPath);
   const gameScriptSource = await readFile(gameScriptPath, "utf8");
   const gameStylePath = new URL("../public/tools/goalkeeper-landscape/assets/index-BqC_uVM0.css", import.meta.url);
@@ -137,7 +137,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(goalkeeperPage, /import GoalkeeperLandscapeRuntime/);
   assert.match(goalkeeperPage, /GOALKEEPER_SCRIPT_SRC/);
   assert.match(goalkeeperPage, /GOALKEEPER_STYLESHEET_HREF/);
-  assert.match(goalkeeperRuntime, /index-CX4jcuxa\.js/);
+  assert.match(goalkeeperRuntime, /index-CIduzz4-\.js/);
   assert.match(goalkeeperPage, /index-BqC_uVM0\.css/);
   assert.match(goalkeeperPage, /<GoalkeeperLandscapeRuntime \/>/);
   assert.match(goalkeeperPage, /弹力手套守门挑战/);
@@ -190,7 +190,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(thinkingClient, /横屏守门挑战/);
   assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-CX4jcuxa\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-CIduzz4-\.js/);
   assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-BqC_uVM0\.css/);
   assert.match(gameIndex, /id="feedbackToast"/);
   assert.match(gameIndex, /id="eventRibbon"/);
@@ -282,6 +282,9 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /height-aware-ball-shadow/);
   assert.match(gameScriptSource, /attached-ball-spin-glint-kit/);
   assert.match(gameScriptSource, /feedback-ball-spin-glint/);
+  assert.match(gameScriptSource, /attached-ball-speed-ribbon-kit/);
+  assert.match(gameScriptSource, /feedback-ball-speed-ribbon/);
+  assert.doesNotMatch(gameScriptSource, /aiming-guide|shot-helper|trajectory-helper/);
   assert.match(gameScriptSource, /localized-net-ripple/);
   assert.match(gameScriptSource, /localized-net-pocket-deformation/);
   assert.match(gameScriptSource, /localized-net-cord-tension-shimmer/);
