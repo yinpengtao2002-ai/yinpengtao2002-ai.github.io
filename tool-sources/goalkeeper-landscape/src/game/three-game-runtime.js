@@ -104,7 +104,7 @@ export function getLingeringBallDurationForOutcome(outcome) {
 
 export function getNextShotDelayForOutcome(outcome) {
   if (outcome === "goal") return 1.08;
-  if (outcome === "save") return 0.38;
+  if (outcome === "save") return 1.12;
   return 0.58;
 }
 

@@ -207,7 +207,7 @@ describe("Rapier goalkeeper world", () => {
     world.dispose();
   });
 
-  it("can brush the ball into the net when contact quality is poor", async () => {
+  it("credits visible glove brushes instead of converting them into late goals", async () => {
     const world = await createRapierGoalkeeperWorld();
 
     world.setGloveTarget({ x: 0.74, y: 1.25, z: 3.15 });
@@ -226,8 +226,41 @@ describe("Rapier goalkeeper world", () => {
     }
     const ball = world.getBallState();
 
-    expect(ball.outcome).toBe("goal");
-    expect(ball.lastContact?.type).toBe("net");
+    expect(ball.outcome).toBe("saved");
+    expect(ball.lastContact?.type).toBe("glove");
+    expect(ball.lastContact?.saveResolution).toBe("glove-contact-before-net");
+
+    world.dispose();
+  });
+
+  it("does not overwrite a credited glove parry with a later net goal", async () => {
+    const world = await createRapierGoalkeeperWorld();
+
+    world.setGloveTarget({ x: 0.38, y: 1.25, z: 3.15 });
+    world.step(1 / 30);
+    world.launchShot({
+      origin: { x: 0, y: 1.25, z: 2.7 },
+      target: { x: 0, y: 1.25, z: 4.65 },
+      velocity: { x: 0, y: 0, z: 28 },
+      angularVelocity: { x: 0, y: 10, z: 0 },
+      curveForce: { x: 0, y: 0, z: 0 },
+      radius: 0.11,
+    });
+
+    world.step(1 / 120);
+    const parry = world.getBallState();
+    expect(parry.outcome).toBe("deflected");
+    expect(parry.lastContact?.type).toBe("glove");
+    expect(parry.velocity.z).toBeGreaterThan(0);
+
+    for (let i = 0; i < 22; i += 1) {
+      world.step(1 / 120);
+    }
+    const ball = world.getBallState();
+
+    expect(ball.outcome).toBe("saved");
+    expect(ball.lastContact?.type).toBe("glove");
+    expect(ball.live).toBe(false);
 
     world.dispose();
   });

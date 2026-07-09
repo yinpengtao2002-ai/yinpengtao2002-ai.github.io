@@ -279,7 +279,7 @@ class RapierGoalkeeperWorld {
     }
 
     this.resolveFrameContact(previousPosition || this.previousBallPosition, previousVelocity, ballPosition, ballVelocity);
-    this.resolveGoalOrSave(previousPosition || this.previousBallPosition, ballPosition);
+    this.resolveGoalOrSave(previousPosition || this.previousBallPosition);
     this.previousBallPosition = vector(this.ballBody.translation());
   }
 
@@ -423,7 +423,7 @@ class RapierGoalkeeperWorld {
     };
   }
 
-  resolveGoalOrSave(previousPosition, ballPosition) {
+  resolveGoalOrSave(previousPosition) {
     if (!this.ballBody) return;
     var position = vector(this.ballBody.translation());
     var velocity = vector(this.ballBody.linvel());
@@ -435,7 +435,17 @@ class RapierGoalkeeperWorld {
       position.y >= 0 &&
       position.y <= RAPIER_GOAL.height;
 
-    if ((this.outcome === "live" || this.outcome === "deflected") && crossedNet) {
+    if (this.outcome === "deflected" && crossedNet) {
+      this.outcome = "saved";
+      this.deflectionAge = null;
+      this.lastContact = {
+        ...(this.lastContact || {}),
+        saveResolution: "glove-contact-before-net",
+      };
+      return;
+    }
+
+    if (this.outcome === "live" && crossedNet) {
       this.outcome = "goal";
       this.lastContact = {
         type: "net",

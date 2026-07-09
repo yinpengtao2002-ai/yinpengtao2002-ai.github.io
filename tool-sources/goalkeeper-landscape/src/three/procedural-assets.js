@@ -736,6 +736,7 @@ export function createGoalAndNet() {
   group.userData.frameAssemblySystem = "manufactured-goal-frame-hardware";
   group.userData.goalEquipmentPolishSystem = "weighted-pro-goal-equipment-kit";
   group.userData.depthReadabilitySystem = "goal-net-depth-contact-shadow-kit";
+  group.userData.netReadabilitySystem = "high-contrast-readable-net-cords";
   group.userData.matchUseDetailSystem = "match-use-equipment-wear-layer";
   var dynamicNetDetails = [];
 
@@ -823,7 +824,7 @@ export function createGoalAndNet() {
   var netMaterial = new THREE.MeshBasicMaterial({
     color: "#dff8ff",
     transparent: true,
-    opacity: 0.16,
+    opacity: 0.14,
     side: THREE.DoubleSide,
     depthWrite: false,
   });
@@ -855,7 +856,7 @@ export function createGoalAndNet() {
   var depthHazeMaterial = new THREE.MeshBasicMaterial({
     color: "#dff8ff",
     transparent: true,
-    opacity: 0.08,
+    opacity: 0.06,
     depthWrite: false,
     side: THREE.DoubleSide,
   });
@@ -870,7 +871,7 @@ export function createGoalAndNet() {
     group.add(haze);
   });
 
-  var gridMaterial = new THREE.LineBasicMaterial({ color: "#ecfdff", transparent: true, opacity: 0.32 });
+  var gridMaterial = new THREE.LineBasicMaterial({ color: "#f5ffff", transparent: true, opacity: 0.42 });
   var linePoints = [];
   for (var x = -RAPIER_GOAL.halfWidth; x <= RAPIER_GOAL.halfWidth + 0.01; x += 0.42) {
     linePoints.push(new THREE.Vector3(x, 0, RAPIER_GOAL.netPlaneZ + 0.09));
@@ -887,7 +888,7 @@ export function createGoalAndNet() {
   var raisedRopeMaterial = new THREE.MeshStandardMaterial({
     color: "#f6fffb",
     transparent: true,
-    opacity: 0.36,
+    opacity: 0.42,
     roughness: 0.62,
     metalness: 0,
   });
@@ -908,14 +909,14 @@ export function createGoalAndNet() {
       { x: ropeX, y: 0.1, z: RAPIER_GOAL.netPlaneZ + 0.118 },
       { x: ropeX + (raisedVerticalIndex % 2 ? -0.018 : 0.018), y: RAPIER_GOAL.height * 0.52, z: RAPIER_GOAL.netPlaneZ + 0.142 },
       { x: ropeX, y: RAPIER_GOAL.height - 0.12, z: RAPIER_GOAL.netPlaneZ + 0.118 },
-    ], 0.0075, 0.32), 0.92, 0.52));
+    ], 0.0075, 0.42), 0.92, 0.52));
   }
   for (var ropeY = 0.42, raisedHorizontalIndex = 0; ropeY <= RAPIER_GOAL.height - 0.32; ropeY += 0.42, raisedHorizontalIndex += 1) {
     group.add(registerDynamicNetDetail(makeRaisedRope("goal-net-raised-horizontal-cord-" + raisedHorizontalIndex, [
       { x: -RAPIER_GOAL.halfWidth + 0.16, y: ropeY, z: RAPIER_GOAL.netPlaneZ + 0.122 },
       { x: 0, y: ropeY + (raisedHorizontalIndex % 2 ? 0.012 : -0.012), z: RAPIER_GOAL.netPlaneZ + 0.148 },
       { x: RAPIER_GOAL.halfWidth - 0.16, y: ropeY, z: RAPIER_GOAL.netPlaneZ + 0.122 },
-    ], 0.0075, 0.3), 0.82, 0.48));
+    ], 0.0075, 0.4), 0.82, 0.48));
   }
   [
     ["top", [
@@ -939,10 +940,10 @@ export function createGoalAndNet() {
       { x: RAPIER_GOAL.halfWidth - 0.08, y: RAPIER_GOAL.height - 0.12, z: RAPIER_GOAL.netPlaneZ + 0.13 },
     ]],
   ].forEach(function addRaisedBorderRope(item) {
-    group.add(registerDynamicNetDetail(makeRaisedRope("goal-net-raised-border-rope-" + item[0], item[1], 0.011, 0.4), 0.72, 0.42));
+    group.add(registerDynamicNetDetail(makeRaisedRope("goal-net-raised-border-rope-" + item[0], item[1], 0.011, 0.46), 0.72, 0.42));
   });
 
-  var diagonalMaterial = new THREE.LineBasicMaterial({ color: "#f7ffff", transparent: true, opacity: 0.22 });
+  var diagonalMaterial = new THREE.LineBasicMaterial({ color: "#f7ffff", transparent: true, opacity: 0.32 });
   function addDiagonalWeave(name, direction) {
     var diagonalPoints = [];
     for (var offset = -RAPIER_GOAL.halfWidth - RAPIER_GOAL.height; offset <= RAPIER_GOAL.halfWidth; offset += 0.64) {
@@ -962,7 +963,7 @@ export function createGoalAndNet() {
   addDiagonalWeave("falling", -1);
 
   var sideNetMaterial = netMaterial.clone();
-  sideNetMaterial.opacity = 0.12;
+  sideNetMaterial.opacity = 0.16;
   ["left", "right"].forEach(function addSideNet(side) {
     var sign = side === "left" ? -1 : 1;
     var sideNet = new THREE.Mesh(new THREE.PlaneGeometry(0.95, RAPIER_GOAL.height, 5, 8), sideNetMaterial.clone());

@@ -502,10 +502,27 @@ describe("procedural 3D assets", () => {
     expect(horizontalCords.length).toBeGreaterThanOrEqual(4);
     expect(borderRopes).toHaveLength(4);
     expect(allRaisedCords.every((cord) => cord.geometry.type === "TubeGeometry")).toBe(true);
-    expect(allRaisedCords.every((cord) => cord.material.opacity <= 0.42)).toBe(true);
+    expect(allRaisedCords.every((cord) => cord.material.opacity <= 0.5)).toBe(true);
     expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-raised-vertical-cord-"))).toBe(true);
     expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-raised-horizontal-cord-"))).toBe(true);
     expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-raised-border-rope-"))).toBe(true);
+  });
+
+  it("keeps the net cords readable without turning the back panel into a ball-blocking veil", () => {
+    const goal = createGoalAndNet();
+    const sideNets = collectByName(goal.group, /^goal-net-side-/);
+    const raisedCords = collectByName(goal.group, /^goal-net-raised-(vertical|horizontal)-cord-/);
+    const borderRopes = collectByName(goal.group, /^goal-net-raised-border-rope-/);
+    const diagonalWeave = collectByName(goal.group, /^goal-net-diagonal-weave-/);
+
+    expect(goal.group.userData.netReadabilitySystem).toBe("high-contrast-readable-net-cords");
+    expect(goal.net.material.opacity).toBeGreaterThanOrEqual(0.12);
+    expect(goal.net.material.opacity).toBeLessThanOrEqual(0.16);
+    expect(goal.grid.material.opacity).toBeGreaterThanOrEqual(0.4);
+    expect(sideNets.every((net) => net.material.opacity >= 0.15 && net.material.opacity <= 0.2)).toBe(true);
+    expect(raisedCords.every((cord) => cord.material.opacity >= 0.38 && cord.material.opacity <= 0.48)).toBe(true);
+    expect(borderRopes.every((rope) => rope.material.opacity >= 0.44 && rope.material.opacity <= 0.5)).toBe(true);
+    expect(diagonalWeave.every((weave) => weave.material.opacity >= 0.3 && weave.material.opacity <= 0.36)).toBe(true);
   });
 
   it("adds assembled goal hardware details so the frame feels manufactured rather than procedural", () => {
