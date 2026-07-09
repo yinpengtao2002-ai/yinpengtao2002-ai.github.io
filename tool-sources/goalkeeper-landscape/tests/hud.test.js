@@ -176,6 +176,7 @@ describe("hud", () => {
     expect(documentRef.elements.bottomControls.dataset.controlMode).toBe("setup");
     expect(documentRef.elements.bottomControls.dataset.controlRailSystem).toBe("live-match-control-rail");
     expect(documentRef.elements.bottomControls.classList.contains("is-live-compact")).toBe(false);
+    expect(documentRef.elements.pauseButton.classList.contains("hidden")).toBe(true);
     expect(documentRef.elements.easyDifficulty.disabled).toBe(false);
     expect(documentRef.elements.easyDifficulty.getAttribute("aria-disabled")).toBe("false");
     expect(documentRef.elements.soundButton.disabled).toBe(false);
@@ -189,6 +190,7 @@ describe("hud", () => {
 
     expect(documentRef.elements.bottomControls.dataset.controlMode).toBe("live");
     expect(documentRef.elements.bottomControls.classList.contains("is-live-compact")).toBe(true);
+    expect(documentRef.elements.pauseButton.classList.contains("hidden")).toBe(false);
     expect(documentRef.elements.easyDifficulty.disabled).toBe(true);
     expect(documentRef.elements.easyDifficulty.getAttribute("aria-disabled")).toBe("true");
     expect(documentRef.elements.mediumDifficulty.disabled).toBe(true);
@@ -203,10 +205,11 @@ describe("hud", () => {
 
     expect(documentRef.elements.bottomControls.dataset.controlMode).toBe("result");
     expect(documentRef.elements.bottomControls.classList.contains("is-live-compact")).toBe(false);
+    expect(documentRef.elements.pauseButton.classList.contains("hidden")).toBe(true);
     expect(documentRef.elements.easyDifficulty.disabled).toBe(false);
   });
 
-  it("turns game events into restrained status feedback without covering the play field", () => {
+  it("keeps the center toast for save moments while goals move to the edge event system", () => {
     const documentRef = createDocument();
     const hud = createHud(documentRef);
     const state = {
@@ -229,15 +232,16 @@ describe("hud", () => {
 
     hud.update({ ...state, message: "goal", streak: 0, lastSavePoints: 0 }, true);
 
-    expect(documentRef.elements.feedbackToast.textContent).toBe("失球");
-    expect(documentRef.elements.feedbackToast.classList.contains("is-goal")).toBe(true);
+    expect(documentRef.elements.feedbackToast.textContent).toBe("");
+    expect(documentRef.elements.feedbackToast.classList.contains("is-visible")).toBe(false);
+    expect(documentRef.elements.feedbackToast.classList.contains("is-goal")).toBe(false);
     expect(documentRef.elements.scoreValue.classList.contains("is-score-pulse")).toBe(false);
     expect(documentRef.elements.concededValue.classList.contains("is-danger-pulse")).toBe(true);
     expect(documentRef.elements.streakValue.classList.contains("is-hot")).toBe(false);
     expect(documentRef.elements.streakValue.classList.contains("is-streak-pop")).toBe(false);
   });
 
-  it("distinguishes frame and wide misses without using the conceded goal treatment", () => {
+  it("keeps frame and wide misses out of the center toast so the shot lane stays clear", () => {
     const documentRef = createDocument();
     const hud = createHud(documentRef);
     const state = {
@@ -250,15 +254,15 @@ describe("hud", () => {
 
     hud.update(state, true);
 
-    expect(documentRef.elements.feedbackToast.textContent).toBe("门框");
-    expect(documentRef.elements.feedbackToast.classList.contains("is-visible")).toBe(true);
-    expect(documentRef.elements.feedbackToast.classList.contains("is-frame")).toBe(true);
+    expect(documentRef.elements.feedbackToast.textContent).toBe("");
+    expect(documentRef.elements.feedbackToast.classList.contains("is-visible")).toBe(false);
+    expect(documentRef.elements.feedbackToast.classList.contains("is-frame")).toBe(false);
     expect(documentRef.elements.feedbackToast.classList.contains("is-goal")).toBe(false);
 
     hud.update({ ...state, message: "miss" }, true);
 
-    expect(documentRef.elements.feedbackToast.textContent).toBe("偏出");
-    expect(documentRef.elements.feedbackToast.classList.contains("is-miss")).toBe(true);
+    expect(documentRef.elements.feedbackToast.textContent).toBe("");
+    expect(documentRef.elements.feedbackToast.classList.contains("is-miss")).toBe(false);
     expect(documentRef.elements.feedbackToast.classList.contains("is-frame")).toBe(false);
   });
 
@@ -440,10 +444,17 @@ describe("hud", () => {
       conceded: 1,
     };
 
+    hud.update(createGameState(), true);
+
+    expect(documentRef.elements.matchProgress.classList.contains("is-visible")).toBe(false);
+    expect(documentRef.elements.matchProgress.getAttribute("aria-hidden")).toBe("true");
+
     hud.update(state, true);
 
     expect(HudModule.getMatchProgressPercent(state)).toBe(51);
     expect(documentRef.elements.matchProgress.dataset.hudSystem).toBe("match-progress-hud");
+    expect(documentRef.elements.matchProgress.classList.contains("is-visible")).toBe(true);
+    expect(documentRef.elements.matchProgress.getAttribute("aria-hidden")).toBe("false");
     expect(documentRef.elements.matchProgress.getAttribute("aria-valuemin")).toBe("0");
     expect(documentRef.elements.matchProgress.getAttribute("aria-valuemax")).toBe("60");
     expect(documentRef.elements.matchProgress.getAttribute("aria-valuenow")).toBe("31");

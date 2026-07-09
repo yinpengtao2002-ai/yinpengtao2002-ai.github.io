@@ -670,8 +670,15 @@ button {
   overflow: hidden;
   background: rgba(15, 36, 30, 0.26);
   box-shadow: 0 8px 18px rgba(15, 35, 29, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.16);
-  transform: translateX(-50%);
+  opacity: 0;
+  transform: translate(-50%, 8px);
+  transition: opacity 160ms ease, transform 180ms ease, box-shadow 160ms ease;
   pointer-events: none;
+}
+
+.match-progress.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 .match-progress-fill {

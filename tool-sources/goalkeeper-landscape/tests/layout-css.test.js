@@ -45,8 +45,12 @@ describe("responsive layout css", () => {
     expect(css).toContain("match-progress-hud");
     expect(css).toContain(".match-progress");
     expect(css).toContain(".match-progress-fill");
+    expect(css).toContain(".match-progress.is-visible");
     expect(css).toContain("bottom: max(clamp(72px, 9svh, 106px), calc(env(safe-area-inset-bottom) + 76px));");
     expect(css).toContain("height: clamp(6px, 0.75vw, 10px);");
+    expect(css).toContain("opacity: 0;");
+    expect(css).toContain("transform: translate(-50%, 8px);");
+    expect(css).toContain("transform: translate(-50%, 0);");
     expect(css).toContain(".match-progress.is-low-time");
     expect(css).toContain(".match-progress.is-match-point");
   });

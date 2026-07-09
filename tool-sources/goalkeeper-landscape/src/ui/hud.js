@@ -400,26 +400,16 @@ export function createHud(documentRef) {
     var message = state.message;
     var isSave = message === "save";
     var isGoal = message === "goal";
-    var isFrame = message === "frame";
-    var isMiss = message === "miss";
     var isStreak = isSave && (state.streak || 0) >= 3;
-    var visible = isSave || isGoal || isFrame || isMiss;
+    var visible = isSave;
 
     if (toast) {
-      toast.textContent = isSave
-        ? (isStreak ? "连扑 " : "") + "+" + String(state.lastSavePoints || 0)
-        : isGoal
-          ? "失球"
-          : isFrame
-            ? "门框"
-            : isMiss
-              ? "偏出"
-              : "";
+      toast.textContent = visible ? (isStreak ? "连扑 " : "") + "+" + String(state.lastSavePoints || 0) : "";
       setClass(toast, "is-visible", visible);
       setClass(toast, "is-save", isSave);
-      setClass(toast, "is-goal", isGoal);
-      setClass(toast, "is-frame", isFrame);
-      setClass(toast, "is-miss", isMiss);
+      setClass(toast, "is-goal", false);
+      setClass(toast, "is-frame", false);
+      setClass(toast, "is-miss", false);
       setClass(toast, "is-streak", isStreak);
     }
 
@@ -521,6 +511,7 @@ export function createHud(documentRef) {
     var fill = refs.matchProgressFill;
     var secondsLeft = getSecondsLeft(state);
     var percent = getMatchProgressPercent(state);
+    var liveVisible = state.running && !state.ended;
     var lowTime = state.running && !state.paused && !state.ended && secondsLeft <= LOW_TIME_SECONDS;
     var matchPoint = state.running && !state.paused && !state.ended && (state.conceded || 0) >= MAX_CONCEDED - 1;
     var text = "剩余 " + String(secondsLeft) + " 秒";
@@ -532,6 +523,8 @@ export function createHud(documentRef) {
       progress.setAttribute("aria-valuenow", String(secondsLeft));
       progress.setAttribute("aria-valuetext", text);
       progress.setAttribute("aria-label", text);
+      progress.setAttribute("aria-hidden", liveVisible ? "false" : "true");
+      setClass(progress, "is-visible", liveVisible);
       setClass(progress, "is-low-time", lowTime);
       setClass(progress, "is-match-point", matchPoint);
     }
@@ -556,6 +549,8 @@ export function createHud(documentRef) {
       button.setAttribute("aria-disabled", isLive ? "true" : "false");
     });
 
+    setVisible(refs.pauseButton, isLive);
+    if (refs.pauseButton) refs.pauseButton.disabled = !isLive;
     if (refs.soundButton) refs.soundButton.disabled = false;
   }
 
