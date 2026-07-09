@@ -1,4 +1,8 @@
 import * as THREE from "three";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import {
   createFieldGroup,
   createFootballMaterial,
@@ -12,6 +16,13 @@ import {
 import { MAX_CONCEDED } from "../config/game-config.js";
 import { SHOT_3D } from "../game/shot-3d-director.js";
 import { RAPIER_GOAL } from "../physics/rapier-world.js";
+
+export const POSTPROCESSING_ADDON_SOURCES = [
+  "three/addons/postprocessing/EffectComposer",
+  "three/addons/postprocessing/RenderPass",
+  "three/addons/postprocessing/UnrealBloomPass",
+  "three/addons/postprocessing/OutputPass",
+];
 
 export const SCENE_TUNING = {
   camera: {
@@ -85,6 +96,19 @@ export const SCENE_TUNING = {
     focusRingMaxOpacity: 0.16,
     decay: 0.058,
     focusRingBaseScale: 0.72,
+  },
+  postprocessing: {
+    system: "three-effectcomposer-unreal-bloom-event-pipeline",
+    technique: "three-official-postprocessing-addons",
+    addonSources: POSTPROCESSING_ADDON_SOURCES,
+    enabled: true,
+    baseStrength: 0.014,
+    maxStrength: 0.2,
+    threshold: 0.76,
+    baseRadius: 0.12,
+    maxRadius: 0.34,
+    eventDecay: 0.04,
+    pixelRatioCap: 1.45,
   },
   feedback: {
     assetSystem: "matchday-feedback-kit",
@@ -979,6 +1003,141 @@ export function getCameraPresentationStatePlan(state, tuning = SCENE_TUNING.pres
   };
 }
 
+export function getEventBloomPlan(eventPlan = {}, tuning = SCENE_TUNING.postprocessing) {
+  var baseStrength = tuning.baseStrength || 0;
+  var priority = eventPlan.priority || "ambient";
+  var isAmbient = priority === "ambient" || !eventPlan.kind || eventPlan.kind === "ambient" || eventPlan.kind === "ground-skid";
+  if (isAmbient) {
+    return {
+      system: tuning.system,
+      active: false,
+      strength: baseStrength,
+      radius: tuning.baseRadius,
+      threshold: tuning.threshold,
+      life: 0,
+      tier: "ambient",
+    };
+  }
+
+  var tier = eventPlan.presentation?.tier || (priority === "critical" ? "critical" : priority === "high" ? "highlight" : "core");
+  var tierWeight = tier === "critical" ? 1 : tier === "highlight" ? 0.78 : 0.56;
+  var intensity = clamp01(eventPlan.effectIntensity || eventPlan.profile?.impactStrength || 0);
+  var kindBoost = eventPlan.kind === "danger-goal" ? 0.12 : eventPlan.kind === "streak-save" ? 0.08 : eventPlan.kind === "goal" ? 0.06 : 0;
+  var eventMix = clamp01(tierWeight * 0.48 + intensity * 0.46 + kindBoost);
+  var strength = Math.min(tuning.maxStrength, baseStrength + (tuning.maxStrength - baseStrength) * eventMix);
+  var radius = Math.min(tuning.maxRadius, tuning.baseRadius + (tuning.maxRadius - tuning.baseRadius) * (0.42 + eventMix * 0.58));
+
+  return {
+    system: tuning.system,
+    active: true,
+    strength,
+    radius,
+    threshold: tuning.threshold,
+    life: 1,
+    tier,
+  };
+}
+
+export function createPostprocessingBloomState(tuning = SCENE_TUNING.postprocessing) {
+  return {
+    life: 0,
+    strength: tuning.baseStrength,
+    radius: tuning.baseRadius,
+    threshold: tuning.threshold,
+    tier: "ambient",
+  };
+}
+
+export function triggerPostprocessingBloomState(state, eventPlan, tuning = SCENE_TUNING.postprocessing) {
+  if (!state || !tuning?.enabled) return state;
+  var plan = eventPlan?.system === tuning.system ? eventPlan : getEventBloomPlan(eventPlan, tuning);
+  if (!plan.active) return state;
+
+  state.life = 1;
+  state.strength = Math.max(state.strength || tuning.baseStrength, plan.strength);
+  state.radius = Math.max(state.radius || tuning.baseRadius, plan.radius);
+  state.threshold = plan.threshold;
+  state.tier = plan.tier;
+  return state;
+}
+
+export function advancePostprocessingBloomState(state, tuning = SCENE_TUNING.postprocessing) {
+  if (!state) return state;
+  state.life = Math.max(0, (state.life || 0) - tuning.eventDecay);
+  if (state.life <= 0) {
+    state.strength = tuning.baseStrength;
+    state.radius = tuning.baseRadius;
+    state.threshold = tuning.threshold;
+    state.tier = "ambient";
+  }
+  return state;
+}
+
+export function getPostprocessingBloomStatePlan(state, tuning = SCENE_TUNING.postprocessing) {
+  if (!state || (state.life || 0) <= 0) {
+    return {
+      system: tuning.system,
+      active: false,
+      strength: tuning.baseStrength,
+      radius: tuning.baseRadius,
+      threshold: tuning.threshold,
+      tier: "ambient",
+    };
+  }
+  var life = clamp01(state.life);
+  var eased = life * life * (3 - 2 * life);
+  return {
+    system: tuning.system,
+    active: true,
+    strength: lerpNumber(tuning.baseStrength, state.strength || tuning.baseStrength, eased),
+    radius: lerpNumber(tuning.baseRadius, state.radius || tuning.baseRadius, eased),
+    threshold: state.threshold || tuning.threshold,
+    tier: state.tier || "core",
+  };
+}
+
+function createPostprocessingPipeline(renderer, scene, camera, tuning = SCENE_TUNING.postprocessing) {
+  if (!tuning.enabled) return null;
+
+  var composer = new EffectComposer(renderer);
+  var renderPass = new RenderPass(scene, camera);
+  var bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(1, 1),
+    tuning.baseStrength,
+    tuning.baseRadius,
+    tuning.threshold,
+  );
+  var outputPass = new OutputPass();
+
+  composer.addPass(renderPass);
+  composer.addPass(bloomPass);
+  composer.addPass(outputPass);
+
+  return {
+    system: tuning.system,
+    technique: tuning.technique,
+    composer,
+    renderPass,
+    bloomPass,
+    outputPass,
+    resize(width, height, pixelRatio) {
+      composer.setPixelRatio(Math.min(Math.max(1, pixelRatio || 1), tuning.pixelRatioCap));
+      composer.setSize(width, height);
+    },
+    apply(plan) {
+      bloomPass.strength = plan.strength;
+      bloomPass.radius = plan.radius;
+      bloomPass.threshold = plan.threshold;
+    },
+    render() {
+      composer.render();
+    },
+    dispose() {
+      composer.dispose();
+    },
+  };
+}
+
 export function getMatchEventFeedbackPlan(event = {}, tuning = SCENE_TUNING.feedback) {
   var system = tuning.eventOrchestratorSystem || "keeper-event-feedback-orchestrator";
   var type = event.type || event.contact?.type || "ambient";
@@ -1250,10 +1409,13 @@ export function createGoalkeeperScene(canvas) {
   scene.userData.gloveContactDeformationSystem = tuning.gloves.contactDeformationSystem;
   scene.userData.presentationLayerSystem = tuning.presentation.system;
   scene.userData.presentationLayerTechnique = tuning.presentation.technique;
+  scene.userData.postprocessingSystem = tuning.postprocessing.system;
+  scene.userData.postprocessingTechnique = tuning.postprocessing.technique;
   scene.fog = new THREE.Fog("#8ed7ff", 28, 58);
 
   var camera = new THREE.PerspectiveCamera(tuning.camera.fov, 16 / 9, 0.05, 90);
   var cameraFraming = applyCameraTuning(camera, 16 / 9, tuning);
+  var postprocessingPipeline = createPostprocessingPipeline(renderer, scene, camera, tuning.postprocessing);
   scene.add(camera);
 
   scene.userData.lightingAssetSystem = tuning.lighting.assetSystem;
@@ -1656,6 +1818,7 @@ export function createGoalkeeperScene(canvas) {
   var netPocketState = createNetPocketState();
   var netRecoilState = createNetRecoilState();
   var cameraPresentationState = createCameraPresentationState();
+  var postprocessingBloomState = createPostprocessingBloomState(tuning.postprocessing);
   var lastCourtContactSignature = "";
   var lastScoreboardSignature = "";
 
@@ -1674,8 +1837,10 @@ export function createGoalkeeperScene(canvas) {
   function resize(bounds) {
     var width = Math.max(1, Math.round(bounds.width || canvas.clientWidth || 1280));
     var height = Math.max(1, Math.round(bounds.height || canvas.clientHeight || 720));
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    var pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    renderer.setPixelRatio(pixelRatio);
     renderer.setSize(width, height, false);
+    postprocessingPipeline?.resize(width, height, pixelRatio);
     camera.aspect = width / height;
     cameraFraming = applyCameraTuning(camera, camera.aspect, tuning);
     camera.updateProjectionMatrix();
@@ -1821,6 +1986,7 @@ export function createGoalkeeperScene(canvas) {
       eventPlan?.cameraShake ?? profile?.cameraShake ?? tuning.feedback.maxCameraShake * pulseStrength,
     );
     triggerCameraPresentationState(cameraPresentationState, eventPlan, tuning.presentation);
+    triggerPostprocessingBloomState(postprocessingBloomState, eventPlan, tuning.postprocessing);
   }
 
   function triggerSaveFeedback(position, strength, contact = null, gloves = null, state = null) {
@@ -2410,6 +2576,19 @@ export function createGoalkeeperScene(canvas) {
     advanceCameraPresentationState(cameraPresentationState, tuning.presentation);
   }
 
+  function updatePostprocessingLayer() {
+    var plan = getPostprocessingBloomStatePlan(postprocessingBloomState, tuning.postprocessing);
+    postprocessingPipeline?.apply(plan);
+
+    if (canvas.dataset) {
+      canvas.dataset.postprocessingSystem = plan.system;
+      canvas.dataset.postprocessingTier = plan.active ? plan.tier : "ambient";
+      canvas.dataset.postprocessingBloom = String(Math.round(plan.strength * 1000) / 1000);
+    }
+
+    advancePostprocessingBloomState(postprocessingBloomState, tuning.postprocessing);
+  }
+
   function updateVisuals(snapshot) {
     var ballRenderPlan = getSceneBallRenderPlan(snapshot);
     if (canvas.dataset) {
@@ -2426,10 +2605,16 @@ export function createGoalkeeperScene(canvas) {
     updateNetAndEffects();
     applyFeedbackCamera();
     updatePresentationLayer();
-    renderer.render(scene, camera);
+    updatePostprocessingLayer();
+    if (postprocessingPipeline) {
+      postprocessingPipeline.render();
+    } else {
+      renderer.render(scene, camera);
+    }
   }
 
   function dispose() {
+    postprocessingPipeline?.dispose();
     renderer.dispose();
   }
 
@@ -2437,6 +2622,7 @@ export function createGoalkeeperScene(canvas) {
     scene,
     camera,
     renderer,
+    postprocessingPipeline,
     resize,
     updateVisuals,
     dispose,

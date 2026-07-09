@@ -846,6 +846,59 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.lighting.fillIntensity).toBeLessThanOrEqual(0.9);
   });
 
+  it("uses reusable Three postprocessing bloom for event polish without making ambient play flashy", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(SCENE_TUNING.postprocessing.system).toBe("three-effectcomposer-unreal-bloom-event-pipeline");
+    expect(SCENE_TUNING.postprocessing.technique).toBe("three-official-postprocessing-addons");
+    expect(SCENE_TUNING.postprocessing.addonSources).toContain("three/addons/postprocessing/EffectComposer");
+    expect(SCENE_TUNING.postprocessing.addonSources).toContain("three/addons/postprocessing/UnrealBloomPass");
+    expect(SCENE_TUNING.postprocessing.baseStrength).toBeLessThanOrEqual(0.02);
+    expect(SCENE_TUNING.postprocessing.maxStrength).toBeLessThanOrEqual(0.22);
+    expect(SCENE_TUNING.postprocessing.threshold).toBeGreaterThanOrEqual(0.72);
+    expect(SCENE_TUNING.postprocessing.eventDecay).toBeLessThanOrEqual(0.045);
+    expect(SCENE_TUNING.postprocessing.pixelRatioCap).toBeLessThanOrEqual(1.5);
+
+    expect(sceneModule.getEventBloomPlan).toBeTypeOf("function");
+    expect(sceneModule.createPostprocessingBloomState).toBeTypeOf("function");
+    expect(sceneModule.triggerPostprocessingBloomState).toBeTypeOf("function");
+    expect(sceneModule.advancePostprocessingBloomState).toBeTypeOf("function");
+    expect(sceneModule.getPostprocessingBloomStatePlan).toBeTypeOf("function");
+
+    const ambient = sceneModule.getEventBloomPlan(sceneModule.getMatchEventFeedbackPlan({ type: "ambient" }));
+    const save = sceneModule.getEventBloomPlan(sceneModule.getMatchEventFeedbackPlan({
+      type: "save",
+      contact: { type: "glove", strength: 24 },
+      state: { streak: 1 },
+    }));
+    const streak = sceneModule.getEventBloomPlan(sceneModule.getMatchEventFeedbackPlan({
+      type: "save",
+      contact: { type: "glove", strength: 28 },
+      state: { streak: 3 },
+    }));
+    const dangerGoal = sceneModule.getEventBloomPlan(sceneModule.getMatchEventFeedbackPlan({
+      type: "goal",
+      contact: { type: "net", strength: 24 },
+      state: { conceded: 4 },
+    }));
+
+    expect(ambient.active).toBe(false);
+    expect(ambient.strength).toBe(SCENE_TUNING.postprocessing.baseStrength);
+    expect(save.active).toBe(true);
+    expect(save.strength).toBeGreaterThan(ambient.strength);
+    expect(streak.strength).toBeGreaterThanOrEqual(save.strength);
+    expect(dangerGoal.strength).toBeGreaterThan(streak.strength);
+    expect(dangerGoal.strength).toBeLessThanOrEqual(SCENE_TUNING.postprocessing.maxStrength);
+
+    const state = sceneModule.createPostprocessingBloomState();
+    sceneModule.triggerPostprocessingBloomState(state, dangerGoal);
+    expect(state.life).toBe(1);
+    expect(state.strength).toBe(dangerGoal.strength);
+    expect(sceneModule.getPostprocessingBloomStatePlan(state).active).toBe(true);
+    sceneModule.advancePostprocessingBloomState(state);
+    expect(state.life).toBeLessThan(1);
+  });
+
   it("adds real Three spotlights that line up with the stadium floodlight props", async () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
 
