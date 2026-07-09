@@ -278,6 +278,7 @@ button {
 .bottom-controls {
   --broadcast-control-rail-hud: 1;
   --corner-control-clusters: 1;
+  --live-match-control-rail: 1;
   position: absolute;
   left: clamp(18px, 3vw, 42px);
   right: clamp(18px, 3vw, 42px);
@@ -290,6 +291,13 @@ button {
   gap: clamp(8px, 1.1vw, 14px);
   margin: 0 auto;
   pointer-events: none;
+  transition: grid-template-columns 160ms ease, opacity 160ms ease;
+}
+
+.bottom-controls[data-control-mode="live"],
+.bottom-controls.is-live-compact {
+  grid-template-columns: auto;
+  justify-content: end;
 }
 
 .bottom-controls::before {
@@ -575,6 +583,14 @@ button {
   padding: 4px;
   gap: 3px;
   pointer-events: auto;
+  transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
+}
+
+.bottom-controls.is-live-compact .difficulty-control {
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
+  pointer-events: none;
 }
 
 .difficulty-button {
@@ -601,6 +617,15 @@ button {
   min-height: clamp(44px, 4.4vw, 66px);
   grid-column: 3;
   justify-self: end;
+}
+
+.bottom-controls.is-live-compact .utility-button {
+  grid-column: 1;
+  justify-self: end;
+  min-width: clamp(72px, 7vw, 104px);
+  min-height: clamp(38px, 3.6vw, 52px);
+  padding: 0 clamp(10px, 1vw, 16px);
+  font-size: clamp(11px, 0.95vw, 14px);
 }
 
 .utility-button.is-sound-ready {

@@ -404,12 +404,12 @@ export function createFieldGroup() {
   group.userData.materialPipelineSystem = "procedural-pbr-material-stack";
   group.userData.markingSystem = "standard-football-pitch";
   group.userData.surfaceDetailSystem = "clean-non-grass-training-floor-depth-shadows";
-  group.userData.surfaceFinishSystem = "clean-training-floor-scuff-and-line-kit";
+  group.userData.surfaceFinishSystem = "clean-training-floor-no-grass-clutter";
   group.userData.stadiumDressingSystem = "crowd-scoreboard-flags-matchday-dressing";
   group.userData.broadcastDressingSystem = "sideline-camera-light-and-safety-pad-kit";
   group.userData.stadiumScoreboardSystem = STADIUM_SCOREBOARD_DISPLAY_SYSTEM;
   group.userData.reusableAssetTechnique = "flat-training-floor-detail-kit";
-  group.userData.matchUseDetailSystem = "match-use-trace-layer";
+  group.userData.matchUseDetailSystem = "clean-field-no-grass-clutter";
   group.userData.trainingFacilitySystem = "professional-keeper-training-ground-kit";
   var surface = new THREE.Mesh(
     new THREE.PlaneGeometry(18, 52, 1, 1),
@@ -458,25 +458,6 @@ export function createFieldGroup() {
     band.rotation.x = -Math.PI / 2;
     band.position.set(0, -0.012, z);
     group.add(band);
-  });
-
-  var wearMaterial = new THREE.MeshBasicMaterial({
-    color: "#8ea1a2",
-    transparent: true,
-    opacity: 0.2,
-    depthWrite: false,
-  });
-  [
-    ["center", 0, 1.2, 0.84, 0.22],
-    ["left", -1.18, 1.0, 0.52, 0.13],
-    ["right", 1.18, 1.0, 0.52, 0.13],
-  ].forEach(function addGoalmouthWear(item) {
-    var wear = new THREE.Mesh(new THREE.CircleGeometry(1, 36), wearMaterial);
-    wear.name = "field-goalmouth-wear-" + item[0];
-    wear.rotation.x = -Math.PI / 2;
-    wear.scale.set(item[3], item[4], 1);
-    wear.position.set(item[1], -0.009, RAPIER_GOAL.netPlaneZ - item[2]);
-    group.add(wear);
   });
 
   var spot = new THREE.Mesh(
@@ -602,93 +583,6 @@ export function createFieldGroup() {
     shadow.position.set(item[1], 0.006, RAPIER_GOAL.netPlaneZ - 0.8);
     group.add(shadow);
   });
-
-  var floorScuffMaterial = new THREE.MeshBasicMaterial({
-    color: "#c9d1ca",
-    transparent: true,
-    opacity: 0.16,
-    depthWrite: false,
-  });
-  for (var scuffIndex = 0; scuffIndex < 12; scuffIndex += 1) {
-    var floorScuff = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.055), floorScuffMaterial.clone());
-    floorScuff.name = "field-floor-scuff-" + scuffIndex;
-    floorScuff.rotation.x = -Math.PI / 2;
-    floorScuff.rotation.z = (scuffIndex % 5) * 0.21;
-    floorScuff.scale.set(0.7 + (scuffIndex % 4) * 0.12, 0.7 + (scuffIndex % 3) * 0.08, 1);
-    floorScuff.material.opacity = 0.08 + (scuffIndex % 4) * 0.018;
-    floorScuff.position.set(-2.9 + (scuffIndex % 6) * 1.12, 0.018, 0.8 + Math.floor(scuffIndex / 6) * 1.25);
-    group.add(floorScuff);
-  }
-
-  var shotLaneCompressionMaterial = new THREE.MeshBasicMaterial({
-    color: "#86a1a4",
-    transparent: true,
-    opacity: 0.14,
-    depthWrite: false,
-  });
-  for (var laneWearIndex = 0; laneWearIndex < 7; laneWearIndex += 1) {
-    var laneWear = new THREE.Mesh(new THREE.CircleGeometry(1, 32), shotLaneCompressionMaterial.clone());
-    laneWear.name = "field-shot-lane-compression-" + laneWearIndex;
-    laneWear.rotation.x = -Math.PI / 2;
-    laneWear.rotation.z = (laneWearIndex % 3 - 1) * 0.09;
-    laneWear.scale.set(0.48 + (laneWearIndex % 3) * 0.08, 0.08 + (laneWearIndex % 2) * 0.018, 1);
-    laneWear.material.opacity = 0.11 + (laneWearIndex % 4) * 0.025;
-    laneWear.position.set((laneWearIndex % 2 ? -0.22 : 0.22) * (laneWearIndex / 6), 0.021, 0.45 - laneWearIndex * 1.05);
-    group.add(laneWear);
-  }
-
-  var keeperScuffMaterial = new THREE.MeshBasicMaterial({
-    color: "#d6ded8",
-    transparent: true,
-    opacity: 0.16,
-    depthWrite: false,
-  });
-  [
-    [-0.92, RAPIER_GOAL.netPlaneZ - 0.78, -0.18],
-    [-0.42, RAPIER_GOAL.netPlaneZ - 0.98, 0.12],
-    [0.46, RAPIER_GOAL.netPlaneZ - 0.94, -0.1],
-    [0.96, RAPIER_GOAL.netPlaneZ - 0.74, 0.16],
-  ].forEach(function addKeeperScuff(item, index) {
-    var scuff = new THREE.Mesh(new THREE.PlaneGeometry(0.52, 0.055), keeperScuffMaterial.clone());
-    scuff.name = "field-keeper-stance-scuff-" + index;
-    scuff.rotation.x = -Math.PI / 2;
-    scuff.rotation.z = item[2];
-    scuff.material.opacity = 0.13 + (index % 3) * 0.025;
-    scuff.position.set(item[0], 0.022, item[1]);
-    group.add(scuff);
-  });
-
-  var bootScuffMaterial = new THREE.MeshBasicMaterial({
-    color: "#93a6a6",
-    transparent: true,
-    opacity: 0.14,
-    depthWrite: false,
-  });
-  for (var bootScuffIndex = 0; bootScuffIndex < 10; bootScuffIndex += 1) {
-    var bootScuff = new THREE.Mesh(new THREE.PlaneGeometry(0.24 + (bootScuffIndex % 3) * 0.04, 0.022), bootScuffMaterial.clone());
-    bootScuff.name = "field-boot-scuff-" + bootScuffIndex;
-    bootScuff.rotation.x = -Math.PI / 2;
-    bootScuff.rotation.z = -0.36 + (bootScuffIndex % 5) * 0.18;
-    bootScuff.material.opacity = 0.08 + (bootScuffIndex % 4) * 0.018;
-    bootScuff.position.set(-2.3 + (bootScuffIndex % 5) * 1.15, 0.023, -0.2 - Math.floor(bootScuffIndex / 5) * 1.26);
-    group.add(bootScuff);
-  }
-
-  var chalkDustMaterial = new THREE.MeshBasicMaterial({
-    color: "#f6fff2",
-    transparent: true,
-    opacity: 0.2,
-    depthWrite: false,
-  });
-  for (var chalkIndex = 0; chalkIndex < 8; chalkIndex += 1) {
-    var chalk = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.055), chalkDustMaterial.clone());
-    chalk.name = "field-line-chalk-dust-" + chalkIndex;
-    chalk.rotation.x = -Math.PI / 2;
-    chalk.rotation.z = chalkIndex % 2 ? 0.08 : -0.08;
-    chalk.material.opacity = 0.12 + (chalkIndex % 3) * 0.035;
-    chalk.position.set(-3.1 + chalkIndex * 0.88, 0.02, RAPIER_GOAL.netPlaneZ - 0.16 - (chalkIndex % 2) * 0.08);
-    group.add(chalk);
-  }
 
   var standMatA = new THREE.MeshStandardMaterial({ color: "#264c54", roughness: 0.64, metalness: 0.02 });
   var standMatB = new THREE.MeshStandardMaterial({ color: "#f2f0df", roughness: 0.7, metalness: 0.01 });

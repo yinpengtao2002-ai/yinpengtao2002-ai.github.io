@@ -198,7 +198,7 @@ describe("procedural 3D assets", () => {
     expect(collectByName(field, /^stadium-corner-flag-/).length).toBeGreaterThanOrEqual(2);
     expect(collectByName(field, /^stadium-ad-board-/).length).toBeGreaterThanOrEqual(6);
     expect(collectByName(field, /^stadium-floodlight-/).length).toBeGreaterThanOrEqual(4);
-    expect(collectByName(field, /^field-goalmouth-wear-/)).toHaveLength(3);
+    expect(collectByName(field, /^field-goalmouth-wear-/)).toHaveLength(0);
   });
 
   it("exposes a reusable broadcast matchday polish profile across scene assets", () => {
@@ -310,6 +310,7 @@ describe("procedural 3D assets", () => {
     const field = createFieldGroup();
 
     expect(field.userData.surfaceDetailSystem).toBe("clean-non-grass-training-floor-depth-shadows");
+    expect(field.userData.surfaceFinishSystem).toBe("clean-training-floor-no-grass-clutter");
     expect(collectByName(field, /^field-turf$/)).toHaveLength(0);
     expect(collectByName(field, /^field-foreground-blade-/)).toHaveLength(0);
     expect(collectByName(field, /^field-foreground-blade-cluster-/)).toHaveLength(0);
@@ -319,6 +320,12 @@ describe("procedural 3D assets", () => {
     expect(collectByName(field, /^field-turf-maintenance-brush-/)).toHaveLength(0);
     expect(collectByName(field, /^field-turf-color-variation-patch-/)).toHaveLength(0);
     expect(collectByName(field, /^field-mowing-stripe-/)).toHaveLength(0);
+    expect(collectByName(field, /^field-goalmouth-wear-/)).toHaveLength(0);
+    expect(collectByName(field, /^field-floor-scuff-/)).toHaveLength(0);
+    expect(collectByName(field, /^field-shot-lane-compression-/)).toHaveLength(0);
+    expect(collectByName(field, /^field-keeper-stance-scuff-/)).toHaveLength(0);
+    expect(collectByName(field, /^field-boot-scuff-/)).toHaveLength(0);
+    expect(collectByName(field, /^field-line-chalk-dust-/)).toHaveLength(0);
     expect(collectByName(field, /^field-goalmouth-depth-shadow-/)).toHaveLength(2);
     expect(collectByName(field, /^field-touchline-shadow-/)).toHaveLength(2);
   });
@@ -354,10 +361,10 @@ describe("procedural 3D assets", () => {
     const glove = createGloveMesh("right");
     const ballTexture = createFootballTexture();
 
-    expect(field.userData.surfaceFinishSystem).toBe("clean-training-floor-scuff-and-line-kit");
+    expect(field.userData.surfaceFinishSystem).toBe("clean-training-floor-no-grass-clutter");
     expect(collectByName(field, /^field-edge-tuft-cluster-/)).toHaveLength(0);
-    expect(collectByName(field, /^field-floor-scuff-/).length).toBeGreaterThanOrEqual(10);
-    expect(collectByName(field, /^field-line-chalk-dust-/).length).toBeGreaterThanOrEqual(6);
+    expect(collectByName(field, /^field-floor-scuff-/)).toHaveLength(0);
+    expect(collectByName(field, /^field-line-chalk-dust-/)).toHaveLength(0);
 
     expect(goal.group.userData.netHardwareSystem).toBe("weighted-net-label-and-clip-kit");
     expect(collectByName(goal.group, /^goal-net-bottom-weight-/).length).toBeGreaterThanOrEqual(4);
@@ -464,7 +471,7 @@ describe("procedural 3D assets", () => {
     expect(ballTexture.userData.valveSystem).toBe("painted-rubber-air-valve");
   });
 
-  it("adds match-use wear traces so the pitch, goal, and launcher feel played on", () => {
+  it("keeps match-use wear off the field while preserving goal and launcher wear", () => {
     const field = createFieldGroup();
     const goal = createGoalAndNet();
     const launcher = createShooterModel();
@@ -472,12 +479,10 @@ describe("procedural 3D assets", () => {
     const shotLaneCompression = collectByName(field, /^field-shot-lane-compression-/);
     const keeperStanceScuffs = collectByName(field, /^field-keeper-stance-scuff-/);
     const bootScuffs = collectByName(field, /^field-boot-scuff-/);
-    expect(field.userData.matchUseDetailSystem).toBe("match-use-trace-layer");
-    expect(shotLaneCompression.length).toBeGreaterThanOrEqual(6);
-    expect(keeperStanceScuffs.length).toBeGreaterThanOrEqual(4);
-    expect(bootScuffs.length).toBeGreaterThanOrEqual(8);
-    expect(shotLaneCompression.every((trace) => trace.material.transparent && trace.material.opacity <= 0.22)).toBe(true);
-    expect(bootScuffs.every((trace) => trace.material.depthWrite === false)).toBe(true);
+    expect(field.userData.matchUseDetailSystem).toBe("clean-field-no-grass-clutter");
+    expect(shotLaneCompression).toHaveLength(0);
+    expect(keeperStanceScuffs).toHaveLength(0);
+    expect(bootScuffs).toHaveLength(0);
 
     expect(goal.group.userData.matchUseDetailSystem).toBe("match-use-equipment-wear-layer");
     expect(collectByName(goal.group, /^goal-frame-ball-mark-/).length).toBeGreaterThanOrEqual(5);

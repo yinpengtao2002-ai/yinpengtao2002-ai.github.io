@@ -64,6 +64,7 @@ function createDocument() {
     "pressureCue",
     "matchProgress",
     "matchProgressFill",
+    "bottomControls",
     "finalSaves",
     "finalBestStreak",
     "finalConceded",
@@ -157,6 +158,45 @@ describe("hud", () => {
     expect(selected).toBe("hard");
     hud.updateDifficulty(selected);
     expect(documentRef.elements.hardDifficulty.classList.contains("is-active")).toBe(true);
+  });
+
+  it("compacts setup controls during live play so difficulty buttons stop blocking the field", () => {
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+
+    hud.update(createGameState(), true, { audioStatus: "locked" });
+
+    expect(documentRef.elements.bottomControls.dataset.controlMode).toBe("setup");
+    expect(documentRef.elements.bottomControls.dataset.controlRailSystem).toBe("live-match-control-rail");
+    expect(documentRef.elements.bottomControls.classList.contains("is-live-compact")).toBe(false);
+    expect(documentRef.elements.easyDifficulty.disabled).toBe(false);
+    expect(documentRef.elements.easyDifficulty.getAttribute("aria-disabled")).toBe("false");
+    expect(documentRef.elements.soundButton.disabled).toBe(false);
+
+    hud.update({
+      ...createGameState(),
+      running: true,
+      paused: false,
+      ended: false,
+    }, true, { audioStatus: "ready" });
+
+    expect(documentRef.elements.bottomControls.dataset.controlMode).toBe("live");
+    expect(documentRef.elements.bottomControls.classList.contains("is-live-compact")).toBe(true);
+    expect(documentRef.elements.easyDifficulty.disabled).toBe(true);
+    expect(documentRef.elements.easyDifficulty.getAttribute("aria-disabled")).toBe("true");
+    expect(documentRef.elements.mediumDifficulty.disabled).toBe(true);
+    expect(documentRef.elements.hardDifficulty.disabled).toBe(true);
+    expect(documentRef.elements.soundButton.disabled).toBe(false);
+
+    hud.update({
+      ...createGameState(),
+      running: false,
+      ended: true,
+    }, true, { audioStatus: "ready" });
+
+    expect(documentRef.elements.bottomControls.dataset.controlMode).toBe("result");
+    expect(documentRef.elements.bottomControls.classList.contains("is-live-compact")).toBe(false);
+    expect(documentRef.elements.easyDifficulty.disabled).toBe(false);
   });
 
   it("turns game events into restrained status feedback without covering the play field", () => {

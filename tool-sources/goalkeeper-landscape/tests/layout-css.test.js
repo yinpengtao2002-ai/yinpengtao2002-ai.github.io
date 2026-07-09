@@ -104,4 +104,17 @@ describe("responsive layout css", () => {
     expect(css).toContain(".sound-status");
     expect(css).toContain("clip-path: inset(50%);");
   });
+
+  it("compacts the live bottom control rail so setup controls do not sit in the shot lane", () => {
+    const css = readFileSync(stylesPath, "utf8");
+
+    expect(css).toContain("live-match-control-rail");
+    expect(css).toContain('.bottom-controls[data-control-mode="live"]');
+    expect(css).toContain(".bottom-controls.is-live-compact .difficulty-control");
+    expect(css).toContain("visibility: hidden;");
+    expect(css).toContain("pointer-events: none;");
+    expect(css).toContain(".bottom-controls.is-live-compact .utility-button");
+    expect(css).toContain("grid-template-columns: auto;");
+    expect(css).toContain("justify-content: end;");
+  });
 });

@@ -9,6 +9,7 @@ export const MATCH_AUDIO_STATUS_MARKER = "match-audio-status-chip";
 export const MATCH_PAUSE_HINT_MARKER = "match-pause-coach-hint";
 export const ROUND_RESULT_COACH_MARKER = "round-result-coach-note";
 export const MATCH_EVENT_RIBBON_MARKER = "broadcast-event-ribbon-hud";
+export const MATCH_CONTROL_RAIL_MARKER = "live-match-control-rail";
 const LOW_TIME_SECONDS = 10;
 
 function getSecondsLeft(state) {
@@ -255,6 +256,7 @@ export function createHud(documentRef) {
     pressureCue: documentRef.getElementById("pressureCue"),
     matchProgress: documentRef.getElementById("matchProgress"),
     matchProgressFill: documentRef.getElementById("matchProgressFill"),
+    bottomControls: documentRef.getElementById("bottomControls"),
     finalSaves: documentRef.getElementById("finalSaves"),
     finalBestStreak: documentRef.getElementById("finalBestStreak"),
     finalConceded: documentRef.getElementById("finalConceded"),
@@ -398,6 +400,24 @@ export function createHud(documentRef) {
     }
   }
 
+  function updateControlRail(state) {
+    var controlMode = state.ended ? "result" : state.running ? "live" : "setup";
+    var isLive = controlMode === "live";
+
+    if (refs.bottomControls) {
+      refs.bottomControls.dataset.controlMode = controlMode;
+      refs.bottomControls.dataset.controlRailSystem = MATCH_CONTROL_RAIL_MARKER;
+      refs.bottomControls.classList.toggle("is-live-compact", isLive);
+    }
+
+    refs.difficultyButtons.forEach((button) => {
+      button.disabled = isLive;
+      button.setAttribute("aria-disabled", isLive ? "true" : "false");
+    });
+
+    if (refs.soundButton) refs.soundButton.disabled = false;
+  }
+
   return {
     refs,
     bind(actions) {
@@ -474,6 +494,7 @@ export function createHud(documentRef) {
       updateMatchStatus(state, context);
       updatePressureCue(state);
       updateMatchProgress(state);
+      updateControlRail(state);
       setVisible(refs.startOverlay, !state.running && !state.ended);
       setVisible(refs.pauseOverlay, state.running && state.paused && !state.ended);
       setVisible(refs.endOverlay, state.ended);

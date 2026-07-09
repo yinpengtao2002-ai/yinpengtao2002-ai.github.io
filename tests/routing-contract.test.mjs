@@ -125,10 +125,10 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
     new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
     "utf8"
   );
-  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-mlWwecog.js", import.meta.url);
+  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-ClYE0BDK.js", import.meta.url);
   const gameScript = await stat(gameScriptPath);
   const gameScriptSource = await readFile(gameScriptPath, "utf8");
-  const gameStylePath = new URL("../public/tools/goalkeeper-landscape/assets/index-CniF0f5A.css", import.meta.url);
+  const gameStylePath = new URL("../public/tools/goalkeeper-landscape/assets/index-CSQkEMNS.css", import.meta.url);
   const gameStyles = await stat(gameStylePath);
   const gameStyleSource = await readFile(gameStylePath, "utf8");
   const gameWasm = await stat(new URL("../public/tools/goalkeeper-landscape/vendor/rapier_wasm3d_bg.wasm", import.meta.url));
@@ -137,8 +137,8 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(goalkeeperPage, /import GoalkeeperLandscapeRuntime/);
   assert.match(goalkeeperPage, /GOALKEEPER_SCRIPT_SRC/);
   assert.match(goalkeeperPage, /GOALKEEPER_STYLESHEET_HREF/);
-  assert.match(goalkeeperRuntime, /index-mlWwecog\.js/);
-  assert.match(goalkeeperPage, /index-CniF0f5A\.css/);
+  assert.match(goalkeeperRuntime, /index-ClYE0BDK\.js/);
+  assert.match(goalkeeperPage, /index-CSQkEMNS\.css/);
   assert.match(goalkeeperPage, /<GoalkeeperLandscapeRuntime \/>/);
   assert.match(goalkeeperPage, /弹力手套守门挑战/);
   assert.match(goalkeeperPage, /id="gameCanvas"/);
@@ -148,6 +148,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(goalkeeperPage, /broadcast-event-ribbon-hud/);
   assert.match(goalkeeperPage, /id="matchStatus"/);
   assert.match(goalkeeperPage, /id="pressureCue"/);
+  assert.match(goalkeeperPage, /id="bottomControls"/);
   assert.match(goalkeeperPage, /id="matchProgress"/);
   assert.match(goalkeeperPage, /id="matchProgressFill"/);
   assert.match(goalkeeperPage, /match-progress-hud/);
@@ -180,8 +181,8 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(thinkingClient, /横屏守门挑战/);
   assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-mlWwecog\.js/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-CniF0f5A\.css/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-ClYE0BDK\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-CSQkEMNS\.css/);
   assert.match(gameIndex, /id="feedbackToast"/);
   assert.match(gameIndex, /id="eventRibbon"/);
   assert.match(gameIndex, /broadcast-event-ribbon-hud/);
@@ -272,11 +273,15 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.doesNotMatch(gameScriptSource, /field-mowing-stripe/);
   assert.match(gameScriptSource, /field-surface-panel/);
   assert.doesNotMatch(gameScriptSource, /field-turf-maintenance-brush/);
-  assert.match(gameScriptSource, /clean-training-floor-scuff-and-line-kit/);
+  assert.match(gameScriptSource, /clean-training-floor-no-grass-clutter/);
+  assert.match(gameScriptSource, /clean-field-no-grass-clutter/);
   assert.doesNotMatch(gameScriptSource, /field-edge-tuft-cluster/);
-  assert.match(gameScriptSource, /field-floor-scuff/);
-  assert.match(gameScriptSource, /field-boot-scuff/);
-  assert.match(gameScriptSource, /field-line-chalk-dust/);
+  assert.doesNotMatch(gameScriptSource, /field-goalmouth-wear/);
+  assert.doesNotMatch(gameScriptSource, /field-floor-scuff/);
+  assert.doesNotMatch(gameScriptSource, /field-shot-lane-compression/);
+  assert.doesNotMatch(gameScriptSource, /field-keeper-stance-scuff/);
+  assert.doesNotMatch(gameScriptSource, /field-boot-scuff/);
+  assert.doesNotMatch(gameScriptSource, /field-line-chalk-dust/);
   assert.match(gameScriptSource, /stadium-crowd-row/);
   assert.match(gameScriptSource, /stadium-scoreboard/);
   assert.match(gameScriptSource, /stadium-corner-flag/);
@@ -332,6 +337,8 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /launcher-muzzle-flash/);
   assert.match(gameScriptSource, /match-hud-flow-polish/);
   assert.match(gameScriptSource, /match-pressure-hud/);
+  assert.match(gameScriptSource, /live-match-control-rail/);
+  assert.match(gameScriptSource, /bottomControls/);
   assert.match(gameScriptSource, /broadcast-event-feedback-presentation/);
   assert.match(gameScriptSource, /camera-attached-broadcast-presentation-layer/);
   assert.match(gameScriptSource, /three-camera-transparent-overlay-kit/);
@@ -340,6 +347,9 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /presentation-event-focus-ring/);
   assert.match(gameScriptSource, /broadcast-event-ribbon-hud/);
   assert.match(gameStyleSource, /broadcast-control-rail-hud/);
+  assert.match(gameStyleSource, /live-match-control-rail/);
+  assert.match(gameStyleSource, /bottom-controls\[data-control-mode=live\]/);
+  assert.match(gameStyleSource, /bottom-controls\.is-live-compact/);
   assert.match(gameStyleSource, /broadcast-event-ribbon-hud/);
   assert.match(gameStyleSource, /match-mobile-corner-controls/);
   assert.match(gameStyleSource, /game-hud:{1,2}before/);
