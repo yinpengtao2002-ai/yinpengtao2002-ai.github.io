@@ -12,6 +12,7 @@ export const ROUND_RESULT_REVIEW_MARKER = "round-result-review-cards";
 export const MATCH_EVENT_RIBBON_MARKER = "broadcast-event-ribbon-hud";
 export const MATCH_CONTROL_RAIL_MARKER = "live-match-control-rail";
 export const MATCH_ATMOSPHERE_MARKER = "match-atmosphere-event-rail";
+export const HUD_STATE_SKIN_MARKER = "match-state-scorebug-skin";
 const LOW_TIME_SECONDS = 10;
 
 function getSecondsLeft(state) {
@@ -228,6 +229,57 @@ export function getMatchAtmospherePlan(state) {
   return empty;
 }
 
+export function getHudTonePlan(state) {
+  var neutral = {
+    marker: HUD_STATE_SKIN_MARKER,
+    tone: "neutral",
+    intensity: "ambient",
+    blocksShotLane: false,
+  };
+  if (!state?.running || state.paused || state.ended) return neutral;
+
+  if (state.message === "save") {
+    if ((state.streak || 0) >= 3) {
+      return {
+        marker: HUD_STATE_SKIN_MARKER,
+        tone: "streak",
+        intensity: "highlight",
+        blocksShotLane: false,
+      };
+    }
+    return {
+      marker: HUD_STATE_SKIN_MARKER,
+      tone: "save",
+      intensity: "moment",
+      blocksShotLane: false,
+    };
+  }
+
+  if (state.message === "goal") {
+    var conceded = Math.max(0, state.conceded || 0);
+    var danger = conceded >= MAX_CONCEDED - 1;
+    return {
+      marker: HUD_STATE_SKIN_MARKER,
+      tone: danger ? "danger" : "goal",
+      intensity: danger ? "critical" : "high",
+      blocksShotLane: false,
+    };
+  }
+
+  var secondsLeft = getSecondsLeft(state);
+  var pressure = secondsLeft <= LOW_TIME_SECONDS || (state.conceded || 0) >= MAX_CONCEDED - 1;
+  if (pressure) {
+    return {
+      marker: HUD_STATE_SKIN_MARKER,
+      tone: "pressure",
+      intensity: "pressure",
+      blocksShotLane: false,
+    };
+  }
+
+  return neutral;
+}
+
 export function getEventRibbonPlan(state) {
   var empty = {
     visible: false,
@@ -357,6 +409,8 @@ export function getSoundStatusLabel(enabled, audioStatus = "locked") {
 
 export function createHud(documentRef) {
   var refs = {
+    stage: documentRef.getElementById("stage"),
+    gameHud: documentRef.getElementById("gameHud"),
     scoreValue: documentRef.getElementById("scoreValue"),
     timeValue: documentRef.getElementById("timeValue"),
     streakValue: documentRef.getElementById("streakValue"),
@@ -407,6 +461,27 @@ export function createHud(documentRef) {
 
   function setClass(element, className, enabled) {
     if (element) element.classList.toggle(className, enabled);
+  }
+
+  function updateHudTone(state) {
+    var plan = getHudTonePlan(state);
+    var toneClasses = ["neutral", "save", "streak", "goal", "danger", "pressure"];
+
+    if (refs.gameHud) {
+      refs.gameHud.dataset.hudSkinSystem = plan.marker;
+      refs.gameHud.dataset.hudTone = plan.tone;
+      refs.gameHud.dataset.hudIntensity = plan.intensity;
+      refs.gameHud.dataset.blocksShotLane = plan.blocksShotLane ? "true" : "false";
+      toneClasses.forEach((tone) => {
+        setClass(refs.gameHud, "is-" + tone + "-tone", plan.tone === tone);
+      });
+    }
+
+    if (refs.stage) {
+      refs.stage.dataset.hudSkinSystem = plan.marker;
+      refs.stage.dataset.hudTone = plan.tone;
+      refs.stage.dataset.hudIntensity = plan.intensity;
+    }
   }
 
   function updateFeedback(state) {
@@ -646,6 +721,7 @@ export function createHud(documentRef) {
       if (refs.finalSaveRate) refs.finalSaveRate.textContent = resultTags[0].value;
       if (refs.finalRhythmTag) refs.finalRhythmTag.textContent = resultTags[1].value;
       if (refs.finalControlTag) refs.finalControlTag.textContent = resultTags[2].value;
+      updateHudTone(state);
       updateFeedback(state);
       updateEventRibbon(state);
       updateMatchAtmosphere(state);

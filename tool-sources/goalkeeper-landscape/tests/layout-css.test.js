@@ -105,6 +105,22 @@ describe("responsive layout css", () => {
     expect(css).toContain("display: none;");
   });
 
+  it("adds a lightweight match-state scorebug skin without creating a new shot-lane overlay", () => {
+    const css = readFileSync(stylesPath, "utf8");
+
+    expect(css).toContain("match-state-scorebug-skin");
+    expect(css).toContain(".broadcast-scorebug[data-hud-skin-system=\"match-state-scorebug-skin\"]");
+    expect(css).toContain(".broadcast-scorebug.is-save-tone");
+    expect(css).toContain(".broadcast-scorebug.is-streak-tone");
+    expect(css).toContain(".broadcast-scorebug.is-goal-tone");
+    expect(css).toContain(".broadcast-scorebug.is-danger-tone");
+    expect(css).toContain(".broadcast-scorebug.is-pressure-tone");
+    expect(css).toContain("height: clamp(38px, 4.2svh, 50px);");
+    expect(css).toContain("box-shadow: 0 12px 26px rgba(4, 14, 12, 0.18)");
+    expect(css).not.toContain(".match-state-overlay");
+    expect(css).not.toContain("position: fixed;");
+  });
+
   it("adds an edge-anchored event ribbon and moves mobile controls away from the save lane", () => {
     const css = readFileSync(stylesPath, "utf8");
 

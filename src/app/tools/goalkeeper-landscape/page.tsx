@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import GoalkeeperLandscapeRuntime, { GOALKEEPER_SCRIPT_SRC } from "./GoalkeeperLandscapeRuntime";
 
-const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-Bbig4_qq.css";
+const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-C_3_ZRGc.css";
 
 export const metadata: Metadata = {
   title: "弹力手套守门挑战｜Lucas Yin",
@@ -23,7 +23,7 @@ export default function GoalkeeperLandscapePage() {
           <div className="stage" id="stage">
             <canvas id="gameCanvas" width="1280" height="720" aria-label="弹力手套守门挑战游戏" />
 
-            <section className="game-hud broadcast-scorebug" data-hud-system="broadcast-scorebug-compact-hud" aria-label="比赛状态">
+            <section className="game-hud broadcast-scorebug" id="gameHud" data-hud-system="broadcast-scorebug-compact-hud" aria-label="比赛状态">
               <div className="glass-panel hud-score hud-metric">
                 <span className="hud-icon hud-icon-score" aria-hidden="true" />
                 <span className="hud-label">扑救分</span>

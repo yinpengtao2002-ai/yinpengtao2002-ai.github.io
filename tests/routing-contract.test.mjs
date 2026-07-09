@@ -125,10 +125,10 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
     new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
     "utf8"
   );
-  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-CQQ1HI5W.js", import.meta.url);
+  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-3wbfdtI5.js", import.meta.url);
   const gameScript = await stat(gameScriptPath);
   const gameScriptSource = await readFile(gameScriptPath, "utf8");
-  const gameStylePath = new URL("../public/tools/goalkeeper-landscape/assets/index-Bbig4_qq.css", import.meta.url);
+  const gameStylePath = new URL("../public/tools/goalkeeper-landscape/assets/index-C_3_ZRGc.css", import.meta.url);
   const gameStyles = await stat(gameStylePath);
   const gameStyleSource = await readFile(gameStylePath, "utf8");
   const gameWasm = await stat(new URL("../public/tools/goalkeeper-landscape/vendor/rapier_wasm3d_bg.wasm", import.meta.url));
@@ -137,14 +137,15 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(goalkeeperPage, /import GoalkeeperLandscapeRuntime/);
   assert.match(goalkeeperPage, /GOALKEEPER_SCRIPT_SRC/);
   assert.match(goalkeeperPage, /GOALKEEPER_STYLESHEET_HREF/);
-  assert.match(goalkeeperRuntime, /index-CQQ1HI5W\.js/);
-  assert.match(goalkeeperPage, /index-Bbig4_qq\.css/);
+  assert.match(goalkeeperRuntime, /index-3wbfdtI5\.js/);
+  assert.match(goalkeeperPage, /index-C_3_ZRGc\.css/);
   assert.match(goalkeeperPage, /<GoalkeeperLandscapeRuntime \/>/);
   assert.match(goalkeeperPage, /弹力手套守门挑战/);
   assert.match(goalkeeperPage, /id="gameCanvas"/);
   assert.match(goalkeeperPage, /id="startButton"/);
   assert.match(goalkeeperPage, /id="feedbackToast"/);
   assert.match(goalkeeperPage, /broadcast-scorebug/);
+  assert.match(goalkeeperPage, /id="gameHud"/);
   assert.match(goalkeeperPage, /broadcast-scorebug-compact-hud/);
   assert.match(goalkeeperPage, /hud-metric/);
   assert.match(goalkeeperPage, /hud-label/);
@@ -195,8 +196,9 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(thinkingClient, /横屏守门挑战/);
   assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-CQQ1HI5W\.js/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-Bbig4_qq\.css/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-3wbfdtI5\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-C_3_ZRGc\.css/);
+  assert.match(gameIndex, /id="gameHud"/);
   assert.match(gameIndex, /id="feedbackToast"/);
   assert.match(gameIndex, /id="eventRibbon"/);
   assert.match(gameIndex, /broadcast-event-ribbon-hud/);
@@ -370,6 +372,9 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /peripheral-net-detail-open-shot-lane/);
   assert.match(gameScriptSource, /match-grade-woven-net-texture-clear-sightline/);
   assert.match(gameScriptSource, /center-lane-ball-first-net-budget/);
+  assert.match(gameScriptSource, /braided-hex-rear-pocket-net-clear-lane/);
+  assert.match(gameScriptSource, /goal-net-rear-hex-pocket-thread/);
+  assert.match(gameScriptSource, /goal-net-rear-hex-pocket-knot/);
   assert.match(gameScriptSource, /goal-net-match-weave-rear-pocket-thread/);
   assert.match(gameScriptSource, /goal-net-match-weave-knot/);
   assert.match(gameScriptSource, /goal-net-front-edge-braided-strand/);
@@ -437,6 +442,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /launcher-hydraulic-piston/);
   assert.match(gameScriptSource, /launcher-muzzle-flash/);
   assert.match(gameScriptSource, /match-hud-flow-polish/);
+  assert.match(gameScriptSource, /match-state-scorebug-skin/);
   assert.match(gameScriptSource, /match-pressure-hud/);
   assert.match(gameScriptSource, /live-match-control-rail/);
   assert.match(gameScriptSource, /bottomControls/);
@@ -452,6 +458,12 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /postprocessingBloom/);
   assert.match(gameScriptSource, /broadcast-event-ribbon-hud/);
   assert.match(gameStyleSource, /broadcast-control-rail-hud/);
+  assert.match(gameStyleSource, /match-state-scorebug-skin/);
+  assert.match(gameStyleSource, /broadcast-scorebug\.is-save-tone/);
+  assert.match(gameStyleSource, /broadcast-scorebug\.is-streak-tone/);
+  assert.match(gameStyleSource, /broadcast-scorebug\.is-goal-tone/);
+  assert.match(gameStyleSource, /broadcast-scorebug\.is-danger-tone/);
+  assert.match(gameStyleSource, /broadcast-scorebug\.is-pressure-tone/);
   assert.match(gameStyleSource, /live-match-control-rail/);
   assert.match(gameStyleSource, /bottom-controls\[data-control-mode=live\]/);
   assert.match(gameStyleSource, /bottom-controls\.is-live-compact/);

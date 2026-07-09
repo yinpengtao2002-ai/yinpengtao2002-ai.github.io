@@ -20,6 +20,7 @@ const NET_MATCHDAY_LACING_SYSTEM = "edge-laced-rear-pocket-net-clear-lane";
 const NET_LANE_GUARD_SYSTEM = "peripheral-net-detail-open-shot-lane";
 const NET_MATCH_GRADE_TEXTURE_SYSTEM = "match-grade-woven-net-texture-clear-sightline";
 const NET_SHOT_LANE_VISIBILITY_SYSTEM = "center-lane-ball-first-net-budget";
+const NET_PHOTOREAL_TEXTURE_SYSTEM = "braided-hex-rear-pocket-net-clear-lane";
 
 export function getMatchdayAssetPolishProfile() {
   return {
@@ -849,6 +850,7 @@ export function createGoalAndNet() {
   group.userData.netLaneGuardSystem = NET_LANE_GUARD_SYSTEM;
   group.userData.netMatchGradeTextureSystem = NET_MATCH_GRADE_TEXTURE_SYSTEM;
   group.userData.netShotLaneVisibilitySystem = NET_SHOT_LANE_VISIBILITY_SYSTEM;
+  group.userData.netPhotorealTextureSystem = NET_PHOTOREAL_TEXTURE_SYSTEM;
   group.userData.matchUseDetailSystem = "match-use-equipment-wear-layer";
   var dynamicNetDetails = [];
   var keeperSightline = {
@@ -1097,6 +1099,7 @@ export function createGoalAndNet() {
   function markMatchGradeNetDetail(object, options = {}) {
     object.userData.netMatchGradeTextureSystem = NET_MATCH_GRADE_TEXTURE_SYSTEM;
     object.userData.netShotLaneVisibilitySystem = NET_SHOT_LANE_VISIBILITY_SYSTEM;
+    object.userData.netPhotorealTextureSystem = options.netPhotorealTextureSystem || NET_PHOTOREAL_TEXTURE_SYSTEM;
     object.userData.netLaneGuardSystem = NET_LANE_GUARD_SYSTEM;
     object.userData.rearPocketLayer = options.rearPocketLayer || "peripheral-depth-detail";
     object.userData.behindShotLane = Boolean(options.behindShotLane);
@@ -1515,6 +1518,96 @@ export function createGoalAndNet() {
       matchWeaveKnotIndex += 1;
     });
   });
+
+  function addRearHexPocketLayer() {
+    var hexRows = [0.36, 0.68, 1.0, 1.32, 1.64, 1.96, 2.28].filter((rowY) => rowY < RAPIER_GOAL.height - 0.16);
+    var hexColumns = [-2.66, -1.98, -1.3, -0.62, 0.06, 0.74, 1.42, 2.1, 2.78].filter(
+      (columnX) => Math.abs(columnX) < RAPIER_GOAL.halfWidth - 0.28,
+    );
+    var threadIndex = 0;
+    var knotIndex = 0;
+
+    function addHexThread(points, crossesSightline, sideBias) {
+      var opacity = crossesSightline ? 0.032 + sideBias * 0.004 : 0.052 + sideBias * 0.026;
+      var thread = makeMatchWeaveThread(
+        "goal-net-rear-hex-pocket-thread-" + threadIndex,
+        points,
+        {
+          radius: crossesSightline ? 0.0022 : 0.0031,
+          opacity,
+          rearPocketLayer: crossesSightline ? "center-depth-detail" : "peripheral-depth-detail",
+          behindShotLane: true,
+          crossesKeeperSightline: crossesSightline,
+          frontShotLaneOcclusion: 0,
+          renderOrder: 4,
+          netPhotorealTextureSystem: NET_PHOTOREAL_TEXTURE_SYSTEM,
+        },
+      );
+      thread.userData.netPhotorealTextureSystem = NET_PHOTOREAL_TEXTURE_SYSTEM;
+      group.add(registerDynamicNetDetail(thread, crossesSightline ? 0.28 : 0.4, crossesSightline ? 0.05 : 0.14));
+      threadIndex += 1;
+    }
+
+    for (var rowIndex = 0; rowIndex < hexRows.length - 1; rowIndex += 1) {
+      var yA = hexRows[rowIndex];
+      var yB = hexRows[rowIndex + 1];
+      var midpointY = (yA + yB) * 0.5;
+      for (var columnIndex = 0; columnIndex < hexColumns.length - 1; columnIndex += 1) {
+        var xA = hexColumns[columnIndex] + (rowIndex % 2 ? 0.08 : -0.04);
+        var xB = hexColumns[columnIndex + 1] + (rowIndex % 2 ? 0.08 : -0.04);
+        var midpointX = (xA + xB) * 0.5;
+        var sideBias = Math.max(Math.abs(xA), Math.abs(xB)) / RAPIER_GOAL.halfWidth;
+        var leftPoints = [
+          { x: xA, y: yA, z: RAPIER_GOAL.netPlaneZ + 0.76 + (rowIndex % 3) * 0.025 },
+          { x: midpointX - 0.035, y: midpointY - 0.025, z: RAPIER_GOAL.netPlaneZ + 0.91 + sideBias * 0.035 },
+          { x: xA + 0.08, y: yB, z: RAPIER_GOAL.netPlaneZ + 0.78 + (columnIndex % 3) * 0.016 },
+        ];
+        var rightPoints = [
+          { x: xB, y: yA, z: RAPIER_GOAL.netPlaneZ + 0.76 + (columnIndex % 3) * 0.018 },
+          { x: midpointX + 0.035, y: midpointY - 0.025, z: RAPIER_GOAL.netPlaneZ + 0.91 + sideBias * 0.035 },
+          { x: xB - 0.08, y: yB, z: RAPIER_GOAL.netPlaneZ + 0.78 + (rowIndex % 3) * 0.02 },
+        ];
+        var horizontalPoints = [
+          { x: xA + 0.08, y: yB, z: RAPIER_GOAL.netPlaneZ + 0.78 + (columnIndex % 3) * 0.016 },
+          { x: midpointX, y: yB - 0.02, z: RAPIER_GOAL.netPlaneZ + 0.86 + sideBias * 0.025 },
+          { x: xB - 0.08, y: yB, z: RAPIER_GOAL.netPlaneZ + 0.78 + (rowIndex % 3) * 0.02 },
+        ];
+
+        [leftPoints, rightPoints, horizontalPoints].forEach(function addHexSegment(points) {
+          var crossesSightline = points.some((point) => isInKeeperSightline(point));
+          addHexThread(points, crossesSightline, sideBias);
+        });
+      }
+    }
+
+    hexRows.forEach(function addHexKnotRow(knotY, rowIndex) {
+      hexColumns.forEach(function addHexKnot(columnX, columnIndex) {
+        var x = columnX + (rowIndex % 2 ? 0.08 : -0.04);
+        var y = knotY + (columnIndex % 2 ? 0.008 : -0.008);
+        var crossesSightline = isInKeeperSightline({ x, y, z: RAPIER_GOAL.netPlaneZ + 0.82 });
+        var sideBias = Math.abs(x) / RAPIER_GOAL.halfWidth;
+        var knot = makeMatchWeaveKnot(
+          "goal-net-rear-hex-pocket-knot-" + knotIndex,
+          x,
+          y,
+          RAPIER_GOAL.netPlaneZ + 0.8 + (rowIndex % 3) * 0.026 + Math.sin(columnIndex * 0.58) * 0.012,
+          crossesSightline ? 0.0048 : 0.0074,
+          crossesSightline ? 0.034 : 0.046 + sideBias * 0.014,
+          {
+            rearPocketLayer: crossesSightline ? "center-depth-detail" : "peripheral-depth-detail",
+            behindShotLane: true,
+            crossesKeeperSightline: crossesSightline,
+            frontShotLaneOcclusion: 0,
+            netPhotorealTextureSystem: NET_PHOTOREAL_TEXTURE_SYSTEM,
+          },
+        );
+        knot.userData.netPhotorealTextureSystem = NET_PHOTOREAL_TEXTURE_SYSTEM;
+        group.add(registerDynamicNetDetail(knot, crossesSightline ? 0.2 : 0.3, crossesSightline ? 0.04 : 0.1));
+        knotIndex += 1;
+      });
+    });
+  }
+  addRearHexPocketLayer();
 
   [
     ["top-left", [

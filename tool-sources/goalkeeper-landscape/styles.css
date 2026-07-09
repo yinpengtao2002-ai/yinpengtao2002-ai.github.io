@@ -296,6 +296,49 @@ button {
   transform: translateX(-50%);
 }
 
+.broadcast-scorebug[data-hud-skin-system="match-state-scorebug-skin"] {
+  --match-state-scorebug-skin: 1;
+  --scorebug-tone-ring: rgba(242, 255, 242, 0.18);
+  --scorebug-tone-glow: rgba(255, 255, 255, 0.08);
+  --scorebug-tone-wash: rgba(255, 255, 255, 0.035);
+  border-color: var(--scorebug-tone-ring);
+  background:
+    linear-gradient(90deg, transparent 0%, var(--scorebug-tone-wash) 50%, transparent 100%),
+    linear-gradient(180deg, rgba(10, 24, 22, 0.78), rgba(6, 16, 15, 0.58));
+  box-shadow: 0 12px 26px rgba(4, 14, 12, 0.18), 0 0 0 1px var(--scorebug-tone-ring), 0 0 22px var(--scorebug-tone-glow), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.broadcast-scorebug.is-save-tone {
+  --scorebug-tone-ring: rgba(116, 228, 158, 0.34);
+  --scorebug-tone-glow: rgba(116, 228, 158, 0.2);
+  --scorebug-tone-wash: rgba(116, 228, 158, 0.06);
+}
+
+.broadcast-scorebug.is-streak-tone {
+  --scorebug-tone-ring: rgba(97, 240, 255, 0.4);
+  --scorebug-tone-glow: rgba(97, 240, 255, 0.26);
+  --scorebug-tone-wash: rgba(97, 240, 255, 0.075);
+}
+
+.broadcast-scorebug.is-goal-tone {
+  --scorebug-tone-ring: rgba(255, 152, 93, 0.4);
+  --scorebug-tone-glow: rgba(255, 118, 70, 0.24);
+  --scorebug-tone-wash: rgba(255, 118, 70, 0.07);
+}
+
+.broadcast-scorebug.is-danger-tone {
+  --scorebug-tone-ring: rgba(255, 82, 58, 0.52);
+  --scorebug-tone-glow: rgba(255, 82, 58, 0.32);
+  --scorebug-tone-wash: rgba(255, 82, 58, 0.09);
+}
+
+.broadcast-scorebug.is-pressure-tone {
+  --scorebug-tone-ring: rgba(255, 203, 119, 0.42);
+  --scorebug-tone-glow: rgba(255, 190, 96, 0.24);
+  --scorebug-tone-wash: rgba(255, 190, 96, 0.07);
+}
+
 .broadcast-scorebug::before {
   display: none;
 }

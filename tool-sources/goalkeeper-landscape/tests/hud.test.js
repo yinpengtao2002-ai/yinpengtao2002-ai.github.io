@@ -39,6 +39,8 @@ function createDocument() {
   var elements = {};
   [
     "scoreValue",
+    "stage",
+    "gameHud",
     "timeValue",
     "streakValue",
     "concededValue",
@@ -373,6 +375,65 @@ describe("hud", () => {
     expect(documentRef.elements.matchAtmosphere.classList.contains("is-visible")).toBe(false);
     expect(documentRef.elements.matchAtmosphereCopy.textContent).toBe("");
     expect(documentRef.elements.matchAtmosphereFill.style.width).toBe("0%");
+  });
+
+  it("skins the scorebug with match state without adding a center-blocking overlay", () => {
+    expect(HudModule.getHudTonePlan).toBeTypeOf("function");
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    const liveState = {
+      ...createGameState(),
+      running: true,
+      paused: false,
+      ended: false,
+      message: "save",
+      streak: 1,
+      lastSavePoints: 110,
+      conceded: 1,
+      timeLeft: 42,
+    };
+
+    expect(HudModule.getHudTonePlan(liveState)).toMatchObject({
+      marker: "match-state-scorebug-skin",
+      tone: "save",
+      intensity: "moment",
+      blocksShotLane: false,
+    });
+
+    hud.update(liveState, true);
+
+    expect(documentRef.elements.gameHud.dataset.hudSkinSystem).toBe("match-state-scorebug-skin");
+    expect(documentRef.elements.gameHud.dataset.hudTone).toBe("save");
+    expect(documentRef.elements.gameHud.dataset.hudIntensity).toBe("moment");
+    expect(documentRef.elements.gameHud.classList.contains("is-save-tone")).toBe(true);
+    expect(documentRef.elements.gameHud.classList.contains("is-streak-tone")).toBe(false);
+    expect(documentRef.elements.stage.dataset.hudTone).toBe("save");
+    expect(documentRef.elements.stage.dataset.hudSkinSystem).toBe("match-state-scorebug-skin");
+
+    hud.update({ ...liveState, streak: 4, lastSavePoints: 190 }, true);
+
+    expect(documentRef.elements.gameHud.dataset.hudTone).toBe("streak");
+    expect(documentRef.elements.gameHud.dataset.hudIntensity).toBe("highlight");
+    expect(documentRef.elements.gameHud.classList.contains("is-streak-tone")).toBe(true);
+    expect(documentRef.elements.gameHud.classList.contains("is-save-tone")).toBe(false);
+
+    hud.update({ ...liveState, message: "goal", conceded: 4, streak: 0, lastSavePoints: 0 }, true);
+
+    expect(documentRef.elements.gameHud.dataset.hudTone).toBe("danger");
+    expect(documentRef.elements.gameHud.dataset.hudIntensity).toBe("critical");
+    expect(documentRef.elements.gameHud.classList.contains("is-danger-tone")).toBe(true);
+    expect(documentRef.elements.gameHud.classList.contains("is-goal-tone")).toBe(false);
+
+    hud.update({ ...liveState, message: "", conceded: 1, timeLeft: 8 }, true);
+
+    expect(documentRef.elements.gameHud.dataset.hudTone).toBe("pressure");
+    expect(documentRef.elements.gameHud.classList.contains("is-pressure-tone")).toBe(true);
+
+    hud.update(createGameState(), true);
+
+    expect(documentRef.elements.gameHud.dataset.hudTone).toBe("neutral");
+    expect(documentRef.elements.gameHud.classList.contains("is-pressure-tone")).toBe(false);
+    expect(documentRef.elements.stage.dataset.hudTone).toBe("neutral");
   });
 
   it("shows match flow states without replacing the playable field", () => {

@@ -779,6 +779,29 @@ describe("procedural 3D assets", () => {
     expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-match-weave-knot-"))).toBe(true);
   });
 
+  it("adds a rear hex pocket net texture while preserving a clear keeper sightline", () => {
+    const goal = createGoalAndNet();
+    const hexThreads = collectByName(goal.group, /^goal-net-rear-hex-pocket-thread-/);
+    const hexKnots = collectByName(goal.group, /^goal-net-rear-hex-pocket-knot-/);
+    const centerHexDetails = [...hexThreads, ...hexKnots].filter((detail) => detail.userData.rearPocketLayer === "center-depth-detail");
+
+    expect(goal.group.userData.netPhotorealTextureSystem).toBe("braided-hex-rear-pocket-net-clear-lane");
+    expect(hexThreads.length).toBeGreaterThanOrEqual(20);
+    expect(hexKnots.length).toBeGreaterThanOrEqual(24);
+    expect(hexThreads.every((thread) => thread.geometry.type === "TubeGeometry")).toBe(true);
+    expect(hexThreads.every((thread) => thread.material.userData.netMaterialSystem === "braided-nylon-cord-pbr")).toBe(true);
+    expect(hexThreads.every((thread) => thread.material.bumpMap?.userData.assetSystem === "procedural-braided-cord-net-material")).toBe(true);
+    expect([...hexThreads, ...hexKnots].every((detail) => detail.userData.behindShotLane === true)).toBe(true);
+    expect([...hexThreads, ...hexKnots].every((detail) => detail.userData.frontShotLaneOcclusion === 0)).toBe(true);
+    expect(centerHexDetails.length).toBeGreaterThan(0);
+    expect(centerHexDetails.every((detail) => detail.material.opacity <= 0.046)).toBe(true);
+    expect(hexThreads.every((thread) => thread.material.opacity <= 0.084)).toBe(true);
+    expect(hexKnots.every((knot) => knot.material.opacity <= 0.062)).toBe(true);
+    expect(goal.net.material.opacity).toBeLessThanOrEqual(0.0001);
+    expect(goal.grid.visible).toBe(false);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-rear-hex-pocket-thread-"))).toBe(true);
+  });
+
   it("adds assembled goal hardware details so the frame feels manufactured rather than procedural", () => {
     const goal = createGoalAndNet();
 
