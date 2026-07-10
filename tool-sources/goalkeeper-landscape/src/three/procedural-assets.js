@@ -28,6 +28,7 @@ const NET_ALPHA_TEXTURE_SYSTEM = "procedural-real-match-net-alpha-texture";
 const NET_BROADCAST_SIGHTLINE_SYSTEM = "broadcast-safe-rear-mesh-net-clear-mobile-landscape";
 const NET_LANE_CUTOUT_SYSTEM = "split-rear-net-around-mobile-shot-window";
 const NET_CONTINUITY_SYSTEM = "continuous-ball-priority-pocket-shell";
+const NET_FRAME_ATTACHMENT_SYSTEM = "frame-bound-continuous-net-seam";
 const BUILD_RETIRED_NET_LAYERS = false;
 const GLOVE_PBR_MATERIAL_SYSTEM = "pbr-latex-textile-match-glove-materials";
 const GLOVE_LATEX_TEXTURE_SYSTEM = "procedural-latex-micrograin-glove-texture";
@@ -38,6 +39,7 @@ const LAUNCHER_DECAL_SYSTEM = "three-decalgeometry-launcher-label-wear-kit";
 const LAUNCHER_PAINT_TEXTURE_SYSTEM = "procedural-painted-metal-launcher-texture";
 const LAUNCHER_GUNMETAL_TEXTURE_SYSTEM = "procedural-gunmetal-launcher-texture";
 const LAUNCHER_RUBBER_TEXTURE_SYSTEM = "procedural-rubber-tire-launcher-texture";
+const LAUNCHER_DISTANCE_CLARITY_SYSTEM = "distance-clarity-silhouette-kit";
 
 export function getMatchdayAssetPolishProfile() {
   return {
@@ -278,8 +280,8 @@ function createSquareGoalNetAlphaTexture() {
 }
 
 function createContinuousNetPocketGeometry() {
-  var width = RAPIER_GOAL.halfWidth * 2 - 0.18;
-  var height = RAPIER_GOAL.height - 0.12;
+  var width = RAPIER_GOAL.halfWidth * 2 + 0.02;
+  var height = RAPIER_GOAL.height + 0.02;
   var geometry = new THREE.PlaneGeometry(width, height, 24, 12);
   var positions = geometry.getAttribute("position");
 
@@ -394,7 +396,7 @@ function createLauncherSurfaceMap(kind, surface) {
       ? LAUNCHER_GUNMETAL_TEXTURE_SYSTEM
       : LAUNCHER_PAINT_TEXTURE_SYSTEM;
   var repeat = surface === "rubber" ? 2.8 : surface === "gunmetal" ? 4.2 : 3.4;
-  var texture = createSurfaceDetailTexture(128, (x, y, size) => {
+  var texture = createSurfaceDetailTexture(256, (x, y, size) => {
     var nx = x / size;
     var ny = y / size;
     var grain = Math.sin(x * 17.17 + y * 37.31) * 0.5 + 0.5;
@@ -421,6 +423,7 @@ function createLauncherSurfaceMap(kind, surface) {
   texture.userData.assetSystem = textureSystem;
   texture.userData.surfaceKind = kind;
   texture.userData.launcherMaterialSystem = LAUNCHER_PBR_MATERIAL_SYSTEM;
+  texture.anisotropy = 4;
   return texture;
 }
 
@@ -1194,6 +1197,7 @@ export function createGoalAndNet() {
   group.userData.netBroadcastSightlineSystem = NET_BROADCAST_SIGHTLINE_SYSTEM;
   group.userData.netLaneCutoutSystem = NET_LANE_CUTOUT_SYSTEM;
   group.userData.netContinuitySystem = NET_CONTINUITY_SYSTEM;
+  group.userData.netFrameAttachmentSystem = NET_FRAME_ATTACHMENT_SYSTEM;
   group.userData.matchUseDetailSystem = "match-use-equipment-wear-layer";
   var dynamicNetDetails = [];
   var keeperSightline = {
@@ -1317,7 +1321,7 @@ export function createGoalAndNet() {
     createContinuousNetPocketMaterial(),
   );
   continuousPocketShell.name = "goal-net-continuous-pocket-shell";
-  continuousPocketShell.position.set(0, RAPIER_GOAL.height / 2, RAPIER_GOAL.netPlaneZ + 0.08);
+  continuousPocketShell.position.set(0, RAPIER_GOAL.height / 2, RAPIER_GOAL.netPlaneZ + 0.022);
   continuousPocketShell.renderOrder = 2;
   continuousPocketShell.userData.netContinuitySystem = NET_CONTINUITY_SYSTEM;
   continuousPocketShell.userData.netVisualUpgradeSystem = NET_VISUAL_UPGRADE_SYSTEM;
@@ -1444,6 +1448,34 @@ export function createGoalAndNet() {
     rope.userData.geometrySource = "three-tube-geometry-raised-net-rope";
     return rope;
   }
+  [
+    ["top", [
+      { x: -RAPIER_GOAL.halfWidth - 0.01, y: RAPIER_GOAL.height - 0.012, z: RAPIER_GOAL.netPlaneZ + 0.052 },
+      { x: 0, y: RAPIER_GOAL.height - 0.012, z: RAPIER_GOAL.netPlaneZ + 0.052 },
+      { x: RAPIER_GOAL.halfWidth + 0.01, y: RAPIER_GOAL.height - 0.012, z: RAPIER_GOAL.netPlaneZ + 0.052 },
+    ], 0.34],
+    ["left", [
+      { x: -RAPIER_GOAL.halfWidth + 0.008, y: 0.012, z: RAPIER_GOAL.netPlaneZ + 0.052 },
+      { x: -RAPIER_GOAL.halfWidth + 0.008, y: RAPIER_GOAL.height * 0.5, z: RAPIER_GOAL.netPlaneZ + 0.052 },
+      { x: -RAPIER_GOAL.halfWidth + 0.008, y: RAPIER_GOAL.height - 0.012, z: RAPIER_GOAL.netPlaneZ + 0.052 },
+    ], 0.32],
+    ["right", [
+      { x: RAPIER_GOAL.halfWidth - 0.008, y: 0.012, z: RAPIER_GOAL.netPlaneZ + 0.052 },
+      { x: RAPIER_GOAL.halfWidth - 0.008, y: RAPIER_GOAL.height * 0.5, z: RAPIER_GOAL.netPlaneZ + 0.052 },
+      { x: RAPIER_GOAL.halfWidth - 0.008, y: RAPIER_GOAL.height - 0.012, z: RAPIER_GOAL.netPlaneZ + 0.052 },
+    ], 0.32],
+    ["bottom", [
+      { x: -RAPIER_GOAL.halfWidth + 0.008, y: 0.018, z: RAPIER_GOAL.netPlaneZ + 0.058 },
+      { x: 0, y: 0.018, z: RAPIER_GOAL.netPlaneZ + 0.058 },
+      { x: RAPIER_GOAL.halfWidth - 0.008, y: 0.018, z: RAPIER_GOAL.netPlaneZ + 0.058 },
+    ], 0.24],
+  ].forEach(function addFrameBindingRope(item) {
+    var bindingRope = makeRaisedRope("goal-net-frame-binding-rope-" + item[0], item[1], 0.0068, item[2]);
+    bindingRope.renderOrder = 6;
+    bindingRope.userData.netFrameAttachmentSystem = NET_FRAME_ATTACHMENT_SYSTEM;
+    bindingRope.userData.anchorBehavior = "fixed-frame-edge";
+    group.add(bindingRope);
+  });
   function makeMatchdayLace(name, points, radius = 0.0054, opacity = 0.12, motionScale = 0.5, opacityScale = 0.16) {
     var lace = makeRaisedRope(name, points, radius, opacity);
     lace.renderOrder = 5;
@@ -2730,11 +2762,12 @@ export function createShooterModel() {
   group.userData.launcherFeedSystem = "indexed-rotary-ball-feed-servo";
   group.userData.launcherMaterialSystem = LAUNCHER_PBR_MATERIAL_SYSTEM;
   group.userData.launcherDecalSystem = LAUNCHER_DECAL_SYSTEM;
+  group.userData.launcherReadabilitySystem = LAUNCHER_DISTANCE_CLARITY_SYSTEM;
   group.userData.matchUseDetailSystem = "launcher-ground-contact-wear-layer";
   group.position.set(0, 0, SHOT_3D.origin.z);
-  group.scale.setScalar(1.45);
+  group.scale.setScalar(1.68);
 
-  var chassisMat = new THREE.MeshStandardMaterial({ color: "#2d4853", roughness: 0.48, metalness: 0.08 });
+  var chassisMat = new THREE.MeshStandardMaterial({ color: "#365c66", roughness: 0.46, metalness: 0.08 });
   var panelMat = new THREE.MeshStandardMaterial({ color: "#f3fbf0", roughness: 0.42, metalness: 0.02 });
   var barrelMat = new THREE.MeshStandardMaterial({ color: "#19242a", roughness: 0.38, metalness: 0.16 });
   var wheelMat = new THREE.MeshStandardMaterial({ color: "#11191e", roughness: 0.5, metalness: 0.04 });
@@ -2786,6 +2819,25 @@ export function createShooterModel() {
     opacity: 0,
     depthWrite: false,
     side: THREE.DoubleSide,
+  });
+  var readabilityFrameMaterial = new THREE.MeshStandardMaterial({
+    color: "#ff9a52",
+    emissive: "#6e2108",
+    emissiveIntensity: 0.24,
+    roughness: 0.36,
+    metalness: 0.05,
+  });
+  var readabilityFrame = [
+    ["left", { x: -0.5, y: 0.28, z: -0.04 }, { x: -0.54, y: 1.76, z: -0.08 }],
+    ["right", { x: 0.5, y: 0.28, z: -0.04 }, { x: 0.54, y: 1.76, z: -0.08 }],
+    ["top", { x: -0.54, y: 1.76, z: -0.08 }, { x: 0.54, y: 1.76, z: -0.08 }],
+  ].map(function createReadabilityFramePart(item) {
+    var part = makeLimb("#ff9a52", 0.024);
+    part.name = "launcher-readability-frame-" + item[0];
+    part.material = readabilityFrameMaterial.clone();
+    part.userData.launcherReadabilitySystem = LAUNCHER_DISTANCE_CLARITY_SYSTEM;
+    setLimb(part, item[1], item[2]);
+    return part;
   });
 
   var kickPad = makeBeveledBox("launcher-kick-pad", 1.22, 0.018, 0.52, 0.12, laneMat.clone(), 0, 0.012, 0.42, 8);
@@ -3176,6 +3228,7 @@ export function createShooterModel() {
 
   group.add(
     kickPad,
+    ...readabilityFrame,
     aimRailLeft,
     aimRailRight,
     ...laneChevrons,
@@ -3315,6 +3368,7 @@ export function createShooterModel() {
     operatorTablet,
     shadow,
     decals,
+    readabilityFrame,
   };
 }
 

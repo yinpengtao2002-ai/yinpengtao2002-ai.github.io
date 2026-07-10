@@ -510,3 +510,22 @@ final result: passed
 - The previous late direction change came from replacing a valid physics velocity when the lingering replay began.
 - Sensor-only glove colliders remove the second Rapier impulse path while retaining the existing swept manual collision coverage.
 - One contact now owns one physical impulse, one world-space impact effect, and one contact audio identity.
+
+## 2026-07-10 Goal-Net Attachment And Launcher Clarity QA
+
+**Scope**
+- Extended the visible pocket shell into the rear edge of the posts and crossbar instead of leaving a visible inset gap.
+- Added fixed top, side, and bottom binding ropes so the net reads as one assembled structure with the frame while its center remains reactive.
+- Increased the distant launcher's silhouette scale, material contrast, procedural texture resolution, and anisotropic filtering.
+- Added a high-contrast equipment safety frame around the launcher without changing the shot origin or camera composition.
+
+**Automated Verification**
+- `npm test` passed: 19 files, 215 tests.
+- Net-shell bounds now overlap the frame envelope and keep edge depth within `0.08` world units of the goal plane.
+- Four fixed frame-binding ropes are present and excluded from dynamic net recoil.
+- Launcher detail maps are at least `256 x 256` with anisotropy `4`, and the distant silhouette scale is `1.68`.
+
+**Visual Verification**
+- `1280 x 720` passed: the top and side net seams meet the frame, and the launcher body, safety frame, and muzzle remain distinguishable through the center mesh.
+- `844 x 390` passed: the goal remains fully framed, the launcher remains identifiable, and the canvas has no horizontal or vertical overflow.
+- Final local bundle `index-D5TcktdZ.js` produced no console errors or warnings.

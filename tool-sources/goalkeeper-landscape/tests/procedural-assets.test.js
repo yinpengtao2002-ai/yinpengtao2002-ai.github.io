@@ -10,6 +10,7 @@ import {
   getStadiumScoreboardPlan,
   updateShooterModel,
 } from "../src/three/procedural-assets.js";
+import { RAPIER_GOAL } from "../src/physics/rapier-world.js";
 
 function collectByName(root, pattern) {
   const matches = [];
@@ -40,6 +41,20 @@ describe("procedural 3D assets", () => {
     expect(collectByName(launcher.group, /^launcher-stand-/).length).toBeGreaterThanOrEqual(3);
     expect(collectByName(launcher.group, /^launcher-accent-/).length).toBeGreaterThanOrEqual(3);
     expect(collectByName(launcher.group, /^shooter-head|^shooter-neck|^shooter-jersey-/)).toHaveLength(0);
+  });
+
+  it("keeps the distant launcher readable through the goal net", () => {
+    const launcher = createShooterModel();
+    const body = collectByName(launcher.group, /^launcher-body$/)[0];
+    const readabilityFrame = collectByName(launcher.group, /^launcher-readability-frame-/);
+
+    expect(launcher.group.userData.launcherReadabilitySystem).toBe("distance-clarity-silhouette-kit");
+    expect(launcher.group.scale.x).toBeGreaterThanOrEqual(1.62);
+    expect(readabilityFrame.length).toBeGreaterThanOrEqual(3);
+    expect(readabilityFrame.every((part) => part.userData.launcherReadabilitySystem === "distance-clarity-silhouette-kit")).toBe(true);
+    expect(body.material.color.getHexString()).toBe("365c66");
+    expect(body.material.bumpMap.image.width).toBeGreaterThanOrEqual(256);
+    expect(body.material.bumpMap.anisotropy).toBeGreaterThanOrEqual(4);
   });
 
   it("grounds the launcher in a finished launch bay with feed balls and restrained firing feedback", () => {
@@ -667,6 +682,30 @@ describe("procedural 3D assets", () => {
     expect(shell.userData.hasShotWindowCutout).toBe(false);
     expect(shell.userData.ballPriorityRenderOrder).toBeGreaterThan(shell.renderOrder);
     expect(goal.dynamicNetDetails.some((detail) => detail.name === shell.name)).toBe(true);
+  });
+
+  it("binds the visible net shell continuously to the posts and crossbar", () => {
+    const goal = createGoalAndNet();
+    const shell = collectByName(goal.group, /^goal-net-continuous-pocket-shell$/)[0];
+    const bindingRopes = collectByName(goal.group, /^goal-net-frame-binding-rope-/);
+    const positions = shell.geometry.getAttribute("position");
+    const xs = Array.from({ length: positions.count }, (_, index) => positions.getX(index) + shell.position.x);
+    const ys = Array.from({ length: positions.count }, (_, index) => positions.getY(index) + shell.position.y);
+    const edgeDepths = Array.from({ length: positions.count }, (_, index) => {
+      const x = positions.getX(index);
+      const y = positions.getY(index);
+      const isEdge = Math.abs(x) >= RAPIER_GOAL.halfWidth - 0.03 || Math.abs(y) >= RAPIER_GOAL.height * 0.5 - 0.03;
+      return isEdge ? positions.getZ(index) + shell.position.z : null;
+    }).filter((value) => value !== null);
+
+    expect(goal.group.userData.netFrameAttachmentSystem).toBe("frame-bound-continuous-net-seam");
+    expect(Math.min(...xs)).toBeLessThanOrEqual(-RAPIER_GOAL.halfWidth + 0.02);
+    expect(Math.max(...xs)).toBeGreaterThanOrEqual(RAPIER_GOAL.halfWidth - 0.02);
+    expect(Math.min(...ys)).toBeLessThanOrEqual(0.02);
+    expect(Math.max(...ys)).toBeGreaterThanOrEqual(RAPIER_GOAL.height - 0.02);
+    expect(Math.max(...edgeDepths)).toBeLessThanOrEqual(RAPIER_GOAL.netPlaneZ + 0.08);
+    expect(bindingRopes).toHaveLength(4);
+    expect(bindingRopes.every((rope) => rope.userData.netFrameAttachmentSystem === "frame-bound-continuous-net-seam")).toBe(true);
   });
 
   it("keeps the finished goal net within a mobile-safe draw and animation budget", () => {
