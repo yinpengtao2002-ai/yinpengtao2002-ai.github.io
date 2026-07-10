@@ -5,6 +5,30 @@ import { SCENE_TUNING } from "../src/three/goalkeeper-scene.js";
 import { SHOT_3D } from "../src/game/shot-3d-director.js";
 
 describe("goalkeeper 3D scene tuning", () => {
+  it("collects physical net contacts separately from scoring contacts", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+    const gloveContact = { eventId: 11, type: "glove", point: { x: 0, y: 1.2, z: 3.15 } };
+    const netContact = {
+      eventId: "net:11",
+      type: "net",
+      point: { x: 0.08, y: 1.18, z: 5.45 },
+      strength: 7.2,
+      sourceContactEventId: 11,
+    };
+
+    const events = sceneModule.getPhysicalNetContactEvents({
+      ball: { outcome: "saved", lastContact: gloveContact, netContact },
+      lingeringBalls: [
+        { outcome: "saved", lastContact: gloveContact, netContact },
+        { outcome: "saved", lastContact: gloveContact },
+      ],
+    });
+
+    expect(events).toHaveLength(1);
+    expect(events[0]).toEqual(netContact);
+    expect(events[0].eventId).not.toBe(gloveContact.eventId);
+  });
+
   it("merges streak payoff into the single glove-contact moment", async () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
 

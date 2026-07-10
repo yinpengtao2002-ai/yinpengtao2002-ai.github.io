@@ -2,13 +2,14 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { SHOT_3D } from "../game/shot-3d-director.js";
 import { GLOVE_3D } from "../input/glove-controller.js";
 import { clamp, dot3, length3, normalize3, subtract3 } from "../math/vector.js";
+import { GOAL_NET_GEOMETRY, resolveGoalNetCollision } from "./goal-net-geometry.js";
 
 export const RAPIER_GOAL = {
   halfWidth: SHOT_3D.goalHalfWidth,
   height: SHOT_3D.goalHeight,
   glovePlaneZ: GLOVE_3D.planeZ,
   netPlaneZ: SHOT_3D.netPlaneZ,
-  backNetZ: SHOT_3D.netPlaneZ + 0.28,
+  backNetZ: SHOT_3D.netPlaneZ + GOAL_NET_GEOMETRY.shellOffsetZ + GOAL_NET_GEOMETRY.anchorDepth + GOAL_NET_GEOMETRY.pocketDepth,
 };
 
 var rapierReady = null;
@@ -140,6 +141,7 @@ class RapierGoalkeeperWorld {
     this.ballPlan = null;
     this.outcome = "idle";
     this.lastContact = null;
+    this.netContact = null;
     this.contactSequence = 0;
     this.deflectionAge = null;
     this.previousBallPosition = null;
@@ -221,6 +223,7 @@ class RapierGoalkeeperWorld {
     this.ballPlan = null;
     this.outcome = "idle";
     this.lastContact = null;
+    this.netContact = null;
     this.deflectionAge = null;
     this.previousBallPosition = null;
     this.time = 0;
@@ -332,7 +335,29 @@ class RapierGoalkeeperWorld {
 
     this.resolveFrameContact(previousPosition || this.previousBallPosition, previousVelocity, ballPosition, ballVelocity);
     this.resolveGoalOrSave(previousPosition || this.previousBallPosition);
+    this.resolveNetContact(previousPosition || this.previousBallPosition, dt);
     this.previousBallPosition = vector(this.ballBody.translation());
+  }
+
+  resolveNetContact(previousPosition, dt) {
+    if (!this.ballBody || (this.outcome !== "goal" && this.outcome !== "saved")) return;
+    var result = resolveGoalNetCollision(
+      {
+        previousPosition,
+        position: vector(this.ballBody.translation()),
+        velocity: vector(this.ballBody.linvel()),
+        angularVelocity: vector(this.ballBody.angvel()),
+        radius: this.ballRadius,
+        netContact: this.netContact,
+        sourceContact: this.lastContact,
+      },
+      dt,
+    );
+    this.netContact = result.netContact;
+    if (!result.collided) return;
+    this.ballBody.setTranslation(result.position, true);
+    this.ballBody.setLinvel(result.velocity, true);
+    this.ballBody.setAngvel(result.angularVelocity, true);
   }
 
   resolveGloveContact(previousPosition, ballPosition, ballVelocity) {
@@ -511,12 +536,11 @@ class RapierGoalkeeperWorld {
 
       this.outcome = "goal";
       this.lastContact = {
+        eventId: this.nextContactEventId(),
         type: "net",
         point: goalLineCrossing,
         strength: Math.abs(velocity.z),
       };
-      this.ballBody.setTranslation({ x: position.x, y: position.y, z: RAPIER_GOAL.netPlaneZ }, true);
-      this.ballBody.setLinvel({ x: velocity.x * 0.12, y: Math.max(-0.8, velocity.y * 0.16), z: 0.2 }, true);
       return;
     }
 
@@ -612,6 +636,7 @@ class RapierGoalkeeperWorld {
         velocity: null,
         angularVelocity: null,
         lastContact: this.lastContact,
+        netContact: this.netContact,
       };
     }
     return {
@@ -622,6 +647,7 @@ class RapierGoalkeeperWorld {
       angularVelocity: vector(this.ballBody.angvel()),
       radius: this.ballRadius,
       lastContact: this.lastContact,
+      netContact: this.netContact,
     };
   }
 

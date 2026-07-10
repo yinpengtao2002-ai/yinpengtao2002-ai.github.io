@@ -728,6 +728,38 @@ describe("procedural 3D assets", () => {
     expect(bindingRopes.every((rope) => rope.userData.netFrameAttachmentSystem === "frame-bound-continuous-net-seam")).toBe(true);
   });
 
+  it("keeps every visible shell edge and frame binding inside the goal frame", () => {
+    const goal = createGoalAndNet();
+    const shell = collectByName(goal.group, /^goal-net-continuous-pocket-shell$/)[0];
+    const bindingRopes = collectByName(goal.group, /^goal-net-frame-binding-rope-/);
+    const positions = shell.geometry.getAttribute("position");
+    const shellXs = Array.from({ length: positions.count }, (_, index) => positions.getX(index) + shell.position.x);
+    const shellYs = Array.from({ length: positions.count }, (_, index) => positions.getY(index) + shell.position.y);
+
+    goal.group.updateMatrixWorld(true);
+    const bindingBounds = bindingRopes.reduce(
+      (bounds, rope) => bounds.union(new THREE.Box3().setFromObject(rope)),
+      new THREE.Box3(),
+    );
+
+    expect(Math.min(...shellXs)).toBeGreaterThanOrEqual(-RAPIER_GOAL.halfWidth - 0.0001);
+    expect(Math.max(...shellXs)).toBeLessThanOrEqual(RAPIER_GOAL.halfWidth + 0.0001);
+    expect(Math.min(...shellYs)).toBeGreaterThanOrEqual(-0.0001);
+    expect(Math.max(...shellYs)).toBeLessThanOrEqual(RAPIER_GOAL.height + 0.0001);
+    expect(bindingBounds.min.x).toBeGreaterThanOrEqual(-RAPIER_GOAL.halfWidth - 0.0001);
+    expect(bindingBounds.max.x).toBeLessThanOrEqual(RAPIER_GOAL.halfWidth + 0.0001);
+    expect(bindingBounds.min.y).toBeGreaterThanOrEqual(-0.0001);
+    expect(bindingBounds.max.y).toBeLessThanOrEqual(RAPIER_GOAL.height + 0.0001);
+  });
+
+  it("removes decorative side-net fibers that protrude beyond the posts", () => {
+    const goal = createGoalAndNet();
+
+    expect(collectByName(goal.group, /^goal-net-side-cheek-lace-/)).toHaveLength(0);
+    expect(collectByName(goal.group, /^goal-net-side-return-cord-/)).toHaveLength(0);
+    expect(collectByName(goal.group, /^goal-net-side-depth-cord-/)).toHaveLength(0);
+  });
+
   it("keeps the finished goal net within a mobile-safe draw and animation budget", () => {
     const goal = createGoalAndNet();
     let objectCount = 0;
@@ -767,7 +799,7 @@ describe("procedural 3D assets", () => {
     expect(goal.group.userData.dynamicNetDetailSystem).toBe("reactive-woven-net-detail-kit");
     expect(goal.dynamicNetDetails.length).toBeGreaterThanOrEqual(10);
     expect(goal.dynamicNetDetails.some((detail) => detail.name === "goal-net-continuous-pocket-shell")).toBe(true);
-    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-side-cheek-lace-"))).toBe(true);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-side-cheek-lace-"))).toBe(false);
     expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-tension-cord-"))).toBe(true);
     expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-matchday-edge-lace-"))).toBe(true);
     expect(goal.dynamicNetDetails.every((detail) => detail.object.userData.dynamicNetDetailSystem)).toBe(true);

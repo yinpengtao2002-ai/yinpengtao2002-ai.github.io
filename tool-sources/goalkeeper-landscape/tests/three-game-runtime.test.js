@@ -21,7 +21,7 @@ import {
   resolveRuntimeDifficulty,
   shouldPlayLingeringGroundAudio,
 } from "../src/game/three-game-runtime.js";
-import { createRapierGoalkeeperWorld } from "../src/physics/rapier-world.js";
+import { RAPIER_GOAL, createRapierGoalkeeperWorld } from "../src/physics/rapier-world.js";
 
 describe("three game runtime timing", () => {
   it("uses a short match countdown before live play begins", () => {
@@ -331,6 +331,46 @@ describe("three game runtime timing", () => {
     expect(Math.abs(replay.velocity.x - glovedSave.velocity.x)).toBeLessThan(0.2);
     expect(Math.abs(replay.velocity.z - glovedSave.velocity.z)).toBeLessThan(0.2);
     expect(replay.position.x).toBeLessThan(glovedSave.position.x);
+  });
+
+  it("catches a credited lingering save in the visible net without changing the save contact", () => {
+    const gloveContact = {
+      eventId: 41,
+      type: "glove",
+      side: "right",
+      point: { x: 0.08, y: 1.2, z: 3.14 },
+      normal: { x: 0.08, y: 0, z: -0.92 },
+      strength: 22,
+    };
+    const savedBall = {
+      live: false,
+      outcome: "saved",
+      saveReplayStyle: "parried-save-deflection-replay",
+      replayInitialized: true,
+      position: { x: 0.08, y: 1.2, z: RAPIER_GOAL.netPlaneZ + 0.04 },
+      velocity: { x: 0.2, y: 0.1, z: 8 },
+      angularVelocity: { x: -7, y: 9, z: 1 },
+      radius: 0.11,
+      age: 0,
+      duration: 5,
+      lastContact: gloveContact,
+    };
+
+    const caught = advanceLingeringBalls([savedBall], 0.2)[0];
+
+    expect(caught.outcome).toBe("saved");
+    expect(caught.lastContact).toEqual(gloveContact);
+    expect(caught.position.z).toBeLessThan(RAPIER_GOAL.netPlaneZ + 1);
+    expect(caught.velocity.z).toBeLessThanOrEqual(0);
+    expect(caught.netContact).toMatchObject({
+      type: "net",
+      sourceContactEventId: 41,
+    });
+
+    const settled = advanceLingeringBalls([caught], 0.1)[0];
+    expect(settled.netContact.eventId).toBe(caught.netContact.eventId);
+    expect(settled.netContact.age).toBeGreaterThan(caught.netContact.age);
+    expect(settled.lastContact.eventId).toBe(41);
   });
 
   it("ignores old framing demo parameters and resolves only gameplay difficulty", async () => {

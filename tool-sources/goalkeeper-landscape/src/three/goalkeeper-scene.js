@@ -629,6 +629,25 @@ export function getSceneBallRenderPlan(snapshot = {}) {
   };
 }
 
+export function getPhysicalNetContactEvents(snapshot = {}) {
+  var candidates = [snapshot.ball, ...(Array.isArray(snapshot.lingeringBalls) ? snapshot.lingeringBalls : [])];
+  var seen = new Set();
+  return candidates.reduce((events, ball) => {
+    var contact = ball?.netContact;
+    if (!contact?.point || contact.type !== "net") return events;
+    var signature = contact.eventId || [
+      "net",
+      Math.round((contact.point.x || 0) * 20),
+      Math.round((contact.point.y || 0) * 20),
+      Math.round((contact.point.z || 0) * 20),
+    ].join(":");
+    if (seen.has(signature)) return events;
+    seen.add(signature);
+    events.push(contact);
+    return events;
+  }, []);
+}
+
 export function shouldRenderLingeringBall(lingeringBall, snapshot = {}, tuning = SCENE_TUNING.ball) {
   if (!lingeringBall?.position) return false;
   var activeBall = snapshot.ball;
@@ -2237,6 +2256,7 @@ export function createGoalkeeperScene(canvas) {
   var netPulse = 0;
   var netPulseContactPoint = null;
   var lastContactSignature = "";
+  var handledPhysicalNetContacts = new Set();
   var cameraImpulseState = createCameraImpulseState();
   var feedbackSignature = "";
   var feedbackFrame = 0;
@@ -2327,6 +2347,33 @@ export function createGoalkeeperScene(canvas) {
     var lingeringBalls = getSceneBallRenderPlan(snapshot).lingeringBalls;
     lingeringBallViews.forEach((view, index) => {
       updateBallView(view, lingeringBalls[index], null);
+    });
+  }
+
+  function updatePhysicalNetContacts(snapshot) {
+    getPhysicalNetContactEvents(snapshot).forEach((contact) => {
+      var signature = contact.eventId || [
+        "net",
+        Math.round((contact.point.x || 0) * 20),
+        Math.round((contact.point.y || 0) * 20),
+        Math.round((contact.point.z || 0) * 20),
+      ].join(":");
+      if (handledPhysicalNetContacts.has(signature)) return;
+      handledPhysicalNetContacts.add(signature);
+      if (handledPhysicalNetContacts.size > 24) {
+        handledPhysicalNetContacts.delete(handledPhysicalNetContacts.values().next().value);
+      }
+
+      var strength = clamp01((contact.strength || 0) / 24);
+      var point = {
+        x: Math.max(-RAPIER_GOAL.halfWidth + 0.12, Math.min(RAPIER_GOAL.halfWidth - 0.12, contact.point.x || 0)),
+        y: Math.max(0.12, Math.min(RAPIER_GOAL.height - 0.08, contact.point.y || 1)),
+        z: contact.point.z || RAPIER_GOAL.backNetZ,
+      };
+      triggerNetPocketState(netPocketState, { ...point, strength: 0.28 + strength * 0.42 }, tuning.feedback);
+      triggerNetRecoilState(netRecoilState, { point, strength: 0.22 + strength * 0.38 }, tuning.feedback);
+      netPulse = Math.max(netPulse, 0.16 + strength * 0.18);
+      netPulseContactPoint = point;
     });
   }
 
@@ -3100,6 +3147,7 @@ export function createGoalkeeperScene(canvas) {
     updateStateFeedback(snapshot);
     updateBall(snapshot);
     updateLingeringBalls(snapshot);
+    updatePhysicalNetContacts(snapshot);
     updateGroundSkids(snapshot);
     updateGloves(snapshot.gloves);
     updateNetAndEffects();

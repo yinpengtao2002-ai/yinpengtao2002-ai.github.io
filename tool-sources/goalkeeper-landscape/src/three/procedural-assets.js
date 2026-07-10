@@ -3,6 +3,7 @@ import { DecalGeometry } from "three/addons/geometries/DecalGeometry.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { MAX_CONCEDED, ROUND_SECONDS } from "../config/game-config.js";
 import { LAUNCHER_GEOMETRY } from "../game/launcher-geometry.js";
+import { GOAL_NET_GEOMETRY, getGoalNetPocketVertex } from "../physics/goal-net-geometry.js";
 import { RAPIER_GOAL } from "../physics/rapier-world.js";
 
 export const STADIUM_SCOREBOARD_DISPLAY_SYSTEM = "live-stadium-scoreboard-display";
@@ -280,33 +281,21 @@ function createSquareGoalNetAlphaTexture() {
 }
 
 function createContinuousNetPocketGeometry() {
-  var width = RAPIER_GOAL.halfWidth * 2 + 0.02;
-  var height = RAPIER_GOAL.height + 0.02;
+  var width = GOAL_NET_GEOMETRY.halfWidth * 2;
+  var height = GOAL_NET_GEOMETRY.height;
   var geometry = new THREE.PlaneGeometry(width, height, 24, 12);
   var positions = geometry.getAttribute("position");
 
   for (var index = 0; index < positions.count; index += 1) {
-    var x = positions.getX(index);
-    var y = positions.getY(index);
-    var normalizedX = Math.min(1, Math.abs(x) / (width * 0.5));
-    var normalizedY = Math.min(1, Math.max(0, y / height + 0.5));
-    var horizontalPocket = Math.pow(Math.max(0, 1 - normalizedX * normalizedX), 0.72);
-    var verticalPocket = Math.pow(Math.max(0, Math.sin(normalizedY * Math.PI)), 0.68);
-    var pocket = horizontalPocket * verticalPocket;
-    var wovenSlack = Math.sin(x * 2.18 + normalizedY * 5.4) * 0.012 * pocket;
-
-    positions.setXYZ(
-      index,
-      x + Math.sin(normalizedY * Math.PI * 2) * 0.012 * horizontalPocket,
-      y - pocket * 0.045 - Math.sin(normalizedX * Math.PI) * 0.008,
-      0.035 + pocket * 0.84 + wovenSlack,
-    );
+    var vertex = getGoalNetPocketVertex(positions.getX(index), positions.getY(index));
+    positions.setXYZ(index, vertex.x, vertex.y, vertex.z);
   }
 
   positions.needsUpdate = true;
   geometry.computeVertexNormals();
   geometry.userData.netContinuitySystem = NET_CONTINUITY_SYSTEM;
-  geometry.userData.pocketDepth = 0.84;
+  geometry.userData.pocketDepth = GOAL_NET_GEOMETRY.pocketDepth;
+  geometry.userData.geometryContract = "shared-render-physics-goal-net";
   geometry.userData.anchorLayout = "four-edge-tensioned-center-pocket";
   return geometry;
 }
@@ -1450,9 +1439,9 @@ export function createGoalAndNet() {
   }
   [
     ["top", [
-      { x: -RAPIER_GOAL.halfWidth - 0.01, y: RAPIER_GOAL.height - 0.012, z: RAPIER_GOAL.netPlaneZ + 0.052 },
+      { x: -RAPIER_GOAL.halfWidth + GOAL_NET_GEOMETRY.bindingInset, y: RAPIER_GOAL.height - 0.012, z: RAPIER_GOAL.netPlaneZ + 0.052 },
       { x: 0, y: RAPIER_GOAL.height - 0.012, z: RAPIER_GOAL.netPlaneZ + 0.052 },
-      { x: RAPIER_GOAL.halfWidth + 0.01, y: RAPIER_GOAL.height - 0.012, z: RAPIER_GOAL.netPlaneZ + 0.052 },
+      { x: RAPIER_GOAL.halfWidth - GOAL_NET_GEOMETRY.bindingInset, y: RAPIER_GOAL.height - 0.012, z: RAPIER_GOAL.netPlaneZ + 0.052 },
     ], 0.34],
     ["left", [
       { x: -RAPIER_GOAL.halfWidth + 0.008, y: 0.012, z: RAPIER_GOAL.netPlaneZ + 0.052 },
@@ -1799,7 +1788,7 @@ export function createGoalAndNet() {
     group.add(makeMatchdayLace("goal-net-matchday-edge-lace-" + item[0], item[1], index < 2 ? 0.0068 : 0.006, index < 2 ? 0.205 : 0.176, 0.44, 0.18));
   });
 
-  ["left", "right"].forEach(function addSideCheekLaces(side) {
+  if (BUILD_RETIRED_NET_LAYERS) ["left", "right"].forEach(function addSideCheekLaces(side) {
     var sign = side === "left" ? -1 : 1;
     [0.16, 0.34, 0.54, 0.74].forEach(function addSideCheekLace(depth, index) {
       group.add(makeMatchdayLace("goal-net-side-cheek-lace-" + side + "-" + index, [
@@ -2325,7 +2314,7 @@ export function createGoalAndNet() {
     group.add(registerDynamicNetDetail(edgeStrand, 0.38, 0.12));
   });
 
-  ["left", "right"].forEach(function addSideReturnCord(side) {
+  if (BUILD_RETIRED_NET_LAYERS) ["left", "right"].forEach(function addSideReturnCord(side) {
     var sign = side === "left" ? -1 : 1;
     [0.62, 1.42].forEach(function addSideReturnRow(rowY, rowIndex) {
       var sideReturn = makeRaisedRope("goal-net-side-return-cord-" + side + "-" + rowIndex, [
@@ -2423,7 +2412,7 @@ export function createGoalAndNet() {
   }
   }
 
-  ["left", "right"].forEach(function addSideDepthCords(side) {
+  if (BUILD_RETIRED_NET_LAYERS) ["left", "right"].forEach(function addSideDepthCords(side) {
     var sign = side === "left" ? -1 : 1;
     [0.46, 0.92, 1.42].forEach(function addSideDepthCord(rowY, rowIndex) {
       group.add(registerDynamicNetDetail(makeRaisedRope("goal-net-side-depth-cord-" + side + "-" + rowIndex, [

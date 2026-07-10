@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createShot3DDirector } from "../src/game/shot-3d-director.js";
-import { createRapierGoalkeeperWorld } from "../src/physics/rapier-world.js";
+import { RAPIER_GOAL, createRapierGoalkeeperWorld } from "../src/physics/rapier-world.js";
 
 describe("Rapier goalkeeper world", () => {
   it("uses sensor-only glove colliders so one manual solver owns the save impulse", async () => {
@@ -303,6 +303,19 @@ describe("Rapier goalkeeper world", () => {
     expect(ball.lastContact?.type).toBe("glove");
     expect(ball.live).toBe(false);
 
+    const gloveEventId = ball.lastContact.eventId;
+    for (let i = 0; i < 48; i += 1) {
+      world.step(1 / 120);
+    }
+    const nettedSave = world.getBallState();
+    expect(nettedSave.outcome).toBe("saved");
+    expect(nettedSave.lastContact?.eventId).toBe(gloveEventId);
+    expect(nettedSave.netContact).toMatchObject({
+      type: "net",
+      sourceContactEventId: gloveEventId,
+    });
+    expect(nettedSave.velocity.z).toBeLessThanOrEqual(0);
+
     world.dispose();
   });
 
@@ -330,14 +343,20 @@ describe("Rapier goalkeeper world", () => {
       radius: 0.11,
     });
 
-    for (let i = 0; i < 18; i += 1) {
+    for (let i = 0; i < 72; i += 1) {
       world.step(1 / 120);
     }
     const ball = world.getBallState();
 
     expect(ball.outcome).toBe("goal");
     expect(ball.lastContact?.type).toBe("net");
-    expect(ball.position.z).toBeGreaterThanOrEqual(4.55);
+    expect(ball.lastContact?.eventId).toBeTypeOf("number");
+    expect(ball.netContact).toMatchObject({
+      type: "net",
+      sourceContactEventId: ball.lastContact.eventId,
+    });
+    expect(ball.position.z).toBeLessThan(RAPIER_GOAL.netPlaneZ + 1);
+    expect(ball.velocity.z).toBeLessThanOrEqual(0);
 
     world.dispose();
   });

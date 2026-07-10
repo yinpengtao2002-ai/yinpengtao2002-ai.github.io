@@ -12,6 +12,7 @@ import {
 import { createPointerInput } from "../input/pointer-input.js";
 import { GLOVE_3D, createGloveController, updateGloveController } from "../input/glove-controller.js";
 import { createRapierGoalkeeperWorld } from "../physics/rapier-world.js";
+import { resolveGoalNetCollision } from "../physics/goal-net-geometry.js";
 import { createGoalkeeperScene } from "../three/goalkeeper-scene.js";
 import { createHud } from "../ui/hud.js";
 import { getStageRenderBounds, requestLandscapeOrientation, syncMobileLandscape } from "../ui/mobile-landscape.js";
@@ -291,12 +292,14 @@ function advanceLingeringBall(ball, dt) {
   var position = cloneVector(ball.position) || { x: 0, y: radius, z: 0 };
   var velocity = cloneVector(ball.velocity) || { x: 0, y: 0, z: 0 };
   var angularVelocity = cloneVector(ball.angularVelocity) || { x: 0, y: 0, z: 0 };
+  var netContact = ball.netContact || null;
   var groundFeedback = advanceGroundFeedback(ball.groundFeedback, dt);
   var remaining = Math.max(0, Math.min(dt, 0.75));
   var step = 1 / 60;
 
   while (remaining > 0) {
     var h = Math.min(step, remaining);
+    var previousPosition = cloneVector(position);
     var horizontalSpeed = Math.hypot(velocity.x || 0, velocity.z || 0);
     var rollingOnGround = position.y <= radius + 0.002 && Math.abs(velocity.y || 0) < 0.08;
 
@@ -325,6 +328,19 @@ function advanceLingeringBall(ball, dt) {
       }
 
       groundFeedback = createRollingGroundFeedback(position, velocity, groundFeedback);
+      var rollingNetResult = resolveGoalNetCollision({
+        previousPosition,
+        position,
+        velocity,
+        angularVelocity,
+        radius,
+        netContact,
+        sourceContact: ball.lastContact,
+      }, h);
+      position = rollingNetResult.position;
+      velocity = rollingNetResult.velocity;
+      angularVelocity = rollingNetResult.angularVelocity;
+      netContact = rollingNetResult.netContact;
       remaining -= h;
       continue;
     }
@@ -360,6 +376,20 @@ function advanceLingeringBall(ball, dt) {
       angularVelocity.z *= 0.997;
     }
 
+    var netResult = resolveGoalNetCollision({
+      previousPosition,
+      position,
+      velocity,
+      angularVelocity,
+      radius,
+      netContact,
+      sourceContact: ball.lastContact,
+    }, h);
+    position = netResult.position;
+    velocity = netResult.velocity;
+    angularVelocity = netResult.angularVelocity;
+    netContact = netResult.netContact;
+
     remaining -= h;
   }
 
@@ -371,6 +401,7 @@ function advanceLingeringBall(ball, dt) {
     velocity,
     angularVelocity,
     groundFeedback,
+    netContact,
   };
 }
 
@@ -476,6 +507,7 @@ export async function createThreeGameRuntime(options) {
       angularVelocity: cloneVector(ball.angularVelocity),
       radius: ball.radius,
       lastContact: ball.lastContact,
+      netContact: ball.netContact,
       age: 0,
       duration: duration,
     });
