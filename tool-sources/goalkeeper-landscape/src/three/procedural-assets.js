@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { DecalGeometry } from "three/addons/geometries/DecalGeometry.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { MAX_CONCEDED, ROUND_SECONDS } from "../config/game-config.js";
-import { SHOT_3D } from "../game/shot-3d-director.js";
+import { LAUNCHER_GEOMETRY } from "../game/launcher-geometry.js";
 import { RAPIER_GOAL } from "../physics/rapier-world.js";
 
 export const STADIUM_SCOREBOARD_DISPLAY_SYSTEM = "live-stadium-scoreboard-display";
@@ -2764,8 +2764,12 @@ export function createShooterModel() {
   group.userData.launcherDecalSystem = LAUNCHER_DECAL_SYSTEM;
   group.userData.launcherReadabilitySystem = LAUNCHER_DISTANCE_CLARITY_SYSTEM;
   group.userData.matchUseDetailSystem = "launcher-ground-contact-wear-layer";
-  group.position.set(0, 0, SHOT_3D.origin.z);
-  group.scale.setScalar(1.68);
+  group.position.set(
+    LAUNCHER_GEOMETRY.basePosition.x,
+    LAUNCHER_GEOMETRY.basePosition.y,
+    LAUNCHER_GEOMETRY.basePosition.z,
+  );
+  group.scale.setScalar(LAUNCHER_GEOMETRY.scale);
 
   var chassisMat = new THREE.MeshStandardMaterial({ color: "#365c66", roughness: 0.46, metalness: 0.08 });
   var panelMat = new THREE.MeshStandardMaterial({ color: "#f3fbf0", roughness: 0.42, metalness: 0.02 });
@@ -2940,7 +2944,11 @@ export function createShooterModel() {
 
   var turret = new THREE.Group();
   turret.name = "launcher-turret";
-  turret.position.set(0, 1.1, 0.12);
+  turret.position.set(
+    LAUNCHER_GEOMETRY.turretPivot.x,
+    LAUNCHER_GEOMETRY.turretPivot.y,
+    LAUNCHER_GEOMETRY.turretPivot.z,
+  );
   var yawBearing = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.018, 8, 36), barrelMat.clone());
   yawBearing.name = "launcher-turret-yaw-bearing";
   yawBearing.rotation.x = Math.PI / 2;
@@ -2971,7 +2979,11 @@ export function createShooterModel() {
   });
   var muzzle = new THREE.Mesh(new THREE.TorusGeometry(0.125, 0.018, 8, 24), orangeAccentMat);
   muzzle.name = "launcher-accent-muzzle-ring";
-  muzzle.position.set(0, 0, 0.71);
+  muzzle.position.set(
+    LAUNCHER_GEOMETRY.muzzleOffset.x,
+    LAUNCHER_GEOMETRY.muzzleOffset.y,
+    LAUNCHER_GEOMETRY.muzzleOffset.z,
+  );
   var chargeRing = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.01, 8, 28), accentMat.clone());
   chargeRing.name = "launcher-charge-ring";
   chargeRing.position.set(0, 0, 0.735);
@@ -3381,14 +3393,14 @@ export function updateShooterModel(model, director) {
   var charge = Math.sin(activeProgress * Math.PI);
   var muzzlePulse = director.phase === "live" ? Math.max(0, 1 - liveProgress / 0.2) : 0;
   var releasePulse = director.phase === "live" ? Math.max(0, 1 - liveProgress / 0.28) : 0;
-  var aimYaw = side * (0.08 + charge * 0.045);
-  var aimPitch = -0.08 - charge * 0.04;
+  var aimYaw = side * (LAUNCHER_GEOMETRY.releaseYaw + charge * 0.045);
+  var aimPitch = LAUNCHER_GEOMETRY.releasePitch - charge * 0.04;
   var spin = director.phaseTime * (director.phase === "live" ? 32 : 18) + cueProgress * 12;
 
   model.turret.rotation.set(aimPitch, aimYaw, 0);
   model.body.rotation.set(-0.05 + charge * 0.025, 0, side * charge * 0.025);
   if (model.recoilSled) {
-    model.recoilSled.position.z = charge * 0.012 - muzzlePulse * 0.09;
+    model.recoilSled.position.z = charge * 0.012 + muzzlePulse * LAUNCHER_GEOMETRY.releaseRecoilZ;
   }
   model.recoilRails?.forEach((rail, index) => {
     rail.material.opacity = 0.24 + charge * 0.1 + muzzlePulse * 0.36 - index * 0.015;

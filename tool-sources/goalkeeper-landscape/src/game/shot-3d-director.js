@@ -1,9 +1,12 @@
 import { ROUND_SECONDS } from "../config/game-config.js";
 import { clamp, lerp } from "../math/vector.js";
+import { getLauncherReleaseOrigin } from "./launcher-geometry.js";
+
+const launcherCenterOrigin = getLauncherReleaseOrigin(0);
 
 export const SHOT_3D = {
   gravity: -9.81,
-  origin: { x: 0, y: 0.28, z: -19 },
+  origin: launcherCenterOrigin,
   netPlaneZ: 4.65,
   goalHalfWidth: 3.66,
   goalHeight: 2.44,
@@ -146,11 +149,7 @@ export function createShot3D(context) {
   var foot = side < 0 ? "right-foot-inside" : "left-foot-inside";
   var cueDuration = lerp(SHOT_3D.earlyCueDuration, SHOT_3D.lateCueDuration, difficulty) * shotDifficulty.cueScale;
   var flightTime = lerp(SHOT_3D.earlyFlightTime, SHOT_3D.lateFlightTime, difficulty) * shotDifficulty.flightScale;
-  var origin = {
-    x: lerp(-0.06, 0.06, random()),
-    y: lerp(0.24, 0.32, random()),
-    z: SHOT_3D.origin.z,
-  };
+  var origin = getLauncherReleaseOrigin(side);
   var targetX = pickTargetX(random, side, shotPressure);
   var targetY = pickTargetY(random, swing, shotPressure);
   var target = {

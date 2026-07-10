@@ -529,3 +529,21 @@ final result: passed
 - `1280 x 720` passed: the top and side net seams meet the frame, and the launcher body, safety frame, and muzzle remain distinguishable through the center mesh.
 - `844 x 390` passed: the goal remains fully framed, the launcher remains identifiable, and the canvas has no horizontal or vertical overflow.
 - Final local bundle `index-D5TcktdZ.js` produced no console errors or warnings.
+
+## 2026-07-10 Launcher Muzzle-Origin QA
+
+**Scope**
+- Replaced the legacy ground-level shot origin with the animated launcher's release-time muzzle position.
+- Centralized launcher base position, scale, turret pivot, muzzle offset, aim angle, and recoil travel in one shared geometry contract.
+- Kept the machine base, camera, target selection, and goal-net attachment unchanged.
+
+**Automated Verification**
+- `npm test` passed: 19 files, 216 tests.
+- The previous physical-to-visual launch offset measured `2.085` world units.
+- The planned ball origin and animated muzzle now match within floating-point precision for both launch sides.
+- Ballistic prediction still reaches the intended goal-mouth target at the configured flight time.
+
+**Visual Verification**
+- `1280 x 720` passed: the first captured live frame was already moving forward from the muzzle axis at `y = 1.97`, with no lower-body or feed-rack intersection.
+- `844 x 390` passed: the first captured live frame remained on the upper launch axis at `y = 2.02`; the canvas had no horizontal or vertical overflow.
+- Final local bundle `index-CN-nwspv.js` produced no console errors or warnings, and the frame-bound goal net remained visually connected in both viewports.

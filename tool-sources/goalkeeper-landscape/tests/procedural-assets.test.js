@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 import {
   createFieldGroup,
@@ -11,6 +12,7 @@ import {
   updateShooterModel,
 } from "../src/three/procedural-assets.js";
 import { RAPIER_GOAL } from "../src/physics/rapier-world.js";
+import { createShot3DDirector } from "../src/game/shot-3d-director.js";
 
 function collectByName(root, pattern) {
   const matches = [];
@@ -55,6 +57,24 @@ describe("procedural 3D assets", () => {
     expect(body.material.color.getHexString()).toBe("365c66");
     expect(body.material.bumpMap.image.width).toBeGreaterThanOrEqual(256);
     expect(body.material.bumpMap.anisotropy).toBeGreaterThanOrEqual(4);
+  });
+
+  it("launches the physical ball from the animated muzzle instead of below the machine", () => {
+    const launcher = createShooterModel();
+    const shot = createShot3DDirector({ seed: 14, elapsed: 8 }).currentShot;
+
+    updateShooterModel(launcher, {
+      phase: "live",
+      phaseTime: 0,
+      currentShot: shot,
+    });
+    launcher.group.updateMatrixWorld(true);
+
+    const muzzlePosition = launcher.muzzle.getWorldPosition(new THREE.Vector3());
+    const plannedOrigin = new THREE.Vector3(shot.origin.x, shot.origin.y, shot.origin.z);
+
+    expect(muzzlePosition.distanceTo(plannedOrigin)).toBeLessThanOrEqual(0.015);
+    expect(plannedOrigin.y).toBeGreaterThan(launcher.body.getWorldPosition(new THREE.Vector3()).y);
   });
 
   it("grounds the launcher in a finished launch bay with feed balls and restrained firing feedback", () => {

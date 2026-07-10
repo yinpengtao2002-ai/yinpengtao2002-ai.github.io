@@ -9,20 +9,23 @@ import {
 } from "../src/game/shot-3d-director.js";
 
 describe("3D shot director", () => {
-  it("plans a fast shot from the shooter's foot toward the goal", () => {
+  it("plans a fast shot from the launcher's visible muzzle toward the goal", () => {
     const director = createShot3DDirector({ seed: 14, elapsed: 8 });
     const shot = director.currentShot;
 
     expect(director.phase).toBe("cue");
     expect(shot.cue.lean).toMatch(/left|right|center/);
     expect(shot.cue.swing).toMatch(/drive|curl|dip/);
-    expect(shot.origin.x).toBeCloseTo(0, 1);
-    expect(shot.origin.y).toBeGreaterThanOrEqual(0.22);
-    expect(shot.origin.y).toBeLessThanOrEqual(0.34);
-    expect(shot.origin.z).toBeGreaterThanOrEqual(-20);
-    expect(shot.origin.z).toBeLessThanOrEqual(-18);
+    expect(Math.sign(shot.origin.x)).toBe(shot.cue.side);
+    expect(Math.abs(shot.origin.x)).toBeGreaterThanOrEqual(0.07);
+    expect(Math.abs(shot.origin.x)).toBeLessThanOrEqual(0.1);
+    expect(shot.origin.y).toBeGreaterThanOrEqual(1.9);
+    expect(shot.origin.y).toBeLessThanOrEqual(1.98);
+    expect(shot.origin.z).toBeGreaterThanOrEqual(-17.8);
+    expect(shot.origin.z).toBeLessThanOrEqual(-17.72);
+    expect(shot.ballPlan.origin).toEqual(shot.origin);
     expect(shot.flightTime).toBeLessThan(0.6);
-    expect(shot.ballPlan.velocity.z).toBeGreaterThan(40);
+    expect(shot.ballPlan.velocity.z).toBeGreaterThan(38);
     expect(Math.abs(shot.ballPlan.velocity.x)).toBeLessThan(6);
     expect(Math.abs(shot.curveForce.x)).toBeLessThanOrEqual(4.2);
   });
