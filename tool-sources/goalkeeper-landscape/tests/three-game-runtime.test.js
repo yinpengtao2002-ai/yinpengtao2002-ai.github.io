@@ -303,13 +303,13 @@ describe("three game runtime timing", () => {
     expect(replay.position.y).toBeLessThan(caughtSave.position.y);
   });
 
-  it("turns glove saves into a visible parry replay with lateral deflection and spin", () => {
+  it("continues the real parry trajectory instead of introducing a replay air-wall turn", () => {
     const glovedSave = {
       live: false,
       outcome: "saved",
       position: { x: 0.18, y: 1.24, z: 3.04 },
-      velocity: { x: 0.25, y: 0.1, z: 0.35 },
-      angularVelocity: { x: 0.5, y: 0.2, z: 0 },
+      velocity: { x: -4.2, y: 1.8, z: -3.6 },
+      angularVelocity: { x: -9.5, y: 8.2, z: -1.4 },
       radius: 0.11,
       age: 0,
       duration: 5,
@@ -322,14 +322,15 @@ describe("three game runtime timing", () => {
       },
     };
 
-    const replay = advanceLingeringBalls([glovedSave], 0.08)[0];
+    const replay = advanceLingeringBalls([glovedSave], 1 / 120)[0];
 
     expect(replay.saveReplayStyle).toBe("parried-save-deflection-replay");
     expect(replay.replayInitialized).toBe(true);
-    expect(Math.abs(replay.velocity.x)).toBeGreaterThan(2.2);
-    expect(replay.velocity.z).toBeLessThan(-1.4);
-    expect(Math.hypot(replay.angularVelocity.x, replay.angularVelocity.y, replay.angularVelocity.z)).toBeGreaterThan(9);
-    expect(replay.position.x).toBeGreaterThan(glovedSave.position.x);
+    expect(replay.velocity.x).toBeLessThan(0);
+    expect(replay.velocity.z).toBeLessThan(0);
+    expect(Math.abs(replay.velocity.x - glovedSave.velocity.x)).toBeLessThan(0.2);
+    expect(Math.abs(replay.velocity.z - glovedSave.velocity.z)).toBeLessThan(0.2);
+    expect(replay.position.x).toBeLessThan(glovedSave.position.x);
   });
 
   it("ignores old framing demo parameters and resolves only gameplay difficulty", async () => {

@@ -5,6 +5,14 @@ import { SCENE_TUNING } from "../src/three/goalkeeper-scene.js";
 import { SHOT_3D } from "../src/game/shot-3d-director.js";
 
 describe("goalkeeper 3D scene tuning", () => {
+  it("merges streak payoff into the single glove-contact moment", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.getSaveContactFeedbackState).toBeTypeOf("function");
+    expect(sceneModule.getSaveContactFeedbackState({ message: "play", streak: 2 })).toMatchObject({ streak: 3 });
+    expect(sceneModule.getSaveContactFeedbackState({ message: "save", streak: 3 })).toMatchObject({ streak: 3 });
+  });
+
   it("keeps the goal framed with smaller ball and glove visuals", () => {
     expect(SCENE_TUNING.camera.fov).toBeGreaterThanOrEqual(64);
     expect(SCENE_TUNING.camera.position.z).toBeGreaterThanOrEqual(8);

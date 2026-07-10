@@ -3,6 +3,15 @@ import { createShot3DDirector } from "../src/game/shot-3d-director.js";
 import { createRapierGoalkeeperWorld } from "../src/physics/rapier-world.js";
 
 describe("Rapier goalkeeper world", () => {
+  it("uses sensor-only glove colliders so one manual solver owns the save impulse", async () => {
+    const world = await createRapierGoalkeeperWorld();
+
+    expect(world.gloveParts.length).toBeGreaterThan(0);
+    expect(world.gloveParts.every((part) => part.collider?.isSensor())).toBe(true);
+
+    world.dispose();
+  });
+
   it("launches a dynamic ball that advances from the shooter toward the goal", async () => {
     const world = await createRapierGoalkeeperWorld();
     const shot = createShot3DDirector({ seed: 2, elapsed: 10 }).currentShot;
@@ -79,6 +88,7 @@ describe("Rapier goalkeeper world", () => {
     const ball = world.getBallState();
 
     expect(ball.lastContact?.type).toBe("glove");
+    expect(ball.lastContact?.eventId).toBeTypeOf("number");
     expect(ball.outcome).toBe("deflected");
     expect(Math.abs(ball.velocity.x)).toBeGreaterThan(2.5);
     expect(Math.abs(ball.velocity.x)).toBeLessThan(9);
@@ -87,6 +97,10 @@ describe("Rapier goalkeeper world", () => {
     expect(ball.velocity.y).toBeGreaterThan(-1.2);
     expect(ball.lastContact.strength).toBeGreaterThan(9);
     expect(ball.lastContact.strength).toBeLessThan(38);
+
+    const contactEventId = ball.lastContact.eventId;
+    for (let i = 0; i < 12; i += 1) world.step(1 / 120);
+    expect(world.getBallState().lastContact?.eventId).toBe(contactEventId);
 
     world.dispose();
   });

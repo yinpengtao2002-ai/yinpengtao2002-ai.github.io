@@ -140,6 +140,7 @@ class RapierGoalkeeperWorld {
     this.ballPlan = null;
     this.outcome = "idle";
     this.lastContact = null;
+    this.contactSequence = 0;
     this.deflectionAge = null;
     this.previousBallPosition = null;
     this.time = 0;
@@ -166,16 +167,22 @@ class RapierGoalkeeperWorld {
           .setTranslation(part.offset.x, part.offset.y, part.offset.z)
           .setRestitution(0.3)
           .setFriction(0.48);
-        this.world.createCollider(desc, body);
+        var collider = this.world.createCollider(desc.setSensor(true), body);
         this.gloveParts.push({
           side: side,
           part: part.part,
           body: body,
           offset: part.offset,
           radius: part.radius,
+          collider: collider,
         });
       });
     });
+  }
+
+  nextContactEventId() {
+    this.contactSequence += 1;
+    return this.contactSequence;
   }
 
   createGoalColliders() {
@@ -390,6 +397,7 @@ class RapierGoalkeeperWorld {
       this.outcome = "saved";
       this.deflectionAge = null;
       this.lastContact = {
+        eventId: this.nextContactEventId(),
         type: "catch",
         side: "both",
         part: "pocket",
@@ -459,6 +467,7 @@ class RapierGoalkeeperWorld {
     this.outcome = "deflected";
     this.deflectionAge = 0;
     this.lastContact = {
+      eventId: this.nextContactEventId(),
       type: "glove",
       side: best.part.side,
       part: best.part.part,

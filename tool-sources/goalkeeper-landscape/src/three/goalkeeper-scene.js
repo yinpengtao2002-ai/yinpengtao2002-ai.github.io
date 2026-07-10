@@ -19,6 +19,7 @@ import {
   updateShooterModel,
 } from "./procedural-assets.js";
 import { MAX_CONCEDED } from "../config/game-config.js";
+import { getContactEventSignature } from "../game/contact-event.js";
 import { SHOT_3D } from "../game/shot-3d-director.js";
 import { RAPIER_GOAL } from "../physics/rapier-world.js";
 
@@ -30,6 +31,14 @@ export const POSTPROCESSING_ADDON_SOURCES = [
 ];
 
 export const SKY_ENVIRONMENT_ADDON_SOURCE = "three/addons/objects/Sky";
+
+export function getSaveContactFeedbackState(state = {}) {
+  if (state.message === "save") return state;
+  return {
+    ...state,
+    streak: (state.streak || 0) + 1,
+  };
+}
 
 export const SCENE_TUNING = {
   camera: {
@@ -2416,8 +2425,9 @@ export function createGoalkeeperScene(canvas) {
   }
 
   function triggerSaveFeedback(position, strength, contact = null, gloves = null, state = null) {
-    var eventPlan = getMatchEventFeedbackPlan({ type: "save", contact, state }, tuning.feedback);
-    var profile = eventPlan.profile || getMatchFeedbackProfile({ type: "save", contact, state }, tuning.feedback);
+    var feedbackState = getSaveContactFeedbackState(state || {});
+    var eventPlan = getMatchEventFeedbackPlan({ type: "save", contact, state: feedbackState }, tuning.feedback);
+    var profile = eventPlan.profile || getMatchFeedbackProfile({ type: "save", contact, state: feedbackState }, tuning.feedback);
     var pulseStrength = strength || eventPlan.effectIntensity || profile.impactStrength || 1;
     triggerImpact("save", position, profile.impactStrength || pulseStrength, profile, eventPlan);
     saveSparks.forEach((spark, index) => {
@@ -2505,6 +2515,7 @@ export function createGoalkeeperScene(canvas) {
       crease.userData.baseOpacity = plan.opacity;
       crease.userData.rotation = plan.rotation;
     });
+    if ((feedbackState.streak || 0) >= 3) triggerStreakFeedback(gloves, false);
   }
 
   function triggerGoalFeedback(position, contact = null, state = null) {
@@ -2614,13 +2625,13 @@ export function createGoalkeeperScene(canvas) {
     });
   }
 
-  function triggerStreakFeedback(gloves) {
+  function triggerStreakFeedback(gloves, includeImpact = true) {
     var center = gloves?.center || { x: 0, y: 1.35, z: 3.15 };
     streakFlash.position.set(center.x, center.y, center.z - 0.04);
     streakFlash.material.opacity = 0.72;
     streakFlash.scale.setScalar(1);
     streakFlash.userData.life = 1;
-    triggerImpact("streak", center, 0.72);
+    if (includeImpact) triggerImpact("streak", center, 0.72);
     streakPulses.forEach((pulse, index) => {
       pulse.position.set(center.x, center.y, center.z - 0.045 - index * 0.018);
       pulse.material.opacity = tuning.feedback.streakPulseMaxOpacity * (1 - index * 0.18);
@@ -2640,13 +2651,7 @@ export function createGoalkeeperScene(canvas) {
 
     if (contactBall?.lastContact?.type) {
       var contactPoint = contactBall.lastContact.point || contactBall.position || { x: 0, y: 0, z: 0 };
-      var contactSignature = [
-        shot?.shotId ?? "",
-        contactBall.lastContact.type,
-        Math.round((contactPoint.x || 0) * 10),
-        Math.round((contactPoint.y || 0) * 10),
-        Math.round((contactPoint.z || 0) * 10),
-      ].join(":");
+      var contactSignature = getContactEventSignature(contactBall.lastContact, shot?.shotId ?? "");
       if (contactSignature === lastContactSignature) return;
       lastContactSignature = contactSignature;
       if (contactBall.lastContact.type === "glove" || contactBall.lastContact.type === "catch") {
@@ -2707,9 +2712,6 @@ export function createGoalkeeperScene(canvas) {
     var signature = [state.message, state.score, state.conceded, state.saves, state.streak].join(":");
     if (signature === feedbackSignature) return;
     feedbackSignature = signature;
-    if (state.message === "save" && state.streak >= 3) {
-      triggerStreakFeedback(snapshot.gloves);
-    }
     if (state.message === "goal" && snapshot.ball?.position) {
       triggerGoalFeedback(snapshot.ball.position, snapshot.ball.lastContact, state);
     }

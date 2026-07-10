@@ -1,5 +1,6 @@
 import { createAudioEngine } from "../audio/audio-engine.js";
 import { MAX_CONCEDED } from "../config/game-config.js";
+import { getContactEventSignature } from "./contact-event.js";
 import { createGameState, recordGoal, recordMiss, recordSave, startRound, tickRound, togglePause } from "./game-state.js";
 import {
   DEFAULT_SHOT_DIFFICULTY,
@@ -274,26 +275,13 @@ function initializeSaveReplay(ball) {
     };
   }
 
-  var normal = contact.normal || { x: Math.sign(ball.position?.x || velocity.x || 1) * 0.45, y: 0.08, z: -0.72 };
-  var side = Math.sign(normal.x || ball.position?.x || velocity.x || 1);
-  var strength = clampNumber(contact.strength || Math.hypot(velocity.x, velocity.y, velocity.z) || 16, 10, 36);
-  var lateralSpeed = Math.max(2.6, Math.min(5.6, 1.8 + strength * 0.08 + Math.abs(velocity.x) * 0.18));
-  var awaySpeed = Math.max(1.7, Math.min(5.2, 1.2 + strength * 0.09 + Math.max(0, -velocity.z) * 0.22));
-
   return {
     ...ball,
     saveReplayStyle,
     replayInitialized: true,
-    velocity: {
-      x: side * lateralSpeed,
-      y: clampNumber(velocity.y * 0.18 + (normal.y || 0) * 1.2 + 0.92, -0.28, 3.2),
-      z: -awaySpeed,
-    },
-    angularVelocity: {
-      x: -8.5 - strength * 0.14,
-      y: side * (8 + strength * 0.32),
-      z: side * (2.2 + strength * 0.035),
-    },
+    velocity,
+    angularVelocity,
+    trajectoryContinuity: "physics-preserved",
   };
 }
 
@@ -591,14 +579,7 @@ export async function createThreeGameRuntime(options) {
   function playContactAudio(ball) {
     var contact = ball?.lastContact;
     if (!contact?.type) return;
-    var point = contact.point || ball.position || { x: 0, y: 0, z: 0 };
-    var signature = [
-      launchedShotId,
-      contact.type,
-      Math.round((point.x || 0) * 10),
-      Math.round((point.y || 0) * 10),
-      Math.round((point.z || 0) * 10),
-    ].join(":");
+    var signature = getContactEventSignature(contact, launchedShotId);
     if (signature === handledContactAudio) return;
     handledContactAudio = signature;
     var cue = getAudioCueForContactType(contact.type);

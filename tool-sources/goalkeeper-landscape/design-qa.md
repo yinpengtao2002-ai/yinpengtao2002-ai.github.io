@@ -469,7 +469,7 @@ final result: passed
 
 **Automated Verification**
 - `npm test` passed: 18 files, 209 tests.
-- `npm run build` passed; production bundle `index-X6RGbrGx.js` was generated.
+- `npm run build` passed; production bundle `index-B8m-W7fe.js` was generated.
 - Root route contract passed: 9 tests.
 - Root `npx tsc --noEmit` passed.
 - Root `npm run lint` passed with 0 errors and 3 pre-existing warnings.
@@ -484,7 +484,7 @@ final result: passed
 - Next route lifecycle: first and second visits each created exactly 1 script and 1 canvas with different mount IDs; leaving the route removed the runtime, script, and canvas.
 - Mobile three-save sequence: scores advanced `100 -> 225 -> 375`, conceded stayed `0/5`, and the round remained live after the third save.
 - Event-ribbon fade probe retained its last event copy while opacity transitioned to zero; no empty HUD pill remained.
-- Final bundle console filter for `index-X6RGbrGx.js`: no errors or warnings.
+- Final bundle console filter for `index-B8m-W7fe.js`: no errors or warnings.
 
 **Findings**
 - HDR/PBR assets add material depth without changing the existing camera, physics, collision shapes, or no-grass court direction.
@@ -492,3 +492,21 @@ final result: passed
 - Streaks and goals still receive a stronger event tier, preserving payoff without making every contact equally loud.
 - The center of the goal now reads as open play space; the net remains visible around the frame and rear pocket without becoming a white screen over the ball.
 - Route changes can no longer strand an unowned game loop, addressing the duplicate-ball, duplicate-audio, and post-streak freeze failure mode at its source.
+
+## 2026-07-10 Parry Continuity And Single-Impact QA
+
+**Scope**
+- Made the Rapier glove-part colliders sensor-only so the authored glove solver is the sole source of ball impulse.
+- Preserved the real parry velocity and spin when a saved ball moves into its five-second lingering replay instead of generating a second stylized direction.
+- Added stable contact event IDs shared by scene and audio deduplication.
+- Merged streak payoff into the original glove-contact moment so the outcome transition cannot fire a second world-space impact.
+
+**Automated Verification**
+- `npm test` passed: 19 files, 213 tests.
+- Waiting block, lateral swipe, and rising palm telemetry kept post-contact velocity changes between `0.082` and `0.084` per 120 Hz step.
+- The physics-to-replay transition kept velocity deltas between `0.082` and `0.086`, consistent with gravity rather than a second collision.
+
+**Findings**
+- The previous late direction change came from replacing a valid physics velocity when the lingering replay began.
+- Sensor-only glove colliders remove the second Rapier impulse path while retaining the existing swept manual collision coverage.
+- One contact now owns one physical impulse, one world-space impact effect, and one contact audio identity.
