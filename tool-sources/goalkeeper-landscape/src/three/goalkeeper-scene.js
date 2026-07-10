@@ -5,6 +5,10 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { Sky } from "three/addons/objects/Sky.js";
 import {
+  REUSABLE_ENVIRONMENT_ASSET_SYSTEM,
+  createReusableEnvironmentAssetPipeline,
+} from "./reusable-environment-assets.js";
+import {
   createFieldGroup,
   createFootballMaterial,
   createGloveMesh,
@@ -106,6 +110,8 @@ export const SCENE_TUNING = {
     system: "three-sky-atmospheric-training-ground",
     technique: "three-official-sky-shader",
     addonSource: SKY_ENVIRONMENT_ADDON_SOURCE,
+    reusableAssetSystem: REUSABLE_ENVIRONMENT_ASSET_SYSTEM,
+    backgroundReplacement: false,
     enabled: true,
     scale: 80,
     turbidity: 2.2,
@@ -122,7 +128,7 @@ export const SCENE_TUNING = {
     system: "camera-attached-broadcast-presentation-layer",
     technique: "three-camera-transparent-overlay-kit",
     overlayDistance: 0.18,
-    maxScreenWashOpacity: 0.12,
+    maxScreenWashOpacity: 0.09,
     vignetteBaseOpacity: 0.13,
     maxVignetteBoost: 0.08,
     focusRingMaxOpacity: 0.05,
@@ -134,11 +140,11 @@ export const SCENE_TUNING = {
     technique: "three-official-postprocessing-addons",
     addonSources: POSTPROCESSING_ADDON_SOURCES,
     enabled: true,
-    baseStrength: 0.014,
-    maxStrength: 0.09,
-    threshold: 0.76,
-    baseRadius: 0.12,
-    maxRadius: 0.34,
+    baseStrength: 0.006,
+    maxStrength: 0.06,
+    threshold: 0.9,
+    baseRadius: 0.08,
+    maxRadius: 0.22,
     eventDecay: 0.04,
     pixelRatioCap: 1.45,
   },
@@ -1053,7 +1059,7 @@ export function getBroadcastEventPresentationPlan(event = {}, plan = {}) {
       ...base,
       tier: streak ? "highlight" : "core",
       cameraShakeMode: "micro",
-      screenWashOpacity: streak ? Math.min(0.085, 0.05 + intensity * 0.03) : Math.min(0.055, 0.024 + intensity * 0.024),
+      screenWashOpacity: streak ? Math.min(0.06, 0.032 + intensity * 0.025) : Math.min(0.032, 0.012 + intensity * 0.02),
       hudBurst: streak ? "streak-ribbon" : "save-chip",
       slowMoMs: streak ? 60 : 0,
     };
@@ -1065,7 +1071,7 @@ export function getBroadcastEventPresentationPlan(event = {}, plan = {}) {
       ...base,
       tier: danger ? "critical" : "highlight",
       cameraShakeMode: danger ? "recoil" : "push",
-      screenWashOpacity: danger ? Math.min(0.14, 0.1 + intensity * 0.032) : Math.min(0.1, 0.06 + intensity * 0.028),
+      screenWashOpacity: danger ? Math.min(0.09, 0.065 + intensity * 0.022) : Math.min(0.07, 0.04 + intensity * 0.022),
       hudBurst: danger ? "danger-loss-ribbon" : "goal-chip",
       slowMoMs: danger ? 90 : 70,
     };
@@ -1076,7 +1082,7 @@ export function getBroadcastEventPresentationPlan(event = {}, plan = {}) {
       ...base,
       tier: "core",
       cameraShakeMode: "micro",
-      screenWashOpacity: Math.min(0.12, 0.045 + intensity * 0.04),
+      screenWashOpacity: Math.min(0.065, 0.025 + intensity * 0.03),
       hudBurst: "frame-chip",
       slowMoMs: 40,
     };
@@ -1313,6 +1319,17 @@ export function getEventBloomPlan(eventPlan = {}, tuning = SCENE_TUNING.postproc
   }
 
   var tier = eventPlan.presentation?.tier || (priority === "critical" ? "critical" : priority === "high" ? "highlight" : "core");
+  if (tier === "core") {
+    return {
+      system: tuning.system,
+      active: false,
+      strength: baseStrength,
+      radius: tuning.baseRadius,
+      threshold: tuning.threshold,
+      life: 0,
+      tier,
+    };
+  }
   var tierWeight = tier === "critical" ? 1 : tier === "highlight" ? 0.78 : 0.56;
   var intensity = clamp01(eventPlan.effectIntensity || eventPlan.profile?.impactStrength || 0);
   var kindBoost = eventPlan.kind === "danger-goal" ? 0.12 : eventPlan.kind === "streak-save" ? 0.08 : eventPlan.kind === "goal" ? 0.06 : 0;
@@ -2202,6 +2219,11 @@ export function createGoalkeeperScene(canvas) {
     ...goalWaves,
     ...streakPulses,
   );
+  var environmentAssetPipeline = createReusableEnvironmentAssetPipeline({
+    renderer,
+    scene,
+    fieldGroup: field,
+  });
 
   var netPulse = 0;
   var netPulseContactPoint = null;
@@ -3068,6 +3090,8 @@ export function createGoalkeeperScene(canvas) {
       canvas.dataset.hideActiveBallForReplay = ballRenderPlan.hideActiveBallForReplay ? "true" : "false";
       canvas.dataset.environmentSystem = tuning.environment.system;
       canvas.dataset.environmentTechnique = tuning.environment.technique;
+      canvas.dataset.reusableEnvironmentAssetSystem = tuning.environment.reusableAssetSystem;
+      canvas.dataset.reusableEnvironmentAssetStatus = scene.userData.reusableEnvironmentAssetStatus || "loading";
     }
     updateShooterModel(shooter, snapshot.director || { phase: "cue", phaseTime: 0, currentShot: null });
     updateStadiumScoreboard(snapshot);
@@ -3088,6 +3112,7 @@ export function createGoalkeeperScene(canvas) {
   }
 
   function dispose() {
+    environmentAssetPipeline.dispose();
     postprocessingPipeline?.dispose();
     renderer.dispose();
   }
@@ -3096,6 +3121,7 @@ export function createGoalkeeperScene(canvas) {
     scene,
     camera,
     renderer,
+    environmentAssetPipeline,
     postprocessingPipeline,
     resize,
     updateVisuals,

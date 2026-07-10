@@ -446,3 +446,49 @@ final result: passed
 - Phone portrait entry now opens into the landscape game layout by default instead of showing the narrow portrait layout.
 - Native landscape viewports and desktop layout keep the normal unrotated presentation.
 - The fallback remains lightweight and web/miniprogram-friendly: no new rendering engine or heavy dependency was added.
+
+## 2026-07-10 CC0 Environment Assets And Restrained Event Bloom QA
+
+**Scope**
+- Added a local reusable environment-asset pipeline around Three.js `HDRLoader` and `PMREMGenerator`.
+- Added the Poly Haven CC0 `Autumn Field (Pure Sky)` 1K HDRI for restrained PBR reflections without replacing the authored Three.js sky.
+- Added Poly Haven CC0 `Clean Asphalt` normal and roughness maps to the existing blue-green polymer court; no grass or turf color texture was introduced.
+- Kept all third-party assets local under `/tools/goalkeeper-landscape/assets/environment/` and documented source URLs, hashes, and license.
+- Reduced court normal strength after browser A/B isolation showed that the original normal intensity created a spotlight glare band.
+- Rebalanced event presentation so ordinary saves keep local rings, sparks, glove deformation, camera micro-impulse, HUD, and audio while global Bloom is reserved for streak saves and goals.
+- Added an owned mount guard so stale asynchronous boots are disposed instead of leaving duplicate RAF, physics, and audio runtimes after React development remounts or route changes.
+- Reduced the continuous net shell to a soft center fade (`0.13` center visibility, `0.22` base opacity) while preserving the shaped pocket and edge lacing.
+- Kept event-ribbon copy mounted through its 150ms fade-out so save and streak feedback never collapses into a blank pill.
+
+**Asset Sources**
+- HDRI: `public/assets/environment/autumn-field-puresky-1k.hdr`
+- Court normal: `public/assets/environment/clean-asphalt-normal-gl-1k.jpg`
+- Court roughness: `public/assets/environment/clean-asphalt-roughness-1k.jpg`
+- Manifest: `public/assets/environment/SOURCES.md`
+- License: Poly Haven CC0 1.0
+
+**Automated Verification**
+- `npm test` passed: 18 files, 209 tests.
+- `npm run build` passed; production bundle `index-X6RGbrGx.js` was generated.
+- Root route contract passed: 9 tests.
+- Root `npx tsc --noEmit` passed.
+- Root `npm run lint` passed with 0 errors and 3 pre-existing warnings.
+- Root `npm run build:vercel` passed and generated 38 static pages.
+
+**Browser Verification**
+- Desktop landscape: `1280 x 720`, environment asset status `ready`, no browser errors.
+- Mobile landscape: `844 x 390`, canvas matched the viewport exactly, environment asset status `ready`, no browser errors or warnings.
+- Normal save: score `100`, global Bloom returned to ambient `0.006`, presentation wash `0.029`, sound status `ready`.
+- Three-save streak: scores advanced `100 -> 225 -> 375`; only the third save activated highlight Bloom (`0.05`) and the `x3 +150` ribbon.
+- Goal: conceded advanced to `1/5`, highlight Bloom `0.054`, presentation wash `0.061`, net and ball remained visible.
+- Next route lifecycle: first and second visits each created exactly 1 script and 1 canvas with different mount IDs; leaving the route removed the runtime, script, and canvas.
+- Mobile three-save sequence: scores advanced `100 -> 225 -> 375`, conceded stayed `0/5`, and the round remained live after the third save.
+- Event-ribbon fade probe retained its last event copy while opacity transitioned to zero; no empty HUD pill remained.
+- Final bundle console filter for `index-X6RGbrGx.js`: no errors or warnings.
+
+**Findings**
+- HDR/PBR assets add material depth without changing the existing camera, physics, collision shapes, or no-grass court direction.
+- Ordinary saves no longer bleach the whole goal; feedback stays concentrated around the gloves and score ribbon.
+- Streaks and goals still receive a stronger event tier, preserving payoff without making every contact equally loud.
+- The center of the goal now reads as open play space; the net remains visible around the frame and rear pocket without becoming a white screen over the ball.
+- Route changes can no longer strand an unowned game loop, addressing the duplicate-ball, duplicate-audio, and post-streak freeze failure mode at its source.

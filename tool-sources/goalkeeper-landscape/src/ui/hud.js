@@ -517,7 +517,7 @@ export function createHud(documentRef) {
     ribbon.dataset.tone = plan.tone;
     ribbon.dataset.priority = plan.priority;
     ribbon.setAttribute("aria-label", plan.ariaLabel || "");
-    ribbon.textContent = plan.visible ? (plan.kicker + " " + plan.text).trim() : "";
+    if (plan.visible) ribbon.textContent = (plan.kicker + " " + plan.text).trim();
     setClass(ribbon, "is-visible", plan.visible);
     ["save", "streak", "goal", "danger", "frame", "miss"].forEach((tone) => {
       setClass(ribbon, "is-" + tone, plan.visible && plan.tone === tone);

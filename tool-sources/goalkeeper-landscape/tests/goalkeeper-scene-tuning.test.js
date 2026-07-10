@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import { SCENE_TUNING } from "../src/three/goalkeeper-scene.js";
 import { SHOT_3D } from "../src/game/shot-3d-director.js";
@@ -665,7 +666,7 @@ describe("goalkeeper 3D scene tuning", () => {
   it("defines a camera-attached broadcast presentation layer that stays subtle", () => {
     expect(SCENE_TUNING.presentation.system).toBe("camera-attached-broadcast-presentation-layer");
     expect(SCENE_TUNING.presentation.technique).toBe("three-camera-transparent-overlay-kit");
-    expect(SCENE_TUNING.presentation.maxScreenWashOpacity).toBeLessThanOrEqual(0.18);
+    expect(SCENE_TUNING.presentation.maxScreenWashOpacity).toBeLessThanOrEqual(0.1);
     expect(SCENE_TUNING.presentation.vignetteBaseOpacity).toBeLessThanOrEqual(0.18);
     expect(SCENE_TUNING.presentation.maxVignetteBoost).toBeLessThanOrEqual(0.1);
     expect(SCENE_TUNING.presentation.focusRingMaxOpacity).toBeLessThanOrEqual(0.08);
@@ -687,9 +688,11 @@ describe("goalkeeper 3D scene tuning", () => {
       state: { streak: 4, conceded: 0 },
     });
 
-    expect(normalSave.presentation.screenWashOpacity).toBeLessThanOrEqual(0.06);
-    expect(streakSave.presentation.screenWashOpacity).toBeLessThanOrEqual(0.1);
-    expect(SCENE_TUNING.postprocessing.maxStrength).toBeLessThanOrEqual(0.1);
+    expect(normalSave.presentation.screenWashOpacity).toBeLessThanOrEqual(0.035);
+    expect(streakSave.presentation.screenWashOpacity).toBeLessThanOrEqual(0.065);
+    expect(SCENE_TUNING.postprocessing.maxStrength).toBeLessThanOrEqual(0.065);
+    expect(SCENE_TUNING.postprocessing.threshold).toBeGreaterThanOrEqual(0.88);
+    expect(SCENE_TUNING.postprocessing.maxRadius).toBeLessThanOrEqual(0.24);
     expect(SCENE_TUNING.feedback.saveSparkCount).toBeLessThanOrEqual(8);
     expect(SCENE_TUNING.feedback.saveAfterimageCount).toBeLessThanOrEqual(3);
   });
@@ -743,7 +746,7 @@ describe("goalkeeper 3D scene tuning", () => {
     sceneModule.triggerCameraPresentationState(state, dangerGoal);
     const livePlan = sceneModule.getCameraPresentationStatePlan(state);
     expect(livePlan.active).toBe(true);
-    expect(livePlan.screenWashOpacity).toBeGreaterThan(0.1);
+    expect(livePlan.screenWashOpacity).toBeGreaterThan(0.07);
 
     sceneModule.advanceCameraPresentationState(state);
     const fadedPlan = sceneModule.getCameraPresentationStatePlan(state);
@@ -1156,8 +1159,9 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.postprocessing.addonSources).toContain("three/addons/postprocessing/EffectComposer");
     expect(SCENE_TUNING.postprocessing.addonSources).toContain("three/addons/postprocessing/UnrealBloomPass");
     expect(SCENE_TUNING.postprocessing.baseStrength).toBeLessThanOrEqual(0.02);
-    expect(SCENE_TUNING.postprocessing.maxStrength).toBeLessThanOrEqual(0.22);
-    expect(SCENE_TUNING.postprocessing.threshold).toBeGreaterThanOrEqual(0.72);
+    expect(SCENE_TUNING.postprocessing.maxStrength).toBeLessThanOrEqual(0.065);
+    expect(SCENE_TUNING.postprocessing.threshold).toBeGreaterThanOrEqual(0.88);
+    expect(SCENE_TUNING.postprocessing.maxRadius).toBeLessThanOrEqual(0.24);
     expect(SCENE_TUNING.postprocessing.eventDecay).toBeLessThanOrEqual(0.045);
     expect(SCENE_TUNING.postprocessing.pixelRatioCap).toBeLessThanOrEqual(1.5);
 
@@ -1186,9 +1190,10 @@ describe("goalkeeper 3D scene tuning", () => {
 
     expect(ambient.active).toBe(false);
     expect(ambient.strength).toBe(SCENE_TUNING.postprocessing.baseStrength);
-    expect(save.active).toBe(true);
-    expect(save.strength).toBeGreaterThan(ambient.strength);
-    expect(streak.strength).toBeGreaterThanOrEqual(save.strength);
+    expect(save.active).toBe(false);
+    expect(save.strength).toBe(ambient.strength);
+    expect(streak.active).toBe(true);
+    expect(streak.strength).toBeGreaterThan(save.strength);
     expect(dangerGoal.strength).toBeGreaterThan(streak.strength);
     expect(dangerGoal.strength).toBeLessThanOrEqual(SCENE_TUNING.postprocessing.maxStrength);
 
@@ -1220,6 +1225,16 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(rig.lights.some((light) => light.position.x < 0)).toBe(true);
     expect(rig.lights.some((light) => light.position.x > 0)).toBe(true);
     expect(rig.targets.every((target) => target.position.z > -3 && target.position.z < 3.8)).toBe(true);
+  });
+
+  it("integrates the local CC0 HDR and court PBR pipeline without replacing the authored sky", async () => {
+    const sceneSource = await readFile(new URL("../src/three/goalkeeper-scene.js", import.meta.url), "utf8");
+
+    expect(SCENE_TUNING.environment.reusableAssetSystem).toBe("poly-haven-cc0-matchday-pbr");
+    expect(SCENE_TUNING.environment.backgroundReplacement).toBe(false);
+    expect(sceneSource).toMatch(/createReusableEnvironmentAssetPipeline/);
+    expect(sceneSource).toMatch(/fieldGroup:\s*field/);
+    expect(sceneSource).toMatch(/environmentAssetPipeline\.dispose\(\)/);
   });
 
   it("keeps one canonical framing instead of composition demo presets", async () => {

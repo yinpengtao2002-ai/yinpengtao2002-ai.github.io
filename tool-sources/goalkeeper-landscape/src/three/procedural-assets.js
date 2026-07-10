@@ -314,9 +314,9 @@ function createContinuousNetPocketMaterial() {
   var material = new THREE.ShaderMaterial({
     uniforms: {
       netMap: { value: netTexture },
-      netOpacity: { value: 0.32 },
-      netTint: { value: new THREE.Color("#f5fff4") },
-      centerVisibilityFloor: { value: 0.26 },
+      netOpacity: { value: 0.22 },
+      netTint: { value: new THREE.Color("#e6eee7") },
+      centerVisibilityFloor: { value: 0.13 },
     },
     vertexShader: `
       varying vec2 vUv;
@@ -353,16 +353,17 @@ function createContinuousNetPocketMaterial() {
     depthTest: true,
     side: THREE.DoubleSide,
   });
-  material.opacity = 0.32;
+  material.opacity = 0.22;
   material.toneMapped = false;
   material.forceSinglePass = true;
   material.userData.netContinuitySystem = NET_CONTINUITY_SYSTEM;
   material.userData.netAlphaTextureSystem = NET_ALPHA_TEXTURE_SYSTEM;
   material.userData.meshPattern = "match-square-120mm-knotted-net";
-  material.userData.centerVisibilityFloor = 0.26;
+  material.userData.centerVisibilityFloor = 0.13;
+  material.userData.visibilityProfile = "soft-center-fade-no-cutout";
   material.userData.ballPriorityCompositing = true;
   material.onBeforeRender = function syncNetOpacity() {
-    material.uniforms.netOpacity.value = Math.min(0.48, Math.max(0, material.opacity));
+    material.uniforms.netOpacity.value = Math.min(0.34, Math.max(0, material.opacity));
   };
   return material;
 }

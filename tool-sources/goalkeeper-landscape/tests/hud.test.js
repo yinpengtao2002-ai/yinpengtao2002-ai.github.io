@@ -316,6 +316,8 @@ describe("hud", () => {
     hud.update({ ...saveState, message: "" }, true);
     expect(documentRef.elements.eventRibbon.classList.contains("is-visible")).toBe(false);
     expect(documentRef.elements.eventRibbon.dataset.priority).toBe("ambient");
+    expect(documentRef.elements.eventRibbon.getAttribute("aria-label")).toBe("");
+    expect(documentRef.elements.eventRibbon.textContent).toBe("危险 4/5");
   });
 
   it("adds a slim atmosphere rail that reacts to match events without blocking play", () => {

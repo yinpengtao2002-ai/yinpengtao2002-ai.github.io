@@ -655,8 +655,11 @@ describe("procedural 3D assets", () => {
     expect(shell.material.transparent).toBe(true);
     expect(shell.material.depthWrite).toBe(false);
     expect(shell.material.forceSinglePass).toBe(true);
-    expect(shell.material.userData.centerVisibilityFloor).toBeGreaterThanOrEqual(0.24);
-    expect(shell.material.userData.centerVisibilityFloor).toBeLessThanOrEqual(0.42);
+    expect(shell.material.userData.centerVisibilityFloor).toBeGreaterThanOrEqual(0.1);
+    expect(shell.material.userData.centerVisibilityFloor).toBeLessThanOrEqual(0.16);
+    expect(shell.material.userData.visibilityProfile).toBe("soft-center-fade-no-cutout");
+    expect(shell.material.uniforms.netOpacity.value).toBeLessThanOrEqual(0.24);
+    expect(shell.material.opacity).toBeLessThanOrEqual(0.24);
     expect(shell.material.userData.meshPattern).toBe("match-square-120mm-knotted-net");
     expect(shell.material.uniforms.netMap.value.userData.cellsAcross).toBeGreaterThanOrEqual(32);
     expect(shell.material.uniforms.netMap.value.userData.cellsHigh).toBeGreaterThanOrEqual(10);
