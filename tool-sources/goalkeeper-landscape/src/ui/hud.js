@@ -9,7 +9,7 @@ export const MATCH_AUDIO_STATUS_MARKER = "match-audio-status-chip";
 export const MATCH_PAUSE_HINT_MARKER = "match-pause-coach-hint";
 export const ROUND_RESULT_COACH_MARKER = "round-result-coach-note";
 export const ROUND_RESULT_REVIEW_MARKER = "round-result-review-cards";
-export const MATCH_EVENT_RIBBON_MARKER = "broadcast-event-ribbon-hud";
+export const MATCH_EVENT_RIBBON_MARKER = "single-match-event-feedback-layer";
 export const MATCH_CONTROL_RAIL_MARKER = "live-match-control-rail";
 export const MATCH_ATMOSPHERE_MARKER = "match-atmosphere-event-rail";
 export const HUD_STATE_SKIN_MARKER = "match-state-scorebug-skin";
@@ -299,7 +299,7 @@ export function getEventRibbonPlan(state) {
         visible: true,
         tone: "streak",
         priority: "highlight",
-        kicker: "STREAK x" + String(state.streak),
+        kicker: "连扑 x" + String(state.streak),
         text: "+" + String(points),
         ariaLabel: "连续扑救 " + String(state.streak) + " 次，加 " + String(points) + " 分",
         marker: MATCH_EVENT_RIBBON_MARKER,
@@ -309,7 +309,7 @@ export function getEventRibbonPlan(state) {
       visible: true,
       tone: "save",
       priority: "core",
-      kicker: "SAVE",
+      kicker: "扑救",
       text: "+" + String(points),
       ariaLabel: "扑救成功，加 " + String(points) + " 分",
       marker: MATCH_EVENT_RIBBON_MARKER,
@@ -323,7 +323,7 @@ export function getEventRibbonPlan(state) {
       visible: true,
       tone: danger ? "danger" : "goal",
       priority: danger ? "critical" : "high",
-      kicker: danger ? "DANGER" : "GOAL",
+      kicker: danger ? "危险" : "失球",
       text: String(conceded) + "/" + String(MAX_CONCEDED),
       ariaLabel: danger
         ? "防线吃紧，失球 " + String(conceded) + "/" + String(MAX_CONCEDED)
@@ -337,8 +337,8 @@ export function getEventRibbonPlan(state) {
       visible: true,
       tone: "frame",
       priority: "core",
-      kicker: "POST",
-      text: "REBOUND",
+      kicker: "门框",
+      text: "",
       ariaLabel: "门框救险",
       marker: MATCH_EVENT_RIBBON_MARKER,
     };
@@ -349,8 +349,8 @@ export function getEventRibbonPlan(state) {
       visible: true,
       tone: "miss",
       priority: "ambient",
-      kicker: "WIDE",
-      text: "RESET",
+      kicker: "偏出",
+      text: "",
       ariaLabel: "射门偏出",
       marker: MATCH_EVENT_RIBBON_MARKER,
     };
@@ -374,7 +374,7 @@ export function getPauseHintText(state) {
 export function getSoundStatusLabel(enabled, audioStatus = "locked") {
   if (!enabled || audioStatus === "muted") {
     return {
-      button: "静音",
+      button: "",
       detail: "当前静音",
       aria: "音效已静音，点击开启",
       status: "muted",
@@ -383,7 +383,7 @@ export function getSoundStatusLabel(enabled, audioStatus = "locked") {
 
   if (audioStatus === "ready") {
     return {
-      button: "音效就绪",
+      button: "",
       detail: "音效已就绪",
       aria: "音效已就绪，点击静音",
       status: "ready",
@@ -392,7 +392,7 @@ export function getSoundStatusLabel(enabled, audioStatus = "locked") {
 
   if (audioStatus === "unavailable") {
     return {
-      button: "无音效",
+      button: "",
       detail: "此浏览器不支持音效",
       aria: "当前浏览器不支持音效",
       status: "unavailable",
@@ -400,7 +400,7 @@ export function getSoundStatusLabel(enabled, audioStatus = "locked") {
   }
 
   return {
-    button: "待启用",
+    button: "",
     detail: "点开始后启用音效",
     aria: "音效待启用，开始挑战后会解锁",
     status: "locked",
@@ -670,7 +670,7 @@ export function createHud(documentRef) {
       if (refs.streakValue) refs.streakValue.textContent = "x" + String(state.streak || 0);
       if (refs.concededValue) refs.concededValue.textContent = state.conceded + "/" + MAX_CONCEDED;
       if (refs.pauseButton) {
-        refs.pauseButton.textContent = state.paused ? "▶ 继续" : "Ⅱ 暂停";
+        refs.pauseButton.textContent = state.paused ? "▶" : "Ⅱ";
         refs.pauseButton.setAttribute("aria-label", state.paused ? "继续挑战" : "暂停挑战");
       }
       if (refs.soundButton) {

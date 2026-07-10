@@ -5,6 +5,7 @@ import { dirname, resolve } from "node:path";
 
 const testDir = dirname(fileURLToPath(import.meta.url));
 const stylesPath = resolve(testDir, "../styles.css");
+const indexPath = resolve(testDir, "../index.html");
 
 describe("responsive layout css", () => {
   it("reserves left edge space for bottom controls in mobile landscape", () => {
@@ -123,8 +124,9 @@ describe("responsive layout css", () => {
 
   it("adds an edge-anchored event ribbon and moves mobile controls away from the save lane", () => {
     const css = readFileSync(stylesPath, "utf8");
+    const html = readFileSync(indexPath, "utf8");
 
-    expect(css).toContain("broadcast-event-ribbon-hud");
+    expect(css).toContain("single-match-event-feedback-layer");
     expect(css).toContain(".event-ribbon");
     expect(css).toContain(".event-ribbon.is-save");
     expect(css).toContain(".event-ribbon.is-streak");
@@ -134,6 +136,9 @@ describe("responsive layout css", () => {
     expect(css).toContain("match-mobile-corner-controls");
     expect(css).toContain("grid-template-columns: auto auto;");
     expect(css).toContain("justify-content: space-between;");
+    expect(html).toContain('data-hud-system="single-match-event-feedback-layer"');
+    expect(html).not.toContain('id="feedbackToast"');
+    expect(html).not.toContain('id="matchAtmosphere"');
   });
 
   it("uses playfield-safe start and control docks instead of a center-blocking debug panel", () => {
@@ -142,12 +147,29 @@ describe("responsive layout css", () => {
     expect(css).toContain("playfield-safe-start-dock");
     expect(css).toContain("corner-control-clusters");
     expect(css).toContain("place-items: end start;");
-    expect(css).toContain("width: min(450px, calc(100vw - 44px));");
+    expect(css).toContain("width: min(360px, calc(100vw - 32px));");
     expect(css).toContain("grid-template-columns: auto minmax(0, 1fr) auto;");
     expect(css).toContain(".bottom-controls::before");
     expect(css).toContain("display: none;");
     expect(css).toContain(".sound-status");
     expect(css).toContain("clip-path: inset(50%);");
+    expect(css).toContain("compact-match-start-ticket");
+    expect(css).toContain("icon-only-match-controls");
+  });
+
+  it("uses compact icon controls and a simplified end card on short landscape screens", () => {
+    const css = readFileSync(stylesPath, "utf8");
+    const html = readFileSync(indexPath, "utf8");
+
+    expect(css).toContain("icon-only-match-controls");
+    expect(css).toContain(".utility-button::before");
+    expect(css).toContain(".utility-button::after");
+    expect(css).toContain(".hud-pause-button");
+    expect(css).toContain('.bottom-controls[data-control-mode="result"]');
+    expect(html).toContain('class="result-scoreblock"');
+    expect(html).toContain('class="result-copyblock"');
+    expect(html).not.toContain('id="resultReview"');
+    expect(html).not.toContain('id="resultTags"');
   });
 
   it("compacts the live bottom control rail so setup controls do not sit in the shot lane", () => {

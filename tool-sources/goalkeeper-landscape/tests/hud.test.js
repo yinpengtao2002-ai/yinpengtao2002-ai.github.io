@@ -114,12 +114,12 @@ describe("hud", () => {
     hud.update(createGameState(), true, { audioStatus: "locked" });
 
     expect(HudModule.getSoundStatusLabel(true, "locked")).toEqual({
-      button: "待启用",
+      button: "",
       detail: "点开始后启用音效",
       aria: "音效待启用，开始挑战后会解锁",
       status: "locked",
     });
-    expect(documentRef.elements.soundButton.textContent).toBe("待启用");
+    expect(documentRef.elements.soundButton.textContent).toBe("");
     expect(documentRef.elements.soundButton.getAttribute("aria-label")).toBe("音效待启用，开始挑战后会解锁");
     expect(documentRef.elements.soundButton.dataset.soundStatus).toBe("locked");
     expect(documentRef.elements.soundButton.classList.contains("is-sound-locked")).toBe(true);
@@ -128,7 +128,7 @@ describe("hud", () => {
 
     hud.update(createGameState(), true, { audioStatus: "ready" });
 
-    expect(documentRef.elements.soundButton.textContent).toBe("音效就绪");
+    expect(documentRef.elements.soundButton.textContent).toBe("");
     expect(documentRef.elements.soundButton.getAttribute("aria-label")).toBe("音效已就绪，点击静音");
     expect(documentRef.elements.soundButton.dataset.soundStatus).toBe("ready");
     expect(documentRef.elements.soundButton.classList.contains("is-sound-ready")).toBe(true);
@@ -136,7 +136,7 @@ describe("hud", () => {
 
     hud.update(createGameState(), false, { audioStatus: "muted" });
 
-    expect(documentRef.elements.soundButton.textContent).toBe("静音");
+    expect(documentRef.elements.soundButton.textContent).toBe("");
     expect(documentRef.elements.soundButton.getAttribute("aria-label")).toBe("音效已静音，点击开启");
     expect(documentRef.elements.soundButton.dataset.soundStatus).toBe("muted");
     expect(documentRef.elements.soundButton.classList.contains("is-sound-muted")).toBe(true);
@@ -284,18 +284,18 @@ describe("hud", () => {
       visible: true,
       tone: "save",
       priority: "core",
-      kicker: "SAVE",
+      kicker: "扑救",
       text: "+110",
       ariaLabel: "扑救成功，加 110 分",
-      marker: "broadcast-event-ribbon-hud",
+      marker: "single-match-event-feedback-layer",
     });
 
     hud.update(saveState, true);
-    expect(documentRef.elements.eventRibbon.dataset.hudSystem).toBe("broadcast-event-ribbon-hud");
+    expect(documentRef.elements.eventRibbon.dataset.hudSystem).toBe("single-match-event-feedback-layer");
     expect(documentRef.elements.eventRibbon.dataset.tone).toBe("save");
     expect(documentRef.elements.eventRibbon.dataset.priority).toBe("core");
     expect(documentRef.elements.eventRibbon.getAttribute("aria-label")).toBe("扑救成功，加 110 分");
-    expect(documentRef.elements.eventRibbon.textContent).toBe("SAVE +110");
+    expect(documentRef.elements.eventRibbon.textContent).toBe("扑救 +110");
     expect(documentRef.elements.eventRibbon.classList.contains("is-visible")).toBe(true);
     expect(documentRef.elements.eventRibbon.classList.contains("is-save")).toBe(true);
 
@@ -303,14 +303,14 @@ describe("hud", () => {
     expect(documentRef.elements.eventRibbon.dataset.tone).toBe("streak");
     expect(documentRef.elements.eventRibbon.dataset.priority).toBe("highlight");
     expect(documentRef.elements.eventRibbon.getAttribute("aria-label")).toBe("连续扑救 4 次，加 180 分");
-    expect(documentRef.elements.eventRibbon.textContent).toBe("STREAK x4 +180");
+    expect(documentRef.elements.eventRibbon.textContent).toBe("连扑 x4 +180");
     expect(documentRef.elements.eventRibbon.classList.contains("is-streak")).toBe(true);
 
     hud.update({ ...saveState, message: "goal", conceded: 4, streak: 0, lastSavePoints: 0 }, true);
     expect(documentRef.elements.eventRibbon.dataset.tone).toBe("danger");
     expect(documentRef.elements.eventRibbon.dataset.priority).toBe("critical");
     expect(documentRef.elements.eventRibbon.getAttribute("aria-label")).toBe("防线吃紧，失球 4/5");
-    expect(documentRef.elements.eventRibbon.textContent).toBe("DANGER 4/5");
+    expect(documentRef.elements.eventRibbon.textContent).toBe("危险 4/5");
     expect(documentRef.elements.eventRibbon.classList.contains("is-danger")).toBe(true);
 
     hud.update({ ...saveState, message: "" }, true);
@@ -570,7 +570,7 @@ describe("hud", () => {
     hud.update({ ...state, paused: true, message: "pause" }, true);
 
     expect(documentRef.elements.pauseOverlay.classList.contains("hidden")).toBe(false);
-    expect(documentRef.elements.pauseButton.textContent).toBe("▶ 继续");
+    expect(documentRef.elements.pauseButton.textContent).toBe("▶");
     expect(documentRef.elements.pauseButton.getAttribute("aria-label")).toBe("继续挑战");
     expect(documentRef.elements.pauseHint.textContent).toBe("先盯球速，再移动手套");
     expect(documentRef.elements.pauseHint.dataset.pauseHintSystem).toBe("match-pause-coach-hint");

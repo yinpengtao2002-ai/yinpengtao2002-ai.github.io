@@ -27,6 +27,8 @@ const NET_VISUAL_UPGRADE_SYSTEM = "procedural-match-net-alpha-weave-clear-lane";
 const NET_ALPHA_TEXTURE_SYSTEM = "procedural-real-match-net-alpha-texture";
 const NET_BROADCAST_SIGHTLINE_SYSTEM = "broadcast-safe-rear-mesh-net-clear-mobile-landscape";
 const NET_LANE_CUTOUT_SYSTEM = "split-rear-net-around-mobile-shot-window";
+const NET_CONTINUITY_SYSTEM = "continuous-ball-priority-pocket-shell";
+const BUILD_RETIRED_NET_LAYERS = false;
 const GLOVE_PBR_MATERIAL_SYSTEM = "pbr-latex-textile-match-glove-materials";
 const GLOVE_LATEX_TEXTURE_SYSTEM = "procedural-latex-micrograin-glove-texture";
 const GLOVE_TEXTILE_TEXTURE_SYSTEM = "procedural-woven-cuff-glove-texture";
@@ -122,6 +124,49 @@ function createSurfaceDetailTexture(size, sample, repeatX = 1, repeatY = 1) {
   return texture;
 }
 
+function createAcademyCourtSurfaceMap(kind) {
+  var size = 256;
+  if (kind !== "albedo") {
+    var detailTexture = createSurfaceDetailTexture(size, (x, y) => {
+      var aggregate = Math.sin(x * 1.91 + y * 0.73) * 0.5 + 0.5;
+      var crossAggregate = Math.sin(x * 0.37 - y * 2.17) * 0.5 + 0.5;
+      var fineSpeckle = Math.sin((x + y) * 3.83) * 0.5 + 0.5;
+      if (kind === "bump") return 112 + aggregate * 74 + crossAggregate * 34 + fineSpeckle * 18;
+      return 184 + (1 - aggregate) * 36 + crossAggregate * 18 + fineSpeckle * 10;
+    }, 5.4, 14.2);
+    detailTexture.userData.assetSystem = "micro-speckled-academy-polymer-surface";
+    detailTexture.userData.surfaceKind = kind;
+    return detailTexture;
+  }
+
+  var data = new Uint8Array(size * size * 4);
+  for (var y = 0; y < size; y += 1) {
+    for (var x = 0; x < size; x += 1) {
+      var aggregate = Math.sin(x * 1.91 + y * 0.73) * 0.5 + 0.5;
+      var crossAggregate = Math.sin(x * 0.37 - y * 2.17) * 0.5 + 0.5;
+      var scuff = Math.max(0, Math.sin(x * 0.12 + y * 0.19) - 0.78);
+      var base = 226 + aggregate * 18 + crossAggregate * 8 - scuff * 38;
+      var index = (y * size + x) * 4;
+      data[index] = Math.max(0, Math.min(255, Math.round(base - 9)));
+      data[index + 1] = Math.max(0, Math.min(255, Math.round(base - 2)));
+      data[index + 2] = Math.max(0, Math.min(255, Math.round(base + 3)));
+      data[index + 3] = 255;
+    }
+  }
+  var texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(5.4, 14.2);
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearFilter;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+  texture.needsUpdate = true;
+  texture.userData.assetSystem = "micro-speckled-academy-polymer-surface";
+  texture.userData.surfaceKind = kind;
+  return texture;
+}
+
 function createNetCordSurfaceMap(kind) {
   var texture = createSurfaceDetailTexture(128, (x, y, size) => {
     var nx = x / size;
@@ -183,6 +228,143 @@ function createMatchNetAlphaTexture(variant = "edge") {
   texture.userData.visibilityBudget = variant === "center" ? "mobile-landscape-center-window" : "peripheral-rear-pocket-window";
   texture.userData.variant = variant;
   return texture;
+}
+
+function createSquareGoalNetAlphaTexture() {
+  var size = 512;
+  var cellsAcross = 36;
+  var cellsHigh = 12;
+  var data = new Uint8Array(size * size * 4);
+
+  for (var y = 0; y < size; y += 1) {
+    for (var x = 0; x < size; x += 1) {
+      var nx = x / size;
+      var ny = y / size;
+      var warpedX = nx + Math.sin(ny * Math.PI * 4.0) * 0.0018;
+      var warpedY = ny + Math.sin(nx * Math.PI * 5.0) * 0.0024;
+      var cellX = warpedX * cellsAcross;
+      var cellY = warpedY * cellsHigh;
+      var fractionX = cellX - Math.floor(cellX);
+      var fractionY = cellY - Math.floor(cellY);
+      var distanceX = Math.min(fractionX, 1 - fractionX);
+      var distanceY = Math.min(fractionY, 1 - fractionY);
+      var cordDistance = Math.min(distanceX, distanceY);
+      var cord = Math.exp(-Math.pow(cordDistance / 0.04, 2));
+      var knot = Math.exp(-((distanceX * distanceX + distanceY * distanceY) / 0.0046));
+      var fiber = Math.sin(x * 1.37 + y * 0.61) * 0.5 + 0.5;
+      var alpha = Math.min(238, Math.round(cord * 202 + knot * 34));
+      var shade = Math.min(255, Math.round(232 + cord * 18 + fiber * 4));
+      var index = (y * size + x) * 4;
+      data[index] = shade;
+      data[index + 1] = Math.min(255, shade + 3);
+      data[index + 2] = Math.min(255, shade + 5);
+      data[index + 3] = alpha;
+    }
+  }
+
+  var texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  texture.userData.assetSystem = NET_ALPHA_TEXTURE_SYSTEM;
+  texture.userData.netVisualUpgradeSystem = NET_VISUAL_UPGRADE_SYSTEM;
+  texture.userData.alphaMeshPattern = "match-square-120mm-knotted-net";
+  texture.userData.visibilityBudget = "ball-priority-continuous-center";
+  texture.userData.cellsAcross = cellsAcross;
+  texture.userData.cellsHigh = cellsHigh;
+  return texture;
+}
+
+function createContinuousNetPocketGeometry() {
+  var width = RAPIER_GOAL.halfWidth * 2 - 0.18;
+  var height = RAPIER_GOAL.height - 0.12;
+  var geometry = new THREE.PlaneGeometry(width, height, 24, 12);
+  var positions = geometry.getAttribute("position");
+
+  for (var index = 0; index < positions.count; index += 1) {
+    var x = positions.getX(index);
+    var y = positions.getY(index);
+    var normalizedX = Math.min(1, Math.abs(x) / (width * 0.5));
+    var normalizedY = Math.min(1, Math.max(0, y / height + 0.5));
+    var horizontalPocket = Math.pow(Math.max(0, 1 - normalizedX * normalizedX), 0.72);
+    var verticalPocket = Math.pow(Math.max(0, Math.sin(normalizedY * Math.PI)), 0.68);
+    var pocket = horizontalPocket * verticalPocket;
+    var wovenSlack = Math.sin(x * 2.18 + normalizedY * 5.4) * 0.012 * pocket;
+
+    positions.setXYZ(
+      index,
+      x + Math.sin(normalizedY * Math.PI * 2) * 0.012 * horizontalPocket,
+      y - pocket * 0.045 - Math.sin(normalizedX * Math.PI) * 0.008,
+      0.035 + pocket * 0.84 + wovenSlack,
+    );
+  }
+
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+  geometry.userData.netContinuitySystem = NET_CONTINUITY_SYSTEM;
+  geometry.userData.pocketDepth = 0.84;
+  geometry.userData.anchorLayout = "four-edge-tensioned-center-pocket";
+  return geometry;
+}
+
+function createContinuousNetPocketMaterial() {
+  var netTexture = createSquareGoalNetAlphaTexture();
+  var material = new THREE.ShaderMaterial({
+    uniforms: {
+      netMap: { value: netTexture },
+      netOpacity: { value: 0.32 },
+      netTint: { value: new THREE.Color("#f5fff4") },
+      centerVisibilityFloor: { value: 0.26 },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D netMap;
+      uniform float netOpacity;
+      uniform vec3 netTint;
+      uniform float centerVisibilityFloor;
+      varying vec2 vUv;
+
+      void main() {
+        vec4 weave = texture2D(netMap, vUv);
+        float horizontalEdge = abs(vUv.x - 0.5) * 2.0;
+        float verticalEdge = abs(vUv.y - 0.5) * 2.0;
+        float edgePresence = smoothstep(0.12, 0.92, max(horizontalEdge, verticalEdge * 0.78));
+        float topTensionBand = smoothstep(0.74, 1.0, vUv.y);
+        float visibility = max(
+          mix(centerVisibilityFloor, 1.0, edgePresence),
+          mix(centerVisibilityFloor, 0.82, topTensionBand)
+        );
+        float alpha = weave.a * netOpacity * visibility;
+        if (alpha < 0.012) discard;
+        vec3 fiber = mix(netTint * 0.9, vec3(1.0), weave.r * 0.18);
+        gl_FragColor = vec4(fiber, alpha);
+      }
+    `,
+    transparent: true,
+    depthWrite: false,
+    depthTest: true,
+    side: THREE.DoubleSide,
+  });
+  material.opacity = 0.32;
+  material.toneMapped = false;
+  material.forceSinglePass = true;
+  material.userData.netContinuitySystem = NET_CONTINUITY_SYSTEM;
+  material.userData.netAlphaTextureSystem = NET_ALPHA_TEXTURE_SYSTEM;
+  material.userData.meshPattern = "match-square-120mm-knotted-net";
+  material.userData.centerVisibilityFloor = 0.26;
+  material.userData.ballPriorityCompositing = true;
+  material.onBeforeRender = function syncNetOpacity() {
+    material.uniforms.netOpacity.value = Math.min(0.48, Math.max(0, material.opacity));
+  };
+  return material;
 }
 
 function createBraidedNetCordMaterial(options = {}) {
@@ -409,14 +591,17 @@ export function updateStadiumScoreboardTexture(texture, plan = getStadiumScorebo
 
 function createTrainingSurfaceMaterial() {
   var material = new THREE.MeshStandardMaterial({
-    color: "#8e9295",
-    bumpScale: 0,
-    roughness: 0.91,
+    color: "#466a6d",
+    map: createAcademyCourtSurfaceMap("albedo"),
+    bumpMap: createAcademyCourtSurfaceMap("bump"),
+    bumpScale: 0.009,
+    roughnessMap: createAcademyCourtSurfaceMap("roughness"),
+    roughness: 0.88,
     metalness: 0,
   });
-  material.userData.materialPipelineSystem = "clean-matte-training-surface-material";
-  material.userData.surfacePaletteSystem = "neutral-concrete-court-no-grass";
-  material.userData.grassReadabilityGuard = "gray-concrete-floor-not-turf";
+  material.userData.materialPipelineSystem = "academy-polymer-training-surface-pbr";
+  material.userData.surfacePaletteSystem = "blue-green-academy-court-no-grass";
+  material.userData.grassReadabilityGuard = "synthetic-polymer-floor-no-turf-blades";
   return material;
 }
 
@@ -601,19 +786,19 @@ function createFallbackFootballTexture() {
 
 export function createFieldGroup() {
   var group = new THREE.Group();
-  group.userData.visualStyle = "professional-keeper-training-court";
+  group.userData.visualStyle = "professional-goalkeeper-academy-court";
   group.userData.polishSystem = MATCHDAY_ASSET_POLISH_SYSTEM;
   group.userData.geometryPolishSystem = ROUNDED_BOX_BEVELED_PROP_SYSTEM;
   group.userData.assetSystem = "stylized-reusable-matchday-kit";
   group.userData.materialPipelineSystem = "procedural-pbr-material-stack";
-  group.userData.markingSystem = "minimal-keeper-training-floor";
-  group.userData.surfaceDetailSystem = "plain-neutral-training-floor-goalmouth-shadows";
-  group.userData.surfaceFinishSystem = "plain-training-floor-no-grass-or-pitch-stripes";
+  group.userData.markingSystem = "clear-academy-court-no-pitch-stripes";
+  group.userData.surfaceDetailSystem = "micro-speckled-polymer-floor-goalmouth-shadows";
+  group.userData.surfaceFinishSystem = "micro-speckled-polymer-court-no-grass";
   group.userData.stadiumDressingSystem = "crowd-scoreboard-flags-matchday-dressing";
   group.userData.broadcastDressingSystem = "sideline-camera-light-and-safety-pad-kit";
   group.userData.stadiumScoreboardSystem = STADIUM_SCOREBOARD_DISPLAY_SYSTEM;
   group.userData.stadiumLightingFinishSystem = "floodlight-lens-and-glare-halo-kit";
-  group.userData.reusableAssetTechnique = "plain-matte-training-floor-kit";
+  group.userData.reusableAssetTechnique = "procedural-pbr-academy-court-kit";
   group.userData.matchUseDetailSystem = "plain-field-no-grass-clutter";
   group.userData.trainingFacilitySystem = "professional-keeper-training-ground-kit";
   var surface = new THREE.Mesh(
@@ -1007,6 +1192,7 @@ export function createGoalAndNet() {
   group.userData.netVisualUpgradeSystem = NET_VISUAL_UPGRADE_SYSTEM;
   group.userData.netBroadcastSightlineSystem = NET_BROADCAST_SIGHTLINE_SYSTEM;
   group.userData.netLaneCutoutSystem = NET_LANE_CUTOUT_SYSTEM;
+  group.userData.netContinuitySystem = NET_CONTINUITY_SYSTEM;
   group.userData.matchUseDetailSystem = "match-use-equipment-wear-layer";
   var dynamicNetDetails = [];
   var keeperSightline = {
@@ -1125,6 +1311,23 @@ export function createGoalAndNet() {
   net.position.set(0, RAPIER_GOAL.height / 2, RAPIER_GOAL.netPlaneZ + 0.1);
   group.add(net);
 
+  var continuousPocketShell = new THREE.Mesh(
+    createContinuousNetPocketGeometry(),
+    createContinuousNetPocketMaterial(),
+  );
+  continuousPocketShell.name = "goal-net-continuous-pocket-shell";
+  continuousPocketShell.position.set(0, RAPIER_GOAL.height / 2, RAPIER_GOAL.netPlaneZ + 0.08);
+  continuousPocketShell.renderOrder = 2;
+  continuousPocketShell.userData.netContinuitySystem = NET_CONTINUITY_SYSTEM;
+  continuousPocketShell.userData.netVisualUpgradeSystem = NET_VISUAL_UPGRADE_SYSTEM;
+  continuousPocketShell.userData.rearPocketLayer = "continuous-shaped-pocket";
+  continuousPocketShell.userData.behindShotLane = true;
+  continuousPocketShell.userData.crossesKeeperSightline = true;
+  continuousPocketShell.userData.hasShotWindowCutout = false;
+  continuousPocketShell.userData.frontShotLaneOcclusion = 0;
+  continuousPocketShell.userData.ballPriorityRenderOrder = 12;
+  group.add(registerDynamicNetDetail(continuousPocketShell, 0.16, 0.035));
+
   var frameContactShadowMaterial = new THREE.MeshBasicMaterial({
     color: "#17242b",
     transparent: true,
@@ -1144,13 +1347,14 @@ export function createGoalAndNet() {
     group.add(shadow);
   });
 
-  var depthHazeMaterial = new THREE.MeshBasicMaterial({
+  if (BUILD_RETIRED_NET_LAYERS) {
+    var depthHazeMaterial = new THREE.MeshBasicMaterial({
     color: "#dff8ff",
     transparent: true,
     opacity: 0,
     depthWrite: false,
     side: THREE.DoubleSide,
-  });
+    });
   [
     ["back-panel", 0, RAPIER_GOAL.height * 0.54, RAPIER_GOAL.netPlaneZ + 0.24, RAPIER_GOAL.halfWidth * 1.7, RAPIER_GOAL.height * 0.72, 0],
     ["rear-pocket", 0, RAPIER_GOAL.height * 0.34, RAPIER_GOAL.netPlaneZ + 0.74, RAPIER_GOAL.halfWidth * 1.35, RAPIER_GOAL.height * 0.42, 0],
@@ -1161,6 +1365,7 @@ export function createGoalAndNet() {
     haze.rotation.y = item[6];
     group.add(haze);
   });
+  }
 
   var gridMaterial = new THREE.LineBasicMaterial({
     color: "#f5ffff",
@@ -1312,6 +1517,7 @@ export function createGoalAndNet() {
     knot.renderOrder = options.renderOrder || 6;
     return markMatchGradeNetDetail(knot, options);
   }
+  if (BUILD_RETIRED_NET_LAYERS) {
   for (var ropeX = -RAPIER_GOAL.halfWidth + 0.5, raisedVerticalIndex = 0; ropeX <= RAPIER_GOAL.halfWidth - 0.49; ropeX += 0.78, raisedVerticalIndex += 1) {
     var verticalName = "goal-net-raised-vertical-cord-" + raisedVerticalIndex;
     if (Math.abs(ropeX) < keeperSightline.halfWidth) {
@@ -1351,6 +1557,7 @@ export function createGoalAndNet() {
         { x: RAPIER_GOAL.halfWidth - 0.16, y: ropeY, z: RAPIER_GOAL.netPlaneZ + 0.122 },
       ], 0.0065, 0.13), 0.82, 0.36));
     }
+  }
   }
   [
     ["top", [
@@ -1398,8 +1605,10 @@ export function createGoalAndNet() {
     weave.name = "goal-net-diagonal-weave-" + name;
     group.add(registerDynamicNetDetail(weave, 0.84, 0.14));
   }
-  addDiagonalWeave("rising", 1);
-  addDiagonalWeave("falling", -1);
+  if (BUILD_RETIRED_NET_LAYERS) {
+    addDiagonalWeave("rising", 1);
+    addDiagonalWeave("falling", -1);
+  }
 
   function addOpenDiamondRopeSet(label, direction) {
     var slope = 1.08;
@@ -1444,9 +1653,12 @@ export function createGoalAndNet() {
       ropeIndex += 1;
     }
   }
-  addOpenDiamondRopeSet("rising", 1);
-  addOpenDiamondRopeSet("falling", -1);
+  if (BUILD_RETIRED_NET_LAYERS) {
+    addOpenDiamondRopeSet("rising", 1);
+    addOpenDiamondRopeSet("falling", -1);
+  }
 
+  if (BUILD_RETIRED_NET_LAYERS) {
   var topSagCord = makeRaisedRope("goal-net-top-sag-cord-main", [
     { x: -RAPIER_GOAL.halfWidth + 0.16, y: RAPIER_GOAL.height - 0.055, z: RAPIER_GOAL.netPlaneZ + 0.18 },
     { x: 0, y: RAPIER_GOAL.height - 0.125, z: RAPIER_GOAL.netPlaneZ + 0.3 },
@@ -1466,6 +1678,7 @@ export function createGoalAndNet() {
     rearSagCord.userData.netProfessionalSystem = NET_PROFESSIONAL_SYSTEM;
     group.add(registerDynamicNetDetail(rearSagCord, 0.56, 0.22));
   });
+  }
 
   function makeRearPocketRope(name, points, radius, opacity, baseZ) {
     var rope = makeRaisedRope(name, points, radius, opacity);
@@ -1512,8 +1725,9 @@ export function createGoalAndNet() {
       ropeIndex += 1;
     }
   }
-  addRearPocketDiamondRopeSet("rising", 1);
-  addRearPocketDiamondRopeSet("falling", -1);
+  if (BUILD_RETIRED_NET_LAYERS) {
+    addRearPocketDiamondRopeSet("rising", 1);
+    addRearPocketDiamondRopeSet("falling", -1);
 
   [0.36, 0.86, 1.38, 1.9].forEach(function addRearDepthRow(rowY, rowIndex) {
     var rowRope = makeRearPocketRope("goal-net-rear-depth-row-cord-" + rowIndex, [
@@ -1525,6 +1739,7 @@ export function createGoalAndNet() {
     ], 0.005, 0.058 + rowIndex * 0.006, RAPIER_GOAL.netPlaneZ + 0.86);
     group.add(registerDynamicNetDetail(rowRope, 0.46, 0.16));
   });
+  }
 
   [
     ["top-left", [
@@ -1576,6 +1791,7 @@ export function createGoalAndNet() {
     });
   });
 
+  if (BUILD_RETIRED_NET_LAYERS) {
   ["left", "right"].forEach(function addRearPocketDepthLaces(side) {
     var sign = side === "left" ? -1 : 1;
     [0.42, 0.9, 1.38].forEach(function addRearDepthLace(rowY, rowIndex) {
@@ -1586,6 +1802,7 @@ export function createGoalAndNet() {
       ], 0.0048, 0.105 + rowIndex * 0.014, 0.38, 0.12));
     });
   });
+  }
 
   [
     ["top-left", [
@@ -1610,6 +1827,7 @@ export function createGoalAndNet() {
     group.add(highlight);
   });
 
+  if (BUILD_RETIRED_NET_LAYERS) {
   var laceKnotIndex = 0;
   ["left", "right"].forEach(function addLaceKnotColumn(side) {
     var sign = side === "left" ? -1 : 1;
@@ -1625,6 +1843,7 @@ export function createGoalAndNet() {
       laceKnotIndex += 1;
     });
   });
+  }
 
   function addMatchGradeRearPocketThreadSet(label, direction) {
     var slope = 0.86;
@@ -1672,9 +1891,12 @@ export function createGoalAndNet() {
       threadIndex += 1;
     }
   }
-  addMatchGradeRearPocketThreadSet("rising", 1);
-  addMatchGradeRearPocketThreadSet("falling", -1);
+  if (BUILD_RETIRED_NET_LAYERS) {
+    addMatchGradeRearPocketThreadSet("rising", 1);
+    addMatchGradeRearPocketThreadSet("falling", -1);
+  }
 
+  if (BUILD_RETIRED_NET_LAYERS) {
   var matchWeaveKnotIndex = 0;
   [0.44, 0.76, 1.08, 1.4, 1.72, 2.04].forEach(function addMatchWeaveKnotRow(knotY, rowIndex) {
     [-2.82, -2.12, -1.42, -0.72, 0, 0.72, 1.42, 2.12, 2.82].forEach(function addMatchWeaveKnotColumn(knotX, columnIndex) {
@@ -1700,6 +1922,7 @@ export function createGoalAndNet() {
       matchWeaveKnotIndex += 1;
     });
   });
+  }
 
   function addRearHexPocketLayer() {
     var hexRows = [0.36, 0.68, 1.0, 1.32, 1.64, 1.96, 2.28].filter((rowY) => rowY < RAPIER_GOAL.height - 0.16);
@@ -1789,7 +2012,7 @@ export function createGoalAndNet() {
       });
     });
   }
-  addRearHexPocketLayer();
+  if (BUILD_RETIRED_NET_LAYERS) addRearHexPocketLayer();
 
   function addLandscapeRearNetTextureLayer() {
     var rowYs = [0.42, 0.74, 1.06, 1.38, 1.7, 2.02].filter((rowY) => rowY < RAPIER_GOAL.height - 0.2);
@@ -1867,7 +2090,7 @@ export function createGoalAndNet() {
       });
     });
   }
-  addLandscapeRearNetTextureLayer();
+  if (BUILD_RETIRED_NET_LAYERS) addLandscapeRearNetTextureLayer();
 
   function addBroadcastRearPocketMeshLayer() {
     var meshWidth = RAPIER_GOAL.halfWidth * 2 - 1.04;
@@ -1952,7 +2175,7 @@ export function createGoalAndNet() {
       });
     });
   }
-  addBroadcastRearPocketMeshLayer();
+  if (BUILD_RETIRED_NET_LAYERS) addBroadcastRearPocketMeshLayer();
 
   function makeMatchAlphaWeavePanel(name, width, height, x, y, z, opacity, options = {}) {
     var material = new THREE.MeshBasicMaterial({
@@ -1983,6 +2206,7 @@ export function createGoalAndNet() {
     return registerDynamicNetDetail(panel, options.motionScale ?? 0.18, options.opacityScale ?? 0.05);
   }
 
+  if (BUILD_RETIRED_NET_LAYERS) {
   [
     ["center-depth", 2.28, 1.58, 0, 1.24, RAPIER_GOAL.netPlaneZ + 0.9, 0.02, {
       rearPocketLayer: "center-depth-texture",
@@ -2024,6 +2248,7 @@ export function createGoalAndNet() {
       item[7],
     ));
   });
+  }
 
   [
     ["top-left", [
@@ -2080,6 +2305,7 @@ export function createGoalAndNet() {
     });
   });
 
+  if (BUILD_RETIRED_NET_LAYERS) {
   var slackKnotGeometry = new THREE.SphereGeometry(0.014, 8, 6);
   var knotColumns = [-2.94, -2.12, -1.34, -0.66, 0.66, 1.34, 2.12, 2.94];
   var knotRows = [0.36, 0.78, 1.2, 1.62, 2.04];
@@ -2117,16 +2343,19 @@ export function createGoalAndNet() {
       slackKnotIndex += 1;
     });
   });
+  }
 
   var sideNetMaterial = netMaterial.clone();
   sideNetMaterial.opacity = 0;
   ["left", "right"].forEach(function addSideNet(side) {
     var sign = side === "left" ? -1 : 1;
+    if (BUILD_RETIRED_NET_LAYERS) {
     var sideNet = new THREE.Mesh(new THREE.PlaneGeometry(0.95, RAPIER_GOAL.height, 5, 8), sideNetMaterial.clone());
     sideNet.name = "goal-net-side-" + side;
     sideNet.position.set(sign * RAPIER_GOAL.halfWidth, RAPIER_GOAL.height / 2, RAPIER_GOAL.netPlaneZ + 0.48);
     sideNet.rotation.y = sign > 0 ? -Math.PI / 2 : Math.PI / 2;
     group.add(registerDynamicNetDetail(sideNet, 0.72, 0));
+    }
 
     var stanchion = makeLimb("#edf9f2", 0.038);
     stanchion.name = "goal-depth-stanchion-" + side;
@@ -2147,6 +2376,7 @@ export function createGoalAndNet() {
     group.add(baseRail);
   });
 
+  if (BUILD_RETIRED_NET_LAYERS) {
   for (var drapeIndex = 0; drapeIndex < 7; drapeIndex += 1) {
     var drapeT = drapeIndex / 6;
     var drapeX = -RAPIER_GOAL.halfWidth + 0.54 + drapeT * (RAPIER_GOAL.halfWidth * 2 - 1.08);
@@ -2157,6 +2387,7 @@ export function createGoalAndNet() {
       { x: drapeX * 1.035, y: RAPIER_GOAL.height * 0.48, z: RAPIER_GOAL.netPlaneZ + 0.58 + Math.sin(drapeIndex * 0.9) * 0.025 },
       { x: drapeX * 1.055, y: 0.16, z: RAPIER_GOAL.netPlaneZ + 0.88 },
     ], 0.0049, drapeOpacity), 0.72, 0.32));
+  }
   }
 
   ["left", "right"].forEach(function addSideDepthCords(side) {
@@ -2222,6 +2453,7 @@ export function createGoalAndNet() {
     group.add(registerDynamicNetDetail(sleeve, 0.42, 0.22));
   });
 
+  if (BUILD_RETIRED_NET_LAYERS) {
   var weaveKnotMaterial = raisedRopeMaterial.clone();
   weaveKnotMaterial.color.set("#fafff7");
   weaveKnotMaterial.opacity = 0.056;
@@ -2240,6 +2472,7 @@ export function createGoalAndNet() {
       weaveKnot.userData.netBroadcastSightlineSystem = NET_BROADCAST_SIGHTLINE_SYSTEM;
     }
     group.add(registerDynamicNetDetail(weaveKnot, 0.76, 0.42));
+  }
   }
 
   var netWeightMaterial = new THREE.MeshStandardMaterial({ color: "#eef4e9", roughness: 0.46, metalness: 0.05 });
@@ -2383,6 +2616,7 @@ export function createGoalAndNet() {
     group.add(mark);
   });
 
+  if (BUILD_RETIRED_NET_LAYERS) {
   var soilSmudgeMaterial = new THREE.MeshBasicMaterial({
     color: "#816f42",
     transparent: true,
@@ -2397,6 +2631,7 @@ export function createGoalAndNet() {
     soilSmudge.material.opacity = 0.12 + soilSmudgeIndex * 0.018;
     soilSmudge.position.set(-RAPIER_GOAL.halfWidth + 0.72 + soilSmudgeIndex * 1.48, 0.12, RAPIER_GOAL.netPlaneZ + 0.118);
     group.add(registerDynamicNetDetail(soilSmudge, 0.22, 0.12));
+  }
   }
 
   var pegShadowMaterial = new THREE.MeshBasicMaterial({
@@ -2427,6 +2662,41 @@ export function createGoalAndNet() {
     hinge.rotation.y = sign * 0.34;
     group.add(hinge);
   });
+
+  var retiredNetVisualPatterns = [
+    /^goal-net-raised-(vertical|horizontal)-cord-/,
+    /^goal-net-diagonal-weave-/,
+    /^goal-net-open-diamond-rope-/,
+    /^goal-net-rear-pocket-(sag-cord|diamond-rope|depth-lace)-/,
+    /^goal-net-rear-depth-row-cord-/,
+    /^goal-net-match-weave-/,
+    /^goal-net-rear-hex-pocket-/,
+    /^goal-net-landscape-rear-/,
+    /^goal-net-broadcast-rear-/,
+    /^goal-net-match-alpha-weave-panel-/,
+    /^goal-net-lace-knot-/,
+    /^goal-net-slack-knot-/,
+    /^goal-net-rear-drape-cord-/,
+    /^goal-net-weave-knot-/,
+    /^goal-net-bottom-soil-smudge-/,
+    /^goal-net-depth-haze-/,
+    /^goal-net-side-(left|right)$/,
+  ];
+  var retiredNetObjects = [];
+
+  group.traverse(function collectRetiredNetVisual(node) {
+    if (retiredNetVisualPatterns.some((pattern) => pattern.test(node.name || ""))) {
+      retiredNetObjects.push(node);
+    }
+  });
+
+  var retiredNetNames = new Set(retiredNetObjects.map((node) => node.name));
+  retiredNetObjects.forEach(function removeRetiredNetVisual(node) {
+    node.parent?.remove(node);
+  });
+  dynamicNetDetails = dynamicNetDetails.filter((detail) => !retiredNetNames.has(detail.name));
+  group.userData.netPerformanceSystem = "single-shell-mobile-net-budget";
+  group.userData.retiredNetLayerCount = retiredNetObjects.length;
 
   return { group, net, grid, dynamicNetDetails };
 }

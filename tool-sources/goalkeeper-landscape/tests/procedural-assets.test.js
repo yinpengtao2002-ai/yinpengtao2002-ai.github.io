@@ -1,4 +1,3 @@
-import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 import {
   createFieldGroup,
@@ -321,35 +320,38 @@ describe("procedural 3D assets", () => {
     expect([...textileRibs, ...latexEdges].every((detail) => detail.userData.pbrMaterialSystem === "pbr-latex-textile-match-glove-materials")).toBe(true);
   });
 
-  it("uses a plain non-grass training floor without pitch striping", () => {
+  it("uses a premium non-grass academy surface with reusable PBR detail", () => {
     const field = createFieldGroup();
     const surface = collectByName(field, /^field-training-surface$/)[0];
     const stripes = collectByName(field, /^field-mowing-stripe-/);
     const turfPatches = collectByName(field, /^field-turf-color-variation-patch-/);
     const markings = collectByName(field, /^field-standard-/);
 
-    expect(field.userData.visualStyle).toBe("professional-keeper-training-court");
-    expect(field.userData.markingSystem).toBe("minimal-keeper-training-floor");
-    expect(surface.material.color.getHexString()).toBe("8e9295");
+    expect(field.userData.visualStyle).toBe("professional-goalkeeper-academy-court");
+    expect(field.userData.markingSystem).toBe("clear-academy-court-no-pitch-stripes");
+    expect(field.userData.surfaceFinishSystem).toBe("micro-speckled-polymer-court-no-grass");
+    expect(surface.material.color.getHexString()).toBe("466a6d");
     expect(surface.material.color.b).toBeGreaterThan(surface.material.color.g);
-    expect(surface.material.map).toBeNull();
-    expect(surface.material.bumpMap).toBeNull();
-    expect(surface.material.roughnessMap).toBeNull();
+    expect(surface.material.map?.userData.assetSystem).toBe("micro-speckled-academy-polymer-surface");
+    expect(surface.material.bumpMap?.userData.assetSystem).toBe("micro-speckled-academy-polymer-surface");
+    expect(surface.material.roughnessMap?.userData.assetSystem).toBe("micro-speckled-academy-polymer-surface");
+    expect(surface.material.bumpScale).toBeGreaterThan(0.004);
+    expect(surface.material.bumpScale).toBeLessThanOrEqual(0.014);
+    expect(surface.material.roughness).toBeGreaterThanOrEqual(0.82);
     expect(stripes).toHaveLength(0);
     expect(turfPatches).toHaveLength(0);
     expect(markings).toHaveLength(0);
     expect(collectByName(field, /^field-penalty-spot$/)).toHaveLength(0);
   });
 
-  it("uses a neutral concrete floor palette so the surface cannot read as grass", () => {
+  it("keeps the academy floor blue-green and polymer-like so it cannot read as grass", () => {
     const field = createFieldGroup();
     const surface = collectByName(field, /^field-training-surface$/)[0];
 
-    expect(surface.material.userData.surfacePaletteSystem).toBe("neutral-concrete-court-no-grass");
-    expect(surface.material.color.getHexString()).toBe("8e9295");
-    expect(surface.material.color.g).toBeLessThan(surface.material.color.b);
-    expect(surface.material.color.g).toBeLessThanOrEqual(surface.material.color.r + 0.045);
-    expect(surface.material.userData.grassReadabilityGuard).toBe("gray-concrete-floor-not-turf");
+    expect(surface.material.userData.surfacePaletteSystem).toBe("blue-green-academy-court-no-grass");
+    expect(surface.material.color.getHexString()).toBe("466a6d");
+    expect(surface.material.color.b).toBeGreaterThan(surface.material.color.g);
+    expect(surface.material.userData.grassReadabilityGuard).toBe("synthetic-polymer-floor-no-turf-blades");
   });
 
   it("uses a modern finished match ball texture instead of a plain prototype pattern", () => {
@@ -364,7 +366,7 @@ describe("procedural 3D assets", () => {
   it("keeps the floor clear of football pitch markings while preserving goalmouth depth", () => {
     const field = createFieldGroup();
 
-    expect(field.userData.markingSystem).toBe("minimal-keeper-training-floor");
+    expect(field.userData.markingSystem).toBe("clear-academy-court-no-pitch-stripes");
     expect(collectByName(field, /^field-standard-/)).toHaveLength(0);
     expect(collectByName(field, /^field-standard-touchline-/)).toHaveLength(0);
     expect(collectByName(field, /^field-standard-penalty-area-/)).toHaveLength(0);
@@ -519,8 +521,8 @@ describe("procedural 3D assets", () => {
   it("keeps the floor clean and removes awkward decorative grass props", () => {
     const field = createFieldGroup();
 
-    expect(field.userData.surfaceDetailSystem).toBe("plain-neutral-training-floor-goalmouth-shadows");
-    expect(field.userData.surfaceFinishSystem).toBe("plain-training-floor-no-grass-or-pitch-stripes");
+    expect(field.userData.surfaceDetailSystem).toBe("micro-speckled-polymer-floor-goalmouth-shadows");
+    expect(field.userData.surfaceFinishSystem).toBe("micro-speckled-polymer-court-no-grass");
     expect(collectByName(field, /^field-turf$/)).toHaveLength(0);
     expect(collectByName(field, /^field-foreground-blade-/)).toHaveLength(0);
     expect(collectByName(field, /^field-foreground-blade-cluster-/)).toHaveLength(0);
@@ -543,7 +545,7 @@ describe("procedural 3D assets", () => {
     expect(collectByName(field, /^field-touchline-shadow-/)).toHaveLength(0);
   });
 
-  it("models the goal with depth, side netting, anchors, and branded posts", () => {
+  it("models the goal with depth, a continuous pocket shell, anchors, and branded posts", () => {
     const goal = createGoalAndNet();
 
     expect(goal.group.userData.assetSystem).toBe("layered-goal-and-net-kit");
@@ -552,7 +554,7 @@ describe("procedural 3D assets", () => {
     expect(goal.net.geometry.attributes.position.count).toBeGreaterThanOrEqual(120);
     expect(collectByName(goal.group, /^goal-frame-(left-post|right-post|crossbar)$/)).toHaveLength(3);
     expect(collectByName(goal.group, /^goal-depth-stanchion-/)).toHaveLength(2);
-    expect(collectByName(goal.group, /^goal-net-side-(left|right)$/)).toHaveLength(2);
+    expect(collectByName(goal.group, /^goal-net-continuous-pocket-shell$/)).toHaveLength(1);
     expect(collectByName(goal.group, /^goal-net-anchor-/).length).toBeGreaterThanOrEqual(4);
     expect(goal.net.name).toBe("goal-net-back-panel");
     expect(goal.grid.name).toBe("goal-net-back-grid");
@@ -574,7 +576,7 @@ describe("procedural 3D assets", () => {
     const glove = createGloveMesh("right");
     const ballTexture = createFootballTexture();
 
-    expect(field.userData.surfaceFinishSystem).toBe("plain-training-floor-no-grass-or-pitch-stripes");
+    expect(field.userData.surfaceFinishSystem).toBe("micro-speckled-polymer-court-no-grass");
     expect(collectByName(field, /^field-edge-tuft-cluster-/)).toHaveLength(0);
     expect(collectByName(field, /^field-floor-scuff-/)).toHaveLength(0);
     expect(collectByName(field, /^field-line-chalk-dust-/)).toHaveLength(0);
@@ -595,11 +597,11 @@ describe("procedural 3D assets", () => {
     expect(ballTexture.userData.finishSystem).toBe("micro-scuffed-satin-panels");
   });
 
-  it("uses a plain matte training floor instead of grass-like surface striping", () => {
+  it("uses a reusable polymer training floor instead of grass-like surface striping", () => {
     const field = createFieldGroup();
     const instancedTurf = collectByName(field, /^field-instanced-turf-blades-/);
 
-    expect(field.userData.reusableAssetTechnique).toBe("plain-matte-training-floor-kit");
+    expect(field.userData.reusableAssetTechnique).toBe("procedural-pbr-academy-court-kit");
     expect(instancedTurf).toHaveLength(0);
     expect(collectByName(field, /^field-standard-/)).toHaveLength(0);
     expect(collectByName(field, /^field-surface-panel-/)).toHaveLength(0);
@@ -615,15 +617,15 @@ describe("procedural 3D assets", () => {
     const ballMaterial = createFootballMaterial();
 
     expect(field.userData.materialPipelineSystem).toBe("procedural-pbr-material-stack");
-    expect(surface.material.userData.materialPipelineSystem).toBe("clean-matte-training-surface-material");
-    expect(surface.material.userData.surfacePaletteSystem).toBe("neutral-concrete-court-no-grass");
-    expect(surface.material.color.getHexString()).toBe("8e9295");
+    expect(surface.material.userData.materialPipelineSystem).toBe("academy-polymer-training-surface-pbr");
+    expect(surface.material.userData.surfacePaletteSystem).toBe("blue-green-academy-court-no-grass");
+    expect(surface.material.color.getHexString()).toBe("466a6d");
     expect(surface.material.color.b).toBeGreaterThan(surface.material.color.g);
-    expect(surface.material.map).toBeNull();
-    expect(surface.material.bumpMap).toBeNull();
-    expect(surface.material.roughnessMap).toBeNull();
-    expect(surface.material.bumpScale).toBe(0);
-    expect(surface.material.roughness).toBeGreaterThanOrEqual(0.88);
+    expect(surface.material.map?.userData.assetSystem).toBe("micro-speckled-academy-polymer-surface");
+    expect(surface.material.bumpMap?.userData.assetSystem).toBe("micro-speckled-academy-polymer-surface");
+    expect(surface.material.roughnessMap?.userData.assetSystem).toBe("micro-speckled-academy-polymer-surface");
+    expect(surface.material.bumpScale).toBeGreaterThan(0);
+    expect(surface.material.roughness).toBeGreaterThanOrEqual(0.86);
 
     expect(ballMaterial.userData.materialPipelineSystem).toBe("procedural-match-ball-pbr");
     expect(ballMaterial.map.userData.assetSystem).toBe("modern-panel-match-ball-texture");
@@ -634,358 +636,52 @@ describe("procedural 3D assets", () => {
     expect(ballMaterial.metalness).toBeLessThanOrEqual(0.03);
   });
 
-  it("adds diagonal net weave and rope sleeve details so the goal feels like a real object", () => {
+  it("uses one continuous shaped pocket shell instead of cutting a rectangular hole through the net", () => {
     const goal = createGoalAndNet();
+    const pocketShells = collectByName(goal.group, /^goal-net-continuous-pocket-shell$/);
 
-    expect(goal.group.userData.netWeaveSystem).toBe("knotted-diagonal-net-weave");
-    expect(collectByName(goal.group, /^goal-net-diagonal-weave-/).length).toBeGreaterThanOrEqual(2);
-    expect(collectByName(goal.group, /^goal-net-corner-sleeve-/).length).toBeGreaterThanOrEqual(4);
-    expect(collectByName(goal.group, /^goal-net-weave-knot-/).length).toBeGreaterThanOrEqual(8);
+    expect(goal.group.userData.netContinuitySystem).toBe("continuous-ball-priority-pocket-shell");
+    expect(pocketShells).toHaveLength(1);
+
+    const shell = pocketShells[0];
+    const positions = shell.geometry.getAttribute("position");
+    const depths = Array.from({ length: positions.count }, (_, index) => positions.getZ(index));
+    const depthRange = Math.max(...depths) - Math.min(...depths);
+
+    expect(shell.geometry.type).toBe("PlaneGeometry");
+    expect(positions.count).toBeGreaterThanOrEqual(200);
+    expect(depthRange).toBeGreaterThanOrEqual(0.68);
+    expect(shell.material.type).toBe("ShaderMaterial");
+    expect(shell.material.transparent).toBe(true);
+    expect(shell.material.depthWrite).toBe(false);
+    expect(shell.material.forceSinglePass).toBe(true);
+    expect(shell.material.userData.centerVisibilityFloor).toBeGreaterThanOrEqual(0.24);
+    expect(shell.material.userData.centerVisibilityFloor).toBeLessThanOrEqual(0.42);
+    expect(shell.material.userData.meshPattern).toBe("match-square-120mm-knotted-net");
+    expect(shell.material.uniforms.netMap.value.userData.cellsAcross).toBeGreaterThanOrEqual(32);
+    expect(shell.material.uniforms.netMap.value.userData.cellsHigh).toBeGreaterThanOrEqual(10);
+    expect(shell.userData.crossesKeeperSightline).toBe(true);
+    expect(shell.userData.hasShotWindowCutout).toBe(false);
+    expect(shell.userData.ballPriorityRenderOrder).toBeGreaterThan(shell.renderOrder);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name === shell.name)).toBe(true);
   });
 
-  it("adds a raised rope net layer so the goal reads as woven cord instead of a flat line grid", () => {
+  it("keeps the finished goal net within a mobile-safe draw and animation budget", () => {
     const goal = createGoalAndNet();
-    const verticalCords = collectByName(goal.group, /^goal-net-raised-vertical-cord-/);
-    const horizontalCords = collectByName(goal.group, /^goal-net-raised-horizontal-cord-/);
-    const borderRopes = collectByName(goal.group, /^goal-net-raised-border-rope-/);
-    const allRaisedCords = [...verticalCords, ...horizontalCords, ...borderRopes];
-
-    expect(goal.group.userData.netCordVolumeSystem).toBe("raised-rope-net-cord-layer");
-    expect(verticalCords.length).toBeGreaterThanOrEqual(5);
-    expect(horizontalCords.length).toBeGreaterThanOrEqual(4);
-    expect(borderRopes).toHaveLength(4);
-    expect(allRaisedCords.every((cord) => cord.geometry.type === "TubeGeometry")).toBe(true);
-    expect(allRaisedCords.every((cord) => cord.material.opacity <= 0.5)).toBe(true);
-    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-raised-vertical-cord-"))).toBe(true);
-    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-raised-horizontal-cord-"))).toBe(true);
-    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-raised-border-rope-"))).toBe(true);
-  });
-
-  it("keeps the net readable without turning the back panel into a ball-blocking veil", () => {
-    const goal = createGoalAndNet();
-    const sideNets = collectByName(goal.group, /^goal-net-side-(left|right)$/);
-    const depthHaze = collectByName(goal.group, /^goal-net-depth-haze-/);
-    const raisedCords = collectByName(goal.group, /^goal-net-raised-(vertical|horizontal)-cord-/);
-    const borderRopes = collectByName(goal.group, /^goal-net-raised-border-rope-/);
-    const diagonalWeave = collectByName(goal.group, /^goal-net-diagonal-weave-/);
-
-    expect(goal.group.userData.netReadabilitySystem).toBe("ball-first-ultra-light-net-cords");
-    expect(goal.net.material.opacity).toBeLessThanOrEqual(0.0001);
-    expect(goal.grid.material.opacity).toBeLessThanOrEqual(0.008);
-    expect(depthHaze.every((haze) => haze.material.opacity <= 0.0001)).toBe(true);
-    expect(sideNets.every((net) => net.material.opacity <= 0.0001)).toBe(true);
-    expect(raisedCords.every((cord) => cord.material.opacity >= 0.07 && cord.material.opacity <= 0.16)).toBe(true);
-    expect(borderRopes.every((rope) => rope.material.opacity >= 0.24 && rope.material.opacity <= 0.28)).toBe(true);
-    expect(diagonalWeave.every((weave) => weave.material.opacity >= 0.004 && weave.material.opacity <= 0.01)).toBe(true);
-  });
-
-  it("uses an open diamond rope net instead of a translucent curtain in the goal mouth", () => {
-    const goal = createGoalAndNet();
-    const diamondRopes = collectByName(goal.group, /^goal-net-open-diamond-rope-/);
-    const crossingRopes = diamondRopes.filter((rope) => rope.userData.crossesKeeperSightline);
-    const peripheralRopes = diamondRopes.filter((rope) => !rope.userData.crossesKeeperSightline);
-
-    expect(goal.group.userData.netRealismSystem).toBe("open-diamond-rope-net-ball-first");
-    expect(diamondRopes.length).toBeGreaterThanOrEqual(12);
-    expect(diamondRopes.every((rope) => rope.geometry.type === "TubeGeometry")).toBe(true);
-    expect(crossingRopes.every((rope) => rope.material.opacity <= 0.012)).toBe(true);
-    expect(peripheralRopes.every((rope) => rope.material.opacity >= 0.09 && rope.material.opacity <= 0.14)).toBe(true);
-    expect(diamondRopes.every((rope) => rope.material.depthWrite === false)).toBe(true);
-    expect(goal.net.material.opacity).toBeLessThanOrEqual(0.0001);
-    expect(goal.grid.material.opacity).toBeLessThanOrEqual(0.008);
-    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-open-diamond-rope-"))).toBe(true);
-  });
-
-  it("uses braided cord material and a low-occlusion keeper sightline for the net", () => {
-    const goal = createGoalAndNet();
-    const diamondRopes = collectByName(goal.group, /^goal-net-open-diamond-rope-/);
-    const rearDrapeCords = collectByName(goal.group, /^goal-net-rear-drape-cord-/);
-    const sideDepthCords = collectByName(goal.group, /^goal-net-side-depth-cord-/);
-    const crossingRopes = diamondRopes.filter((rope) => rope.userData.crossesKeeperSightline);
-    const peripheralRopes = diamondRopes.filter((rope) => !rope.userData.crossesKeeperSightline);
-
-    expect(goal.group.userData.netTextureSystem).toBe("procedural-braided-cord-net-material");
-    expect(goal.group.userData.netSightlineSystem).toBe("central-shot-lane-low-occlusion-net");
-    expect(goal.group.userData.netDepthSystem).toBe("rear-draped-side-net-volume");
-    expect(goal.net.material.opacity).toBeLessThanOrEqual(0.0001);
-    expect(goal.grid.material.opacity).toBeLessThanOrEqual(0.055);
-    expect(rearDrapeCords.length).toBeGreaterThanOrEqual(6);
-    expect(sideDepthCords.length).toBeGreaterThanOrEqual(6);
-    expect(crossingRopes.length).toBeGreaterThan(0);
-    expect(crossingRopes.every((rope) => rope.material.opacity <= 0.04)).toBe(true);
-    expect(peripheralRopes.some((rope) => rope.material.opacity >= 0.12)).toBe(true);
-    expect(diamondRopes.every((rope) => rope.material.userData.netMaterialSystem === "braided-nylon-cord-pbr")).toBe(true);
-    expect(diamondRopes.every((rope) => rope.material.bumpMap?.userData.assetSystem === "procedural-braided-cord-net-material")).toBe(true);
-  });
-
-  it("builds a slack knotted pro net without covering the central shot lane", () => {
-    const goal = createGoalAndNet();
-    const diamondRopes = collectByName(goal.group, /^goal-net-open-diamond-rope-/);
-    const crossingRopes = diamondRopes.filter((rope) => rope.userData.crossesKeeperSightline);
-    const peripheralRopes = diamondRopes.filter((rope) => !rope.userData.crossesKeeperSightline);
-    const slackKnots = collectByName(goal.group, /^goal-net-slack-knot-/);
-    const topSagCords = collectByName(goal.group, /^goal-net-top-sag-cord-/);
-    const rearPocketSagCords = collectByName(goal.group, /^goal-net-rear-pocket-sag-cord-/);
-    const sideReturnCords = collectByName(goal.group, /^goal-net-side-return-cord-/);
-    const diagonalDetails = goal.dynamicNetDetails.filter((detail) => detail.name.startsWith("goal-net-diagonal-weave-"));
-    const sidePlaneDetails = goal.dynamicNetDetails.filter((detail) => /^goal-net-side-(left|right)$/.test(detail.name));
-
-    expect(goal.group.userData.netProfessionalSystem).toBe("slack-knotted-pro-goal-net");
-    expect(goal.group.userData.netOcclusionBudgetSystem).toBe("keeper-view-low-opacity-center-window");
-    expect(goal.grid.visible).toBe(false);
-    expect(goal.grid.material.opacity).toBeLessThanOrEqual(0.001);
-    expect(crossingRopes.length).toBeGreaterThan(0);
-    expect(crossingRopes.every((rope) => rope.material.opacity <= 0.012)).toBe(true);
-    expect(crossingRopes.every((rope) => rope.userData.ropeRadius <= 0.0036)).toBe(true);
-    expect(peripheralRopes.some((rope) => rope.material.opacity >= 0.09 && rope.material.opacity <= 0.128)).toBe(true);
-    expect(slackKnots.length).toBeGreaterThanOrEqual(18);
-    expect(slackKnots.every((knot) => knot.userData.netProfessionalSystem === "slack-knotted-pro-goal-net")).toBe(true);
-    expect(slackKnots.every((knot) => knot.material.transparent && knot.material.opacity <= 0.13)).toBe(true);
-    expect(topSagCords).toHaveLength(1);
-    expect(rearPocketSagCords.length).toBeGreaterThanOrEqual(2);
-    expect(sideReturnCords.length).toBeGreaterThanOrEqual(4);
-    expect([...topSagCords, ...rearPocketSagCords, ...sideReturnCords].every((rope) => rope.geometry.type === "TubeGeometry")).toBe(true);
-    expect(diagonalDetails.length).toBeGreaterThanOrEqual(2);
-    expect(diagonalDetails.every((detail) => detail.opacityScale <= 0.16)).toBe(true);
-    expect(sidePlaneDetails).toHaveLength(2);
-    expect(sidePlaneDetails.every((detail) => detail.opacityScale === 0)).toBe(true);
-  });
-
-  it("uses a true open center window with the detailed net carried by the rear pocket", () => {
-    const goal = createGoalAndNet();
-    const diamondRopes = collectByName(goal.group, /^goal-net-open-diamond-rope-/);
-    const centralGhostRopes = diamondRopes.filter((rope) => rope.userData.crossesKeeperSightline);
-    const rearPocketDiamondRopes = collectByName(goal.group, /^goal-net-rear-pocket-diamond-rope-/);
-    const rearDepthRows = collectByName(goal.group, /^goal-net-rear-depth-row-cord-/);
-    const centerKnots = collectByName(goal.group, /^goal-net-slack-knot-/).filter((knot) => knot.userData.crossesKeeperSightline);
-
-    expect(goal.group.userData.netCenterWindowSystem).toBe("true-open-center-shot-window");
-    expect(goal.group.userData.netRealismUpgradeSystem).toBe("layered-rear-pocket-braided-net");
-    expect(centralGhostRopes.length).toBeGreaterThan(0);
-    expect(centralGhostRopes.every((rope) => rope.material.opacity <= 0.004)).toBe(true);
-    expect(centralGhostRopes.every((rope) => rope.userData.ropeRadius <= 0.0026)).toBe(true);
-    expect(centerKnots).toHaveLength(0);
-    expect(rearPocketDiamondRopes.length).toBeGreaterThanOrEqual(10);
-    expect(rearPocketDiamondRopes.every((rope) => rope.geometry.type === "TubeGeometry")).toBe(true);
-    expect(rearPocketDiamondRopes.every((rope) => rope.material.opacity >= 0.035 && rope.material.opacity <= 0.082)).toBe(true);
-    expect(rearPocketDiamondRopes.every((rope) => rope.position.z > 0.24)).toBe(true);
-    expect(rearDepthRows.length).toBeGreaterThanOrEqual(3);
-    expect(rearDepthRows.every((rope) => rope.material.opacity <= 0.09)).toBe(true);
-  });
-
-  it("adds an edge-laced rear pocket net that looks woven without blocking the shot lane", () => {
-    const goal = createGoalAndNet();
-    const edgeLaces = collectByName(goal.group, /^goal-net-matchday-edge-lace-/);
-    const sideCheekLaces = collectByName(goal.group, /^goal-net-side-cheek-lace-/);
-    const sideCheekCrossLaces = collectByName(goal.group, /^goal-net-side-cheek-lace-(left|right)-cross-/);
-    const rearDepthLaces = collectByName(goal.group, /^goal-net-rear-pocket-depth-lace-/);
-    const highlightCords = collectByName(goal.group, /^goal-net-cord-highlight-/);
-    const laceKnots = collectByName(goal.group, /^goal-net-lace-knot-/);
-    const allWovenLaces = [...edgeLaces, ...sideCheekLaces, ...rearDepthLaces];
-
-    expect(goal.group.userData.netMatchdayLacingSystem).toBe("edge-laced-rear-pocket-net-clear-lane");
-    expect(goal.group.userData.netLaneGuardSystem).toBe("peripheral-net-detail-open-shot-lane");
-    expect(edgeLaces).toHaveLength(4);
-    expect(sideCheekLaces.length).toBeGreaterThanOrEqual(8);
-    expect(sideCheekCrossLaces.length).toBeGreaterThanOrEqual(4);
-    expect(rearDepthLaces.length).toBeGreaterThanOrEqual(4);
-    expect(highlightCords.length).toBeGreaterThanOrEqual(4);
-    expect(laceKnots.length).toBeGreaterThanOrEqual(12);
-    expect(allWovenLaces.every((rope) => rope.geometry.type === "TubeGeometry")).toBe(true);
-    expect(allWovenLaces.every((rope) => rope.material.userData.netMaterialSystem === "braided-nylon-cord-pbr")).toBe(true);
-    expect(allWovenLaces.every((rope) => rope.material.bumpMap?.userData.assetSystem === "procedural-braided-cord-net-material")).toBe(true);
-    expect(allWovenLaces.every((rope) => rope.material.transparent && rope.material.depthWrite === false)).toBe(true);
-    expect(allWovenLaces.every((rope) => rope.userData.netLaneGuardSystem === "peripheral-net-detail-open-shot-lane")).toBe(true);
-    expect(allWovenLaces.every((rope) => rope.userData.crossesKeeperSightline === false)).toBe(true);
-    expect(allWovenLaces.every((rope) => rope.material.opacity >= 0.075 && rope.material.opacity <= 0.24)).toBe(true);
-    expect(highlightCords.every((cord) => cord.material.transparent && cord.material.opacity <= 0.12)).toBe(true);
-    expect(laceKnots.every((knot) => knot.material.transparent && knot.material.opacity <= 0.16)).toBe(true);
-    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-matchday-edge-lace-"))).toBe(true);
-    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-side-cheek-lace-"))).toBe(true);
-  });
-
-  it("adds match-grade woven rear pocket texture while keeping the center ball-first", () => {
-    const goal = createGoalAndNet();
-    const rearPocketThreads = collectByName(goal.group, /^goal-net-match-weave-rear-pocket-thread-/);
-    const weaveKnots = collectByName(goal.group, /^goal-net-match-weave-knot-/);
-    const edgeBraids = collectByName(goal.group, /^goal-net-front-edge-braided-strand-/);
-    const allMatchWeaveDetails = [...rearPocketThreads, ...weaveKnots, ...edgeBraids];
-    const centerDepthThreads = rearPocketThreads.filter((thread) => thread.userData.rearPocketLayer === "center-depth-detail");
-    const centerDepthKnots = weaveKnots.filter((knot) => knot.userData.rearPocketLayer === "center-depth-detail");
-    const frontLaneDetails = allMatchWeaveDetails.filter((detail) => detail.userData.frontShotLaneOcclusion > 0);
-
-    expect(goal.group.userData.netMatchGradeTextureSystem).toBe("match-grade-woven-net-texture-clear-sightline");
-    expect(goal.group.userData.netShotLaneVisibilitySystem).toBe("center-lane-ball-first-net-budget");
-    expect(rearPocketThreads.length).toBeGreaterThanOrEqual(18);
-    expect(weaveKnots.length).toBeGreaterThanOrEqual(24);
-    expect(edgeBraids.length).toBeGreaterThanOrEqual(6);
-    expect(rearPocketThreads.every((thread) => thread.geometry.type === "TubeGeometry")).toBe(true);
-    expect(edgeBraids.every((strand) => strand.geometry.type === "TubeGeometry")).toBe(true);
-    expect(allMatchWeaveDetails.every((detail) => detail.userData.netMatchGradeTextureSystem === "match-grade-woven-net-texture-clear-sightline")).toBe(true);
-    expect(allMatchWeaveDetails.every((detail) => detail.userData.netShotLaneVisibilitySystem === "center-lane-ball-first-net-budget")).toBe(true);
-    expect(rearPocketThreads.every((thread) => thread.material.userData.netMaterialSystem === "braided-nylon-cord-pbr")).toBe(true);
-    expect(rearPocketThreads.every((thread) => thread.material.bumpMap?.userData.assetSystem === "procedural-braided-cord-net-material")).toBe(true);
-    expect(centerDepthThreads.length).toBeGreaterThan(0);
-    expect(centerDepthKnots.length).toBeGreaterThan(0);
-    expect([...centerDepthThreads, ...centerDepthKnots].every((detail) => detail.userData.behindShotLane === true)).toBe(true);
-    expect(centerDepthThreads.every((thread) => thread.material.opacity <= 0.064)).toBe(true);
-    expect(centerDepthKnots.every((knot) => knot.material.opacity <= 0.05)).toBe(true);
-    expect(frontLaneDetails).toHaveLength(0);
-    expect(edgeBraids.every((strand) => strand.userData.crossesKeeperSightline === false)).toBe(true);
-    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-match-weave-rear-pocket-thread-"))).toBe(true);
-    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-match-weave-knot-"))).toBe(true);
-  });
-
-  it("adds a rear hex pocket net texture while preserving a clear keeper sightline", () => {
-    const goal = createGoalAndNet();
-    const hexThreads = collectByName(goal.group, /^goal-net-rear-hex-pocket-thread-/);
-    const hexKnots = collectByName(goal.group, /^goal-net-rear-hex-pocket-knot-/);
-    const centerHexDetails = [...hexThreads, ...hexKnots].filter((detail) => detail.userData.rearPocketLayer === "center-depth-detail");
-
-    expect(goal.group.userData.netPhotorealTextureSystem).toBe("braided-hex-rear-pocket-net-clear-lane");
-    expect(hexThreads.length).toBeGreaterThanOrEqual(20);
-    expect(hexKnots.length).toBeGreaterThanOrEqual(24);
-    expect(hexThreads.every((thread) => thread.geometry.type === "TubeGeometry")).toBe(true);
-    expect(hexThreads.every((thread) => thread.material.userData.netMaterialSystem === "braided-nylon-cord-pbr")).toBe(true);
-    expect(hexThreads.every((thread) => thread.material.bumpMap?.userData.assetSystem === "procedural-braided-cord-net-material")).toBe(true);
-    expect([...hexThreads, ...hexKnots].every((detail) => detail.userData.behindShotLane === true)).toBe(true);
-    expect([...hexThreads, ...hexKnots].every((detail) => detail.userData.frontShotLaneOcclusion === 0)).toBe(true);
-    expect(centerHexDetails.length).toBeGreaterThan(0);
-    expect(centerHexDetails.every((detail) => detail.material.opacity <= 0.046)).toBe(true);
-    expect(hexThreads.every((thread) => thread.material.opacity <= 0.084)).toBe(true);
-    expect(hexKnots.every((knot) => knot.material.opacity <= 0.062)).toBe(true);
-    expect(goal.net.material.opacity).toBeLessThanOrEqual(0.0001);
-    expect(goal.grid.visible).toBe(false);
-    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-rear-hex-pocket-thread-"))).toBe(true);
-  });
-
-  it("keeps the landscape keeper view clear while moving realistic net texture into the rear pocket", () => {
-    const goal = createGoalAndNet();
-    const rearCatenaryCords = collectByName(goal.group, /^goal-net-landscape-rear-catenary-cord-/);
-    const rearKnottedTufts = collectByName(goal.group, /^goal-net-landscape-rear-knot-tuft-/);
-    const keeperLaneBlockers = [];
-    const worldPosition = new THREE.Vector3();
+    let objectCount = 0;
+    let transparentObjectCount = 0;
 
     goal.group.traverse((node) => {
-      if (!node.name?.startsWith("goal-net-") || !node.material || node.visible === false) return;
-      node.getWorldPosition(worldPosition);
-      const materialList = Array.isArray(node.material) ? node.material : [node.material];
-      const maxOpacity = Math.max(...materialList.map((material) => material.opacity ?? 1));
-      const isInLandscapeLane =
-        Math.abs(worldPosition.x) < 1.1 &&
-        worldPosition.y > 0.38 &&
-        worldPosition.y < 2.12 &&
-        worldPosition.z <= goal.net.position.z + 0.18;
-      if (isInLandscapeLane && maxOpacity > 0.075) {
-        keeperLaneBlockers.push(`${node.name}:${maxOpacity.toFixed(3)}`);
-      }
+      objectCount += 1;
+      const materials = node.material ? (Array.isArray(node.material) ? node.material : [node.material]) : [];
+      if (materials.some((material) => material.transparent)) transparentObjectCount += 1;
     });
 
-    expect(goal.group.userData.netLandscapeSightlineSystem).toBe("landscape-keeper-view-real-net-clear-shot-lane");
-    expect(keeperLaneBlockers).toEqual([]);
-    expect(rearCatenaryCords.length).toBeGreaterThanOrEqual(8);
-    expect(rearCatenaryCords.every((cord) => cord.geometry.type === "TubeGeometry")).toBe(true);
-    expect(rearCatenaryCords.every((cord) => cord.material.userData.netMaterialSystem === "braided-nylon-cord-pbr")).toBe(true);
-    expect(rearCatenaryCords.every((cord) => cord.material.bumpMap?.userData.assetSystem === "procedural-braided-cord-net-material")).toBe(true);
-    expect(rearCatenaryCords.every((cord) => cord.position.z >= goal.net.position.z + 0.38)).toBe(true);
-    expect(rearCatenaryCords.every((cord) => cord.material.opacity >= 0.04 && cord.material.opacity <= 0.115)).toBe(true);
-    expect(rearKnottedTufts.length).toBeGreaterThanOrEqual(18);
-    expect(rearKnottedTufts.every((knot) => knot.material.transparent && knot.material.opacity <= 0.08)).toBe(true);
-    expect([...rearCatenaryCords, ...rearKnottedTufts].every((detail) => detail.userData.netLaneGuardSystem === "peripheral-net-detail-open-shot-lane")).toBe(true);
-    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-landscape-rear-catenary-cord-"))).toBe(true);
-  });
-
-  it("uses a procedural match-net texture layer that reads like real mesh without covering the shot lane", () => {
-    const goal = createGoalAndNet();
-    const texturedPanels = collectByName(goal.group, /^goal-net-match-alpha-weave-panel-/);
-    const centerPanels = texturedPanels.filter((panel) => panel.userData.rearPocketLayer === "center-depth-texture");
-    const edgePanels = texturedPanels.filter((panel) => panel.userData.rearPocketLayer === "peripheral-edge-texture");
-    const laneIntruders = texturedPanels.filter((panel) => {
-      const crossesLane = panel.userData.crossesKeeperSightline === true;
-      const opacity = panel.material.opacity ?? 1;
-      return crossesLane && (opacity > 0.08 || panel.position.z <= goal.net.position.z + 0.36);
-    });
-
-    expect(goal.group.userData.netVisualUpgradeSystem).toBe("procedural-match-net-alpha-weave-clear-lane");
-    expect(texturedPanels.length).toBeGreaterThanOrEqual(4);
-    expect(centerPanels.length).toBeGreaterThanOrEqual(1);
-    expect(edgePanels.length).toBeGreaterThanOrEqual(3);
-    expect(laneIntruders).toHaveLength(0);
-    expect(texturedPanels.every((panel) => panel.material.map?.userData.assetSystem === "procedural-real-match-net-alpha-texture")).toBe(true);
-    expect(texturedPanels.every((panel) => panel.material.transparent && panel.material.depthWrite === false)).toBe(true);
-    expect(texturedPanels.every((panel) => panel.userData.frontShotLaneOcclusion === 0)).toBe(true);
-    expect(centerPanels.every((panel) => panel.material.opacity <= 0.08)).toBe(true);
-    expect(edgePanels.every((panel) => panel.material.opacity >= 0.12 && panel.material.opacity <= 0.28)).toBe(true);
-    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-match-alpha-weave-panel-"))).toBe(true);
-  });
-
-  it("adds a broadcast-safe rear pocket rope mesh so the net looks real in mobile landscape without veiling shots", () => {
-    const goal = createGoalAndNet();
-    const rearMeshCords = collectByName(goal.group, /^goal-net-broadcast-rear-mesh-cord-/);
-    const rearMeshKnots = collectByName(goal.group, /^goal-net-broadcast-rear-mesh-knot-/);
-    const centerTexturePanels = collectByName(goal.group, /^goal-net-match-alpha-weave-panel-center-depth$/);
-    const visibleLaneBlockers = [];
-    const worldPosition = new THREE.Vector3();
-
-    goal.group.traverse((node) => {
-      if (!node.name?.startsWith("goal-net-") || !node.material || node.visible === false) return;
-      node.getWorldPosition(worldPosition);
-      const materialList = Array.isArray(node.material) ? node.material : [node.material];
-      const maxOpacity = Math.max(...materialList.map((material) => material.opacity ?? 1));
-      const isInMobileLandscapeShotWindow =
-        Math.abs(worldPosition.x) < 1.34 &&
-        worldPosition.y > 0.28 &&
-        worldPosition.y < 2.24 &&
-        worldPosition.z <= goal.net.position.z + 0.46;
-      if (isInMobileLandscapeShotWindow && maxOpacity > 0.045) {
-        visibleLaneBlockers.push(`${node.name}:${maxOpacity.toFixed(3)}`);
-      }
-    });
-
-    expect(goal.group.userData.netBroadcastSightlineSystem).toBe("broadcast-safe-rear-mesh-net-clear-mobile-landscape");
-    expect(visibleLaneBlockers).toEqual([]);
-    expect(rearMeshCords.length).toBeGreaterThanOrEqual(16);
-    expect(rearMeshKnots.length).toBeGreaterThanOrEqual(18);
-    expect(rearMeshCords.every((cord) => cord.geometry.type === "TubeGeometry")).toBe(true);
-    expect(rearMeshCords.every((cord) => cord.material.userData.netMaterialSystem === "braided-nylon-cord-pbr")).toBe(true);
-    expect(rearMeshCords.every((cord) => cord.material.bumpMap?.userData.assetSystem === "procedural-braided-cord-net-material")).toBe(true);
-    expect([...rearMeshCords, ...rearMeshKnots].every((detail) => detail.userData.netBroadcastSightlineSystem === "broadcast-safe-rear-mesh-net-clear-mobile-landscape")).toBe(true);
-    expect([...rearMeshCords, ...rearMeshKnots].every((detail) => detail.userData.behindShotLane === true)).toBe(true);
-    expect([...rearMeshCords, ...rearMeshKnots].every((detail) => detail.userData.frontShotLaneOcclusion === 0)).toBe(true);
-    expect(rearMeshCords.every((cord) => cord.position.z >= goal.net.position.z + 0.5)).toBe(true);
-    expect(rearMeshCords.every((cord) => cord.material.opacity <= 0.115)).toBe(true);
-    expect(rearMeshKnots.every((knot) => knot.material.transparent && knot.material.opacity <= 0.07)).toBe(true);
-    expect(centerTexturePanels).toHaveLength(1);
-    expect(centerTexturePanels[0].material.opacity).toBeLessThanOrEqual(0.045);
-    expect(centerTexturePanels[0].material.map.userData.alphaMeshPattern).toBe("wide-open-diamond-cord-alpha");
-    expect(centerTexturePanels[0].material.map.userData.visibilityBudget).toBe("mobile-landscape-center-window");
-    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-broadcast-rear-mesh-cord-"))).toBe(true);
-  });
-
-  it("cuts the rear net around the mobile landscape shot window instead of drawing a full center curtain", () => {
-    const goal = createGoalAndNet();
-    const rearCatenaryCords = collectByName(goal.group, /^goal-net-landscape-rear-catenary-cord-/);
-    const rearKnottedTufts = collectByName(goal.group, /^goal-net-landscape-rear-knot-tuft-/);
-    const centerVeilDetails = [];
-
-    goal.group.traverse((node) => {
-      if (!node.name?.startsWith("goal-net-") || !node.material || node.visible === false) return;
-      const materialList = Array.isArray(node.material) ? node.material : [node.material];
-      const maxOpacity = Math.max(...materialList.map((material) => material.opacity ?? 1));
-      const centerTagged =
-        node.userData.crossesKeeperSightline === true ||
-        String(node.userData.rearPocketLayer || "").includes("center");
-      if (centerTagged && maxOpacity > 0.026) {
-        centerVeilDetails.push(`${node.name}:${maxOpacity.toFixed(3)}`);
-      }
-    });
-
-    expect(goal.group.userData.netLaneCutoutSystem).toBe("split-rear-net-around-mobile-shot-window");
-    expect(centerVeilDetails).toEqual([]);
-    expect(rearCatenaryCords.length).toBeGreaterThanOrEqual(12);
-    expect(rearCatenaryCords.every((cord) => cord.userData.netLaneCutoutSystem === "split-rear-net-around-mobile-shot-window")).toBe(true);
-    expect(rearCatenaryCords.every((cord) => cord.userData.crossesKeeperSightline === false)).toBe(true);
-    expect(rearKnottedTufts.every((knot) => Math.abs(knot.position.x) >= 1.34)).toBe(true);
+    expect(goal.group.userData.netPerformanceSystem).toBe("single-shell-mobile-net-budget");
+    expect(goal.group.userData.retiredNetLayerCount).toBe(0);
+    expect(objectCount).toBeLessThanOrEqual(180);
+    expect(transparentObjectCount).toBeLessThanOrEqual(100);
+    expect(goal.dynamicNetDetails.length).toBeLessThanOrEqual(90);
   });
 
   it("adds assembled goal hardware details so the frame feels manufactured rather than procedural", () => {
@@ -1008,19 +704,19 @@ describe("procedural 3D assets", () => {
 
     expect(goal.group.userData.dynamicNetDetailSystem).toBe("reactive-woven-net-detail-kit");
     expect(goal.dynamicNetDetails.length).toBeGreaterThanOrEqual(10);
-    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-diagonal-weave-"))).toBe(true);
-    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-side-"))).toBe(true);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name === "goal-net-continuous-pocket-shell")).toBe(true);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-side-cheek-lace-"))).toBe(true);
     expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-tension-cord-"))).toBe(true);
-    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-weave-knot-"))).toBe(true);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-matchday-edge-lace-"))).toBe(true);
     expect(goal.dynamicNetDetails.every((detail) => detail.object.userData.dynamicNetDetailSystem)).toBe(true);
   });
 
-  it("adds goalmouth contact shadows and net depth haze so the goal has readable space", () => {
+  it("adds goalmouth contact shadows and a shaped pocket so the goal has readable space", () => {
     const goal = createGoalAndNet();
 
     expect(goal.group.userData.depthReadabilitySystem).toBe("goal-net-depth-contact-shadow-kit");
     expect(collectByName(goal.group, /^goal-frame-contact-shadow-/).length).toBeGreaterThanOrEqual(3);
-    expect(collectByName(goal.group, /^goal-net-depth-haze-/).length).toBeGreaterThanOrEqual(2);
+    expect(collectByName(goal.group, /^goal-net-continuous-pocket-shell$/)).toHaveLength(1);
     expect(collectByName(goal.group, /^goal-net-rear-weight-cord-/).length).toBeGreaterThanOrEqual(1);
   });
 
@@ -1052,7 +748,7 @@ describe("procedural 3D assets", () => {
 
     expect(goal.group.userData.matchUseDetailSystem).toBe("match-use-equipment-wear-layer");
     expect(collectByName(goal.group, /^goal-frame-ball-mark-/).length).toBeGreaterThanOrEqual(5);
-    expect(collectByName(goal.group, /^goal-net-bottom-soil-smudge-/).length).toBeGreaterThanOrEqual(4);
+    expect(collectByName(goal.group, /^goal-net-bottom-soil-smudge-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-net-peg-shadow-/).length).toBeGreaterThanOrEqual(4);
 
     expect(launcher.group.userData.matchUseDetailSystem).toBe("launcher-ground-contact-wear-layer");

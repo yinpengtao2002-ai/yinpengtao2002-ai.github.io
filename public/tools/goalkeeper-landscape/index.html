@@ -9,8 +9,8 @@
     <meta name="full-screen" content="yes">
     <title>弹力手套守门挑战</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2369c97a'/%3E%3Ccircle cx='32' cy='32' r='16' fill='%23fffdf2'/%3E%3Cpath d='M20 32h24M32 20v24' stroke='%23222' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
-    <script type="module" crossorigin src="/tools/goalkeeper-landscape/assets/index-DkJuMNXJ.js"></script>
-    <link rel="stylesheet" crossorigin href="/tools/goalkeeper-landscape/assets/index-C_3_ZRGc.css">
+    <script type="module" crossorigin src="/tools/goalkeeper-landscape/assets/index-Bvmpm0eX.js"></script>
+    <link rel="stylesheet" crossorigin href="/tools/goalkeeper-landscape/assets/index-DjLiJCWj.css">
   </head>
   <body>
     <main class="app" aria-label="弹力手套守门挑战">
@@ -42,18 +42,13 @@
                 <span class="hud-label">失球</span>
                 <strong class="hud-value" id="concededValue">0/5</strong>
               </div>
-                <button class="glass-button hud-pause-button" id="pauseButton" type="button" aria-label="暂停挑战">Ⅱ 暂停</button>
+                <button class="glass-button hud-pause-button" id="pauseButton" type="button" aria-label="暂停挑战">Ⅱ</button>
             </div>
           </section>
 
-          <div class="feedback-toast" id="feedbackToast" aria-live="polite"></div>
-          <div class="event-ribbon" id="eventRibbon" data-hud-system="broadcast-event-ribbon-hud" aria-live="polite"></div>
+          <div class="event-ribbon" id="eventRibbon" data-hud-system="single-match-event-feedback-layer" aria-live="polite"></div>
           <div class="match-status" id="matchStatus" aria-live="polite"></div>
           <div class="pressure-cue" id="pressureCue" aria-live="polite"></div>
-          <div class="match-atmosphere" id="matchAtmosphere" data-hud-system="match-atmosphere-event-rail" aria-live="polite">
-            <span class="match-atmosphere-fill" id="matchAtmosphereFill"></span>
-            <span class="match-atmosphere-copy" id="matchAtmosphereCopy"></span>
-          </div>
           <div class="match-progress" id="matchProgress" role="progressbar" aria-valuemin="0" aria-valuemax="60" aria-valuenow="60" aria-valuetext="剩余 60 秒" data-hud-system="match-progress-hud">
             <span class="match-progress-fill" id="matchProgressFill"></span>
           </div>
@@ -64,7 +59,7 @@
               <button class="difficulty-button is-active" type="button" data-difficulty="medium" aria-pressed="true">中等</button>
               <button class="difficulty-button" type="button" data-difficulty="hard" aria-pressed="false">困难</button>
             </div>
-            <button class="glass-button utility-button" id="soundButton" type="button" aria-label="音效待启用，开始挑战后会解锁">待启用</button>
+            <button class="glass-button utility-button" id="soundButton" type="button" aria-label="音效待启用，开始挑战后会解锁"></button>
             <span class="sound-status" id="soundStatus" data-audio-status-system="match-audio-status-chip" aria-live="polite">点开始后启用音效</span>
           </div>
 
@@ -78,8 +73,8 @@
                 <span><strong>x3</strong> 连扑</span>
               </div>
               <button class="start-disc" id="startButton" type="button" aria-label="开始挑战">
-                <span>准备好</span>
-                <strong>开始</strong>
+                <span aria-hidden="true">▶</span>
+                <strong>开始挑战</strong>
               </button>
             </div>
           </div>
@@ -96,28 +91,22 @@
 
           <div class="overlay end-overlay hidden" id="endOverlay" aria-live="polite">
             <div class="result-panel">
-              <span class="result-grade" id="resultGrade">C级</span>
-              <span class="result-kicker" id="resultReason">挑战结束</span>
-              <strong id="finalScore">0</strong>
-              <p class="result-verdict" id="resultVerdict">先守住中路，再去赌边角</p>
-              <p class="result-summary" id="resultSummary">再来一局，读准球路</p>
-              <p class="result-coach" id="resultCoach" data-result-coach-system="round-result-coach-note">下一局先等球过半，再做大幅移动</p>
-              <div class="result-review" id="resultReview" data-result-review-system="round-result-review-cards" aria-label="本局复盘">
-                <span>亮点 <strong id="finalHighlight">先读第一脚球</strong></span>
-                <span>短板 <strong id="finalWeakness">出手再慢一点</strong></span>
-                <span>目标 <strong id="finalNextTarget">先完成 3 次扑救</strong></span>
+              <div class="result-scoreblock">
+                <span class="result-grade" id="resultGrade">C级</span>
+                <span class="result-kicker" id="resultReason">挑战结束</span>
+                <strong id="finalScore">0</strong>
               </div>
-              <div class="result-stats" aria-label="本局统计">
-                <span>扑救 <strong id="finalSaves">0</strong></span>
-                <span>连扑 <strong id="finalBestStreak">x0</strong></span>
-                <span>失球 <strong id="finalConceded">0/5</strong></span>
+              <div class="result-copyblock">
+                <p class="result-verdict" id="resultVerdict">先守住中路，再去赌边角</p>
+                <p class="result-summary" id="resultSummary">再来一局，读准球路</p>
+                <div class="result-stats" aria-label="本局统计">
+                  <span>扑救 <strong id="finalSaves">0</strong></span>
+                  <span>连扑 <strong id="finalBestStreak">x0</strong></span>
+                  <span>失球 <strong id="finalConceded">0/5</strong></span>
+                </div>
+                <p class="result-coach" id="resultCoach" data-result-coach-system="round-result-coach-note">下一局先等球过半，再做大幅移动</p>
+                <button id="restartButton" type="button">再来一局</button>
               </div>
-              <div class="result-tags" id="resultTags" data-result-tags-system="round-result-performance-tags" aria-label="表现标签">
-                <span>扑救率 <strong id="finalSaveRate">0%</strong></span>
-                <span>节奏 <strong id="finalRhythmTag">待机</strong></span>
-                <span>防线 <strong id="finalControlTag">稳住</strong></span>
-              </div>
-              <button id="restartButton" type="button">再来一局</button>
             </div>
           </div>
 

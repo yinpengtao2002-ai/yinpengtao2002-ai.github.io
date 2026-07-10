@@ -665,12 +665,33 @@ describe("goalkeeper 3D scene tuning", () => {
   it("defines a camera-attached broadcast presentation layer that stays subtle", () => {
     expect(SCENE_TUNING.presentation.system).toBe("camera-attached-broadcast-presentation-layer");
     expect(SCENE_TUNING.presentation.technique).toBe("three-camera-transparent-overlay-kit");
-    expect(SCENE_TUNING.presentation.maxScreenWashOpacity).toBeLessThanOrEqual(0.24);
+    expect(SCENE_TUNING.presentation.maxScreenWashOpacity).toBeLessThanOrEqual(0.18);
     expect(SCENE_TUNING.presentation.vignetteBaseOpacity).toBeLessThanOrEqual(0.18);
     expect(SCENE_TUNING.presentation.maxVignetteBoost).toBeLessThanOrEqual(0.1);
-    expect(SCENE_TUNING.presentation.focusRingMaxOpacity).toBeLessThanOrEqual(0.18);
+    expect(SCENE_TUNING.presentation.focusRingMaxOpacity).toBeLessThanOrEqual(0.08);
+    expect(SCENE_TUNING.presentation.focusRingBaseScale).toBeLessThanOrEqual(0.4);
     expect(SCENE_TUNING.presentation.decay).toBeGreaterThanOrEqual(0.045);
     expect(SCENE_TUNING.presentation.decay).toBeLessThanOrEqual(0.085);
+  });
+
+  it("keeps normal saves crisp instead of bleaching the whole playfield", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+    const normalSave = sceneModule.getMatchEventFeedbackPlan({
+      type: "save",
+      contact: { type: "glove", strength: 22, point: { x: 0.22, y: 1.22, z: 3.14 } },
+      state: { streak: 1, conceded: 0 },
+    });
+    const streakSave = sceneModule.getMatchEventFeedbackPlan({
+      type: "save",
+      contact: { type: "glove", strength: 34, point: { x: -0.18, y: 1.28, z: 3.14 } },
+      state: { streak: 4, conceded: 0 },
+    });
+
+    expect(normalSave.presentation.screenWashOpacity).toBeLessThanOrEqual(0.06);
+    expect(streakSave.presentation.screenWashOpacity).toBeLessThanOrEqual(0.1);
+    expect(SCENE_TUNING.postprocessing.maxStrength).toBeLessThanOrEqual(0.1);
+    expect(SCENE_TUNING.feedback.saveSparkCount).toBeLessThanOrEqual(8);
+    expect(SCENE_TUNING.feedback.saveAfterimageCount).toBeLessThanOrEqual(3);
   });
 
   it("turns broadcast event plans into a short-lived screen presentation pulse", async () => {
