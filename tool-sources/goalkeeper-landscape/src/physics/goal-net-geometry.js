@@ -69,7 +69,7 @@ export function getGoalRoofHeightAtZ(z) {
 
 export function getGoalNetPocketVertex(localX, localY) {
   var halfWidth = GOAL_NET_GEOMETRY.halfWidth;
-  var height = GOAL_NET_GEOMETRY.height;
+  var height = GOAL_NET_GEOMETRY.rearHeight;
   var normalizedX = Math.min(1, Math.abs(localX) / halfWidth);
   var normalizedY = Math.min(1, Math.max(0, localY / height + 0.5));
   var horizontalPocket = Math.pow(Math.max(0, 1 - normalizedX * normalizedX), 0.72);
@@ -95,11 +95,11 @@ export function getGoalNetPocketVertex(localX, localY) {
 
 export function getGoalNetSurfacePoint(position) {
   var safeX = clamp(position?.x || 0, -GOAL_NET_GEOMETRY.halfWidth, GOAL_NET_GEOMETRY.halfWidth);
-  var safeY = clamp(position?.y || 0, 0, GOAL_NET_GEOMETRY.height);
-  var vertex = getGoalNetPocketVertex(safeX, safeY - GOAL_NET_GEOMETRY.height * 0.5);
+  var safeY = clamp(position?.y || 0, 0, GOAL_NET_GEOMETRY.rearHeight);
+  var vertex = getGoalNetPocketVertex(safeX, safeY - GOAL_NET_GEOMETRY.rearHeight * 0.5);
   return {
     x: vertex.x,
-    y: vertex.y + GOAL_NET_GEOMETRY.height * 0.5,
+    y: vertex.y + GOAL_NET_GEOMETRY.rearHeight * 0.5,
     z: GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.shellOffsetZ + vertex.z,
   };
 }

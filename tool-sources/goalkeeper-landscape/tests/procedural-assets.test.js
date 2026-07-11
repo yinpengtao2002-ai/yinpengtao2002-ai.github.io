@@ -11,6 +11,12 @@ import {
   getStadiumScoreboardPlan,
   updateShooterModel,
 } from "../src/three/procedural-assets.js";
+import {
+  GOAL_CAGE_POINTS,
+  GOAL_FRAME_SEGMENTS,
+  GOAL_NET_GEOMETRY,
+  getGoalRoofHeightAtZ,
+} from "../src/physics/goal-net-geometry.js";
 import { RAPIER_GOAL } from "../src/physics/rapier-world.js";
 import { createShot3DDirector } from "../src/game/shot-3d-director.js";
 
@@ -580,7 +586,7 @@ describe("procedural 3D assets", () => {
     expect(collectByName(field, /^field-touchline-shadow-/)).toHaveLength(0);
   });
 
-  it("models the goal with depth, a continuous pocket shell, anchors, and branded posts", () => {
+  it("models a complete front-high rear-low trapezoid from the shared frame contract", () => {
     const goal = createGoalAndNet();
 
     expect(goal.group.userData.assetSystem).toBe("layered-goal-and-net-kit");
@@ -588,21 +594,37 @@ describe("procedural 3D assets", () => {
     expect(goal.net.userData.deformationSystem).toBe("localized-net-pocket-deformation");
     expect(goal.net.geometry.attributes.position.count).toBeGreaterThanOrEqual(120);
     expect(collectByName(goal.group, /^goal-frame-(left-post|right-post|crossbar)$/)).toHaveLength(3);
-    expect(collectByName(goal.group, /^goal-depth-stanchion-/)).toHaveLength(2);
+    expect(collectByName(goal.group, /^goal-frame-top-rail-/)).toHaveLength(2);
+    expect(collectByName(goal.group, /^goal-frame-rear-upright-/)).toHaveLength(2);
+    expect(collectByName(goal.group, /^goal-frame-bottom-rail-/)).toHaveLength(2);
+    expect(collectByName(goal.group, /^goal-frame-rear-bottom-rail$/)).toHaveLength(1);
+    expect(collectByName(goal.group, /^goal-depth-stanchion-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-net-continuous-pocket-shell$/)).toHaveLength(1);
     expect(collectByName(goal.group, /^goal-net-anchor-/).length).toBeGreaterThanOrEqual(4);
     expect(goal.net.name).toBe("goal-net-back-panel");
     expect(goal.grid.name).toBe("goal-net-back-grid");
+
+    const renderedSegments = [];
+    goal.group.traverse((node) => {
+      if (node.name.startsWith("goal-frame-") && node.userData.goalFrameSegment) renderedSegments.push(node);
+    });
+    expect(renderedSegments).toHaveLength(GOAL_FRAME_SEGMENTS.length);
+    renderedSegments.forEach((object) => {
+      const segment = GOAL_FRAME_SEGMENTS.find((item) => item.name === object.userData.goalFrameSegment);
+      expect(segment).toBeTruthy();
+      expect(object.userData.segmentStart).toEqual(segment.start);
+      expect(object.userData.segmentEnd).toEqual(segment.end);
+    });
   });
 
-  it("adds round frame caps, base rails, and tension cords to move the goal past boxy prototype geometry", () => {
+  it("adds round frame caps and restrained cage seams to move the goal past prototype geometry", () => {
     const goal = createGoalAndNet();
 
     expect(goal.group.userData.frameDetailSystem).toBe("rounded-posts-with-tensioned-net");
     expect(collectByName(goal.group, /^goal-frame-post-cap-/).length).toBeGreaterThanOrEqual(4);
-    expect(collectByName(goal.group, /^goal-frame-base-rail-/)).toHaveLength(2);
-    expect(collectByName(goal.group, /^goal-net-tension-cord-/).length).toBeGreaterThanOrEqual(4);
-    expect(collectByName(goal.group, /^goal-net-rope-knot-/).length).toBeGreaterThanOrEqual(4);
+    expect(collectByName(goal.group, /^goal-frame-bottom-rail-/)).toHaveLength(2);
+    expect(collectByName(goal.group, /^goal-net-cage-seam-/).length).toBeGreaterThanOrEqual(8);
+    expect(collectByName(goal.group, /^goal-net-tension-cord-/)).toHaveLength(0);
   });
 
   it("adds near-camera asset finishing details for the clean floor, net hardware, gloves, and match ball material", () => {
@@ -685,7 +707,8 @@ describe("procedural 3D assets", () => {
 
     expect(shell.geometry.type).toBe("PlaneGeometry");
     expect(positions.count).toBeGreaterThanOrEqual(200);
-    expect(depthRange).toBeGreaterThanOrEqual(0.68);
+    expect(depthRange).toBeGreaterThanOrEqual(0.08);
+    expect(depthRange).toBeLessThanOrEqual(0.16);
     expect(shell.material.type).toBe("ShaderMaterial");
     expect(shell.material.transparent).toBe(true);
     expect(shell.material.depthWrite).toBe(false);
@@ -704,52 +727,28 @@ describe("procedural 3D assets", () => {
     expect(goal.dynamicNetDetails.some((detail) => detail.name === shell.name)).toBe(true);
   });
 
-  it("binds the visible net shell continuously to the posts and crossbar", () => {
+  it("keeps all four visible net panels inside the shared cage envelope", () => {
     const goal = createGoalAndNet();
-    const shell = collectByName(goal.group, /^goal-net-continuous-pocket-shell$/)[0];
-    const bindingRopes = collectByName(goal.group, /^goal-net-frame-binding-rope-/);
-    const positions = shell.geometry.getAttribute("position");
-    const xs = Array.from({ length: positions.count }, (_, index) => positions.getX(index) + shell.position.x);
-    const ys = Array.from({ length: positions.count }, (_, index) => positions.getY(index) + shell.position.y);
-    const edgeDepths = Array.from({ length: positions.count }, (_, index) => {
-      const x = positions.getX(index);
-      const y = positions.getY(index);
-      const isEdge = Math.abs(x) >= RAPIER_GOAL.halfWidth - 0.03 || Math.abs(y) >= RAPIER_GOAL.height * 0.5 - 0.03;
-      return isEdge ? positions.getZ(index) + shell.position.z : null;
-    }).filter((value) => value !== null);
+    const panels = [];
+    goal.group.updateMatrixWorld(true);
+    goal.group.traverse((node) => {
+      if (node.userData.goalNetPanel) panels.push(node);
+    });
 
     expect(goal.group.userData.netFrameAttachmentSystem).toBe("frame-bound-continuous-net-seam");
-    expect(Math.min(...xs)).toBeLessThanOrEqual(-RAPIER_GOAL.halfWidth + 0.02);
-    expect(Math.max(...xs)).toBeGreaterThanOrEqual(RAPIER_GOAL.halfWidth - 0.02);
-    expect(Math.min(...ys)).toBeLessThanOrEqual(0.02);
-    expect(Math.max(...ys)).toBeGreaterThanOrEqual(RAPIER_GOAL.height - 0.02);
-    expect(Math.max(...edgeDepths)).toBeLessThanOrEqual(RAPIER_GOAL.netPlaneZ + 0.08);
-    expect(bindingRopes).toHaveLength(4);
-    expect(bindingRopes.every((rope) => rope.userData.netFrameAttachmentSystem === "frame-bound-continuous-net-seam")).toBe(true);
-  });
-
-  it("keeps every visible shell edge and frame binding inside the goal frame", () => {
-    const goal = createGoalAndNet();
-    const shell = collectByName(goal.group, /^goal-net-continuous-pocket-shell$/)[0];
-    const bindingRopes = collectByName(goal.group, /^goal-net-frame-binding-rope-/);
-    const positions = shell.geometry.getAttribute("position");
-    const shellXs = Array.from({ length: positions.count }, (_, index) => positions.getX(index) + shell.position.x);
-    const shellYs = Array.from({ length: positions.count }, (_, index) => positions.getY(index) + shell.position.y);
-
-    goal.group.updateMatrixWorld(true);
-    const bindingBounds = bindingRopes.reduce(
-      (bounds, rope) => bounds.union(new THREE.Box3().setFromObject(rope)),
-      new THREE.Box3(),
-    );
-
-    expect(Math.min(...shellXs)).toBeGreaterThanOrEqual(-RAPIER_GOAL.halfWidth - 0.0001);
-    expect(Math.max(...shellXs)).toBeLessThanOrEqual(RAPIER_GOAL.halfWidth + 0.0001);
-    expect(Math.min(...shellYs)).toBeGreaterThanOrEqual(-0.0001);
-    expect(Math.max(...shellYs)).toBeLessThanOrEqual(RAPIER_GOAL.height + 0.0001);
-    expect(bindingBounds.min.x).toBeGreaterThanOrEqual(-RAPIER_GOAL.halfWidth - 0.0001);
-    expect(bindingBounds.max.x).toBeLessThanOrEqual(RAPIER_GOAL.halfWidth + 0.0001);
-    expect(bindingBounds.min.y).toBeGreaterThanOrEqual(-0.0001);
-    expect(bindingBounds.max.y).toBeLessThanOrEqual(RAPIER_GOAL.height + 0.0001);
+    expect(panels.map((panel) => panel.userData.goalNetPanel).sort()).toEqual(["left", "rear", "right", "top"]);
+    panels.forEach((panel) => {
+      const positions = panel.geometry.getAttribute("position");
+      for (let index = 0; index < positions.count; index += 1) {
+        const point = new THREE.Vector3().fromBufferAttribute(positions, index).applyMatrix4(panel.matrixWorld);
+        expect(point.x).toBeGreaterThanOrEqual(-GOAL_NET_GEOMETRY.halfWidth - 0.0001);
+        expect(point.x).toBeLessThanOrEqual(GOAL_NET_GEOMETRY.halfWidth + 0.0001);
+        expect(point.y).toBeGreaterThanOrEqual(-0.0001);
+        expect(point.z).toBeGreaterThanOrEqual(GOAL_NET_GEOMETRY.netPlaneZ - 0.0001);
+        expect(point.z).toBeLessThanOrEqual(GOAL_CAGE_POINTS.rearBottomLeft.z + 0.0001);
+        expect(point.y).toBeLessThanOrEqual(getGoalRoofHeightAtZ(point.z) + 0.0001);
+      }
+    });
   });
 
   it("removes decorative side-net fibers that protrude beyond the posts", () => {
@@ -800,7 +799,8 @@ describe("procedural 3D assets", () => {
     expect(goal.dynamicNetDetails.length).toBeGreaterThanOrEqual(10);
     expect(goal.dynamicNetDetails.some((detail) => detail.name === "goal-net-continuous-pocket-shell")).toBe(true);
     expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-side-cheek-lace-"))).toBe(false);
-    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-tension-cord-"))).toBe(true);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name === "goal-net-panel-left")).toBe(true);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name === "goal-net-panel-top")).toBe(true);
     expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-matchday-edge-lace-"))).toBe(true);
     expect(goal.dynamicNetDetails.every((detail) => detail.object.userData.dynamicNetDetailSystem)).toBe(true);
   });

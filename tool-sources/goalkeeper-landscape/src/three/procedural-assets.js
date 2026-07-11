@@ -3,7 +3,14 @@ import { DecalGeometry } from "three/addons/geometries/DecalGeometry.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { MAX_CONCEDED, ROUND_SECONDS } from "../config/game-config.js";
 import { LAUNCHER_GEOMETRY } from "../game/launcher-geometry.js";
-import { GOAL_NET_GEOMETRY, getGoalNetPocketVertex } from "../physics/goal-net-geometry.js";
+import {
+  GOAL_CAGE_POINTS,
+  GOAL_FRAME_SEGMENTS,
+  GOAL_NET_GEOMETRY,
+  getGoalNetPocketVertex,
+  getGoalNetSurfacePoint,
+  getGoalRoofHeightAtZ,
+} from "../physics/goal-net-geometry.js";
 import { RAPIER_GOAL } from "../physics/rapier-world.js";
 
 export const STADIUM_SCOREBOARD_DISPLAY_SYSTEM = "live-stadium-scoreboard-display";
@@ -282,7 +289,7 @@ function createSquareGoalNetAlphaTexture() {
 
 function createContinuousNetPocketGeometry() {
   var width = GOAL_NET_GEOMETRY.halfWidth * 2;
-  var height = GOAL_NET_GEOMETRY.height;
+  var height = GOAL_NET_GEOMETRY.rearHeight;
   var geometry = new THREE.PlaneGeometry(width, height, 24, 12);
   var positions = geometry.getAttribute("position");
 
@@ -294,7 +301,8 @@ function createContinuousNetPocketGeometry() {
   positions.needsUpdate = true;
   geometry.computeVertexNormals();
   geometry.userData.netContinuitySystem = NET_CONTINUITY_SYSTEM;
-  geometry.userData.pocketDepth = GOAL_NET_GEOMETRY.pocketDepth;
+  geometry.userData.pocketDepth = GOAL_NET_GEOMETRY.netSlack;
+  geometry.userData.cageDepth = GOAL_NET_GEOMETRY.cageDepth;
   geometry.userData.geometryContract = "shared-render-physics-goal-net";
   geometry.userData.anchorLayout = "four-edge-tensioned-center-pocket";
   return geometry;
@@ -1227,6 +1235,13 @@ export function createGoalAndNet() {
 
   var frameMaterial = new THREE.MeshStandardMaterial({ color: "#f5fff7", roughness: 0.34, metalness: 0.04 });
   var trimMaterial = new THREE.MeshStandardMaterial({ color: "#f0782f", roughness: 0.36, metalness: 0.02 });
+  function markGoalFrameSegment(object, segmentName) {
+    var segment = GOAL_FRAME_SEGMENTS.find((item) => item.name === segmentName);
+    object.userData.goalFrameSegment = segmentName;
+    object.userData.segmentStart = { ...segment.start };
+    object.userData.segmentEnd = { ...segment.end };
+    return object;
+  }
   var postGeometry = new THREE.CylinderGeometry(0.065, 0.065, 1, 24);
   var left = new THREE.Mesh(postGeometry, frameMaterial);
   var right = new THREE.Mesh(postGeometry, frameMaterial);
@@ -1249,6 +1264,9 @@ export function createGoalAndNet() {
     y: RAPIER_GOAL.height,
     z: RAPIER_GOAL.netPlaneZ,
   });
+  markGoalFrameSegment(left, "front-left-post");
+  markGoalFrameSegment(right, "front-right-post");
+  markGoalFrameSegment(top, "crossbar");
   group.add(left, right, top);
 
   var capMaterial = new THREE.MeshStandardMaterial({ color: "#fbfff3", roughness: 0.28, metalness: 0.05 });
@@ -1299,10 +1317,10 @@ export function createGoalAndNet() {
     side: THREE.DoubleSide,
     depthWrite: false,
   });
-  var net = new THREE.Mesh(new THREE.PlaneGeometry(RAPIER_GOAL.halfWidth * 2, RAPIER_GOAL.height, 18, 8), netMaterial);
+  var net = new THREE.Mesh(new THREE.PlaneGeometry(RAPIER_GOAL.halfWidth * 2, GOAL_NET_GEOMETRY.rearHeight, 18, 8), netMaterial);
   net.name = "goal-net-back-panel";
   net.userData.deformationSystem = "localized-net-pocket-deformation";
-  net.position.set(0, RAPIER_GOAL.height / 2, RAPIER_GOAL.netPlaneZ + 0.1);
+  net.position.set(0, GOAL_NET_GEOMETRY.rearHeight / 2, GOAL_CAGE_POINTS.rearBottomLeft.z);
   group.add(net);
 
   var continuousPocketShell = new THREE.Mesh(
@@ -1310,7 +1328,7 @@ export function createGoalAndNet() {
     createContinuousNetPocketMaterial(),
   );
   continuousPocketShell.name = "goal-net-continuous-pocket-shell";
-  continuousPocketShell.position.set(0, RAPIER_GOAL.height / 2, RAPIER_GOAL.netPlaneZ + 0.022);
+  continuousPocketShell.position.set(0, GOAL_NET_GEOMETRY.rearHeight / 2, RAPIER_GOAL.netPlaneZ + GOAL_NET_GEOMETRY.shellOffsetZ);
   continuousPocketShell.renderOrder = 2;
   continuousPocketShell.userData.netContinuitySystem = NET_CONTINUITY_SYSTEM;
   continuousPocketShell.userData.netVisualUpgradeSystem = NET_VISUAL_UPGRADE_SYSTEM;
@@ -1320,6 +1338,7 @@ export function createGoalAndNet() {
   continuousPocketShell.userData.hasShotWindowCutout = false;
   continuousPocketShell.userData.frontShotLaneOcclusion = 0;
   continuousPocketShell.userData.ballPriorityRenderOrder = 12;
+  continuousPocketShell.userData.goalNetPanel = "rear";
   group.add(registerDynamicNetDetail(continuousPocketShell, 0.16, 0.035));
 
   var frameContactShadowMaterial = new THREE.MeshBasicMaterial({
@@ -1331,7 +1350,7 @@ export function createGoalAndNet() {
   [
     ["left-post", -RAPIER_GOAL.halfWidth, RAPIER_GOAL.netPlaneZ + 0.02, 0.28, 0.12],
     ["right-post", RAPIER_GOAL.halfWidth, RAPIER_GOAL.netPlaneZ + 0.02, 0.28, 0.12],
-    ["rear-cord", 0, RAPIER_GOAL.netPlaneZ + 0.72, 1.55, 0.11],
+    ["rear-cord", 0, GOAL_CAGE_POINTS.rearBottomLeft.z - 0.08, 1.55, 0.11],
   ].forEach(function addFrameContactShadow(item) {
     var shadow = new THREE.Mesh(new THREE.CircleGeometry(1, 32), frameContactShadowMaterial.clone());
     shadow.name = "goal-frame-contact-shadow-" + item[0];
@@ -1410,6 +1429,93 @@ export function createGoalAndNet() {
   grid.name = "goal-net-back-grid";
   grid.visible = false;
   group.add(grid);
+
+  var cageNetMaterial = new THREE.LineBasicMaterial({
+    color: "#effff8",
+    transparent: true,
+    opacity: 0.25,
+    depthWrite: false,
+  });
+  function addCageNetPanel(panel, points, opacity) {
+    var material = cageNetMaterial.clone();
+    material.opacity = opacity;
+    var object = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points), material);
+    object.name = "goal-net-panel-" + panel;
+    object.renderOrder = 4;
+    object.userData.goalNetPanel = panel;
+    object.userData.netFrameAttachmentSystem = NET_FRAME_ATTACHMENT_SYSTEM;
+    object.userData.netContinuitySystem = NET_CONTINUITY_SYSTEM;
+    object.userData.behindShotLane = true;
+    object.userData.frontShotLaneOcclusion = 0;
+    group.add(registerDynamicNetDetail(object, panel === "top" ? 0.12 : 0.18, 0.04));
+  }
+
+  ["left", "right"].forEach(function addTrapezoidSidePanel(side) {
+    var x = side === "left" ? -GOAL_NET_GEOMETRY.halfWidth : GOAL_NET_GEOMETRY.halfWidth;
+    var points = [];
+    var depthSteps = 6;
+    for (var depthIndex = 0; depthIndex <= depthSteps; depthIndex += 1) {
+      var depthT = depthIndex / depthSteps;
+      var z = GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth * depthT;
+      points.push(new THREE.Vector3(x, 0, z));
+      points.push(new THREE.Vector3(x, getGoalRoofHeightAtZ(z), z));
+    }
+    [0.18, 0.36, 0.54, 0.72, 0.9].forEach(function addSideRow(heightT) {
+      for (var rowIndex = 0; rowIndex < depthSteps; rowIndex += 1) {
+        var startZ = GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth * (rowIndex / depthSteps);
+        var endZ = GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth * ((rowIndex + 1) / depthSteps);
+        points.push(new THREE.Vector3(x, getGoalRoofHeightAtZ(startZ) * heightT, startZ));
+        points.push(new THREE.Vector3(x, getGoalRoofHeightAtZ(endZ) * heightT, endZ));
+      }
+    });
+    addCageNetPanel(side, points, 0.29);
+  });
+
+  var topPanelPoints = [];
+  var topDepthSteps = 6;
+  for (var topColumnIndex = 0; topColumnIndex <= 10; topColumnIndex += 1) {
+    var topX = -GOAL_NET_GEOMETRY.halfWidth +
+      (GOAL_NET_GEOMETRY.halfWidth * 2 * topColumnIndex) / 10;
+    topPanelPoints.push(new THREE.Vector3(
+      topX,
+      GOAL_NET_GEOMETRY.height,
+      GOAL_NET_GEOMETRY.netPlaneZ,
+    ));
+    topPanelPoints.push(new THREE.Vector3(
+      topX,
+      GOAL_NET_GEOMETRY.rearHeight,
+      GOAL_CAGE_POINTS.rearTopLeft.z,
+    ));
+  }
+  for (var topRowIndex = 0; topRowIndex <= topDepthSteps; topRowIndex += 1) {
+    var topRowZ = GOAL_NET_GEOMETRY.netPlaneZ +
+      GOAL_NET_GEOMETRY.cageDepth * (topRowIndex / topDepthSteps);
+    var topRowY = getGoalRoofHeightAtZ(topRowZ);
+    topPanelPoints.push(new THREE.Vector3(-GOAL_NET_GEOMETRY.halfWidth, topRowY, topRowZ));
+    topPanelPoints.push(new THREE.Vector3(GOAL_NET_GEOMETRY.halfWidth, topRowY, topRowZ));
+  }
+  addCageNetPanel("top", topPanelPoints, 0.24);
+
+  var cageSeamMaterial = new THREE.LineBasicMaterial({
+    color: "#f8fff4",
+    transparent: true,
+    opacity: 0.42,
+    depthWrite: false,
+  });
+  GOAL_FRAME_SEGMENTS.forEach(function addCageSeam(segment) {
+    var seam = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(segment.start.x, segment.start.y, segment.start.z),
+        new THREE.Vector3(segment.end.x, segment.end.y, segment.end.z),
+      ]),
+      cageSeamMaterial.clone(),
+    );
+    seam.name = "goal-net-cage-seam-" + segment.name;
+    seam.renderOrder = 5;
+    seam.userData.netFrameAttachmentSystem = NET_FRAME_ATTACHMENT_SYSTEM;
+    seam.userData.goalFrameSegment = segment.name;
+    group.add(seam);
+  });
 
   var raisedRopeMaterial = createBraidedNetCordMaterial({
     color: "#f4fff8",
@@ -2367,35 +2473,21 @@ export function createGoalAndNet() {
   });
   }
 
-  var sideNetMaterial = netMaterial.clone();
-  sideNetMaterial.opacity = 0;
-  ["left", "right"].forEach(function addSideNet(side) {
-    var sign = side === "left" ? -1 : 1;
-    if (BUILD_RETIRED_NET_LAYERS) {
-    var sideNet = new THREE.Mesh(new THREE.PlaneGeometry(0.95, RAPIER_GOAL.height, 5, 8), sideNetMaterial.clone());
-    sideNet.name = "goal-net-side-" + side;
-    sideNet.position.set(sign * RAPIER_GOAL.halfWidth, RAPIER_GOAL.height / 2, RAPIER_GOAL.netPlaneZ + 0.48);
-    sideNet.rotation.y = sign > 0 ? -Math.PI / 2 : Math.PI / 2;
-    group.add(registerDynamicNetDetail(sideNet, 0.72, 0));
-    }
-
-    var stanchion = makeLimb("#edf9f2", 0.038);
-    stanchion.name = "goal-depth-stanchion-" + side;
-    setLimb(
-      stanchion,
-      { x: sign * RAPIER_GOAL.halfWidth, y: RAPIER_GOAL.height, z: RAPIER_GOAL.netPlaneZ },
-      { x: sign * (RAPIER_GOAL.halfWidth + 0.42), y: 0.12, z: RAPIER_GOAL.netPlaneZ + 0.92 },
-    );
-    group.add(stanchion);
-
-    var baseRail = makeLimb("#eefaf0", 0.03);
-    baseRail.name = "goal-frame-base-rail-" + side;
-    setLimb(
-      baseRail,
-      { x: sign * RAPIER_GOAL.halfWidth, y: 0.045, z: RAPIER_GOAL.netPlaneZ },
-      { x: sign * (RAPIER_GOAL.halfWidth + 0.42), y: 0.045, z: RAPIER_GOAL.netPlaneZ + 0.92 },
-    );
-    group.add(baseRail);
+  var rearFrameNames = {
+    "top-left-rail": "goal-frame-top-rail-left",
+    "top-right-rail": "goal-frame-top-rail-right",
+    "rear-left-upright": "goal-frame-rear-upright-left",
+    "rear-right-upright": "goal-frame-rear-upright-right",
+    "bottom-left-rail": "goal-frame-bottom-rail-left",
+    "bottom-right-rail": "goal-frame-bottom-rail-right",
+    "rear-bottom-rail": "goal-frame-rear-bottom-rail",
+  };
+  GOAL_FRAME_SEGMENTS.filter((segment) => rearFrameNames[segment.name]).forEach(function addRearFrameSegment(segment) {
+    var rail = makeLimb("#edf9f2", GOAL_NET_GEOMETRY.frameRadius * 0.82);
+    rail.name = rearFrameNames[segment.name];
+    setLimb(rail, segment.start, segment.end);
+    markGoalFrameSegment(rail, segment.name);
+    group.add(rail);
   });
 
   if (BUILD_RETIRED_NET_LAYERS) {
@@ -2423,6 +2515,7 @@ export function createGoalAndNet() {
     });
   });
 
+  if (BUILD_RETIRED_NET_LAYERS) {
   var cordMaterial = new THREE.MeshBasicMaterial({ color: "#f5fffb", transparent: true, opacity: 0.32, depthWrite: false });
   [
     ["top-left", -RAPIER_GOAL.halfWidth, RAPIER_GOAL.height, RAPIER_GOAL.netPlaneZ, -RAPIER_GOAL.halfWidth - 0.42, 0.18, RAPIER_GOAL.netPlaneZ + 0.92],
@@ -2445,6 +2538,7 @@ export function createGoalAndNet() {
     knot.position.set(item[4], item[5], item[6]);
     group.add(registerDynamicNetDetail(knot, 0.62, 0.36));
   });
+  }
 
   var rearWeightCordMaterial = new THREE.LineBasicMaterial({
     color: "#f5fffb",
@@ -2453,8 +2547,8 @@ export function createGoalAndNet() {
   });
   var rearWeightCord = new THREE.Line(
     new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(-RAPIER_GOAL.halfWidth - 0.28, 0.11, RAPIER_GOAL.netPlaneZ + 0.76),
-      new THREE.Vector3(RAPIER_GOAL.halfWidth + 0.28, 0.11, RAPIER_GOAL.netPlaneZ + 0.76),
+      new THREE.Vector3(-RAPIER_GOAL.halfWidth + 0.06, 0.08, GOAL_CAGE_POINTS.rearBottomLeft.z - 0.02),
+      new THREE.Vector3(RAPIER_GOAL.halfWidth - 0.06, 0.08, GOAL_CAGE_POINTS.rearBottomRight.z - 0.02),
     ]),
     rearWeightCordMaterial,
   );
@@ -2463,14 +2557,13 @@ export function createGoalAndNet() {
 
   var sleeveMaterial = new THREE.MeshStandardMaterial({ color: "#fbfff4", roughness: 0.4, metalness: 0.02 });
   [
-    ["front-left", -RAPIER_GOAL.halfWidth, RAPIER_GOAL.height - 0.22, RAPIER_GOAL.netPlaneZ + 0.055],
-    ["front-right", RAPIER_GOAL.halfWidth, RAPIER_GOAL.height - 0.22, RAPIER_GOAL.netPlaneZ + 0.055],
-    ["back-left", -RAPIER_GOAL.halfWidth - 0.34, 0.24, RAPIER_GOAL.netPlaneZ + 0.86],
-    ["back-right", RAPIER_GOAL.halfWidth + 0.34, 0.24, RAPIER_GOAL.netPlaneZ + 0.86],
+    ["front-left", -RAPIER_GOAL.halfWidth, RAPIER_GOAL.height - 0.22, RAPIER_GOAL.netPlaneZ + 0.035],
+    ["front-right", RAPIER_GOAL.halfWidth, RAPIER_GOAL.height - 0.22, RAPIER_GOAL.netPlaneZ + 0.035],
+    ["back-left", -RAPIER_GOAL.halfWidth, GOAL_NET_GEOMETRY.rearHeight - 0.22, GOAL_CAGE_POINTS.rearTopLeft.z - 0.035],
+    ["back-right", RAPIER_GOAL.halfWidth, GOAL_NET_GEOMETRY.rearHeight - 0.22, GOAL_CAGE_POINTS.rearTopRight.z - 0.035],
   ].forEach(function addCornerSleeve(item) {
     var sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.032, 0.36, 12), sleeveMaterial);
     sleeve.name = "goal-net-corner-sleeve-" + item[0];
-    sleeve.rotation.z = Math.PI / 2;
     sleeve.position.set(item[1], item[2], item[3]);
     group.add(registerDynamicNetDetail(sleeve, 0.42, 0.22));
   });
@@ -2502,7 +2595,7 @@ export function createGoalAndNet() {
     var weight = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.34, 14), netWeightMaterial);
     weight.name = "goal-net-bottom-weight-" + weightIndex;
     weight.rotation.z = Math.PI / 2;
-    weight.position.set(-RAPIER_GOAL.halfWidth + 0.72 + weightIndex * 1.48, 0.055, RAPIER_GOAL.netPlaneZ + 0.13);
+    weight.position.set(-RAPIER_GOAL.halfWidth + 0.72 + weightIndex * 1.48, 0.055, GOAL_CAGE_POINTS.rearBottomLeft.z - 0.04);
     group.add(registerDynamicNetDetail(weight, 0.34, 0.16));
   }
 
@@ -2554,8 +2647,8 @@ export function createGoalAndNet() {
   [
     ["front-left", -RAPIER_GOAL.halfWidth, RAPIER_GOAL.height - 0.34, RAPIER_GOAL.netPlaneZ + 0.08],
     ["front-right", RAPIER_GOAL.halfWidth, RAPIER_GOAL.height - 0.34, RAPIER_GOAL.netPlaneZ + 0.08],
-    ["rear-left", -RAPIER_GOAL.halfWidth - 0.34, 0.3, RAPIER_GOAL.netPlaneZ + 0.72],
-    ["rear-right", RAPIER_GOAL.halfWidth + 0.34, 0.3, RAPIER_GOAL.netPlaneZ + 0.72],
+    ["rear-left", -RAPIER_GOAL.halfWidth, 0.3, GOAL_CAGE_POINTS.rearBottomLeft.z - 0.06],
+    ["rear-right", RAPIER_GOAL.halfWidth, 0.3, GOAL_CAGE_POINTS.rearBottomRight.z - 0.06],
   ].forEach(function addRopeTensioner(item) {
     var tensioner = makeBeveledBox("goal-net-rope-tensioner-" + item[0], 0.12, 0.052, 0.04, 0.014, tensionerMaterial);
     tensioner.position.set(item[1], item[2], item[3]);
@@ -2580,8 +2673,8 @@ export function createGoalAndNet() {
   [
     ["front-left", -RAPIER_GOAL.halfWidth, 0, RAPIER_GOAL.netPlaneZ],
     ["front-right", RAPIER_GOAL.halfWidth, 0, RAPIER_GOAL.netPlaneZ],
-    ["back-left", -RAPIER_GOAL.halfWidth - 0.42, 0, RAPIER_GOAL.netPlaneZ + 0.92],
-    ["back-right", RAPIER_GOAL.halfWidth + 0.42, 0, RAPIER_GOAL.netPlaneZ + 0.92],
+    ["back-left", -RAPIER_GOAL.halfWidth, 0, GOAL_CAGE_POINTS.rearBottomLeft.z],
+    ["back-right", RAPIER_GOAL.halfWidth, 0, GOAL_CAGE_POINTS.rearBottomRight.z],
   ].forEach(function addAnchor(item, anchorIndex) {
     var anchor = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.085, 0.055, 14), anchorMaterial);
     anchor.name = "goal-net-anchor-" + item[0];
@@ -2665,8 +2758,8 @@ export function createGoalAndNet() {
   [
     ["front-left", -RAPIER_GOAL.halfWidth, RAPIER_GOAL.netPlaneZ],
     ["front-right", RAPIER_GOAL.halfWidth, RAPIER_GOAL.netPlaneZ],
-    ["back-left", -RAPIER_GOAL.halfWidth - 0.42, RAPIER_GOAL.netPlaneZ + 0.92],
-    ["back-right", RAPIER_GOAL.halfWidth + 0.42, RAPIER_GOAL.netPlaneZ + 0.92],
+    ["back-left", -RAPIER_GOAL.halfWidth, GOAL_CAGE_POINTS.rearBottomLeft.z],
+    ["back-right", RAPIER_GOAL.halfWidth, GOAL_CAGE_POINTS.rearBottomRight.z],
   ].forEach(function addNetPegShadow(item) {
     var pegShadow = new THREE.Mesh(new THREE.CircleGeometry(1, 24), pegShadowMaterial.clone());
     pegShadow.name = "goal-net-peg-shadow-" + item[0];
@@ -2680,7 +2773,11 @@ export function createGoalAndNet() {
   ["left", "right"].forEach(function addDepthHinge(side) {
     var sign = side === "left" ? -1 : 1;
     var hinge = makeBeveledBox("goal-depth-hinge-bracket-" + side, 0.14, 0.075, 0.05, 0.016, hingeMaterial);
-    hinge.position.set(sign * (RAPIER_GOAL.halfWidth + 0.26), 0.13, RAPIER_GOAL.netPlaneZ + 0.72);
+    hinge.position.set(
+      sign * RAPIER_GOAL.halfWidth,
+      0.13,
+      RAPIER_GOAL.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth * 0.55,
+    );
     hinge.rotation.y = sign * 0.34;
     group.add(hinge);
   });

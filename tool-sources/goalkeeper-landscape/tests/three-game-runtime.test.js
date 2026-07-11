@@ -356,11 +356,11 @@ describe("three game runtime timing", () => {
       lastContact: gloveContact,
     };
 
-    const caught = advanceLingeringBalls([savedBall], 0.2)[0];
+    const caught = advanceLingeringBalls([savedBall], 0.3)[0];
 
     expect(caught.outcome).toBe("saved");
     expect(caught.lastContact).toEqual(gloveContact);
-    expect(caught.position.z).toBeLessThan(RAPIER_GOAL.netPlaneZ + 1);
+    expect(caught.position.z).toBeLessThan(RAPIER_GOAL.backNetZ);
     expect(caught.velocity.z).toBeLessThanOrEqual(0);
     expect(caught.netContact).toMatchObject({
       type: "net",
