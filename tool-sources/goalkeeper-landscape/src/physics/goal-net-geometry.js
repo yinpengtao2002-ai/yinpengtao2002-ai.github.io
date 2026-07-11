@@ -4,6 +4,10 @@ export const GOAL_NET_GEOMETRY = {
   halfWidth: SHOT_3D.goalHalfWidth,
   height: SHOT_3D.goalHeight,
   netPlaneZ: SHOT_3D.netPlaneZ,
+  rearHeight: 1.95,
+  cageDepth: 2.05,
+  frameRadius: 0.06,
+  netSlack: 0.12,
   shellOffsetZ: 0.022,
   anchorDepth: 0.035,
   pocketDepth: 0.84,
@@ -11,8 +15,56 @@ export const GOAL_NET_GEOMETRY = {
   contactCooldown: 0.16,
 };
 
+function point(x, y, z) {
+  return Object.freeze({ x, y, z });
+}
+
+var rearZ = GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth;
+
+export const GOAL_CAGE_POINTS = Object.freeze({
+  frontBottomLeft: point(-GOAL_NET_GEOMETRY.halfWidth, 0, GOAL_NET_GEOMETRY.netPlaneZ),
+  frontTopLeft: point(-GOAL_NET_GEOMETRY.halfWidth, GOAL_NET_GEOMETRY.height, GOAL_NET_GEOMETRY.netPlaneZ),
+  frontTopRight: point(GOAL_NET_GEOMETRY.halfWidth, GOAL_NET_GEOMETRY.height, GOAL_NET_GEOMETRY.netPlaneZ),
+  frontBottomRight: point(GOAL_NET_GEOMETRY.halfWidth, 0, GOAL_NET_GEOMETRY.netPlaneZ),
+  rearBottomLeft: point(-GOAL_NET_GEOMETRY.halfWidth, 0, rearZ),
+  rearTopLeft: point(-GOAL_NET_GEOMETRY.halfWidth, GOAL_NET_GEOMETRY.rearHeight, rearZ),
+  rearTopRight: point(GOAL_NET_GEOMETRY.halfWidth, GOAL_NET_GEOMETRY.rearHeight, rearZ),
+  rearBottomRight: point(GOAL_NET_GEOMETRY.halfWidth, 0, rearZ),
+});
+
+function segment(name, startName, endName) {
+  return Object.freeze({
+    name,
+    start: GOAL_CAGE_POINTS[startName],
+    end: GOAL_CAGE_POINTS[endName],
+  });
+}
+
+export const GOAL_FRAME_SEGMENTS = Object.freeze([
+  segment("crossbar", "frontTopLeft", "frontTopRight"),
+  segment("front-left-post", "frontBottomLeft", "frontTopLeft"),
+  segment("front-right-post", "frontBottomRight", "frontTopRight"),
+  segment("top-left-rail", "frontTopLeft", "rearTopLeft"),
+  segment("top-right-rail", "frontTopRight", "rearTopRight"),
+  segment("rear-left-upright", "rearBottomLeft", "rearTopLeft"),
+  segment("rear-right-upright", "rearBottomRight", "rearTopRight"),
+  segment("bottom-left-rail", "frontBottomLeft", "rearBottomLeft"),
+  segment("bottom-right-rail", "frontBottomRight", "rearBottomRight"),
+  segment("rear-bottom-rail", "rearBottomLeft", "rearBottomRight"),
+]);
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+export function getGoalRoofHeightAtZ(z) {
+  var depth = clamp(
+    (z - GOAL_NET_GEOMETRY.netPlaneZ) / GOAL_NET_GEOMETRY.cageDepth,
+    0,
+    1,
+  );
+  return GOAL_NET_GEOMETRY.height +
+    (GOAL_NET_GEOMETRY.rearHeight - GOAL_NET_GEOMETRY.height) * depth;
 }
 
 export function getGoalNetPocketVertex(localX, localY) {

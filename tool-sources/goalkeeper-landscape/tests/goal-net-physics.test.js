@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  GOAL_CAGE_POINTS,
+  GOAL_FRAME_SEGMENTS,
   GOAL_NET_GEOMETRY,
   getGoalNetSurfacePoint,
+  getGoalRoofHeightAtZ,
   resolveGoalNetCollision,
 } from "../src/physics/goal-net-geometry.js";
 
@@ -18,6 +21,46 @@ function makeNetCollisionState(overrides = {}) {
 }
 
 describe("shared physical goal net", () => {
+  it("defines a balanced front-high rear-low trapezoid from shared points", () => {
+    const rearZ = GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth;
+
+    expect(GOAL_NET_GEOMETRY.rearHeight).toBe(1.95);
+    expect(GOAL_NET_GEOMETRY.cageDepth).toBe(2.05);
+    expect(GOAL_CAGE_POINTS.frontTopLeft).toEqual({
+      x: -GOAL_NET_GEOMETRY.halfWidth,
+      y: GOAL_NET_GEOMETRY.height,
+      z: GOAL_NET_GEOMETRY.netPlaneZ,
+    });
+    expect(GOAL_CAGE_POINTS.rearTopLeft).toEqual({
+      x: -GOAL_NET_GEOMETRY.halfWidth,
+      y: GOAL_NET_GEOMETRY.rearHeight,
+      z: rearZ,
+    });
+    expect(GOAL_CAGE_POINTS.rearTopRight.x).toBe(GOAL_NET_GEOMETRY.halfWidth);
+    expect(getGoalRoofHeightAtZ(GOAL_NET_GEOMETRY.netPlaneZ)).toBe(GOAL_NET_GEOMETRY.height);
+    expect(getGoalRoofHeightAtZ(rearZ)).toBe(GOAL_NET_GEOMETRY.rearHeight);
+  });
+
+  it("derives every visible and physical frame member from the cage corners", () => {
+    expect(GOAL_FRAME_SEGMENTS.map((segment) => segment.name)).toEqual([
+      "crossbar",
+      "front-left-post",
+      "front-right-post",
+      "top-left-rail",
+      "top-right-rail",
+      "rear-left-upright",
+      "rear-right-upright",
+      "bottom-left-rail",
+      "bottom-right-rail",
+      "rear-bottom-rail",
+    ]);
+    expect(GOAL_FRAME_SEGMENTS.every((segment) => segment.start && segment.end)).toBe(true);
+    expect(GOAL_FRAME_SEGMENTS.find((segment) => segment.name === "top-left-rail")).toMatchObject({
+      start: GOAL_CAGE_POINTS.frontTopLeft,
+      end: GOAL_CAGE_POINTS.rearTopLeft,
+    });
+  });
+
   it("does not create an invisible net wall outside the posts or above the crossbar", () => {
     const outsidePost = makeNetCollisionState({
       previousPosition: { x: GOAL_NET_GEOMETRY.halfWidth + 0.04, y: 1.2, z: 5.28 },
