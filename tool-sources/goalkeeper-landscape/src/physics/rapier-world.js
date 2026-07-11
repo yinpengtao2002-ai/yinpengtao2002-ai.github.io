@@ -2,14 +2,19 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { SHOT_3D } from "../game/shot-3d-director.js";
 import { GLOVE_3D } from "../input/glove-controller.js";
 import { clamp, dot3, length3, normalize3, subtract3 } from "../math/vector.js";
-import { GOAL_NET_GEOMETRY, resolveGoalNetCollision } from "./goal-net-geometry.js";
+import {
+  GOAL_CAGE_POINTS,
+  GOAL_FRAME_SEGMENTS,
+  GOAL_NET_GEOMETRY,
+  resolveGoalNetCollision,
+} from "./goal-net-geometry.js";
 
 export const RAPIER_GOAL = {
   halfWidth: SHOT_3D.goalHalfWidth,
   height: SHOT_3D.goalHeight,
   glovePlaneZ: GLOVE_3D.planeZ,
   netPlaneZ: SHOT_3D.netPlaneZ,
-  backNetZ: SHOT_3D.netPlaneZ + GOAL_NET_GEOMETRY.shellOffsetZ + GOAL_NET_GEOMETRY.anchorDepth + GOAL_NET_GEOMETRY.pocketDepth,
+  backNetZ: GOAL_CAGE_POINTS.rearBottomLeft.z,
 };
 
 var rapierReady = null;
@@ -27,6 +32,18 @@ async function ensureRapier() {
 
 function vector(value) {
   return { x: value.x, y: value.y, z: value.z };
+}
+
+function rotationFromYAxis(direction) {
+  var dot = clamp(direction.y, -1, 1);
+  if (dot < -0.999999) return { x: 1, y: 0, z: 0, w: 0 };
+  var scale = Math.sqrt((1 + dot) * 2);
+  return {
+    x: direction.z / scale,
+    y: 0,
+    z: -direction.x / scale,
+    w: scale * 0.5,
+  };
 }
 
 function makeTarget(center) {
@@ -152,6 +169,7 @@ class RapierGoalkeeperWorld {
     this.gloveRiseMemory = 0;
     this.gloveBodies = {};
     this.gloveParts = [];
+    this.goalFrameColliders = [];
     this.createGloves();
     this.createGoalColliders();
     this.createFieldColliders();
@@ -189,16 +207,33 @@ class RapierGoalkeeperWorld {
 
   createGoalColliders() {
     var R = this.R;
-    var frameDepth = 0.12;
-    var z = RAPIER_GOAL.netPlaneZ;
-    var frame = [
-      { x: 0, y: RAPIER_GOAL.height + 0.06, z: z, hx: RAPIER_GOAL.halfWidth + 0.14, hy: 0.06, hz: frameDepth },
-      { x: -RAPIER_GOAL.halfWidth - 0.06, y: RAPIER_GOAL.height / 2, z: z, hx: 0.06, hy: RAPIER_GOAL.height / 2, hz: frameDepth },
-      { x: RAPIER_GOAL.halfWidth + 0.06, y: RAPIER_GOAL.height / 2, z: z, hx: 0.06, hy: RAPIER_GOAL.height / 2, hz: frameDepth },
-    ];
-    frame.forEach((box) => {
-      var body = this.world.createRigidBody(R.RigidBodyDesc.fixed().setTranslation(box.x, box.y, box.z));
-      this.world.createCollider(R.ColliderDesc.cuboid(box.hx, box.hy, box.hz).setRestitution(0.72).setFriction(0.3), body);
+    var radius = GOAL_NET_GEOMETRY.frameRadius;
+    GOAL_FRAME_SEGMENTS.forEach((segment) => {
+      var delta = subtract3(segment.end, segment.start);
+      var length = length3(delta);
+      var direction = normalize3(delta);
+      var midpoint = {
+        x: (segment.start.x + segment.end.x) * 0.5,
+        y: (segment.start.y + segment.end.y) * 0.5,
+        z: (segment.start.z + segment.end.z) * 0.5,
+      };
+      var body = this.world.createRigidBody(
+        R.RigidBodyDesc.fixed().setTranslation(midpoint.x, midpoint.y, midpoint.z),
+      );
+      var collider = this.world.createCollider(
+        R.ColliderDesc.cuboid(radius, length * 0.5, radius)
+          .setRotation(rotationFromYAxis(direction))
+          .setRestitution(0.72)
+          .setFriction(0.3),
+        body,
+      );
+      this.goalFrameColliders.push({
+        name: segment.name,
+        start: segment.start,
+        end: segment.end,
+        body,
+        collider,
+      });
     });
   }
 
