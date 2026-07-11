@@ -547,3 +547,19 @@ final result: passed
 - `1280 x 720` passed: the first captured live frame was already moving forward from the muzzle axis at `y = 1.97`, with no lower-body or feed-rack intersection.
 - `844 x 390` passed: the first captured live frame remained on the upper launch axis at `y = 2.02`; the canvas had no horizontal or vertical overflow.
 - Final local bundle `index-CN-nwspv.js` produced no console errors or warnings, and the frame-bound goal net remained visually connected in both viewports.
+
+## 2026-07-11 Freestanding Training Goal QA
+
+**Reference Direction**
+- White round front tubing with slimmer integrated white return rails.
+- Continuous white 120mm square mesh with restrained top and rear sag.
+- Existing goalkeeper camera, court, launcher, HUD, and gameplay composition preserved.
+
+**Verification**
+- `1440 x 900`, `932 x 430`, and `844 x 390` passed visual inspection.
+- Side, roof, and rear panels terminate on the shared frame envelope with no protruding net.
+- Only the legal front posts and crossbar remain rigid colliders; all seven return rails are visual-only.
+- No viewport overflow at either mobile landscape size; the portrait orientation gate remains intact.
+- Mobile canvas screenshots were nonblank with over 3,000 downsampled colors each.
+
+Final result: passed

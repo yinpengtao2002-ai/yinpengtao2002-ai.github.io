@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-export const GOALKEEPER_SCRIPT_SRC = "/tools/goalkeeper-landscape/assets/index-I1cS7tiu.js";
+export const GOALKEEPER_SCRIPT_SRC = "/tools/goalkeeper-landscape/assets/index-9XesRiZ5.js";
 
 type GoalkeeperGameWindow = Window & {
   goalkeeperActiveMountId?: string;

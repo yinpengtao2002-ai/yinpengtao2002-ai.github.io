@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   GOAL_CAGE_POINTS,
   GOAL_FRAME_SEGMENTS,
+  GOAL_RETURN_FRAME_SEGMENTS,
   GOAL_NET_GRID,
   GOAL_NET_GEOMETRY,
   getGoalNetPocketVertex,
@@ -23,11 +24,11 @@ function makeNetCollisionState(overrides = {}) {
 }
 
 describe("shared physical goal net", () => {
-  it("defines a deep professional stadium net with a nearly level roof", () => {
+  it("defines a compact freestanding training goal with a gently sloped roof", () => {
     const rearZ = GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth;
 
-    expect(GOAL_NET_GEOMETRY.rearHeight).toBe(2.34);
-    expect(GOAL_NET_GEOMETRY.cageDepth).toBe(2.05);
+    expect(GOAL_NET_GEOMETRY.rearHeight).toBe(2.24);
+    expect(GOAL_NET_GEOMETRY.cageDepth).toBe(1.78);
     expect(GOAL_CAGE_POINTS.frontTopLeft).toEqual({
       x: -GOAL_NET_GEOMETRY.halfWidth,
       y: GOAL_NET_GEOMETRY.height,
@@ -52,6 +53,21 @@ describe("shared physical goal net", () => {
     expect(GOAL_FRAME_SEGMENTS.every((segment) => segment.start && segment.end)).toBe(true);
     expect(GOAL_FRAME_SEGMENTS.some((segment) => segment.name.includes("rear"))).toBe(false);
     expect(GOAL_FRAME_SEGMENTS.some((segment) => segment.name.includes("rail"))).toBe(false);
+  });
+
+  it("defines the white return frame separately from rigid collision geometry", () => {
+    expect(GOAL_RETURN_FRAME_SEGMENTS.map((segment) => segment.name)).toEqual([
+      "top-left-return",
+      "top-right-return",
+      "rear-left-upright",
+      "rear-right-upright",
+      "bottom-left-return",
+      "bottom-right-return",
+      "rear-base-rail",
+    ]);
+    expect(GOAL_RETURN_FRAME_SEGMENTS).toHaveLength(7);
+    expect(GOAL_RETURN_FRAME_SEGMENTS.every((segment) => segment.visualOnly)).toBe(true);
+    expect(GOAL_RETURN_FRAME_SEGMENTS.every((segment) => segment.start && segment.end)).toBe(true);
   });
 
   it("keeps every rear net boundary vertex fixed to the shared rear frame", () => {

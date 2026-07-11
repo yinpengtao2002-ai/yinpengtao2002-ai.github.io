@@ -4,8 +4,8 @@ export const GOAL_NET_GEOMETRY = {
   halfWidth: SHOT_3D.goalHalfWidth,
   height: SHOT_3D.goalHeight,
   netPlaneZ: SHOT_3D.netPlaneZ,
-  rearHeight: 2.34,
-  cageDepth: 2.05,
+  rearHeight: 2.24,
+  cageDepth: 1.78,
   frameRadius: 0.06,
   netSlack: 0.12,
   shellOffsetZ: 0.022,
@@ -58,6 +58,23 @@ export const GOAL_FRAME_SEGMENTS = Object.freeze([
   segment("crossbar", "frontTopLeft", "frontTopRight"),
   segment("front-left-post", "frontBottomLeft", "frontTopLeft"),
   segment("front-right-post", "frontBottomRight", "frontTopRight"),
+]);
+
+function visualSegment(name, startName, endName) {
+  return Object.freeze({
+    ...segment(name, startName, endName),
+    visualOnly: true,
+  });
+}
+
+export const GOAL_RETURN_FRAME_SEGMENTS = Object.freeze([
+  visualSegment("top-left-return", "frontTopLeft", "rearTopLeft"),
+  visualSegment("top-right-return", "frontTopRight", "rearTopRight"),
+  visualSegment("rear-left-upright", "rearBottomLeft", "rearTopLeft"),
+  visualSegment("rear-right-upright", "rearBottomRight", "rearTopRight"),
+  visualSegment("bottom-left-return", "frontBottomLeft", "rearBottomLeft"),
+  visualSegment("bottom-right-return", "frontBottomRight", "rearBottomRight"),
+  visualSegment("rear-base-rail", "rearBottomLeft", "rearBottomRight"),
 ]);
 
 function clamp(value, min, max) {

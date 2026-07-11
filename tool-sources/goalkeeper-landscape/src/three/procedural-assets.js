@@ -6,9 +6,11 @@ import { LAUNCHER_GEOMETRY } from "../game/launcher-geometry.js";
 import {
   GOAL_CAGE_POINTS,
   GOAL_FRAME_SEGMENTS,
+  GOAL_RETURN_FRAME_SEGMENTS,
   GOAL_NET_GRID,
   GOAL_NET_GEOMETRY,
   getGoalNetPocketVertex,
+  getGoalRoofHeightAtZ,
 } from "../physics/goal-net-geometry.js";
 import { RAPIER_GOAL } from "../physics/rapier-world.js";
 
@@ -317,9 +319,9 @@ function createContinuousNetPocketMaterial() {
   var material = new THREE.ShaderMaterial({
     uniforms: {
       netMap: { value: netTexture },
-      netOpacity: { value: 0.12 },
-      netTint: { value: new THREE.Color("#dbe8e2") },
-      centerVisibilityFloor: { value: 0.06 },
+      netOpacity: { value: 0.13 },
+      netTint: { value: new THREE.Color("#eef4f1") },
+      centerVisibilityFloor: { value: 0.075 },
     },
     vertexShader: `
       varying vec2 vUv;
@@ -356,19 +358,73 @@ function createContinuousNetPocketMaterial() {
     depthTest: true,
     side: THREE.DoubleSide,
   });
-  material.opacity = 0.12;
+  material.opacity = 0.13;
   material.toneMapped = false;
   material.forceSinglePass = true;
   material.userData.netContinuitySystem = NET_CONTINUITY_SYSTEM;
   material.userData.netAlphaTextureSystem = NET_ALPHA_TEXTURE_SYSTEM;
   material.userData.meshPattern = "professional-square-120mm-knotted-net";
-  material.userData.centerVisibilityFloor = 0.06;
+  material.userData.centerVisibilityFloor = 0.075;
   material.userData.visibilityProfile = "soft-center-fade-no-cutout";
   material.userData.ballPriorityCompositing = true;
   material.onBeforeRender = function syncNetOpacity() {
     material.uniforms.netOpacity.value = Math.min(0.24, Math.max(0, material.opacity));
   };
   return material;
+}
+
+function createDetailedCageNetPanelGeometry(panel) {
+  var isTop = panel === "top";
+  var widthSegments = isTop ? GOAL_NET_GRID.widthDivisions : GOAL_NET_GRID.depthDivisions;
+  var heightSegments = isTop ? GOAL_NET_GRID.depthDivisions : GOAL_NET_GRID.frontHeightDivisions;
+  var positions = [];
+  var uvs = [];
+  var indices = [];
+  var sideSign = panel === "left" ? -1 : 1;
+
+  for (var row = 0; row <= heightSegments; row += 1) {
+    var v = row / heightSegments;
+    for (var column = 0; column <= widthSegments; column += 1) {
+      var u = column / widthSegments;
+      var z;
+      var x;
+      var y;
+      if (isTop) {
+        x = -GOAL_NET_GEOMETRY.halfWidth + u * GOAL_NET_GEOMETRY.halfWidth * 2;
+        z = GOAL_NET_GEOMETRY.netPlaneZ + v * GOAL_NET_GEOMETRY.cageDepth;
+        var edgeTension = Math.sin(Math.PI * u) * Math.sin(Math.PI * v);
+        y = getGoalRoofHeightAtZ(z) - edgeTension * 0.065;
+      } else {
+        z = GOAL_NET_GEOMETRY.netPlaneZ + u * GOAL_NET_GEOMETRY.cageDepth;
+        x = sideSign * GOAL_NET_GEOMETRY.halfWidth;
+        var roofHeight = getGoalRoofHeightAtZ(z);
+        var sideSlack = Math.sin(Math.PI * u) * Math.sin(Math.PI * v) * 0.028;
+        y = Math.max(0, v * roofHeight - sideSlack);
+      }
+      positions.push(x, y, z);
+      uvs.push(u, v);
+    }
+  }
+
+  var stride = widthSegments + 1;
+  for (var gridY = 0; gridY < heightSegments; gridY += 1) {
+    for (var gridX = 0; gridX < widthSegments; gridX += 1) {
+      var a = gridY * stride + gridX;
+      var b = a + 1;
+      var c = a + stride + 1;
+      var d = a + stride;
+      indices.push(a, b, c, a, c, d);
+    }
+  }
+
+  var geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  geometry.userData.naturalSag = isTop ? 0.065 : 0.028;
+  geometry.userData.panel = panel;
+  return geometry;
 }
 
 function createBraidedNetCordMaterial(options = {}) {
@@ -1169,19 +1225,19 @@ export function createGoalAndNet() {
   var group = new THREE.Group();
   group.userData.polishSystem = MATCHDAY_ASSET_POLISH_SYSTEM;
   group.userData.geometryPolishSystem = ROUNDED_BOX_BEVELED_PROP_SYSTEM;
-  group.userData.assetSystem = "ifab-stadium-goal-kit";
-  group.userData.goalConstructionSystem = "socketed-front-frame-with-independent-net-support";
+  group.userData.assetSystem = "professional-freestanding-training-goal-kit";
+  group.userData.goalConstructionSystem = "integrated-white-tube-return-frame";
   group.userData.frameDetailSystem = "rounded-posts-with-tensioned-net";
   group.userData.netPocketSystem = "localized-net-pocket-deformation";
-  group.userData.netHardwareSystem = "stadium-net-ground-rope-kit";
+  group.userData.netHardwareSystem = "integrated-frame-bound-net";
   group.userData.netWeaveSystem = "knotted-diagonal-net-weave";
   group.userData.netCordVolumeSystem = "raised-rope-net-cord-layer";
   group.userData.dynamicNetDetailSystem = "reactive-woven-net-detail-kit";
-  group.userData.frameAssemblySystem = "clean-socketed-stadium-frame";
-  group.userData.goalEquipmentPolishSystem = "ifab-match-goal-equipment-kit";
+  group.userData.frameAssemblySystem = "slim-white-portable-goal-frame";
+  group.userData.goalEquipmentPolishSystem = "clean-training-ground-goal-equipment";
   group.userData.depthReadabilitySystem = "goal-net-depth-contact-shadow-kit";
   group.userData.netReadabilitySystem = "ball-first-ultra-light-net-cords";
-  group.userData.netRealismSystem = "open-diamond-rope-net-ball-first";
+  group.userData.netRealismSystem = "naturally-sagged-square-training-net";
   group.userData.netTextureSystem = NET_CORD_TEXTURE_SYSTEM;
   group.userData.netSightlineSystem = NET_SIGHTLINE_SYSTEM;
   group.userData.netDepthSystem = NET_DEPTH_SYSTEM;
@@ -1274,83 +1330,17 @@ export function createGoalAndNet() {
   markGoalFrameSegment(top, "crossbar");
   group.add(left, right, top);
 
-  var supportMaterial = new THREE.MeshStandardMaterial({
-    color: "#263237",
-    roughness: 0.62,
-    metalness: 0.18,
-  });
-  var supportCableMaterial = new THREE.LineBasicMaterial({
-    color: "#465157",
-    transparent: true,
-    opacity: 0.72,
-  });
-  var supportX = RAPIER_GOAL.halfWidth + 0.44;
-  var supportZ = GOAL_CAGE_POINTS.rearBottomLeft.z + 0.08;
-  var supportTopY = 3.12;
-  [
-    ["left", -supportX],
-    ["right", supportX],
-  ].forEach(function addNetSupportPost(item) {
-    var post = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.052, supportTopY, 16), supportMaterial);
-    post.name = "goal-net-support-post-" + item[0];
-    post.position.set(item[1], supportTopY * 0.5, supportZ);
-    post.userData.goalSupportSystem = "independent-stadium-net-support";
-    group.add(post);
-  });
-
-  function addSupportCable(name, start, end) {
-    var cable = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(start.x, start.y, start.z),
-        new THREE.Vector3(end.x, end.y, end.z),
-      ]),
-      supportCableMaterial.clone(),
-    );
-    cable.name = "goal-net-support-cable-" + name;
-    cable.userData.goalSupportSystem = "independent-stadium-net-support";
-    group.add(cable);
-  }
-
-  addSupportCable("left", GOAL_CAGE_POINTS.frontTopLeft, {
-    x: -supportX,
-    y: GOAL_NET_GEOMETRY.rearHeight,
-    z: supportZ,
-  });
-  addSupportCable("right", GOAL_CAGE_POINTS.frontTopRight, {
-    x: supportX,
-    y: GOAL_NET_GEOMETRY.rearHeight,
-    z: supportZ,
-  });
-  addSupportCable("rear", {
-    x: -supportX,
-    y: GOAL_NET_GEOMETRY.rearHeight,
-    z: supportZ,
-  }, {
-    x: supportX,
-    y: GOAL_NET_GEOMETRY.rearHeight,
-    z: supportZ,
-  });
-
-  var groundRopeMaterial = new THREE.LineBasicMaterial({
-    color: "#cfd7d2",
-    transparent: true,
-    opacity: 0.42,
-  });
-  [
-    ["left", GOAL_CAGE_POINTS.frontBottomLeft, GOAL_CAGE_POINTS.rearBottomLeft],
-    ["right", GOAL_CAGE_POINTS.frontBottomRight, GOAL_CAGE_POINTS.rearBottomRight],
-    ["rear", GOAL_CAGE_POINTS.rearBottomLeft, GOAL_CAGE_POINTS.rearBottomRight],
-  ].forEach(function addGroundRope(item) {
-    var rope = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(item[1].x, 0.025, item[1].z),
-        new THREE.Vector3(item[2].x, 0.025, item[2].z),
-      ]),
-      groundRopeMaterial.clone(),
-    );
-    rope.name = "goal-net-ground-rope-" + item[0];
-    rope.userData.goalSupportSystem = "ground-anchored-net-rope";
-    group.add(rope);
+  GOAL_RETURN_FRAME_SEGMENTS.forEach(function addReturnFrameRail(segment) {
+    var rail = makeLimb("#e8eeeb", GOAL_NET_GEOMETRY.frameRadius * 0.54);
+    rail.name = "goal-frame-return-" + segment.name;
+    rail.material.roughness = 0.48;
+    rail.material.metalness = 0.02;
+    rail.userData.visualOnly = true;
+    rail.userData.goalSupportSystem = "integrated-white-return-frame";
+    rail.userData.segmentStart = { ...segment.start };
+    rail.userData.segmentEnd = { ...segment.end };
+    setLimb(rail, segment.start, segment.end);
+    group.add(rail);
   });
 
   var capMaterial = new THREE.MeshStandardMaterial({ color: "#fbfff3", roughness: 0.28, metalness: 0.05 });
@@ -1493,20 +1483,8 @@ export function createGoalAndNet() {
   group.add(grid);
 
   var sharedNetTexture = continuousPocketShell.material.uniforms.netMap.value;
-  function addCageNetPanel(panel, corners, opacity, netGridDivisions) {
-    var geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.Float32BufferAttribute(
-      corners.flatMap((corner) => [corner.x, corner.y, corner.z]),
-      3,
-    ));
-    geometry.setAttribute("uv", new THREE.Float32BufferAttribute([
-      0, 0,
-      1, 0,
-      1, 1,
-      0, 1,
-    ], 2));
-    geometry.setIndex([0, 1, 2, 0, 2, 3]);
-    geometry.computeVertexNormals();
+  function addCageNetPanel(panel, opacity, netGridDivisions) {
+    var geometry = createDetailedCageNetPanelGeometry(panel);
     var material = new THREE.MeshBasicMaterial({
       color: "#dfe9e4",
       map: sharedNetTexture,
@@ -1531,23 +1509,13 @@ export function createGoalAndNet() {
   }
 
   ["left", "right"].forEach(function addTrapezoidSidePanel(side) {
-    addCageNetPanel(side, [
-      GOAL_CAGE_POINTS[side === "left" ? "frontBottomLeft" : "frontBottomRight"],
-      GOAL_CAGE_POINTS[side === "left" ? "rearBottomLeft" : "rearBottomRight"],
-      GOAL_CAGE_POINTS[side === "left" ? "rearTopLeft" : "rearTopRight"],
-      GOAL_CAGE_POINTS[side === "left" ? "frontTopLeft" : "frontTopRight"],
-    ], 0.11, {
+    addCageNetPanel(side, 0.14, {
       depth: GOAL_NET_GRID.depthDivisions,
       height: GOAL_NET_GRID.frontHeightDivisions,
     });
   });
 
-  addCageNetPanel("top", [
-    GOAL_CAGE_POINTS.frontTopLeft,
-    GOAL_CAGE_POINTS.rearTopLeft,
-    GOAL_CAGE_POINTS.rearTopRight,
-    GOAL_CAGE_POINTS.frontTopRight,
-  ], 0.075, {
+  addCageNetPanel("top", 0.1, {
     depth: GOAL_NET_GRID.depthDivisions,
     width: GOAL_NET_GRID.widthDivisions,
   });

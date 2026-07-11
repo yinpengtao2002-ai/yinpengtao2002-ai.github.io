@@ -586,25 +586,24 @@ describe("procedural 3D assets", () => {
     expect(collectByName(field, /^field-touchline-shadow-/)).toHaveLength(0);
   });
 
-  it("models an IFAB stadium goal with only the legal white front frame", () => {
+  it("models a white freestanding training goal without separate poles or cables", () => {
     const goal = createGoalAndNet();
 
-    expect(goal.group.userData.assetSystem).toBe("ifab-stadium-goal-kit");
-    expect(goal.group.userData.goalConstructionSystem).toBe("socketed-front-frame-with-independent-net-support");
+    expect(goal.group.userData.assetSystem).toBe("professional-freestanding-training-goal-kit");
+    expect(goal.group.userData.goalConstructionSystem).toBe("integrated-white-tube-return-frame");
     expect(goal.group.userData.netPocketSystem).toBe("localized-net-pocket-deformation");
     expect(goal.net.userData.deformationSystem).toBe("localized-net-pocket-deformation");
     expect(goal.net.geometry.attributes.position.count).toBeGreaterThanOrEqual(120);
     expect(collectByName(goal.group, /^goal-frame-(left-post|right-post|crossbar)$/)).toHaveLength(3);
-    expect(collectByName(goal.group, /^goal-frame-(top-rail|rear-upright|rear-top-rail|bottom-rail|rear-bottom-rail)/)).toHaveLength(0);
-    expect(collectByName(goal.group, /^goal-net-support-post-/)).toHaveLength(2);
-    expect(collectByName(goal.group, /^goal-net-support-cable-/).length).toBeGreaterThanOrEqual(3);
-    expect(collectByName(goal.group, /^goal-net-ground-rope-/)).toHaveLength(3);
+    expect(collectByName(goal.group, /^goal-frame-return-/)).toHaveLength(7);
+    expect(collectByName(goal.group, /^goal-net-support-post-/)).toHaveLength(0);
+    expect(collectByName(goal.group, /^goal-net-support-cable-/)).toHaveLength(0);
+    expect(collectByName(goal.group, /^goal-net-ground-rope-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-brand-trim-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-frame-crossbar-sleeve-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-depth-stanchion-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-net-continuous-pocket-shell$/)).toHaveLength(1);
     expect(collectByName(goal.group, /^goal-net-anchor-/)).toHaveLength(0);
-    expect(collectByName(goal.group, /^goal-net-ground-rope-/)).toHaveLength(3);
     expect(goal.net.name).toBe("goal-net-back-panel");
     expect(goal.grid.name).toBe("goal-net-back-grid");
 
@@ -626,12 +625,16 @@ describe("procedural 3D assets", () => {
     });
   });
 
-  it("keeps rounded front-frame caps without adding freestanding cage rails", () => {
+  it("keeps rounded front-frame caps and adds slim integrated return rails", () => {
     const goal = createGoalAndNet();
 
     expect(goal.group.userData.frameDetailSystem).toBe("rounded-posts-with-tensioned-net");
     expect(collectByName(goal.group, /^goal-frame-post-cap-/).length).toBeGreaterThanOrEqual(4);
-    expect(collectByName(goal.group, /^goal-frame-bottom-rail-/)).toHaveLength(0);
+    const returnRails = collectByName(goal.group, /^goal-frame-return-/);
+    expect(returnRails).toHaveLength(7);
+    expect(returnRails.every((rail) => rail.userData.visualOnly === true)).toBe(true);
+    expect(returnRails.every((rail) => rail.userData.goalFrameSegment === undefined)).toBe(true);
+    expect(returnRails.every((rail) => rail.material.color.getHexString() === "e8eeeb")).toBe(true);
     expect(collectByName(goal.group, /^goal-net-cage-seam-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-net-tension-cord-/)).toHaveLength(0);
   });
@@ -649,11 +652,11 @@ describe("procedural 3D assets", () => {
     expect(collectByName(field, /^field-surface-panel-/)).toHaveLength(0);
     expect(collectByName(field, /^field-depth-band-/)).toHaveLength(0);
 
-    expect(goal.group.userData.netHardwareSystem).toBe("stadium-net-ground-rope-kit");
+    expect(goal.group.userData.netHardwareSystem).toBe("integrated-frame-bound-net");
     expect(collectByName(goal.group, /^goal-net-bottom-weight-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-net-label-tab-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-frame-net-clip-/)).toHaveLength(0);
-    expect(collectByName(goal.group, /^goal-net-ground-rope-/)).toHaveLength(3);
+    expect(collectByName(goal.group, /^goal-net-ground-rope-/)).toHaveLength(0);
 
     expect(glove.userData.materialSystem).toBe("stitched-padded-match-glove");
     expect(collectByName(glove, /^glove-vent-perforation-/).length).toBeGreaterThanOrEqual(8);
@@ -738,13 +741,13 @@ describe("procedural 3D assets", () => {
     expect(goal.dynamicNetDetails.some((detail) => detail.name === shell.name)).toBe(true);
   });
 
-  it("keeps the professional stadium net roof nearly level behind the crossbar", () => {
+  it("gives the freestanding training net a modest rearward roof slope", () => {
     const rearRoofHeight = getGoalRoofHeightAtZ(GOAL_CAGE_POINTS.rearTopLeft.z);
 
     expect(GOAL_NET_GRID.targetCellSize).toBeCloseTo(0.12, 3);
-    expect(rearRoofHeight).toBeGreaterThanOrEqual(2.3);
+    expect(rearRoofHeight).toBeGreaterThanOrEqual(2.2);
     expect(rearRoofHeight).toBeLessThanOrEqual(GOAL_NET_GEOMETRY.height);
-    expect(GOAL_NET_GEOMETRY.height - rearRoofHeight).toBeLessThanOrEqual(0.14);
+    expect(GOAL_NET_GEOMETRY.height - rearRoofHeight).toBeLessThanOrEqual(0.24);
   });
 
   it("keeps all four visible net panels inside the shared cage envelope", () => {
@@ -799,6 +802,18 @@ describe("procedural 3D assets", () => {
     expect(left.material.opacity).toBeLessThanOrEqual(0.18);
     expect(right.material.opacity).toBeLessThanOrEqual(0.18);
     expect(top.material.opacity).toBeLessThanOrEqual(0.16);
+    expect(top.geometry.getAttribute("position").count).toBeGreaterThan(100);
+
+    const topPositions = top.geometry.getAttribute("position");
+    const centerIndex = Array.from({ length: topPositions.count }, (_, index) => index)
+      .reduce((best, index) => {
+        const distance = Math.abs(topPositions.getX(index)) +
+          Math.abs(topPositions.getZ(index) - (GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth * 0.5));
+        return distance < best.distance ? { index, distance } : best;
+      }, { index: 0, distance: Infinity }).index;
+    expect(topPositions.getY(centerIndex)).toBeLessThan(
+      getGoalRoofHeightAtZ(topPositions.getZ(centerIndex)) - 0.04,
+    );
   });
 
   it("removes decorative side-net fibers that protrude beyond the posts", () => {
@@ -827,11 +842,11 @@ describe("procedural 3D assets", () => {
     expect(goal.dynamicNetDetails).toHaveLength(4);
   });
 
-  it("removes freestanding training-goal hardware from the stadium construction", () => {
+  it("keeps the freestanding training goal clean and free of decorative hardware", () => {
     const goal = createGoalAndNet();
 
-    expect(goal.group.userData.frameAssemblySystem).toBe("clean-socketed-stadium-frame");
-    expect(goal.group.userData.goalEquipmentPolishSystem).toBe("ifab-match-goal-equipment-kit");
+    expect(goal.group.userData.frameAssemblySystem).toBe("slim-white-portable-goal-frame");
+    expect(goal.group.userData.goalEquipmentPolishSystem).toBe("clean-training-ground-goal-equipment");
     expect(collectByName(goal.group, /^goal-frame-corner-collar-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-frame-ground-foot-pad-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-net-tie-strap-/)).toHaveLength(0);
@@ -866,7 +881,7 @@ describe("procedural 3D assets", () => {
     expect(goal.group.userData.depthReadabilitySystem).toBe("goal-net-depth-contact-shadow-kit");
     expect(collectByName(goal.group, /^goal-frame-contact-shadow-/).length).toBeGreaterThanOrEqual(3);
     expect(collectByName(goal.group, /^goal-net-continuous-pocket-shell$/)).toHaveLength(1);
-    expect(collectByName(goal.group, /^goal-net-ground-rope-rear$/)).toHaveLength(1);
+    expect(collectByName(goal.group, /^goal-frame-return-rear-base-rail$/)).toHaveLength(1);
   });
 
   it("adds close-range glove protection ridges and ball surface storytelling details", () => {

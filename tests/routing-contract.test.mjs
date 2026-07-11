@@ -125,7 +125,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
     new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
     "utf8"
   );
-  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-I1cS7tiu.js", import.meta.url);
+  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-9XesRiZ5.js", import.meta.url);
   const gameScript = await stat(gameScriptPath);
   const gameScriptSource = await readFile(gameScriptPath, "utf8");
   const gameStylePath = new URL("../public/tools/goalkeeper-landscape/assets/index-CvA-KOni.css", import.meta.url);
@@ -150,7 +150,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(goalkeeperPage, /import GoalkeeperLandscapeRuntime/);
   assert.match(goalkeeperPage, /GOALKEEPER_SCRIPT_SRC/);
   assert.match(goalkeeperPage, /GOALKEEPER_STYLESHEET_HREF/);
-  assert.match(goalkeeperRuntime, /index-I1cS7tiu\.js/);
+  assert.match(goalkeeperRuntime, /index-9XesRiZ5\.js/);
   assert.match(goalkeeperRuntime, /goalkeeperRuntime/);
   assert.match(goalkeeperRuntime, /dispose\?\.\(\)/);
   assert.match(goalkeeperRuntime, /goalkeeperActiveMountId/);
@@ -206,7 +206,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(thinkingClient, /横屏守门挑战/);
   assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-I1cS7tiu\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-9XesRiZ5\.js/);
   assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-CvA-KOni\.css/);
   assert.match(gameIndex, /id="gameHud"/);
   assert.doesNotMatch(gameIndex, /id="feedbackToast"/);
@@ -351,17 +351,16 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /stadium-crowd-row/);
   assert.match(gameScriptSource, /stadium-scoreboard/);
   assert.match(gameScriptSource, /stadium-corner-flag/);
-  assert.match(gameScriptSource, /ifab-stadium-goal-kit/);
-  assert.match(gameScriptSource, /socketed-front-frame-with-independent-net-support/);
-  assert.match(gameScriptSource, /independent-stadium-net-support/);
-  assert.match(gameScriptSource, /goal-net-support-post/);
-  assert.match(gameScriptSource, /goal-net-support-cable/);
-  assert.match(gameScriptSource, /goal-net-ground-rope/);
-  assert.match(gameScriptSource, /clean-socketed-stadium-frame/);
-  assert.match(gameScriptSource, /ifab-match-goal-equipment-kit/);
+  assert.match(gameScriptSource, /professional-freestanding-training-goal-kit/);
+  assert.match(gameScriptSource, /integrated-white-tube-return-frame/);
+  assert.match(gameScriptSource, /integrated-white-return-frame/);
+  assert.doesNotMatch(gameScriptSource, /goal-net-support-post/);
+  assert.doesNotMatch(gameScriptSource, /goal-net-support-cable/);
+  assert.doesNotMatch(gameScriptSource, /goal-net-ground-rope/);
+  assert.match(gameScriptSource, /slim-white-portable-goal-frame/);
+  assert.match(gameScriptSource, /clean-training-ground-goal-equipment/);
   assert.doesNotMatch(gameScriptSource, /goal-net-cage-seam/);
-  assert.doesNotMatch(gameScriptSource, /goal-frame-top-rail/);
-  assert.doesNotMatch(gameScriptSource, /goal-frame-rear-upright/);
+  assert.match(gameScriptSource, /goal-frame-return-/);
   assert.doesNotMatch(gameScriptSource, /goal-frame-corner-collar/);
   assert.doesNotMatch(gameScriptSource, /goal-frame-ground-foot-pad/);
   assert.doesNotMatch(gameScriptSource, /goal-net-tie-strap/);
@@ -381,7 +380,8 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /reactive-woven-net-detail-kit/);
   assert.match(gameScriptSource, /reactive-woven-net-recoil/);
   assert.match(gameScriptSource, /feedback-dynamic-net-detail-recoil/);
-  assert.match(gameScriptSource, /stadium-net-ground-rope-kit/);
+  assert.match(gameScriptSource, /integrated-frame-bound-net/);
+  assert.match(gameScriptSource, /naturally-sagged-square-training-net/);
   assert.doesNotMatch(gameScriptSource, /goal-net-bottom-weight/);
   assert.doesNotMatch(gameScriptSource, /goal-frame-net-clip/);
   assert.match(gameScriptSource, /stitched-padded-match-glove/);
