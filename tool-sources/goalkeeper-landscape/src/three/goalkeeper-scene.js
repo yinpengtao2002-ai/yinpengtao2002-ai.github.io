@@ -74,8 +74,12 @@ export const SCENE_TUNING = {
     netReadabilitySystem: "near-net-ball-priority-halo",
     renderOrder: 12,
     haloRenderOrder: 13,
-    nearNetHaloBoost: 0.12,
-    nearNetHaloMaxOpacity: 0.46,
+    haloColor: "#ffffff",
+    liveHaloOpacity: 0.1,
+    goalHaloOpacity: 0,
+    settledHaloOpacity: 0,
+    nearNetHaloBoost: 0.06,
+    nearNetHaloMaxOpacity: 0.16,
     showShotTrail: false,
     flightSpinGlintSystem: "attached-ball-spin-glint-kit",
     flightSpinGlintCount: 2,
@@ -669,6 +673,28 @@ export function getPhysicalNetAnimationContact(contact) {
       z: contact.point.z || RAPIER_GOAL.netPlaneZ,
     },
     strength: clampNumber(0.3 + (rawStrength / 24) * 0.7, 0.3, 1),
+  };
+}
+
+export function getBallHaloAppearancePlan(ballState = {}, position = {}, tuning = SCENE_TUNING.ball) {
+  var isLiveBall = Boolean(ballState.live) && ballState.outcome !== "goal";
+  var baseOpacity = ballState.outcome === "goal"
+    ? tuning.goalHaloOpacity
+    : isLiveBall
+      ? tuning.liveHaloOpacity
+      : tuning.settledHaloOpacity;
+  var nearNetMix = isLiveBall
+    ? clamp01(((position.z || 0) - (SCENE_TUNING.depth.netPlaneZ - 1.35)) / 1.35)
+    : 0;
+  var opacity = Math.min(
+    tuning.nearNetHaloMaxOpacity,
+    Math.max(0, (baseOpacity || 0) + nearNetMix * tuning.nearNetHaloBoost),
+  );
+
+  return {
+    color: tuning.haloColor,
+    opacity,
+    visible: opacity > 0.002,
   };
 }
 
@@ -1987,7 +2013,12 @@ export function createGoalkeeperScene(canvas) {
     );
     var halo = new THREE.Mesh(
       haloGeometry,
-      new THREE.MeshBasicMaterial({ color: "#fff0a6", transparent: true, opacity: 0.34, depthWrite: false }),
+      new THREE.MeshBasicMaterial({
+        color: tuning.ball.haloColor,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      }),
     );
     var shadow = new THREE.Mesh(
       shadowGeometry,
@@ -2438,12 +2469,10 @@ export function createGoalkeeperScene(canvas) {
     view.halo.position.set(position.x, position.y, position.z - 0.025);
     view.halo.lookAt(camera.position);
     view.halo.scale.setScalar(0.22 + depth * 0.64);
-    var baseHaloOpacity = ballState?.outcome === "goal" ? 0.34 : ballState?.live ? 0.28 : 0.18;
-    var nearNetMix = clamp01((position.z - (tuning.depth.netPlaneZ - 1.35)) / 1.35);
-    view.halo.material.opacity = Math.min(
-      tuning.ball.nearNetHaloMaxOpacity,
-      baseHaloOpacity + nearNetMix * tuning.ball.nearNetHaloBoost,
-    );
+    var haloPlan = getBallHaloAppearancePlan(ballState, position, tuning.ball);
+    view.halo.material.color.set(haloPlan.color);
+    view.halo.material.opacity = haloPlan.opacity;
+    view.halo.visible = haloPlan.visible;
 
     view.shadow.position.set(position.x, 0.012, position.z);
     var heightAboveFloor = Math.max(0, position.y - (ballState?.radius || tuning.ball.radius));

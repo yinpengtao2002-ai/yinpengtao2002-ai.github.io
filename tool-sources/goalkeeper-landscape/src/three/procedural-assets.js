@@ -703,13 +703,13 @@ export function createFootballTexture() {
   canvas.height = 512;
   var ctx = canvas.getContext("2d");
   var baseGradient = ctx.createRadialGradient(204, 156, 20, 256, 256, 384);
-  baseGradient.addColorStop(0, "#fffdf1");
-  baseGradient.addColorStop(0.58, "#f7f3e5");
-  baseGradient.addColorStop(1, "#d9d2c0");
+  baseGradient.addColorStop(0, "#ffffff");
+  baseGradient.addColorStop(0.58, "#f3f5f4");
+  baseGradient.addColorStop(1, "#cfd4d2");
   ctx.fillStyle = baseGradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.strokeStyle = "rgba(23, 28, 30, 0.38)";
+  ctx.strokeStyle = "rgba(20, 25, 27, 0.52)";
   ctx.lineWidth = 4;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
@@ -729,15 +729,15 @@ export function createFootballTexture() {
   }
 
   [
-    [256, 256, 58, "#1f272b", -Math.PI / 2],
-    [118, 120, 44, "#f0782f", -0.2],
-    [392, 130, 44, "#61f0ff", 0.52],
-    [145, 392, 42, "#1f272b", 0.2],
-    [378, 378, 42, "#f0782f", -0.7],
+    [256, 256, 58, "#171d20", -Math.PI / 2],
+    [118, 120, 46, "#22292c", -0.2],
+    [392, 130, 46, "#171d20", 0.52],
+    [145, 392, 44, "#22292c", 0.2],
+    [378, 378, 44, "#171d20", -0.7],
   ].forEach(function drawPatch(patch) {
     ctx.beginPath();
-    for (var i = 0; i < 6; i += 1) {
-      var angle = patch[4] + (i / 6) * Math.PI * 2;
+    for (var i = 0; i < 5; i += 1) {
+      var angle = patch[4] + (i / 5) * Math.PI * 2;
       var px = patch[0] + Math.cos(angle) * patch[2];
       var py = patch[1] + Math.sin(angle) * patch[2];
       if (i === 0) ctx.moveTo(px, py);
@@ -746,15 +746,15 @@ export function createFootballTexture() {
     ctx.closePath();
     ctx.fillStyle = patch[3];
     ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.58)";
+    ctx.strokeStyle = "rgba(255,255,255,0.34)";
     ctx.lineWidth = 3;
     ctx.stroke();
   });
 
-  ctx.globalAlpha = 0.52;
-  ["#f0782f", "#61f0ff", "#1f272b"].forEach(function drawAccent(color, index) {
+  ctx.globalAlpha = 0.34;
+  ["#20272a", "#4d5659", "#20272a"].forEach(function drawPanelLink(color, index) {
     ctx.strokeStyle = color;
-    ctx.lineWidth = 9 - index * 2;
+    ctx.lineWidth = 6 - index;
     ctx.beginPath();
     ctx.arc(256, 256, 132 + index * 28, Math.PI * (0.12 + index * 0.16), Math.PI * (0.62 + index * 0.16));
     ctx.stroke();
@@ -762,7 +762,7 @@ export function createFootballTexture() {
   ctx.globalAlpha = 1;
 
   ctx.globalAlpha = 0.28;
-  ctx.strokeStyle = "#7f7465";
+  ctx.strokeStyle = "#697174";
   ctx.lineWidth = 2;
   for (var scuff = 0; scuff < 18; scuff += 1) {
     var sx = 92 + ((scuff * 61) % 330);
@@ -790,9 +790,10 @@ export function createFootballTexture() {
   var texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
-  texture.userData.assetSystem = "modern-panel-match-ball-texture";
-  texture.userData.panelSystem = "radial-accent-seamed-panels";
-  texture.userData.materialSystem = "raised-seam-accent-match-ball";
+  texture.userData.assetSystem = "classic-neutral-match-ball-texture";
+  texture.userData.panelSystem = "classic-dark-pentagon-panel-layout";
+  texture.userData.paletteSystem = "neutral-white-charcoal-no-yellow-cast";
+  texture.userData.materialSystem = "stitched-classic-match-ball";
   texture.userData.finishSystem = "micro-scuffed-satin-panels";
   texture.userData.surfaceDetailSystem = "micro-scuffs-valve-and-panel-depth";
   texture.userData.valveSystem = "painted-rubber-air-valve";
@@ -802,6 +803,7 @@ export function createFootballTexture() {
 
 export function createFootballMaterial() {
   var material = new THREE.MeshStandardMaterial({
+    color: "#ffffff",
     map: createFootballTexture(),
     bumpMap: createFootballSurfaceMap("bump"),
     bumpScale: 0.018,
@@ -810,6 +812,7 @@ export function createFootballMaterial() {
     metalness: 0.015,
   });
   material.userData.materialPipelineSystem = "procedural-match-ball-pbr";
+  material.userData.paletteSystem = "neutral-white-charcoal-no-yellow-cast";
   material.userData.surfaceDetailSystem = "raised-seam-and-scuffed-panel-relief";
   material.userData.polishSystem = MATCHDAY_ASSET_POLISH_SYSTEM;
   return material;
@@ -827,9 +830,10 @@ function createFallbackFootballTexture() {
       var angle = Math.atan2(ny, nx);
       var seam = Math.abs(Math.sin(angle * 6 + radius * 8)) < 0.055 || Math.abs((radius * 5) % 1 - 0.5) < 0.025;
       var accent = Math.abs(Math.sin(angle * 3 - radius * 5)) < 0.08 && radius > 0.28 && radius < 0.78;
-      data[index] = seam ? 34 : accent ? 240 : 246 - Math.floor(radius * 28);
-      data[index + 1] = seam ? 39 : accent ? 120 : 242 - Math.floor(radius * 24);
-      data[index + 2] = seam ? 42 : accent ? 47 : 229 - Math.floor(radius * 22);
+      var neutralPanel = accent ? 28 : 246 - Math.floor(radius * 22);
+      data[index] = seam ? 34 : neutralPanel;
+      data[index + 1] = seam ? 39 : accent ? 34 : neutralPanel;
+      data[index + 2] = seam ? 42 : accent ? 37 : neutralPanel;
       data[index + 3] = 255;
     }
   }
@@ -837,9 +841,10 @@ function createFallbackFootballTexture() {
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
   texture.needsUpdate = true;
-  texture.userData.assetSystem = "modern-panel-match-ball-texture";
-  texture.userData.panelSystem = "radial-accent-seamed-panels";
-  texture.userData.materialSystem = "raised-seam-accent-match-ball";
+  texture.userData.assetSystem = "classic-neutral-match-ball-texture";
+  texture.userData.panelSystem = "classic-dark-pentagon-panel-layout";
+  texture.userData.paletteSystem = "neutral-white-charcoal-no-yellow-cast";
+  texture.userData.materialSystem = "stitched-classic-match-ball";
   texture.userData.finishSystem = "micro-scuffed-satin-panels";
   texture.userData.surfaceDetailSystem = "micro-scuffs-valve-and-panel-depth";
   texture.userData.valveSystem = "painted-rubber-air-valve";

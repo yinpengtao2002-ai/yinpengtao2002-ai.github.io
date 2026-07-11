@@ -395,13 +395,14 @@ describe("procedural 3D assets", () => {
     expect(surface.material.userData.grassReadabilityGuard).toBe("synthetic-polymer-floor-no-turf-blades");
   });
 
-  it("uses a modern finished match ball texture instead of a plain prototype pattern", () => {
+  it("uses a recognizable neutral-white football texture instead of a yellow stylized shell", () => {
     const texture = createFootballTexture();
 
-    expect(texture.userData.assetSystem).toBe("modern-panel-match-ball-texture");
+    expect(texture.userData.assetSystem).toBe("classic-neutral-match-ball-texture");
     expect(texture.image.width).toBeGreaterThanOrEqual(512);
     expect(texture.anisotropy).toBeGreaterThanOrEqual(4);
-    expect(texture.userData.panelSystem).toBe("radial-accent-seamed-panels");
+    expect(texture.userData.panelSystem).toBe("classic-dark-pentagon-panel-layout");
+    expect(texture.userData.paletteSystem).toBe("neutral-white-charcoal-no-yellow-cast");
   });
 
   it("keeps the floor clear of football pitch markings while preserving goalmouth depth", () => {
@@ -663,7 +664,7 @@ describe("procedural 3D assets", () => {
     expect(collectByName(glove, /^glove-wrist-strap-/)).toHaveLength(1);
     expect(collectByName(glove, /^glove-brand-patch-/)).toHaveLength(1);
 
-    expect(ballTexture.userData.materialSystem).toBe("raised-seam-accent-match-ball");
+    expect(ballTexture.userData.materialSystem).toBe("stitched-classic-match-ball");
     expect(ballTexture.userData.finishSystem).toBe("micro-scuffed-satin-panels");
   });
 
@@ -698,12 +699,14 @@ describe("procedural 3D assets", () => {
     expect(surface.material.roughness).toBeGreaterThanOrEqual(0.86);
 
     expect(ballMaterial.userData.materialPipelineSystem).toBe("procedural-match-ball-pbr");
-    expect(ballMaterial.map.userData.assetSystem).toBe("modern-panel-match-ball-texture");
+    expect(ballMaterial.map.userData.assetSystem).toBe("classic-neutral-match-ball-texture");
     expect(ballMaterial.bumpMap).toBeTruthy();
     expect(ballMaterial.roughnessMap).toBeTruthy();
     expect(ballMaterial.bumpScale).toBeGreaterThan(0.01);
     expect(ballMaterial.roughness).toBeGreaterThanOrEqual(0.38);
     expect(ballMaterial.metalness).toBeLessThanOrEqual(0.03);
+    expect(ballMaterial.color.getHexString()).toBe("ffffff");
+    expect(ballMaterial.userData.paletteSystem).toBe("neutral-white-charcoal-no-yellow-cast");
   });
 
   it("uses one continuous low-occlusion 120mm square match net", () => {

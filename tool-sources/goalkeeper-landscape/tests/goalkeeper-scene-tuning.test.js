@@ -158,12 +158,36 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.ball.shadowHeightFade).toBeGreaterThanOrEqual(1.2);
   });
 
-  it("keeps the ball visually above the back net near the goal mouth", () => {
+  it("keeps only a restrained neutral halo on a live ball near the goal mouth", () => {
     expect(SCENE_TUNING.ball.netReadabilitySystem).toBe("near-net-ball-priority-halo");
     expect(SCENE_TUNING.ball.renderOrder).toBeGreaterThanOrEqual(12);
     expect(SCENE_TUNING.ball.haloRenderOrder).toBeGreaterThanOrEqual(SCENE_TUNING.ball.renderOrder);
-    expect(SCENE_TUNING.ball.nearNetHaloBoost).toBeGreaterThanOrEqual(0.1);
-    expect(SCENE_TUNING.ball.nearNetHaloMaxOpacity).toBeLessThanOrEqual(0.48);
+    expect(SCENE_TUNING.ball.nearNetHaloBoost).toBeLessThanOrEqual(0.08);
+    expect(SCENE_TUNING.ball.nearNetHaloMaxOpacity).toBeLessThanOrEqual(0.2);
+  });
+
+  it("removes the yellow foreground shell once the ball is inside the goal", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.getBallHaloAppearancePlan).toBeTypeOf("function");
+    expect(SCENE_TUNING.ball.haloColor).toBe("#ffffff");
+    expect(SCENE_TUNING.ball.goalHaloOpacity).toBe(0);
+    expect(SCENE_TUNING.ball.settledHaloOpacity).toBe(0);
+
+    const goal = sceneModule.getBallHaloAppearancePlan(
+      { live: false, outcome: "goal" },
+      { x: 0, y: 1.2, z: SHOT_3D.netPlaneZ + 0.6 },
+    );
+    const live = sceneModule.getBallHaloAppearancePlan(
+      { live: true, outcome: "live" },
+      { x: 0, y: 1.2, z: SHOT_3D.netPlaneZ - 0.2 },
+    );
+
+    expect(goal).toMatchObject({ visible: false, opacity: 0, color: "#ffffff" });
+    expect(live.visible).toBe(true);
+    expect(live.opacity).toBeGreaterThan(0);
+    expect(live.opacity).toBeLessThanOrEqual(0.2);
+    expect(live.color).toBe("#ffffff");
   });
 
   it("keeps runtime net feedback below the ball-first occlusion budget", () => {
