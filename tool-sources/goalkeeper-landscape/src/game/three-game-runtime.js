@@ -25,6 +25,13 @@ export const PARRIED_SAVE_REPLAY_STYLE = "parried-save-deflection-replay";
 export const GROUND_CONTACT_AUDIO_COOLDOWN = 0.28;
 export const OUTCOME_HUD_HOLD_SECONDS = 0.82;
 const GROUND_FEEDBACK_DURATION = 0.62;
+const PARRIED_ROLLING_DAMPING_60HZ = 0.993;
+const PARRIED_ROLLING_SPIN_DAMPING_60HZ = 0.996;
+const PARRIED_GROUND_TANGENTIAL_RETENTION = 0.91;
+const PARRIED_GROUND_SPIN_RETENTION = 0.9;
+const PARRIED_MIN_BOUNCE_SPEED = 0.26;
+const AIRBORNE_LINEAR_DAMPING_60HZ = 0.998;
+const AIRBORNE_SPIN_DAMPING_60HZ = 0.997;
 
 function clamp01(value) {
   return Math.max(0, Math.min(1, value || 0));
@@ -217,6 +224,23 @@ function createRollingGroundFeedback(position, velocity, existingFeedback = null
     speed: horizontalSpeed,
   };
 
+  if (existingFeedback) {
+    return {
+      ...existingFeedback,
+      speed: horizontalSpeed,
+      point: {
+        x: position.x || 0,
+        y: 0.012,
+        z: position.z || 0,
+      },
+      direction: {
+        x: horizontalSpeed > 0.001 ? (velocity.x || 0) / horizontalSpeed : 0,
+        y: 0,
+        z: horizontalSpeed > 0.001 ? (velocity.z || 0) / horizontalSpeed : -1,
+      },
+    };
+  }
+
   var baseIntensity = clamp01(horizontalSpeed / 10) * 0.42;
   return {
     active: true,
@@ -309,8 +333,9 @@ function advanceLingeringBall(ball, dt) {
       position.x += velocity.x * h;
       position.z += velocity.z * h;
 
-      var rollingDamping = ball.saveReplayStyle === CAUGHT_SAVE_REPLAY_STYLE ? 0.946 : 0.976;
-      var rollingSpinDamping = ball.saveReplayStyle === CAUGHT_SAVE_REPLAY_STYLE ? 0.962 : 0.988;
+      var isCaughtReplay = ball.saveReplayStyle === CAUGHT_SAVE_REPLAY_STYLE;
+      var rollingDamping = isCaughtReplay ? 0.946 : PARRIED_ROLLING_DAMPING_60HZ;
+      var rollingSpinDamping = isCaughtReplay ? 0.962 : PARRIED_ROLLING_SPIN_DAMPING_60HZ;
       var dampingFactor = Math.pow(rollingDamping, h * 60);
       var spinDampingFactor = Math.pow(rollingSpinDamping, h * 60);
       velocity.x *= dampingFactor;
@@ -318,6 +343,14 @@ function advanceLingeringBall(ball, dt) {
       angularVelocity.x *= spinDampingFactor;
       angularVelocity.y *= spinDampingFactor;
       angularVelocity.z *= spinDampingFactor;
+
+      if (!isCaughtReplay && horizontalSpeed >= 0.12) {
+        var rollingBlend = 1 - Math.pow(0.82, h * 60);
+        var targetAngularX = -(velocity.z || 0) / radius;
+        var targetAngularZ = (velocity.x || 0) / radius;
+        angularVelocity.x += (targetAngularX - angularVelocity.x) * rollingBlend;
+        angularVelocity.z += (targetAngularZ - angularVelocity.z) * rollingBlend;
+      }
 
       if (horizontalSpeed < 0.12) {
         velocity.x = 0;
@@ -354,12 +387,19 @@ function advanceLingeringBall(ball, dt) {
     if (position.y < radius) {
       position.y = radius;
       if (velocity.y < 0) {
-        var bounce = ball.saveReplayStyle === CAUGHT_SAVE_REPLAY_STYLE ? 0.12 : 0.22;
+        var caughtReplay = ball.saveReplayStyle === CAUGHT_SAVE_REPLAY_STYLE;
+        var bounce = caughtReplay
+          ? 0.12
+          : clampNumber(0.32 + verticalImpactSpeed * 0.018, 0.34, 0.44);
         velocity.y = Math.abs(velocity.y) * bounce;
-        if (velocity.y < 0.45) velocity.y = 0;
+        if (velocity.y < (caughtReplay ? 0.45 : PARRIED_MIN_BOUNCE_SPEED)) velocity.y = 0;
       }
-      var groundDamping = ball.saveReplayStyle === CAUGHT_SAVE_REPLAY_STYLE ? 0.58 : 0.72;
-      var spinDamping = ball.saveReplayStyle === CAUGHT_SAVE_REPLAY_STYLE ? 0.66 : 0.82;
+      var groundDamping = ball.saveReplayStyle === CAUGHT_SAVE_REPLAY_STYLE
+        ? 0.58
+        : PARRIED_GROUND_TANGENTIAL_RETENTION;
+      var spinDamping = ball.saveReplayStyle === CAUGHT_SAVE_REPLAY_STYLE
+        ? 0.66
+        : PARRIED_GROUND_SPIN_RETENTION;
       velocity.x *= groundDamping;
       velocity.z *= groundDamping;
       angularVelocity.x *= spinDamping;
@@ -369,11 +409,13 @@ function advanceLingeringBall(ball, dt) {
         groundFeedback = createGroundFeedback(position, velocity, verticalImpactSpeed);
       }
     } else {
-      velocity.x *= 0.998;
-      velocity.z *= 0.998;
-      angularVelocity.x *= 0.997;
-      angularVelocity.y *= 0.997;
-      angularVelocity.z *= 0.997;
+      var airborneDampingFactor = Math.pow(AIRBORNE_LINEAR_DAMPING_60HZ, h * 60);
+      var airborneSpinDampingFactor = Math.pow(AIRBORNE_SPIN_DAMPING_60HZ, h * 60);
+      velocity.x *= airborneDampingFactor;
+      velocity.z *= airborneDampingFactor;
+      angularVelocity.x *= airborneSpinDampingFactor;
+      angularVelocity.y *= airborneSpinDampingFactor;
+      angularVelocity.z *= airborneSpinDampingFactor;
     }
 
     var netResult = resolveGoalNetCollision({

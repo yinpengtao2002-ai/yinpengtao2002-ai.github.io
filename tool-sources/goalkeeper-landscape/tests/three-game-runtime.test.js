@@ -277,6 +277,100 @@ describe("three game runtime timing", () => {
     expect(Math.hypot(afterThreeSeconds.velocity.x, afterThreeSeconds.velocity.z)).toBeLessThan(rollingSpeed);
   });
 
+  it("keeps a firmly parried football rolling for several seconds", () => {
+    const rollingSave = {
+      live: false,
+      outcome: "saved",
+      saveReplayStyle: "parried-save-deflection-replay",
+      replayInitialized: true,
+      position: { x: 0.15, y: 0.11, z: 2.9 },
+      velocity: { x: 0.8, y: 0, z: -5.2 },
+      angularVelocity: { x: -12, y: 1.4, z: 0.8 },
+      radius: 0.11,
+      age: 0,
+      duration: 5,
+    };
+
+    const afterTwoAndHalfSeconds = Array.from({ length: 300 }).reduce(
+      (balls) => advanceLingeringBalls(balls, 1 / 120),
+      [rollingSave],
+    )[0];
+    const travel = Math.hypot(
+      afterTwoAndHalfSeconds.position.x - rollingSave.position.x,
+      afterTwoAndHalfSeconds.position.z - rollingSave.position.z,
+    );
+    const rollingSpeed = Math.hypot(
+      afterTwoAndHalfSeconds.velocity.x,
+      afterTwoAndHalfSeconds.velocity.z,
+    );
+
+    expect(travel).toBeGreaterThan(6);
+    expect(rollingSpeed).toBeGreaterThan(1.2);
+    expect(afterTwoAndHalfSeconds.position.y).toBeCloseTo(rollingSave.radius, 3);
+  });
+
+  it("lets a downward parry make two visible football bounces before rolling", () => {
+    const bouncingSave = {
+      live: false,
+      outcome: "saved",
+      saveReplayStyle: "parried-save-deflection-replay",
+      replayInitialized: true,
+      position: { x: -0.2, y: 0.72, z: 2.9 },
+      velocity: { x: 0.7, y: -3.8, z: -5.2 },
+      angularVelocity: { x: -12, y: 1.2, z: 0.6 },
+      radius: 0.11,
+      age: 0,
+      duration: 5,
+    };
+    let balls = [bouncingSave];
+    let previousVerticalSpeed = bouncingSave.velocity.y;
+    let bounceCount = 0;
+
+    for (let frame = 0; frame < 240; frame += 1) {
+      balls = advanceLingeringBalls(balls, 1 / 120);
+      const ball = balls[0];
+      if (
+        previousVerticalSpeed < 0 &&
+        ball.velocity.y > 0 &&
+        ball.position.y <= ball.radius + 0.001
+      ) {
+        bounceCount += 1;
+      }
+      previousVerticalSpeed = ball.velocity.y;
+    }
+
+    expect(bounceCount).toBeGreaterThanOrEqual(2);
+    expect(bounceCount).toBeLessThanOrEqual(3);
+    expect(Math.hypot(balls[0].velocity.x, balls[0].velocity.z)).toBeGreaterThan(1.2);
+  });
+
+  it("keeps the lingering football trajectory stable across common frame rates", () => {
+    const bouncingSave = {
+      live: false,
+      outcome: "saved",
+      saveReplayStyle: "parried-save-deflection-replay",
+      replayInitialized: true,
+      position: { x: -0.2, y: 0.72, z: 2.9 },
+      velocity: { x: 0.7, y: -3.8, z: -5.2 },
+      angularVelocity: { x: -12, y: 1.2, z: 0.6 },
+      radius: 0.11,
+      age: 0,
+      duration: 5,
+    };
+    const simulate = (fps) => Array.from({ length: fps }).reduce(
+      (balls) => advanceLingeringBalls(balls, 1 / fps),
+      [{ ...bouncingSave, position: { ...bouncingSave.position }, velocity: { ...bouncingSave.velocity } }],
+    )[0];
+
+    const at60Fps = simulate(60);
+    const at120Fps = simulate(120);
+    const speed60 = Math.hypot(at60Fps.velocity.x, at60Fps.velocity.z);
+    const speed120 = Math.hypot(at120Fps.velocity.x, at120Fps.velocity.z);
+
+    expect(Math.abs(at60Fps.position.z - at120Fps.position.z)).toBeLessThan(0.08);
+    expect(Math.abs(speed60 - speed120)).toBeLessThan(0.12);
+  });
+
   it("turns caught saves into a soft drop replay instead of inheriting wild contact velocity", () => {
     const caughtSave = {
       live: false,
