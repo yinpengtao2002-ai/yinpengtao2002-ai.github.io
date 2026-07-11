@@ -14,6 +14,7 @@ import {
 import {
   GOAL_CAGE_POINTS,
   GOAL_FRAME_SEGMENTS,
+  GOAL_NET_GRID,
   GOAL_NET_GEOMETRY,
   getGoalRoofHeightAtZ,
 } from "../src/physics/goal-net-geometry.js";
@@ -595,6 +596,7 @@ describe("procedural 3D assets", () => {
     expect(collectByName(goal.group, /^goal-frame-(left-post|right-post|crossbar)$/)).toHaveLength(3);
     expect(collectByName(goal.group, /^goal-frame-top-rail-/)).toHaveLength(2);
     expect(collectByName(goal.group, /^goal-frame-rear-upright-/)).toHaveLength(2);
+    expect(collectByName(goal.group, /^goal-frame-rear-top-rail$/)).toHaveLength(1);
     expect(collectByName(goal.group, /^goal-frame-bottom-rail-/)).toHaveLength(2);
     expect(collectByName(goal.group, /^goal-frame-rear-bottom-rail$/)).toHaveLength(1);
     expect(collectByName(goal.group, /^goal-depth-stanchion-/)).toHaveLength(0);
@@ -717,9 +719,9 @@ describe("procedural 3D assets", () => {
     expect(shell.material.userData.visibilityProfile).toBe("soft-center-fade-no-cutout");
     expect(shell.material.uniforms.netOpacity.value).toBeLessThanOrEqual(0.24);
     expect(shell.material.opacity).toBeLessThanOrEqual(0.24);
-    expect(shell.material.userData.meshPattern).toBe("match-square-120mm-knotted-net");
-    expect(shell.material.uniforms.netMap.value.userData.cellsAcross).toBeGreaterThanOrEqual(32);
-    expect(shell.material.uniforms.netMap.value.userData.cellsHigh).toBeGreaterThanOrEqual(10);
+    expect(shell.material.userData.meshPattern).toBe("mobile-safe-square-knotted-net");
+    expect(shell.material.uniforms.netMap.value.userData.cellsAcross).toBe(GOAL_NET_GRID.widthDivisions);
+    expect(shell.material.uniforms.netMap.value.userData.cellsHigh).toBe(GOAL_NET_GRID.rearHeightDivisions);
     expect(shell.userData.crossesKeeperSightline).toBe(true);
     expect(shell.userData.hasShotWindowCutout).toBe(false);
     expect(shell.userData.ballPriorityRenderOrder).toBeGreaterThan(shell.renderOrder);
@@ -737,6 +739,7 @@ describe("procedural 3D assets", () => {
     expect(goal.group.userData.netFrameAttachmentSystem).toBe("frame-bound-continuous-net-seam");
     expect(panels.map((panel) => panel.userData.goalNetPanel).sort()).toEqual(["left", "rear", "right", "top"]);
     panels.forEach((panel) => {
+      expect(panel.userData.anchoredPanel).toBe(true);
       const positions = panel.geometry.getAttribute("position");
       for (let index = 0; index < positions.count; index += 1) {
         const point = new THREE.Vector3().fromBufferAttribute(positions, index).applyMatrix4(panel.matrixWorld);
@@ -748,6 +751,26 @@ describe("procedural 3D assets", () => {
         expect(point.y).toBeLessThanOrEqual(getGoalRoofHeightAtZ(point.z) + 0.0001);
       }
     });
+  });
+
+  it("uses the shared grid scale for the rear, side, and roof panels", () => {
+    const goal = createGoalAndNet();
+    const left = goal.group.getObjectByName("goal-net-panel-left");
+    const right = goal.group.getObjectByName("goal-net-panel-right");
+    const top = goal.group.getObjectByName("goal-net-panel-top");
+    const rear = goal.group.getObjectByName("goal-net-continuous-pocket-shell");
+
+    expect(left.userData.netGridDivisions).toEqual({
+      depth: GOAL_NET_GRID.depthDivisions,
+      height: GOAL_NET_GRID.frontHeightDivisions,
+    });
+    expect(right.userData.netGridDivisions).toEqual(left.userData.netGridDivisions);
+    expect(top.userData.netGridDivisions).toEqual({
+      depth: GOAL_NET_GRID.depthDivisions,
+      width: GOAL_NET_GRID.widthDivisions,
+    });
+    expect(rear.material.uniforms.netMap.value.userData.cellsAcross).toBe(GOAL_NET_GRID.widthDivisions);
+    expect(rear.material.uniforms.netMap.value.userData.cellsHigh).toBe(GOAL_NET_GRID.rearHeightDivisions);
   });
 
   it("removes decorative side-net fibers that protrude beyond the posts", () => {
@@ -800,6 +823,11 @@ describe("procedural 3D assets", () => {
     expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-side-cheek-lace-"))).toBe(false);
     expect(goal.dynamicNetDetails.some((detail) => detail.name === "goal-net-panel-left")).toBe(true);
     expect(goal.dynamicNetDetails.some((detail) => detail.name === "goal-net-panel-top")).toBe(true);
+    expect(
+      goal.dynamicNetDetails
+        .filter((detail) => detail.object.userData.goalNetPanel)
+        .every((detail) => detail.anchoredPanel),
+    ).toBe(true);
     expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-matchday-edge-lace-"))).toBe(true);
     expect(goal.dynamicNetDetails.every((detail) => detail.object.userData.dynamicNetDetailSystem)).toBe(true);
   });

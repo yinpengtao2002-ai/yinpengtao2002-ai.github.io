@@ -907,6 +907,35 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(quiet.opacityBoost).toBe(0);
   });
 
+  it("keeps frame-anchored net panels at their base transform during recoil", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+    const basePosition = { x: 0, y: 0.975, z: 6.25 };
+    const plan = sceneModule.getDynamicNetDetailMotionPlan(
+      {
+        name: "goal-net-panel-rear",
+        basePosition,
+        motionScale: 1,
+        anchoredPanel: true,
+      },
+      0.9,
+      { x: 1.2, y: 1.4, z: SHOT_3D.netPlaneZ },
+    );
+
+    expect(plan.anchoredPanel).toBe(true);
+    expect(plan.position).toEqual(basePosition);
+    expect(plan.opacityBoost).toBeGreaterThan(0);
+  });
+
+  it("keeps the rear net boundary vertices fixed during localized pocket deformation", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+    const halfHeight = 1.95 * 0.5;
+    const impact = { point: { x: 3.5, y: 1.9 }, radius: 1, depth: 0.16 };
+
+    expect(sceneModule.getNetPocketVertexDepthOffset(3.66, halfHeight * 0.8, impact)).toBe(0);
+    expect(sceneModule.getNetPocketVertexDepthOffset(3.3, halfHeight, impact)).toBe(0);
+    expect(sceneModule.getNetPocketVertexDepthOffset(3.3, halfHeight * 0.8, impact)).toBeGreaterThan(0);
+  });
+
   it("plans a localized net pocket deformation around the ball impact", async () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
 

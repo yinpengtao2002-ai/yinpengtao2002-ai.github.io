@@ -21,6 +21,7 @@ import {
 import { MAX_CONCEDED } from "../config/game-config.js";
 import { getContactEventSignature } from "../game/contact-event.js";
 import { SHOT_3D } from "../game/shot-3d-director.js";
+import { GOAL_NET_GEOMETRY } from "../physics/goal-net-geometry.js";
 import { RAPIER_GOAL } from "../physics/rapier-world.js";
 
 export const POSTPROCESSING_ADDON_SOURCES = [
@@ -1643,17 +1644,33 @@ export function getDynamicNetDetailMotionPlan(detail, pulse, contactPoint, tunin
   var recoil = tuning.dynamicNetDetailMaxTravel * wave * falloff * motionScale;
   var lateral = wave * falloff * 0.024 * motionScale;
   var lift = wave * falloff * 0.018 * motionScale;
+  var anchoredPanel = Boolean(detail?.anchoredPanel || detail?.object?.userData?.anchoredPanel);
 
   return {
     marker: "feedback-dynamic-net-detail-recoil",
     name: detail?.name || detail?.object?.name || "",
+    anchoredPanel,
     position: {
-      x: (base.x || 0) + (dx >= 0 ? lateral : -lateral),
-      y: (base.y || 0) + (dy >= 0 ? lift : -lift * 0.5),
-      z: (base.z || 0) + recoil,
+      x: (base.x || 0) + (anchoredPanel ? 0 : (dx >= 0 ? lateral : -lateral)),
+      y: (base.y || 0) + (anchoredPanel ? 0 : (dy >= 0 ? lift : -lift * 0.5)),
+      z: (base.z || 0) + (anchoredPanel ? 0 : recoil),
     },
     opacityBoost: tuning.dynamicNetDetailOpacityBoost * life * falloff * (detail?.opacityScale ?? 1),
   };
+}
+
+export function getNetPocketVertexDepthOffset(baseX, baseY, plan) {
+  var boundaryEpsilon = 0.0001;
+  var onSideEdge = Math.abs(baseX) >= GOAL_NET_GEOMETRY.halfWidth - boundaryEpsilon;
+  var onHorizontalEdge = Math.abs(baseY) >= GOAL_NET_GEOMETRY.rearHeight * 0.5 - boundaryEpsilon;
+  if (onSideEdge || onHorizontalEdge || !plan?.point) return 0;
+
+  var radius = plan.radius || 1;
+  var worldY = baseY + GOAL_NET_GEOMETRY.rearHeight * 0.5;
+  var dx = baseX - plan.point.x;
+  var dy = worldY - plan.point.y;
+  var falloff = Math.max(0, 1 - Math.hypot(dx, dy) / radius);
+  return (plan.depth || 0) * falloff * falloff;
 }
 
 function applyCameraTuning(camera, aspect, tuning) {
@@ -1862,7 +1879,10 @@ export function createGoalkeeperScene(canvas) {
   var stadiumScoreboardDisplay = field.getObjectByName("stadium-scoreboard-display");
   var goal = createGoalAndNet();
   var dynamicNetDetails = goal.dynamicNetDetails || [];
-  var netBasePositions = Array.from(goal.net.geometry.attributes.position.array);
+  var netPocketShell = goal.group.getObjectByName("goal-net-continuous-pocket-shell");
+  var netBasePositions = Array.from(netPocketShell.geometry.attributes.position.array);
+  var netLayerBasePosition = goal.net.position.clone();
+  var gridLayerBasePosition = goal.grid.position.clone();
   var shooter = createShooterModel();
   var ballMaterial = createFootballMaterial();
   var ballGeometry = new THREE.SphereGeometry(tuning.ball.radius, 32, 24);
@@ -2797,26 +2817,15 @@ export function createGoalkeeperScene(canvas) {
   }
 
   function applyNetPocketGeometry(plan) {
-    var attribute = goal.net.geometry.attributes.position;
+    var attribute = netPocketShell.geometry.attributes.position;
     var positions = attribute.array;
-    var radius = plan?.radius || 1;
-    var point = plan?.point;
-    var depth = plan?.depth || 0;
 
     for (var index = 0; index < positions.length; index += 3) {
       var baseX = netBasePositions[index];
       var baseY = netBasePositions[index + 1];
-      var worldY = baseY + RAPIER_GOAL.height / 2;
-      var falloff = 0;
-      if (point) {
-        var dx = baseX - point.x;
-        var dy = worldY - point.y;
-        falloff = Math.max(0, 1 - Math.hypot(dx, dy) / radius);
-        falloff *= falloff;
-      }
       positions[index] = baseX;
       positions[index + 1] = baseY;
-      positions[index + 2] = netBasePositions[index + 2] + depth * falloff;
+      positions[index + 2] = netBasePositions[index + 2] + getNetPocketVertexDepthOffset(baseX, baseY, plan);
     }
     attribute.needsUpdate = true;
   }
@@ -2888,18 +2897,12 @@ export function createGoalkeeperScene(canvas) {
     var recoilContactPoint = recoilPlan.point;
     if (netPulse > 0) {
       netPulse = Math.max(0, netPulse - tuning.feedback.netPulseDecay);
-      var pulseOffset = Math.sin(netPulse * Math.PI) * 0.11;
-      goal.net.position.z = RAPIER_GOAL.netPlaneZ + 0.1 + pulseOffset + recoilOffset;
-      goal.net.material.opacity =
-        tuning.feedback.netBaseOpacity +
-        Math.max(netPulse * tuning.feedback.netPulseOpacityBoost, recoilPulse * tuning.feedback.netRecoilOpacityBoost);
-      goal.grid.position.z = pulseOffset * 0.56 + recoilOffset * 0.48;
     } else {
-      goal.net.position.z = RAPIER_GOAL.netPlaneZ + 0.1 + recoilOffset;
-      goal.net.material.opacity = tuning.feedback.netBaseOpacity + recoilPulse * tuning.feedback.netRecoilOpacityBoost;
-      goal.grid.position.z = recoilOffset * 0.48;
       netPulseContactPoint = null;
     }
+    goal.net.position.copy(netLayerBasePosition);
+    goal.net.material.opacity = tuning.feedback.netBaseOpacity;
+    goal.grid.position.copy(gridLayerBasePosition);
     dynamicNetDetails.forEach((detail) => {
       var plan = getDynamicNetDetailMotionPlan(
         detail,
@@ -2910,7 +2913,7 @@ export function createGoalkeeperScene(canvas) {
       detail.object.position.set(
         plan.position.x,
         plan.position.y,
-        plan.position.z + recoilOffset * 0.34 * (detail.motionScale || 1),
+        plan.position.z + (plan.anchoredPanel ? 0 : recoilOffset * 0.34 * (detail.motionScale || 1)),
       );
       if (Number.isFinite(detail.baseOpacity) && detail.object.material) {
         detail.object.material.opacity = detail.baseOpacity + plan.opacityBoost + recoilPlan.opacityBoost * 0.45;

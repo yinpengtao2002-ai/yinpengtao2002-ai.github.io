@@ -125,7 +125,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
     new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
     "utf8"
   );
-  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-nH8tYHNo.js", import.meta.url);
+  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-BmYHQwGO.js", import.meta.url);
   const gameScript = await stat(gameScriptPath);
   const gameScriptSource = await readFile(gameScriptPath, "utf8");
   const gameStylePath = new URL("../public/tools/goalkeeper-landscape/assets/index-DjLiJCWj.css", import.meta.url);
@@ -150,7 +150,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(goalkeeperPage, /import GoalkeeperLandscapeRuntime/);
   assert.match(goalkeeperPage, /GOALKEEPER_SCRIPT_SRC/);
   assert.match(goalkeeperPage, /GOALKEEPER_STYLESHEET_HREF/);
-  assert.match(goalkeeperRuntime, /index-nH8tYHNo\.js/);
+  assert.match(goalkeeperRuntime, /index-BmYHQwGO\.js/);
   assert.match(goalkeeperRuntime, /goalkeeperRuntime/);
   assert.match(goalkeeperRuntime, /dispose\?\.\(\)/);
   assert.match(goalkeeperRuntime, /goalkeeperActiveMountId/);
@@ -206,7 +206,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(thinkingClient, /横屏守门挑战/);
   assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-nH8tYHNo\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-BmYHQwGO\.js/);
   assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-DjLiJCWj\.css/);
   assert.match(gameIndex, /id="gameHud"/);
   assert.doesNotMatch(gameIndex, /id="feedbackToast"/);
@@ -371,7 +371,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /procedural-real-match-net-alpha-texture/);
   assert.match(gameScriptSource, /continuous-ball-priority-pocket-shell/);
   assert.match(gameScriptSource, /goal-net-continuous-pocket-shell/);
-  assert.match(gameScriptSource, /match-square-120mm-knotted-net/);
+  assert.match(gameScriptSource, /mobile-safe-square-knotted-net/);
   assert.match(gameScriptSource, /ball-priority-continuous-center/);
   assert.match(gameScriptSource, /four-edge-tensioned-center-pocket/);
   assert.match(gameScriptSource, /single-shell-mobile-net-budget/);

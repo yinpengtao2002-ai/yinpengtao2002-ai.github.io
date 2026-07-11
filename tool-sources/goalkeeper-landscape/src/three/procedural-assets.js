@@ -6,6 +6,7 @@ import { LAUNCHER_GEOMETRY } from "../game/launcher-geometry.js";
 import {
   GOAL_CAGE_POINTS,
   GOAL_FRAME_SEGMENTS,
+  GOAL_NET_GRID,
   GOAL_NET_GEOMETRY,
   getGoalNetPocketVertex,
   getGoalRoofHeightAtZ,
@@ -241,8 +242,8 @@ function createMatchNetAlphaTexture(variant = "edge") {
 
 function createSquareGoalNetAlphaTexture() {
   var size = 512;
-  var cellsAcross = 36;
-  var cellsHigh = 12;
+  var cellsAcross = GOAL_NET_GRID.widthDivisions;
+  var cellsHigh = GOAL_NET_GRID.rearHeightDivisions;
   var data = new Uint8Array(size * size * 4);
 
   for (var y = 0; y < size; y += 1) {
@@ -279,7 +280,7 @@ function createSquareGoalNetAlphaTexture() {
   texture.needsUpdate = true;
   texture.userData.assetSystem = NET_ALPHA_TEXTURE_SYSTEM;
   texture.userData.netVisualUpgradeSystem = NET_VISUAL_UPGRADE_SYSTEM;
-  texture.userData.alphaMeshPattern = "match-square-120mm-knotted-net";
+  texture.userData.alphaMeshPattern = "mobile-safe-square-knotted-net";
   texture.userData.visibilityBudget = "ball-priority-continuous-center";
   texture.userData.cellsAcross = cellsAcross;
   texture.userData.cellsHigh = cellsHigh;
@@ -289,7 +290,12 @@ function createSquareGoalNetAlphaTexture() {
 function createContinuousNetPocketGeometry() {
   var width = GOAL_NET_GEOMETRY.halfWidth * 2;
   var height = GOAL_NET_GEOMETRY.rearHeight;
-  var geometry = new THREE.PlaneGeometry(width, height, 24, 12);
+  var geometry = new THREE.PlaneGeometry(
+    width,
+    height,
+    GOAL_NET_GRID.widthDivisions,
+    GOAL_NET_GRID.rearHeightDivisions,
+  );
   var positions = geometry.getAttribute("position");
 
   for (var index = 0; index < positions.count; index += 1) {
@@ -356,7 +362,7 @@ function createContinuousNetPocketMaterial() {
   material.forceSinglePass = true;
   material.userData.netContinuitySystem = NET_CONTINUITY_SYSTEM;
   material.userData.netAlphaTextureSystem = NET_ALPHA_TEXTURE_SYSTEM;
-  material.userData.meshPattern = "match-square-120mm-knotted-net";
+  material.userData.meshPattern = "mobile-safe-square-knotted-net";
   material.userData.centerVisibilityFloor = 0.13;
   material.userData.visibilityProfile = "soft-center-fade-no-cutout";
   material.userData.ballPriorityCompositing = true;
@@ -1228,6 +1234,7 @@ export function createGoalAndNet() {
       baseOpacity: Number.isFinite(object.material?.opacity) ? object.material.opacity : null,
       motionScale,
       opacityScale,
+      anchoredPanel: Boolean(object.userData.anchoredPanel),
     });
     return object;
   }
@@ -1319,6 +1326,7 @@ export function createGoalAndNet() {
   var net = new THREE.Mesh(new THREE.PlaneGeometry(RAPIER_GOAL.halfWidth * 2, GOAL_NET_GEOMETRY.rearHeight, 18, 8), netMaterial);
   net.name = "goal-net-back-panel";
   net.userData.deformationSystem = "localized-net-pocket-deformation";
+  net.userData.anchoredPanel = true;
   net.position.set(0, GOAL_NET_GEOMETRY.rearHeight / 2, GOAL_CAGE_POINTS.rearBottomLeft.z);
   group.add(net);
 
@@ -1338,6 +1346,11 @@ export function createGoalAndNet() {
   continuousPocketShell.userData.frontShotLaneOcclusion = 0;
   continuousPocketShell.userData.ballPriorityRenderOrder = 12;
   continuousPocketShell.userData.goalNetPanel = "rear";
+  continuousPocketShell.userData.anchoredPanel = true;
+  continuousPocketShell.userData.netGridDivisions = {
+    width: GOAL_NET_GRID.widthDivisions,
+    height: GOAL_NET_GRID.rearHeightDivisions,
+  };
   group.add(registerDynamicNetDetail(continuousPocketShell, 0.16, 0.035));
 
   var frameContactShadowMaterial = new THREE.MeshBasicMaterial({
@@ -1435,7 +1448,7 @@ export function createGoalAndNet() {
     opacity: 0.25,
     depthWrite: false,
   });
-  function addCageNetPanel(panel, points, opacity) {
+  function addCageNetPanel(panel, points, opacity, netGridDivisions) {
     var material = cageNetMaterial.clone();
     material.opacity = opacity;
     var object = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points), material);
@@ -1446,35 +1459,41 @@ export function createGoalAndNet() {
     object.userData.netContinuitySystem = NET_CONTINUITY_SYSTEM;
     object.userData.behindShotLane = true;
     object.userData.frontShotLaneOcclusion = 0;
+    object.userData.anchoredPanel = true;
+    object.userData.netGridDivisions = netGridDivisions;
     group.add(registerDynamicNetDetail(object, panel === "top" ? 0.12 : 0.18, 0.04));
   }
 
   ["left", "right"].forEach(function addTrapezoidSidePanel(side) {
     var x = side === "left" ? -GOAL_NET_GEOMETRY.halfWidth : GOAL_NET_GEOMETRY.halfWidth;
     var points = [];
-    var depthSteps = 6;
+    var depthSteps = GOAL_NET_GRID.depthDivisions;
     for (var depthIndex = 0; depthIndex <= depthSteps; depthIndex += 1) {
       var depthT = depthIndex / depthSteps;
       var z = GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth * depthT;
       points.push(new THREE.Vector3(x, 0, z));
       points.push(new THREE.Vector3(x, getGoalRoofHeightAtZ(z), z));
     }
-    [0.18, 0.36, 0.54, 0.72, 0.9].forEach(function addSideRow(heightT) {
+    for (var heightIndex = 0; heightIndex <= GOAL_NET_GRID.frontHeightDivisions; heightIndex += 1) {
+      var heightT = heightIndex / GOAL_NET_GRID.frontHeightDivisions;
       for (var rowIndex = 0; rowIndex < depthSteps; rowIndex += 1) {
         var startZ = GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth * (rowIndex / depthSteps);
         var endZ = GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth * ((rowIndex + 1) / depthSteps);
         points.push(new THREE.Vector3(x, getGoalRoofHeightAtZ(startZ) * heightT, startZ));
         points.push(new THREE.Vector3(x, getGoalRoofHeightAtZ(endZ) * heightT, endZ));
       }
+    }
+    addCageNetPanel(side, points, 0.29, {
+      depth: GOAL_NET_GRID.depthDivisions,
+      height: GOAL_NET_GRID.frontHeightDivisions,
     });
-    addCageNetPanel(side, points, 0.29);
   });
 
   var topPanelPoints = [];
-  var topDepthSteps = 6;
-  for (var topColumnIndex = 0; topColumnIndex <= 10; topColumnIndex += 1) {
+  var topDepthSteps = GOAL_NET_GRID.depthDivisions;
+  for (var topColumnIndex = 0; topColumnIndex <= GOAL_NET_GRID.widthDivisions; topColumnIndex += 1) {
     var topX = -GOAL_NET_GEOMETRY.halfWidth +
-      (GOAL_NET_GEOMETRY.halfWidth * 2 * topColumnIndex) / 10;
+      (GOAL_NET_GEOMETRY.halfWidth * 2 * topColumnIndex) / GOAL_NET_GRID.widthDivisions;
     topPanelPoints.push(new THREE.Vector3(
       topX,
       GOAL_NET_GEOMETRY.height,
@@ -1493,7 +1512,10 @@ export function createGoalAndNet() {
     topPanelPoints.push(new THREE.Vector3(-GOAL_NET_GEOMETRY.halfWidth, topRowY, topRowZ));
     topPanelPoints.push(new THREE.Vector3(GOAL_NET_GEOMETRY.halfWidth, topRowY, topRowZ));
   }
-  addCageNetPanel("top", topPanelPoints, 0.24);
+  addCageNetPanel("top", topPanelPoints, 0.24, {
+    depth: GOAL_NET_GRID.depthDivisions,
+    width: GOAL_NET_GRID.widthDivisions,
+  });
 
   var cageSeamMaterial = new THREE.LineBasicMaterial({
     color: "#f8fff4",
@@ -2477,6 +2499,7 @@ export function createGoalAndNet() {
     "top-right-rail": "goal-frame-top-rail-right",
     "rear-left-upright": "goal-frame-rear-upright-left",
     "rear-right-upright": "goal-frame-rear-upright-right",
+    "rear-top-rail": "goal-frame-rear-top-rail",
     "bottom-left-rail": "goal-frame-bottom-rail-left",
     "bottom-right-rail": "goal-frame-bottom-rail-right",
     "rear-bottom-rail": "goal-frame-rear-bottom-rail",

@@ -10,7 +10,7 @@ describe("Rapier goalkeeper world", () => {
     expect(world.goalFrameColliders.map((entry) => entry.name)).toEqual(
       GOAL_FRAME_SEGMENTS.map((segment) => segment.name),
     );
-    expect(world.goalFrameColliders).toHaveLength(10);
+    expect(world.goalFrameColliders).toHaveLength(11);
     expect(world.goalFrameColliders.every((entry) => entry.collider && entry.body)).toBe(true);
     expect(world.goalFrameColliders.find((entry) => entry.name === "rear-left-upright")).toMatchObject({
       start: GOAL_FRAME_SEGMENTS.find((segment) => segment.name === "rear-left-upright").start,

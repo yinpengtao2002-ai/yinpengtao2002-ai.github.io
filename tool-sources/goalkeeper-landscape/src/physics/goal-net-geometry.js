@@ -15,6 +15,20 @@ export const GOAL_NET_GEOMETRY = {
   contactCooldown: 0.16,
 };
 
+function gridDivisions(length, targetCellSize) {
+  return Math.max(1, Math.round(length / targetCellSize));
+}
+
+const TARGET_NET_CELL_SIZE = 0.3;
+
+export const GOAL_NET_GRID = Object.freeze({
+  targetCellSize: TARGET_NET_CELL_SIZE,
+  widthDivisions: gridDivisions(GOAL_NET_GEOMETRY.halfWidth * 2, TARGET_NET_CELL_SIZE),
+  depthDivisions: gridDivisions(GOAL_NET_GEOMETRY.cageDepth, TARGET_NET_CELL_SIZE),
+  frontHeightDivisions: gridDivisions(GOAL_NET_GEOMETRY.height, TARGET_NET_CELL_SIZE),
+  rearHeightDivisions: gridDivisions(GOAL_NET_GEOMETRY.rearHeight, TARGET_NET_CELL_SIZE),
+});
+
 function point(x, y, z) {
   return Object.freeze({ x, y, z });
 }
@@ -48,6 +62,7 @@ export const GOAL_FRAME_SEGMENTS = Object.freeze([
   segment("top-right-rail", "frontTopRight", "rearTopRight"),
   segment("rear-left-upright", "rearBottomLeft", "rearTopLeft"),
   segment("rear-right-upright", "rearBottomRight", "rearTopRight"),
+  segment("rear-top-rail", "rearTopLeft", "rearTopRight"),
   segment("bottom-left-rail", "frontBottomLeft", "rearBottomLeft"),
   segment("bottom-right-rail", "frontBottomRight", "rearBottomRight"),
   segment("rear-bottom-rail", "rearBottomLeft", "rearBottomRight"),
@@ -84,7 +99,7 @@ export function getGoalNetPocketVertex(localX, localY) {
       halfWidth,
     ),
     y: clamp(
-      localY - pocket * 0.045 - Math.sin(normalizedX * Math.PI) * 0.008,
+      localY - pocket * (0.045 + Math.sin(normalizedX * Math.PI) * 0.008),
       -height * 0.5,
       height * 0.5,
     ),

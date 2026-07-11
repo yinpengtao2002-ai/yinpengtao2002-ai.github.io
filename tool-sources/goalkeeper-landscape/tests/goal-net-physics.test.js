@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   GOAL_CAGE_POINTS,
   GOAL_FRAME_SEGMENTS,
+  GOAL_NET_GRID,
   GOAL_NET_GEOMETRY,
+  getGoalNetPocketVertex,
   getGoalNetSurfacePoint,
   getGoalRoofHeightAtZ,
   resolveGoalNetCollision,
@@ -50,6 +52,7 @@ describe("shared physical goal net", () => {
       "top-right-rail",
       "rear-left-upright",
       "rear-right-upright",
+      "rear-top-rail",
       "bottom-left-rail",
       "bottom-right-rail",
       "rear-bottom-rail",
@@ -59,6 +62,48 @@ describe("shared physical goal net", () => {
       start: GOAL_CAGE_POINTS.frontTopLeft,
       end: GOAL_CAGE_POINTS.rearTopLeft,
     });
+    expect(GOAL_FRAME_SEGMENTS.find((segment) => segment.name === "rear-top-rail")).toMatchObject({
+      start: GOAL_CAGE_POINTS.rearTopLeft,
+      end: GOAL_CAGE_POINTS.rearTopRight,
+    });
+  });
+
+  it("keeps every rear net boundary vertex fixed to the shared rear frame", () => {
+    const halfWidth = GOAL_NET_GEOMETRY.halfWidth;
+    const halfHeight = GOAL_NET_GEOMETRY.rearHeight * 0.5;
+    const rearDepth = GOAL_NET_GEOMETRY.cageDepth - GOAL_NET_GEOMETRY.shellOffsetZ;
+
+    [-halfHeight, -halfHeight * 0.5, 0, halfHeight * 0.5, halfHeight].forEach((localY) => {
+      [-halfWidth, halfWidth].forEach((localX) => {
+        const vertex = getGoalNetPocketVertex(localX, localY);
+        expect(vertex.x).toBeCloseTo(localX, 8);
+        expect(vertex.y).toBeCloseTo(localY, 8);
+        expect(vertex.z).toBeCloseTo(rearDepth, 8);
+      });
+    });
+
+    [-halfWidth, -halfWidth * 0.5, 0, halfWidth * 0.5, halfWidth].forEach((localX) => {
+      [-halfHeight, halfHeight].forEach((localY) => {
+        const vertex = getGoalNetPocketVertex(localX, localY);
+        expect(vertex.x).toBeCloseTo(localX, 8);
+        expect(vertex.y).toBeCloseTo(localY, 8);
+        expect(vertex.z).toBeCloseTo(rearDepth, 8);
+      });
+    });
+  });
+
+  it("derives every visible panel grid from one mobile-safe cell size", () => {
+    expect(GOAL_NET_GRID.targetCellSize).toBeGreaterThanOrEqual(0.28);
+    expect(GOAL_NET_GRID.targetCellSize).toBeLessThanOrEqual(0.32);
+    expect(GOAL_NET_GRID.widthDivisions).toBe(
+      Math.round((GOAL_NET_GEOMETRY.halfWidth * 2) / GOAL_NET_GRID.targetCellSize),
+    );
+    expect(GOAL_NET_GRID.depthDivisions).toBe(
+      Math.round(GOAL_NET_GEOMETRY.cageDepth / GOAL_NET_GRID.targetCellSize),
+    );
+    expect(GOAL_NET_GRID.rearHeightDivisions).toBe(
+      Math.round(GOAL_NET_GEOMETRY.rearHeight / GOAL_NET_GRID.targetCellSize),
+    );
   });
 
   it.each([
