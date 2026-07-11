@@ -17,7 +17,6 @@ import {
   GOAL_NET_GEOMETRY,
   getGoalRoofHeightAtZ,
 } from "../src/physics/goal-net-geometry.js";
-import { RAPIER_GOAL } from "../src/physics/rapier-world.js";
 import { createShot3DDirector } from "../src/game/shot-3d-director.js";
 
 function collectByName(root, pattern) {

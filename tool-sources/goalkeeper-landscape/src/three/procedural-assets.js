@@ -8,7 +8,6 @@ import {
   GOAL_FRAME_SEGMENTS,
   GOAL_NET_GEOMETRY,
   getGoalNetPocketVertex,
-  getGoalNetSurfacePoint,
   getGoalRoofHeightAtZ,
 } from "../physics/goal-net-geometry.js";
 import { RAPIER_GOAL } from "../physics/rapier-world.js";
