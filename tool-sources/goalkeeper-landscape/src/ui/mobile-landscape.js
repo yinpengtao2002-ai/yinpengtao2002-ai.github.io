@@ -2,21 +2,18 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-export function shouldForceMobileLandscape(windowRef) {
-  var width = windowRef?.innerWidth || 0;
-  var height = windowRef?.innerHeight || 0;
-  if (!width || !height || width >= height) return false;
-  var narrowSide = Math.min(width, height);
-  var coarsePointer = Boolean(windowRef?.matchMedia?.("(pointer: coarse)")?.matches);
-  return coarsePointer || narrowSide <= 760;
+export function shouldForceMobileLandscape() {
+  return false;
 }
 
 export function syncMobileLandscape(stage, windowRef) {
-  var forced = shouldForceMobileLandscape(windowRef);
+  var width = windowRef?.innerWidth || 0;
+  var height = windowRef?.innerHeight || 0;
+  var portrait = Boolean(width && height && width < height);
   if (stage?.dataset) {
-    stage.dataset.mobileLandscape = forced ? "forced" : "native";
+    stage.dataset.mobileLandscape = portrait ? "prompt" : "native";
   }
-  return forced;
+  return false;
 }
 
 export function getStageRenderBounds(stage, fallback = { width: 1280, height: 720 }) {

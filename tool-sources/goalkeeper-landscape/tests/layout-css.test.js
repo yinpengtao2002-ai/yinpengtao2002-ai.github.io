@@ -8,6 +8,15 @@ const stylesPath = resolve(testDir, "../styles.css");
 const indexPath = resolve(testDir, "../index.html");
 
 describe("responsive layout css", () => {
+  it("uses a clean portrait orientation gate instead of rotating the full game UI", () => {
+    const css = readFileSync(stylesPath, "utf8");
+
+    expect(css).toContain("portrait-orientation-gate");
+    expect(css).toContain('.stage[data-mobile-landscape="prompt"]');
+    expect(css).toContain("请横屏体验");
+    expect(css).not.toContain("transform: rotate(90deg) translateY(-100%);");
+  });
+
   it("reserves left edge space for bottom controls in mobile landscape", () => {
     const css = readFileSync(stylesPath, "utf8");
 

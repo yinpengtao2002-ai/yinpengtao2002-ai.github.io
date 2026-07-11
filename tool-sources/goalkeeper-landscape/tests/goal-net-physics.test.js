@@ -92,9 +92,9 @@ describe("shared physical goal net", () => {
     });
   });
 
-  it("derives every visible panel grid from one mobile-safe cell size", () => {
-    expect(GOAL_NET_GRID.targetCellSize).toBeGreaterThanOrEqual(0.28);
-    expect(GOAL_NET_GRID.targetCellSize).toBeLessThanOrEqual(0.32);
+  it("derives every visible panel grid from one match-scale cell size", () => {
+    expect(GOAL_NET_GRID.targetCellSize).toBeGreaterThanOrEqual(0.12);
+    expect(GOAL_NET_GRID.targetCellSize).toBeLessThanOrEqual(0.16);
     expect(GOAL_NET_GRID.widthDivisions).toBe(
       Math.round((GOAL_NET_GEOMETRY.halfWidth * 2) / GOAL_NET_GRID.targetCellSize),
     );

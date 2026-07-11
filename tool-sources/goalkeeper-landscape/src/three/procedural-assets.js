@@ -259,7 +259,7 @@ function createSquareGoalNetAlphaTexture() {
       var distanceX = Math.min(fractionX, 1 - fractionX);
       var distanceY = Math.min(fractionY, 1 - fractionY);
       var cordDistance = Math.min(distanceX, distanceY);
-      var cord = Math.exp(-Math.pow(cordDistance / 0.04, 2));
+      var cord = Math.exp(-Math.pow(cordDistance / 0.055, 2));
       var knot = Math.exp(-((distanceX * distanceX + distanceY * distanceY) / 0.0046));
       var fiber = Math.sin(x * 1.37 + y * 0.61) * 0.5 + 0.5;
       var alpha = Math.min(238, Math.round(cord * 202 + knot * 34));
@@ -280,7 +280,7 @@ function createSquareGoalNetAlphaTexture() {
   texture.needsUpdate = true;
   texture.userData.assetSystem = NET_ALPHA_TEXTURE_SYSTEM;
   texture.userData.netVisualUpgradeSystem = NET_VISUAL_UPGRADE_SYSTEM;
-  texture.userData.alphaMeshPattern = "mobile-safe-square-knotted-net";
+  texture.userData.alphaMeshPattern = "match-square-140mm-knotted-net";
   texture.userData.visibilityBudget = "ball-priority-continuous-center";
   texture.userData.cellsAcross = cellsAcross;
   texture.userData.cellsHigh = cellsHigh;
@@ -318,9 +318,9 @@ function createContinuousNetPocketMaterial() {
   var material = new THREE.ShaderMaterial({
     uniforms: {
       netMap: { value: netTexture },
-      netOpacity: { value: 0.22 },
-      netTint: { value: new THREE.Color("#e6eee7") },
-      centerVisibilityFloor: { value: 0.13 },
+      netOpacity: { value: 0.15 },
+      netTint: { value: new THREE.Color("#dbe8e2") },
+      centerVisibilityFloor: { value: 0.11 },
     },
     vertexShader: `
       varying vec2 vUv;
@@ -357,17 +357,17 @@ function createContinuousNetPocketMaterial() {
     depthTest: true,
     side: THREE.DoubleSide,
   });
-  material.opacity = 0.22;
+  material.opacity = 0.15;
   material.toneMapped = false;
   material.forceSinglePass = true;
   material.userData.netContinuitySystem = NET_CONTINUITY_SYSTEM;
   material.userData.netAlphaTextureSystem = NET_ALPHA_TEXTURE_SYSTEM;
-  material.userData.meshPattern = "mobile-safe-square-knotted-net";
-  material.userData.centerVisibilityFloor = 0.13;
+  material.userData.meshPattern = "match-square-140mm-knotted-net";
+  material.userData.centerVisibilityFloor = 0.11;
   material.userData.visibilityProfile = "soft-center-fade-no-cutout";
   material.userData.ballPriorityCompositing = true;
   material.onBeforeRender = function syncNetOpacity() {
-    material.uniforms.netOpacity.value = Math.min(0.34, Math.max(0, material.opacity));
+    material.uniforms.netOpacity.value = Math.min(0.24, Math.max(0, material.opacity));
   };
   return material;
 }
@@ -1240,7 +1240,6 @@ export function createGoalAndNet() {
   }
 
   var frameMaterial = new THREE.MeshStandardMaterial({ color: "#f5fff7", roughness: 0.34, metalness: 0.04 });
-  var trimMaterial = new THREE.MeshStandardMaterial({ color: "#f0782f", roughness: 0.36, metalness: 0.02 });
   function markGoalFrameSegment(object, segmentName) {
     var segment = GOAL_FRAME_SEGMENTS.find((item) => item.name === segmentName);
     object.userData.goalFrameSegment = segmentName;
@@ -1287,12 +1286,6 @@ export function createGoalAndNet() {
     cap.position.set(item[1], item[2], item[3]);
     group.add(cap);
   });
-
-  var leftTrim = makeBeveledBox("goal-brand-trim-left-post", 0.15, 0.28, 0.135, 0.025, trimMaterial);
-  leftTrim.position.set(-RAPIER_GOAL.halfWidth, 0.42, RAPIER_GOAL.netPlaneZ - 0.005);
-  var rightTrim = makeBeveledBox("goal-brand-trim-right-post", 0.15, 0.28, 0.135, 0.025, trimMaterial);
-  rightTrim.position.set(RAPIER_GOAL.halfWidth, 0.42, RAPIER_GOAL.netPlaneZ - 0.005);
-  group.add(leftTrim, rightTrim);
 
   var collarMaterial = new THREE.MeshStandardMaterial({ color: "#e7efe7", roughness: 0.34, metalness: 0.12 });
   var boltMaterial = new THREE.MeshStandardMaterial({ color: "#cfd9d2", roughness: 0.32, metalness: 0.18 });
@@ -1443,9 +1436,9 @@ export function createGoalAndNet() {
   group.add(grid);
 
   var cageNetMaterial = new THREE.LineBasicMaterial({
-    color: "#effff8",
+    color: "#d9e6df",
     transparent: true,
-    opacity: 0.25,
+    opacity: 0.16,
     depthWrite: false,
   });
   function addCageNetPanel(panel, points, opacity, netGridDivisions) {
@@ -1483,7 +1476,7 @@ export function createGoalAndNet() {
         points.push(new THREE.Vector3(x, getGoalRoofHeightAtZ(endZ) * heightT, endZ));
       }
     }
-    addCageNetPanel(side, points, 0.29, {
+    addCageNetPanel(side, points, 0.16, {
       depth: GOAL_NET_GRID.depthDivisions,
       height: GOAL_NET_GRID.frontHeightDivisions,
     });
@@ -1512,7 +1505,7 @@ export function createGoalAndNet() {
     topPanelPoints.push(new THREE.Vector3(-GOAL_NET_GEOMETRY.halfWidth, topRowY, topRowZ));
     topPanelPoints.push(new THREE.Vector3(GOAL_NET_GEOMETRY.halfWidth, topRowY, topRowZ));
   }
-  addCageNetPanel("top", topPanelPoints, 0.24, {
+  addCageNetPanel("top", topPanelPoints, 0.14, {
     depth: GOAL_NET_GRID.depthDivisions,
     width: GOAL_NET_GRID.widthDivisions,
   });
@@ -1520,7 +1513,7 @@ export function createGoalAndNet() {
   var cageSeamMaterial = new THREE.LineBasicMaterial({
     color: "#f8fff4",
     transparent: true,
-    opacity: 0.42,
+    opacity: 0.18,
     depthWrite: false,
   });
   GOAL_FRAME_SEGMENTS.forEach(function addCageSeam(segment) {
@@ -2505,7 +2498,7 @@ export function createGoalAndNet() {
     "rear-bottom-rail": "goal-frame-rear-bottom-rail",
   };
   GOAL_FRAME_SEGMENTS.filter((segment) => rearFrameNames[segment.name]).forEach(function addRearFrameSegment(segment) {
-    var rail = makeLimb("#edf9f2", GOAL_NET_GEOMETRY.frameRadius * 0.82);
+    var rail = makeLimb("#b6c3bd", GOAL_NET_GEOMETRY.frameRadius * 0.62);
     rail.name = rearFrameNames[segment.name];
     setLimb(rail, segment.start, segment.end);
     markGoalFrameSegment(rail, segment.name);
@@ -2657,13 +2650,6 @@ export function createGoalAndNet() {
     }
     group.add(clip);
   }
-
-  var crossbarSleeveMaterial = new THREE.MeshStandardMaterial({ color: "#fff4d2", roughness: 0.34, metalness: 0.03 });
-  [-1, 0, 1].forEach(function addCrossbarSleeve(offset, index) {
-    var sleeve = makeBeveledBox("goal-frame-crossbar-sleeve-" + index, 0.28, 0.13, 0.08, 0.026, crossbarSleeveMaterial);
-    sleeve.position.set(offset * RAPIER_GOAL.halfWidth * 0.48, RAPIER_GOAL.height, RAPIER_GOAL.netPlaneZ + 0.002);
-    group.add(sleeve);
-  });
 
   var tensionerMaterial = new THREE.MeshStandardMaterial({ color: "#cfdad2", roughness: 0.32, metalness: 0.18 });
   [

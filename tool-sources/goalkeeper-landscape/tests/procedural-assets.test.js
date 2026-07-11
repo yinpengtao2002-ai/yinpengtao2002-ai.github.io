@@ -599,6 +599,8 @@ describe("procedural 3D assets", () => {
     expect(collectByName(goal.group, /^goal-frame-rear-top-rail$/)).toHaveLength(1);
     expect(collectByName(goal.group, /^goal-frame-bottom-rail-/)).toHaveLength(2);
     expect(collectByName(goal.group, /^goal-frame-rear-bottom-rail$/)).toHaveLength(1);
+    expect(collectByName(goal.group, /^goal-brand-trim-/)).toHaveLength(0);
+    expect(collectByName(goal.group, /^goal-frame-crossbar-sleeve-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-depth-stanchion-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-net-continuous-pocket-shell$/)).toHaveLength(1);
     expect(collectByName(goal.group, /^goal-net-anchor-/).length).toBeGreaterThanOrEqual(4);
@@ -717,9 +719,9 @@ describe("procedural 3D assets", () => {
     expect(shell.material.userData.centerVisibilityFloor).toBeGreaterThanOrEqual(0.1);
     expect(shell.material.userData.centerVisibilityFloor).toBeLessThanOrEqual(0.16);
     expect(shell.material.userData.visibilityProfile).toBe("soft-center-fade-no-cutout");
-    expect(shell.material.uniforms.netOpacity.value).toBeLessThanOrEqual(0.24);
-    expect(shell.material.opacity).toBeLessThanOrEqual(0.24);
-    expect(shell.material.userData.meshPattern).toBe("mobile-safe-square-knotted-net");
+    expect(shell.material.uniforms.netOpacity.value).toBeLessThanOrEqual(0.17);
+    expect(shell.material.opacity).toBeLessThanOrEqual(0.17);
+    expect(shell.material.userData.meshPattern).toBe("match-square-140mm-knotted-net");
     expect(shell.material.uniforms.netMap.value.userData.cellsAcross).toBe(GOAL_NET_GRID.widthDivisions);
     expect(shell.material.uniforms.netMap.value.userData.cellsHigh).toBe(GOAL_NET_GRID.rearHeightDivisions);
     expect(shell.userData.crossesKeeperSightline).toBe(true);
@@ -771,6 +773,9 @@ describe("procedural 3D assets", () => {
     });
     expect(rear.material.uniforms.netMap.value.userData.cellsAcross).toBe(GOAL_NET_GRID.widthDivisions);
     expect(rear.material.uniforms.netMap.value.userData.cellsHigh).toBe(GOAL_NET_GRID.rearHeightDivisions);
+    expect(left.material.opacity).toBeLessThanOrEqual(0.18);
+    expect(right.material.opacity).toBeLessThanOrEqual(0.18);
+    expect(top.material.opacity).toBeLessThanOrEqual(0.16);
   });
 
   it("removes decorative side-net fibers that protrude beyond the posts", () => {
@@ -809,7 +814,7 @@ describe("procedural 3D assets", () => {
     expect(collectByName(goal.group, /^goal-net-tie-strap-/).length).toBeGreaterThanOrEqual(8);
     expect(collectByName(goal.group, /^goal-depth-hinge-bracket-/)).toHaveLength(2);
     expect(collectByName(goal.group, /^goal-frame-fastener-bolt-/).length).toBeGreaterThanOrEqual(8);
-    expect(collectByName(goal.group, /^goal-frame-crossbar-sleeve-/)).toHaveLength(3);
+    expect(collectByName(goal.group, /^goal-frame-crossbar-sleeve-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-net-rope-tensioner-/)).toHaveLength(4);
     expect(collectByName(goal.group, /^goal-frame-ground-shadow-pad-/)).toHaveLength(2);
   });

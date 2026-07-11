@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import GoalkeeperLandscapeRuntime, { GOALKEEPER_SCRIPT_SRC } from "./GoalkeeperLandscapeRuntime";
 
-const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-DjLiJCWj.css";
+const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-CvA-KOni.css";
 
 export const metadata: Metadata = {
   title: "弹力手套守门挑战｜Lucas Yin",

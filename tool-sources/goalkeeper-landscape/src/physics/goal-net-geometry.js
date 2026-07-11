@@ -19,7 +19,7 @@ function gridDivisions(length, targetCellSize) {
   return Math.max(1, Math.round(length / targetCellSize));
 }
 
-const TARGET_NET_CELL_SIZE = 0.3;
+const TARGET_NET_CELL_SIZE = 0.14;
 
 export const GOAL_NET_GRID = Object.freeze({
   targetCellSize: TARGET_NET_CELL_SIZE,

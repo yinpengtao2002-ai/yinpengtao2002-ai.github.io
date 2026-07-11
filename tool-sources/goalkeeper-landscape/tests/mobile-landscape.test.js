@@ -24,7 +24,7 @@ function makeStage({
 }
 
 describe("mobile landscape helpers", () => {
-  it("forces landscape presentation for a portrait phone viewport", () => {
+  it("shows a portrait prompt without rotating the whole game surface", () => {
     const stage = makeStage();
     const windowRef = {
       innerWidth: 390,
@@ -32,9 +32,9 @@ describe("mobile landscape helpers", () => {
       matchMedia: () => ({ matches: true }),
     };
 
-    expect(shouldForceMobileLandscape(windowRef)).toBe(true);
-    expect(syncMobileLandscape(stage, windowRef)).toBe(true);
-    expect(stage.dataset.mobileLandscape).toBe("forced");
+    expect(shouldForceMobileLandscape(windowRef)).toBe(false);
+    expect(syncMobileLandscape(stage, windowRef)).toBe(false);
+    expect(stage.dataset.mobileLandscape).toBe("prompt");
   });
 
   it("keeps native layout for an already-landscape viewport", () => {
