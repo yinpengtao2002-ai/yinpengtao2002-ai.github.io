@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import { SCENE_TUNING } from "../src/three/goalkeeper-scene.js";
 import { SHOT_3D } from "../src/game/shot-3d-director.js";
+import { GOAL_NET_GEOMETRY } from "../src/physics/goal-net-geometry.js";
 
 describe("goalkeeper 3D scene tuning", () => {
   it("collects physical net contacts separately from scoring contacts", async () => {
@@ -928,7 +929,7 @@ describe("goalkeeper 3D scene tuning", () => {
 
   it("keeps the rear net boundary vertices fixed during localized pocket deformation", async () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
-    const halfHeight = 1.95 * 0.5;
+    const halfHeight = GOAL_NET_GEOMETRY.rearHeight * 0.5;
     const impact = { point: { x: 3.5, y: 1.9 }, radius: 1, depth: 0.16 };
 
     expect(sceneModule.getNetPocketVertexDepthOffset(3.66, halfHeight * 0.8, impact)).toBe(0);

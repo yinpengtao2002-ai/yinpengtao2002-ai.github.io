@@ -4,18 +4,15 @@ import { GOAL_FRAME_SEGMENTS } from "../src/physics/goal-net-geometry.js";
 import { RAPIER_GOAL, createRapierGoalkeeperWorld } from "../src/physics/rapier-world.js";
 
 describe("Rapier goalkeeper world", () => {
-  it("creates a rigid collider for every shared trapezoid frame segment", async () => {
+  it("creates rigid colliders for only the legal front goal frame", async () => {
     const world = await createRapierGoalkeeperWorld();
 
     expect(world.goalFrameColliders.map((entry) => entry.name)).toEqual(
       GOAL_FRAME_SEGMENTS.map((segment) => segment.name),
     );
-    expect(world.goalFrameColliders).toHaveLength(11);
+    expect(world.goalFrameColliders).toHaveLength(3);
     expect(world.goalFrameColliders.every((entry) => entry.collider && entry.body)).toBe(true);
-    expect(world.goalFrameColliders.find((entry) => entry.name === "rear-left-upright")).toMatchObject({
-      start: GOAL_FRAME_SEGMENTS.find((segment) => segment.name === "rear-left-upright").start,
-      end: GOAL_FRAME_SEGMENTS.find((segment) => segment.name === "rear-left-upright").end,
-    });
+    expect(world.goalFrameColliders.some((entry) => entry.name.includes("rear"))).toBe(false);
 
     world.dispose();
   });

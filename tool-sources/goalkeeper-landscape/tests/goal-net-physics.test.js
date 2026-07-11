@@ -23,10 +23,10 @@ function makeNetCollisionState(overrides = {}) {
 }
 
 describe("shared physical goal net", () => {
-  it("defines a balanced front-high rear-low trapezoid from shared points", () => {
+  it("defines a deep professional stadium net with a nearly level roof", () => {
     const rearZ = GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth;
 
-    expect(GOAL_NET_GEOMETRY.rearHeight).toBe(1.95);
+    expect(GOAL_NET_GEOMETRY.rearHeight).toBe(2.34);
     expect(GOAL_NET_GEOMETRY.cageDepth).toBe(2.05);
     expect(GOAL_CAGE_POINTS.frontTopLeft).toEqual({
       x: -GOAL_NET_GEOMETRY.halfWidth,
@@ -43,29 +43,15 @@ describe("shared physical goal net", () => {
     expect(getGoalRoofHeightAtZ(rearZ)).toBe(GOAL_NET_GEOMETRY.rearHeight);
   });
 
-  it("derives every visible and physical frame member from the cage corners", () => {
+  it("keeps rigid frame colliders on the legal front frame only", () => {
     expect(GOAL_FRAME_SEGMENTS.map((segment) => segment.name)).toEqual([
       "crossbar",
       "front-left-post",
       "front-right-post",
-      "top-left-rail",
-      "top-right-rail",
-      "rear-left-upright",
-      "rear-right-upright",
-      "rear-top-rail",
-      "bottom-left-rail",
-      "bottom-right-rail",
-      "rear-bottom-rail",
     ]);
     expect(GOAL_FRAME_SEGMENTS.every((segment) => segment.start && segment.end)).toBe(true);
-    expect(GOAL_FRAME_SEGMENTS.find((segment) => segment.name === "top-left-rail")).toMatchObject({
-      start: GOAL_CAGE_POINTS.frontTopLeft,
-      end: GOAL_CAGE_POINTS.rearTopLeft,
-    });
-    expect(GOAL_FRAME_SEGMENTS.find((segment) => segment.name === "rear-top-rail")).toMatchObject({
-      start: GOAL_CAGE_POINTS.rearTopLeft,
-      end: GOAL_CAGE_POINTS.rearTopRight,
-    });
+    expect(GOAL_FRAME_SEGMENTS.some((segment) => segment.name.includes("rear"))).toBe(false);
+    expect(GOAL_FRAME_SEGMENTS.some((segment) => segment.name.includes("rail"))).toBe(false);
   });
 
   it("keeps every rear net boundary vertex fixed to the shared rear frame", () => {

@@ -586,24 +586,25 @@ describe("procedural 3D assets", () => {
     expect(collectByName(field, /^field-touchline-shadow-/)).toHaveLength(0);
   });
 
-  it("models a complete front-high rear-low trapezoid from the shared frame contract", () => {
+  it("models an IFAB stadium goal with only the legal white front frame", () => {
     const goal = createGoalAndNet();
 
-    expect(goal.group.userData.assetSystem).toBe("layered-goal-and-net-kit");
+    expect(goal.group.userData.assetSystem).toBe("ifab-stadium-goal-kit");
+    expect(goal.group.userData.goalConstructionSystem).toBe("socketed-front-frame-with-independent-net-support");
     expect(goal.group.userData.netPocketSystem).toBe("localized-net-pocket-deformation");
     expect(goal.net.userData.deformationSystem).toBe("localized-net-pocket-deformation");
     expect(goal.net.geometry.attributes.position.count).toBeGreaterThanOrEqual(120);
     expect(collectByName(goal.group, /^goal-frame-(left-post|right-post|crossbar)$/)).toHaveLength(3);
-    expect(collectByName(goal.group, /^goal-frame-top-rail-/)).toHaveLength(2);
-    expect(collectByName(goal.group, /^goal-frame-rear-upright-/)).toHaveLength(2);
-    expect(collectByName(goal.group, /^goal-frame-rear-top-rail$/)).toHaveLength(1);
-    expect(collectByName(goal.group, /^goal-frame-bottom-rail-/)).toHaveLength(2);
-    expect(collectByName(goal.group, /^goal-frame-rear-bottom-rail$/)).toHaveLength(1);
+    expect(collectByName(goal.group, /^goal-frame-(top-rail|rear-upright|rear-top-rail|bottom-rail|rear-bottom-rail)/)).toHaveLength(0);
+    expect(collectByName(goal.group, /^goal-net-support-post-/)).toHaveLength(2);
+    expect(collectByName(goal.group, /^goal-net-support-cable-/).length).toBeGreaterThanOrEqual(3);
+    expect(collectByName(goal.group, /^goal-net-ground-rope-/)).toHaveLength(3);
     expect(collectByName(goal.group, /^goal-brand-trim-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-frame-crossbar-sleeve-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-depth-stanchion-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-net-continuous-pocket-shell$/)).toHaveLength(1);
-    expect(collectByName(goal.group, /^goal-net-anchor-/).length).toBeGreaterThanOrEqual(4);
+    expect(collectByName(goal.group, /^goal-net-anchor-/)).toHaveLength(0);
+    expect(collectByName(goal.group, /^goal-net-ground-rope-/)).toHaveLength(3);
     expect(goal.net.name).toBe("goal-net-back-panel");
     expect(goal.grid.name).toBe("goal-net-back-grid");
 
@@ -611,7 +612,12 @@ describe("procedural 3D assets", () => {
     goal.group.traverse((node) => {
       if (node.name.startsWith("goal-frame-") && node.userData.goalFrameSegment) renderedSegments.push(node);
     });
-    expect(renderedSegments).toHaveLength(GOAL_FRAME_SEGMENTS.length);
+    expect(GOAL_FRAME_SEGMENTS.map((segment) => segment.name).sort()).toEqual([
+      "crossbar",
+      "front-left-post",
+      "front-right-post",
+    ]);
+    expect(renderedSegments).toHaveLength(3);
     renderedSegments.forEach((object) => {
       const segment = GOAL_FRAME_SEGMENTS.find((item) => item.name === object.userData.goalFrameSegment);
       expect(segment).toBeTruthy();
@@ -620,17 +626,17 @@ describe("procedural 3D assets", () => {
     });
   });
 
-  it("adds round frame caps and restrained cage seams to move the goal past prototype geometry", () => {
+  it("keeps rounded front-frame caps without adding freestanding cage rails", () => {
     const goal = createGoalAndNet();
 
     expect(goal.group.userData.frameDetailSystem).toBe("rounded-posts-with-tensioned-net");
     expect(collectByName(goal.group, /^goal-frame-post-cap-/).length).toBeGreaterThanOrEqual(4);
-    expect(collectByName(goal.group, /^goal-frame-bottom-rail-/)).toHaveLength(2);
-    expect(collectByName(goal.group, /^goal-net-cage-seam-/).length).toBeGreaterThanOrEqual(8);
+    expect(collectByName(goal.group, /^goal-frame-bottom-rail-/)).toHaveLength(0);
+    expect(collectByName(goal.group, /^goal-net-cage-seam-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-net-tension-cord-/)).toHaveLength(0);
   });
 
-  it("adds near-camera asset finishing details for the clean floor, net hardware, gloves, and match ball material", () => {
+  it("keeps near-camera goal hardware restrained while preserving glove and ball finish", () => {
     const field = createFieldGroup();
     const goal = createGoalAndNet();
     const glove = createGloveMesh("right");
@@ -643,10 +649,11 @@ describe("procedural 3D assets", () => {
     expect(collectByName(field, /^field-surface-panel-/)).toHaveLength(0);
     expect(collectByName(field, /^field-depth-band-/)).toHaveLength(0);
 
-    expect(goal.group.userData.netHardwareSystem).toBe("weighted-net-label-and-clip-kit");
-    expect(collectByName(goal.group, /^goal-net-bottom-weight-/).length).toBeGreaterThanOrEqual(4);
-    expect(collectByName(goal.group, /^goal-net-label-tab-/)).toHaveLength(2);
-    expect(collectByName(goal.group, /^goal-frame-net-clip-/).length).toBeGreaterThanOrEqual(6);
+    expect(goal.group.userData.netHardwareSystem).toBe("stadium-net-ground-rope-kit");
+    expect(collectByName(goal.group, /^goal-net-bottom-weight-/)).toHaveLength(0);
+    expect(collectByName(goal.group, /^goal-net-label-tab-/)).toHaveLength(0);
+    expect(collectByName(goal.group, /^goal-frame-net-clip-/)).toHaveLength(0);
+    expect(collectByName(goal.group, /^goal-net-ground-rope-/)).toHaveLength(3);
 
     expect(glove.userData.materialSystem).toBe("stitched-padded-match-glove");
     expect(collectByName(glove, /^glove-vent-perforation-/).length).toBeGreaterThanOrEqual(8);
@@ -696,7 +703,7 @@ describe("procedural 3D assets", () => {
     expect(ballMaterial.metalness).toBeLessThanOrEqual(0.03);
   });
 
-  it("uses one continuous shaped pocket shell instead of cutting a rectangular hole through the net", () => {
+  it("uses one continuous low-occlusion 120mm square match net", () => {
     const goal = createGoalAndNet();
     const pocketShells = collectByName(goal.group, /^goal-net-continuous-pocket-shell$/);
 
@@ -716,18 +723,28 @@ describe("procedural 3D assets", () => {
     expect(shell.material.transparent).toBe(true);
     expect(shell.material.depthWrite).toBe(false);
     expect(shell.material.forceSinglePass).toBe(true);
-    expect(shell.material.userData.centerVisibilityFloor).toBeGreaterThanOrEqual(0.1);
-    expect(shell.material.userData.centerVisibilityFloor).toBeLessThanOrEqual(0.16);
+    expect(shell.material.userData.centerVisibilityFloor).toBeGreaterThanOrEqual(0.04);
+    expect(shell.material.userData.centerVisibilityFloor).toBeLessThanOrEqual(0.08);
     expect(shell.material.userData.visibilityProfile).toBe("soft-center-fade-no-cutout");
-    expect(shell.material.uniforms.netOpacity.value).toBeLessThanOrEqual(0.17);
-    expect(shell.material.opacity).toBeLessThanOrEqual(0.17);
-    expect(shell.material.userData.meshPattern).toBe("match-square-140mm-knotted-net");
+    expect(shell.material.uniforms.netOpacity.value).toBeLessThanOrEqual(0.13);
+    expect(shell.material.opacity).toBeLessThanOrEqual(0.13);
+    expect(shell.material.userData.meshPattern).toBe("professional-square-120mm-knotted-net");
+    expect(shell.material.uniforms.netMap.value.userData.alphaMeshPattern).toBe("professional-square-120mm-knotted-net");
     expect(shell.material.uniforms.netMap.value.userData.cellsAcross).toBe(GOAL_NET_GRID.widthDivisions);
     expect(shell.material.uniforms.netMap.value.userData.cellsHigh).toBe(GOAL_NET_GRID.rearHeightDivisions);
     expect(shell.userData.crossesKeeperSightline).toBe(true);
     expect(shell.userData.hasShotWindowCutout).toBe(false);
     expect(shell.userData.ballPriorityRenderOrder).toBeGreaterThan(shell.renderOrder);
     expect(goal.dynamicNetDetails.some((detail) => detail.name === shell.name)).toBe(true);
+  });
+
+  it("keeps the professional stadium net roof nearly level behind the crossbar", () => {
+    const rearRoofHeight = getGoalRoofHeightAtZ(GOAL_CAGE_POINTS.rearTopLeft.z);
+
+    expect(GOAL_NET_GRID.targetCellSize).toBeCloseTo(0.12, 3);
+    expect(rearRoofHeight).toBeGreaterThanOrEqual(2.3);
+    expect(rearRoofHeight).toBeLessThanOrEqual(GOAL_NET_GEOMETRY.height);
+    expect(GOAL_NET_GEOMETRY.height - rearRoofHeight).toBeLessThanOrEqual(0.14);
   });
 
   it("keeps all four visible net panels inside the shared cage envelope", () => {
@@ -762,6 +779,12 @@ describe("procedural 3D assets", () => {
     const top = goal.group.getObjectByName("goal-net-panel-top");
     const rear = goal.group.getObjectByName("goal-net-continuous-pocket-shell");
 
+    expect(left.type).toBe("Mesh");
+    expect(right.type).toBe("Mesh");
+    expect(top.type).toBe("Mesh");
+    expect(left.material.map.userData.alphaMeshPattern).toBe("professional-square-120mm-knotted-net");
+    expect(right.material.map).toBe(left.material.map);
+    expect(top.material.map).toBe(left.material.map);
     expect(left.userData.netGridDivisions).toEqual({
       depth: GOAL_NET_GRID.depthDivisions,
       height: GOAL_NET_GRID.frontHeightDivisions,
@@ -799,31 +822,31 @@ describe("procedural 3D assets", () => {
 
     expect(goal.group.userData.netPerformanceSystem).toBe("single-shell-mobile-net-budget");
     expect(goal.group.userData.retiredNetLayerCount).toBe(0);
-    expect(objectCount).toBeLessThanOrEqual(180);
-    expect(transparentObjectCount).toBeLessThanOrEqual(100);
-    expect(goal.dynamicNetDetails.length).toBeLessThanOrEqual(90);
+    expect(objectCount).toBeLessThanOrEqual(36);
+    expect(transparentObjectCount).toBeLessThanOrEqual(16);
+    expect(goal.dynamicNetDetails).toHaveLength(4);
   });
 
-  it("adds assembled goal hardware details so the frame feels manufactured rather than procedural", () => {
+  it("removes freestanding training-goal hardware from the stadium construction", () => {
     const goal = createGoalAndNet();
 
-    expect(goal.group.userData.frameAssemblySystem).toBe("manufactured-goal-frame-hardware");
-    expect(goal.group.userData.goalEquipmentPolishSystem).toBe("weighted-pro-goal-equipment-kit");
-    expect(collectByName(goal.group, /^goal-frame-corner-collar-/)).toHaveLength(4);
-    expect(collectByName(goal.group, /^goal-frame-ground-foot-pad-/)).toHaveLength(4);
-    expect(collectByName(goal.group, /^goal-net-tie-strap-/).length).toBeGreaterThanOrEqual(8);
-    expect(collectByName(goal.group, /^goal-depth-hinge-bracket-/)).toHaveLength(2);
-    expect(collectByName(goal.group, /^goal-frame-fastener-bolt-/).length).toBeGreaterThanOrEqual(8);
+    expect(goal.group.userData.frameAssemblySystem).toBe("clean-socketed-stadium-frame");
+    expect(goal.group.userData.goalEquipmentPolishSystem).toBe("ifab-match-goal-equipment-kit");
+    expect(collectByName(goal.group, /^goal-frame-corner-collar-/)).toHaveLength(0);
+    expect(collectByName(goal.group, /^goal-frame-ground-foot-pad-/)).toHaveLength(0);
+    expect(collectByName(goal.group, /^goal-net-tie-strap-/)).toHaveLength(0);
+    expect(collectByName(goal.group, /^goal-depth-hinge-bracket-/)).toHaveLength(0);
+    expect(collectByName(goal.group, /^goal-frame-fastener-bolt-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-frame-crossbar-sleeve-/)).toHaveLength(0);
-    expect(collectByName(goal.group, /^goal-net-rope-tensioner-/)).toHaveLength(4);
-    expect(collectByName(goal.group, /^goal-frame-ground-shadow-pad-/)).toHaveLength(2);
+    expect(collectByName(goal.group, /^goal-net-rope-tensioner-/)).toHaveLength(0);
+    expect(collectByName(goal.group, /^goal-frame-ground-shadow-pad-/)).toHaveLength(0);
   });
 
   it("registers woven net details as a reusable reactive asset layer", () => {
     const goal = createGoalAndNet();
 
     expect(goal.group.userData.dynamicNetDetailSystem).toBe("reactive-woven-net-detail-kit");
-    expect(goal.dynamicNetDetails.length).toBeGreaterThanOrEqual(10);
+    expect(goal.dynamicNetDetails).toHaveLength(4);
     expect(goal.dynamicNetDetails.some((detail) => detail.name === "goal-net-continuous-pocket-shell")).toBe(true);
     expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-side-cheek-lace-"))).toBe(false);
     expect(goal.dynamicNetDetails.some((detail) => detail.name === "goal-net-panel-left")).toBe(true);
@@ -833,7 +856,7 @@ describe("procedural 3D assets", () => {
         .filter((detail) => detail.object.userData.goalNetPanel)
         .every((detail) => detail.anchoredPanel),
     ).toBe(true);
-    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-matchday-edge-lace-"))).toBe(true);
+    expect(goal.dynamicNetDetails.some((detail) => detail.name.startsWith("goal-net-matchday-edge-lace-"))).toBe(false);
     expect(goal.dynamicNetDetails.every((detail) => detail.object.userData.dynamicNetDetailSystem)).toBe(true);
   });
 
@@ -843,7 +866,7 @@ describe("procedural 3D assets", () => {
     expect(goal.group.userData.depthReadabilitySystem).toBe("goal-net-depth-contact-shadow-kit");
     expect(collectByName(goal.group, /^goal-frame-contact-shadow-/).length).toBeGreaterThanOrEqual(3);
     expect(collectByName(goal.group, /^goal-net-continuous-pocket-shell$/)).toHaveLength(1);
-    expect(collectByName(goal.group, /^goal-net-rear-weight-cord-/).length).toBeGreaterThanOrEqual(1);
+    expect(collectByName(goal.group, /^goal-net-ground-rope-rear$/)).toHaveLength(1);
   });
 
   it("adds close-range glove protection ridges and ball surface storytelling details", () => {
@@ -872,10 +895,10 @@ describe("procedural 3D assets", () => {
     expect(keeperStanceScuffs).toHaveLength(0);
     expect(bootScuffs).toHaveLength(0);
 
-    expect(goal.group.userData.matchUseDetailSystem).toBe("match-use-equipment-wear-layer");
-    expect(collectByName(goal.group, /^goal-frame-ball-mark-/).length).toBeGreaterThanOrEqual(5);
+    expect(goal.group.userData.matchUseDetailSystem).toBe("clean-match-goal-no-decorative-wear");
+    expect(collectByName(goal.group, /^goal-frame-ball-mark-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-net-bottom-soil-smudge-/)).toHaveLength(0);
-    expect(collectByName(goal.group, /^goal-net-peg-shadow-/).length).toBeGreaterThanOrEqual(4);
+    expect(collectByName(goal.group, /^goal-net-peg-shadow-/)).toHaveLength(0);
 
     expect(launcher.group.userData.matchUseDetailSystem).toBe("launcher-ground-contact-wear-layer");
     expect(collectByName(launcher.group, /^launcher-wheel-tread-shadow-/)).toHaveLength(2);
@@ -915,7 +938,8 @@ describe("procedural 3D assets", () => {
     ];
 
     const allRoundedProps = [...roundedFieldProps, ...roundedGoalProps, ...roundedLauncherProps];
-    expect(allRoundedProps.length).toBeGreaterThanOrEqual(24);
+    expect(roundedGoalProps).toHaveLength(0);
+    expect(allRoundedProps.length).toBeGreaterThanOrEqual(20);
     expect(allRoundedProps.every((prop) => prop.geometry?.type === "RoundedBoxGeometry")).toBe(true);
     expect(allRoundedProps.every((prop) => prop.userData.geometrySource === "three/addons/geometries/RoundedBoxGeometry")).toBe(true);
     expect(allRoundedProps.every((prop) => prop.userData.beveledAssetSystem === "three-rounded-box-beveled-prop-kit")).toBe(true);

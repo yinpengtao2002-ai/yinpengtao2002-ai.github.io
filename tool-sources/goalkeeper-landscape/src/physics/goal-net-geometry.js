@@ -4,7 +4,7 @@ export const GOAL_NET_GEOMETRY = {
   halfWidth: SHOT_3D.goalHalfWidth,
   height: SHOT_3D.goalHeight,
   netPlaneZ: SHOT_3D.netPlaneZ,
-  rearHeight: 1.95,
+  rearHeight: 2.34,
   cageDepth: 2.05,
   frameRadius: 0.06,
   netSlack: 0.12,
@@ -19,7 +19,7 @@ function gridDivisions(length, targetCellSize) {
   return Math.max(1, Math.round(length / targetCellSize));
 }
 
-const TARGET_NET_CELL_SIZE = 0.14;
+const TARGET_NET_CELL_SIZE = 0.12;
 
 export const GOAL_NET_GRID = Object.freeze({
   targetCellSize: TARGET_NET_CELL_SIZE,
@@ -58,14 +58,6 @@ export const GOAL_FRAME_SEGMENTS = Object.freeze([
   segment("crossbar", "frontTopLeft", "frontTopRight"),
   segment("front-left-post", "frontBottomLeft", "frontTopLeft"),
   segment("front-right-post", "frontBottomRight", "frontTopRight"),
-  segment("top-left-rail", "frontTopLeft", "rearTopLeft"),
-  segment("top-right-rail", "frontTopRight", "rearTopRight"),
-  segment("rear-left-upright", "rearBottomLeft", "rearTopLeft"),
-  segment("rear-right-upright", "rearBottomRight", "rearTopRight"),
-  segment("rear-top-rail", "rearTopLeft", "rearTopRight"),
-  segment("bottom-left-rail", "frontBottomLeft", "rearBottomLeft"),
-  segment("bottom-right-rail", "frontBottomRight", "rearBottomRight"),
-  segment("rear-bottom-rail", "rearBottomLeft", "rearBottomRight"),
 ]);
 
 function clamp(value, min, max) {
