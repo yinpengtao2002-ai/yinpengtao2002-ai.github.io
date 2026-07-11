@@ -61,6 +61,105 @@ describe("shared physical goal net", () => {
     });
   });
 
+  it.each([
+    {
+      panel: "rear",
+      previousPosition: { x: 0, y: 1, z: getGoalNetSurfacePoint({ x: 0, y: 1 }).z - 0.2 },
+      position: { x: 0, y: 1, z: getGoalNetSurfacePoint({ x: 0, y: 1 }).z + 0.04 },
+      velocity: { x: 0, y: 0, z: 16 },
+    },
+    {
+      panel: "left",
+      previousPosition: {
+        x: -GOAL_NET_GEOMETRY.halfWidth + 0.2,
+        y: 1,
+        z: GOAL_NET_GEOMETRY.netPlaneZ + 0.8,
+      },
+      position: {
+        x: -GOAL_NET_GEOMETRY.halfWidth - 0.04,
+        y: 1,
+        z: GOAL_NET_GEOMETRY.netPlaneZ + 1,
+      },
+      velocity: { x: -12, y: 0, z: 10 },
+    },
+    {
+      panel: "right",
+      previousPosition: {
+        x: GOAL_NET_GEOMETRY.halfWidth - 0.2,
+        y: 1,
+        z: GOAL_NET_GEOMETRY.netPlaneZ + 0.8,
+      },
+      position: {
+        x: GOAL_NET_GEOMETRY.halfWidth + 0.04,
+        y: 1,
+        z: GOAL_NET_GEOMETRY.netPlaneZ + 1,
+      },
+      velocity: { x: 12, y: 0, z: 10 },
+    },
+    {
+      panel: "top",
+      previousPosition: {
+        x: 0,
+        y: getGoalRoofHeightAtZ(GOAL_NET_GEOMETRY.netPlaneZ + 1) - 0.2,
+        z: GOAL_NET_GEOMETRY.netPlaneZ + 0.9,
+      },
+      position: {
+        x: 0,
+        y: getGoalRoofHeightAtZ(GOAL_NET_GEOMETRY.netPlaneZ + 1) + 0.04,
+        z: GOAL_NET_GEOMETRY.netPlaneZ + 1,
+      },
+      velocity: { x: 0, y: 12, z: 5 },
+    },
+  ])("resolves a swept ball against the $panel net panel", ({ panel, ...shot }) => {
+    const result = resolveGoalNetCollision(makeNetCollisionState(shot), 1 / 60);
+
+    expect(result.collided).toBe(true);
+    expect(result.panel).toBe(panel);
+    expect(result.netContact).toMatchObject({
+      panel,
+      impactCount: 1,
+      fresh: true,
+    });
+  });
+
+  it("selects one panel and emits one contact when a ball reaches a net seam", () => {
+    const z = GOAL_NET_GEOMETRY.netPlaneZ + 1.3;
+    const roof = getGoalRoofHeightAtZ(z);
+    const first = resolveGoalNetCollision(makeNetCollisionState({
+      previousPosition: {
+        x: GOAL_NET_GEOMETRY.halfWidth - 0.2,
+        y: roof - 0.2,
+        z: z - 0.1,
+      },
+      position: {
+        x: GOAL_NET_GEOMETRY.halfWidth + 0.04,
+        y: roof + 0.04,
+        z,
+      },
+      velocity: { x: 12, y: 12, z: 5 },
+    }), 1 / 60);
+
+    expect(first.collided).toBe(true);
+    expect(["right", "top"]).toContain(first.panel);
+    expect(first.netContact.impactCount).toBe(1);
+
+    const second = resolveGoalNetCollision(makeNetCollisionState({
+      previousPosition: first.position,
+      position: {
+        x: first.position.x + 0.01,
+        y: first.position.y + 0.01,
+        z: first.position.z + 0.01,
+      },
+      velocity: first.velocity,
+      angularVelocity: first.angularVelocity,
+      netContact: first.netContact,
+    }), 1 / 120);
+
+    expect(second.collided).toBe(false);
+    expect(second.netContact.eventId).toBe(first.netContact.eventId);
+    expect(second.netContact.impactCount).toBe(1);
+  });
+
   it("does not create an invisible net wall outside the posts or above the crossbar", () => {
     const outsidePost = makeNetCollisionState({
       previousPosition: { x: GOAL_NET_GEOMETRY.halfWidth + 0.04, y: 1.2, z: 5.28 },

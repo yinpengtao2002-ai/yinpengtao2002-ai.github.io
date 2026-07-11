@@ -88,7 +88,8 @@ export function getGoalNetPocketVertex(localX, localY) {
       -height * 0.5,
       height * 0.5,
     ),
-    z: GOAL_NET_GEOMETRY.anchorDepth + pocket * GOAL_NET_GEOMETRY.pocketDepth + wovenSlack,
+    z: GOAL_NET_GEOMETRY.cageDepth - GOAL_NET_GEOMETRY.shellOffsetZ -
+      pocket * GOAL_NET_GEOMETRY.netSlack + wovenSlack,
   };
 }
 
@@ -125,6 +126,133 @@ function advanceNetContact(contact, dt) {
   };
 }
 
+function crossingTime(previousDistance, currentDistance) {
+  if (previousDistance < -0.004 || currentDistance > 0) return null;
+  var travel = previousDistance - currentDistance;
+  return travel <= 0.000001 ? 0 : clamp(previousDistance / travel, 0, 1);
+}
+
+function interpolatePosition(previousPosition, position, t) {
+  return {
+    x: previousPosition.x + (position.x - previousPosition.x) * t,
+    y: previousPosition.y + (position.y - previousPosition.y) * t,
+    z: previousPosition.z + (position.z - previousPosition.z) * t,
+  };
+}
+
+function isInsidePanelHeight(point, radius) {
+  var roof = getGoalRoofHeightAtZ(point.z);
+  return point.y >= radius * 0.35 && point.y <= roof + radius * 0.35;
+}
+
+function getNetCollisionCandidates(previousPosition, position, velocity, radius) {
+  var candidates = [];
+  var frontZ = GOAL_NET_GEOMETRY.netPlaneZ;
+  var rearZ = GOAL_CAGE_POINTS.rearBottomLeft.z;
+  var halfWidth = GOAL_NET_GEOMETRY.halfWidth;
+
+  function addCandidate(panel, previousDistance, currentDistance, validPoint) {
+    var t = crossingTime(previousDistance, currentDistance);
+    if (t === null) return;
+    var point = interpolatePosition(previousPosition, position, t);
+    if (!validPoint(point)) return;
+    candidates.push({ panel, point, t });
+  }
+
+  if ((velocity.z || 0) > 0.02) {
+    var previousRearSurface = getGoalNetSurfacePoint(previousPosition).z;
+    var currentRearSurface = getGoalNetSurfacePoint(position).z;
+    addCandidate(
+      "rear",
+      previousRearSurface - (previousPosition.z + radius),
+      currentRearSurface - (position.z + radius),
+      (point) => Math.abs(point.x) <= halfWidth + radius * 0.2 &&
+        point.y >= 0 && point.y <= GOAL_NET_GEOMETRY.rearHeight + radius * 0.2,
+    );
+  }
+
+  if ((velocity.x || 0) < -0.02) {
+    addCandidate(
+      "left",
+      previousPosition.x - radius + halfWidth,
+      position.x - radius + halfWidth,
+      (point) => point.z >= frontZ - radius * 0.2 &&
+        point.z <= rearZ + radius * 0.2 && isInsidePanelHeight(point, radius),
+    );
+  }
+
+  if ((velocity.x || 0) > 0.02) {
+    addCandidate(
+      "right",
+      halfWidth - (previousPosition.x + radius),
+      halfWidth - (position.x + radius),
+      (point) => point.z >= frontZ - radius * 0.2 &&
+        point.z <= rearZ + radius * 0.2 && isInsidePanelHeight(point, radius),
+    );
+  }
+
+  var previousRoofDistance = getGoalRoofHeightAtZ(previousPosition.z) - (previousPosition.y + radius);
+  var currentRoofDistance = getGoalRoofHeightAtZ(position.z) - (position.y + radius);
+  if (currentRoofDistance < previousRoofDistance - 0.0001) {
+    addCandidate(
+      "top",
+      previousRoofDistance,
+      currentRoofDistance,
+      (point) => point.z >= frontZ - radius * 0.2 && point.z <= rearZ + radius * 0.2 &&
+        Math.abs(point.x) <= halfWidth + radius * 0.2,
+    );
+  }
+
+  return candidates.sort((a, b) => a.t - b.t);
+}
+
+function resolvePanelVelocity(panel, velocity) {
+  var next = { ...velocity };
+  if (panel === "rear") {
+    var rearImpact = Math.max(0, velocity.z || 0);
+    next.x *= 0.44;
+    next.y *= 0.52;
+    next.z = -Math.min(3.6, Math.max(0.42, rearImpact * 0.16));
+  } else if (panel === "left" || panel === "right") {
+    var sideImpact = Math.abs(velocity.x || 0);
+    next.x = (panel === "left" ? 1 : -1) * Math.min(3.2, Math.max(0.35, sideImpact * 0.18));
+    next.y *= 0.72;
+    next.z *= 0.58;
+  } else {
+    var topImpact = Math.abs(velocity.y || 0);
+    next.x *= 0.72;
+    next.y = -Math.min(2.8, Math.max(0.35, topImpact * 0.2));
+    next.z *= 0.58;
+  }
+  return next;
+}
+
+function clampBallToPanel(panel, position, radius) {
+  var inset = radius + 0.004;
+  if (panel === "rear") {
+    position.z = getGoalNetSurfacePoint(position).z - inset;
+  } else if (panel === "left") {
+    position.x = -GOAL_NET_GEOMETRY.halfWidth + inset;
+  } else if (panel === "right") {
+    position.x = GOAL_NET_GEOMETRY.halfWidth - inset;
+  } else {
+    position.y = getGoalRoofHeightAtZ(position.z) - inset;
+  }
+  return position;
+}
+
+function getPanelContactPoint(panel, position) {
+  if (panel === "rear") return getGoalNetSurfacePoint(position);
+  if (panel === "left" || panel === "right") {
+    return {
+      x: panel === "left" ? -GOAL_NET_GEOMETRY.halfWidth : GOAL_NET_GEOMETRY.halfWidth,
+      y: position.y,
+      z: position.z,
+    };
+  }
+  return { x: position.x, y: getGoalRoofHeightAtZ(position.z), z: position.z };
+}
+
 export function resolveGoalNetCollision(state, dt = 1 / 60) {
   var radius = Math.max(0.01, state.radius || 0.11);
   var position = { ...state.position };
@@ -132,41 +260,33 @@ export function resolveGoalNetCollision(state, dt = 1 / 60) {
   var velocity = { ...state.velocity };
   var angularVelocity = { ...(state.angularVelocity || { x: 0, y: 0, z: 0 }) };
   var netContact = advanceNetContact(state.netContact, dt);
-  var insideEnvelope =
-    Math.abs(position.x) <= GOAL_NET_GEOMETRY.halfWidth &&
-    position.y >= 0 &&
-    position.y <= GOAL_NET_GEOMETRY.height;
+  var candidates = getNetCollisionCandidates(previousPosition, position, velocity, radius);
 
-  if (!insideEnvelope || (velocity.z || 0) <= 0.02) {
-    return { position, velocity, angularVelocity, netContact, collided: false };
+  if (candidates.length === 0 || (netContact?.cooldown || 0) > 0) {
+    return { position, velocity, angularVelocity, netContact, collided: false, panel: null };
   }
 
-  var previousSurface = getGoalNetSurfacePoint(previousPosition);
-  var currentSurface = getGoalNetSurfacePoint(position);
-  var previousRear = previousPosition.z + radius;
-  var currentRear = position.z + radius;
-  var crossedSurface = previousRear <= previousSurface.z + 0.004 && currentRear >= currentSurface.z;
-  var penetratingSurface = currentRear > currentSurface.z + 0.015 && previousPosition.z <= position.z;
-
-  if ((!crossedSurface && !penetratingSurface) || (netContact?.cooldown || 0) > 0) {
-    return { position, velocity, angularVelocity, netContact, collided: false };
-  }
-
-  var impactSpeed = Math.max(0, velocity.z || 0);
-  var reboundSpeed = Math.min(3.6, Math.max(0.42, impactSpeed * 0.16));
-  position.z = currentSurface.z - radius - 0.004;
-  velocity.x *= 0.42;
-  velocity.y *= 0.5;
-  velocity.z = -reboundSpeed;
+  var collision = candidates[0];
+  var panel = collision.panel;
+  var impactSpeed = panel === "rear"
+    ? Math.max(0, velocity.z || 0)
+    : panel === "top"
+      ? Math.abs(velocity.y || 0)
+      : Math.abs(velocity.x || 0);
+  position = clampBallToPanel(panel, position, radius);
+  velocity = resolvePanelVelocity(panel, velocity);
   angularVelocity.x *= 0.58;
   angularVelocity.y *= 0.58;
   angularVelocity.z *= 0.58;
 
+  var contactPoint = getPanelContactPoint(panel, position);
+
   var sourceContactEventId = state.sourceContact?.eventId ?? netContact?.sourceContactEventId ?? null;
   netContact = {
-    eventId: netContact?.eventId || makeNetContactEventId(state.sourceContact, currentSurface),
+    eventId: netContact?.eventId || makeNetContactEventId(state.sourceContact, contactPoint),
     type: "net",
-    point: currentSurface,
+    panel,
+    point: contactPoint,
     strength: impactSpeed,
     sourceContactEventId,
     age: 0,
@@ -175,5 +295,5 @@ export function resolveGoalNetCollision(state, dt = 1 / 60) {
     impactCount: (netContact?.impactCount || 0) + 1,
   };
 
-  return { position, velocity, angularVelocity, netContact, collided: true };
+  return { position, velocity, angularVelocity, netContact, collided: true, panel };
 }
