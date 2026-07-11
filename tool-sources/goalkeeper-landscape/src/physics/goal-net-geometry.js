@@ -206,25 +206,21 @@ function getNetCollisionCandidates(previousPosition, position, velocity, radius)
     );
   }
 
-  if ((velocity.x || 0) < -0.02) {
-    addCandidate(
-      "left",
-      previousPosition.x - radius + getGoalSideHalfWidthAtZ(previousPosition.z),
-      position.x - radius + getGoalSideHalfWidthAtZ(position.z),
-      (point) => point.z >= frontZ - radius * 0.2 &&
-        point.z <= rearZ + radius * 0.2 && isInsidePanelHeight(point, radius),
-    );
-  }
+  addCandidate(
+    "left",
+    previousPosition.x - radius + getGoalSideHalfWidthAtZ(previousPosition.z),
+    position.x - radius + getGoalSideHalfWidthAtZ(position.z),
+    (point) => point.z >= frontZ - radius * 0.2 &&
+      point.z <= rearZ + radius * 0.2 && isInsidePanelHeight(point, radius),
+  );
 
-  if ((velocity.x || 0) > 0.02) {
-    addCandidate(
-      "right",
-      getGoalSideHalfWidthAtZ(previousPosition.z) - (previousPosition.x + radius),
-      getGoalSideHalfWidthAtZ(position.z) - (position.x + radius),
-      (point) => point.z >= frontZ - radius * 0.2 &&
-        point.z <= rearZ + radius * 0.2 && isInsidePanelHeight(point, radius),
-    );
-  }
+  addCandidate(
+    "right",
+    getGoalSideHalfWidthAtZ(previousPosition.z) - (previousPosition.x + radius),
+    getGoalSideHalfWidthAtZ(position.z) - (position.x + radius),
+    (point) => point.z >= frontZ - radius * 0.2 &&
+      point.z <= rearZ + radius * 0.2 && isInsidePanelHeight(point, radius),
+  );
 
   var previousRoofDistance = getGoalRoofHeightAtZ(previousPosition.z) - (previousPosition.y + radius);
   var currentRoofDistance = getGoalRoofHeightAtZ(position.z) - (position.y + radius);
@@ -245,9 +241,9 @@ function resolvePanelVelocity(panel, velocity) {
   var next = { ...velocity };
   if (panel === "rear") {
     var rearImpact = Math.max(0, velocity.z || 0);
-    next.x *= 0.44;
-    next.y *= 0.52;
-    next.z = -Math.min(3.6, Math.max(0.42, rearImpact * 0.16));
+    next.x *= 0.34;
+    next.y *= 0.42;
+    next.z = -Math.min(0.62, Math.max(0.18, rearImpact * 0.028));
   } else if (panel === "left" || panel === "right") {
     var sideImpact = Math.abs(velocity.x || 0);
     next.x = (panel === "left" ? 1 : -1) * Math.min(3.2, Math.max(0.35, sideImpact * 0.18));
@@ -297,12 +293,13 @@ export function resolveGoalNetCollision(state, dt = 1 / 60) {
   var netContact = advanceNetContact(state.netContact, dt);
   var candidates = getNetCollisionCandidates(previousPosition, position, velocity, radius);
 
-  if (candidates.length === 0 || (netContact?.cooldown || 0) > 0) {
+  if (candidates.length === 0) {
     return { position, velocity, angularVelocity, netContact, collided: false, panel: null };
   }
 
   var collision = candidates[0];
   var panel = collision.panel;
+  var suppressFeedback = (netContact?.cooldown || 0) > 0;
   var impactSpeed = panel === "rear"
     ? Math.max(0, velocity.z || 0)
     : panel === "top"
@@ -310,11 +307,35 @@ export function resolveGoalNetCollision(state, dt = 1 / 60) {
       : Math.abs(velocity.x || 0);
   position = clampBallToPanel(panel, position, radius);
   velocity = resolvePanelVelocity(panel, velocity);
+  var secondaryPanel = null;
+  if (
+    (panel === "left" || panel === "right") &&
+    (velocity.z || 0) > 0.02 &&
+    Math.abs(position.x) <= GOAL_NET_GEOMETRY.rearHalfWidth + radius &&
+    position.z + radius >= getGoalNetSurfacePoint(position).z
+  ) {
+    position = clampBallToPanel("rear", position, radius);
+    velocity = resolvePanelVelocity("rear", velocity);
+    secondaryPanel = "rear";
+  }
   angularVelocity.x *= 0.58;
   angularVelocity.y *= 0.58;
   angularVelocity.z *= 0.58;
 
   var contactPoint = getPanelContactPoint(panel, position);
+
+  if (suppressFeedback) {
+    return {
+      position,
+      velocity,
+      angularVelocity,
+      netContact,
+      collided: true,
+      panel,
+      secondaryPanel,
+      feedbackSuppressed: true,
+    };
+  }
 
   var sourceContactEventId = state.sourceContact?.eventId ?? netContact?.sourceContactEventId ?? null;
   netContact = {
@@ -330,5 +351,5 @@ export function resolveGoalNetCollision(state, dt = 1 / 60) {
     impactCount: (netContact?.impactCount || 0) + 1,
   };
 
-  return { position, velocity, angularVelocity, netContact, collided: true, panel };
+  return { position, velocity, angularVelocity, netContact, collided: true, panel, secondaryPanel };
 }

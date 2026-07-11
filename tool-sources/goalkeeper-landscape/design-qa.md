@@ -564,6 +564,20 @@ final result: passed
 
 Final result: passed
 
+## 2026-07-12 Near-Post Net Containment QA
+
+**Root Cause**
+- A straight goal-bound ball could cross the tapered side net without lateral velocity, then repeatedly win the side-panel collision before the rear panel was resolved.
+- Net-contact cooldown suppressed physical follow-up collisions together with duplicate audiovisual feedback.
+
+**Fix And Verification**
+- Tapered side panels now use swept boundary crossing independent of lateral ball velocity.
+- Side and rear panels can resolve in one physics step while preserving one net event, one effect, and one audio cue.
+- The rear net now absorbs most forward speed instead of firing the ball back through the goal mouth.
+- A near-post `24m/s` goal remains behind the goal line after one second at `z=5.27`, with only `0.15m/s` residual rebound and `impactCount=1`.
+
+Final result: passed
+
 ## 2026-07-11 Glove-Brush Goal Adjudication QA
 
 **Root Cause**

@@ -195,6 +195,36 @@ describe("shared physical goal net", () => {
     });
   });
 
+  it("catches a straight goal-bound ball when the tapered side net closes around it", () => {
+    const previousPosition = {
+      x: 3.35,
+      y: 1.1,
+      z: GOAL_NET_GEOMETRY.netPlaneZ + 0.15,
+    };
+    const position = {
+      x: 3.35,
+      y: 1.1,
+      z: GOAL_CAGE_POINTS.rearBottomRight.z - 0.06,
+    };
+    const radius = 0.11;
+
+    expect(getGoalSideHalfWidthAtZ(previousPosition.z) - (previousPosition.x + radius)).toBeGreaterThan(0);
+    expect(getGoalSideHalfWidthAtZ(position.z) - (position.x + radius)).toBeLessThan(0);
+
+    const result = resolveGoalNetCollision(makeNetCollisionState({
+      previousPosition,
+      position,
+      velocity: { x: 0, y: 0, z: 14 },
+      radius,
+    }), 1 / 60);
+
+    expect(result.collided).toBe(true);
+    expect(result.panel).toBe("right");
+    expect(result.position.x).toBeLessThan(position.x);
+    expect(result.velocity.x).toBeLessThan(0);
+    expect(result.velocity.z).toBeLessThan(14);
+  });
+
   it("selects one panel and emits one contact when a ball reaches a net seam", () => {
     const z = GOAL_NET_GEOMETRY.netPlaneZ + 0.78;
     const roof = getGoalRoofHeightAtZ(z);

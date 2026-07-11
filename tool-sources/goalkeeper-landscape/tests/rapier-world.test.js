@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createShot3DDirector } from "../src/game/shot-3d-director.js";
-import { GOAL_FRAME_SEGMENTS } from "../src/physics/goal-net-geometry.js";
+import { GOAL_CAGE_POINTS, GOAL_FRAME_SEGMENTS } from "../src/physics/goal-net-geometry.js";
 import { RAPIER_GOAL, createRapierGoalkeeperWorld } from "../src/physics/rapier-world.js";
 
 describe("Rapier goalkeeper world", () => {
@@ -375,6 +375,32 @@ describe("Rapier goalkeeper world", () => {
       sourceContactEventId: ball.lastContact.eventId,
     });
     expect(ball.position.z).toBeLessThan(RAPIER_GOAL.netPlaneZ + 1);
+    expect(ball.velocity.z).toBeLessThanOrEqual(0);
+
+    world.dispose();
+  });
+
+  it("keeps a near-post goal inside the net after side and rear net contact", async () => {
+    const world = await createRapierGoalkeeperWorld();
+
+    world.setGloveTarget({ x: 0, y: 2.8, z: 3.15 });
+    world.launchShot({
+      origin: { x: 3.35, y: 1.1, z: 3.55 },
+      target: { x: 3.35, y: 1.1, z: 4.65 },
+      velocity: { x: 0, y: 0, z: 24 },
+      angularVelocity: { x: 0, y: 10, z: 0 },
+      curveForce: { x: 0, y: 0, z: 0 },
+      radius: 0.11,
+    });
+
+    for (let i = 0; i < 120; i += 1) world.step(1 / 120);
+    const ball = world.getBallState();
+
+    expect(ball.outcome).toBe("goal");
+    expect(ball.netContact?.type).toBe("net");
+    expect(ball.netContact?.impactCount).toBe(1);
+    expect(ball.position.z).toBeLessThanOrEqual(GOAL_CAGE_POINTS.rearBottomRight.z + ball.radius);
+    expect(ball.position.z).toBeGreaterThanOrEqual(RAPIER_GOAL.netPlaneZ);
     expect(ball.velocity.z).toBeLessThanOrEqual(0);
 
     world.dispose();
