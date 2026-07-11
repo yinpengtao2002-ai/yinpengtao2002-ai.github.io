@@ -125,7 +125,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
     new URL("../public/tools/goalkeeper-landscape/index.html", import.meta.url),
     "utf8"
   );
-  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-DquS7FtE.js", import.meta.url);
+  const gameScriptPath = new URL("../public/tools/goalkeeper-landscape/assets/index-npGTTyyv.js", import.meta.url);
   const gameScript = await stat(gameScriptPath);
   const gameScriptSource = await readFile(gameScriptPath, "utf8");
   const gameStylePath = new URL("../public/tools/goalkeeper-landscape/assets/index-CvA-KOni.css", import.meta.url);
@@ -150,7 +150,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(goalkeeperPage, /import GoalkeeperLandscapeRuntime/);
   assert.match(goalkeeperPage, /GOALKEEPER_SCRIPT_SRC/);
   assert.match(goalkeeperPage, /GOALKEEPER_STYLESHEET_HREF/);
-  assert.match(goalkeeperRuntime, /index-DquS7FtE\.js/);
+  assert.match(goalkeeperRuntime, /index-npGTTyyv\.js/);
   assert.match(goalkeeperRuntime, /goalkeeperRuntime/);
   assert.match(goalkeeperRuntime, /dispose\?\.\(\)/);
   assert.match(goalkeeperRuntime, /goalkeeperActiveMountId/);
@@ -206,7 +206,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(thinkingClient, /横屏守门挑战/);
   assert.match(clientShell, /\/tools\/goalkeeper-landscape/);
   assert.match(sitemap, /\$\{BASE_URL\}\/tools\/goalkeeper-landscape/);
-  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-DquS7FtE\.js/);
+  assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-npGTTyyv\.js/);
   assert.match(gameIndex, /\/tools\/goalkeeper-landscape\/assets\/index-CvA-KOni\.css/);
   assert.match(gameIndex, /id="gameHud"/);
   assert.doesNotMatch(gameIndex, /id="feedbackToast"/);
@@ -255,20 +255,18 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.match(gameScriptSource, /field-training-surface/);
   assert.match(gameScriptSource, /classic-neutral-match-ball-texture/);
   assert.match(gameScriptSource, /neutral-white-charcoal-no-yellow-cast/);
-  assert.match(gameScriptSource, /crowd-scoreboard-flags-matchday-dressing/);
+  assert.match(gameScriptSource, /quiet-crowd-scoreboard-training-backdrop/);
   assert.match(gameScriptSource, /broadcast-matchday-polish-kit/);
   assert.match(gameScriptSource, /three-rounded-box-beveled-prop-kit/);
   assert.match(gameScriptSource, /three\/addons\/geometries\/RoundedBoxGeometry/);
-  assert.match(gameScriptSource, /sideline-camera-light-and-safety-pad-kit/);
-  assert.match(gameScriptSource, /broadcast-camera-pod/);
-  assert.match(gameScriptSource, /broadcast-sideline-safety-pad/);
-  assert.match(gameScriptSource, /stadium-light-cone/);
-  assert.match(gameScriptSource, /stadium-depth-vignette/);
-  assert.match(gameScriptSource, /professional-keeper-training-ground-kit/);
-  assert.match(gameScriptSource, /training-ground-equipment-cart/);
-  assert.match(gameScriptSource, /training-ground-spare-ball/);
-  assert.match(gameScriptSource, /training-ground-coach-bench/);
-  assert.match(gameScriptSource, /training-ground-tactic-board/);
+  assert.match(gameScriptSource, /cohesive-goalkeeper-training-lane/);
+  assert.match(gameScriptSource, /stray-ball-containment-padded-rails/);
+  assert.match(gameScriptSource, /training-lane-safety-barrier/);
+  assert.match(gameScriptSource, /purpose-built-launcher-service-zone/);
+  assert.match(gameScriptSource, /training-lane-ball-rack/);
+  assert.match(gameScriptSource, /training-lane-control-cabinet/);
+  assert.match(gameScriptSource, /cohesive-autonomous-ball-launcher/);
+  assert.match(gameScriptSource, /feed-aim-launch-without-operator-clutter/);
   assert.match(gameScriptSource, /rounded-posts-with-tensioned-net/);
   assert.match(gameScriptSource, /warm-stadium-three-point/);
   assert.match(gameScriptSource, /three-sky-atmospheric-training-ground/);
@@ -351,7 +349,7 @@ test("goalkeeper landscape game is exposed as a thinking lab tool", async () => 
   assert.doesNotMatch(gameScriptSource, /field-line-chalk-dust/);
   assert.match(gameScriptSource, /stadium-crowd-row/);
   assert.match(gameScriptSource, /stadium-scoreboard/);
-  assert.match(gameScriptSource, /stadium-corner-flag/);
+  assert.match(gameScriptSource, /launcher-protective-roll-frame/);
   assert.match(gameScriptSource, /professional-freestanding-training-goal-kit/);
   assert.match(gameScriptSource, /integrated-white-tube-return-frame/);
   assert.match(gameScriptSource, /integrated-white-return-frame/);

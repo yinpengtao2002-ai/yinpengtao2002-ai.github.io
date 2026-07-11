@@ -39,7 +39,8 @@ describe("procedural 3D assets", () => {
   it("replaces the distant shooter with a polished ball launcher machine", () => {
     const launcher = createShooterModel();
 
-    expect(launcher.group.userData.visualStyle).toBe("polished-ball-launcher");
+    expect(launcher.group.userData.visualStyle).toBe("cohesive-autonomous-ball-launcher");
+    expect(launcher.group.userData.visualPurpose).toBe("feed-aim-launch-without-operator-clutter");
     expect(launcher.group.scale.x).toBeGreaterThanOrEqual(1.35);
     expect(collectByName(launcher.group, /^launcher-body/)).toHaveLength(1);
     expect(collectByName(launcher.group, /^launcher-barrel/)).toHaveLength(1);
@@ -54,12 +55,12 @@ describe("procedural 3D assets", () => {
   it("keeps the distant launcher readable through the goal net", () => {
     const launcher = createShooterModel();
     const body = collectByName(launcher.group, /^launcher-body$/)[0];
-    const readabilityFrame = collectByName(launcher.group, /^launcher-readability-frame-/);
+    const protectiveFrame = collectByName(launcher.group, /^launcher-protective-roll-frame-/);
 
     expect(launcher.group.userData.launcherReadabilitySystem).toBe("distance-clarity-silhouette-kit");
     expect(launcher.group.scale.x).toBeGreaterThanOrEqual(1.62);
-    expect(readabilityFrame.length).toBeGreaterThanOrEqual(3);
-    expect(readabilityFrame.every((part) => part.userData.launcherReadabilitySystem === "distance-clarity-silhouette-kit")).toBe(true);
+    expect(protectiveFrame).toHaveLength(3);
+    expect(protectiveFrame.every((part) => part.userData.visualPurpose === "protect-launcher-and-clarify-silhouette")).toBe(true);
     expect(body.material.color.getHexString()).toBe("365c66");
     expect(body.material.bumpMap.image.width).toBeGreaterThanOrEqual(256);
     expect(body.material.bumpMap.anisotropy).toBeGreaterThanOrEqual(4);
@@ -83,39 +84,38 @@ describe("procedural 3D assets", () => {
     expect(plannedOrigin.y).toBeGreaterThan(launcher.body.getWorldPosition(new THREE.Vector3()).y);
   });
 
-  it("grounds the launcher in a finished launch bay with feed balls and restrained firing feedback", () => {
+  it("keeps only functional feed and firing hardware on the launcher", () => {
     const launcher = createShooterModel();
 
     expect(launcher.group.userData.launcherStationSystem).toBe("animated-launch-bay-with-ball-feed");
     expect(collectByName(launcher.group, /^launcher-kick-pad$/)).toHaveLength(1);
-    expect(collectByName(launcher.group, /^launcher-aim-rail-/)).toHaveLength(2);
-    expect(collectByName(launcher.group, /^launcher-lane-chevron-/).length).toBeGreaterThanOrEqual(3);
+    expect(collectByName(launcher.group, /^launcher-aim-rail-/)).toHaveLength(0);
+    expect(collectByName(launcher.group, /^launcher-lane-chevron-/)).toHaveLength(0);
     expect(collectByName(launcher.group, /^launcher-feed-queue-ball-/)).toHaveLength(3);
-    expect(collectByName(launcher.group, /^launcher-cable-/).length).toBeGreaterThanOrEqual(2);
+    expect(collectByName(launcher.group, /^launcher-cable-/)).toHaveLength(0);
     expect(collectByName(launcher.group, /^launcher-charge-ring$/)).toHaveLength(1);
     expect(collectByName(launcher.group, /^launcher-muzzle-flash$/)).toHaveLength(1);
     expect(launcher.muzzleFlash.material.transparent).toBe(true);
     expect(launcher.muzzleFlash.material.opacity).toBe(0);
   });
 
-  it("adds a professional training rig and operator silhouette around the launcher", () => {
+  it("removes distant launcher clutter while preserving the controls and safety shell", () => {
     const launcher = createShooterModel();
 
-    expect(launcher.group.userData.launcherRigSystem).toBe("pro-matchday-machine-rig");
+    expect(launcher.group.userData.launcherRigSystem).toBe("guarded-feed-aim-launch-rig");
     expect(collectByName(launcher.group, /^launcher-control-console$/)).toHaveLength(1);
     expect(collectByName(launcher.group, /^launcher-control-screen$/)).toHaveLength(1);
     expect(collectByName(launcher.group, /^launcher-status-led-/).length).toBeGreaterThanOrEqual(4);
     expect(collectByName(launcher.group, /^launcher-safety-guard-/)).toHaveLength(2);
-    expect(collectByName(launcher.group, /^launcher-calibration-beam-/)).toHaveLength(2);
-    expect(collectByName(launcher.group, /^launcher-ground-anchor-/).length).toBeGreaterThanOrEqual(4);
-    expect(collectByName(launcher.group, /^launcher-pressure-hose-/).length).toBeGreaterThanOrEqual(2);
-    expect(collectByName(launcher.group, /^launcher-service-panel-screw-/).length).toBeGreaterThanOrEqual(4);
+    expect(collectByName(launcher.group, /^launcher-calibration-beam-/)).toHaveLength(0);
+    expect(collectByName(launcher.group, /^launcher-ground-anchor-/)).toHaveLength(0);
+    expect(collectByName(launcher.group, /^launcher-pressure-hose-/)).toHaveLength(0);
+    expect(collectByName(launcher.group, /^launcher-service-panel-screw-/)).toHaveLength(0);
     expect(collectByName(launcher.group, /^launcher-number-plate$/)).toHaveLength(1);
 
-    expect(collectByName(launcher.group, /^launcher-operator-/).length).toBeGreaterThanOrEqual(7);
-    expect(collectByName(launcher.group, /^launcher-operator-tablet$/)).toHaveLength(1);
+    expect(collectByName(launcher.group, /^launcher-operator-/)).toHaveLength(0);
     expect(launcher.controlScreen.material.transparent).toBe(true);
-    expect(launcher.calibrationBeams).toHaveLength(2);
+    expect(launcher.calibrationBeams).toHaveLength(0);
     expect(launcher.statusLeds.length).toBeGreaterThanOrEqual(4);
   });
 
@@ -146,11 +146,9 @@ describe("procedural 3D assets", () => {
     });
 
     const cueScreenOpacity = launcher.controlScreen.material.opacity;
-    const cueBeamOpacity = launcher.calibrationBeams[0].material.opacity;
     expect(cueScreenOpacity).toBeGreaterThan(0.42);
-    expect(cueBeamOpacity).toBeGreaterThan(0.18);
-    expect(launcher.calibrationBeams[0].visible).toBe(true);
-    expect(launcher.operatorTablet.material.opacity).toBeGreaterThan(0.38);
+    expect(launcher.calibrationBeams).toEqual([]);
+    expect(launcher.operatorTablet).toBeNull();
 
     updateShooterModel(launcher, {
       phase: "live",
@@ -159,7 +157,6 @@ describe("procedural 3D assets", () => {
     });
 
     expect(launcher.controlScreen.material.opacity).toBeGreaterThan(cueScreenOpacity);
-    expect(launcher.calibrationBeams[0].material.opacity).toBeLessThanOrEqual(0.55);
     expect(launcher.statusLeds.some((led) => led.material.opacity > 0.8)).toBe(true);
     expect(launcher.safetyGuards[0].rotation.y).not.toBe(0);
   });
@@ -420,17 +417,17 @@ describe("procedural 3D assets", () => {
     expect(collectByName(field, /^field-goalmouth-depth-shadow-/)).toHaveLength(2);
   });
 
-  it("adds stadium dressing and lighting props so the scene no longer reads as a bare prototype", () => {
+  it("keeps the distant stadium quiet and removes unrelated sideline props", () => {
     const field = createFieldGroup();
 
     expect(field.userData.assetSystem).toBe("stylized-reusable-matchday-kit");
-    expect(field.userData.stadiumDressingSystem).toBe("crowd-scoreboard-flags-matchday-dressing");
+    expect(field.userData.stadiumDressingSystem).toBe("quiet-crowd-scoreboard-training-backdrop");
     expect(collectByName(field, /^stadium-stand-/).length).toBeGreaterThanOrEqual(5);
     expect(collectByName(field, /^stadium-crowd-row-/).length).toBeGreaterThanOrEqual(5);
     expect(collectByName(field, /^stadium-scoreboard-/).length).toBeGreaterThanOrEqual(3);
-    expect(collectByName(field, /^stadium-corner-flag-/).length).toBeGreaterThanOrEqual(2);
-    expect(collectByName(field, /^stadium-ad-board-/).length).toBeGreaterThanOrEqual(6);
-    expect(collectByName(field, /^stadium-floodlight-/).length).toBeGreaterThanOrEqual(4);
+    expect(collectByName(field, /^stadium-corner-flag-/)).toHaveLength(0);
+    expect(collectByName(field, /^stadium-ad-board-/)).toHaveLength(0);
+    expect(collectByName(field, /^stadium-floodlight-head-/)).toHaveLength(2);
     expect(collectByName(field, /^field-goalmouth-wear-/)).toHaveLength(0);
   });
 
@@ -442,10 +439,10 @@ describe("procedural 3D assets", () => {
     const glareRings = collectByName(field, /^stadium-floodlight-glare-ring-/);
 
     expect(field.userData.stadiumLightingFinishSystem).toBe("floodlight-lens-and-glare-halo-kit");
-    expect(heads).toHaveLength(4);
-    expect(lensCells).toHaveLength(16);
-    expect(glareCores).toHaveLength(4);
-    expect(glareRings).toHaveLength(4);
+    expect(heads).toHaveLength(2);
+    expect(lensCells).toHaveLength(8);
+    expect(glareCores).toHaveLength(2);
+    expect(glareRings).toHaveLength(2);
     expect(lensCells.every((cell) => cell.material.transparent && cell.material.opacity <= 0.92)).toBe(true);
     expect(glareCores.every((glare) => glare.material.transparent && glare.material.opacity <= 0.34)).toBe(true);
     expect(glareRings.every((ring) => ring.material.transparent && ring.material.opacity <= 0.2)).toBe(true);
@@ -478,33 +475,33 @@ describe("procedural 3D assets", () => {
     expect(football.userData.polishSystem).toBe(profile.system);
   });
 
-  it("adds broadcast edge dressing, safety pads, and volumetric light props without blocking play", () => {
+  it("builds symmetric padded side rails that contain stray balls without decorating the shot lane", () => {
     const field = createFieldGroup();
 
-    expect(field.userData.broadcastDressingSystem).toBe("sideline-camera-light-and-safety-pad-kit");
-    expect(collectByName(field, /^broadcast-camera-pod-(left|right)$/)).toHaveLength(2);
-    expect(collectByName(field, /^broadcast-sideline-safety-pad-/).length).toBeGreaterThanOrEqual(4);
-    expect(collectByName(field, /^stadium-light-cone-/).length).toBeGreaterThanOrEqual(4);
-    expect(collectByName(field, /^stadium-depth-vignette-/)).toHaveLength(2);
-
-    const lightCones = collectByName(field, /^stadium-light-cone-/);
-    const depthVignettes = collectByName(field, /^stadium-depth-vignette-/);
-    expect(lightCones.every((cone) => cone.material.transparent && cone.material.opacity <= 0.006)).toBe(true);
-    expect(depthVignettes.every((vignette) => vignette.material.transparent && vignette.material.opacity <= 0.02)).toBe(true);
-    expect(lightCones.every((cone) => cone.position.z < 0)).toBe(true);
+    const barriers = collectByName(field, /^training-lane-safety-barrier-(left|right)-segment-/);
+    const padding = collectByName(field, /^training-lane-impact-pad-(left|right)-segment-/);
+    expect(field.userData.trainingLaneSystem).toBe("cohesive-goalkeeper-training-lane");
+    expect(field.userData.sideSafetySystem).toBe("stray-ball-containment-padded-rails");
+    expect(barriers).toHaveLength(8);
+    expect(padding).toHaveLength(8);
+    expect(barriers.every((barrier) => barrier.userData.visualPurpose === "contain-stray-balls-and-protect-equipment")).toBe(true);
+    expect(collectByName(field, /^broadcast-camera-pod-/)).toHaveLength(0);
+    expect(collectByName(field, /^broadcast-sideline-safety-pad-/)).toHaveLength(0);
+    expect(collectByName(field, /^stadium-light-cone-/)).toHaveLength(0);
+    expect(collectByName(field, /^stadium-depth-vignette-/)).toHaveLength(0);
   });
 
-  it("adds a finished training-ground identity layer without bringing back grass clutter", () => {
+  it("organizes the launcher area into a service pad, ball rack, and control station", () => {
     const field = createFieldGroup();
 
-    expect(field.userData.trainingFacilitySystem).toBe("professional-keeper-training-ground-kit");
-    expect(collectByName(field, /^training-ground-tunnel-/).length).toBeGreaterThanOrEqual(3);
-    expect(collectByName(field, /^training-ground-equipment-cart$/)).toHaveLength(1);
-    expect(collectByName(field, /^training-ground-spare-ball-/)).toHaveLength(5);
-    expect(collectByName(field, /^training-ground-coach-bench-/).length).toBeGreaterThanOrEqual(3);
-    expect(collectByName(field, /^training-ground-hydration-cooler$/)).toHaveLength(1);
-    expect(collectByName(field, /^training-ground-tactic-board$/)).toHaveLength(1);
-    expect(collectByName(field, /^training-ground-identity-banner-/).length).toBeGreaterThanOrEqual(2);
+    expect(field.userData.trainingFacilitySystem).toBe("purpose-built-launcher-service-zone");
+    expect(collectByName(field, /^training-lane-launcher-service-pad$/)).toHaveLength(1);
+    expect(collectByName(field, /^training-lane-ball-rack$/)).toHaveLength(1);
+    expect(collectByName(field, /^training-lane-rack-ball-/)).toHaveLength(4);
+    expect(collectByName(field, /^training-lane-control-cabinet$/)).toHaveLength(1);
+    expect(collectByName(field, /^training-lane-control-display$/)).toHaveLength(1);
+    expect(collectByName(field, /^training-lane-safety-bollard-\d+$/)).toHaveLength(2);
+    expect(collectByName(field, /^training-ground-(tunnel|equipment-cart|coach-bench|hydration-cooler|tactic-board|identity-banner)/)).toHaveLength(0);
     expect(collectByName(field, /grass|tuft|blade|turf|mowing/)).toHaveLength(0);
   });
 
@@ -918,10 +915,10 @@ describe("procedural 3D assets", () => {
     expect(collectByName(goal.group, /^goal-net-bottom-soil-smudge-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-net-peg-shadow-/)).toHaveLength(0);
 
-    expect(launcher.group.userData.matchUseDetailSystem).toBe("launcher-ground-contact-wear-layer");
+    expect(launcher.group.userData.matchUseDetailSystem).toBe("clean-launcher-contact-shadow-layer");
     expect(collectByName(launcher.group, /^launcher-wheel-tread-shadow-/)).toHaveLength(2);
     expect(collectByName(launcher.group, /^launcher-service-mat$/)).toHaveLength(1);
-    expect(collectByName(launcher.group, /^launcher-footprint-scuff-/).length).toBeGreaterThanOrEqual(4);
+    expect(collectByName(launcher.group, /^launcher-footprint-scuff-/)).toHaveLength(0);
   });
 
   it("uses reusable rounded-box geometry on near-field props instead of hard prototype cubes", () => {
@@ -934,11 +931,11 @@ describe("procedural 3D assets", () => {
     expect(launcher.group.userData.geometryPolishSystem).toBe("three-rounded-box-beveled-prop-kit");
 
     const roundedFieldProps = [
-      ...collectByName(field, /^stadium-ad-board-/),
-      ...collectByName(field, /^broadcast-sideline-safety-pad-/),
-      ...collectByName(field, /^training-ground-equipment-cart-base$/),
-      ...collectByName(field, /^training-ground-coach-bench-(seat|back)$/),
-      ...collectByName(field, /^training-ground-hydration-cooler(-lid)?$/),
+      ...collectByName(field, /^training-lane-safety-barrier-/),
+      ...collectByName(field, /^training-lane-impact-pad-/),
+      ...collectByName(field, /^training-lane-launcher-service-pad$/),
+      ...collectByName(field, /^training-lane-ball-rack-base$/),
+      ...collectByName(field, /^training-lane-control-cabinet$/),
     ];
     const roundedGoalProps = [
       ...collectByName(goal.group, /^goal-brand-trim-/),

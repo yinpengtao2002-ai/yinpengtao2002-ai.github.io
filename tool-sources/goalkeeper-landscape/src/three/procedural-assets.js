@@ -862,13 +862,15 @@ export function createFieldGroup() {
   group.userData.markingSystem = "clear-academy-court-no-pitch-stripes";
   group.userData.surfaceDetailSystem = "micro-speckled-polymer-floor-goalmouth-shadows";
   group.userData.surfaceFinishSystem = "micro-speckled-polymer-court-no-grass";
-  group.userData.stadiumDressingSystem = "crowd-scoreboard-flags-matchday-dressing";
-  group.userData.broadcastDressingSystem = "sideline-camera-light-and-safety-pad-kit";
+  group.userData.stadiumDressingSystem = "quiet-crowd-scoreboard-training-backdrop";
+  group.userData.broadcastDressingSystem = "purpose-built-training-lane-safety-system";
   group.userData.stadiumScoreboardSystem = STADIUM_SCOREBOARD_DISPLAY_SYSTEM;
   group.userData.stadiumLightingFinishSystem = "floodlight-lens-and-glare-halo-kit";
   group.userData.reusableAssetTechnique = "procedural-pbr-academy-court-kit";
   group.userData.matchUseDetailSystem = "plain-field-no-grass-clutter";
-  group.userData.trainingFacilitySystem = "professional-keeper-training-ground-kit";
+  group.userData.trainingFacilitySystem = "purpose-built-launcher-service-zone";
+  group.userData.trainingLaneSystem = "cohesive-goalkeeper-training-lane";
+  group.userData.sideSafetySystem = "stray-ball-containment-padded-rails";
   var surface = new THREE.Mesh(
     new THREE.PlaneGeometry(18, 52, 1, 1),
     createTrainingSurfaceMaterial(),
@@ -1223,6 +1225,199 @@ export function createFieldGroup() {
     banner.position.set(item[1], 1.36, -24.18);
     banner.material.opacity = 0.66;
     group.add(banner);
+  });
+
+  var retiredDecorationPatterns = [
+    /^stadium-corner-flag-/,
+    /^stadium-ad-board-/,
+    /^broadcast-camera-pod-/,
+    /^broadcast-sideline-safety-pad-/,
+    /^stadium-light-cone-/,
+    /^stadium-depth-vignette-/,
+    /^training-ground-tunnel-/,
+    /^training-ground-equipment-cart/,
+    /^training-ground-spare-ball-/,
+    /^training-ground-coach-bench-/,
+    /^training-ground-hydration-cooler/,
+    /^training-ground-tactic-board/,
+    /^training-ground-identity-banner-/,
+    /^stadium-floodlight-(mast|head|glare-core|glare-ring)-(left|right)-mid$/,
+    /^stadium-floodlight-lens-cell-(left|right)-mid-/,
+  ];
+  var retiredDecorations = [];
+  group.traverse(function collectRetiredDecoration(node) {
+    if (retiredDecorationPatterns.some((pattern) => pattern.test(node.name || ""))) {
+      retiredDecorations.push(node);
+    }
+  });
+  retiredDecorations.forEach(function removeRetiredDecoration(node) {
+    node.parent?.remove(node);
+  });
+  group.userData.retiredDecorationCount = retiredDecorations.length;
+
+  var laneFrameMaterial = new THREE.MeshStandardMaterial({
+    color: "#21383d",
+    roughness: 0.58,
+    metalness: 0.06,
+  });
+  var lanePadMaterial = new THREE.MeshStandardMaterial({
+    color: "#edf2ed",
+    roughness: 0.72,
+    metalness: 0.01,
+  });
+  var laneAccentMaterial = new THREE.MeshStandardMaterial({
+    color: "#e77932",
+    roughness: 0.54,
+    metalness: 0.02,
+  });
+  ["left", "right"].forEach(function addTrainingLaneBarrier(side) {
+    var sign = side === "left" ? -1 : 1;
+    [-1.8, -6.2, -10.6, -15].forEach(function addBarrierSegment(z, index) {
+      var barrier = makeBeveledBox(
+        "training-lane-safety-barrier-" + side + "-segment-" + index,
+        0.22,
+        0.42,
+        3.72,
+        0.075,
+        laneFrameMaterial.clone(),
+      );
+      barrier.position.set(sign * 7.02, 0.22, z);
+      barrier.userData.visualPurpose = "contain-stray-balls-and-protect-equipment";
+
+      var pad = makeBeveledBox(
+        "training-lane-impact-pad-" + side + "-segment-" + index,
+        0.12,
+        0.25,
+        2.86,
+        0.055,
+        lanePadMaterial.clone(),
+      );
+      pad.position.set(sign * 6.88, 0.27, z);
+      pad.userData.visualPurpose = "soften-ball-impact-and-unify-sideline";
+
+      var topRail = makeBeveledBox(
+        "training-lane-top-rail-" + side + "-segment-" + index,
+        0.25,
+        0.075,
+        3.78,
+        0.032,
+        lanePadMaterial.clone(),
+      );
+      topRail.position.set(sign * 7.02, 0.47, z);
+
+      var marker = makeBeveledBox(
+        "training-lane-safety-marker-" + side + "-segment-" + index,
+        0.14,
+        0.28,
+        0.18,
+        0.035,
+        laneAccentMaterial.clone(),
+      );
+      marker.position.set(sign * 6.86, 0.28, z + 1.36);
+      group.add(barrier, pad, topRail, marker);
+    });
+  });
+
+  var servicePad = makeBeveledBox(
+    "training-lane-launcher-service-pad",
+    5.4,
+    0.08,
+    2.9,
+    0.16,
+    laneFrameMaterial.clone(),
+    0,
+    0.015,
+    -19.1,
+  );
+  servicePad.userData.visualPurpose = "stabilize-launcher-and-organize-service-zone";
+  group.add(servicePad);
+
+  [-2.48, 2.48].forEach(function addServicePadEdge(x, index) {
+    var edge = makeBeveledBox(
+      "training-lane-service-pad-edge-" + index,
+      0.16,
+      0.035,
+      2.42,
+      0.03,
+      laneAccentMaterial.clone(),
+      x,
+      0.072,
+      -19.1,
+    );
+    group.add(edge);
+  });
+
+  var ballRack = new THREE.Group();
+  ballRack.name = "training-lane-ball-rack";
+  ballRack.position.set(-2.05, 0.16, -19.05);
+  ballRack.userData.visualPurpose = "store-ready-balls-for-continuous-drills";
+  var rackBase = makeBeveledBox(
+    "training-lane-ball-rack-base",
+    1.05,
+    0.18,
+    0.58,
+    0.075,
+    laneFrameMaterial.clone(),
+  );
+  rackBase.position.y = 0.12;
+  ballRack.add(rackBase);
+  [-0.46, 0.46].forEach(function addRackUpright(x, index) {
+    var upright = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.72, 12), lanePadMaterial.clone());
+    upright.name = "training-lane-ball-rack-upright-" + index;
+    upright.position.set(x, 0.48, 0);
+    ballRack.add(upright);
+  });
+  var rackBallMaterial = createFootballMaterial();
+  [
+    [-0.3, 0.37, 0],
+    [0, 0.37, 0],
+    [0.3, 0.37, 0],
+    [0, 0.64, 0],
+  ].forEach(function addRackBall(position, index) {
+    var ball = new THREE.Mesh(new THREE.SphereGeometry(0.125, 24, 18), rackBallMaterial.clone());
+    ball.name = "training-lane-rack-ball-" + index;
+    ball.position.set(position[0], position[1], position[2]);
+    ball.rotation.set(index * 0.42, index * 0.68, 0);
+    ballRack.add(ball);
+  });
+  group.add(ballRack);
+
+  var controlCabinet = makeBeveledBox(
+    "training-lane-control-cabinet",
+    0.86,
+    1.08,
+    0.58,
+    0.11,
+    laneFrameMaterial.clone(),
+    2.02,
+    0.58,
+    -19.18,
+  );
+  controlCabinet.userData.visualPurpose = "control-shot-speed-spin-and-drill-mode";
+  var controlDisplay = makeBeveledBox(
+    "training-lane-control-display",
+    0.58,
+    0.35,
+    0.035,
+    0.045,
+    new THREE.MeshBasicMaterial({ color: "#a8d6cf", toneMapped: false }),
+    2.02,
+    0.72,
+    -18.87,
+  );
+  controlDisplay.userData.visualPurpose = "show-launcher-status-and-current-drill";
+  group.add(controlCabinet, controlDisplay);
+
+  [-2.86, 2.86].forEach(function addSafetyBollard(x, index) {
+    var bollard = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.64, 14), lanePadMaterial.clone());
+    bollard.name = "training-lane-safety-bollard-" + index;
+    bollard.position.set(x, 0.33, -17.78);
+    bollard.userData.visualPurpose = "mark-no-entry-zone-around-launcher";
+    var band = new THREE.Mesh(new THREE.CylinderGeometry(0.076, 0.076, 0.12, 14), laneAccentMaterial.clone());
+    band.name = "training-lane-safety-bollard-band-" + index;
+    band.position.y = 0.12;
+    bollard.add(band);
+    group.add(bollard);
   });
 
   return group;
@@ -2870,17 +3065,18 @@ export function setLimb(mesh, start, end) {
 
 export function createShooterModel() {
   var group = new THREE.Group();
-  group.userData.visualStyle = "polished-ball-launcher";
+  group.userData.visualStyle = "cohesive-autonomous-ball-launcher";
+  group.userData.visualPurpose = "feed-aim-launch-without-operator-clutter";
   group.userData.geometryPolishSystem = ROUNDED_BOX_BEVELED_PROP_SYSTEM;
   group.userData.launcherStationSystem = "animated-launch-bay-with-ball-feed";
-  group.userData.launcherRigSystem = "pro-matchday-machine-rig";
+  group.userData.launcherRigSystem = "guarded-feed-aim-launch-rig";
   group.userData.launcherMechanismSystem = "hydraulic-recoil-aiming-cradle";
   group.userData.launcherReleaseFeedbackSystem = "recoil-exhaust-floor-shock-kit";
   group.userData.launcherFeedSystem = "indexed-rotary-ball-feed-servo";
   group.userData.launcherMaterialSystem = LAUNCHER_PBR_MATERIAL_SYSTEM;
   group.userData.launcherDecalSystem = LAUNCHER_DECAL_SYSTEM;
   group.userData.launcherReadabilitySystem = LAUNCHER_DISTANCE_CLARITY_SYSTEM;
-  group.userData.matchUseDetailSystem = "launcher-ground-contact-wear-layer";
+  group.userData.matchUseDetailSystem = "clean-launcher-contact-shadow-layer";
   group.position.set(
     LAUNCHER_GEOMETRY.basePosition.x,
     LAUNCHER_GEOMETRY.basePosition.y,
@@ -2898,9 +3094,9 @@ export function createShooterModel() {
   applyLauncherMaterialMaps(barrelMat, "gunmetal", 0.011);
   applyLauncherMaterialMaps(wheelMat, "rubber", 0.013);
   applyLauncherMaterialMaps(tireGrooveMat, "rubber", 0.011);
-  var accentMat = new THREE.MeshBasicMaterial({ color: "#61f0ff", transparent: true, opacity: 0.86 });
-  var orangeAccentMat = new THREE.MeshBasicMaterial({ color: "#ff8b3d", transparent: true, opacity: 0.9 });
-  var ballMat = new THREE.MeshStandardMaterial({ color: "#f8f5e8", roughness: 0.42, metalness: 0.01 });
+  var accentMat = new THREE.MeshBasicMaterial({ color: "#a8d6cf", transparent: true, opacity: 0.72 });
+  var orangeAccentMat = new THREE.MeshBasicMaterial({ color: "#e77932", transparent: true, opacity: 0.82 });
+  var ballMat = createFootballMaterial();
   var shadowMat = new THREE.MeshBasicMaterial({ color: "#1b252b", transparent: true, opacity: 0.2, depthWrite: false });
   var laneMat = new THREE.MeshBasicMaterial({ color: "#f8fff0", transparent: true, opacity: 0.18, depthWrite: false });
   var cableMat = new THREE.LineBasicMaterial({ color: "#20323a", transparent: true, opacity: 0.68 });
@@ -2942,21 +3138,22 @@ export function createShooterModel() {
     side: THREE.DoubleSide,
   });
   var readabilityFrameMaterial = new THREE.MeshStandardMaterial({
-    color: "#ff9a52",
-    emissive: "#6e2108",
-    emissiveIntensity: 0.24,
-    roughness: 0.36,
-    metalness: 0.05,
+    color: "#edf2ed",
+    emissive: "#263b3d",
+    emissiveIntensity: 0.08,
+    roughness: 0.48,
+    metalness: 0.04,
   });
   var readabilityFrame = [
     ["left", { x: -0.5, y: 0.28, z: -0.04 }, { x: -0.54, y: 1.76, z: -0.08 }],
     ["right", { x: 0.5, y: 0.28, z: -0.04 }, { x: 0.54, y: 1.76, z: -0.08 }],
     ["top", { x: -0.54, y: 1.76, z: -0.08 }, { x: 0.54, y: 1.76, z: -0.08 }],
   ].map(function createReadabilityFramePart(item) {
-    var part = makeLimb("#ff9a52", 0.024);
-    part.name = "launcher-readability-frame-" + item[0];
+    var part = makeLimb("#edf2ed", 0.028);
+    part.name = "launcher-protective-roll-frame-" + item[0];
     part.material = readabilityFrameMaterial.clone();
     part.userData.launcherReadabilitySystem = LAUNCHER_DISTANCE_CLARITY_SYSTEM;
+    part.userData.visualPurpose = "protect-launcher-and-clarify-silhouette";
     setLimb(part, item[1], item[2]);
     return part;
   });
@@ -3460,6 +3657,28 @@ export function createShooterModel() {
   ];
   group.add(...decals);
 
+  var retiredLauncherPatterns = [
+    /^launcher-aim-rail-/,
+    /^launcher-lane-chevron-/,
+    /^launcher-cable-/,
+    /^launcher-calibration-beam-/,
+    /^launcher-ground-anchor-/,
+    /^launcher-pressure-hose-/,
+    /^launcher-service-panel-screw-/,
+    /^launcher-operator-/,
+    /^launcher-footprint-scuff-/,
+  ];
+  var retiredLauncherDetails = [];
+  group.traverse(function collectRetiredLauncherDetail(node) {
+    if (retiredLauncherPatterns.some((pattern) => pattern.test(node.name || ""))) {
+      retiredLauncherDetails.push(node);
+    }
+  });
+  retiredLauncherDetails.forEach(function removeRetiredLauncherDetail(node) {
+    node.parent?.remove(node);
+  });
+  group.userData.retiredLauncherDetailCount = retiredLauncherDetails.length;
+
   return {
     group,
     body,
@@ -3480,8 +3699,8 @@ export function createShooterModel() {
     feedIndexMarkers,
     feedBall,
     queueBalls,
-    laneChevrons,
-    aimRails: [aimRailLeft, aimRailRight],
+    laneChevrons: [],
+    aimRails: [],
     kickPad,
     chargeRing,
     muzzleFlash,
@@ -3492,9 +3711,9 @@ export function createShooterModel() {
     powerLight,
     controlScreen,
     statusLeds,
-    calibrationBeams,
+    calibrationBeams: [],
     safetyGuards,
-    operatorTablet,
+    operatorTablet: null,
     shadow,
     decals,
     readabilityFrame,
