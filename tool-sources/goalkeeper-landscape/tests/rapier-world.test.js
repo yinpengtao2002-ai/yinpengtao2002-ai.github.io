@@ -262,7 +262,7 @@ describe("Rapier goalkeeper world", () => {
     world.dispose();
   });
 
-  it("credits visible glove brushes instead of converting them into late goals", async () => {
+  it("counts a light glove brush as a goal when the whole ball still crosses the line", async () => {
     const world = await createRapierGoalkeeperWorld();
 
     world.setGloveTarget({ x: 0.74, y: 1.25, z: 3.15 });
@@ -276,19 +276,26 @@ describe("Rapier goalkeeper world", () => {
       radius: 0.11,
     });
 
+    let gloveEventId = null;
     for (let i = 0; i < 28; i += 1) {
       world.step(1 / 120);
+      const frame = world.getBallState();
+      if (frame.lastContact?.type === "glove") gloveEventId = frame.lastContact.eventId;
     }
     const ball = world.getBallState();
 
-    expect(ball.outcome).toBe("saved");
-    expect(ball.lastContact?.type).toBe("glove");
-    expect(ball.lastContact?.saveResolution).toBe("glove-contact-before-net");
+    expect(gloveEventId).toBeTypeOf("number");
+    expect(ball.outcome).toBe("goal");
+    expect(ball.lastContact).toMatchObject({
+      type: "net",
+      sourceContactEventId: gloveEventId,
+      reason: "deflection-crossed-goal-line",
+    });
 
     world.dispose();
   });
 
-  it("does not overwrite a credited glove parry with a later net goal", async () => {
+  it("does not credit a parry until the deflected ball is safely away from goal", async () => {
     const world = await createRapierGoalkeeperWorld();
 
     world.setGloveTarget({ x: 0.38, y: 1.25, z: 3.15 });
@@ -313,22 +320,20 @@ describe("Rapier goalkeeper world", () => {
     }
     const ball = world.getBallState();
 
-    expect(ball.outcome).toBe("saved");
-    expect(ball.lastContact?.type).toBe("glove");
+    expect(ball.outcome).toBe("goal");
+    expect(ball.lastContact).toMatchObject({
+      type: "net",
+      sourceContactEventId: parry.lastContact.eventId,
+      reason: "deflection-crossed-goal-line",
+    });
     expect(ball.live).toBe(false);
 
-    const gloveEventId = ball.lastContact.eventId;
     for (let i = 0; i < 48; i += 1) {
       world.step(1 / 120);
     }
-    const nettedSave = world.getBallState();
-    expect(nettedSave.outcome).toBe("saved");
-    expect(nettedSave.lastContact?.eventId).toBe(gloveEventId);
-    expect(nettedSave.netContact).toMatchObject({
-      type: "net",
-      sourceContactEventId: gloveEventId,
-    });
-    expect(nettedSave.velocity.z).toBeLessThanOrEqual(0);
+    const nettedGoal = world.getBallState();
+    expect(nettedGoal.outcome).toBe("goal");
+    expect(nettedGoal.netContact?.type).toBe("net");
 
     world.dispose();
   });

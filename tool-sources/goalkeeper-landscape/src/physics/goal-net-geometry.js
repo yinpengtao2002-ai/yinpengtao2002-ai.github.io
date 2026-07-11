@@ -2,10 +2,11 @@ import { SHOT_3D } from "../game/shot-3d-director.js";
 
 export const GOAL_NET_GEOMETRY = {
   halfWidth: SHOT_3D.goalHalfWidth,
+  rearHalfWidth: 3.3,
   height: SHOT_3D.goalHeight,
   netPlaneZ: SHOT_3D.netPlaneZ,
   rearHeight: 2.24,
-  cageDepth: 1.78,
+  cageDepth: 0.92,
   frameRadius: 0.06,
   netSlack: 0.12,
   shellOffsetZ: 0.022,
@@ -40,10 +41,10 @@ export const GOAL_CAGE_POINTS = Object.freeze({
   frontTopLeft: point(-GOAL_NET_GEOMETRY.halfWidth, GOAL_NET_GEOMETRY.height, GOAL_NET_GEOMETRY.netPlaneZ),
   frontTopRight: point(GOAL_NET_GEOMETRY.halfWidth, GOAL_NET_GEOMETRY.height, GOAL_NET_GEOMETRY.netPlaneZ),
   frontBottomRight: point(GOAL_NET_GEOMETRY.halfWidth, 0, GOAL_NET_GEOMETRY.netPlaneZ),
-  rearBottomLeft: point(-GOAL_NET_GEOMETRY.halfWidth, 0, rearZ),
-  rearTopLeft: point(-GOAL_NET_GEOMETRY.halfWidth, GOAL_NET_GEOMETRY.rearHeight, rearZ),
-  rearTopRight: point(GOAL_NET_GEOMETRY.halfWidth, GOAL_NET_GEOMETRY.rearHeight, rearZ),
-  rearBottomRight: point(GOAL_NET_GEOMETRY.halfWidth, 0, rearZ),
+  rearBottomLeft: point(-GOAL_NET_GEOMETRY.rearHalfWidth, 0, rearZ),
+  rearTopLeft: point(-GOAL_NET_GEOMETRY.rearHalfWidth, GOAL_NET_GEOMETRY.rearHeight, rearZ),
+  rearTopRight: point(GOAL_NET_GEOMETRY.rearHalfWidth, GOAL_NET_GEOMETRY.rearHeight, rearZ),
+  rearBottomRight: point(GOAL_NET_GEOMETRY.rearHalfWidth, 0, rearZ),
 });
 
 function segment(name, startName, endName) {
@@ -91,8 +92,18 @@ export function getGoalRoofHeightAtZ(z) {
     (GOAL_NET_GEOMETRY.rearHeight - GOAL_NET_GEOMETRY.height) * depth;
 }
 
+export function getGoalSideHalfWidthAtZ(z) {
+  var depth = clamp(
+    (z - GOAL_NET_GEOMETRY.netPlaneZ) / GOAL_NET_GEOMETRY.cageDepth,
+    0,
+    1,
+  );
+  return GOAL_NET_GEOMETRY.halfWidth +
+    (GOAL_NET_GEOMETRY.rearHalfWidth - GOAL_NET_GEOMETRY.halfWidth) * depth;
+}
+
 export function getGoalNetPocketVertex(localX, localY) {
-  var halfWidth = GOAL_NET_GEOMETRY.halfWidth;
+  var halfWidth = GOAL_NET_GEOMETRY.rearHalfWidth;
   var height = GOAL_NET_GEOMETRY.rearHeight;
   var normalizedX = Math.min(1, Math.abs(localX) / halfWidth);
   var normalizedY = Math.min(1, Math.max(0, localY / height + 0.5));
@@ -118,7 +129,7 @@ export function getGoalNetPocketVertex(localX, localY) {
 }
 
 export function getGoalNetSurfacePoint(position) {
-  var safeX = clamp(position?.x || 0, -GOAL_NET_GEOMETRY.halfWidth, GOAL_NET_GEOMETRY.halfWidth);
+  var safeX = clamp(position?.x || 0, -GOAL_NET_GEOMETRY.rearHalfWidth, GOAL_NET_GEOMETRY.rearHalfWidth);
   var safeY = clamp(position?.y || 0, 0, GOAL_NET_GEOMETRY.rearHeight);
   var vertex = getGoalNetPocketVertex(safeX, safeY - GOAL_NET_GEOMETRY.rearHeight * 0.5);
   return {
@@ -173,7 +184,7 @@ function getNetCollisionCandidates(previousPosition, position, velocity, radius)
   var candidates = [];
   var frontZ = GOAL_NET_GEOMETRY.netPlaneZ;
   var rearZ = GOAL_CAGE_POINTS.rearBottomLeft.z;
-  var halfWidth = GOAL_NET_GEOMETRY.halfWidth;
+  var rearHalfWidth = GOAL_NET_GEOMETRY.rearHalfWidth;
 
   function addCandidate(panel, previousDistance, currentDistance, validPoint) {
     var t = crossingTime(previousDistance, currentDistance);
@@ -190,7 +201,7 @@ function getNetCollisionCandidates(previousPosition, position, velocity, radius)
       "rear",
       previousRearSurface - (previousPosition.z + radius),
       currentRearSurface - (position.z + radius),
-      (point) => Math.abs(point.x) <= halfWidth + radius * 0.2 &&
+      (point) => Math.abs(point.x) <= rearHalfWidth + radius * 0.2 &&
         point.y >= 0 && point.y <= GOAL_NET_GEOMETRY.rearHeight + radius * 0.2,
     );
   }
@@ -198,8 +209,8 @@ function getNetCollisionCandidates(previousPosition, position, velocity, radius)
   if ((velocity.x || 0) < -0.02) {
     addCandidate(
       "left",
-      previousPosition.x - radius + halfWidth,
-      position.x - radius + halfWidth,
+      previousPosition.x - radius + getGoalSideHalfWidthAtZ(previousPosition.z),
+      position.x - radius + getGoalSideHalfWidthAtZ(position.z),
       (point) => point.z >= frontZ - radius * 0.2 &&
         point.z <= rearZ + radius * 0.2 && isInsidePanelHeight(point, radius),
     );
@@ -208,8 +219,8 @@ function getNetCollisionCandidates(previousPosition, position, velocity, radius)
   if ((velocity.x || 0) > 0.02) {
     addCandidate(
       "right",
-      halfWidth - (previousPosition.x + radius),
-      halfWidth - (position.x + radius),
+      getGoalSideHalfWidthAtZ(previousPosition.z) - (previousPosition.x + radius),
+      getGoalSideHalfWidthAtZ(position.z) - (position.x + radius),
       (point) => point.z >= frontZ - radius * 0.2 &&
         point.z <= rearZ + radius * 0.2 && isInsidePanelHeight(point, radius),
     );
@@ -223,7 +234,7 @@ function getNetCollisionCandidates(previousPosition, position, velocity, radius)
       previousRoofDistance,
       currentRoofDistance,
       (point) => point.z >= frontZ - radius * 0.2 && point.z <= rearZ + radius * 0.2 &&
-        Math.abs(point.x) <= halfWidth + radius * 0.2,
+        Math.abs(point.x) <= getGoalSideHalfWidthAtZ(point.z) + radius * 0.2,
     );
   }
 
@@ -256,9 +267,9 @@ function clampBallToPanel(panel, position, radius) {
   if (panel === "rear") {
     position.z = getGoalNetSurfacePoint(position).z - inset;
   } else if (panel === "left") {
-    position.x = -GOAL_NET_GEOMETRY.halfWidth + inset;
+    position.x = -getGoalSideHalfWidthAtZ(position.z) + inset;
   } else if (panel === "right") {
-    position.x = GOAL_NET_GEOMETRY.halfWidth - inset;
+    position.x = getGoalSideHalfWidthAtZ(position.z) - inset;
   } else {
     position.y = getGoalRoofHeightAtZ(position.z) - inset;
   }
@@ -269,7 +280,7 @@ function getPanelContactPoint(panel, position) {
   if (panel === "rear") return getGoalNetSurfacePoint(position);
   if (panel === "left" || panel === "right") {
     return {
-      x: panel === "left" ? -GOAL_NET_GEOMETRY.halfWidth : GOAL_NET_GEOMETRY.halfWidth,
+      x: (panel === "left" ? -1 : 1) * getGoalSideHalfWidthAtZ(position.z),
       y: position.y,
       z: position.z,
     };

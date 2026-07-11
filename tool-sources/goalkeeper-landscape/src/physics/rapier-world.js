@@ -548,11 +548,27 @@ class RapierGoalkeeperWorld {
     var crossedNet = goalLineCrossing && isBallCenterInsideGoalMouth(goalLineCrossing);
 
     if (this.outcome === "deflected" && crossedNet) {
-      this.outcome = "saved";
+      var gloveContact = this.lastContact;
       this.deflectionAge = null;
+
+      if (!isWholeBallInsideGoalMouth(goalLineCrossing, this.ballRadius)) {
+        this.outcome = "saved";
+        this.lastContact = {
+          ...(gloveContact || {}),
+          saveResolution: "glove-deflected-outside-goal-mouth",
+        };
+        return;
+      }
+
+      this.outcome = "goal";
       this.lastContact = {
-        ...(this.lastContact || {}),
-        saveResolution: "glove-contact-before-net",
+        eventId: this.nextContactEventId(),
+        type: "net",
+        point: goalLineCrossing,
+        strength: Math.abs(velocity.z),
+        sourceContactEventId: gloveContact?.eventId ?? null,
+        sourceContactType: gloveContact?.type ?? null,
+        reason: "deflection-crossed-goal-line",
       };
       return;
     }

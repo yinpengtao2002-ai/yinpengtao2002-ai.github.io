@@ -563,3 +563,29 @@ final result: passed
 - Mobile canvas screenshots were nonblank with over 3,000 downsampled colors each.
 
 Final result: passed
+
+## 2026-07-11 Glove-Brush Goal Adjudication QA
+
+**Root Cause**
+- The outcome resolver treated every glove deflection followed by a goal-line crossing as a save, even when the whole ball continued into the goal.
+
+**Fix And Verification**
+- A deflected ball is now credited as a save only after it travels safely away, exits the goal mouth, or is caught.
+- A lightly brushed ball that still crosses the line completely is recorded as a goal and retains the originating glove-contact event ID for traceability.
+- Two real Rapier trajectories cover light visual-pocket contact and a forward parry that still enters the net.
+
+Final result: passed
+
+## 2026-07-11 Rear-Frame Perspective Restraint QA
+
+**Scope**
+- Reduced the return-frame depth from `1.78m` to `0.92m` and tapered the rear half-width to `3.30m`.
+- Kept the legal front opening at `7.32m` wide and preserved the existing camera.
+- Matched side-net collision boundaries to the tapered visible net.
+
+**Verification**
+- Under the landscape camera, the rear-frame projection is `1.12x` the front-frame width, down from roughly `1.60x`.
+- `1440 x 900` and `844 x 390` passed visual inspection with only a restrained rear-frame overhang.
+- Live play started with sound ready, no viewport overflow, and no browser console errors.
+
+Final result: passed

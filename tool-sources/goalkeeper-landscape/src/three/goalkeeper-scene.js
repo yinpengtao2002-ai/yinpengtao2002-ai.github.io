@@ -1661,7 +1661,7 @@ export function getDynamicNetDetailMotionPlan(detail, pulse, contactPoint, tunin
 
 export function getNetPocketVertexDepthOffset(baseX, baseY, plan) {
   var boundaryEpsilon = 0.0001;
-  var onSideEdge = Math.abs(baseX) >= GOAL_NET_GEOMETRY.halfWidth - boundaryEpsilon;
+  var onSideEdge = Math.abs(baseX) >= GOAL_NET_GEOMETRY.rearHalfWidth - boundaryEpsilon;
   var onHorizontalEdge = Math.abs(baseY) >= GOAL_NET_GEOMETRY.rearHeight * 0.5 - boundaryEpsilon;
   if (onSideEdge || onHorizontalEdge || !plan?.point) return 0;
 

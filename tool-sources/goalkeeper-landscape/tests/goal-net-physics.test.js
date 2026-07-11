@@ -8,6 +8,7 @@ import {
   getGoalNetPocketVertex,
   getGoalNetSurfacePoint,
   getGoalRoofHeightAtZ,
+  getGoalSideHalfWidthAtZ,
   resolveGoalNetCollision,
 } from "../src/physics/goal-net-geometry.js";
 
@@ -23,25 +24,43 @@ function makeNetCollisionState(overrides = {}) {
   };
 }
 
+function desiredSideHalfWidthAtZ(z) {
+  const depth = Math.max(0, Math.min(1, (z - GOAL_NET_GEOMETRY.netPlaneZ) / 0.92));
+  return GOAL_NET_GEOMETRY.halfWidth + (3.3 - GOAL_NET_GEOMETRY.halfWidth) * depth;
+}
+
 describe("shared physical goal net", () => {
   it("defines a compact freestanding training goal with a gently sloped roof", () => {
     const rearZ = GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth;
 
     expect(GOAL_NET_GEOMETRY.rearHeight).toBe(2.24);
-    expect(GOAL_NET_GEOMETRY.cageDepth).toBe(1.78);
+    expect(GOAL_NET_GEOMETRY.cageDepth).toBe(0.92);
+    expect(GOAL_NET_GEOMETRY.rearHalfWidth).toBe(3.3);
     expect(GOAL_CAGE_POINTS.frontTopLeft).toEqual({
       x: -GOAL_NET_GEOMETRY.halfWidth,
       y: GOAL_NET_GEOMETRY.height,
       z: GOAL_NET_GEOMETRY.netPlaneZ,
     });
     expect(GOAL_CAGE_POINTS.rearTopLeft).toEqual({
-      x: -GOAL_NET_GEOMETRY.halfWidth,
+      x: -GOAL_NET_GEOMETRY.rearHalfWidth,
       y: GOAL_NET_GEOMETRY.rearHeight,
       z: rearZ,
     });
-    expect(GOAL_CAGE_POINTS.rearTopRight.x).toBe(GOAL_NET_GEOMETRY.halfWidth);
+    expect(GOAL_CAGE_POINTS.rearTopRight.x).toBe(GOAL_NET_GEOMETRY.rearHalfWidth);
     expect(getGoalRoofHeightAtZ(GOAL_NET_GEOMETRY.netPlaneZ)).toBe(GOAL_NET_GEOMETRY.height);
     expect(getGoalRoofHeightAtZ(rearZ)).toBe(GOAL_NET_GEOMETRY.rearHeight);
+  });
+
+  it("keeps the rear frame only slightly wider than the front frame on screen", () => {
+    const cameraZ = 9.35;
+    const frontDistance = cameraZ - GOAL_NET_GEOMETRY.netPlaneZ;
+    const rearDistance = cameraZ - GOAL_CAGE_POINTS.rearBottomLeft.z;
+    const projectedWidthRatio =
+      (GOAL_NET_GEOMETRY.rearHalfWidth / rearDistance) /
+      (GOAL_NET_GEOMETRY.halfWidth / frontDistance);
+
+    expect(projectedWidthRatio).toBeGreaterThanOrEqual(1.06);
+    expect(projectedWidthRatio).toBeLessThanOrEqual(1.15);
   });
 
   it("keeps rigid frame colliders on the legal front frame only", () => {
@@ -71,7 +90,7 @@ describe("shared physical goal net", () => {
   });
 
   it("keeps every rear net boundary vertex fixed to the shared rear frame", () => {
-    const halfWidth = GOAL_NET_GEOMETRY.halfWidth;
+    const halfWidth = GOAL_NET_GEOMETRY.rearHalfWidth;
     const halfHeight = GOAL_NET_GEOMETRY.rearHeight * 0.5;
     const rearDepth = GOAL_NET_GEOMETRY.cageDepth - GOAL_NET_GEOMETRY.shellOffsetZ;
 
@@ -108,6 +127,13 @@ describe("shared physical goal net", () => {
     );
   });
 
+  it("tapers the side-net boundary from the front posts to the narrower rear frame", () => {
+    expect(typeof getGoalSideHalfWidthAtZ).toBe("function");
+    if (typeof getGoalSideHalfWidthAtZ !== "function") return;
+    expect(getGoalSideHalfWidthAtZ(GOAL_NET_GEOMETRY.netPlaneZ)).toBe(GOAL_NET_GEOMETRY.halfWidth);
+    expect(getGoalSideHalfWidthAtZ(GOAL_CAGE_POINTS.rearBottomLeft.z)).toBe(GOAL_NET_GEOMETRY.rearHalfWidth);
+  });
+
   it.each([
     {
       panel: "rear",
@@ -118,28 +144,28 @@ describe("shared physical goal net", () => {
     {
       panel: "left",
       previousPosition: {
-        x: -GOAL_NET_GEOMETRY.halfWidth + 0.2,
+        x: -desiredSideHalfWidthAtZ(GOAL_NET_GEOMETRY.netPlaneZ + 0.7) + 0.2,
         y: 1,
-        z: GOAL_NET_GEOMETRY.netPlaneZ + 0.8,
+        z: GOAL_NET_GEOMETRY.netPlaneZ + 0.7,
       },
       position: {
-        x: -GOAL_NET_GEOMETRY.halfWidth - 0.04,
+        x: -desiredSideHalfWidthAtZ(GOAL_NET_GEOMETRY.netPlaneZ + 0.82) - 0.04,
         y: 1,
-        z: GOAL_NET_GEOMETRY.netPlaneZ + 1,
+        z: GOAL_NET_GEOMETRY.netPlaneZ + 0.82,
       },
       velocity: { x: -12, y: 0, z: 10 },
     },
     {
       panel: "right",
       previousPosition: {
-        x: GOAL_NET_GEOMETRY.halfWidth - 0.2,
+        x: desiredSideHalfWidthAtZ(GOAL_NET_GEOMETRY.netPlaneZ + 0.7) - 0.2,
         y: 1,
-        z: GOAL_NET_GEOMETRY.netPlaneZ + 0.8,
+        z: GOAL_NET_GEOMETRY.netPlaneZ + 0.7,
       },
       position: {
-        x: GOAL_NET_GEOMETRY.halfWidth + 0.04,
+        x: desiredSideHalfWidthAtZ(GOAL_NET_GEOMETRY.netPlaneZ + 0.82) + 0.04,
         y: 1,
-        z: GOAL_NET_GEOMETRY.netPlaneZ + 1,
+        z: GOAL_NET_GEOMETRY.netPlaneZ + 0.82,
       },
       velocity: { x: 12, y: 0, z: 10 },
     },
@@ -147,13 +173,13 @@ describe("shared physical goal net", () => {
       panel: "top",
       previousPosition: {
         x: 0,
-        y: getGoalRoofHeightAtZ(GOAL_NET_GEOMETRY.netPlaneZ + 1) - 0.2,
-        z: GOAL_NET_GEOMETRY.netPlaneZ + 0.9,
+        y: getGoalRoofHeightAtZ(GOAL_NET_GEOMETRY.netPlaneZ + 0.82) - 0.2,
+        z: GOAL_NET_GEOMETRY.netPlaneZ + 0.72,
       },
       position: {
         x: 0,
-        y: getGoalRoofHeightAtZ(GOAL_NET_GEOMETRY.netPlaneZ + 1) + 0.04,
-        z: GOAL_NET_GEOMETRY.netPlaneZ + 1,
+        y: getGoalRoofHeightAtZ(GOAL_NET_GEOMETRY.netPlaneZ + 0.82) + 0.04,
+        z: GOAL_NET_GEOMETRY.netPlaneZ + 0.82,
       },
       velocity: { x: 0, y: 12, z: 5 },
     },
@@ -170,16 +196,17 @@ describe("shared physical goal net", () => {
   });
 
   it("selects one panel and emits one contact when a ball reaches a net seam", () => {
-    const z = GOAL_NET_GEOMETRY.netPlaneZ + 1.3;
+    const z = GOAL_NET_GEOMETRY.netPlaneZ + 0.78;
     const roof = getGoalRoofHeightAtZ(z);
+    const sideHalfWidth = desiredSideHalfWidthAtZ(z);
     const first = resolveGoalNetCollision(makeNetCollisionState({
       previousPosition: {
-        x: GOAL_NET_GEOMETRY.halfWidth - 0.2,
+        x: sideHalfWidth - 0.2,
         y: roof - 0.2,
         z: z - 0.1,
       },
       position: {
-        x: GOAL_NET_GEOMETRY.halfWidth + 0.04,
+        x: sideHalfWidth + 0.04,
         y: roof + 0.04,
         z,
       },

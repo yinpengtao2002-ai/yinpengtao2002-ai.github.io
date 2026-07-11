@@ -11,6 +11,7 @@ import {
   GOAL_NET_GEOMETRY,
   getGoalNetPocketVertex,
   getGoalRoofHeightAtZ,
+  getGoalSideHalfWidthAtZ,
 } from "../physics/goal-net-geometry.js";
 import { RAPIER_GOAL } from "../physics/rapier-world.js";
 
@@ -289,7 +290,7 @@ function createSquareGoalNetAlphaTexture() {
 }
 
 function createContinuousNetPocketGeometry() {
-  var width = GOAL_NET_GEOMETRY.halfWidth * 2;
+  var width = GOAL_NET_GEOMETRY.rearHalfWidth * 2;
   var height = GOAL_NET_GEOMETRY.rearHeight;
   var geometry = new THREE.PlaneGeometry(
     width,
@@ -390,13 +391,14 @@ function createDetailedCageNetPanelGeometry(panel) {
       var x;
       var y;
       if (isTop) {
-        x = -GOAL_NET_GEOMETRY.halfWidth + u * GOAL_NET_GEOMETRY.halfWidth * 2;
         z = GOAL_NET_GEOMETRY.netPlaneZ + v * GOAL_NET_GEOMETRY.cageDepth;
+        var topHalfWidth = getGoalSideHalfWidthAtZ(z);
+        x = -topHalfWidth + u * topHalfWidth * 2;
         var edgeTension = Math.sin(Math.PI * u) * Math.sin(Math.PI * v);
         y = getGoalRoofHeightAtZ(z) - edgeTension * 0.065;
       } else {
         z = GOAL_NET_GEOMETRY.netPlaneZ + u * GOAL_NET_GEOMETRY.cageDepth;
-        x = sideSign * GOAL_NET_GEOMETRY.halfWidth;
+        x = sideSign * getGoalSideHalfWidthAtZ(z);
         var roofHeight = getGoalRoofHeightAtZ(z);
         var sideSlack = Math.sin(Math.PI * u) * Math.sin(Math.PI * v) * 0.028;
         y = Math.max(0, v * roofHeight - sideSlack);
@@ -1363,7 +1365,7 @@ export function createGoalAndNet() {
     side: THREE.DoubleSide,
     depthWrite: false,
   });
-  var net = new THREE.Mesh(new THREE.PlaneGeometry(RAPIER_GOAL.halfWidth * 2, GOAL_NET_GEOMETRY.rearHeight, 18, 8), netMaterial);
+  var net = new THREE.Mesh(new THREE.PlaneGeometry(GOAL_NET_GEOMETRY.rearHalfWidth * 2, GOAL_NET_GEOMETRY.rearHeight, 18, 8), netMaterial);
   net.name = "goal-net-back-panel";
   net.userData.deformationSystem = "localized-net-pocket-deformation";
   net.userData.anchoredPanel = true;

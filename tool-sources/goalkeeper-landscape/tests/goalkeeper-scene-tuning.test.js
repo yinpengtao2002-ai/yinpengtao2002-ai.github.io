@@ -930,11 +930,11 @@ describe("goalkeeper 3D scene tuning", () => {
   it("keeps the rear net boundary vertices fixed during localized pocket deformation", async () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
     const halfHeight = GOAL_NET_GEOMETRY.rearHeight * 0.5;
-    const impact = { point: { x: 3.5, y: 1.9 }, radius: 1, depth: 0.16 };
+    const impact = { point: { x: 3.1, y: 1.9 }, radius: 1, depth: 0.16 };
 
-    expect(sceneModule.getNetPocketVertexDepthOffset(3.66, halfHeight * 0.8, impact)).toBe(0);
-    expect(sceneModule.getNetPocketVertexDepthOffset(3.3, halfHeight, impact)).toBe(0);
-    expect(sceneModule.getNetPocketVertexDepthOffset(3.3, halfHeight * 0.8, impact)).toBeGreaterThan(0);
+    expect(sceneModule.getNetPocketVertexDepthOffset(GOAL_NET_GEOMETRY.rearHalfWidth, halfHeight * 0.8, impact)).toBe(0);
+    expect(sceneModule.getNetPocketVertexDepthOffset(3.1, halfHeight, impact)).toBe(0);
+    expect(sceneModule.getNetPocketVertexDepthOffset(3.1, halfHeight * 0.8, impact)).toBeGreaterThan(0);
   });
 
   it("plans a localized net pocket deformation around the ball impact", async () => {
