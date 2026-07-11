@@ -21,7 +21,11 @@ import {
 import { MAX_CONCEDED } from "../config/game-config.js";
 import { getContactEventSignature } from "../game/contact-event.js";
 import { SHOT_3D } from "../game/shot-3d-director.js";
-import { GOAL_NET_GEOMETRY } from "../physics/goal-net-geometry.js";
+import {
+  GOAL_NET_GEOMETRY,
+  getGoalRoofHeightAtZ,
+  getGoalSideHalfWidthAtZ,
+} from "../physics/goal-net-geometry.js";
 import { RAPIER_GOAL } from "../physics/rapier-world.js";
 
 export const POSTPROCESSING_ADDON_SOURCES = [
@@ -205,19 +209,23 @@ export const SCENE_TUNING = {
     saveContactShockwaveMaxOpacity: 0.3,
     saveContactShockwaveMaxRadius: 0.42,
     saveContactShockwaveDecay: 0.07,
-    netRippleLineCount: 5,
-    netRippleMaxOpacity: 0.34,
+    netRippleLineCount: 0,
+    netRippleMaxOpacity: 0,
     netRippleAssetSystem: "localized-net-ripple",
     netRippleContactRadius: 0.62,
     netRippleTravel: 0.075,
     netPocketAssetSystem: "localized-net-pocket-deformation",
-    netPocketPatchCount: 3,
-    netPocketMaxDepth: 0.28,
-    netPocketMaxOpacity: 0.58,
-    netPocketDecay: 0.042,
+    netSurfaceDeformationSystem: "panel-aware-vertex-spring-net",
+    netImpactTriggerSystem: "physical-panel-contact-only",
+    netPocketPatchCount: 0,
+    netPocketMaxDepth: 0.32,
+    netPocketMaxOpacity: 0,
+    netPocketDecay: 0.012,
+    netPocketRippleAmplitude: 0.075,
+    netPocketRippleWidth: 0.34,
     netCordTensionAssetSystem: "localized-net-cord-tension-shimmer",
-    netCordTensionCount: 8,
-    netCordTensionMaxOpacity: 0.36,
+    netCordTensionCount: 0,
+    netCordTensionMaxOpacity: 0,
     netCordTensionTravel: 0.065,
     netCordTensionDecay: 0.044,
     netRecoilSystem: "damped-net-spring-rebound",
@@ -229,8 +237,8 @@ export const SCENE_TUNING = {
     frameReboundMaxOpacity: 0.62,
     frameReboundDecay: 0.052,
     frameReboundShake: 0.72,
-    goalWaveCount: 3,
-    goalWaveMaxOpacity: 0.42,
+    goalWaveCount: 0,
+    goalWaveMaxOpacity: 0,
     streakPulseCount: 2,
     streakPulseMaxOpacity: 0.62,
     dynamicNetDetailSystem: "reactive-woven-net-recoil",
@@ -649,6 +657,21 @@ export function getPhysicalNetContactEvents(snapshot = {}) {
   }, []);
 }
 
+export function getPhysicalNetAnimationContact(contact) {
+  var supportedPanels = new Set(["rear", "left", "right", "top"]);
+  if (!contact?.point || contact.type !== "net" || !supportedPanels.has(contact.panel)) return null;
+  var rawStrength = Number.isFinite(contact.strength) ? contact.strength : 12;
+  return {
+    panel: contact.panel,
+    point: {
+      x: contact.point.x || 0,
+      y: contact.point.y || 0,
+      z: contact.point.z || RAPIER_GOAL.netPlaneZ,
+    },
+    strength: clampNumber(0.3 + (rawStrength / 24) * 0.7, 0.3, 1),
+  };
+}
+
 export function shouldRenderLingeringBall(lingeringBall, snapshot = {}, tuning = SCENE_TUNING.ball) {
   if (!lingeringBall?.position) return false;
   var activeBall = snapshot.ball;
@@ -791,6 +814,7 @@ export function createNetPocketState() {
   return {
     life: 0,
     strength: 0,
+    panel: null,
     point: null,
     radius: 0,
     depth: 0,
@@ -808,6 +832,7 @@ export function triggerNetPocketState(state, contact, tuning = SCENE_TUNING.feed
 
   state.life = 1;
   state.strength = Math.max(state.strength || 0, strength);
+  state.panel = contact.panel || contact.point?.panel || "rear";
   state.point = point;
   state.radius = tuning.netRippleContactRadius * (0.92 + strength * 0.34);
   state.depth = tuning.netPocketMaxDepth * (0.68 + strength * 0.32);
@@ -819,6 +844,7 @@ export function advanceNetPocketState(state, tuning = SCENE_TUNING.feedback) {
   state.life = Math.max(0, (state.life || 0) - tuning.netPocketDecay);
   if (state.life <= 0) {
     state.strength = 0;
+    state.panel = null;
     state.point = null;
     state.radius = 0;
     state.depth = 0;
@@ -836,9 +862,14 @@ export function getNetPocketFeedbackPlan(state, tuning = SCENE_TUNING.feedback) 
 
   return {
     marker: "feedback-net-pocket-deformation",
+    system: tuning.netSurfaceDeformationSystem,
+    panel: state.panel || "rear",
     point: state.point,
     radius,
     depth,
+    life,
+    rippleAmplitude: tuning.netPocketRippleAmplitude * life * strength,
+    rippleWidth: tuning.netPocketRippleWidth,
     strength,
     patches: Array.from({ length: tuning.netPocketPatchCount }, (_, index) => {
       var t = tuning.netPocketPatchCount <= 1 ? 0 : index / (tuning.netPocketPatchCount - 1);
@@ -1528,18 +1559,11 @@ export function getMatchEventFeedbackPlan(event = {}, tuning = SCENE_TUNING.feed
       priority: isDanger ? "critical" : "high",
       hudTone: isDanger ? "danger" : "goal",
       audioEvent: isDanger ? "danger-goal" : "goal-net",
-      visualEffects: [
-        "feedback-impact-ring",
-        "feedback-goal-wave",
-        "feedback-net-pocket-deformation",
-        "feedback-net-ripple-line",
-        "feedback-dynamic-net-detail-recoil",
-        "feedback-net-cord-tension-shimmer",
-      ],
+      visualEffects: ["feedback-goal-state-awaiting-physical-net-contact"],
       flashColor: profile.flashColor,
       effectIntensity: goalIntensity,
       cameraShake: Math.min(tuning.maxCameraShake * 1.24, profile.cameraShake || tuning.maxCameraShake * goalIntensity),
-      ringCount: Math.min(tuning.impactRingCount || defaultRingCount, isDanger ? 4 : 3),
+      ringCount: 0,
       durationMs: isDanger ? 900 : 780,
       net: {
         recoilStrength: clampNumber(profile.netPulse || 0, 0.78, isDanger ? 1.14 : 1.02),
@@ -1671,6 +1695,64 @@ export function getNetPocketVertexDepthOffset(baseX, baseY, plan) {
   var dy = worldY - plan.point.y;
   var falloff = Math.max(0, 1 - Math.hypot(dx, dy) / radius);
   return (plan.depth || 0) * falloff * falloff;
+}
+
+function isNetPanelAnchor(panel, vertex) {
+  var epsilon = 0.035;
+  if (panel === "rear") {
+    return (
+      Math.abs(vertex.x) >= GOAL_NET_GEOMETRY.rearHalfWidth - epsilon ||
+      vertex.y <= epsilon ||
+      vertex.y >= GOAL_NET_GEOMETRY.rearHeight - epsilon
+    );
+  }
+
+  var atFrontOrRear =
+    vertex.z <= GOAL_NET_GEOMETRY.netPlaneZ + epsilon ||
+    vertex.z >= GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth - epsilon;
+  if (panel === "left" || panel === "right") {
+    return atFrontOrRear || vertex.y <= epsilon || vertex.y >= getGoalRoofHeightAtZ(vertex.z) - epsilon;
+  }
+  if (panel === "top") {
+    return atFrontOrRear || Math.abs(vertex.x) >= getGoalSideHalfWidthAtZ(vertex.z) - epsilon;
+  }
+  return true;
+}
+
+export function getNetPanelVertexDisplacement(panel, vertex, plan) {
+  var zero = { x: 0, y: 0, z: 0 };
+  if (!plan?.point || plan.panel !== panel || isNetPanelAnchor(panel, vertex)) return zero;
+
+  var dx = (vertex.x || 0) - (plan.point.x || 0);
+  var dy = (vertex.y || 0) - (plan.point.y || 0);
+  var dz = (vertex.z || 0) - (plan.point.z || 0);
+  var surfaceDistance = panel === "rear"
+    ? Math.hypot(dx, dy)
+    : panel === "top"
+      ? Math.hypot(dx, dz)
+      : Math.hypot(dy, dz);
+  var radius = Math.max(0.16, plan.radius || 0.9);
+  var coreFalloff = Math.max(0, 1 - surfaceDistance / radius);
+  var life = clamp01(Number.isFinite(plan.life) ? plan.life : 1);
+  var progress = 1 - life;
+  var waveCenter = radius * (0.18 + progress * 1.28);
+  var waveWidth = radius * (plan.rippleWidth || 0.34);
+  var waveBand = Math.max(0, 1 - Math.abs(surfaceDistance - waveCenter) / Math.max(0.001, waveWidth));
+  var wave = Math.sin(progress * Math.PI * 4.6) * (plan.rippleAmplitude || 0) * waveBand;
+  var coreDepth = Number.isFinite(plan.springDisplacement)
+    ? (plan.depth || 0) * 0.45 + plan.springDisplacement * 0.9
+    : plan.depth || 0;
+  var displacement = clampNumber(
+    coreDepth * coreFalloff * coreFalloff + wave,
+    -GOAL_NET_GEOMETRY.netSlack * 0.72,
+    GOAL_NET_GEOMETRY.netSlack + 0.22,
+  );
+
+  if (panel === "rear") return { x: 0, y: 0, z: displacement };
+  if (panel === "left") return { x: -displacement, y: 0, z: 0 };
+  if (panel === "right") return { x: displacement, y: 0, z: 0 };
+  if (panel === "top") return { x: 0, y: displacement, z: 0 };
+  return zero;
 }
 
 function applyCameraTuning(camera, aspect, tuning) {
@@ -1879,8 +1961,18 @@ export function createGoalkeeperScene(canvas) {
   var stadiumScoreboardDisplay = field.getObjectByName("stadium-scoreboard-display");
   var goal = createGoalAndNet();
   var dynamicNetDetails = goal.dynamicNetDetails || [];
-  var netPocketShell = goal.group.getObjectByName("goal-net-continuous-pocket-shell");
-  var netBasePositions = Array.from(netPocketShell.geometry.attributes.position.array);
+  var reactiveNetPanels = dynamicNetDetails.reduce((panels, detail) => {
+    var panel = detail.object?.userData?.goalNetPanel;
+    var positionAttribute = detail.object?.geometry?.attributes?.position;
+    if (!panel || !positionAttribute) return panels;
+    panels.push({
+      panel,
+      object: detail.object,
+      baseObjectPosition: detail.basePosition.clone(),
+      basePositions: Array.from(positionAttribute.array),
+    });
+    return panels;
+  }, []);
   var netLayerBasePosition = goal.net.position.clone();
   var gridLayerBasePosition = goal.grid.position.clone();
   var shooter = createShooterModel();
@@ -2384,15 +2476,20 @@ export function createGoalkeeperScene(canvas) {
         handledPhysicalNetContacts.delete(handledPhysicalNetContacts.values().next().value);
       }
 
-      var strength = clamp01((contact.strength || 0) / 24);
-      var point = {
-        x: Math.max(-RAPIER_GOAL.halfWidth + 0.12, Math.min(RAPIER_GOAL.halfWidth - 0.12, contact.point.x || 0)),
-        y: Math.max(0.12, Math.min(RAPIER_GOAL.height - 0.08, contact.point.y || 1)),
-        z: contact.point.z || RAPIER_GOAL.backNetZ,
-      };
-      triggerNetPocketState(netPocketState, { ...point, strength: 0.28 + strength * 0.42 }, tuning.feedback);
-      triggerNetRecoilState(netRecoilState, { point, strength: 0.22 + strength * 0.38 }, tuning.feedback);
-      netPulse = Math.max(netPulse, 0.16 + strength * 0.18);
+      var animationContact = getPhysicalNetAnimationContact(contact);
+      if (!animationContact) return;
+      var point = { ...animationContact.point, panel: animationContact.panel };
+      triggerNetPocketState(
+        netPocketState,
+        { ...point, strength: animationContact.strength },
+        tuning.feedback,
+      );
+      triggerNetRecoilState(
+        netRecoilState,
+        { point, strength: animationContact.strength },
+        tuning.feedback,
+      );
+      netPulse = Math.max(netPulse, 0.18 + animationContact.strength * 0.2);
       netPulseContactPoint = point;
     });
   }
@@ -2591,50 +2688,17 @@ export function createGoalkeeperScene(canvas) {
     var contactX = Math.max(-RAPIER_GOAL.halfWidth + 0.18, Math.min(RAPIER_GOAL.halfWidth - 0.18, position.x || 0));
     var contactY = Math.max(0.18, Math.min(RAPIER_GOAL.height - 0.08, position.y || 1));
     var contactZ = position.z || RAPIER_GOAL.netPlaneZ;
-    triggerNetPocketState(
-      netPocketState,
-      {
-        x: contactX,
-        y: contactY,
-        z: contactZ,
-        strength: eventPlan.net.pocketStrength,
-      },
-      tuning.feedback,
-    );
     goalFlash.material.color.set(profile.flashColor);
     goalFlash.position.set(contactX, Math.max(0.08, contactY), contactZ + 0.05);
-    goalFlash.material.opacity = Math.min(0.52, 0.34 * profile.impactStrength + (profile.kind === "danger-goal" ? 0.08 : 0));
+    goalFlash.material.opacity = Math.min(0.16, 0.1 * profile.impactStrength + (profile.kind === "danger-goal" ? 0.03 : 0));
     goalFlash.scale.setScalar(1);
     triggerImpact("goal", { ...position, x: contactX, y: contactY }, profile.impactStrength, profile, eventPlan);
-    netPulse = Math.max(netPulse, eventPlan.net.pulse);
-    netPulseContactPoint = { x: contactX, y: contactY, z: contactZ };
-    triggerNetRecoilState(
-      netRecoilState,
-      {
-        point: netPulseContactPoint,
-        strength: eventPlan.net.recoilStrength,
-      },
-      tuning.feedback,
-    );
     goalWaves.forEach((wave, index) => {
       wave.material.color.set(profile.flashColor);
       wave.position.set(contactX, Math.max(0.16, contactY), position.z + 0.06 + index * 0.012);
       wave.scale.setScalar(1 + index * 0.12);
       wave.material.opacity = tuning.feedback.goalWaveMaxOpacity * eventPlan.effectIntensity * (1 - index * 0.16);
       wave.userData.life = Math.max(0.42, 0.74 - index * 0.12);
-    });
-    netRippleLines.forEach((line, index) => {
-      var centeredIndex = index - (netRippleLines.length - 1) / 2;
-      var localY = Math.max(0.28, Math.min(RAPIER_GOAL.height - 0.12, contactY + centeredIndex * 0.16));
-      var rippleWidth = tuning.feedback.netRippleContactRadius * (1.35 + index * 0.16);
-      line.userData.life = Math.max(0.38, 0.7 - index * 0.055);
-      line.userData.originX = contactX;
-      line.userData.baseY = localY;
-      line.userData.baseScaleX = rippleWidth / (RAPIER_GOAL.halfWidth * 1.82);
-      line.material.opacity = tuning.feedback.netRippleMaxOpacity * (1 - index * 0.09);
-      line.position.x = contactX;
-      line.position.y = localY;
-      line.scale.set(line.userData.baseScaleX, 1, 1);
     });
   }
 
@@ -2816,24 +2880,36 @@ export function createGoalkeeperScene(canvas) {
     rightGlove.scale.set(rightTransform.scale.x, rightTransform.scale.y, rightTransform.scale.z);
   }
 
-  function applyNetPocketGeometry(plan) {
-    var attribute = netPocketShell.geometry.attributes.position;
-    var positions = attribute.array;
-
-    for (var index = 0; index < positions.length; index += 3) {
-      var baseX = netBasePositions[index];
-      var baseY = netBasePositions[index + 1];
-      positions[index] = baseX;
-      positions[index + 1] = baseY;
-      positions[index + 2] = netBasePositions[index + 2] + getNetPocketVertexDepthOffset(baseX, baseY, plan);
-    }
-    attribute.needsUpdate = true;
+  function applyReactiveNetPanelGeometry(plan) {
+    reactiveNetPanels.forEach((panel) => {
+      var attribute = panel.object.geometry.attributes.position;
+      var positions = attribute.array;
+      for (var index = 0; index < positions.length; index += 3) {
+        var baseX = panel.basePositions[index];
+        var baseY = panel.basePositions[index + 1];
+        var baseZ = panel.basePositions[index + 2];
+        var displacement = getNetPanelVertexDisplacement(
+          panel.panel,
+          {
+            x: baseX + panel.baseObjectPosition.x,
+            y: baseY + panel.baseObjectPosition.y,
+            z: baseZ + panel.baseObjectPosition.z,
+          },
+          plan,
+        );
+        positions[index] = baseX + displacement.x;
+        positions[index + 1] = baseY + displacement.y;
+        positions[index + 2] = baseZ + displacement.z;
+      }
+      attribute.needsUpdate = true;
+    });
   }
 
-  function updateNetPocketVisuals() {
+  function updateNetPocketVisuals(recoilPlan = null) {
     var plan = getNetPocketFeedbackPlan(netPocketState, tuning.feedback);
+    if (plan && recoilPlan) plan.springDisplacement = recoilPlan.netZOffset || 0;
     var cordPlan = getNetCordTensionFeedbackPlan(netPocketState, tuning.feedback);
-    applyNetPocketGeometry(plan);
+    applyReactiveNetPanelGeometry(plan);
 
     netPocketPatches.forEach((patch, index) => {
       var patchPlan = plan?.patches?.[index];
@@ -2919,7 +2995,7 @@ export function createGoalkeeperScene(canvas) {
         detail.object.material.opacity = detail.baseOpacity + plan.opacityBoost + recoilPlan.opacityBoost * 0.45;
       }
     });
-    updateNetPocketVisuals();
+    updateNetPocketVisuals(recoilPlan);
     advanceNetRecoilState(netRecoilState, 1 / 60, tuning.feedback);
 
     impactRings.forEach((ring, index) => {

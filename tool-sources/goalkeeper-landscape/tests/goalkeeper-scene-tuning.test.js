@@ -30,6 +30,31 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(events[0].eventId).not.toBe(gloveContact.eventId);
   });
 
+  it("starts net deformation only from a physical panel contact, not the goal-line score event", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.getPhysicalNetAnimationContact).toBeTypeOf("function");
+    expect(sceneModule.getPhysicalNetAnimationContact({
+      type: "net",
+      point: { x: 0.2, y: 1.2, z: SHOT_3D.netPlaneZ },
+      strength: 18,
+    })).toBeNull();
+
+    const contact = sceneModule.getPhysicalNetAnimationContact({
+      type: "net",
+      panel: "rear",
+      point: { x: 0.2, y: 1.2, z: GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth },
+      strength: 18,
+    });
+
+    expect(contact).toMatchObject({
+      panel: "rear",
+      point: { x: 0.2, y: 1.2 },
+    });
+    expect(contact.strength).toBeGreaterThan(0.5);
+    expect(contact.strength).toBeLessThanOrEqual(1);
+  });
+
   it("merges streak payoff into the single glove-contact moment", async () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
 
@@ -466,25 +491,29 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.feedback.savePressureArcCount).toBeGreaterThanOrEqual(3);
     expect(SCENE_TUNING.feedback.savePressureArcCount).toBeLessThanOrEqual(5);
     expect(SCENE_TUNING.feedback.savePressureMaxOpacity).toBeLessThanOrEqual(0.52);
-    expect(SCENE_TUNING.feedback.netRippleLineCount).toBeGreaterThanOrEqual(4);
-    expect(SCENE_TUNING.feedback.netRippleMaxOpacity).toBeLessThanOrEqual(0.42);
+    expect(SCENE_TUNING.feedback.netRippleLineCount).toBe(0);
+    expect(SCENE_TUNING.feedback.netRippleMaxOpacity).toBe(0);
     expect(SCENE_TUNING.feedback.netRippleAssetSystem).toBe("localized-net-ripple");
     expect(SCENE_TUNING.feedback.netRippleContactRadius).toBeGreaterThanOrEqual(0.42);
     expect(SCENE_TUNING.feedback.netRippleContactRadius).toBeLessThanOrEqual(0.9);
     expect(SCENE_TUNING.feedback.netRippleTravel).toBeGreaterThan(0.04);
     expect(SCENE_TUNING.feedback.netPocketAssetSystem).toBe("localized-net-pocket-deformation");
-    expect(SCENE_TUNING.feedback.netPocketPatchCount).toBeGreaterThanOrEqual(2);
+    expect(SCENE_TUNING.feedback.netSurfaceDeformationSystem).toBe("panel-aware-vertex-spring-net");
+    expect(SCENE_TUNING.feedback.netImpactTriggerSystem).toBe("physical-panel-contact-only");
+    expect(SCENE_TUNING.feedback.netPocketPatchCount).toBe(0);
     expect(SCENE_TUNING.feedback.netPocketMaxDepth).toBeGreaterThanOrEqual(0.18);
     expect(SCENE_TUNING.feedback.netPocketMaxDepth).toBeLessThanOrEqual(0.36);
+    expect(SCENE_TUNING.feedback.netPocketRippleAmplitude).toBeGreaterThanOrEqual(0.05);
+    expect(SCENE_TUNING.feedback.netPocketRippleAmplitude).toBeLessThanOrEqual(0.1);
     expect(SCENE_TUNING.feedback.netCordTensionAssetSystem).toBe("localized-net-cord-tension-shimmer");
-    expect(SCENE_TUNING.feedback.netCordTensionCount).toBeGreaterThanOrEqual(6);
-    expect(SCENE_TUNING.feedback.netCordTensionMaxOpacity).toBeLessThanOrEqual(0.42);
+    expect(SCENE_TUNING.feedback.netCordTensionCount).toBe(0);
+    expect(SCENE_TUNING.feedback.netCordTensionMaxOpacity).toBe(0);
     expect(SCENE_TUNING.feedback.netCordTensionTravel).toBeGreaterThanOrEqual(0.04);
     expect(SCENE_TUNING.feedback.netCordTensionDecay).toBeGreaterThanOrEqual(0.035);
     expect(SCENE_TUNING.feedback.frameReboundSystem).toBe("post-crossbar-rebound-highlight");
     expect(SCENE_TUNING.feedback.frameReboundMaxOpacity).toBeLessThanOrEqual(0.72);
-    expect(SCENE_TUNING.feedback.goalWaveCount).toBeGreaterThanOrEqual(2);
-    expect(SCENE_TUNING.feedback.goalWaveMaxOpacity).toBeLessThanOrEqual(0.48);
+    expect(SCENE_TUNING.feedback.goalWaveCount).toBe(0);
+    expect(SCENE_TUNING.feedback.goalWaveMaxOpacity).toBe(0);
     expect(SCENE_TUNING.feedback.streakPulseCount).toBeGreaterThanOrEqual(2);
     expect(SCENE_TUNING.feedback.streakPulseMaxOpacity).toBeLessThanOrEqual(0.7);
     expect(SCENE_TUNING.feedback.dynamicNetDetailSystem).toBe("reactive-woven-net-recoil");
@@ -625,13 +654,8 @@ describe("goalkeeper 3D scene tuning", () => {
 
     expect(dangerGoal.audioEvent).toBe("danger-goal");
     expect(dangerGoal.hudTone).toBe("danger");
-    expect(dangerGoal.visualEffects).toEqual(expect.arrayContaining([
-      "feedback-goal-wave",
-      "feedback-net-pocket-deformation",
-      "feedback-net-ripple-line",
-      "feedback-dynamic-net-detail-recoil",
-      "feedback-net-cord-tension-shimmer",
-    ]));
+    expect(dangerGoal.visualEffects).toEqual(["feedback-goal-state-awaiting-physical-net-contact"]);
+    expect(dangerGoal.ringCount).toBe(0);
     expect(dangerGoal.net.recoilStrength).toBeGreaterThan(streakSave.net.recoilStrength);
     expect(dangerGoal.net.pocketStrength).toBeGreaterThanOrEqual(0.9);
     expect(dangerGoal.cameraShake).toBeLessThanOrEqual(SCENE_TUNING.feedback.maxCameraShake * 1.24);
@@ -937,6 +961,84 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(sceneModule.getNetPocketVertexDepthOffset(3.1, halfHeight * 0.8, impact)).toBeGreaterThan(0);
   });
 
+  it("deforms the actual rear, side, and top net panels in their physical impact directions", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.getNetPanelVertexDisplacement).toBeTypeOf("function");
+    const middleZ = GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth * 0.5;
+    const sideHalfWidth = (GOAL_NET_GEOMETRY.halfWidth + GOAL_NET_GEOMETRY.rearHalfWidth) * 0.5;
+    const roofHeight = (GOAL_NET_GEOMETRY.height + GOAL_NET_GEOMETRY.rearHeight) * 0.5;
+    const common = { radius: 0.92, depth: 0.26, life: 0.92, strength: 0.86 };
+
+    const rear = sceneModule.getNetPanelVertexDisplacement(
+      "rear",
+      { x: 0.2, y: 1.2, z: GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth },
+      { ...common, panel: "rear", point: { x: 0.2, y: 1.2, z: GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth } },
+    );
+    const left = sceneModule.getNetPanelVertexDisplacement(
+      "left",
+      { x: -sideHalfWidth, y: 1.2, z: middleZ },
+      { ...common, panel: "left", point: { x: -sideHalfWidth, y: 1.2, z: middleZ } },
+    );
+    const right = sceneModule.getNetPanelVertexDisplacement(
+      "right",
+      { x: sideHalfWidth, y: 1.2, z: middleZ },
+      { ...common, panel: "right", point: { x: sideHalfWidth, y: 1.2, z: middleZ } },
+    );
+    const top = sceneModule.getNetPanelVertexDisplacement(
+      "top",
+      { x: 0, y: roofHeight, z: middleZ },
+      { ...common, panel: "top", point: { x: 0, y: roofHeight, z: middleZ } },
+    );
+    const rearRebound = sceneModule.getNetPanelVertexDisplacement(
+      "rear",
+      { x: 0.2, y: 1.2, z: GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth },
+      {
+        ...common,
+        panel: "rear",
+        point: { x: 0.2, y: 1.2, z: GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth },
+        depth: 0.08,
+        springDisplacement: -0.15,
+        rippleAmplitude: 0,
+      },
+    );
+
+    expect(rear.z).toBeGreaterThan(0.12);
+    expect(left.x).toBeLessThan(-0.1);
+    expect(right.x).toBeGreaterThan(0.1);
+    expect(top.y).toBeGreaterThan(0.1);
+    expect(rearRebound.z).toBeLessThan(-0.04);
+    expect(Math.abs(rear.x) + Math.abs(rear.y)).toBe(0);
+  });
+
+  it("keeps every panel edge attached to the goal frame during deformation", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+    const rearPlan = {
+      panel: "rear",
+      point: { x: 0, y: 1.2, z: GOAL_NET_GEOMETRY.netPlaneZ + GOAL_NET_GEOMETRY.cageDepth },
+      radius: 1.1,
+      depth: 0.28,
+      life: 0.9,
+      strength: 0.9,
+    };
+    const sidePlan = {
+      ...rearPlan,
+      panel: "left",
+      point: { x: -GOAL_NET_GEOMETRY.halfWidth, y: 1.2, z: GOAL_NET_GEOMETRY.netPlaneZ },
+    };
+
+    expect(sceneModule.getNetPanelVertexDisplacement(
+      "rear",
+      { x: GOAL_NET_GEOMETRY.rearHalfWidth, y: 1.2, z: rearPlan.point.z },
+      rearPlan,
+    )).toEqual({ x: 0, y: 0, z: 0 });
+    expect(sceneModule.getNetPanelVertexDisplacement(
+      "left",
+      { x: -GOAL_NET_GEOMETRY.halfWidth, y: 1.2, z: GOAL_NET_GEOMETRY.netPlaneZ },
+      sidePlan,
+    )).toEqual({ x: 0, y: 0, z: 0 });
+  });
+
   it("plans a localized net pocket deformation around the ball impact", async () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
 
@@ -959,11 +1061,13 @@ describe("goalkeeper 3D scene tuning", () => {
 
     const plan = sceneModule.getNetPocketFeedbackPlan(state);
     expect(plan.marker).toBe("feedback-net-pocket-deformation");
-    expect(plan.patches).toHaveLength(SCENE_TUNING.feedback.netPocketPatchCount);
+    expect(plan.system).toBe("panel-aware-vertex-spring-net");
+    expect(plan.panel).toBe("rear");
+    expect(plan.patches).toEqual([]);
     expect(plan.depth).toBeGreaterThan(0.16);
     expect(plan.radius).toBeGreaterThanOrEqual(SCENE_TUNING.feedback.netRippleContactRadius);
-    expect(plan.patches[0].opacity).toBeLessThanOrEqual(0.72);
-    expect(plan.patches[0].scale.x).toBeGreaterThan(plan.patches[0].scale.y);
+    expect(plan.rippleAmplitude).toBeGreaterThan(0.04);
+    expect(plan.life).toBe(1);
 
     sceneModule.advanceNetPocketState(state);
     expect(state.life).toBeLessThan(1);
@@ -971,7 +1075,7 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(sceneModule.getNetPocketFeedbackPlan(sceneModule.createNetPocketState())).toBeNull();
   });
 
-  it("plans localized cord tension shimmer around a net impact point", async () => {
+  it("retires detached cord shimmer because the real net surface now carries the impact", async () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
 
     expect(sceneModule.getNetCordTensionFeedbackPlan).toBeTypeOf("function");
@@ -987,22 +1091,7 @@ describe("goalkeeper 3D scene tuning", () => {
 
     expect(plan.marker).toBe("feedback-net-cord-tension-shimmer");
     expect(plan.system).toBe("localized-net-cord-tension-shimmer");
-    expect(plan.segments).toHaveLength(SCENE_TUNING.feedback.netCordTensionCount);
-
-    const horizontal = plan.segments.filter((segment) => segment.orientation === "horizontal");
-    const vertical = plan.segments.filter((segment) => segment.orientation === "vertical");
-    expect(horizontal.length).toBeGreaterThan(0);
-    expect(vertical.length).toBeGreaterThan(0);
-
-    plan.segments.forEach((segment) => {
-      expect(segment.marker).toBe("feedback-net-cord-tension-segment");
-      expect(segment.opacity).toBeGreaterThan(0);
-      expect(segment.opacity).toBeLessThanOrEqual(SCENE_TUNING.feedback.netCordTensionMaxOpacity);
-      expect(Math.abs(segment.position.x - plan.point.x)).toBeLessThanOrEqual(plan.radius + 0.02);
-      expect(Math.abs(segment.position.y - plan.point.y)).toBeLessThanOrEqual(plan.radius + 0.02);
-      expect(segment.position.z).toBeGreaterThan(SHOT_3D.netPlaneZ);
-      expect(segment.scale.x).toBeGreaterThan(segment.scale.y);
-    });
+    expect(plan.segments).toEqual([]);
 
     const quiet = sceneModule.getNetCordTensionFeedbackPlan({ life: 0, point: plan.point }, SCENE_TUNING.feedback);
     expect(quiet).toBeNull();
