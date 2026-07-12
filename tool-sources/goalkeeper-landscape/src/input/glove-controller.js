@@ -35,6 +35,18 @@ function withHands(center) {
 }
 
 export function mapPointerToGloveTarget(pointer, bounds) {
+  var pointerWorldTarget = bounds.pointerWorldTarget;
+  if (
+    Number.isFinite(pointerWorldTarget?.x) &&
+    Number.isFinite(pointerWorldTarget?.y)
+  ) {
+    return withHands({
+      x: clamp(pointerWorldTarget.x, -GLOVE_3D.centerLimitX, GLOVE_3D.centerLimitX),
+      y: clamp(pointerWorldTarget.y, GLOVE_3D.minY, GLOVE_3D.maxY),
+      z: GLOVE_3D.planeZ,
+    });
+  }
+
   var width = bounds.width || 1280;
   var height = bounds.height || 720;
   var nx = clamp(pointer.x / width, 0, 1);

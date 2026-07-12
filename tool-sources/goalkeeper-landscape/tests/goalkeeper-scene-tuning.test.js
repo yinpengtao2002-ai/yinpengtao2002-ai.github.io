@@ -6,6 +6,36 @@ import { SHOT_3D } from "../src/game/shot-3d-director.js";
 import { GOAL_NET_GEOMETRY } from "../src/physics/goal-net-geometry.js";
 
 describe("goalkeeper 3D scene tuning", () => {
+  it("round-trips a screen pointer through the camera onto the glove plane without visual offset", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+    const camera = new THREE.PerspectiveCamera(SCENE_TUNING.camera.fov, 844 / 390, 0.05, 90);
+    camera.position.set(
+      SCENE_TUNING.camera.position.x,
+      SCENE_TUNING.camera.position.y,
+      SCENE_TUNING.camera.position.z,
+    );
+    camera.lookAt(new THREE.Vector3(
+      SCENE_TUNING.camera.lookAt.x,
+      SCENE_TUNING.camera.lookAt.y,
+      SCENE_TUNING.camera.lookAt.z,
+    ));
+    camera.updateProjectionMatrix();
+    camera.updateMatrixWorld();
+
+    const expected = new THREE.Vector3(2.7, 0.14, 3.15);
+    const ndc = expected.clone().project(camera);
+    const pointer = {
+      x: ((ndc.x + 1) / 2) * 844,
+      y: ((1 - ndc.y) / 2) * 390,
+    };
+    const projected = sceneModule.projectPointerToWorldPlane(camera, pointer, { width: 844, height: 390 }, 3.15);
+
+    expect(sceneModule.projectPointerToWorldPlane).toBeTypeOf("function");
+    expect(projected.x).toBeCloseTo(expected.x, 4);
+    expect(projected.y).toBeCloseTo(expected.y, 4);
+    expect(projected.z).toBeCloseTo(expected.z, 4);
+  });
+
   it("collects physical net contacts separately from scoring contacts", async () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
     const gloveContact = { eventId: 11, type: "glove", point: { x: 0, y: 1.2, z: 3.15 } };

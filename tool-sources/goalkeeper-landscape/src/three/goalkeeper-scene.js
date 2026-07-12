@@ -37,6 +37,35 @@ export const POSTPROCESSING_ADDON_SOURCES = [
 
 export const SKY_ENVIRONMENT_ADDON_SOURCE = "three/addons/objects/Sky";
 
+export function projectPointerToWorldPlane(camera, pointer, bounds, planeZ) {
+  var width = Math.max(1, bounds?.width || 1);
+  var height = Math.max(1, bounds?.height || 1);
+  var ndc = new THREE.Vector3(
+    ((pointer?.x || 0) / width) * 2 - 1,
+    1 - ((pointer?.y || 0) / height) * 2,
+    0.5,
+  );
+  camera.updateMatrixWorld();
+  var origin = camera.position.clone();
+  var direction = ndc.unproject(camera).sub(origin).normalize();
+  if (Math.abs(direction.z) < 0.000001) return null;
+  var distance = (planeZ - origin.z) / direction.z;
+  if (!Number.isFinite(distance) || distance < 0) return null;
+  var point = origin.add(direction.multiplyScalar(distance));
+  return { x: point.x, y: point.y, z: planeZ };
+}
+
+export function projectWorldPointToScreen(camera, point, bounds) {
+  var width = Math.max(1, bounds?.width || 1);
+  var height = Math.max(1, bounds?.height || 1);
+  camera.updateMatrixWorld();
+  var ndc = new THREE.Vector3(point?.x || 0, point?.y || 0, point?.z || 0).project(camera);
+  return {
+    x: ((ndc.x + 1) * 0.5) * width,
+    y: ((1 - ndc.y) * 0.5) * height,
+  };
+}
+
 export function getSaveContactFeedbackState(state = {}) {
   if (state.message === "save") return state;
   return {
@@ -3298,6 +3327,14 @@ export function createGoalkeeperScene(canvas) {
     renderer.dispose();
   }
 
+  function projectPointerToGlovePlane(pointer, bounds, planeZ) {
+    return projectPointerToWorldPlane(camera, pointer, bounds, planeZ);
+  }
+
+  function projectGlovePointToScreen(point, bounds) {
+    return projectWorldPointToScreen(camera, point, bounds);
+  }
+
   return {
     scene,
     camera,
@@ -3306,6 +3343,8 @@ export function createGoalkeeperScene(canvas) {
     postprocessingPipeline,
     resize,
     updateVisuals,
+    projectPointerToGlovePlane,
+    projectWorldPointToScreen: projectGlovePointToScreen,
     dispose,
   };
 }

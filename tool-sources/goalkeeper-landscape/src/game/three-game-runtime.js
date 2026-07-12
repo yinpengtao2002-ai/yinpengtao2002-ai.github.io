@@ -605,6 +605,7 @@ export async function createThreeGameRuntime(options) {
   var penaltyRoundBreak = null;
   var penaltyRoundBreakTimer = 0;
   var musicStoppedForResult = false;
+  var lastPointerInput = { x: 0, y: 0 };
   var lastFrame = 0;
   var runningLoop = false;
   var debugKeysEnabled =
@@ -619,8 +620,20 @@ export async function createThreeGameRuntime(options) {
       height: rect.height || 720,
     };
     input.setDefault(bounds);
+    lastPointerInput = input.getPointer(bounds);
     scene.resize(bounds);
     render();
+  }
+
+  function updateGloveFromPointer(dt) {
+    var pointer = input.getPointer(bounds);
+    lastPointerInput = pointer;
+    var pointerWorldTarget = scene.projectPointerToGlovePlane?.(pointer, bounds, GLOVE_3D.planeZ) || null;
+    gloveController = updateGloveController(gloveController, pointer, dt, {
+      ...bounds,
+      inputMode: input.getMode(),
+      pointerWorldTarget,
+    });
   }
 
   function resetRound() {
@@ -805,10 +818,7 @@ export async function createThreeGameRuntime(options) {
     penaltyRoundBreakTimer = Math.max(0, penaltyRoundBreakTimer - Math.max(0, dt || 0));
 
     if (roundIntroTimer > 0) {
-      gloveController = updateGloveController(gloveController, input.getPointer(bounds), dt, {
-        ...bounds,
-        inputMode: input.getMode(),
-      });
+      updateGloveFromPointer(dt);
       physics.setGloveTarget(gloveController.center);
       var introBeforeTick = roundIntroTimer;
       roundIntroTimer = advanceRoundIntroTimer(roundIntroTimer, dt);
@@ -840,10 +850,7 @@ export async function createThreeGameRuntime(options) {
       gloveController = applyForcedGloveTarget(gloveController, forcedGloveTarget);
       if (forcedGloveTimer <= 0) forcedGloveTarget = null;
     } else {
-      gloveController = updateGloveController(gloveController, input.getPointer(bounds), dt, {
-        ...bounds,
-        inputMode: input.getMode(),
-      });
+      updateGloveFromPointer(dt);
     }
     physics.setGloveTarget(gloveController.center);
 
@@ -881,6 +888,7 @@ export async function createThreeGameRuntime(options) {
 
   function syncDebugDataset() {
     var ball = physics.getBallState();
+    var gloveScreenPoint = scene.projectWorldPointToScreen?.(gloveController.center, bounds);
     stage.dataset.difficulty = selectedDifficulty;
     stage.dataset.mode = selectedMode;
     stage.dataset.bootStatus = windowRef.goalkeeperBootStatus || "";
@@ -904,6 +912,13 @@ export async function createThreeGameRuntime(options) {
     stage.dataset.penaltyFlow = penaltyRoundBreakTimer > 0 ? "score-break" : roundIntroTimer > 0 ? "countdown" : "play";
     stage.dataset.penaltyRoundBreak = penaltyRoundBreakTimer > 0 ? "true" : "false";
     stage.dataset.gloveX = String(Math.round((gloveController.center?.x || 0) * 100) / 100);
+    stage.dataset.pointerX = String(Math.round((lastPointerInput.x || 0) * 10) / 10);
+    stage.dataset.pointerY = String(Math.round((lastPointerInput.y || 0) * 10) / 10);
+    stage.dataset.gloveScreenX = gloveScreenPoint ? String(Math.round(gloveScreenPoint.x * 10) / 10) : "";
+    stage.dataset.gloveScreenY = gloveScreenPoint ? String(Math.round(gloveScreenPoint.y * 10) / 10) : "";
+    stage.dataset.pointerError = gloveScreenPoint
+      ? String(Math.round(Math.hypot(gloveScreenPoint.x - lastPointerInput.x, gloveScreenPoint.y - lastPointerInput.y) * 10) / 10)
+      : "";
     stage.dataset.shotTargetX = String(Math.round((director.currentShot?.target?.x || 0) * 100) / 100);
     stage.dataset.musicStatus = audio.getMusicStatus?.() || "unavailable";
   }

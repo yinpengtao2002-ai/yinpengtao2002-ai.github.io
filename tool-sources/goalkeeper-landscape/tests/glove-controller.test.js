@@ -42,6 +42,29 @@ describe("3D glove controller", () => {
     expect(touch.target.x).toBeCloseTo(target.x, 5);
   });
 
+  it("uses the same zero-offset projected target for mouse and touch input", () => {
+    const pointer = { x: 1120, y: 520 };
+    const pointerWorldTarget = { x: 2.35, y: 0.14, z: 3.15 };
+    const target = mapPointerToGloveTarget(pointer, { ...bounds, pointerWorldTarget });
+    const touch = updateGloveController(createGloveController(), pointer, 0.016, {
+      ...bounds,
+      inputMode: "touch",
+      pointerWorldTarget,
+    });
+    const mouse = updateGloveController(createGloveController(), pointer, 0.016, {
+      ...bounds,
+      inputMode: "mouse",
+      pointerWorldTarget,
+    });
+
+    expect(target.x).toBeCloseTo(pointerWorldTarget.x, 5);
+    expect(target.y).toBeCloseTo(pointerWorldTarget.y, 5);
+    expect(touch.target.x).toBeCloseTo(pointerWorldTarget.x, 5);
+    expect(touch.target.y).toBeCloseTo(pointerWorldTarget.y, 5);
+    expect(mouse.target.x).toBeCloseTo(pointerWorldTarget.x, 5);
+    expect(mouse.target.y).toBeCloseTo(pointerWorldTarget.y, 5);
+  });
+
   it("mouse still eases into the target instead of snapping", () => {
     const pointer = { x: 1100, y: 180 };
     const target = mapPointerToGloveTarget(pointer, bounds);
