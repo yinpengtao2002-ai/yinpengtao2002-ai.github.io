@@ -2,6 +2,18 @@
 
 All downloaded samples are from Mixkit Sound Effects and are used under the Mixkit License.
 
+## Background music
+
+- `mixkit-sports-rock-78.mp3`
+  - Track: Sports Rock
+  - Artist: Ahjay Stelino
+  - Source: https://mixkit.co/free-stock-music/sports/
+  - Download URL: https://assets.mixkit.co/music/78/78.mp3
+  - In-game use: looping match background music
+  - License: Mixkit Stock Music Free License
+
+## Sound effects
+
 - `mixkit-soccer-ball-kick-2099.wav`
   - Source: https://mixkit.co/free-sound-effects/soccer/
   - Download URL: https://assets.mixkit.co/active_storage/sfx/2099/2099.wav

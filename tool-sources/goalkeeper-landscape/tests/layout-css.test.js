@@ -210,4 +210,23 @@ describe("responsive layout css", () => {
     expect(css).toContain(".match-atmosphere.is-pressure");
     expect(css).toContain("bottom: max(clamp(88px, 11svh, 126px), calc(env(safe-area-inset-bottom) + 96px));");
   });
+
+  it("adds a compact penalty shootout score strip and mode selector outside the shot lane", () => {
+    const css = readFileSync(stylesPath, "utf8");
+    const html = readFileSync(indexPath, "utf8");
+
+    expect(html).toContain('data-mode="timed"');
+    expect(html).toContain('data-mode="penalty"');
+    expect(html).toContain('data-difficulty="extreme"');
+    expect(html).toContain('id="penaltyScoreboard"');
+    expect(html).toContain('id="penaltyTeamKicks"');
+    expect(html).toContain('id="penaltyOpponentKicks"');
+    expect(css).toContain("penalty-shootout-score-strip");
+    expect(css).toContain(".mode-control");
+    expect(css).toContain(".penalty-scoreboard");
+    expect(css).toContain(".penalty-kick-marks");
+    expect(css).toContain('.stage[data-mode="penalty"]');
+    expect(css).toContain("pointer-events: none;");
+    expect(css).toContain("@media (max-height: 520px) and (orientation: landscape)");
+  });
 });

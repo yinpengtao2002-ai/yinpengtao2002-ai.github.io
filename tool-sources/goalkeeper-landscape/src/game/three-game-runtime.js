@@ -1,7 +1,18 @@
 import { createAudioEngine } from "../audio/audio-engine.js";
 import { MAX_CONCEDED } from "../config/game-config.js";
 import { getContactEventSignature } from "./contact-event.js";
-import { createGameState, recordGoal, recordMiss, recordSave, startRound, tickRound, togglePause } from "./game-state.js";
+import {
+  createGameState,
+  recordGoal,
+  recordMiss,
+  recordPenaltyTeamKick,
+  recordSave,
+  resolveGameMode,
+  simulatePenaltyTeamKick,
+  startRound,
+  tickRound,
+  togglePause,
+} from "./game-state.js";
 import {
   DEFAULT_SHOT_DIFFICULTY,
   completeShot3D,
@@ -24,6 +35,8 @@ export const CAUGHT_SAVE_REPLAY_STYLE = "caught-save-drop-replay";
 export const PARRIED_SAVE_REPLAY_STYLE = "parried-save-deflection-replay";
 export const GROUND_CONTACT_AUDIO_COOLDOWN = 0.28;
 export const OUTCOME_HUD_HOLD_SECONDS = 0.82;
+export const PENALTY_TEAM_KICK_DELAY = 0.96;
+export const PENALTY_NEXT_SHOT_DELAY = 2.05;
 const GROUND_FEEDBACK_DURATION = 0.62;
 const PARRIED_ROLLING_DAMPING_60HZ = 0.993;
 const PARRIED_ROLLING_SPIN_DAMPING_60HZ = 0.996;
@@ -143,10 +156,31 @@ export function getOutcomeAudioEvent(state, previousState = null) {
   if (state.ended && !previousState?.ended) return "round-end";
   if (state.message === "save" && (state.streak || 0) >= 3) return "save-streak";
   if (state.message === "save") return "clean-save";
-  if (state.message === "goal" && !state.ended && (state.conceded || 0) >= MAX_CONCEDED - 1) return "danger-goal";
+  if (state.mode !== "penalty" && state.message === "goal" && !state.ended && (state.conceded || 0) >= MAX_CONCEDED - 1) return "danger-goal";
   if (state.message === "goal") return "goal-net";
   if (state.message === "frame") return "frame-rattle";
   return null;
+}
+
+export function getModeDifficulty(mode, selectedDifficulty) {
+  return mode === "penalty" ? "extreme" : resolveShotDifficulty(selectedDifficulty).id;
+}
+
+export function getPenaltySequenceAction(state, outcomeTimer, teamResolved) {
+  if (state?.mode !== "penalty") return "standard";
+  if (state.ended || state.shootout?.ended) return "complete";
+  if (!teamResolved && state.shootout?.phase === "team-kick" && outcomeTimer >= PENALTY_TEAM_KICK_DELAY) {
+    return "simulate-team";
+  }
+  if (teamResolved && outcomeTimer >= PENALTY_NEXT_SHOT_DELAY) return "next-shot";
+  return "wait";
+}
+
+export function getPenaltyTeamAnnouncement(state) {
+  var event = state?.shootout?.lastEvent;
+  if (state?.mode !== "penalty" || event?.side !== "team") return "";
+  var label = event.result === "goal" ? "我方罚进" : "我方未进";
+  return label + " · " + String(state.shootout.teamGoals || 0) + ":" + String(state.shootout.opponentGoals || 0);
 }
 
 export function getGroundContactAudioEvent(feedback) {
@@ -466,12 +500,28 @@ export function resolveRuntimeDifficulty(windowRef) {
   return resolveShotDifficulty(value).id;
 }
 
+export function resolveRuntimeMode(windowRef) {
+  var search = windowRef?.location?.search || "";
+  var value = "timed";
+
+  try {
+    var params = new URLSearchParams(search);
+    value = params.get("mode") || "timed";
+  } catch {
+    value = "timed";
+  }
+
+  return resolveGameMode(value).id;
+}
+
 export async function createThreeGameRuntime(options) {
   var canvas = options.canvas;
   var stage = options.stage;
   var documentRef = options.documentRef || document;
   var windowRef = options.windowRef || window;
-  var selectedDifficulty = resolveRuntimeDifficulty(windowRef);
+  var selectedMode = resolveRuntimeMode(windowRef);
+  var selectedTimedDifficulty = resolveRuntimeDifficulty(windowRef);
+  var selectedDifficulty = getModeDifficulty(selectedMode, selectedTimedDifficulty);
 
   windowRef.goalkeeperBootStatus = "hud";
   var hud = createHud(documentRef);
@@ -486,7 +536,7 @@ export async function createThreeGameRuntime(options) {
   windowRef.goalkeeperBootStatus = "runtime-ready";
 
   var bounds = { width: 1280, height: 720 };
-  var state = createGameState();
+  var state = createGameState({ mode: selectedMode });
   var director = createShot3DDirector({ seed: Date.now() % 100000, difficulty: selectedDifficulty });
   var gloveController = createGloveController();
   var launchedShotId = null;
@@ -500,6 +550,9 @@ export async function createThreeGameRuntime(options) {
   var forcedGloveTarget = null;
   var forcedGloveTimer = 0;
   var roundIntroTimer = 0;
+  var penaltyTeamResolved = false;
+  var penaltyAnnouncement = "";
+  var musicStoppedForResult = false;
   var lastFrame = 0;
   var runningLoop = false;
   var debugKeysEnabled =
@@ -519,9 +572,12 @@ export async function createThreeGameRuntime(options) {
   }
 
   function resetRound() {
+    selectedDifficulty = getModeDifficulty(selectedMode, selectedTimedDifficulty);
     audio.prime();
-    state = startRound(createGameState());
-    director = createShot3DDirector({ seed: Date.now() % 100000, elapsed: 0, difficulty: selectedDifficulty });
+    audio.startMusic?.();
+    audio.setMusicPaused?.(false);
+    state = startRound(createGameState({ mode: selectedMode }), { mode: selectedMode });
+    director = createShot3DDirector({ seed: Date.now() % 100000, elapsed: 0, difficulty: selectedDifficulty, keeperX: 0 });
     gloveController = createGloveController();
     physics.resetBall();
     launchedShotId = null;
@@ -535,6 +591,9 @@ export async function createThreeGameRuntime(options) {
     forcedGloveTarget = null;
     forcedGloveTimer = 0;
     roundIntroTimer = ROUND_INTRO_SECONDS;
+    penaltyTeamResolved = false;
+    penaltyAnnouncement = "";
+    musicStoppedForResult = false;
     updateHud();
   }
 
@@ -591,13 +650,28 @@ export async function createThreeGameRuntime(options) {
   function finishCurrentShotAfterReplay(dt) {
     if (!handledOutcome) return;
     outcomeTimer += dt;
+    if (state.mode === "penalty") {
+      var action = getPenaltySequenceAction(state, outcomeTimer, penaltyTeamResolved);
+      if (action === "simulate-team") {
+        var previousPenaltyState = state;
+        state = simulatePenaltyTeamKick(state, Math.random());
+        penaltyTeamResolved = true;
+        penaltyAnnouncement = getPenaltyTeamAnnouncement(state);
+        audio.playEvent(state.shootout?.lastEvent?.result === "goal" ? "penalty-team-goal" : "penalty-team-miss");
+        if (state.ended) playOutcomeAudioEvent(previousPenaltyState);
+        return;
+      }
+      if (action !== "next-shot") return;
+    }
     var nextShotDelay = getNextShotDelayForOutcome(handledOutcome);
-    if (outcomeTimer >= nextShotDelay && !state.ended) {
+    if ((state.mode === "penalty" || outcomeTimer >= nextShotDelay) && !state.ended) {
       director = completeShot3D({ ...director, difficulty: selectedDifficulty });
       physics.resetBall();
       launchedShotId = null;
       handledOutcome = null;
       outcomeTimer = 0;
+      penaltyTeamResolved = false;
+      penaltyAnnouncement = "";
     }
   }
 
@@ -619,6 +693,7 @@ export async function createThreeGameRuntime(options) {
       playOutcomeAudioEvent(previousState);
       handledOutcome = "goal";
       outcomeTimer = 0;
+      penaltyTeamResolved = false;
       return;
     }
     if (ball.outcome === "saved") {
@@ -628,6 +703,7 @@ export async function createThreeGameRuntime(options) {
       rememberLingeringBall(ball, "save");
       handledOutcome = "save";
       outcomeTimer = 0;
+      penaltyTeamResolved = false;
       return;
     }
     if (ball.outcome === "missed") {
@@ -636,6 +712,7 @@ export async function createThreeGameRuntime(options) {
       playOutcomeAudioEvent(previousStateForMiss);
       handledOutcome = "miss";
       outcomeTimer = 0;
+      penaltyTeamResolved = false;
     }
   }
 
@@ -664,7 +741,21 @@ export async function createThreeGameRuntime(options) {
     if (!state.running || state.paused || state.ended) return;
 
     if (roundIntroTimer > 0) {
+      gloveController = updateGloveController(gloveController, input.getPointer(bounds), dt, {
+        ...bounds,
+        inputMode: input.getMode(),
+      });
+      physics.setGloveTarget(gloveController.center);
+      var introBeforeTick = roundIntroTimer;
       roundIntroTimer = advanceRoundIntroTimer(roundIntroTimer, dt);
+      if (introBeforeTick > 0 && roundIntroTimer <= 0) {
+        director = createShot3DDirector({
+          seed: director.seed,
+          elapsed: state.elapsed,
+          difficulty: selectedDifficulty,
+          keeperX: gloveController.center.x,
+        });
+      }
       return;
     }
 
@@ -672,6 +763,10 @@ export async function createThreeGameRuntime(options) {
     state = tickRound(state, dt);
     if (state.ended) {
       playOutcomeAudioEvent(previousState);
+      if (!musicStoppedForResult) {
+        audio.stopMusic?.();
+        musicStoppedForResult = true;
+      }
       return;
     }
     updateLingeringBalls(dt);
@@ -688,7 +783,9 @@ export async function createThreeGameRuntime(options) {
     }
     physics.setGloveTarget(gloveController.center);
 
-    director = updateShot3DDirector(director, dt, state.elapsed, selectedDifficulty);
+    director = updateShot3DDirector(director, dt, state.elapsed, selectedDifficulty, {
+      keeperX: gloveController.center.x,
+    });
     launchCurrentShotIfNeeded();
 
     physics.step(dt);
@@ -698,6 +795,10 @@ export async function createThreeGameRuntime(options) {
       playContactAudio(ball);
       handleBallOutcome(ball);
       finishCurrentShotAfterReplay(dt);
+      if (state.ended && !musicStoppedForResult) {
+        audio.stopMusic?.();
+        musicStoppedForResult = true;
+      }
     }
   }
 
@@ -717,6 +818,7 @@ export async function createThreeGameRuntime(options) {
   function syncDebugDataset() {
     var ball = physics.getBallState();
     stage.dataset.difficulty = selectedDifficulty;
+    stage.dataset.mode = selectedMode;
     stage.dataset.bootStatus = windowRef.goalkeeperBootStatus || "";
     stage.dataset.phase = director.phase;
     stage.dataset.shotId = String(director.currentShot?.shotId ?? "");
@@ -730,12 +832,21 @@ export async function createThreeGameRuntime(options) {
     stage.dataset.score = String(state.score);
     stage.dataset.conceded = String(state.conceded);
     stage.dataset.roundIntro = String(Math.round(roundIntroTimer * 100) / 100);
+    stage.dataset.penaltyRound = String(state.shootout?.round || "");
+    stage.dataset.penaltyPhase = state.shootout?.phase || "";
+    stage.dataset.penaltyTeamScore = String(state.shootout?.teamGoals ?? "");
+    stage.dataset.penaltyOpponentScore = String(state.shootout?.opponentGoals ?? "");
+    stage.dataset.penaltySuddenDeath = state.shootout?.suddenDeath ? "true" : "false";
+    stage.dataset.gloveX = String(Math.round((gloveController.center?.x || 0) * 100) / 100);
+    stage.dataset.shotTargetX = String(Math.round((director.currentShot?.target?.x || 0) * 100) / 100);
+    stage.dataset.musicStatus = audio.getMusicStatus?.() || "unavailable";
   }
 
   function getHudContext() {
     return {
       audioStatus: audio.getStatus?.() || (audio.isEnabled() ? "locked" : "muted"),
       roundIntroCue: getRoundIntroCue(roundIntroTimer),
+      penaltyAnnouncement,
     };
   }
 
@@ -802,6 +913,7 @@ export async function createThreeGameRuntime(options) {
     },
     onPause() {
       state = togglePause(state);
+      audio.setMusicPaused?.(state.paused);
       updateHud();
     },
     onSound() {
@@ -809,11 +921,24 @@ export async function createThreeGameRuntime(options) {
       updateHud();
     },
     onDifficulty(value) {
-      selectedDifficulty = resolveShotDifficulty(value).id;
+      if (selectedMode === "penalty") return;
+      selectedTimedDifficulty = resolveShotDifficulty(value).id;
+      selectedDifficulty = selectedTimedDifficulty;
       director = { ...director, difficulty: selectedDifficulty };
       hud.updateDifficulty(selectedDifficulty);
     },
+    onMode(value) {
+      if (state.running && !state.ended) return;
+      selectedMode = resolveGameMode(value).id;
+      selectedDifficulty = getModeDifficulty(selectedMode, selectedTimedDifficulty);
+      state = createGameState({ mode: selectedMode });
+      director = createShot3DDirector({ seed: Date.now() % 100000, difficulty: selectedDifficulty });
+      hud.updateMode(selectedMode);
+      hud.updateDifficulty(selectedDifficulty);
+      updateHud();
+    },
   });
+  hud.updateMode(selectedMode);
   hud.updateDifficulty(selectedDifficulty);
 
   function onDebugKey(event) {
@@ -852,6 +977,16 @@ export async function createThreeGameRuntime(options) {
     getDifficulty() {
       return selectedDifficulty;
     },
+    getMode() {
+      return selectedMode;
+    },
+    getAudioState() {
+      return {
+        enabled: audio.isEnabled(),
+        status: audio.getStatus?.() || "unavailable",
+        musicStatus: audio.getMusicStatus?.() || "unavailable",
+      };
+    },
     getBall() {
       return physics.getBallState();
     },
@@ -861,10 +996,35 @@ export async function createThreeGameRuntime(options) {
     forceEnd() {
       var previousState = state;
       while (!state.ended) {
-        state = recordGoal(state);
+        if (state.mode === "penalty" && state.shootout?.phase === "team-kick") {
+          state = recordPenaltyTeamKick(state, "miss");
+        } else {
+          state = recordGoal(state);
+        }
       }
       playOutcomeAudioEvent(previousState);
+      audio.stopMusic?.();
+      musicStoppedForResult = true;
       updateHud();
+    },
+    setMode(value) {
+      if (state.running && !state.ended) return false;
+      selectedMode = resolveGameMode(value).id;
+      selectedDifficulty = getModeDifficulty(selectedMode, selectedTimedDifficulty);
+      state = createGameState({ mode: selectedMode });
+      director = createShot3DDirector({ seed: Date.now() % 100000, difficulty: selectedDifficulty });
+      hud.updateMode(selectedMode);
+      hud.updateDifficulty(selectedDifficulty);
+      updateHud();
+      return true;
+    },
+    forcePenaltyTeamResult(result) {
+      if (state.mode !== "penalty" || state.shootout?.phase !== "team-kick") return false;
+      state = recordPenaltyTeamKick(state, result);
+      penaltyTeamResolved = true;
+      penaltyAnnouncement = getPenaltyTeamAnnouncement(state);
+      updateHud();
+      return true;
     },
     forceSave() {
       forcePlan(createDebugSavePlan(), { x: 0, y: 1.25, z: 3.15 });
@@ -879,6 +1039,7 @@ export async function createThreeGameRuntime(options) {
       this.stop();
       physics.dispose();
       scene.dispose();
+      audio.stopMusic?.();
     },
   };
 

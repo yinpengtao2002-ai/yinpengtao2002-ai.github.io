@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as AudioModule from "../src/audio/audio-engine.js";
-import { createAudioEngine, getSoundAssetManifest } from "../src/audio/audio-engine.js";
+import { createAudioEngine, getMusicAssetManifest, getSoundAssetManifest } from "../src/audio/audio-engine.js";
 
 function createFakeAudioRoot() {
   var decodedBuffers = [];
@@ -37,6 +37,9 @@ function createFakeAudioRoot() {
         start(time) {
           this.startedAt = time;
           startedSources.push(this);
+        },
+        stop(time) {
+          this.stoppedAt = time;
         },
       };
       return source;
@@ -254,6 +257,44 @@ describe("audio engine", () => {
     expect(manifest.goal.url).toBe("/tools/goalkeeper-landscape/audio/mixkit-basketball-ball-hitting-net-2084.wav");
   });
 
+  it("uses a locally hosted reusable sports-rock track with explicit license metadata", () => {
+    const music = getMusicAssetManifest();
+
+    expect(music.url).toBe("/tools/goalkeeper-landscape/audio/mixkit-sports-rock-78.mp3");
+    expect(music.title).toBe("Sports Rock");
+    expect(music.author).toBe("Ahjay Stelino");
+    expect(music.license).toBe("Mixkit Stock Music Free License");
+    expect(music.licenseUrl).toContain("mixkit.co/license");
+    expect(music.gain).toBeGreaterThanOrEqual(0.08);
+    expect(music.gain).toBeLessThanOrEqual(0.2);
+    expect(music.loopEnd).toBeGreaterThan(music.loopStart);
+  });
+
+  it("starts, pauses, resumes, and stops a gapless background music loop", async () => {
+    const root = createFakeAudioRoot();
+    const audio = createAudioEngine(root);
+
+    await audio.preload();
+    await audio.startMusic();
+
+    const musicSource = root.startedSources[0];
+    expect(root.fetchedUrls).toContain("/tools/goalkeeper-landscape/audio/mixkit-sports-rock-78.mp3");
+    expect(musicSource.loop).toBe(true);
+    expect(musicSource.loopStart).toBeGreaterThan(0);
+    expect(musicSource.loopEnd).toBeGreaterThan(musicSource.loopStart);
+    expect(musicSource.startedAt).toBe(1);
+    expect(audio.getMusicStatus()).toBe("playing");
+
+    audio.setMusicPaused(true);
+    expect(audio.getMusicStatus()).toBe("paused");
+    audio.setMusicPaused(false);
+    expect(audio.getMusicStatus()).toBe("playing");
+
+    audio.stopMusic();
+    expect(musicSource.stoppedAt).toBe(1);
+    expect(audio.getMusicStatus()).toBe("stopped");
+  });
+
   it("preloads and plays decoded samples instead of synthetic oscillators", async () => {
     const root = createFakeAudioRoot();
     const audio = createAudioEngine(root);
@@ -326,6 +367,13 @@ describe("audio engine", () => {
     expect(AudioModule.getAudioEventPlan("round-end")).toEqual([
       expect.objectContaining({ name: "frame", marker: "round-end-audio-cue" }),
       expect.objectContaining({ name: "tick", delay: expect.any(Number), gainScale: expect.any(Number) }),
+    ]);
+    expect(AudioModule.getAudioEventPlan("penalty-team-goal")).toEqual([
+      expect.objectContaining({ name: "tick", marker: "penalty-team-goal-audio-cue" }),
+      expect.objectContaining({ name: "save", delay: expect.any(Number) }),
+    ]);
+    expect(AudioModule.getAudioEventPlan("penalty-team-miss")).toEqual([
+      expect.objectContaining({ name: "frame", marker: "penalty-team-miss-audio-cue" }),
     ]);
     expect(AudioModule.getAudioEventPlan("unknown")).toEqual([]);
   });

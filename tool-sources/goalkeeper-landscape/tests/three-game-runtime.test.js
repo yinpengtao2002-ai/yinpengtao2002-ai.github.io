@@ -19,11 +19,55 @@ import {
   getMissMessageForBall,
   OUTCOME_HUD_HOLD_SECONDS,
   resolveRuntimeDifficulty,
+  resolveRuntimeMode,
+  getModeDifficulty,
+  getPenaltySequenceAction,
+  getPenaltyTeamAnnouncement,
   shouldPlayLingeringGroundAudio,
 } from "../src/game/three-game-runtime.js";
 import { RAPIER_GOAL, createRapierGoalkeeperWorld } from "../src/physics/rapier-world.js";
 
 describe("three game runtime timing", () => {
+  it("resolves penalty mode from the URL and locks it to extreme difficulty", () => {
+    expect(resolveRuntimeMode({ location: { search: "?mode=penalty&difficulty=easy" } })).toBe("penalty");
+    expect(resolveRuntimeMode({ location: { search: "?mode=unknown" } })).toBe("timed");
+    expect(getModeDifficulty("penalty", "easy")).toBe("extreme");
+    expect(getModeDifficulty("timed", "hard")).toBe("hard");
+  });
+
+  it("waits for the unseen team kick result before launching the next penalty", () => {
+    const state = {
+      mode: "penalty",
+      ended: false,
+      shootout: { phase: "team-kick" },
+    };
+
+    expect(getPenaltySequenceAction(state, 0.5, false)).toBe("wait");
+    expect(getPenaltySequenceAction(state, 1.05, false)).toBe("simulate-team");
+    expect(getPenaltySequenceAction({ ...state, shootout: { phase: "defend" } }, 1.4, true)).toBe("wait");
+    expect(getPenaltySequenceAction({ ...state, shootout: { phase: "defend" } }, 2.2, true)).toBe("next-shot");
+    expect(getPenaltySequenceAction({ ...state, ended: true }, 4, true)).toBe("complete");
+  });
+
+  it("announces the automatic team penalty result and current score", () => {
+    expect(getPenaltyTeamAnnouncement({
+      mode: "penalty",
+      shootout: {
+        teamGoals: 2,
+        opponentGoals: 1,
+        lastEvent: { side: "team", result: "goal", round: 3 },
+      },
+    })).toBe("我方罚进 · 2:1");
+    expect(getPenaltyTeamAnnouncement({
+      mode: "penalty",
+      shootout: {
+        teamGoals: 2,
+        opponentGoals: 2,
+        lastEvent: { side: "team", result: "miss", round: 3 },
+      },
+    })).toBe("我方未进 · 2:2");
+  });
+
   it("uses a short match countdown before live play begins", () => {
     expect(ROUND_INTRO_SECONDS).toBeGreaterThanOrEqual(1.2);
     expect(ROUND_INTRO_SECONDS).toBeLessThanOrEqual(2.4);

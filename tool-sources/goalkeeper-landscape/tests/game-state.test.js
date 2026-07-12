@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { createGameState, recordGoal, recordMiss, recordSave, startRound, tickRound, togglePause } from "../src/game/game-state.js";
+import {
+  createGameState,
+  recordGoal,
+  recordMiss,
+  recordPenaltyTeamKick,
+  recordSave,
+  startRound,
+  tickRound,
+  togglePause,
+} from "../src/game/game-state.js";
 
 describe("game state", () => {
   it("starts a 60 second round and ends after time expires", () => {
@@ -67,5 +76,49 @@ describe("game state", () => {
 
     expect(state.timeLeft).toBe(60);
     expect(state.paused).toBe(true);
+  });
+
+  it("starts penalty mode without a clock and maps physical outcomes into opponent kicks", () => {
+    let state = startRound(createGameState({ mode: "penalty" }), { mode: "penalty" });
+
+    expect(state.mode).toBe("penalty");
+    expect(state.timeLeft).toBeNull();
+    expect(state.shootout.phase).toBe("defend");
+
+    state = tickRound(state, 90);
+    expect(state.ended).toBe(false);
+    expect(state.elapsed).toBe(90);
+
+    state = recordSave(state);
+    expect(state.shootout.opponentKicks).toEqual(["miss"]);
+    expect(state.shootout.phase).toBe("team-kick");
+
+    state = recordPenaltyTeamKick(state, "goal");
+    expect(state.shootout.teamKicks).toEqual(["goal"]);
+    expect(state.shootout.phase).toBe("defend");
+  });
+
+  it("finishes the game state when a penalty shootout winner is decided", () => {
+    let state = startRound(createGameState({ mode: "penalty" }), { mode: "penalty" });
+
+    for (let round = 0; round < 3; round += 1) {
+      state = recordGoal(state);
+      state = recordPenaltyTeamKick(state, "miss");
+    }
+
+    expect(state.ended).toBe(true);
+    expect(state.running).toBe(false);
+    expect(state.endReason).toBe("penalty-loss");
+    expect(state.shootout.winner).toBe("opponent");
+  });
+
+  it("counts a frame or wide miss as a missed opponent penalty", () => {
+    let state = startRound(createGameState({ mode: "penalty" }), { mode: "penalty" });
+
+    state = recordMiss(state, "frame");
+
+    expect(state.message).toBe("frame");
+    expect(state.shootout.opponentKicks).toEqual(["miss"]);
+    expect(state.shootout.lastEvent).toEqual({ side: "opponent", result: "miss", round: 1 });
   });
 });

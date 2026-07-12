@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import GoalkeeperLandscapeRuntime, { GOALKEEPER_SCRIPT_SRC } from "./GoalkeeperLandscapeRuntime";
 
-const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-CvA-KOni.css";
+const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-CrgXL-ZZ.css";
 
 export const metadata: Metadata = {
   title: "弹力手套守门挑战｜Lucas Yin",
-  description: "一个横屏体验的弹力手套守门小游戏。",
+  description: "一个支持 60 秒挑战与真实点球大战的横屏守门游戏。",
 };
 
 export const viewport: Viewport = {
@@ -26,30 +26,48 @@ export default function GoalkeeperLandscapePage() {
             <section className="game-hud broadcast-scorebug" id="gameHud" data-hud-system="broadcast-scorebug-compact-hud" aria-label="比赛状态">
               <div className="glass-panel hud-score hud-metric">
                 <span className="hud-icon hud-icon-score" aria-hidden="true" />
-                <span className="hud-label">扑救分</span>
+                <span className="hud-label" id="scoreLabel">扑救分</span>
                 <strong className="hud-value" id="scoreValue">0</strong>
               </div>
 
               <div className="glass-panel hud-time hud-metric">
                 <span className="hud-icon hud-icon-time" aria-hidden="true" />
-                <span className="hud-label">时间</span>
+                <span className="hud-label" id="timeLabel">时间</span>
                 <strong className="hud-value" id="timeValue">60</strong>
               </div>
 
               <div className="hud-actions">
                 <div className="glass-panel hud-streak hud-metric">
                   <span className="hud-icon hud-icon-streak" aria-hidden="true" />
-                  <span className="hud-label">连扑</span>
+                  <span className="hud-label" id="streakLabel">连扑</span>
                   <strong className="hud-value" id="streakValue">0</strong>
                 </div>
                 <div className="glass-panel hud-goals hud-metric">
                   <span className="hud-icon hud-icon-goals" aria-hidden="true" />
-                  <span className="hud-label">失球</span>
+                  <span className="hud-label" id="concededLabel">失球</span>
                   <strong className="hud-value" id="concededValue">0/5</strong>
                 </div>
                 <button className="glass-button hud-pause-button" id="pauseButton" type="button" aria-label="暂停挑战">Ⅱ</button>
               </div>
             </section>
+
+            <section className="penalty-scoreboard hidden" id="penaltyScoreboard" data-hud-system="penalty-shootout-score-strip" aria-label="点球大战比分">
+              <div className="penalty-heading">
+                <strong id="penaltyRoundLabel">第 1 轮</strong>
+                <span id="penaltyPhaseLabel">准备扑救</span>
+              </div>
+              <div className="penalty-team-row">
+                <span>我方</span>
+                <strong className="penalty-kick-marks" id="penaltyTeamKicks">· · · · ·</strong>
+                <b id="penaltyTeamScore">0</b>
+              </div>
+              <div className="penalty-team-row is-opponent">
+                <span>对手</span>
+                <strong className="penalty-kick-marks" id="penaltyOpponentKicks">· · · · ·</strong>
+                <b id="penaltyOpponentScore">0</b>
+              </div>
+            </section>
+            <div className="penalty-announcement" id="penaltyAnnouncement" aria-live="polite" />
 
             <div className="event-ribbon" id="eventRibbon" data-hud-system="single-match-event-feedback-layer" aria-live="polite" />
             <div className="match-status" id="matchStatus" aria-live="polite" />
@@ -68,29 +86,36 @@ export default function GoalkeeperLandscapePage() {
             </div>
 
             <div className="bottom-controls" id="bottomControls" aria-label="游戏控制">
-              <div className="difficulty-control glass-panel" role="group" aria-label="难度">
-                <button className="difficulty-button" type="button" data-difficulty="easy" aria-pressed="false">容易</button>
-                <button className="difficulty-button is-active" type="button" data-difficulty="medium" aria-pressed="true">中等</button>
-                <button className="difficulty-button" type="button" data-difficulty="hard" aria-pressed="false">困难</button>
+              <div className="setup-controls">
+                <div className="mode-control glass-panel" role="group" aria-label="游戏模式">
+                  <button className="mode-button is-active" type="button" data-mode="timed" aria-pressed="true">经典</button>
+                  <button className="mode-button" type="button" data-mode="penalty" aria-pressed="false">点球大战</button>
+                </div>
+                <div className="difficulty-control glass-panel" role="group" aria-label="难度">
+                  <button className="difficulty-button" type="button" data-difficulty="easy" aria-pressed="false">容易</button>
+                  <button className="difficulty-button is-active" type="button" data-difficulty="medium" aria-pressed="true">中等</button>
+                  <button className="difficulty-button" type="button" data-difficulty="hard" aria-pressed="false">困难</button>
+                  <button className="difficulty-button hidden" type="button" data-difficulty="extreme" aria-pressed="false">极难</button>
+                </div>
               </div>
-              <button className="glass-button utility-button" id="soundButton" type="button" aria-label="音效待启用，开始挑战后会解锁" />
+              <button className="glass-button utility-button" id="soundButton" type="button" aria-label="音乐与音效待启用，开始挑战后会解锁" />
               <span className="sound-status" id="soundStatus" data-audio-status-system="match-audio-status-chip" aria-live="polite">
-                点开始后启用音效
+                点开始后启用音乐与音效
               </span>
             </div>
 
             <div className="overlay start-overlay" id="startOverlay">
               <div className="start-panel" data-ui-system="match-hud-flow-polish">
-                <p className="start-kicker">60 秒守门挑战</p>
-                <h1>弹力手套守门</h1>
+                <p className="start-kicker" id="startKicker">60 秒守门挑战</p>
+                <h1 id="startTitle">弹力手套守门</h1>
                 <div className="start-rules" aria-label="挑战规则">
-                  <span><strong>60</strong> 秒</span>
-                  <span><strong>5</strong> 失球</span>
-                  <span><strong>x3</strong> 连扑</span>
+                  <span id="startRuleA"><strong>60</strong> 秒</span>
+                  <span id="startRuleB"><strong>5</strong> 失球</span>
+                  <span id="startRuleC"><strong>x3</strong> 连扑</span>
                 </div>
                 <button className="start-disc" id="startButton" type="button" aria-label="开始挑战">
                   <span aria-hidden="true">▶</span>
-                  <strong>开始挑战</strong>
+                  <strong id="startButtonLabel">开始挑战</strong>
                 </button>
               </div>
             </div>
@@ -118,9 +143,9 @@ export default function GoalkeeperLandscapePage() {
                   <p className="result-verdict" id="resultVerdict">先守住中路，再去赌边角</p>
                   <p className="result-summary" id="resultSummary">再来一局，读准球路</p>
                   <div className="result-stats" aria-label="本局统计">
-                    <span>扑救 <strong id="finalSaves">0</strong></span>
-                    <span>连扑 <strong id="finalBestStreak">x0</strong></span>
-                    <span>失球 <strong id="finalConceded">0/5</strong></span>
+                    <span><i id="finalSavesLabel">扑救</i> <strong id="finalSaves">0</strong></span>
+                    <span><i id="finalBestStreakLabel">连扑</i> <strong id="finalBestStreak">x0</strong></span>
+                    <span><i id="finalConcededLabel">失球</i> <strong id="finalConceded">0/5</strong></span>
                   </div>
                   <p className="result-coach" id="resultCoach" data-result-coach-system="round-result-coach-note">
                     下一局先等球过半，再做大幅移动

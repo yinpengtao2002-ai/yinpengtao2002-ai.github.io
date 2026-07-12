@@ -7,6 +7,7 @@ import {
   createGloveMesh,
   createGoalAndNet,
   createShooterModel,
+  getClassicFootballPanelLayout,
   getMatchdayAssetPolishProfile,
   getStadiumScoreboardPlan,
   updateShooterModel,
@@ -397,9 +398,21 @@ describe("procedural 3D assets", () => {
 
     expect(texture.userData.assetSystem).toBe("classic-neutral-match-ball-texture");
     expect(texture.image.width).toBeGreaterThanOrEqual(512);
+    expect(texture.image.width / texture.image.height).toBe(2);
     expect(texture.anisotropy).toBeGreaterThanOrEqual(4);
     expect(texture.userData.panelSystem).toBe("classic-dark-pentagon-panel-layout");
+    expect(texture.userData.panelCoverageSystem).toBe("dense-classic-32-panel-readability");
     expect(texture.userData.paletteSystem).toBe("neutral-white-charcoal-no-yellow-cast");
+  });
+
+  it("distributes classic dark football panels across the full spherical UV", () => {
+    const layout = getClassicFootballPanelLayout(1024, 512);
+
+    expect(layout.width / layout.height).toBe(2);
+    expect(layout.darkPanels).toHaveLength(12);
+    expect(layout.darkPanels.some((panel) => panel.x < layout.width * 0.08)).toBe(true);
+    expect(layout.darkPanels.some((panel) => panel.x > layout.width * 0.92)).toBe(true);
+    expect(new Set(layout.darkPanels.map((panel) => Math.round(panel.y))).size).toBeGreaterThanOrEqual(4);
   });
 
   it("keeps the floor clear of football pitch markings while preserving goalmouth depth", () => {

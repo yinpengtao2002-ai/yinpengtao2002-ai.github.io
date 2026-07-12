@@ -693,81 +693,117 @@ function makeRoundedPart(name, width, height, radius, depth, material, x, y, z) 
   return makeBeveledBox(name, width, height, depth, radius, material, x, y, z, 4);
 }
 
+export function getClassicFootballPanelLayout(width = 1024, height = 512) {
+  var panelRows = [
+    { y: 0.12, xs: [0.03, 0.36, 0.69], rotation: -Math.PI / 2 },
+    { y: 0.36, xs: [0.18, 0.51, 0.84], rotation: -Math.PI / 2 + 0.18 },
+    { y: 0.64, xs: [0.02, 0.35, 0.68], rotation: -Math.PI / 2 - 0.12 },
+    { y: 0.88, xs: [0.31, 0.64, 0.97], rotation: -Math.PI / 2 + 0.08 },
+  ];
+  var radius = Math.max(22, height * 0.092);
+  var darkPanels = panelRows.flatMap((row, rowIndex) =>
+    row.xs.map((x, columnIndex) => ({
+      x: x * width,
+      y: row.y * height,
+      radius: radius * (rowIndex === 0 || rowIndex === panelRows.length - 1 ? 0.86 : 1),
+      rotation: row.rotation + columnIndex * 0.08,
+    })),
+  );
+
+  return {
+    width,
+    height,
+    darkPanels,
+    system: "dense-classic-32-panel-readability",
+  };
+}
+
+function drawFootballPentagon(ctx, panel, width, allowWrap = true) {
+  var points = Array.from({ length: 5 }, (_, index) => {
+    var angle = panel.rotation + (index / 5) * Math.PI * 2;
+    return {
+      x: panel.x + Math.cos(angle) * panel.radius,
+      y: panel.y + Math.sin(angle) * panel.radius,
+    };
+  });
+
+  ctx.beginPath();
+  points.forEach((point, index) => {
+    if (index === 0) ctx.moveTo(point.x, point.y);
+    else ctx.lineTo(point.x, point.y);
+  });
+  ctx.closePath();
+  var panelGradient = ctx.createRadialGradient(
+    panel.x - panel.radius * 0.22,
+    panel.y - panel.radius * 0.28,
+    panel.radius * 0.08,
+    panel.x,
+    panel.y,
+    panel.radius,
+  );
+  panelGradient.addColorStop(0, "#30383b");
+  panelGradient.addColorStop(0.58, "#151b1e");
+  panelGradient.addColorStop(1, "#090d0f");
+  ctx.fillStyle = panelGradient;
+  ctx.fill();
+  ctx.strokeStyle = "rgba(9, 14, 16, 0.86)";
+  ctx.lineWidth = 5;
+  ctx.stroke();
+
+  points.forEach((point, index) => {
+    var angle = panel.rotation + (index / 5) * Math.PI * 2;
+    var outerRadius = panel.radius * 1.72;
+    var outerX = panel.x + Math.cos(angle) * outerRadius;
+    var outerY = panel.y + Math.sin(angle) * outerRadius;
+    ctx.beginPath();
+    ctx.moveTo(point.x, point.y);
+    ctx.quadraticCurveTo(
+      panel.x + Math.cos(angle + 0.16) * panel.radius * 1.32,
+      panel.y + Math.sin(angle + 0.16) * panel.radius * 1.32,
+      outerX,
+      outerY,
+    );
+    ctx.strokeStyle = "rgba(31, 39, 42, 0.72)";
+    ctx.lineWidth = 3.2;
+    ctx.stroke();
+  });
+
+  if (allowWrap && panel.x < panel.radius * 1.8) {
+    drawFootballPentagon(ctx, { ...panel, x: panel.x + width }, width, false);
+  } else if (panel.x > width - panel.radius * 1.8) {
+    drawFootballPentagon(ctx, { ...panel, x: panel.x - width }, width, false);
+  }
+}
+
 export function createFootballTexture() {
   if (typeof document === "undefined" || !document.createElement) {
     return createFallbackFootballTexture();
   }
 
   var canvas = document.createElement("canvas");
-  canvas.width = 512;
+  canvas.width = 1024;
   canvas.height = 512;
   var ctx = canvas.getContext("2d");
-  var baseGradient = ctx.createRadialGradient(204, 156, 20, 256, 256, 384);
-  baseGradient.addColorStop(0, "#ffffff");
-  baseGradient.addColorStop(0.58, "#f3f5f4");
-  baseGradient.addColorStop(1, "#cfd4d2");
+  var layout = getClassicFootballPanelLayout(canvas.width, canvas.height);
+  var baseGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  baseGradient.addColorStop(0, "#eef2f1");
+  baseGradient.addColorStop(0.22, "#ffffff");
+  baseGradient.addColorStop(0.7, "#f7f9f8");
+  baseGradient.addColorStop(1, "#dce2e0");
   ctx.fillStyle = baseGradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.strokeStyle = "rgba(20, 25, 27, 0.52)";
-  ctx.lineWidth = 4;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  for (var panel = 0; panel < 12; panel += 1) {
-    var angle = (panel / 12) * Math.PI * 2;
-    var nextAngle = angle + Math.PI / 6;
-    var innerX = 256 + Math.cos(angle) * 42;
-    var innerY = 256 + Math.sin(angle) * 42;
-    var outerX = 256 + Math.cos(angle) * 252;
-    var outerY = 256 + Math.sin(angle) * 252;
-    var controlX = 256 + Math.cos(nextAngle) * 138;
-    var controlY = 256 + Math.sin(nextAngle) * 138;
-    ctx.beginPath();
-    ctx.moveTo(innerX, innerY);
-    ctx.quadraticCurveTo(controlX, controlY, outerX, outerY);
-    ctx.stroke();
-  }
+  layout.darkPanels.forEach((panel) => drawFootballPentagon(ctx, panel, canvas.width));
 
-  [
-    [256, 256, 58, "#171d20", -Math.PI / 2],
-    [118, 120, 46, "#22292c", -0.2],
-    [392, 130, 46, "#171d20", 0.52],
-    [145, 392, 44, "#22292c", 0.2],
-    [378, 378, 44, "#171d20", -0.7],
-  ].forEach(function drawPatch(patch) {
-    ctx.beginPath();
-    for (var i = 0; i < 5; i += 1) {
-      var angle = patch[4] + (i / 5) * Math.PI * 2;
-      var px = patch[0] + Math.cos(angle) * patch[2];
-      var py = patch[1] + Math.sin(angle) * patch[2];
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
-    }
-    ctx.closePath();
-    ctx.fillStyle = patch[3];
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.34)";
-    ctx.lineWidth = 3;
-    ctx.stroke();
-  });
-
-  ctx.globalAlpha = 0.34;
-  ["#20272a", "#4d5659", "#20272a"].forEach(function drawPanelLink(color, index) {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 6 - index;
-    ctx.beginPath();
-    ctx.arc(256, 256, 132 + index * 28, Math.PI * (0.12 + index * 0.16), Math.PI * (0.62 + index * 0.16));
-    ctx.stroke();
-  });
-  ctx.globalAlpha = 1;
-
-  ctx.globalAlpha = 0.28;
+  ctx.globalAlpha = 0.16;
   ctx.strokeStyle = "#697174";
-  ctx.lineWidth = 2;
-  for (var scuff = 0; scuff < 18; scuff += 1) {
-    var sx = 92 + ((scuff * 61) % 330);
-    var sy = 86 + ((scuff * 97) % 322);
-    var length = 16 + (scuff % 5) * 7;
+  ctx.lineWidth = 1.5;
+  for (var scuff = 0; scuff < 28; scuff += 1) {
+    var sx = 44 + ((scuff * 83) % 930);
+    var sy = 38 + ((scuff * 97) % 430);
+    var length = 12 + (scuff % 5) * 6;
     ctx.beginPath();
     ctx.moveTo(sx, sy);
     ctx.quadraticCurveTo(sx + length * 0.38, sy - 6 + (scuff % 4) * 4, sx + length, sy + (scuff % 3) * 3);
@@ -776,11 +812,11 @@ export function createFootballTexture() {
   ctx.globalAlpha = 1;
 
   ctx.beginPath();
-  ctx.arc(337, 236, 15, 0, Math.PI * 2);
+  ctx.arc(574, 248, 9, 0, Math.PI * 2);
   ctx.fillStyle = "#182226";
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(337, 236, 7, 0, Math.PI * 2);
+  ctx.arc(574, 248, 4, 0, Math.PI * 2);
   ctx.fillStyle = "#4f5d5e";
   ctx.fill();
   ctx.strokeStyle = "rgba(255,255,255,0.55)";
@@ -789,9 +825,11 @@ export function createFootballTexture() {
 
   var texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 4;
+  texture.anisotropy = 8;
+  texture.wrapS = THREE.RepeatWrapping;
   texture.userData.assetSystem = "classic-neutral-match-ball-texture";
   texture.userData.panelSystem = "classic-dark-pentagon-panel-layout";
+  texture.userData.panelCoverageSystem = layout.system;
   texture.userData.paletteSystem = "neutral-white-charcoal-no-yellow-cast";
   texture.userData.materialSystem = "stitched-classic-match-ball";
   texture.userData.finishSystem = "micro-scuffed-satin-panels";
@@ -819,30 +857,35 @@ export function createFootballMaterial() {
 }
 
 function createFallbackFootballTexture() {
-  var size = 512;
-  var data = new Uint8Array(size * size * 4);
-  for (var y = 0; y < size; y += 1) {
-    for (var x = 0; x < size; x += 1) {
-      var index = (y * size + x) * 4;
-      var nx = (x - size / 2) / (size / 2);
-      var ny = (y - size / 2) / (size / 2);
-      var radius = Math.hypot(nx, ny);
-      var angle = Math.atan2(ny, nx);
-      var seam = Math.abs(Math.sin(angle * 6 + radius * 8)) < 0.055 || Math.abs((radius * 5) % 1 - 0.5) < 0.025;
-      var accent = Math.abs(Math.sin(angle * 3 - radius * 5)) < 0.08 && radius > 0.28 && radius < 0.78;
-      var neutralPanel = accent ? 28 : 246 - Math.floor(radius * 22);
-      data[index] = seam ? 34 : neutralPanel;
-      data[index + 1] = seam ? 39 : accent ? 34 : neutralPanel;
-      data[index + 2] = seam ? 42 : accent ? 37 : neutralPanel;
+  var width = 1024;
+  var height = 512;
+  var layout = getClassicFootballPanelLayout(width, height);
+  var data = new Uint8Array(width * height * 4);
+  for (var y = 0; y < height; y += 1) {
+    for (var x = 0; x < width; x += 1) {
+      var index = (y * width + x) * 4;
+      var nearestPanel = layout.darkPanels.reduce((nearest, panel) => {
+        var wrappedDx = Math.min(Math.abs(x - panel.x), width - Math.abs(x - panel.x));
+        var distance = Math.hypot(wrappedDx, y - panel.y) / panel.radius;
+        return Math.min(nearest, distance);
+      }, Number.POSITIVE_INFINITY);
+      var accent = nearestPanel < 0.78;
+      var seam = nearestPanel >= 0.78 && nearestPanel < 0.86;
+      var neutralPanel = 246 - Math.floor(Math.abs(y / height - 0.48) * 20);
+      data[index] = seam ? 42 : accent ? 22 : neutralPanel;
+      data[index + 1] = seam ? 47 : accent ? 27 : neutralPanel;
+      data[index + 2] = seam ? 49 : accent ? 30 : neutralPanel;
       data[index + 3] = 255;
     }
   }
-  var texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  var texture = new THREE.DataTexture(data, width, height, THREE.RGBAFormat);
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 4;
+  texture.anisotropy = 8;
+  texture.wrapS = THREE.RepeatWrapping;
   texture.needsUpdate = true;
   texture.userData.assetSystem = "classic-neutral-match-ball-texture";
   texture.userData.panelSystem = "classic-dark-pentagon-panel-layout";
+  texture.userData.panelCoverageSystem = layout.system;
   texture.userData.paletteSystem = "neutral-white-charcoal-no-yellow-cast";
   texture.userData.materialSystem = "stitched-classic-match-ball";
   texture.userData.finishSystem = "micro-scuffed-satin-panels";

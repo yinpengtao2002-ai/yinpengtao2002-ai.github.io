@@ -81,6 +81,27 @@ function createDocument() {
     "finalSaveRate",
     "finalRhythmTag",
     "finalControlTag",
+    "scoreLabel",
+    "timeLabel",
+    "streakLabel",
+    "concededLabel",
+    "startKicker",
+    "startTitle",
+    "startRuleA",
+    "startRuleB",
+    "startRuleC",
+    "startButtonLabel",
+    "penaltyScoreboard",
+    "penaltyTeamKicks",
+    "penaltyOpponentKicks",
+    "penaltyTeamScore",
+    "penaltyOpponentScore",
+    "penaltyRoundLabel",
+    "penaltyPhaseLabel",
+    "penaltyAnnouncement",
+    "finalSavesLabel",
+    "finalBestStreakLabel",
+    "finalConcededLabel",
   ].forEach((id) => {
     elements[id] = createElement();
   });
@@ -90,6 +111,12 @@ function createDocument() {
   elements.mediumDifficulty.dataset.difficulty = "medium";
   elements.hardDifficulty = createElement();
   elements.hardDifficulty.dataset.difficulty = "hard";
+  elements.extremeDifficulty = createElement();
+  elements.extremeDifficulty.dataset.difficulty = "extreme";
+  elements.timedMode = createElement();
+  elements.timedMode.dataset.mode = "timed";
+  elements.penaltyMode = createElement();
+  elements.penaltyMode.dataset.mode = "penalty";
 
   return {
     elements,
@@ -98,7 +125,10 @@ function createDocument() {
     },
     querySelectorAll(selector) {
       if (selector === "[data-difficulty]") {
-        return [elements.easyDifficulty, elements.mediumDifficulty, elements.hardDifficulty];
+        return [elements.easyDifficulty, elements.mediumDifficulty, elements.hardDifficulty, elements.extremeDifficulty];
+      }
+      if (selector === "[data-mode]") {
+        return [elements.timedMode, elements.penaltyMode];
       }
       return [];
     },
@@ -115,21 +145,21 @@ describe("hud", () => {
 
     expect(HudModule.getSoundStatusLabel(true, "locked")).toEqual({
       button: "",
-      detail: "点开始后启用音效",
-      aria: "音效待启用，开始挑战后会解锁",
+      detail: "点开始后启用音乐与音效",
+      aria: "音乐与音效待启用，开始挑战后会解锁",
       status: "locked",
     });
     expect(documentRef.elements.soundButton.textContent).toBe("");
-    expect(documentRef.elements.soundButton.getAttribute("aria-label")).toBe("音效待启用，开始挑战后会解锁");
+    expect(documentRef.elements.soundButton.getAttribute("aria-label")).toBe("音乐与音效待启用，开始挑战后会解锁");
     expect(documentRef.elements.soundButton.dataset.soundStatus).toBe("locked");
     expect(documentRef.elements.soundButton.classList.contains("is-sound-locked")).toBe(true);
-    expect(documentRef.elements.soundStatus.textContent).toBe("点开始后启用音效");
+    expect(documentRef.elements.soundStatus.textContent).toBe("点开始后启用音乐与音效");
     expect(documentRef.elements.soundStatus.dataset.audioStatusSystem).toBe("match-audio-status-chip");
 
     hud.update(createGameState(), true, { audioStatus: "ready" });
 
     expect(documentRef.elements.soundButton.textContent).toBe("");
-    expect(documentRef.elements.soundButton.getAttribute("aria-label")).toBe("音效已就绪，点击静音");
+    expect(documentRef.elements.soundButton.getAttribute("aria-label")).toBe("音乐与音效已就绪，点击静音");
     expect(documentRef.elements.soundButton.dataset.soundStatus).toBe("ready");
     expect(documentRef.elements.soundButton.classList.contains("is-sound-ready")).toBe(true);
     expect(documentRef.elements.soundButton.classList.contains("is-sound-locked")).toBe(false);
@@ -137,10 +167,10 @@ describe("hud", () => {
     hud.update(createGameState(), false, { audioStatus: "muted" });
 
     expect(documentRef.elements.soundButton.textContent).toBe("");
-    expect(documentRef.elements.soundButton.getAttribute("aria-label")).toBe("音效已静音，点击开启");
+    expect(documentRef.elements.soundButton.getAttribute("aria-label")).toBe("音乐与音效已静音，点击开启");
     expect(documentRef.elements.soundButton.dataset.soundStatus).toBe("muted");
     expect(documentRef.elements.soundButton.classList.contains("is-sound-muted")).toBe(true);
-    expect(documentRef.elements.soundStatus.textContent).toBe("当前静音");
+    expect(documentRef.elements.soundStatus.textContent).toBe("音乐与音效已静音");
   });
 
   it("highlights the selected difficulty and reports difficulty changes", () => {
@@ -167,6 +197,141 @@ describe("hud", () => {
     expect(selected).toBe("hard");
     hud.updateDifficulty(selected);
     expect(documentRef.elements.hardDifficulty.classList.contains("is-active")).toBe(true);
+  });
+
+  it("switches between timed and penalty modes while reserving extreme for shootouts", () => {
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    let selectedMode = "timed";
+
+    hud.bind({
+      onStart() {},
+      onRestart() {},
+      onPause() {},
+      onSound() {},
+      onDifficulty() {},
+      onMode(value) {
+        selectedMode = value;
+      },
+    });
+
+    hud.updateMode("timed");
+    expect(documentRef.elements.timedMode.getAttribute("aria-pressed")).toBe("true");
+    expect(documentRef.elements.penaltyMode.getAttribute("aria-pressed")).toBe("false");
+    expect(documentRef.elements.extremeDifficulty.classList.contains("hidden")).toBe(true);
+    expect(documentRef.elements.mediumDifficulty.classList.contains("hidden")).toBe(false);
+
+    documentRef.elements.penaltyMode.click();
+    expect(selectedMode).toBe("penalty");
+    hud.updateMode(selectedMode);
+    expect(documentRef.elements.penaltyMode.classList.contains("is-active")).toBe(true);
+    expect(documentRef.elements.extremeDifficulty.classList.contains("hidden")).toBe(false);
+    expect(documentRef.elements.mediumDifficulty.classList.contains("hidden")).toBe(true);
+    expect(documentRef.elements.stage.dataset.mode).toBe("penalty");
+  });
+
+  it("renders a real penalty scoreline with kick-by-kick marks and sudden death", () => {
+    expect(HudModule.getPenaltyHudPlan).toBeTypeOf("function");
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    const state = {
+      ...createGameState({ mode: "penalty" }),
+      mode: "penalty",
+      running: true,
+      shootout: {
+        teamKicks: ["goal", "miss", "goal", "goal", "miss"],
+        opponentKicks: ["goal", "goal", "miss", "goal", "miss"],
+        teamGoals: 3,
+        opponentGoals: 3,
+        suddenDeath: true,
+        phase: "defend",
+        round: 6,
+        ended: false,
+        winner: null,
+        lastEvent: { side: "team", result: "miss", round: 5 },
+      },
+    };
+
+    const plan = HudModule.getPenaltyHudPlan(state);
+    expect(plan.visible).toBe(true);
+    expect(plan.teamMarks).toBe("● × ● ● × ·");
+    expect(plan.opponentMarks).toBe("● ● × ● × ·");
+    expect(plan.scoreText).toBe("3 : 3");
+    expect(plan.roundLabel).toBe("骤死 第 6 轮");
+    expect(plan.phaseLabel).toBe("准备扑救");
+
+    hud.update(state, true, { audioStatus: "ready" });
+    expect(documentRef.elements.penaltyScoreboard.classList.contains("hidden")).toBe(false);
+    expect(documentRef.elements.penaltyTeamKicks.textContent).toBe(plan.teamMarks);
+    expect(documentRef.elements.penaltyOpponentKicks.textContent).toBe(plan.opponentMarks);
+    expect(documentRef.elements.penaltyRoundLabel.textContent).toBe("骤死 第 6 轮");
+    expect(documentRef.elements.scoreValue.textContent).toBe("0");
+    expect(documentRef.elements.timeValue.textContent).toBe("6");
+    expect(documentRef.elements.streakValue.textContent).toBe("骤死");
+    expect(documentRef.elements.concededValue.textContent).toBe("3:3");
+  });
+
+  it("turns the result card into a penalty win or loss summary", () => {
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    const state = {
+      ...createGameState({ mode: "penalty" }),
+      mode: "penalty",
+      running: false,
+      ended: true,
+      endReason: "penalty-win",
+      saves: 2,
+      shootout: {
+        teamKicks: ["goal", "goal", "miss", "goal", "goal", "goal"],
+        opponentKicks: ["goal", "miss", "goal", "goal", "goal", "miss"],
+        teamGoals: 5,
+        opponentGoals: 4,
+        suddenDeath: true,
+        round: 6,
+        phase: "complete",
+        ended: true,
+        winner: "team",
+      },
+    };
+
+    hud.update(state, true, { audioStatus: "ready" });
+
+    expect(documentRef.elements.resultGrade.textContent).toBe("胜");
+    expect(documentRef.elements.resultReason.textContent).toBe("点球大战胜利");
+    expect(documentRef.elements.finalScore.textContent).toBe("5:4");
+    expect(documentRef.elements.resultVerdict.textContent).toContain("关键点球");
+    expect(documentRef.elements.resultSummary.textContent).toContain("骤死第 6 轮");
+    expect(documentRef.elements.finalSaves.textContent).toBe("2");
+    expect(documentRef.elements.finalConceded.textContent).toBe("4");
+    expect(documentRef.elements.finalSavesLabel.textContent).toBe("扑出");
+    expect(documentRef.elements.finalBestStreakLabel.textContent).toBe("决胜");
+    expect(documentRef.elements.finalConcededLabel.textContent).toBe("对手进球");
+  });
+
+  it("uses penalty score language instead of the timed five-goal danger warning", () => {
+    const state = {
+      ...createGameState({ mode: "penalty" }),
+      mode: "penalty",
+      running: true,
+      message: "goal",
+      conceded: 7,
+      shootout: {
+        teamGoals: 6,
+        opponentGoals: 7,
+        teamKicks: Array(7).fill("goal"),
+        opponentKicks: Array(7).fill("goal"),
+        suddenDeath: true,
+        phase: "team-kick",
+        round: 7,
+        ended: false,
+      },
+    };
+
+    const ribbon = HudModule.getEventRibbonPlan(state);
+    expect(ribbon.kicker).toBe("对手罚进");
+    expect(ribbon.text).toBe("6:7");
+    expect(ribbon.ariaLabel).toBe("对手点球罚进，比分 6 比 7");
+    expect(ribbon.text).not.toContain("/5");
   });
 
   it("compacts setup controls during live play so difficulty buttons stop blocking the field", () => {

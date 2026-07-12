@@ -24,6 +24,11 @@ function clamp(value, min, max) {
 }
 
 export function getMatchProgressPercent(state) {
+  if (state?.mode === "penalty") {
+    if (state.shootout?.suddenDeath) return 100;
+    var completedPairs = Math.min(state.shootout?.teamKicks?.length || 0, state.shootout?.opponentKicks?.length || 0);
+    return Math.round((clamp(completedPairs, 0, 5) / 5) * 100);
+  }
   var timeLeft = Number.isFinite(state?.timeLeft) ? state.timeLeft : ROUND_SECONDS;
   return Math.round((clamp(timeLeft, 0, ROUND_SECONDS) / ROUND_SECONDS) * 100);
 }
@@ -135,6 +140,7 @@ export function getResultPerformanceTags(state) {
 
 export function getPressureCueText(state) {
   if (!state?.running || state.paused || state.ended) return "";
+  if (state.mode === "penalty") return state.shootout?.phase === "team-kick" ? "我方罚球" : "准备扑救";
 
   var secondsLeft = getSecondsLeft(state);
   var lowTime = secondsLeft <= LOW_TIME_SECONDS;
@@ -179,6 +185,17 @@ export function getMatchAtmospherePlan(state) {
     };
   }
 
+  if (state.mode === "penalty" && state.message === "goal") {
+    return {
+      visible: true,
+      tone: "goal",
+      label: "对手罚进",
+      detail: String(state.shootout?.teamGoals || 0) + ":" + String(state.shootout?.opponentGoals || 0),
+      progress: 78,
+      marker: MATCH_ATMOSPHERE_MARKER,
+    };
+  }
+
   if (state.message === "goal") {
     var conceded = Math.max(0, state.conceded || 0);
     var danger = conceded >= MAX_CONCEDED - 1;
@@ -213,6 +230,19 @@ export function getMatchAtmospherePlan(state) {
       marker: MATCH_ATMOSPHERE_MARKER,
     };
   }
+
+  if (state.message === "team-goal" || state.message === "team-miss") {
+    return {
+      visible: true,
+      tone: state.message === "team-goal" ? "save" : "miss",
+      label: state.message === "team-goal" ? "我方罚进" : "我方未进",
+      detail: state.shootout ? String(state.shootout.teamGoals) + ":" + String(state.shootout.opponentGoals) : "",
+      progress: state.message === "team-goal" ? 72 : 46,
+      marker: MATCH_ATMOSPHERE_MARKER,
+    };
+  }
+
+  if (state.mode === "penalty") return empty;
 
   var secondsLeft = getSecondsLeft(state);
   if (secondsLeft <= LOW_TIME_SECONDS) {
@@ -255,6 +285,15 @@ export function getHudTonePlan(state) {
     };
   }
 
+  if (state.mode === "penalty" && state.message === "goal") {
+    return {
+      marker: HUD_STATE_SKIN_MARKER,
+      tone: "goal",
+      intensity: "high",
+      blocksShotLane: false,
+    };
+  }
+
   if (state.message === "goal") {
     var conceded = Math.max(0, state.conceded || 0);
     var danger = conceded >= MAX_CONCEDED - 1;
@@ -265,6 +304,8 @@ export function getHudTonePlan(state) {
       blocksShotLane: false,
     };
   }
+
+  if (state.mode === "penalty") return neutral;
 
   var secondsLeft = getSecondsLeft(state);
   var pressure = secondsLeft <= LOW_TIME_SECONDS || (state.conceded || 0) >= MAX_CONCEDED - 1;
@@ -316,6 +357,20 @@ export function getEventRibbonPlan(state) {
     };
   }
 
+  if (state.mode === "penalty" && state.message === "goal") {
+    var teamGoals = state.shootout?.teamGoals || 0;
+    var opponentGoals = state.shootout?.opponentGoals || 0;
+    return {
+      visible: true,
+      tone: "goal",
+      priority: "high",
+      kicker: "对手罚进",
+      text: String(teamGoals) + ":" + String(opponentGoals),
+      ariaLabel: "对手点球罚进，比分 " + String(teamGoals) + " 比 " + String(opponentGoals),
+      marker: MATCH_EVENT_RIBBON_MARKER,
+    };
+  }
+
   if (state.message === "goal") {
     var conceded = Math.max(0, state.conceded || 0);
     var danger = conceded >= MAX_CONCEDED - 1;
@@ -356,6 +411,19 @@ export function getEventRibbonPlan(state) {
     };
   }
 
+  if (state.message === "team-goal" || state.message === "team-miss") {
+    var isTeamGoal = state.message === "team-goal";
+    return {
+      visible: true,
+      tone: isTeamGoal ? "save" : "miss",
+      priority: "core",
+      kicker: isTeamGoal ? "我方罚进" : "我方未进",
+      text: state.shootout ? String(state.shootout.teamGoals) + ":" + String(state.shootout.opponentGoals) : "",
+      ariaLabel: isTeamGoal ? "我方点球罚进" : "我方点球未进",
+      marker: MATCH_EVENT_RIBBON_MARKER,
+    };
+  }
+
   return empty;
 }
 
@@ -375,8 +443,8 @@ export function getSoundStatusLabel(enabled, audioStatus = "locked") {
   if (!enabled || audioStatus === "muted") {
     return {
       button: "",
-      detail: "当前静音",
-      aria: "音效已静音，点击开启",
+      detail: "音乐与音效已静音",
+      aria: "音乐与音效已静音，点击开启",
       status: "muted",
     };
   }
@@ -384,8 +452,8 @@ export function getSoundStatusLabel(enabled, audioStatus = "locked") {
   if (audioStatus === "ready") {
     return {
       button: "",
-      detail: "音效已就绪",
-      aria: "音效已就绪，点击静音",
+      detail: "音乐与音效已就绪",
+      aria: "音乐与音效已就绪，点击静音",
       status: "ready",
     };
   }
@@ -393,17 +461,76 @@ export function getSoundStatusLabel(enabled, audioStatus = "locked") {
   if (audioStatus === "unavailable") {
     return {
       button: "",
-      detail: "此浏览器不支持音效",
-      aria: "当前浏览器不支持音效",
+      detail: "此浏览器不支持游戏音频",
+      aria: "当前浏览器不支持游戏音频",
       status: "unavailable",
     };
   }
 
   return {
     button: "",
-    detail: "点开始后启用音效",
-    aria: "音效待启用，开始挑战后会解锁",
+    detail: "点开始后启用音乐与音效",
+    aria: "音乐与音效待启用，开始挑战后会解锁",
     status: "locked",
+  };
+}
+
+function formatPenaltyMarks(kicks, slotCount) {
+  return Array.from({ length: slotCount }, (_, index) => {
+    if (kicks[index] === "goal") return "●";
+    if (kicks[index] === "miss") return "×";
+    return "·";
+  }).join(" ");
+}
+
+export function getPenaltyHudPlan(state) {
+  var shootout = state?.shootout;
+  if (state?.mode !== "penalty" || !shootout) {
+    return {
+      visible: false,
+      teamMarks: "",
+      opponentMarks: "",
+      teamScore: 0,
+      opponentScore: 0,
+      scoreText: "0 : 0",
+      roundLabel: "",
+      phaseLabel: "",
+    };
+  }
+
+  var slotCount = Math.max(5, shootout.round || 1, shootout.teamKicks?.length || 0, shootout.opponentKicks?.length || 0);
+  var teamScore = shootout.teamGoals || 0;
+  var opponentScore = shootout.opponentGoals || 0;
+  return {
+    visible: true,
+    teamMarks: formatPenaltyMarks(shootout.teamKicks || [], slotCount),
+    opponentMarks: formatPenaltyMarks(shootout.opponentKicks || [], slotCount),
+    teamScore,
+    opponentScore,
+    scoreText: String(teamScore) + " : " + String(opponentScore),
+    roundLabel: (shootout.suddenDeath ? "骤死 " : "") + "第 " + String(shootout.round || 1) + " 轮",
+    phaseLabel: shootout.ended
+      ? shootout.winner === "team" ? "我方胜" : "对手胜"
+      : shootout.phase === "team-kick" ? "我方罚球" : "准备扑救",
+  };
+}
+
+export function getPenaltyResultPlan(state) {
+  var shootout = state?.shootout;
+  var won = shootout?.winner === "team";
+  var round = shootout?.round || Math.max(shootout?.teamKicks?.length || 0, shootout?.opponentKicks?.length || 0, 1);
+  var teamGoals = shootout?.teamGoals || 0;
+  var opponentGoals = shootout?.opponentGoals || 0;
+  return {
+    grade: won ? "胜" : "负",
+    gradeTone: won ? "S" : "C",
+    reason: won ? "点球大战胜利" : "点球大战惜败",
+    score: String(teamGoals) + ":" + String(opponentGoals),
+    verdict: won ? "扑出关键点球，拿下比赛" : "差一个身位，再战一轮",
+    summary: shootout?.suddenDeath
+      ? "骤死第 " + String(round) + " 轮决出胜负"
+      : "常规点球 " + String(teamGoals) + ":" + String(opponentGoals),
+    coach: won ? "极难球路守住了，下一局继续读远角" : "先稳住中路，等发球动作结束再扑",
   };
 }
 
@@ -422,6 +549,7 @@ export function createHud(documentRef) {
     restartButton: documentRef.getElementById("restartButton"),
     pauseResumeButton: documentRef.getElementById("pauseResumeButton"),
     difficultyButtons: Array.from(documentRef.querySelectorAll?.("[data-difficulty]") || []),
+    modeButtons: Array.from(documentRef.querySelectorAll?.("[data-mode]") || []),
     startOverlay: documentRef.getElementById("startOverlay"),
     pauseOverlay: documentRef.getElementById("pauseOverlay"),
     endOverlay: documentRef.getElementById("endOverlay"),
@@ -453,6 +581,27 @@ export function createHud(documentRef) {
     finalSaveRate: documentRef.getElementById("finalSaveRate"),
     finalRhythmTag: documentRef.getElementById("finalRhythmTag"),
     finalControlTag: documentRef.getElementById("finalControlTag"),
+    finalSavesLabel: documentRef.getElementById("finalSavesLabel"),
+    finalBestStreakLabel: documentRef.getElementById("finalBestStreakLabel"),
+    finalConcededLabel: documentRef.getElementById("finalConcededLabel"),
+    scoreLabel: documentRef.getElementById("scoreLabel"),
+    timeLabel: documentRef.getElementById("timeLabel"),
+    streakLabel: documentRef.getElementById("streakLabel"),
+    concededLabel: documentRef.getElementById("concededLabel"),
+    startKicker: documentRef.getElementById("startKicker"),
+    startTitle: documentRef.getElementById("startTitle"),
+    startRuleA: documentRef.getElementById("startRuleA"),
+    startRuleB: documentRef.getElementById("startRuleB"),
+    startRuleC: documentRef.getElementById("startRuleC"),
+    startButtonLabel: documentRef.getElementById("startButtonLabel"),
+    penaltyScoreboard: documentRef.getElementById("penaltyScoreboard"),
+    penaltyTeamKicks: documentRef.getElementById("penaltyTeamKicks"),
+    penaltyOpponentKicks: documentRef.getElementById("penaltyOpponentKicks"),
+    penaltyTeamScore: documentRef.getElementById("penaltyTeamScore"),
+    penaltyOpponentScore: documentRef.getElementById("penaltyOpponentScore"),
+    penaltyRoundLabel: documentRef.getElementById("penaltyRoundLabel"),
+    penaltyPhaseLabel: documentRef.getElementById("penaltyPhaseLabel"),
+    penaltyAnnouncement: documentRef.getElementById("penaltyAnnouncement"),
   };
 
   function setVisible(element, visible) {
@@ -568,8 +717,9 @@ export function createHud(documentRef) {
   function updatePressureCue(state) {
     var cue = refs.pressureCue;
     var secondsLeft = getSecondsLeft(state);
-    var lowTime = state.running && !state.paused && !state.ended && secondsLeft <= LOW_TIME_SECONDS;
-    var matchPoint = state.running && !state.paused && !state.ended && (state.conceded || 0) >= MAX_CONCEDED - 1;
+    var timedMode = state.mode !== "penalty";
+    var lowTime = timedMode && state.running && !state.paused && !state.ended && secondsLeft <= LOW_TIME_SECONDS;
+    var matchPoint = timedMode && state.running && !state.paused && !state.ended && (state.conceded || 0) >= MAX_CONCEDED - 1;
     var cueText = getPressureCueText(state);
 
     if (refs.timeValue) {
@@ -605,13 +755,15 @@ export function createHud(documentRef) {
     var liveVisible = state.running && !state.ended;
     var lowTime = state.running && !state.paused && !state.ended && secondsLeft <= LOW_TIME_SECONDS;
     var matchPoint = state.running && !state.paused && !state.ended && (state.conceded || 0) >= MAX_CONCEDED - 1;
-    var text = "剩余 " + String(secondsLeft) + " 秒";
+    var isPenalty = state.mode === "penalty";
+    var penaltyPlan = getPenaltyHudPlan(state);
+    var text = isPenalty ? penaltyPlan.roundLabel + " " + penaltyPlan.phaseLabel : "剩余 " + String(secondsLeft) + " 秒";
 
     if (progress) {
       progress.dataset.hudSystem = MATCH_PROGRESS_HUD_MARKER;
       progress.setAttribute("aria-valuemin", "0");
-      progress.setAttribute("aria-valuemax", String(ROUND_SECONDS));
-      progress.setAttribute("aria-valuenow", String(secondsLeft));
+      progress.setAttribute("aria-valuemax", isPenalty ? "5" : String(ROUND_SECONDS));
+      progress.setAttribute("aria-valuenow", isPenalty ? String(Math.min(5, state.shootout?.teamKicks?.length || 0)) : String(secondsLeft));
       progress.setAttribute("aria-valuetext", text);
       progress.setAttribute("aria-label", text);
       progress.setAttribute("aria-hidden", liveVisible ? "false" : "true");
@@ -639,6 +791,10 @@ export function createHud(documentRef) {
       button.disabled = isLive;
       button.setAttribute("aria-disabled", isLive ? "true" : "false");
     });
+    refs.modeButtons.forEach((button) => {
+      button.disabled = isLive;
+      button.setAttribute("aria-disabled", isLive ? "true" : "false");
+    });
 
     setVisible(refs.pauseButton, isLive);
     if (refs.pauseButton) refs.pauseButton.disabled = !isLive;
@@ -656,6 +812,29 @@ export function createHud(documentRef) {
       refs.difficultyButtons.forEach((button) => {
         button.addEventListener("click", () => actions.onDifficulty?.(button.dataset.difficulty));
       });
+      refs.modeButtons.forEach((button) => {
+        button.addEventListener("click", () => actions.onMode?.(button.dataset.mode));
+      });
+    },
+    updateMode(selectedMode) {
+      var penaltyMode = selectedMode === "penalty";
+      if (refs.stage) refs.stage.dataset.mode = penaltyMode ? "penalty" : "timed";
+      refs.modeButtons.forEach((button) => {
+        var active = button.dataset.mode === selectedMode;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+      refs.difficultyButtons.forEach((button) => {
+        var extreme = button.dataset.difficulty === "extreme";
+        setClass(button, "hidden", penaltyMode ? !extreme : extreme);
+      });
+      if (refs.startKicker) refs.startKicker.textContent = penaltyMode ? "真实五轮 · 平局骤死" : "60 秒守门挑战";
+      if (refs.startTitle) refs.startTitle.textContent = penaltyMode ? "极限点球大战" : "弹力手套守门";
+      if (refs.startRuleA) refs.startRuleA.textContent = penaltyMode ? "5 轮" : "60 秒";
+      if (refs.startRuleB) refs.startRuleB.textContent = penaltyMode ? "双方交替" : "5 失球";
+      if (refs.startRuleC) refs.startRuleC.textContent = penaltyMode ? "平局骤死" : "x3 连扑";
+      if (refs.startButtonLabel) refs.startButtonLabel.textContent = penaltyMode ? "开始点球大战" : "开始挑战";
+      if (refs.startButton) refs.startButton.setAttribute("aria-label", penaltyMode ? "开始点球大战" : "开始挑战");
     },
     updateDifficulty(selectedDifficulty) {
       refs.difficultyButtons.forEach((button) => {
@@ -665,10 +844,28 @@ export function createHud(documentRef) {
       });
     },
     update(state, soundEnabled, context = {}) {
-      if (refs.scoreValue) refs.scoreValue.textContent = String(state.score);
-      if (refs.timeValue) refs.timeValue.textContent = String(getSecondsLeft(state));
-      if (refs.streakValue) refs.streakValue.textContent = "x" + String(state.streak || 0);
-      if (refs.concededValue) refs.concededValue.textContent = state.conceded + "/" + MAX_CONCEDED;
+      var penaltyPlan = getPenaltyHudPlan(state);
+      var penaltyMode = state.mode === "penalty";
+      var penaltyResult = penaltyMode ? getPenaltyResultPlan(state) : null;
+      if (refs.scoreLabel) refs.scoreLabel.textContent = penaltyMode ? "扑出" : "扑救分";
+      if (refs.timeLabel) refs.timeLabel.textContent = penaltyMode ? "轮次" : "时间";
+      if (refs.streakLabel) refs.streakLabel.textContent = penaltyMode ? "阶段" : "连扑";
+      if (refs.concededLabel) refs.concededLabel.textContent = penaltyMode ? "比分" : "失球";
+      if (refs.scoreValue) refs.scoreValue.textContent = String(penaltyMode ? state.saves || 0 : state.score);
+      if (refs.timeValue) refs.timeValue.textContent = String(penaltyMode ? state.shootout?.round || 1 : getSecondsLeft(state));
+      if (refs.streakValue) refs.streakValue.textContent = penaltyMode ? state.shootout?.suddenDeath ? "骤死" : "常规" : "x" + String(state.streak || 0);
+      if (refs.concededValue) refs.concededValue.textContent = penaltyMode ? String(penaltyPlan.teamScore) + ":" + String(penaltyPlan.opponentScore) : state.conceded + "/" + MAX_CONCEDED;
+      setVisible(refs.penaltyScoreboard, penaltyPlan.visible);
+      if (refs.penaltyTeamKicks) refs.penaltyTeamKicks.textContent = penaltyPlan.teamMarks;
+      if (refs.penaltyOpponentKicks) refs.penaltyOpponentKicks.textContent = penaltyPlan.opponentMarks;
+      if (refs.penaltyTeamScore) refs.penaltyTeamScore.textContent = String(penaltyPlan.teamScore);
+      if (refs.penaltyOpponentScore) refs.penaltyOpponentScore.textContent = String(penaltyPlan.opponentScore);
+      if (refs.penaltyRoundLabel) refs.penaltyRoundLabel.textContent = penaltyPlan.roundLabel;
+      if (refs.penaltyPhaseLabel) refs.penaltyPhaseLabel.textContent = penaltyPlan.phaseLabel;
+      if (refs.penaltyAnnouncement) {
+        refs.penaltyAnnouncement.textContent = context.penaltyAnnouncement || "";
+        setClass(refs.penaltyAnnouncement, "is-visible", Boolean(context.penaltyAnnouncement));
+      }
       if (refs.pauseButton) {
         refs.pauseButton.textContent = state.paused ? "▶" : "Ⅱ";
         refs.pauseButton.setAttribute("aria-label", state.paused ? "继续挑战" : "暂停挑战");
@@ -687,20 +884,20 @@ export function createHud(documentRef) {
           refs.soundStatus.dataset.soundStatus = soundLabel.status;
         }
       }
-      if (refs.finalScore) refs.finalScore.textContent = String(state.score);
+      if (refs.finalScore) refs.finalScore.textContent = penaltyMode ? penaltyResult.score : String(state.score);
       if (refs.resultGrade) {
-        var grade = getResultGrade(state);
-        refs.resultGrade.textContent = grade + "级";
+        var grade = penaltyMode ? penaltyResult.gradeTone : getResultGrade(state);
+        refs.resultGrade.textContent = penaltyMode ? penaltyResult.grade : grade + "级";
         refs.resultGrade.dataset.grade = grade;
       }
-      if (refs.resultReason) refs.resultReason.textContent = getResultReasonText(state.endReason);
-      if (refs.resultVerdict) refs.resultVerdict.textContent = getResultVerdictText(state);
+      if (refs.resultReason) refs.resultReason.textContent = penaltyMode ? penaltyResult.reason : getResultReasonText(state.endReason);
+      if (refs.resultVerdict) refs.resultVerdict.textContent = penaltyMode ? penaltyResult.verdict : getResultVerdictText(state);
       if (refs.resultSummary) {
-        refs.resultSummary.textContent = getResultSummaryText(state);
+        refs.resultSummary.textContent = penaltyMode ? penaltyResult.summary : getResultSummaryText(state);
         refs.resultSummary.dataset.summarySystem = ROUND_RESULT_SUMMARY_MARKER;
       }
       if (refs.resultCoach) {
-        refs.resultCoach.textContent = getResultCoachText(state);
+        refs.resultCoach.textContent = penaltyMode ? penaltyResult.coach : getResultCoachText(state);
         refs.resultCoach.dataset.resultCoachSystem = ROUND_RESULT_COACH_MARKER;
       }
       var resultReview = getResultReviewPlan(state);
@@ -714,8 +911,11 @@ export function createHud(documentRef) {
       }
       if (refs.startOverlay) refs.startOverlay.dataset.uiSystem = HUD_FLOW_POLISH_MARKER;
       if (refs.finalSaves) refs.finalSaves.textContent = String(state.saves || 0);
-      if (refs.finalBestStreak) refs.finalBestStreak.textContent = "x" + String(state.bestStreak || 0);
-      if (refs.finalConceded) refs.finalConceded.textContent = state.conceded + "/" + MAX_CONCEDED;
+      if (refs.finalSavesLabel) refs.finalSavesLabel.textContent = penaltyMode ? "扑出" : "扑救";
+      if (refs.finalBestStreakLabel) refs.finalBestStreakLabel.textContent = penaltyMode ? "决胜" : "连扑";
+      if (refs.finalConcededLabel) refs.finalConcededLabel.textContent = penaltyMode ? "对手进球" : "失球";
+      if (refs.finalBestStreak) refs.finalBestStreak.textContent = penaltyMode ? "第" + String(state.shootout?.round || 1) + "轮" : "x" + String(state.bestStreak || 0);
+      if (refs.finalConceded) refs.finalConceded.textContent = penaltyMode ? String(state.shootout?.opponentGoals || 0) : state.conceded + "/" + MAX_CONCEDED;
       if (refs.resultTags) refs.resultTags.dataset.resultTagsSystem = ROUND_RESULT_TAGS_MARKER;
       var resultTags = getResultPerformanceTags(state);
       if (refs.finalSaveRate) refs.finalSaveRate.textContent = resultTags[0].value;

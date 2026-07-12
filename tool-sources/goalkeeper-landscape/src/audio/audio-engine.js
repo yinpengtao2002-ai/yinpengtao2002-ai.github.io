@@ -26,6 +26,19 @@ const SAMPLE_ASSETS = {
   },
 };
 
+const MUSIC_ASSET = {
+  url: "/tools/goalkeeper-landscape/audio/mixkit-sports-rock-78.mp3",
+  title: "Sports Rock",
+  author: "Ahjay Stelino",
+  sourceUrl: "https://mixkit.co/free-stock-music/sports/",
+  license: "Mixkit Stock Music Free License",
+  licenseUrl: "https://mixkit.co/license/#musicFree",
+  gain: 0.13,
+  pausedGain: 0.0001,
+  loopStart: 6,
+  loopEnd: 96,
+};
+
 const SYNTH_PROFILE = {
   shot: { frequency: 120, endFrequency: 65, duration: 0.1, gain: 0.08, type: "sine" },
   save: { frequency: 260, endFrequency: 150, duration: 0.16, gain: 0.14, type: "square" },
@@ -62,6 +75,13 @@ const AUDIO_EVENT_PLANS = {
     { name: "frame", delay: 0, gainScale: 0.36, playbackRateOffset: -0.16, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "round-end-audio-cue" },
     { name: "tick", delay: 0.12, gainScale: 0.45, playbackRateOffset: 0 },
   ],
+  "penalty-team-goal": [
+    { name: "tick", delay: 0, gainScale: 0.72, playbackRateOffset: 0.18, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "penalty-team-goal-audio-cue" },
+    { name: "save", delay: 0.085, gainScale: 0.28, playbackRateOffset: 0.16 },
+  ],
+  "penalty-team-miss": [
+    { name: "frame", delay: 0, gainScale: 0.28, playbackRateOffset: -0.22, layer: MATCHDAY_AUDIO_EVENT_LAYER, marker: "penalty-team-miss-audio-cue" },
+  ],
 };
 
 const HAPTIC_PATTERNS = {
@@ -77,10 +97,16 @@ const HAPTIC_PATTERNS = {
   "danger-goal": [48, 35, 82],
   "save-streak": [16, 30, 16],
   "round-end": [32, 42, 32],
+  "penalty-team-goal": [14, 22, 14],
+  "penalty-team-miss": [22],
 };
 
 export function getSoundAssetManifest() {
   return { ...SAMPLE_ASSETS };
+}
+
+export function getMusicAssetManifest() {
+  return { ...MUSIC_ASSET };
 }
 
 export function getAudioEventPlan(eventName) {
@@ -98,6 +124,12 @@ export function createAudioEngine(root = window) {
   var unlocked = false;
   var sampleBuffers = {};
   var samplePromises = {};
+  var musicBuffer = null;
+  var musicPromise = null;
+  var musicSource = null;
+  var musicGain = null;
+  var musicWanted = false;
+  var musicPaused = false;
 
   function getContext() {
     if (!AudioContextCtor) return null;
@@ -179,9 +211,103 @@ export function createAudioEngine(root = window) {
     return samplePromises[name];
   }
 
+  function loadMusic() {
+    var ctx = getContext();
+    var fetcher = getFetcher();
+    if (!ctx || !fetcher || !ctx.decodeAudioData) return Promise.resolve(null);
+    if (musicBuffer) return Promise.resolve(musicBuffer);
+    if (musicPromise) return musicPromise;
+
+    musicPromise = fetcher(MUSIC_ASSET.url)
+      .then((response) => {
+        if (!response || !response.ok) return null;
+        return response.arrayBuffer();
+      })
+      .then((arrayBuffer) => {
+        if (!arrayBuffer) return null;
+        return ctx.decodeAudioData(arrayBuffer);
+      })
+      .then((buffer) => {
+        musicBuffer = buffer;
+        return buffer;
+      })
+      .catch(() => null);
+    return musicPromise;
+  }
+
   function preload() {
     getContext();
-    return Promise.all(Object.keys(SAMPLE_ASSETS).map(loadSample)).then(() => undefined);
+    return Promise.all([...Object.keys(SAMPLE_ASSETS).map(loadSample), loadMusic()]).then(() => undefined);
+  }
+
+  function getMusicGainValue() {
+    if (!enabled || musicPaused) return MUSIC_ASSET.pausedGain;
+    return MUSIC_ASSET.gain;
+  }
+
+  function syncMusicGain() {
+    var ctx = getContext();
+    if (!musicGain || !ctx) return;
+    setAudioParam(musicGain.gain, getMusicGainValue(), ctx.currentTime || 0);
+  }
+
+  function startMusic() {
+    musicWanted = true;
+    var ctx = getContext();
+    if (!ctx || !ctx.createBufferSource || !ctx.createGain) return Promise.resolve(false);
+    resumeContext(ctx);
+    if (musicSource) {
+      syncMusicGain();
+      return Promise.resolve(true);
+    }
+
+    return loadMusic().then((buffer) => {
+      if (!buffer || !musicWanted || musicSource) return Boolean(musicSource);
+      var source = ctx.createBufferSource();
+      var gain = ctx.createGain();
+      source.buffer = buffer;
+      source.loop = true;
+      source.loopStart = MUSIC_ASSET.loopStart;
+      source.loopEnd = MUSIC_ASSET.loopEnd;
+      source.connect(gain);
+      gain.connect(ctx.destination);
+      musicSource = source;
+      musicGain = gain;
+      syncMusicGain();
+      source.start(ctx.currentTime || 0, MUSIC_ASSET.loopStart);
+      source.onended = () => {
+        if (musicSource !== source) return;
+        musicSource = null;
+        musicGain = null;
+      };
+      unlocked = true;
+      return true;
+    });
+  }
+
+  function setMusicPaused(paused) {
+    musicPaused = Boolean(paused);
+    syncMusicGain();
+  }
+
+  function stopMusic() {
+    musicWanted = false;
+    var source = musicSource;
+    musicSource = null;
+    musicGain = null;
+    if (!source?.stop) return;
+    try {
+      source.stop(context?.currentTime || 0);
+    } catch {
+      // A source can only be stopped once; cleanup should stay idempotent.
+    }
+  }
+
+  function getMusicStatus() {
+    if (!AudioContextCtor) return "unavailable";
+    if (!musicSource) return musicWanted ? "loading" : "stopped";
+    if (!enabled || musicPaused) return "paused";
+    return "playing";
   }
 
   function playSample(name, ctx, modifiers = {}) {
@@ -265,7 +391,11 @@ export function createAudioEngine(root = window) {
 
   function toggle() {
     enabled = !enabled;
-    if (enabled) prime();
+    if (enabled) {
+      prime();
+      if (musicWanted) startMusic();
+    }
+    syncMusicGain();
     return enabled;
   }
 
@@ -282,6 +412,10 @@ export function createAudioEngine(root = window) {
     play,
     playEvent,
     pulseHaptic,
+    startMusic,
+    setMusicPaused,
+    stopMusic,
+    getMusicStatus,
     toggle,
     getStatus,
     isEnabled() {

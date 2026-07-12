@@ -190,6 +190,18 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(live.color).toBe("#ffffff");
   });
 
+  it("uses ring-only goal feedback so no warm contact disc sits behind the scored ball", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+
+    expect(sceneModule.getGoalContactFlashPlan).toBeTypeOf("function");
+    expect(SCENE_TUNING.feedback.goalContactDiscOpacity).toBe(0);
+    expect(sceneModule.getGoalContactFlashPlan({ impactStrength: 1 })).toMatchObject({
+      visible: false,
+      opacity: 0,
+      system: "ring-only-goal-feedback",
+    });
+  });
+
   it("keeps runtime net feedback below the ball-first occlusion budget", () => {
     expect(SCENE_TUNING.feedback.netBaseOpacity).toBeLessThanOrEqual(0.0001);
     expect(SCENE_TUNING.feedback.netPulseOpacityBoost).toBeLessThanOrEqual(0.0001);

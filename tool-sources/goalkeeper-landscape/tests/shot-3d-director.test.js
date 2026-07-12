@@ -3,6 +3,7 @@ import {
   DEFAULT_SHOT_DIFFICULTY,
   SHOT_DIFFICULTIES,
   createShot3DDirector,
+  getAdaptivePenaltySide,
   predictShotPosition,
   resolveShotDifficulty,
   updateShot3DDirector,
@@ -75,7 +76,7 @@ describe("3D shot director", () => {
 
   it("keeps medium as the current baseline while easy and hard adjust shot pressure", () => {
     expect(DEFAULT_SHOT_DIFFICULTY).toBe("medium");
-    expect(Object.keys(SHOT_DIFFICULTIES)).toEqual(["easy", "medium", "hard"]);
+    expect(Object.keys(SHOT_DIFFICULTIES)).toEqual(["easy", "medium", "hard", "extreme"]);
     expect(resolveShotDifficulty("missing").id).toBe("medium");
 
     const easy = createShot3DDirector({ seed: 22, elapsed: 18, difficulty: "easy" }).currentShot;
@@ -93,5 +94,44 @@ describe("3D shot director", () => {
     expect(hard.cueDuration).toBeLessThan(medium.cueDuration);
     expect(hard.ballPlan.velocity.z).toBeGreaterThan(medium.ballPlan.velocity.z);
     expect(easy.ballPlan.velocity.z).toBeLessThan(medium.ballPlan.velocity.z);
+  });
+
+  it("makes extreme penalty shots faster and more corner-focused than hard shots", () => {
+    const hardShots = Array.from({ length: 100 }, (_, index) => createShot3DDirector({
+      seed: index + 1,
+      elapsed: 30,
+      difficulty: "hard",
+    }).currentShot);
+    const extremeShots = Array.from({ length: 100 }, (_, index) => createShot3DDirector({
+      seed: index + 1,
+      elapsed: 30,
+      difficulty: "extreme",
+      keeperX: 0,
+    }).currentShot);
+    const hardAverageFlight = hardShots.reduce((sum, shot) => sum + shot.flightTime, 0) / hardShots.length;
+    const extremeAverageFlight = extremeShots.reduce((sum, shot) => sum + shot.flightTime, 0) / extremeShots.length;
+    const extremeCorners = extremeShots.filter((shot) => (
+      Math.abs(shot.target.x) >= 2.7 && (shot.target.y <= 0.72 || shot.target.y >= 1.96)
+    ));
+
+    expect(resolveShotDifficulty("extreme").label).toBe("极难");
+    expect(extremeAverageFlight).toBeLessThan(hardAverageFlight);
+    expect(extremeCorners.length).toBeGreaterThanOrEqual(70);
+  });
+
+  it("reads the keeper position and attacks the opposite side most of the time on extreme", () => {
+    const leftKeeperSides = Array.from({ length: 100 }, (_, index) => getAdaptivePenaltySide(
+      () => (index + 0.5) / 100,
+      -1.4,
+      "extreme",
+    ));
+    const rightKeeperSides = Array.from({ length: 100 }, (_, index) => getAdaptivePenaltySide(
+      () => (index + 0.5) / 100,
+      1.4,
+      "extreme",
+    ));
+
+    expect(leftKeeperSides.filter((side) => side === 1).length).toBeGreaterThanOrEqual(82);
+    expect(rightKeeperSides.filter((side) => side === -1).length).toBeGreaterThanOrEqual(82);
   });
 });

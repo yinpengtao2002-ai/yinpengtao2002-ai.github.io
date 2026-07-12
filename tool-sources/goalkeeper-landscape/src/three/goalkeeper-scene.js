@@ -172,6 +172,7 @@ export const SCENE_TUNING = {
     impactRingCount: 4,
     saveFlashColor: "#fff1a8",
     goalFlashColor: "#ff7846",
+    goalContactDiscOpacity: 0,
     dangerGoalFlashColor: "#ff3f2f",
     streakFlashColor: "#61f0ff",
     frameFlashColor: "#f8fff2",
@@ -693,6 +694,19 @@ export function getBallHaloAppearancePlan(ballState = {}, position = {}, tuning 
 
   return {
     color: tuning.haloColor,
+    opacity,
+    visible: opacity > 0.002,
+  };
+}
+
+export function getGoalContactFlashPlan(profile = {}, tuning = SCENE_TUNING.feedback) {
+  var opacity = clampNumber(
+    (tuning.goalContactDiscOpacity || 0) * (profile.impactStrength || 1),
+    0,
+    0.16,
+  );
+  return {
+    system: "ring-only-goal-feedback",
     opacity,
     visible: opacity > 0.002,
   };
@@ -2717,9 +2731,11 @@ export function createGoalkeeperScene(canvas) {
     var contactX = Math.max(-RAPIER_GOAL.halfWidth + 0.18, Math.min(RAPIER_GOAL.halfWidth - 0.18, position.x || 0));
     var contactY = Math.max(0.18, Math.min(RAPIER_GOAL.height - 0.08, position.y || 1));
     var contactZ = position.z || RAPIER_GOAL.netPlaneZ;
+    var contactFlashPlan = getGoalContactFlashPlan(profile, tuning.feedback);
     goalFlash.material.color.set(profile.flashColor);
     goalFlash.position.set(contactX, Math.max(0.08, contactY), contactZ + 0.05);
-    goalFlash.material.opacity = Math.min(0.16, 0.1 * profile.impactStrength + (profile.kind === "danger-goal" ? 0.03 : 0));
+    goalFlash.material.opacity = contactFlashPlan.opacity;
+    goalFlash.visible = contactFlashPlan.visible;
     goalFlash.scale.setScalar(1);
     triggerImpact("goal", { ...position, x: contactX, y: contactY }, profile.impactStrength, profile, eventPlan);
     goalWaves.forEach((wave, index) => {
@@ -3133,6 +3149,8 @@ export function createGoalkeeperScene(canvas) {
       goalFlash.material.opacity = Math.max(0, goalFlash.material.opacity - 0.028);
       goalFlash.scale.multiplyScalar(1.028);
       goalFlash.lookAt(camera.position);
+    } else {
+      goalFlash.visible = false;
     }
 
     if (streakFlash.userData.life > 0) {

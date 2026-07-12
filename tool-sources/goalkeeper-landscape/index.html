@@ -20,30 +20,48 @@
           <section class="game-hud broadcast-scorebug" id="gameHud" data-hud-system="broadcast-scorebug-compact-hud" aria-label="比赛状态">
             <div class="glass-panel hud-score hud-metric">
               <span class="hud-icon hud-icon-score" aria-hidden="true"></span>
-              <span class="hud-label">扑救分</span>
+              <span class="hud-label" id="scoreLabel">扑救分</span>
               <strong class="hud-value" id="scoreValue">0</strong>
             </div>
 
             <div class="glass-panel hud-time hud-metric">
               <span class="hud-icon hud-icon-time" aria-hidden="true"></span>
-              <span class="hud-label">时间</span>
+              <span class="hud-label" id="timeLabel">时间</span>
               <strong class="hud-value" id="timeValue">60</strong>
             </div>
 
             <div class="hud-actions">
               <div class="glass-panel hud-streak hud-metric">
                 <span class="hud-icon hud-icon-streak" aria-hidden="true"></span>
-                <span class="hud-label">连扑</span>
+                <span class="hud-label" id="streakLabel">连扑</span>
                 <strong class="hud-value" id="streakValue">0</strong>
               </div>
               <div class="glass-panel hud-goals hud-metric">
                 <span class="hud-icon hud-icon-goals" aria-hidden="true"></span>
-                <span class="hud-label">失球</span>
+                <span class="hud-label" id="concededLabel">失球</span>
                 <strong class="hud-value" id="concededValue">0/5</strong>
               </div>
                 <button class="glass-button hud-pause-button" id="pauseButton" type="button" aria-label="暂停挑战">Ⅱ</button>
             </div>
           </section>
+
+          <section class="penalty-scoreboard hidden" id="penaltyScoreboard" data-hud-system="penalty-shootout-score-strip" aria-label="点球大战比分">
+            <div class="penalty-heading">
+              <strong id="penaltyRoundLabel">第 1 轮</strong>
+              <span id="penaltyPhaseLabel">准备扑救</span>
+            </div>
+            <div class="penalty-team-row">
+              <span>我方</span>
+              <strong class="penalty-kick-marks" id="penaltyTeamKicks">· · · · ·</strong>
+              <b id="penaltyTeamScore">0</b>
+            </div>
+            <div class="penalty-team-row is-opponent">
+              <span>对手</span>
+              <strong class="penalty-kick-marks" id="penaltyOpponentKicks">· · · · ·</strong>
+              <b id="penaltyOpponentScore">0</b>
+            </div>
+          </section>
+          <div class="penalty-announcement" id="penaltyAnnouncement" aria-live="polite"></div>
 
           <div class="event-ribbon" id="eventRibbon" data-hud-system="single-match-event-feedback-layer" aria-live="polite"></div>
           <div class="match-status" id="matchStatus" aria-live="polite"></div>
@@ -53,27 +71,34 @@
           </div>
 
           <div class="bottom-controls" id="bottomControls" aria-label="游戏控制">
-            <div class="difficulty-control glass-panel" role="group" aria-label="难度">
-              <button class="difficulty-button" type="button" data-difficulty="easy" aria-pressed="false">容易</button>
-              <button class="difficulty-button is-active" type="button" data-difficulty="medium" aria-pressed="true">中等</button>
-              <button class="difficulty-button" type="button" data-difficulty="hard" aria-pressed="false">困难</button>
+            <div class="setup-controls">
+              <div class="mode-control glass-panel" role="group" aria-label="游戏模式">
+                <button class="mode-button is-active" type="button" data-mode="timed" aria-pressed="true">经典</button>
+                <button class="mode-button" type="button" data-mode="penalty" aria-pressed="false">点球大战</button>
+              </div>
+              <div class="difficulty-control glass-panel" role="group" aria-label="难度">
+                <button class="difficulty-button" type="button" data-difficulty="easy" aria-pressed="false">容易</button>
+                <button class="difficulty-button is-active" type="button" data-difficulty="medium" aria-pressed="true">中等</button>
+                <button class="difficulty-button" type="button" data-difficulty="hard" aria-pressed="false">困难</button>
+                <button class="difficulty-button hidden" type="button" data-difficulty="extreme" aria-pressed="false">极难</button>
+              </div>
             </div>
-            <button class="glass-button utility-button" id="soundButton" type="button" aria-label="音效待启用，开始挑战后会解锁"></button>
-            <span class="sound-status" id="soundStatus" data-audio-status-system="match-audio-status-chip" aria-live="polite">点开始后启用音效</span>
+            <button class="glass-button utility-button" id="soundButton" type="button" aria-label="音乐与音效待启用，开始挑战后会解锁"></button>
+            <span class="sound-status" id="soundStatus" data-audio-status-system="match-audio-status-chip" aria-live="polite">点开始后启用音乐与音效</span>
           </div>
 
           <div class="overlay start-overlay" id="startOverlay">
             <div class="start-panel" data-ui-system="match-hud-flow-polish">
-              <p class="start-kicker">60 秒守门挑战</p>
-              <h1>弹力手套守门</h1>
+              <p class="start-kicker" id="startKicker">60 秒守门挑战</p>
+              <h1 id="startTitle">弹力手套守门</h1>
               <div class="start-rules" aria-label="挑战规则">
-                <span><strong>60</strong> 秒</span>
-                <span><strong>5</strong> 失球</span>
-                <span><strong>x3</strong> 连扑</span>
+                <span id="startRuleA"><strong>60</strong> 秒</span>
+                <span id="startRuleB"><strong>5</strong> 失球</span>
+                <span id="startRuleC"><strong>x3</strong> 连扑</span>
               </div>
               <button class="start-disc" id="startButton" type="button" aria-label="开始挑战">
                 <span aria-hidden="true">▶</span>
-                <strong>开始挑战</strong>
+                <strong id="startButtonLabel">开始挑战</strong>
               </button>
             </div>
           </div>
@@ -99,9 +124,9 @@
                 <p class="result-verdict" id="resultVerdict">先守住中路，再去赌边角</p>
                 <p class="result-summary" id="resultSummary">再来一局，读准球路</p>
                 <div class="result-stats" aria-label="本局统计">
-                  <span>扑救 <strong id="finalSaves">0</strong></span>
-                  <span>连扑 <strong id="finalBestStreak">x0</strong></span>
-                  <span>失球 <strong id="finalConceded">0/5</strong></span>
+                  <span><i id="finalSavesLabel">扑救</i> <strong id="finalSaves">0</strong></span>
+                  <span><i id="finalBestStreakLabel">连扑</i> <strong id="finalBestStreak">x0</strong></span>
+                  <span><i id="finalConcededLabel">失球</i> <strong id="finalConceded">0/5</strong></span>
                 </div>
                 <p class="result-coach" id="resultCoach" data-result-coach-system="round-result-coach-note">下一局先等球过半，再做大幅移动</p>
                 <button id="restartButton" type="button">再来一局</button>
