@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  TOUCH_GLOVE_OFFSET_PX,
   createGloveController,
   mapPointerToGloveTarget,
+  resolveInputPointerWorldTarget,
   updateGloveController,
 } from "../src/input/glove-controller.js";
 
@@ -42,7 +44,7 @@ describe("3D glove controller", () => {
     expect(touch.target.x).toBeCloseTo(target.x, 5);
   });
 
-  it("uses the same zero-offset projected target for mouse and touch input", () => {
+  it("uses the camera-projected target supplied for each input mode", () => {
     const pointer = { x: 1120, y: 520 };
     const pointerWorldTarget = { x: 2.35, y: 0.14, z: 3.15 };
     const target = mapPointerToGloveTarget(pointer, { ...bounds, pointerWorldTarget });
@@ -63,6 +65,25 @@ describe("3D glove controller", () => {
     expect(touch.target.y).toBeCloseTo(pointerWorldTarget.y, 5);
     expect(mouse.target.x).toBeCloseTo(pointerWorldTarget.x, 5);
     expect(mouse.target.y).toBeCloseTo(pointerWorldTarget.y, 5);
+  });
+
+  it("keeps mouse at zero offset while giving touch a restrained upward offset", () => {
+    const direct = { x: 1.4, y: 1.2, z: 3.15 };
+    const shifted = { x: 1.4, y: 1.68, z: 3.15 };
+
+    expect(TOUCH_GLOVE_OFFSET_PX).toBe(22);
+    expect(resolveInputPointerWorldTarget(direct, shifted, "mouse")).toEqual(direct);
+    expect(resolveInputPointerWorldTarget(direct, shifted, "touch")).toEqual(shifted);
+  });
+
+  it("fades the touch offset to zero at the lower save boundary", () => {
+    const direct = { x: -2.8, y: 0.08, z: 3.15 };
+    const shifted = { x: -2.8, y: 0.56, z: 3.15 };
+    const target = resolveInputPointerWorldTarget(direct, shifted, "touch");
+
+    expect(target.x).toBeCloseTo(direct.x, 5);
+    expect(target.y).toBeCloseTo(direct.y, 5);
+    expect(target.z).toBeCloseTo(direct.z, 5);
   });
 
   it("mouse still eases into the target instead of snapping", () => {

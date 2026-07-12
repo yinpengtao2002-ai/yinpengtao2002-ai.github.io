@@ -21,7 +21,13 @@ import {
   updateShot3DDirector,
 } from "./shot-3d-director.js";
 import { createPointerInput } from "../input/pointer-input.js";
-import { GLOVE_3D, createGloveController, updateGloveController } from "../input/glove-controller.js";
+import {
+  GLOVE_3D,
+  TOUCH_GLOVE_OFFSET_PX,
+  createGloveController,
+  resolveInputPointerWorldTarget,
+  updateGloveController,
+} from "../input/glove-controller.js";
 import { createRapierGoalkeeperWorld } from "../physics/rapier-world.js";
 import { resolveGoalNetCollision } from "../physics/goal-net-geometry.js";
 import { createGoalkeeperScene } from "../three/goalkeeper-scene.js";
@@ -627,11 +633,22 @@ export async function createThreeGameRuntime(options) {
 
   function updateGloveFromPointer(dt) {
     var pointer = input.getPointer(bounds);
+    var inputMode = input.getMode();
     lastPointerInput = pointer;
-    var pointerWorldTarget = scene.projectPointerToGlovePlane?.(pointer, bounds, GLOVE_3D.planeZ) || null;
+    var directWorldTarget = scene.projectPointerToGlovePlane?.(pointer, bounds, GLOVE_3D.planeZ) || null;
+    var shiftedWorldTarget = inputMode === "touch"
+      ? scene.projectPointerToGlovePlane?.(
+          { x: pointer.x, y: Math.max(0, pointer.y - TOUCH_GLOVE_OFFSET_PX) },
+          bounds,
+          GLOVE_3D.planeZ,
+        ) || null
+      : null;
+    var pointerWorldTarget = directWorldTarget
+      ? resolveInputPointerWorldTarget(directWorldTarget, shiftedWorldTarget, inputMode)
+      : null;
     gloveController = updateGloveController(gloveController, pointer, dt, {
       ...bounds,
-      inputMode: input.getMode(),
+      inputMode,
       pointerWorldTarget,
     });
   }
