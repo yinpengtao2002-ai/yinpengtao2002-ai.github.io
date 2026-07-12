@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { createShot3DDirector } from "../src/game/shot-3d-director.js";
-import { GOAL_CAGE_POINTS, GOAL_FRAME_SEGMENTS } from "../src/physics/goal-net-geometry.js";
+import {
+  GOAL_CAGE_POINTS,
+  GOAL_FRAME_SEGMENTS,
+  getGoalRoofHeightAtZ,
+  getGoalSideHalfWidthAtZ,
+} from "../src/physics/goal-net-geometry.js";
 import { RAPIER_GOAL, createRapierGoalkeeperWorld } from "../src/physics/rapier-world.js";
 
 describe("Rapier goalkeeper world", () => {
@@ -402,6 +407,68 @@ describe("Rapier goalkeeper world", () => {
     expect(ball.position.z).toBeLessThanOrEqual(GOAL_CAGE_POINTS.rearBottomRight.z + ball.radius);
     expect(ball.position.z).toBeGreaterThanOrEqual(RAPIER_GOAL.netPlaneZ);
     expect(ball.velocity.z).toBeLessThanOrEqual(0);
+
+    world.dispose();
+  });
+
+  it("contains an extreme top-corner penalty after the ball reaches the roof-rear seam", async () => {
+    const world = await createRapierGoalkeeperWorld();
+    const shot = createShot3DDirector({ seed: 15, difficulty: "extreme", keeperX: 0 }).currentShot;
+
+    world.setGloveTarget({ x: 0, y: 3, z: 3.15 });
+    world.launchShot(shot.ballPlan);
+
+    let goalSeen = false;
+    let maxRearPenetration = Number.NEGATIVE_INFINITY;
+    let maxSidePenetration = Number.NEGATIVE_INFINITY;
+    let maxRoofPenetration = Number.NEGATIVE_INFINITY;
+    for (let frame = 0; frame < 180; frame += 1) {
+      world.step(1 / 120);
+      const ball = world.getBallState();
+      if (ball.outcome === "goal") goalSeen = true;
+      if (!goalSeen || !ball.position) continue;
+      maxRearPenetration = Math.max(
+        maxRearPenetration,
+        ball.position.z + ball.radius - GOAL_CAGE_POINTS.rearBottomRight.z,
+      );
+      maxSidePenetration = Math.max(
+        maxSidePenetration,
+        Math.abs(ball.position.x) + ball.radius - getGoalSideHalfWidthAtZ(ball.position.z),
+      );
+      maxRoofPenetration = Math.max(
+        maxRoofPenetration,
+        ball.position.y + ball.radius - getGoalRoofHeightAtZ(ball.position.z),
+      );
+    }
+
+    expect(goalSeen).toBe(true);
+    expect(maxRearPenetration).toBeLessThanOrEqual(0.02);
+    expect(maxSidePenetration).toBeLessThanOrEqual(0.02);
+    expect(maxRoofPenetration).toBeLessThanOrEqual(0.02);
+
+    world.dispose();
+  });
+
+  it("keeps a scored extreme penalty inside the goal mouth for the full replay hold", async () => {
+    const world = await createRapierGoalkeeperWorld();
+    const shot = createShot3DDirector({ seed: 27, difficulty: "extreme", keeperX: 0 }).currentShot;
+
+    world.setGloveTarget({ x: 0, y: 3, z: 3.15 });
+    world.launchShot(shot.ballPlan);
+
+    let framesAfterGoal = 0;
+    let minGoalZ = Number.POSITIVE_INFINITY;
+    while (framesAfterGoal <= 130) {
+      world.step(1 / 120);
+      const ball = world.getBallState();
+      if (ball.outcome !== "goal" || !ball.position) continue;
+      framesAfterGoal += 1;
+      minGoalZ = Math.min(minGoalZ, ball.position.z);
+    }
+
+    const ball = world.getBallState();
+    expect(ball.outcome).toBe("goal");
+    expect(minGoalZ).toBeGreaterThanOrEqual(RAPIER_GOAL.netPlaneZ + ball.radius - 0.02);
 
     world.dispose();
   });

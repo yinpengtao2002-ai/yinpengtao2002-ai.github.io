@@ -99,6 +99,10 @@ function createDocument() {
     "penaltyRoundLabel",
     "penaltyPhaseLabel",
     "penaltyAnnouncement",
+    "penaltyRoundBreak",
+    "penaltyRoundBreakLabel",
+    "penaltyRoundBreakScore",
+    "penaltyRoundBreakDetail",
     "finalSavesLabel",
     "finalBestStreakLabel",
     "finalConcededLabel",
@@ -269,6 +273,70 @@ describe("hud", () => {
     expect(documentRef.elements.timeValue.textContent).toBe("6");
     expect(documentRef.elements.streakValue.textContent).toBe("骤死");
     expect(documentRef.elements.concededValue.textContent).toBe("3:3");
+  });
+
+  it("shows each completed penalty round score in the center before the next countdown", () => {
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    const state = {
+      ...createGameState({ mode: "penalty" }),
+      mode: "penalty",
+      running: true,
+      shootout: {
+        teamKicks: ["goal", "miss"],
+        opponentKicks: ["goal", "goal"],
+        teamGoals: 1,
+        opponentGoals: 2,
+        suddenDeath: false,
+        phase: "defend",
+        round: 3,
+        ended: false,
+        winner: null,
+      },
+    };
+
+    hud.update(state, true, {
+      audioStatus: "ready",
+      penaltyRoundBreak: {
+        visible: true,
+        round: 2,
+        roundLabel: "第 2 轮结束",
+        scoreText: "1 : 2",
+        teamResultLabel: "我方未进",
+        teamGoals: 1,
+        opponentGoals: 2,
+      },
+    });
+
+    expect(documentRef.elements.penaltyRoundBreak.classList.contains("is-visible")).toBe(true);
+    expect(documentRef.elements.penaltyRoundBreakLabel.textContent).toBe("第 2 轮结束");
+    expect(documentRef.elements.penaltyRoundBreakScore.textContent).toBe("1 : 2");
+    expect(documentRef.elements.penaltyRoundBreakDetail.textContent).toBe("我方未进");
+    expect(documentRef.elements.penaltyAnnouncement.classList.contains("is-visible")).toBe(false);
+  });
+
+  it("labels the centered penalty countdown with its round", () => {
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    const state = {
+      ...createGameState({ mode: "penalty" }),
+      mode: "penalty",
+      running: true,
+    };
+
+    hud.update(state, true, {
+      audioStatus: "ready",
+      roundIntroCue: {
+        visible: true,
+        label: "3",
+        kicker: "第 2 轮",
+        ariaLabel: "第 2 轮点球，3 秒后射门",
+      },
+    });
+
+    expect(documentRef.elements.matchStatus.textContent).toBe("第 2 轮 · 3");
+    expect(documentRef.elements.matchStatus.classList.contains("is-penalty-countdown")).toBe(true);
+    expect(documentRef.elements.matchStatus.getAttribute("aria-label")).toBe("第 2 轮点球，3 秒后射门");
   });
 
   it("turns the result card into a penalty win or loss summary", () => {

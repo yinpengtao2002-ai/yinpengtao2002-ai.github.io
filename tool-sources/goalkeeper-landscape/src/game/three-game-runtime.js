@@ -36,7 +36,9 @@ export const PARRIED_SAVE_REPLAY_STYLE = "parried-save-deflection-replay";
 export const GROUND_CONTACT_AUDIO_COOLDOWN = 0.28;
 export const OUTCOME_HUD_HOLD_SECONDS = 0.82;
 export const PENALTY_TEAM_KICK_DELAY = 0.96;
-export const PENALTY_NEXT_SHOT_DELAY = 2.05;
+export const PENALTY_ROUND_SCORE_HOLD_SECONDS = 1.8;
+export const PENALTY_KICK_COUNTDOWN_SECONDS = 3;
+export const PENALTY_NEXT_SHOT_DELAY = PENALTY_TEAM_KICK_DELAY + PENALTY_ROUND_SCORE_HOLD_SECONDS;
 const GROUND_FEEDBACK_DURATION = 0.62;
 const PARRIED_ROLLING_DAMPING_60HZ = 0.993;
 const PARRIED_ROLLING_SPIN_DAMPING_60HZ = 0.996;
@@ -62,6 +64,22 @@ export function getRoundIntroCue(timer) {
   var remaining = Math.max(0, timer || 0);
   if (remaining <= 0) return { visible: false, label: "" };
   return { visible: true, label: String(Math.max(1, Math.ceil(remaining))) };
+}
+
+export function getPenaltyCountdownCue(timer, state = {}) {
+  var remaining = Math.max(0, timer || 0);
+  if (state?.mode !== "penalty" || remaining <= 0) {
+    return { visible: false, label: "", kicker: "", ariaLabel: "" };
+  }
+  var count = String(Math.max(1, Math.ceil(remaining)));
+  var roundPrefix = state.shootout?.suddenDeath ? "骤死第 " : "第 ";
+  var kicker = roundPrefix + String(state.shootout?.round || 1) + " 轮";
+  return {
+    visible: true,
+    label: count,
+    kicker,
+    ariaLabel: kicker + "点球，" + count + " 秒后射门",
+  };
 }
 
 export function applyForcedGloveTarget(controller, target) {
@@ -181,6 +199,38 @@ export function getPenaltyTeamAnnouncement(state) {
   if (state?.mode !== "penalty" || event?.side !== "team") return "";
   var label = event.result === "goal" ? "我方罚进" : "我方未进";
   return label + " · " + String(state.shootout.teamGoals || 0) + ":" + String(state.shootout.opponentGoals || 0);
+}
+
+export function getPenaltyRoundBreak(state) {
+  var shootout = state?.shootout;
+  var event = shootout?.lastEvent;
+  if (state?.mode !== "penalty" || state.ended || !shootout || event?.side !== "team") {
+    return {
+      visible: false,
+      round: 0,
+      roundLabel: "",
+      scoreText: "",
+      teamResultLabel: "",
+      teamGoals: shootout?.teamGoals || 0,
+      opponentGoals: shootout?.opponentGoals || 0,
+    };
+  }
+  var round = event.round || Math.max(shootout.teamKicks?.length || 0, shootout.opponentKicks?.length || 0, 1);
+  var roundPrefix = shootout.suddenDeath ? "骤死第 " : "第 ";
+  return {
+    visible: true,
+    round,
+    roundLabel: roundPrefix + String(round) + " 轮结束",
+    scoreText: String(shootout.teamGoals || 0) + " : " + String(shootout.opponentGoals || 0),
+    teamResultLabel: event.result === "goal" ? "我方罚进" : "我方未进",
+    teamGoals: shootout.teamGoals || 0,
+    opponentGoals: shootout.opponentGoals || 0,
+  };
+}
+
+export function prepareNextPenaltyShot(director, elapsed, difficulty, keeperX) {
+  var completed = completeShot3D({ ...director, difficulty });
+  return updateShot3DDirector(completed, 1, elapsed, difficulty, { keeperX });
 }
 
 export function getGroundContactAudioEvent(feedback) {
@@ -552,6 +602,8 @@ export async function createThreeGameRuntime(options) {
   var roundIntroTimer = 0;
   var penaltyTeamResolved = false;
   var penaltyAnnouncement = "";
+  var penaltyRoundBreak = null;
+  var penaltyRoundBreakTimer = 0;
   var musicStoppedForResult = false;
   var lastFrame = 0;
   var runningLoop = false;
@@ -590,9 +642,11 @@ export async function createThreeGameRuntime(options) {
     lingeringBalls = [];
     forcedGloveTarget = null;
     forcedGloveTimer = 0;
-    roundIntroTimer = ROUND_INTRO_SECONDS;
+    roundIntroTimer = selectedMode === "penalty" ? PENALTY_KICK_COUNTDOWN_SECONDS : ROUND_INTRO_SECONDS;
     penaltyTeamResolved = false;
     penaltyAnnouncement = "";
+    penaltyRoundBreak = null;
+    penaltyRoundBreakTimer = 0;
     musicStoppedForResult = false;
     updateHud();
   }
@@ -609,6 +663,7 @@ export async function createThreeGameRuntime(options) {
       radius: ball.radius,
       lastContact: ball.lastContact,
       netContact: ball.netContact,
+      replaySourceShotId: launchedShotId,
       age: 0,
       duration: duration,
     });
@@ -657,6 +712,8 @@ export async function createThreeGameRuntime(options) {
         state = simulatePenaltyTeamKick(state, Math.random());
         penaltyTeamResolved = true;
         penaltyAnnouncement = getPenaltyTeamAnnouncement(state);
+        penaltyRoundBreak = getPenaltyRoundBreak(state);
+        penaltyRoundBreakTimer = penaltyRoundBreak.visible ? PENALTY_ROUND_SCORE_HOLD_SECONDS : 0;
         audio.playEvent(state.shootout?.lastEvent?.result === "goal" ? "penalty-team-goal" : "penalty-team-miss");
         if (state.ended) playOutcomeAudioEvent(previousPenaltyState);
         return;
@@ -665,13 +722,18 @@ export async function createThreeGameRuntime(options) {
     }
     var nextShotDelay = getNextShotDelayForOutcome(handledOutcome);
     if ((state.mode === "penalty" || outcomeTimer >= nextShotDelay) && !state.ended) {
-      director = completeShot3D({ ...director, difficulty: selectedDifficulty });
+      director = state.mode === "penalty"
+        ? prepareNextPenaltyShot(director, state.elapsed, selectedDifficulty, gloveController.center.x)
+        : completeShot3D({ ...director, difficulty: selectedDifficulty });
       physics.resetBall();
       launchedShotId = null;
       handledOutcome = null;
       outcomeTimer = 0;
       penaltyTeamResolved = false;
       penaltyAnnouncement = "";
+      penaltyRoundBreak = null;
+      penaltyRoundBreakTimer = 0;
+      if (state.mode === "penalty") roundIntroTimer = PENALTY_KICK_COUNTDOWN_SECONDS;
     }
   }
 
@@ -740,6 +802,8 @@ export async function createThreeGameRuntime(options) {
   function update(dt) {
     if (!state.running || state.paused || state.ended) return;
 
+    penaltyRoundBreakTimer = Math.max(0, penaltyRoundBreakTimer - Math.max(0, dt || 0));
+
     if (roundIntroTimer > 0) {
       gloveController = updateGloveController(gloveController, input.getPointer(bounds), dt, {
         ...bounds,
@@ -748,7 +812,7 @@ export async function createThreeGameRuntime(options) {
       physics.setGloveTarget(gloveController.center);
       var introBeforeTick = roundIntroTimer;
       roundIntroTimer = advanceRoundIntroTimer(roundIntroTimer, dt);
-      if (introBeforeTick > 0 && roundIntroTimer <= 0) {
+      if (introBeforeTick > 0 && roundIntroTimer <= 0 && state.mode !== "penalty") {
         director = createShot3DDirector({
           seed: director.seed,
           elapsed: state.elapsed,
@@ -837,6 +901,8 @@ export async function createThreeGameRuntime(options) {
     stage.dataset.penaltyTeamScore = String(state.shootout?.teamGoals ?? "");
     stage.dataset.penaltyOpponentScore = String(state.shootout?.opponentGoals ?? "");
     stage.dataset.penaltySuddenDeath = state.shootout?.suddenDeath ? "true" : "false";
+    stage.dataset.penaltyFlow = penaltyRoundBreakTimer > 0 ? "score-break" : roundIntroTimer > 0 ? "countdown" : "play";
+    stage.dataset.penaltyRoundBreak = penaltyRoundBreakTimer > 0 ? "true" : "false";
     stage.dataset.gloveX = String(Math.round((gloveController.center?.x || 0) * 100) / 100);
     stage.dataset.shotTargetX = String(Math.round((director.currentShot?.target?.x || 0) * 100) / 100);
     stage.dataset.musicStatus = audio.getMusicStatus?.() || "unavailable";
@@ -845,8 +911,13 @@ export async function createThreeGameRuntime(options) {
   function getHudContext() {
     return {
       audioStatus: audio.getStatus?.() || (audio.isEnabled() ? "locked" : "muted"),
-      roundIntroCue: getRoundIntroCue(roundIntroTimer),
+      roundIntroCue: state.mode === "penalty"
+        ? getPenaltyCountdownCue(roundIntroTimer, state)
+        : getRoundIntroCue(roundIntroTimer),
       penaltyAnnouncement,
+      penaltyRoundBreak: penaltyRoundBreak
+        ? { ...penaltyRoundBreak, visible: penaltyRoundBreak.visible && penaltyRoundBreakTimer > 0 && !state.ended }
+        : { visible: false },
     };
   }
 
@@ -899,6 +970,8 @@ export async function createThreeGameRuntime(options) {
     forcedGloveTarget = gloveTarget;
     forcedGloveTimer = DEBUG_FORCE_GLOVE_HOLD_SECONDS;
     roundIntroTimer = 0;
+    penaltyRoundBreak = null;
+    penaltyRoundBreakTimer = 0;
     launchCurrentShotIfNeeded();
   }
 
@@ -1023,6 +1096,8 @@ export async function createThreeGameRuntime(options) {
       state = recordPenaltyTeamKick(state, result);
       penaltyTeamResolved = true;
       penaltyAnnouncement = getPenaltyTeamAnnouncement(state);
+      penaltyRoundBreak = getPenaltyRoundBreak(state);
+      penaltyRoundBreakTimer = penaltyRoundBreak.visible ? PENALTY_ROUND_SCORE_HOLD_SECONDS : 0;
       updateHud();
       return true;
     },

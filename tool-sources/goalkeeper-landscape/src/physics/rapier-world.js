@@ -385,6 +385,7 @@ class RapierGoalkeeperWorld {
         radius: this.ballRadius,
         netContact: this.netContact,
         sourceContact: this.lastContact,
+        trapInsideGoal: this.outcome === "goal",
       },
       dt,
     );

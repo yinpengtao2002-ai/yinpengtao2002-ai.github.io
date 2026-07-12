@@ -4,6 +4,8 @@ import {
   DEBUG_FORCE_GLOVE_SETTLE_DT,
   DEBUG_FORCE_GLOVE_HOLD_SECONDS,
   ROUND_INTRO_SECONDS,
+  PENALTY_KICK_COUNTDOWN_SECONDS,
+  PENALTY_ROUND_SCORE_HOLD_SECONDS,
   applyForcedGloveTarget,
   advanceLingeringBalls,
   advanceRoundIntroTimer,
@@ -22,9 +24,13 @@ import {
   resolveRuntimeMode,
   getModeDifficulty,
   getPenaltySequenceAction,
+  getPenaltyCountdownCue,
+  getPenaltyRoundBreak,
   getPenaltyTeamAnnouncement,
+  prepareNextPenaltyShot,
   shouldPlayLingeringGroundAudio,
 } from "../src/game/three-game-runtime.js";
+import { createShot3DDirector } from "../src/game/shot-3d-director.js";
 import { RAPIER_GOAL, createRapierGoalkeeperWorld } from "../src/physics/rapier-world.js";
 
 describe("three game runtime timing", () => {
@@ -45,8 +51,65 @@ describe("three game runtime timing", () => {
     expect(getPenaltySequenceAction(state, 0.5, false)).toBe("wait");
     expect(getPenaltySequenceAction(state, 1.05, false)).toBe("simulate-team");
     expect(getPenaltySequenceAction({ ...state, shootout: { phase: "defend" } }, 1.4, true)).toBe("wait");
-    expect(getPenaltySequenceAction({ ...state, shootout: { phase: "defend" } }, 2.2, true)).toBe("next-shot");
+    expect(getPenaltySequenceAction({ ...state, shootout: { phase: "defend" } }, 2.2, true)).toBe("wait");
+    expect(getPenaltySequenceAction(
+      { ...state, shootout: { phase: "defend" } },
+      1.05 + PENALTY_ROUND_SCORE_HOLD_SECONDS,
+      true,
+    )).toBe("next-shot");
     expect(getPenaltySequenceAction({ ...state, ended: true }, 4, true)).toBe("complete");
+  });
+
+  it("counts down every penalty round before the opponent shoots", () => {
+    const state = {
+      mode: "penalty",
+      shootout: { round: 3, suddenDeath: false },
+    };
+
+    expect(PENALTY_KICK_COUNTDOWN_SECONDS).toBe(3);
+    expect(getPenaltyCountdownCue(2.95, state)).toEqual({
+      visible: true,
+      label: "3",
+      kicker: "第 3 轮",
+      ariaLabel: "第 3 轮点球，3 秒后射门",
+    });
+    expect(getPenaltyCountdownCue(0.4, state).label).toBe("1");
+    expect(getPenaltyCountdownCue(0, state).visible).toBe(false);
+  });
+
+  it("builds a centered score break after both sides complete a penalty round", () => {
+    const breakPlan = getPenaltyRoundBreak({
+      mode: "penalty",
+      ended: false,
+      shootout: {
+        teamGoals: 2,
+        opponentGoals: 1,
+        suddenDeath: false,
+        lastEvent: { side: "team", result: "goal", round: 3 },
+      },
+    });
+
+    expect(PENALTY_ROUND_SCORE_HOLD_SECONDS).toBeGreaterThanOrEqual(1.6);
+    expect(breakPlan).toEqual({
+      visible: true,
+      round: 3,
+      roundLabel: "第 3 轮结束",
+      scoreText: "2 : 1",
+      teamResultLabel: "我方罚进",
+      teamGoals: 2,
+      opponentGoals: 1,
+    });
+  });
+
+  it("prepares the next extreme shot before its new-round countdown begins", () => {
+    const current = createShot3DDirector({ seed: 91, difficulty: "extreme", keeperX: 0 });
+    const next = prepareNextPenaltyShot(current, 0, "extreme", 2.4);
+
+    expect(next.phase).toBe("cue");
+    expect(next.shotIndex).toBe(1);
+    expect(next.currentShot.shotId).toBe(1);
+    expect(next.currentShot.difficulty).toBe("extreme");
+    expect(Math.abs(next.currentShot.target.x)).toBeGreaterThanOrEqual(2.7);
   });
 
   it("announces the automatic team penalty result and current score", () => {

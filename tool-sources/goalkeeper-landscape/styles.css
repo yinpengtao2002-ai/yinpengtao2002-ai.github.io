@@ -1975,6 +1975,108 @@ button {
   }
 }
 
+.match-status.is-penalty-countdown {
+  min-width: clamp(164px, 15vw, 220px);
+  min-height: clamp(70px, 6.8vw, 96px);
+  border-radius: 8px;
+  padding: 0 18px;
+  white-space: nowrap;
+  font-size: clamp(22px, 2.4vw, 34px);
+}
+
+.penalty-round-break {
+  --penalty-round-score-break: 1;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 6;
+  width: min(300px, calc(100vw - 40px));
+  min-height: 154px;
+  border: 1px solid rgba(235, 255, 246, 0.52);
+  border-radius: 8px;
+  padding: 17px 24px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  color: #f8fff4;
+  background: rgba(10, 32, 29, 0.9);
+  box-shadow: 0 22px 52px rgba(4, 18, 16, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(16px);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.94);
+  transition: opacity 180ms ease, transform 200ms ease;
+  pointer-events: none;
+}
+
+.penalty-round-break.is-visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.penalty-round-break > span {
+  color: #a9d9cc;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.penalty-round-break > strong {
+  color: #ffffff;
+  font-size: clamp(40px, 4.6vw, 60px);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.penalty-round-break > p {
+  margin: 0;
+  color: #ffd0ae;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.stage[data-mode="penalty"] .start-disc {
+  width: clamp(172px, 16vw, 220px);
+  grid-template-columns: minmax(0, 1fr);
+  padding: 0 20px;
+}
+
+.stage[data-mode="penalty"] .start-disc > span {
+  display: none;
+}
+
+.stage[data-mode="penalty"] .start-disc > strong {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: clamp(15px, 1.45vw, 19px);
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .match-status.is-penalty-countdown {
+    min-width: 144px;
+    min-height: 58px;
+    padding: 0 14px;
+    font-size: 20px;
+  }
+
+  .penalty-round-break {
+    width: min(238px, calc(100vw - 32px));
+    min-height: 106px;
+    padding: 11px 18px;
+    gap: 4px;
+  }
+
+  .penalty-round-break > strong {
+    font-size: 36px;
+  }
+
+  .stage[data-mode="penalty"] .start-disc {
+    width: clamp(164px, 31svh, 204px);
+    height: 50px;
+  }
+}
+
 @media (min-height: 521px) {
   .stage .start-overlay {
     padding-bottom: max(100px, calc(env(safe-area-inset-bottom) + 92px));

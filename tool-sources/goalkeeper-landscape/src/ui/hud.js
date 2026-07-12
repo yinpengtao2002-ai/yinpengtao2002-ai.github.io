@@ -602,6 +602,10 @@ export function createHud(documentRef) {
     penaltyRoundLabel: documentRef.getElementById("penaltyRoundLabel"),
     penaltyPhaseLabel: documentRef.getElementById("penaltyPhaseLabel"),
     penaltyAnnouncement: documentRef.getElementById("penaltyAnnouncement"),
+    penaltyRoundBreak: documentRef.getElementById("penaltyRoundBreak"),
+    penaltyRoundBreakLabel: documentRef.getElementById("penaltyRoundBreakLabel"),
+    penaltyRoundBreakScore: documentRef.getElementById("penaltyRoundBreakScore"),
+    penaltyRoundBreakDetail: documentRef.getElementById("penaltyRoundBreakDetail"),
   };
 
   function setVisible(element, visible) {
@@ -704,14 +708,21 @@ export function createHud(documentRef) {
     var roundIntroCue = context?.roundIntroCue || { visible: false, label: "" };
     var isPaused = state.running && state.paused && !state.ended;
     var isCountdown = !isPaused && roundIntroCue.visible;
+    var isPenaltyCountdown = isCountdown && state.mode === "penalty" && Boolean(roundIntroCue.kicker);
     var visible = isPaused || isCountdown;
 
     if (!status) return;
 
-    status.textContent = isPaused ? "暂停" : isCountdown ? roundIntroCue.label : "";
+    status.textContent = isPaused
+      ? "暂停"
+      : isPenaltyCountdown
+        ? roundIntroCue.kicker + " · " + roundIntroCue.label
+        : isCountdown ? roundIntroCue.label : "";
+    status.setAttribute("aria-label", isPenaltyCountdown ? roundIntroCue.ariaLabel || status.textContent : status.textContent);
     setClass(status, "is-visible", visible);
     setClass(status, "is-paused", isPaused);
     setClass(status, "is-countdown", isCountdown);
+    setClass(status, "is-penalty-countdown", isPenaltyCountdown);
   }
 
   function updatePressureCue(state) {
@@ -847,6 +858,7 @@ export function createHud(documentRef) {
       var penaltyPlan = getPenaltyHudPlan(state);
       var penaltyMode = state.mode === "penalty";
       var penaltyResult = penaltyMode ? getPenaltyResultPlan(state) : null;
+      var penaltyRoundBreak = context.penaltyRoundBreak || { visible: false };
       if (refs.scoreLabel) refs.scoreLabel.textContent = penaltyMode ? "扑出" : "扑救分";
       if (refs.timeLabel) refs.timeLabel.textContent = penaltyMode ? "轮次" : "时间";
       if (refs.streakLabel) refs.streakLabel.textContent = penaltyMode ? "阶段" : "连扑";
@@ -864,8 +876,24 @@ export function createHud(documentRef) {
       if (refs.penaltyPhaseLabel) refs.penaltyPhaseLabel.textContent = penaltyPlan.phaseLabel;
       if (refs.penaltyAnnouncement) {
         refs.penaltyAnnouncement.textContent = context.penaltyAnnouncement || "";
-        setClass(refs.penaltyAnnouncement, "is-visible", Boolean(context.penaltyAnnouncement));
+        setClass(
+          refs.penaltyAnnouncement,
+          "is-visible",
+          Boolean(context.penaltyAnnouncement) && !penaltyRoundBreak.visible,
+        );
       }
+      if (refs.penaltyRoundBreak) {
+        setClass(refs.penaltyRoundBreak, "is-visible", Boolean(penaltyRoundBreak.visible));
+        refs.penaltyRoundBreak.setAttribute(
+          "aria-label",
+          penaltyRoundBreak.visible
+            ? penaltyRoundBreak.roundLabel + "，比分 " + penaltyRoundBreak.scoreText + "，" + penaltyRoundBreak.teamResultLabel
+            : "",
+        );
+      }
+      if (refs.penaltyRoundBreakLabel) refs.penaltyRoundBreakLabel.textContent = penaltyRoundBreak.roundLabel || "";
+      if (refs.penaltyRoundBreakScore) refs.penaltyRoundBreakScore.textContent = penaltyRoundBreak.scoreText || "";
+      if (refs.penaltyRoundBreakDetail) refs.penaltyRoundBreakDetail.textContent = penaltyRoundBreak.teamResultLabel || "";
       if (refs.pauseButton) {
         refs.pauseButton.textContent = state.paused ? "▶" : "Ⅱ";
         refs.pauseButton.setAttribute("aria-label", state.paused ? "继续挑战" : "暂停挑战");

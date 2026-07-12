@@ -229,4 +229,25 @@ describe("responsive layout css", () => {
     expect(css).toContain("pointer-events: none;");
     expect(css).toContain("@media (max-height: 520px) and (orientation: landscape)");
   });
+
+  it("adds a centered penalty round score break without nesting it in the top scoreboard", () => {
+    const css = readFileSync(stylesPath, "utf8");
+    const html = readFileSync(indexPath, "utf8");
+
+    expect(html).toContain('id="penaltyRoundBreak"');
+    expect(html).toContain('id="penaltyRoundBreakScore"');
+    expect(html).toContain('id="penaltyRoundBreakDetail"');
+    expect(css).toContain("penalty-round-score-break");
+    expect(css).toContain(".penalty-round-break.is-visible");
+    expect(css).toContain(".match-status.is-penalty-countdown");
+  });
+
+  it("gives the penalty start action its own wide icon-free button treatment", () => {
+    const css = readFileSync(stylesPath, "utf8");
+
+    expect(css).toContain('.stage[data-mode="penalty"] .start-disc');
+    expect(css).toContain('.stage[data-mode="penalty"] .start-disc > span');
+    expect(css).toMatch(/\.stage\[data-mode="penalty"\] \.start-disc > span\s*\{[^}]*display:\s*none/s);
+    expect(css).toMatch(/\.stage\[data-mode="penalty"\] \.start-disc > strong\s*\{[^}]*white-space:\s*nowrap/s);
+  });
 });

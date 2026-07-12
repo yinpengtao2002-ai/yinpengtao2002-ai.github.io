@@ -483,6 +483,40 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(plan.visibleBallCount).toBe(1);
   });
 
+  it("does not split an extreme saved shot when its final contact changes from glove to frame", async () => {
+    const sceneModule = await import("../src/three/goalkeeper-scene.js");
+    const frameSettledBall = {
+      live: false,
+      outcome: "saved",
+      position: { x: 3.25, y: 2.18, z: 4.72 },
+      velocity: { x: -4.8, y: -1.2, z: -2.4 },
+      radius: 0.11,
+      lastContact: {
+        type: "frame",
+        part: "right-post",
+        point: { x: 3.66, y: 2.18, z: 4.65 },
+      },
+    };
+    const replayBall = {
+      ...frameSettledBall,
+      position: { x: 3.2, y: 2.15, z: 4.68 },
+      age: 0.04,
+      duration: 5,
+      replaySourceShotId: 7,
+    };
+
+    const plan = sceneModule.getSceneBallRenderPlan({
+      director: { phase: "live", currentShot: { shotId: 7 } },
+      ball: frameSettledBall,
+      lingeringBalls: [replayBall],
+    });
+
+    expect(plan.hideActiveBallForReplay).toBe(true);
+    expect(plan.activeBall.position).toBeNull();
+    expect(plan.lingeringBalls).toEqual([replayBall]);
+    expect(plan.visibleBallCount).toBe(1);
+  });
+
   it("defines a restrained matchday feedback layer for saves, goals, streaks, and camera shake", () => {
     expect(SCENE_TUNING.feedback.assetSystem).toBe("matchday-feedback-kit");
     expect(SCENE_TUNING.feedback.impactRingCount).toBeGreaterThanOrEqual(3);

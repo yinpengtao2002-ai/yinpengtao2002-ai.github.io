@@ -609,11 +609,16 @@ export function getSceneBallRenderPlan(snapshot = {}) {
   var contactType = ball?.lastContact?.type;
   var replaySourceOutcome = ball?.outcome === "saved" || ball?.outcome === "deflected";
   var replaySourceContact = contactType === "glove" || contactType === "catch";
+  var currentShotId = snapshot.director?.currentShot?.shotId;
+  var hasCurrentShotReplay = lingeringBalls.some((lingeringBall) =>
+    lingeringBall?.replaySourceShotId !== undefined &&
+    lingeringBall.replaySourceShotId !== null &&
+    lingeringBall.replaySourceShotId === currentShotId,
+  );
   var hideActiveBallForReplay = Boolean(
     ball &&
     !ball.live &&
-    replaySourceOutcome &&
-    replaySourceContact &&
+    (hasCurrentShotReplay || (replaySourceOutcome && replaySourceContact)) &&
     lingeringBalls.length > 0,
   );
   var activeBall = hideActiveBallForReplay

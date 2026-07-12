@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import GoalkeeperLandscapeRuntime, { GOALKEEPER_SCRIPT_SRC } from "./GoalkeeperLandscapeRuntime";
 
-const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-CrgXL-ZZ.css";
+const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-DLy530NS.css";
 
 export const metadata: Metadata = {
   title: "弹力手套守门挑战｜Lucas Yin",
@@ -68,6 +68,11 @@ export default function GoalkeeperLandscapePage() {
               </div>
             </section>
             <div className="penalty-announcement" id="penaltyAnnouncement" aria-live="polite" />
+            <section className="penalty-round-break" id="penaltyRoundBreak" data-hud-system="penalty-round-score-break" aria-live="polite">
+              <span id="penaltyRoundBreakLabel">第 1 轮结束</span>
+              <strong id="penaltyRoundBreakScore">0 : 0</strong>
+              <p id="penaltyRoundBreakDetail">我方罚球结果</p>
+            </section>
 
             <div className="event-ribbon" id="eventRibbon" data-hud-system="single-match-event-feedback-layer" aria-live="polite" />
             <div className="match-status" id="matchStatus" aria-live="polite" />

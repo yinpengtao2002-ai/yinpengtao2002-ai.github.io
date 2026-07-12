@@ -284,6 +284,53 @@ function getPanelContactPoint(panel, position) {
   return { x: position.x, y: getGoalRoofHeightAtZ(position.z), z: position.z };
 }
 
+function containScoredBallInGoal(position, velocity, radius, retainFront = true) {
+  var nextPosition = { ...position };
+  var nextVelocity = { ...velocity };
+  var panels = [];
+  var inset = radius + 0.004;
+  var frontLimit = GOAL_NET_GEOMETRY.netPlaneZ + inset;
+
+  if (retainFront && nextPosition.z < frontLimit) {
+    nextPosition.z = frontLimit;
+    nextVelocity.z = Math.min(0.42, Math.max(0.12, Math.abs(nextVelocity.z || 0) * 0.16));
+    nextVelocity.x *= 0.78;
+    nextVelocity.y *= 0.78;
+    panels.push("front-retention");
+  }
+
+  var rearLimit = getGoalNetSurfacePoint(nextPosition).z - inset;
+  if (nextPosition.z > rearLimit) {
+    nextPosition.z = rearLimit;
+    nextVelocity = resolvePanelVelocity("rear", nextVelocity);
+    panels.push("rear");
+  }
+
+  var sideLimit = Math.max(radius, getGoalSideHalfWidthAtZ(nextPosition.z) - inset);
+  if (nextPosition.x < -sideLimit) {
+    nextPosition.x = -sideLimit;
+    nextVelocity = resolvePanelVelocity("left", nextVelocity);
+    panels.push("left");
+  } else if (nextPosition.x > sideLimit) {
+    nextPosition.x = sideLimit;
+    nextVelocity = resolvePanelVelocity("right", nextVelocity);
+    panels.push("right");
+  }
+
+  var roofLimit = getGoalRoofHeightAtZ(nextPosition.z) - inset;
+  if (nextPosition.y > roofLimit) {
+    nextPosition.y = roofLimit;
+    nextVelocity = resolvePanelVelocity("top", nextVelocity);
+    panels.push("top");
+  }
+
+  return {
+    position: nextPosition,
+    velocity: nextVelocity,
+    panels,
+  };
+}
+
 export function resolveGoalNetCollision(state, dt = 1 / 60) {
   var radius = Math.max(0.01, state.radius || 0.11);
   var position = { ...state.position };
@@ -291,6 +338,60 @@ export function resolveGoalNetCollision(state, dt = 1 / 60) {
   var velocity = { ...state.velocity };
   var angularVelocity = { ...(state.angularVelocity || { x: 0, y: 0, z: 0 }) };
   var netContact = advanceNetContact(state.netContact, dt);
+  var containment = state.trapInsideGoal
+    ? containScoredBallInGoal(position, velocity, radius, Boolean(state.netContact))
+    : null;
+  if (containment?.panels.length) {
+    position = containment.position;
+    velocity = containment.velocity;
+    angularVelocity.x *= 0.58;
+    angularVelocity.y *= 0.58;
+    angularVelocity.z *= 0.58;
+    var containmentPanel = containment.panels.find((panelName) => panelName !== "front-retention") || "front-retention";
+    if (containmentPanel === "front-retention") {
+      return {
+        position,
+        velocity,
+        angularVelocity,
+        netContact,
+        collided: true,
+        panel: containmentPanel,
+        secondaryPanel: null,
+        feedbackSuppressed: true,
+      };
+    }
+
+    var containmentContactPoint = getPanelContactPoint(containmentPanel, position);
+    var containmentSuppressed = (netContact?.cooldown || 0) > 0;
+    if (!containmentSuppressed) {
+      netContact = {
+        eventId: netContact?.eventId || makeNetContactEventId(state.sourceContact, containmentContactPoint),
+        type: "net",
+        panel: containmentPanel,
+        point: containmentContactPoint,
+        strength: Math.max(
+          Math.abs(state.velocity?.x || 0),
+          Math.abs(state.velocity?.y || 0),
+          Math.abs(state.velocity?.z || 0),
+        ),
+        sourceContactEventId: state.sourceContact?.eventId ?? netContact?.sourceContactEventId ?? null,
+        age: 0,
+        cooldown: GOAL_NET_GEOMETRY.contactCooldown,
+        fresh: true,
+        impactCount: (netContact?.impactCount || 0) + 1,
+      };
+    }
+    return {
+      position,
+      velocity,
+      angularVelocity,
+      netContact,
+      collided: true,
+      panel: containmentPanel,
+      secondaryPanel: containment.panels.find((panelName) => panelName !== containmentPanel && panelName !== "front-retention") || null,
+      feedbackSuppressed: containmentSuppressed,
+    };
+  }
   var candidates = getNetCollisionCandidates(previousPosition, position, velocity, radius);
 
   if (candidates.length === 0) {
@@ -317,6 +418,14 @@ export function resolveGoalNetCollision(state, dt = 1 / 60) {
     position = clampBallToPanel("rear", position, radius);
     velocity = resolvePanelVelocity("rear", velocity);
     secondaryPanel = "rear";
+  }
+  if (state.trapInsideGoal) {
+    var postCollisionContainment = containScoredBallInGoal(position, velocity, radius, true);
+    position = postCollisionContainment.position;
+    velocity = postCollisionContainment.velocity;
+    secondaryPanel = secondaryPanel || postCollisionContainment.panels.find(
+      (panelName) => panelName !== panel && panelName !== "front-retention",
+    ) || null;
   }
   angularVelocity.x *= 0.58;
   angularVelocity.y *= 0.58;
