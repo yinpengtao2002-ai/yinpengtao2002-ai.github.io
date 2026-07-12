@@ -258,8 +258,8 @@ describe("hud", () => {
 
     const plan = HudModule.getPenaltyHudPlan(state);
     expect(plan.visible).toBe(true);
-    expect(plan.teamMarks).toBe("● × ● ● × ·");
-    expect(plan.opponentMarks).toBe("● ● × ● × ·");
+    expect(plan.teamMarks).toBe("● × ● ● ×");
+    expect(plan.opponentMarks).toBe("● ● × ● ×");
     expect(plan.scoreText).toBe("3 : 3");
     expect(plan.roundLabel).toBe("骤死 第 6 轮");
     expect(plan.phaseLabel).toBe("准备扑救");
@@ -273,6 +273,33 @@ describe("hud", () => {
     expect(documentRef.elements.timeValue.textContent).toBe("6");
     expect(documentRef.elements.streakValue.textContent).toBe("骤死");
     expect(documentRef.elements.concededValue.textContent).toBe("3:3");
+  });
+
+  it("keeps only the latest five aligned penalty results while preserving cumulative scores", () => {
+    const state = {
+      ...createGameState({ mode: "penalty" }),
+      mode: "penalty",
+      running: true,
+      shootout: {
+        teamKicks: ["goal", "goal", "miss", "goal", "goal", "goal", "miss", "goal", "goal"],
+        opponentKicks: ["goal", "miss", "goal", "goal", "goal", "miss", "goal", "goal"],
+        teamGoals: 7,
+        opponentGoals: 6,
+        suddenDeath: true,
+        phase: "defend",
+        round: 9,
+        ended: false,
+        winner: null,
+      },
+    };
+
+    const plan = HudModule.getPenaltyHudPlan(state);
+
+    expect(plan.teamMarks).toBe("● ● × ● ●");
+    expect(plan.opponentMarks).toBe("● × ● ● ·");
+    expect(plan.teamScore).toBe(7);
+    expect(plan.opponentScore).toBe(6);
+    expect(plan.scoreText).toBe("7 : 6");
   });
 
   it("shows each completed penalty round score in the center before the next countdown", () => {

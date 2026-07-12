@@ -2436,6 +2436,27 @@ button {
   white-space: nowrap;
 }
 
+.stage[data-mode="penalty"] .start-panel {
+  width: min(450px, calc(100vw - 32px));
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 14px;
+}
+
+.stage[data-mode="penalty"] .start-panel h1 {
+  font-size: 26px;
+  white-space: nowrap;
+}
+
+.stage[data-mode="penalty"] .start-rules {
+  flex-wrap: nowrap;
+}
+
+.stage[data-mode="penalty"] .start-disc {
+  width: clamp(168px, 14vw, 192px);
+  height: 50px;
+  padding: 0 18px;
+}
+
 .result-panel {
   width: min(560px, calc(100vw - 32px));
   min-width: 0;

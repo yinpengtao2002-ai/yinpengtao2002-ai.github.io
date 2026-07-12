@@ -245,6 +245,9 @@ describe("responsive layout css", () => {
   it("gives the penalty start action its own wide icon-free button treatment", () => {
     const css = readFileSync(stylesPath, "utf8");
 
+    expect(css).toMatch(/\.stage\[data-mode="penalty"\] \.start-panel\s*\{[^}]*width:\s*min\(450px, calc\(100vw - 32px\)\)/s);
+    expect(css).toMatch(/\.stage\[data-mode="penalty"\] \.start-panel h1\s*\{[^}]*white-space:\s*nowrap/s);
+    expect(css).toMatch(/\.stage\[data-mode="penalty"\] \.start-rules\s*\{[^}]*flex-wrap:\s*nowrap/s);
     expect(css).toContain('.stage[data-mode="penalty"] .start-disc');
     expect(css).toContain('.stage[data-mode="penalty"] .start-disc > span');
     expect(css).toMatch(/\.stage\[data-mode="penalty"\] \.start-disc > span\s*\{[^}]*display:\s*none/s);

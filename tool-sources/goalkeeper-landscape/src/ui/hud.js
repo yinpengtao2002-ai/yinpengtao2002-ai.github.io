@@ -475,10 +475,13 @@ export function getSoundStatusLabel(enabled, audioStatus = "locked") {
   };
 }
 
-function formatPenaltyMarks(kicks, slotCount) {
-  return Array.from({ length: slotCount }, (_, index) => {
-    if (kicks[index] === "goal") return "●";
-    if (kicks[index] === "miss") return "×";
+const PENALTY_MARK_WINDOW = 5;
+
+function formatPenaltyMarks(kicks, startIndex) {
+  return Array.from({ length: PENALTY_MARK_WINDOW }, (_, index) => {
+    var result = kicks[startIndex + index];
+    if (result === "goal") return "●";
+    if (result === "miss") return "×";
     return "·";
   }).join(" ");
 }
@@ -498,13 +501,14 @@ export function getPenaltyHudPlan(state) {
     };
   }
 
-  var slotCount = Math.max(5, shootout.round || 1, shootout.teamKicks?.length || 0, shootout.opponentKicks?.length || 0);
+  var latestKickCount = Math.max(shootout.teamKicks?.length || 0, shootout.opponentKicks?.length || 0);
+  var markStartIndex = Math.max(0, latestKickCount - PENALTY_MARK_WINDOW);
   var teamScore = shootout.teamGoals || 0;
   var opponentScore = shootout.opponentGoals || 0;
   return {
     visible: true,
-    teamMarks: formatPenaltyMarks(shootout.teamKicks || [], slotCount),
-    opponentMarks: formatPenaltyMarks(shootout.opponentKicks || [], slotCount),
+    teamMarks: formatPenaltyMarks(shootout.teamKicks || [], markStartIndex),
+    opponentMarks: formatPenaltyMarks(shootout.opponentKicks || [], markStartIndex),
     teamScore,
     opponentScore,
     scoreText: String(teamScore) + " : " + String(opponentScore),
