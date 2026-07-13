@@ -41,6 +41,10 @@ describe("three game runtime timing", () => {
     expect(getModeDifficulty("timed", "hard")).toBe("hard");
   });
 
+  it("retires the local glove demo switch after selecting the production model", () => {
+    expect(RuntimeModule.resolveGloveDemoStyle).toBeUndefined();
+  });
+
   it("waits for the unseen team kick result before launching the next penalty", () => {
     const state = {
       mode: "penalty",

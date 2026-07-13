@@ -3875,39 +3875,427 @@ export function updateShooterModel(model, director) {
   model.shadow.scale.set(1.5 + charge * 0.08, 0.48 + charge * 0.04, 1);
 }
 
-export function createGloveMesh(side) {
+const DEFAULT_GLOVE_VISUAL_PROFILE = {
+  authentic: true,
+  id: "default",
+  label: "Hybrid Claw",
+  visualStyle: "authentic-negative-roll-hybrid-goalkeeper-glove",
+  cutSystem: "negative-roll-hybrid",
+  backhandColor: "#eee8dc",
+  backhandSecondaryColor: "#d8d1c5",
+  latexColor: "#f3efe4",
+  gussetColor: "#24282a",
+  strikeColor: "#d84d36",
+  seamColor: "#817a70",
+  cuffColor: "#d64c38",
+  strapColor: "#252a2d",
+  palmWidth: 0.39,
+  palmHeight: 0.35,
+  palmTopWidth: 0.41,
+  fingerWidths: [0.075, 0.082, 0.08, 0.071],
+  fingerLengths: [0.21, 0.263, 0.244, 0.19],
+  fingerGap: 0.011,
+  fingerTaper: 0.86,
+  latexWrap: 0.014,
+  thumbWidth: 0.09,
+  thumbLength: 0.2,
+  thumbReach: 0.215,
+  thumbRotation: 0.7,
+  cuffWidth: 0.35,
+  cuffLength: 0.19,
+  preCurve: 0.12,
+  pose: { pitch: -0.055, yaw: 0.035, roll: 0.055 },
+};
+
+function createTaperedGlovePlateGeometry(bottomWidth, topWidth, height, depth, cornerRadius = 0.025) {
+  var bottomHalf = bottomWidth * 0.5;
+  var topHalf = topWidth * 0.5;
+  var bottomY = -height * 0.5;
+  var topY = height * 0.5;
+  var radius = Math.min(cornerRadius, height * 0.18, bottomWidth * 0.18, topWidth * 0.18);
+  var shape = new THREE.Shape();
+  shape.moveTo(-bottomHalf + radius, bottomY);
+  shape.quadraticCurveTo(-bottomHalf, bottomY, -bottomHalf, bottomY + radius);
+  shape.lineTo(-topHalf, topY - radius);
+  shape.quadraticCurveTo(-topHalf, topY, -topHalf + radius, topY);
+  shape.lineTo(topHalf - radius, topY);
+  shape.quadraticCurveTo(topHalf, topY, topHalf, topY - radius);
+  shape.lineTo(bottomHalf, bottomY + radius);
+  shape.quadraticCurveTo(bottomHalf, bottomY, bottomHalf - radius, bottomY);
+  shape.closePath();
+  var geometry = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    steps: 1,
+    bevelEnabled: true,
+    bevelSegments: 3,
+    bevelSize: Math.min(0.009, depth * 0.18),
+    bevelThickness: Math.min(0.008, depth * 0.18),
+  });
+  geometry.center();
+  geometry.computeVertexNormals();
+  geometry.userData.gloveGeometrySystem = "tapered-continuous-glove-panel";
+  return geometry;
+}
+
+function createRoundedFingerPlateGeometry(bottomWidth, topWidth, height, depth) {
+  var bottomHalf = bottomWidth * 0.5;
+  var topRadius = topWidth * 0.5;
+  var bottomY = -height * 0.5;
+  var tipCenterY = height * 0.5 - topRadius;
+  var shape = new THREE.Shape();
+  shape.moveTo(-bottomHalf, bottomY);
+  shape.lineTo(-topRadius, tipCenterY);
+  shape.absarc(0, tipCenterY, topRadius, Math.PI, 0, false);
+  shape.lineTo(bottomHalf, bottomY);
+  shape.closePath();
+  var geometry = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    steps: 1,
+    bevelEnabled: true,
+    bevelSegments: 4,
+    bevelSize: Math.min(0.008, topWidth * 0.1),
+    bevelThickness: Math.min(0.008, depth * 0.2),
+  });
+  geometry.center();
+  geometry.computeVertexNormals();
+  geometry.userData.gloveGeometrySystem = "rounded-tapered-precurved-finger";
+  return geometry;
+}
+
+function createAuthenticGloveMesh(side, profile) {
   var group = new THREE.Group();
-  group.userData.visualStyle = "polished-orange-reference-glove";
+  var thumbSide = side === "left" ? 1 : -1;
+  group.userData.visualStyle = profile.visualStyle;
+  group.userData.modelStyle = profile.id;
+  group.userData.modelLabel = profile.label;
+  group.userData.restPose = profile.pose;
+  group.userData.cutSystem = profile.cutSystem;
+  group.userData.realismReferenceSystem = "professional-negative-hybrid-roll-finger-construction";
+  group.userData.polishSystem = MATCHDAY_ASSET_POLISH_SYSTEM;
+  group.userData.materialSystem = "continuous-latex-palm-textile-backhand-silicone-strike-zones";
+  group.userData.gripSystem = "wrapped-latex-palm-and-thumb";
+  group.userData.pbrMaterialSystem = GLOVE_PBR_MATERIAL_SYSTEM;
+  group.userData.wearDetailSystem = GLOVE_WEAR_DETAIL_SYSTEM;
+
+  var latexMaterial = new THREE.MeshStandardMaterial({
+    color: profile.latexColor,
+    roughness: 0.56,
+    metalness: 0,
+  });
+  var backhandMaterial = new THREE.MeshStandardMaterial({
+    color: profile.backhandColor,
+    roughness: 0.68,
+    metalness: 0,
+  });
+  var secondaryMaterial = new THREE.MeshStandardMaterial({
+    color: profile.backhandSecondaryColor,
+    roughness: 0.7,
+    metalness: 0,
+  });
+  var gussetMaterial = new THREE.MeshStandardMaterial({
+    color: profile.gussetColor,
+    roughness: 0.78,
+    metalness: 0,
+  });
+  var strikeMaterial = new THREE.MeshStandardMaterial({
+    color: profile.strikeColor,
+    roughness: 0.46,
+    metalness: 0,
+  });
+  var seamMaterial = new THREE.MeshStandardMaterial({
+    color: profile.seamColor,
+    roughness: 0.74,
+    metalness: 0,
+  });
+  var cuffMaterial = new THREE.MeshStandardMaterial({
+    color: profile.cuffColor,
+    roughness: 0.8,
+    metalness: 0,
+  });
+  var strapMaterial = new THREE.MeshStandardMaterial({
+    color: profile.strapColor,
+    roughness: 0.72,
+    metalness: 0,
+  });
+  applyGloveMaterialMaps(latexMaterial, "latex", 0.009);
+  applyGloveMaterialMaps(backhandMaterial, "textile", 0.012);
+  applyGloveMaterialMaps(secondaryMaterial, "textile", 0.01);
+  applyGloveMaterialMaps(gussetMaterial, "textile", 0.011);
+  applyGloveMaterialMaps(cuffMaterial, "textile", 0.013);
+  applyGloveMaterialMaps(strapMaterial, "textile", 0.009);
+
+  var palmDepth = 0.072;
+  var latexPalm = new THREE.Mesh(
+    createTaperedGlovePlateGeometry(profile.palmWidth * 0.96, profile.palmTopWidth, profile.palmHeight, palmDepth, 0.045),
+    latexMaterial,
+  );
+  latexPalm.name = "glove-latex-palm-continuous";
+  latexPalm.position.z = -0.025;
+  group.add(latexPalm);
+
+  var backhand = new THREE.Mesh(
+    createTaperedGlovePlateGeometry(
+      profile.palmWidth * 0.9,
+      profile.palmTopWidth * 0.94,
+      profile.palmHeight * 0.94,
+      palmDepth * 0.72,
+      0.04,
+    ),
+    backhandMaterial,
+  );
+  backhand.name = "glove-textile-backhand-contoured";
+  backhand.position.set(0, 0.008, 0.035);
+  group.add(backhand);
+
+  var totalFingerWidth = profile.fingerWidths.reduce((sum, width) => sum + width, 0)
+    + profile.fingerGap * (profile.fingerWidths.length - 1);
+  var fingerCursor = -totalFingerWidth * 0.5;
+  var fingerCenters = [];
+  profile.fingerWidths.forEach(function addAuthenticFinger(width, index) {
+    var length = profile.fingerLengths[index];
+    var centerX = fingerCursor + width * 0.5;
+    fingerCursor += width + profile.fingerGap;
+    fingerCenters.push(centerX);
+
+    var wrap = new THREE.Mesh(
+      createRoundedFingerPlateGeometry(
+        width + profile.latexWrap * 2,
+        width * profile.fingerTaper + profile.latexWrap * 1.2,
+        length + 0.012,
+        0.072,
+      ),
+      latexMaterial,
+    );
+    wrap.name = "glove-latex-finger-wrap-" + index;
+    wrap.position.set(centerX, profile.palmHeight * 0.5 + length * 0.5 - 0.024, -0.018);
+    wrap.rotation.x = -profile.preCurve * (0.72 + index * 0.05);
+    wrap.rotation.z = (index - 1.5) * 0.018;
+    group.add(wrap);
+
+    var shell = new THREE.Mesh(
+      createRoundedFingerPlateGeometry(width, width * profile.fingerTaper, length, 0.052),
+      index === 0 || index === 3 ? secondaryMaterial : backhandMaterial,
+    );
+    shell.name = "glove-finger-backhand-shell-" + index;
+    shell.position.set(centerX, profile.palmHeight * 0.5 + length * 0.5 - 0.021, 0.042);
+    shell.rotation.x = -profile.preCurve * (0.72 + index * 0.05);
+    shell.rotation.z = (index - 1.5) * 0.018;
+    shell.userData.cutSystem = profile.cutSystem;
+    group.add(shell);
+
+    var strikeZone = makeRoundedPart(
+      "glove-silicone-strike-zone-finger-" + index,
+      width * 0.54,
+      Math.max(0.075, length * 0.46),
+      0.009,
+      0.016,
+      strikeMaterial,
+      centerX,
+      profile.palmHeight * 0.5 + length * 0.48,
+      0.087,
+    );
+    strikeZone.rotation.z = (index - 1.5) * 0.024;
+    group.add(strikeZone);
+  });
+
+  for (var gussetIndex = 0; gussetIndex < 3; gussetIndex += 1) {
+    var gussetHeight = Math.min(profile.fingerLengths[gussetIndex], profile.fingerLengths[gussetIndex + 1]) * 0.72;
+    var gussetX = (fingerCenters[gussetIndex] + fingerCenters[gussetIndex + 1]) * 0.5;
+    var gusset = makeRoundedPart(
+      "glove-finger-gusset-" + gussetIndex,
+      Math.max(0.008, profile.fingerGap * 0.72),
+      gussetHeight,
+      0.005,
+      0.024,
+      gussetMaterial,
+      gussetX,
+      profile.palmHeight * 0.5 + gussetHeight * 0.5 - 0.01,
+      0.025,
+    );
+    group.add(gusset);
+  }
+
+  var thumbWrap = new THREE.Mesh(
+    createRoundedFingerPlateGeometry(
+      profile.thumbWidth + profile.latexWrap * 2,
+      profile.thumbWidth * 0.84 + profile.latexWrap,
+      profile.thumbLength,
+      0.076,
+    ),
+    latexMaterial,
+  );
+  thumbWrap.name = "glove-thumb-wrap";
+  thumbWrap.position.set(thumbSide * profile.thumbReach, -0.005, -0.004);
+  thumbWrap.rotation.z = thumbSide * -profile.thumbRotation;
+  thumbWrap.rotation.x = -profile.preCurve * 0.55;
+  group.add(thumbWrap);
+
+  var thumbBackhand = new THREE.Mesh(
+    createRoundedFingerPlateGeometry(profile.thumbWidth * 0.84, profile.thumbWidth * 0.68, profile.thumbLength * 0.9, 0.045),
+    secondaryMaterial,
+  );
+  thumbBackhand.name = "glove-thumb-backhand-panel";
+  thumbBackhand.position.set(thumbSide * profile.thumbReach, -0.002, 0.052);
+  thumbBackhand.rotation.z = thumbSide * -profile.thumbRotation;
+  thumbBackhand.rotation.x = -profile.preCurve * 0.55;
+  group.add(thumbBackhand);
+
+  var knuckleWidths = [0.25, 0.21, 0.17];
+  knuckleWidths.forEach(function addKnuckleStrike(width, index) {
+    var strike = makeRoundedPart(
+      "glove-silicone-strike-zone-knuckle-" + index,
+      width,
+      0.025,
+      0.009,
+      0.016,
+      strikeMaterial,
+      thumbSide * (index - 1) * 0.008,
+      0.092 - index * 0.052,
+      0.089,
+    );
+    strike.rotation.z = thumbSide * (-0.08 + index * 0.06);
+    group.add(strike);
+  });
+
+  var palmSideInset = profile.palmWidth * 0.43;
+  [-1, 1].forEach(function addPalmSideSeam(direction, index) {
+    var seam = makeRoundedPart(
+      "glove-negative-seam-palm-side-" + index,
+      0.009,
+      profile.palmHeight * 0.72,
+      0.004,
+      0.01,
+      seamMaterial,
+      direction * palmSideInset,
+      0.005,
+      0.077,
+    );
+    seam.rotation.z = direction * -0.045;
+    group.add(seam);
+  });
+
+  var cuffY = -profile.palmHeight * 0.5 - profile.cuffLength * 0.5 + 0.018;
+  var cuff = new THREE.Mesh(
+    createTaperedGlovePlateGeometry(
+      profile.cuffWidth * 0.86,
+      profile.cuffWidth,
+      profile.cuffLength,
+      0.07,
+      0.025,
+    ),
+    cuffMaterial,
+  );
+  cuff.name = "glove-long-wrist-cuff";
+  cuff.position.set(0, cuffY, 0.002);
+  group.add(cuff);
+
+  for (var ribIndex = 0; ribIndex < 8; ribIndex += 1) {
+    var rib = makeRoundedPart(
+      "glove-textile-knit-rib-" + ribIndex,
+      0.012,
+      profile.cuffLength * 0.76,
+      0.003,
+      0.008,
+      secondaryMaterial,
+      -profile.cuffWidth * 0.32 + ribIndex * (profile.cuffWidth * 0.64 / 7),
+      cuffY,
+      0.052,
+    );
+    rib.userData.pbrMaterialSystem = GLOVE_PBR_MATERIAL_SYSTEM;
+    group.add(rib);
+  }
+
+  var strap = makeRoundedPart(
+    "glove-wrist-strap-main",
+    profile.cuffWidth * 1.06,
+    0.055,
+    0.014,
+    0.024,
+    strapMaterial,
+    0,
+    cuffY - profile.cuffLength * 0.14,
+    0.075,
+  );
+  strap.rotation.z = thumbSide * -0.025;
+  group.add(strap);
+
+  var closure = makeRoundedPart(
+    "glove-wrist-closure-tab",
+    0.105,
+    0.045,
+    0.012,
+    0.018,
+    strikeMaterial,
+    thumbSide * profile.cuffWidth * 0.25,
+    cuffY - profile.cuffLength * 0.14,
+    0.098,
+  );
+  closure.rotation.z = thumbSide * -0.04;
+  group.add(closure);
+
+  return group;
+}
+
+export function createGloveMesh(side) {
+  var profile = DEFAULT_GLOVE_VISUAL_PROFILE;
+  if (profile.authentic) return createAuthenticGloveMesh(side, profile);
+  var group = new THREE.Group();
+  group.userData.visualStyle = profile.visualStyle;
+  group.userData.modelStyle = profile.id;
+  group.userData.modelLabel = profile.label;
+  group.userData.restPose = profile.pose;
   group.userData.polishSystem = MATCHDAY_ASSET_POLISH_SYSTEM;
   group.userData.materialSystem = "stitched-padded-match-glove";
   group.userData.gripSystem = "latex-ridge-and-stitched-fingerback";
   group.userData.pbrMaterialSystem = GLOVE_PBR_MATERIAL_SYSTEM;
   group.userData.wearDetailSystem = GLOVE_WEAR_DETAIL_SYSTEM;
   var palmMat = new THREE.MeshStandardMaterial({
-    color: side === "left" ? "#ff6339" : "#ff7244",
+    color: side === "left" ? profile.leftColor : profile.rightColor,
     roughness: 0.42,
     metalness: 0.02,
   });
-  var padMat = new THREE.MeshStandardMaterial({ color: "#ff9a5f", roughness: 0.46, metalness: 0.01 });
-  var seamMat = new THREE.MeshStandardMaterial({ color: "#ffd2a5", roughness: 0.5 });
-  var highlightMat = new THREE.MeshBasicMaterial({ color: "#fff0c8", transparent: true, opacity: 0.62 });
-  var trimMat = new THREE.MeshStandardMaterial({ color: "#1c2528", roughness: 0.5 });
-  var cuffTrimMat = new THREE.MeshStandardMaterial({ color: "#ff7543", roughness: 0.44 });
+  var padMat = new THREE.MeshStandardMaterial({ color: profile.padColor, roughness: 0.46, metalness: 0.01 });
+  var seamMat = new THREE.MeshStandardMaterial({ color: profile.seamColor, roughness: 0.5 });
+  var highlightMat = new THREE.MeshBasicMaterial({ color: profile.highlightColor, transparent: true, opacity: 0.62 });
+  var trimMat = new THREE.MeshStandardMaterial({ color: profile.trimColor, roughness: 0.5 });
+  var cuffTrimMat = new THREE.MeshStandardMaterial({ color: profile.cuffColor, roughness: 0.44 });
   applyGloveMaterialMaps(palmMat, "latex", 0.008);
   applyGloveMaterialMaps(padMat, "latex", 0.006);
   applyGloveMaterialMaps(seamMat, "latex", 0.0045);
   applyGloveMaterialMaps(trimMat, "textile", 0.01);
   applyGloveMaterialMaps(cuffTrimMat, "textile", 0.007);
 
-  var palm = makeRoundedPart("glove-palm-shell", 0.38, 0.43, 0.085, 0.12, palmMat, 0, 0, 0);
-  var pad = makeRoundedPart("glove-palm-pad", 0.27, 0.28, 0.06, 0.026, padMat, 0, -0.005, 0.07);
+  var palm = makeRoundedPart(
+    "glove-palm-shell",
+    profile.palmWidth,
+    profile.palmHeight,
+    profile.palmDepth,
+    profile.palmRadius,
+    palmMat,
+    0,
+    0,
+    0,
+  );
+  var pad = makeRoundedPart(
+    "glove-palm-pad",
+    profile.padWidth,
+    profile.padHeight,
+    profile.padDepth,
+    0.026,
+    padMat,
+    0,
+    -0.005,
+    0.07,
+  );
   group.add(palm, pad);
 
+  var palmHalfWidth = profile.palmWidth * 0.5;
+  var palmTop = profile.palmHeight * 0.55;
   [
-    ["top", 0, 0.236, 0.093, 0.31, 0.018],
-    ["bottom", 0, -0.198, 0.094, 0.29, 0.016],
-    ["left", -0.194, 0.01, 0.092, 0.018, 0.35],
-    ["right", 0.194, 0.01, 0.092, 0.018, 0.35],
+    ["top", 0, palmTop, 0.093, profile.palmWidth * 0.82, 0.018],
+    ["bottom", 0, -profile.palmHeight * 0.46, 0.094, profile.palmWidth * 0.76, 0.016],
+    ["left", -palmHalfWidth - 0.004, 0.01, 0.092, 0.018, profile.palmHeight * 0.81],
+    ["right", palmHalfWidth + 0.004, 0.01, 0.092, 0.018, profile.palmHeight * 0.81],
   ].forEach(function addRolledLatexEdge(item) {
     var edge = makeRoundedPart(
       "glove-latex-edge-rolled-seam-" + item[0],
@@ -3925,25 +4313,38 @@ export function createGloveMesh(side) {
   });
 
   for (var i = 0; i < 4; i += 1) {
-    var finger = new THREE.Mesh(new THREE.CapsuleGeometry(0.043, 0.16, 8, 14), palmMat);
+    var finger = new THREE.Mesh(
+      new THREE.CapsuleGeometry(profile.fingerRadius, profile.fingerLength, 8, 14),
+      palmMat,
+    );
     finger.name = "glove-finger-" + i;
-    finger.position.set(-0.135 + i * 0.09, 0.305 + (i === 1 || i === 2 ? 0.018 : 0), 0.008);
+    finger.position.set(
+      (i - 1.5) * profile.fingerSpacing,
+      profile.fingerRootY + (i === 1 || i === 2 ? profile.fingerCenterBoost : 0),
+      0.008,
+    );
     group.add(finger);
 
-    var fingerSeam = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.17, 0.009), seamMat);
+    var fingerSeam = new THREE.Mesh(
+      new THREE.BoxGeometry(0.012, profile.fingerLength + 0.01, 0.009),
+      seamMat,
+    );
     fingerSeam.name = "glove-seam-finger-" + i;
     fingerSeam.position.set(finger.position.x, finger.position.y - 0.018, 0.06);
     group.add(fingerSeam);
 
-    var fingerHighlight = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.13, 0.006), highlightMat);
+    var fingerHighlight = new THREE.Mesh(
+      new THREE.BoxGeometry(profile.fingerRadius * 0.56, profile.fingerLength * 0.8, 0.006),
+      highlightMat,
+    );
     fingerHighlight.name = "glove-highlight-finger-" + i;
     fingerHighlight.position.set(finger.position.x - 0.012, finger.position.y + 0.006, 0.066);
     group.add(fingerHighlight);
 
     var fingerbackRidge = makeRoundedPart(
       "glove-fingerback-protection-ridge-" + i,
-      0.055,
-      0.12,
+      profile.fingerRadius * 1.28,
+      profile.fingerLength * 0.75,
       0.014,
       0.018,
       padMat,
@@ -3956,15 +4357,18 @@ export function createGloveMesh(side) {
   }
 
   var thumbSide = side === "left" ? 1 : -1;
-  var thumb = new THREE.Mesh(new THREE.CapsuleGeometry(0.052, 0.15, 8, 14), palmMat);
+  var thumb = new THREE.Mesh(
+    new THREE.CapsuleGeometry(profile.thumbRadius, profile.thumbLength, 8, 14),
+    palmMat,
+  );
   thumb.name = "glove-thumb";
-  thumb.position.set(thumbSide * 0.22, 0.015, 0.012);
-  thumb.rotation.z = thumbSide * -0.62;
+  thumb.position.set(thumbSide * profile.thumbX, 0.015, 0.012);
+  thumb.rotation.z = thumbSide * -profile.thumbRotation;
   group.add(thumb);
 
   var thumbSeam = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.12, 0.008), seamMat);
   thumbSeam.name = "glove-seam-thumb";
-  thumbSeam.position.set(thumbSide * 0.205, 0.02, 0.066);
+  thumbSeam.position.set(thumbSide * profile.thumbX * 0.93, 0.02, 0.066);
   thumbSeam.rotation.z = thumb.rotation.z;
   group.add(thumbSeam);
 
@@ -3988,7 +4392,7 @@ export function createGloveMesh(side) {
   }
 
   var scuffMaterial = new THREE.MeshBasicMaterial({
-    color: "#fff1d6",
+    color: profile.scuffColor,
     transparent: true,
     opacity: 0.13,
     depthWrite: false,
@@ -4021,8 +4425,40 @@ export function createGloveMesh(side) {
     group.add(sheen);
   });
 
-  var wrist = makeRoundedPart("glove-cuff", 0.36, 0.105, 0.026, 0.12, trimMat, 0, -0.285, 0.002);
+  var wrist = makeRoundedPart(
+    "glove-cuff",
+    profile.cuffWidth,
+    0.105,
+    0.026,
+    0.12,
+    trimMat,
+    0,
+    -0.285,
+    0.002,
+  );
   group.add(wrist);
+
+  if (profile.sleeveLength > 0) {
+    var sleeveMaterial = new THREE.MeshStandardMaterial({
+      color: profile.sleeveColor,
+      roughness: 0.64,
+      metalness: 0,
+    });
+    applyGloveMaterialMaps(sleeveMaterial, "textile", 0.012);
+    var sleeve = makeRoundedPart(
+      "glove-sleeve",
+      profile.cuffWidth * 0.82,
+      profile.sleeveLength,
+      0.022,
+      0.09,
+      sleeveMaterial,
+      0,
+      -0.337 - profile.sleeveLength * 0.5,
+      -0.004,
+    );
+    sleeve.userData.pbrMaterialSystem = GLOVE_PBR_MATERIAL_SYSTEM;
+    group.add(sleeve);
+  }
 
   for (var ribIndex = 0; ribIndex < 7; ribIndex += 1) {
     var rib = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.09, 0.008), cuffTrimMat);
@@ -4033,12 +4469,22 @@ export function createGloveMesh(side) {
     group.add(rib);
   }
 
-  var cuffTrim = new THREE.Mesh(new THREE.BoxGeometry(0.31, 0.018, 0.126), cuffTrimMat);
+  var cuffTrim = new THREE.Mesh(new THREE.BoxGeometry(profile.cuffTrimWidth, 0.018, 0.126), cuffTrimMat);
   cuffTrim.name = "glove-cuff-trim";
   cuffTrim.position.set(0, -0.23, 0.004);
   group.add(cuffTrim);
 
-  var strap = makeRoundedPart("glove-wrist-strap-main", 0.31, 0.052, 0.018, 0.132, trimMat, 0, -0.246, 0.073);
+  var strap = makeRoundedPart(
+    "glove-wrist-strap-main",
+    profile.strapWidth,
+    0.052,
+    0.018,
+    0.132,
+    trimMat,
+    0,
+    -0.246,
+    0.073,
+  );
   strap.rotation.z = side === "left" ? -0.04 : 0.04;
   group.add(strap);
 
@@ -4046,7 +4492,11 @@ export function createGloveMesh(side) {
   brandPatch.rotation.z = side === "left" ? -0.08 : 0.08;
   group.add(brandPatch);
 
-  var stitchBeadMaterial = new THREE.MeshStandardMaterial({ color: "#ffd6aa", roughness: 0.52, metalness: 0.01 });
+  var stitchBeadMaterial = new THREE.MeshStandardMaterial({
+    color: profile.stitchColor,
+    roughness: 0.52,
+    metalness: 0.01,
+  });
   for (var stitchIndex = 0; stitchIndex < 10; stitchIndex += 1) {
     var stitch = new THREE.Mesh(new THREE.SphereGeometry(0.011, 8, 6), stitchBeadMaterial);
     stitch.name = "glove-stitch-bead-" + stitchIndex;
@@ -4055,7 +4505,12 @@ export function createGloveMesh(side) {
     group.add(stitch);
   }
 
-  var ventMat = new THREE.MeshBasicMaterial({ color: "#7b2f22", transparent: true, opacity: 0.58, side: THREE.DoubleSide });
+  var ventMat = new THREE.MeshBasicMaterial({
+    color: profile.ventColor,
+    transparent: true,
+    opacity: 0.58,
+    side: THREE.DoubleSide,
+  });
   for (var ventIndex = 0; ventIndex < 10; ventIndex += 1) {
     var vent = new THREE.Mesh(new THREE.CircleGeometry(0.012, 12), ventMat);
     vent.name = "glove-vent-perforation-" + ventIndex;

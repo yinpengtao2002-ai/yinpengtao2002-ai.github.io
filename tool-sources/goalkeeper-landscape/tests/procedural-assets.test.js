@@ -321,26 +321,28 @@ describe("procedural 3D assets", () => {
     expect(launcher.decals).toHaveLength(decals.length);
   });
 
-  it("builds polished orange gloves with highlights and black cuffs", () => {
+  it("uses the selected authentic hybrid glove as the default game model", () => {
     const glove = createGloveMesh("left");
 
-    expect(glove.userData.visualStyle).toBe("polished-orange-reference-glove");
-    expect(collectByName(glove, /^glove-finger-/)).toHaveLength(4);
-    expect(collectByName(glove, /^glove-seam-/).length).toBeGreaterThanOrEqual(5);
-    expect(collectByName(glove, /^glove-highlight-/).length).toBeGreaterThanOrEqual(3);
-    expect(collectByName(glove, /^glove-cuff$/)).toHaveLength(1);
-    expect(collectByName(glove, /^glove-palm-pad/)).toHaveLength(1);
+    expect(glove.userData.modelStyle).toBe("default");
+    expect(glove.userData.visualStyle).toBe("authentic-negative-roll-hybrid-goalkeeper-glove");
+    expect(glove.userData.cutSystem).toBe("negative-roll-hybrid");
+    expect(collectByName(glove, /^glove-latex-palm-continuous$/)).toHaveLength(1);
+    expect(collectByName(glove, /^glove-finger-backhand-shell-/)).toHaveLength(4);
+    expect(collectByName(glove, /^glove-finger-gusset-/)).toHaveLength(3);
+    expect(collectByName(glove, /^glove-thumb-wrap$/)).toHaveLength(1);
+    expect(collectByName(glove, /^glove-long-wrist-cuff$/)).toHaveLength(1);
+    expect(collectByName(glove, /^glove-silicone-strike-zone-/).length).toBeGreaterThanOrEqual(7);
   });
 
   it("uses reusable PBR latex and textile material detail on gloves instead of flat prototype color", () => {
     const glove = createGloveMesh("right");
-    const palm = collectByName(glove, /^glove-palm-shell$/)[0];
-    const pad = collectByName(glove, /^glove-palm-pad$/)[0];
-    const cuff = collectByName(glove, /^glove-cuff$/)[0];
+    const palm = collectByName(glove, /^glove-latex-palm-continuous$/)[0];
+    const backhand = collectByName(glove, /^glove-textile-backhand-contoured$/)[0];
+    const cuff = collectByName(glove, /^glove-long-wrist-cuff$/)[0];
     const strap = collectByName(glove, /^glove-wrist-strap-main$/)[0];
-    const scuffs = collectByName(glove, /^glove-latex-wear-scuff-/);
     const textileRibs = collectByName(glove, /^glove-textile-knit-rib-/);
-    const latexEdges = collectByName(glove, /^glove-latex-edge-rolled-seam-/);
+    const latexWraps = collectByName(glove, /^glove-latex-finger-wrap-/);
 
     expect(glove.userData.pbrMaterialSystem).toBe("pbr-latex-textile-match-glove-materials");
     expect(glove.userData.wearDetailSystem).toBe("subtle-match-use-glove-wear");
@@ -349,14 +351,12 @@ describe("procedural 3D assets", () => {
     expect(palm.material.roughnessMap?.userData.assetSystem).toBe("procedural-latex-micrograin-glove-texture");
     expect(palm.material.bumpScale).toBeGreaterThan(0.004);
     expect(palm.material.bumpScale).toBeLessThanOrEqual(0.014);
-    expect(pad.material.bumpMap?.userData.assetSystem).toBe("procedural-latex-micrograin-glove-texture");
+    expect(backhand.material.bumpMap?.userData.assetSystem).toBe("procedural-woven-cuff-glove-texture");
     expect(cuff.material.bumpMap?.userData.assetSystem).toBe("procedural-woven-cuff-glove-texture");
     expect(strap.material.roughnessMap?.userData.assetSystem).toBe("procedural-woven-cuff-glove-texture");
-    expect(scuffs.length).toBeGreaterThanOrEqual(5);
-    expect(scuffs.every((scuff) => scuff.material.transparent && scuff.material.opacity <= 0.18)).toBe(true);
     expect(textileRibs.length).toBeGreaterThanOrEqual(6);
-    expect(latexEdges.length).toBeGreaterThanOrEqual(4);
-    expect([...textileRibs, ...latexEdges].every((detail) => detail.userData.pbrMaterialSystem === "pbr-latex-textile-match-glove-materials")).toBe(true);
+    expect(latexWraps).toHaveLength(4);
+    expect(textileRibs.every((detail) => detail.userData.pbrMaterialSystem === "pbr-latex-textile-match-glove-materials")).toBe(true);
   });
 
   it("uses a premium non-grass academy surface with reusable PBR detail", () => {
@@ -669,10 +669,11 @@ describe("procedural 3D assets", () => {
     expect(collectByName(goal.group, /^goal-frame-net-clip-/)).toHaveLength(0);
     expect(collectByName(goal.group, /^goal-net-ground-rope-/)).toHaveLength(0);
 
-    expect(glove.userData.materialSystem).toBe("stitched-padded-match-glove");
-    expect(collectByName(glove, /^glove-vent-perforation-/).length).toBeGreaterThanOrEqual(8);
+    expect(glove.userData.materialSystem).toBe("continuous-latex-palm-textile-backhand-silicone-strike-zones");
+    expect(collectByName(glove, /^glove-vent-perforation-/)).toHaveLength(0);
+    expect(collectByName(glove, /^glove-silicone-strike-zone-/).length).toBeGreaterThanOrEqual(7);
     expect(collectByName(glove, /^glove-wrist-strap-/)).toHaveLength(1);
-    expect(collectByName(glove, /^glove-brand-patch-/)).toHaveLength(1);
+    expect(collectByName(glove, /^glove-wrist-closure-tab$/)).toHaveLength(1);
 
     expect(ballTexture.userData.materialSystem).toBe("stitched-classic-match-ball");
     expect(ballTexture.userData.finishSystem).toBe("micro-scuffed-satin-panels");
@@ -901,10 +902,10 @@ describe("procedural 3D assets", () => {
     const glove = createGloveMesh("left");
     const ballTexture = createFootballTexture();
 
-    expect(glove.userData.gripSystem).toBe("latex-ridge-and-stitched-fingerback");
-    expect(collectByName(glove, /^glove-fingerback-protection-ridge-/).length).toBeGreaterThanOrEqual(4);
-    expect(collectByName(glove, /^glove-latex-grip-ridge-/).length).toBeGreaterThanOrEqual(5);
-    expect(collectByName(glove, /^glove-stitch-bead-/).length).toBeGreaterThanOrEqual(8);
+    expect(glove.userData.gripSystem).toBe("wrapped-latex-palm-and-thumb");
+    expect(collectByName(glove, /^glove-latex-finger-wrap-/)).toHaveLength(4);
+    expect(collectByName(glove, /^glove-thumb-wrap$/)).toHaveLength(1);
+    expect(collectByName(glove, /^glove-negative-seam-palm-side-/)).toHaveLength(2);
 
     expect(ballTexture.userData.surfaceDetailSystem).toBe("micro-scuffs-valve-and-panel-depth");
     expect(ballTexture.userData.valveSystem).toBe("painted-rubber-air-valve");
