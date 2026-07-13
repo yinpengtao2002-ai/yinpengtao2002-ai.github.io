@@ -2,18 +2,22 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-export function shouldForceMobileLandscape() {
-  return false;
+export function shouldForceMobileLandscape(windowRef) {
+  var width = windowRef?.innerWidth || 0;
+  var height = windowRef?.innerHeight || 0;
+  var coarsePointer = Boolean(windowRef?.matchMedia?.("(pointer: coarse)")?.matches);
+  var touchPoints = Number(windowRef?.navigator?.maxTouchPoints || 0);
+  return Boolean(width && height && width < height && (coarsePointer || touchPoints > 0));
 }
 
 export function syncMobileLandscape(stage, windowRef) {
-  var width = windowRef?.innerWidth || 0;
-  var height = windowRef?.innerHeight || 0;
-  var portrait = Boolean(width && height && width < height);
+  var shouldForce = shouldForceMobileLandscape(windowRef);
   if (stage?.dataset) {
-    stage.dataset.mobileLandscape = portrait ? "prompt" : "native";
+    stage.dataset.mobileLandscape = shouldForce
+      ? stage.dataset.mobileLandscape === "manual" ? "manual" : "auto"
+      : "native";
   }
-  return false;
+  return shouldForce;
 }
 
 export function getStageRenderBounds(stage, fallback = { width: 1280, height: 720 }) {
@@ -44,14 +48,37 @@ export function mapClientPointToStage(event, element) {
   };
 }
 
-export async function requestLandscapeOrientation(windowRef) {
+export async function requestLandscapeOrientation(windowRef, stage) {
+  if (!shouldForceMobileLandscape(windowRef)) {
+    if (stage?.dataset) stage.dataset.mobileLandscape = "native";
+    return false;
+  }
+
   var orientation = windowRef?.screen?.orientation;
-  if (!orientation?.lock) return false;
+  if (!orientation?.lock) {
+    if (stage?.dataset) stage.dataset.mobileLandscape = "manual";
+    return false;
+  }
+
+  var documentRef = windowRef?.document;
+  var fullscreenTarget = stage || documentRef?.documentElement;
+  var requestFullscreen = fullscreenTarget?.requestFullscreen || fullscreenTarget?.webkitRequestFullscreen;
+  var hasFullscreen = Boolean(documentRef?.fullscreenElement || documentRef?.webkitFullscreenElement);
+
+  if (!hasFullscreen && requestFullscreen) {
+    try {
+      await requestFullscreen.call(fullscreenTarget);
+    } catch (error) {
+      // Some browsers permit orientation lock without fullscreen.
+    }
+  }
 
   try {
     await orientation.lock("landscape");
+    if (stage?.dataset) stage.dataset.mobileLandscape = "native";
     return true;
   } catch (error) {
+    if (stage?.dataset) stage.dataset.mobileLandscape = "manual";
     return false;
   }
 }

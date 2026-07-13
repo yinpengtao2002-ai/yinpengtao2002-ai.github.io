@@ -1,11 +1,17 @@
 import type { Metadata, Viewport } from "next";
 import GoalkeeperLandscapeRuntime, { GOALKEEPER_SCRIPT_SRC } from "./GoalkeeperLandscapeRuntime";
 
-const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-CsZj8A1K.css";
+const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-CpaU7AQg.css";
 
 export const metadata: Metadata = {
   title: "弹力手套守门挑战｜Lucas Yin",
   description: "一个支持 60 秒挑战与真实点球大战的横屏守门游戏。",
+  other: {
+    "screen-orientation": "landscape",
+    "x5-orientation": "landscape",
+    "x5-fullscreen": "true",
+    "full-screen": "yes",
+  },
 };
 
 export const viewport: Viewport = {
@@ -160,7 +166,7 @@ export default function GoalkeeperLandscapePage() {
               </div>
             </div>
 
-            <div className="rotate-hint">请横屏体验</div>
+            <div className="rotate-hint">开始后自动横屏</div>
           </div>
         </section>
       </main>

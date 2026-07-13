@@ -8,11 +8,15 @@ const stylesPath = resolve(testDir, "../styles.css");
 const indexPath = resolve(testDir, "../index.html");
 
 describe("responsive layout css", () => {
-  it("uses a clean portrait orientation gate instead of rotating the full game UI", () => {
+  it("keeps the portrait start action available before automatic landscape entry", () => {
     const css = readFileSync(stylesPath, "utf8");
+    const html = readFileSync(indexPath, "utf8");
 
-    expect(css).toContain("portrait-orientation-gate");
-    expect(css).toContain('.stage[data-mobile-landscape="prompt"]');
+    expect(css).toContain('.stage[data-mobile-landscape="auto"]');
+    expect(css).toContain('.stage[data-mobile-landscape="manual"]');
+    expect(css).toContain('.stage[data-mobile-landscape="manual"] > :not(.rotate-hint)');
+    expect(css).not.toContain('.stage[data-mobile-landscape="auto"] > :not(.rotate-hint)');
+    expect(html).toContain("开始后自动横屏");
     expect(css).toContain("请横屏体验");
     expect(css).not.toContain("transform: rotate(90deg) translateY(-100%);");
   });

@@ -71,18 +71,20 @@ describe("3D glove controller", () => {
     const direct = { x: 1.4, y: 1.2, z: 3.15 };
     const shifted = { x: 1.4, y: 1.68, z: 3.15 };
 
-    expect(TOUCH_GLOVE_OFFSET_PX).toBe(22);
+    expect(TOUCH_GLOVE_OFFSET_PX).toBe(28);
     expect(resolveInputPointerWorldTarget(direct, shifted, "mouse")).toEqual(direct);
     expect(resolveInputPointerWorldTarget(direct, shifted, "touch")).toEqual(shifted);
   });
 
-  it("fades the touch offset to zero at the lower save boundary", () => {
+  it("keeps a small touch offset at the lower save boundary", () => {
     const direct = { x: -2.8, y: 0.08, z: 3.15 };
     const shifted = { x: -2.8, y: 0.56, z: 3.15 };
     const target = resolveInputPointerWorldTarget(direct, shifted, "touch");
 
     expect(target.x).toBeCloseTo(direct.x, 5);
-    expect(target.y).toBeCloseTo(direct.y, 5);
+    expect(target.y).toBeGreaterThan(direct.y);
+    expect(target.y).toBeLessThan(shifted.y);
+    expect(target.y).toBeCloseTo(direct.y + (shifted.y - direct.y) * 0.25, 5);
     expect(target.z).toBeCloseTo(direct.z, 5);
   });
 

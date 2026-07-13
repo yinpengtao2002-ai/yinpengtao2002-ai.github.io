@@ -24,7 +24,7 @@ function makeStage({
 }
 
 describe("mobile landscape helpers", () => {
-  it("shows a portrait prompt without rotating the whole game surface", () => {
+  it("marks portrait touch devices for automatic landscape entry", () => {
     const stage = makeStage();
     const windowRef = {
       innerWidth: 390,
@@ -32,9 +32,9 @@ describe("mobile landscape helpers", () => {
       matchMedia: () => ({ matches: true }),
     };
 
-    expect(shouldForceMobileLandscape(windowRef)).toBe(false);
-    expect(syncMobileLandscape(stage, windowRef)).toBe(false);
-    expect(stage.dataset.mobileLandscape).toBe("prompt");
+    expect(shouldForceMobileLandscape(windowRef)).toBe(true);
+    expect(syncMobileLandscape(stage, windowRef)).toBe(true);
+    expect(stage.dataset.mobileLandscape).toBe("auto");
   });
 
   it("keeps native layout for an already-landscape viewport", () => {
@@ -71,10 +71,57 @@ describe("mobile landscape helpers", () => {
     expect(mapClientPointToStage({ clientX: 20, clientY: 160 }, stage)).toEqual({ x: 160, y: 370 });
   });
 
-  it("requests landscape orientation when the browser exposes a lock API", async () => {
-    const lock = vi.fn().mockResolvedValue(undefined);
+  it("enters fullscreen before requesting landscape from a portrait touch device", async () => {
+    const calls = [];
+    const requestFullscreen = vi.fn().mockImplementation(async () => {
+      calls.push("fullscreen");
+    });
+    const lock = vi.fn().mockImplementation(async () => {
+      calls.push("landscape");
+    });
+    const stage = { dataset: {}, requestFullscreen };
+    const windowRef = {
+      innerWidth: 390,
+      innerHeight: 844,
+      matchMedia: () => ({ matches: true }),
+      document: { fullscreenElement: null },
+      screen: { orientation: { lock } },
+    };
 
-    await expect(requestLandscapeOrientation({ screen: { orientation: { lock } } })).resolves.toBe(true);
+    await expect(requestLandscapeOrientation(windowRef, stage)).resolves.toBe(true);
+    expect(requestFullscreen).toHaveBeenCalledTimes(1);
     expect(lock).toHaveBeenCalledWith("landscape");
+    expect(calls).toEqual(["fullscreen", "landscape"]);
+    expect(stage.dataset.mobileLandscape).toBe("native");
+  });
+
+  it("falls back to the manual landscape gate only when locking is unavailable", async () => {
+    const stage = makeStage({ mode: "auto" });
+    const windowRef = {
+      innerWidth: 390,
+      innerHeight: 844,
+      matchMedia: () => ({ matches: true }),
+      screen: { orientation: {} },
+    };
+
+    await expect(requestLandscapeOrientation(windowRef, stage)).resolves.toBe(false);
+    expect(stage.dataset.mobileLandscape).toBe("manual");
+    expect(syncMobileLandscape(stage, windowRef)).toBe(true);
+    expect(stage.dataset.mobileLandscape).toBe("manual");
+  });
+
+  it("does not fullscreen an already-landscape viewport", async () => {
+    const requestFullscreen = vi.fn().mockResolvedValue(undefined);
+    const lock = vi.fn().mockResolvedValue(undefined);
+    const windowRef = {
+      innerWidth: 844,
+      innerHeight: 390,
+      matchMedia: () => ({ matches: true }),
+      screen: { orientation: { lock } },
+    };
+
+    await expect(requestLandscapeOrientation(windowRef, { requestFullscreen })).resolves.toBe(false);
+    expect(requestFullscreen).not.toHaveBeenCalled();
+    expect(lock).not.toHaveBeenCalled();
   });
 });

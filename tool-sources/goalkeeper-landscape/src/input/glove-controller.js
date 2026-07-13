@@ -16,14 +16,15 @@ export const GLOVE_3D = {
   maxSpeedTouch: 21,
 };
 
-export const TOUCH_GLOVE_OFFSET_PX = 22;
+export const TOUCH_GLOVE_OFFSET_PX = 28;
 
 export function resolveInputPointerWorldTarget(directTarget, shiftedTarget, inputMode) {
   if (inputMode !== "touch" || !shiftedTarget) return directTarget;
   var upwardDistance = Math.max(0, shiftedTarget.y - directTarget.y);
   if (upwardDistance <= 0.000001) return directTarget;
   var lowerReach = Math.max(0, directTarget.y - GLOVE_3D.minY);
-  var lowerBoundaryFade = clamp(lowerReach / (upwardDistance * 1.25), 0, 1);
+  var lowerBoundaryProgress = clamp(lowerReach / (upwardDistance * 1.25), 0, 1);
+  var lowerBoundaryFade = 0.25 + lowerBoundaryProgress * 0.75;
   return {
     x: directTarget.x,
     y: directTarget.y + upwardDistance * lowerBoundaryFade,

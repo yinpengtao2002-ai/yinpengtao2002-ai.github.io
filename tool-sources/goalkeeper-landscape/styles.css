@@ -1785,16 +1785,16 @@ button {
     transform: none;
   }
 
-  .stage[data-mobile-landscape="prompt"] {
-    --portrait-orientation-gate: 1;
+  .stage[data-mobile-landscape="auto"],
+  .stage[data-mobile-landscape="manual"] {
     background: #102422;
   }
 
-  .stage[data-mobile-landscape="prompt"] > :not(.rotate-hint) {
+  .stage[data-mobile-landscape="manual"] > :not(.rotate-hint) {
     visibility: hidden;
   }
 
-  .stage[data-mobile-landscape="prompt"] .rotate-hint {
+  .stage[data-mobile-landscape="manual"] .rotate-hint {
     position: absolute;
     inset: 0;
     z-index: 20;
@@ -1811,7 +1811,7 @@ button {
     pointer-events: auto;
   }
 
-  .stage[data-mobile-landscape="prompt"] .rotate-hint::before {
+  .stage[data-mobile-landscape="manual"] .rotate-hint::before {
     content: "";
     width: 46px;
     height: 74px;
@@ -1821,7 +1821,7 @@ button {
     transform: rotate(-90deg);
   }
 
-  .stage[data-mobile-landscape="prompt"] .rotate-hint::after {
+  .stage[data-mobile-landscape="manual"] .rotate-hint::after {
     content: "请横屏体验";
     font-size: 18px;
     font-weight: 800;

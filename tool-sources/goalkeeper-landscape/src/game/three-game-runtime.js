@@ -32,7 +32,12 @@ import { createRapierGoalkeeperWorld } from "../physics/rapier-world.js";
 import { resolveGoalNetCollision } from "../physics/goal-net-geometry.js";
 import { createGoalkeeperScene } from "../three/goalkeeper-scene.js";
 import { createHud } from "../ui/hud.js";
-import { getStageRenderBounds, requestLandscapeOrientation, syncMobileLandscape } from "../ui/mobile-landscape.js";
+import {
+  getStageRenderBounds,
+  requestLandscapeOrientation,
+  shouldForceMobileLandscape,
+  syncMobileLandscape,
+} from "../ui/mobile-landscape.js";
 
 export const DEBUG_FORCE_GLOVE_SETTLE_DT = 1 / 30;
 export const DEBUG_FORCE_GLOVE_HOLD_SECONDS = 0.45;
@@ -614,12 +619,13 @@ export async function createThreeGameRuntime(options) {
   var lastPointerInput = { x: 0, y: 0 };
   var lastFrame = 0;
   var runningLoop = false;
+  var pendingLandscapeStart = false;
   var debugKeysEnabled =
     windowRef.location &&
     (windowRef.location.hostname === "127.0.0.1" || windowRef.location.hostname === "localhost");
 
   function resize() {
-    syncMobileLandscape(stage, windowRef);
+    var needsLandscape = syncMobileLandscape(stage, windowRef);
     var rect = getStageRenderBounds(stage);
     bounds = {
       width: rect.width || 1280,
@@ -629,6 +635,10 @@ export async function createThreeGameRuntime(options) {
     lastPointerInput = input.getPointer(bounds);
     scene.resize(bounds);
     render();
+    if (pendingLandscapeStart && !needsLandscape) {
+      pendingLandscapeStart = false;
+      resetRound();
+    }
   }
 
   function updateGloveFromPointer(dt) {
@@ -679,6 +689,25 @@ export async function createThreeGameRuntime(options) {
     penaltyRoundBreakTimer = 0;
     musicStoppedForResult = false;
     updateHud();
+  }
+
+  function startRoundWithMobileLandscape() {
+    audio.prime();
+    if (!shouldForceMobileLandscape(windowRef)) {
+      pendingLandscapeStart = false;
+      resetRound();
+      return;
+    }
+
+    if (pendingLandscapeStart) return;
+    pendingLandscapeStart = true;
+    requestLandscapeOrientation(windowRef, stage).then(function afterLandscapeRequest(locked) {
+      if (!pendingLandscapeStart) return;
+      if (locked || !shouldForceMobileLandscape(windowRef)) {
+        pendingLandscapeStart = false;
+        resetRound();
+      }
+    });
   }
 
   function rememberLingeringBall(ball, outcome) {
@@ -1009,12 +1038,10 @@ export async function createThreeGameRuntime(options) {
 
   hud.bind({
     onStart() {
-      requestLandscapeOrientation(windowRef);
-      resetRound();
+      startRoundWithMobileLandscape();
     },
     onRestart() {
-      requestLandscapeOrientation(windowRef);
-      resetRound();
+      startRoundWithMobileLandscape();
     },
     onPause() {
       state = togglePause(state);
