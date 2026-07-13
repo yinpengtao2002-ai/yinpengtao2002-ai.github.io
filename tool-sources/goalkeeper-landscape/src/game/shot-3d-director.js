@@ -19,6 +19,12 @@ export const SHOT_3D = {
 
 export const DEFAULT_SHOT_DIFFICULTY = "medium";
 
+export const SHOT_EASTER_EGG = Object.freeze({
+  frameChance: 0.005,
+  wideChance: 0.003,
+  totalChance: 0.008,
+});
+
 export const SHOT_DIFFICULTIES = {
   easy: {
     id: "easy",
@@ -56,6 +62,13 @@ export const SHOT_DIFFICULTIES = {
 
 export function resolveShotDifficulty(id) {
   return SHOT_DIFFICULTIES[id] || SHOT_DIFFICULTIES[DEFAULT_SHOT_DIFFICULTY];
+}
+
+export function resolveEasterEggShotVariant(roll) {
+  var value = Number.isFinite(roll) ? roll : 1;
+  if (value < SHOT_EASTER_EGG.frameChance) return "frame";
+  if (value < SHOT_EASTER_EGG.totalChance) return "wide";
+  return "standard";
 }
 
 function makeRandom(seed) {
@@ -200,6 +213,49 @@ export function createShot3D(context) {
     y: dipForce,
     z: 0,
   };
+  var easterEggRoll = Number.isFinite(context.easterEggRoll) ? context.easterEggRoll : random();
+  var shotVariant = resolveEasterEggShotVariant(easterEggRoll);
+  var easterEggPart = null;
+
+  if (shotVariant === "frame") {
+    var hitCrossbar = random() < 0.28;
+    easterEggPart = hitCrossbar ? "crossbar" : side < 0 ? "left-post" : "right-post";
+    target = hitCrossbar
+      ? {
+          x: clamp(target.x, -SHOT_3D.goalHalfWidth + 0.55, SHOT_3D.goalHalfWidth - 0.55),
+          y: SHOT_3D.goalHeight + 0.06,
+          z: SHOT_3D.netPlaneZ,
+        }
+      : {
+          x: side * (SHOT_3D.goalHalfWidth + 0.06),
+          y: clamp(target.y, 0.56, SHOT_3D.goalHeight - 0.18),
+          z: SHOT_3D.netPlaneZ,
+        };
+    curveForce = {
+      ...curveForce,
+      x: curveForce.x * 0.22,
+      y: curveForce.y * 0.45,
+    };
+  } else if (shotVariant === "wide") {
+    var flyOver = random() < 0.32;
+    easterEggPart = flyOver ? "over-crossbar" : side < 0 ? "wide-left" : "wide-right";
+    target = flyOver
+      ? {
+          x: clamp(target.x, -SHOT_3D.goalHalfWidth + 0.4, SHOT_3D.goalHalfWidth - 0.4),
+          y: SHOT_3D.goalHeight + lerp(0.62, 1.18, random()),
+          z: SHOT_3D.netPlaneZ,
+        }
+      : {
+          x: side * (SHOT_3D.goalHalfWidth + lerp(0.72, 1.25, random())),
+          y: clamp(target.y, 0.62, SHOT_3D.goalHeight - 0.12),
+          z: SHOT_3D.netPlaneZ,
+        };
+    curveForce = {
+      ...curveForce,
+      x: curveForce.x * 0.2,
+      y: curveForce.y * 0.4,
+    };
+  }
   var velocity = planBallisticVelocity(origin, target, flightTime, {
     x: curveForce.x,
     y: SHOT_3D.gravity + curveForce.y,
@@ -214,6 +270,8 @@ export function createShot3D(context) {
   return {
     shotId: context.shotId || 0,
     difficulty: shotDifficulty.id,
+    shotVariant: shotVariant,
+    easterEggPart: easterEggPart,
     cue: {
       lean: lean,
       swing: swing,
@@ -236,6 +294,8 @@ export function createShot3D(context) {
       radius: 0.11,
       flightTime: flightTime,
       spin: angularVelocity,
+      shotVariant: shotVariant,
+      easterEggPart: easterEggPart,
     },
   };
 }

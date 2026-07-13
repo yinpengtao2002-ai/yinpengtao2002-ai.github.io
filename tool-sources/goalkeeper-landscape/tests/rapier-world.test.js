@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createShot3DDirector } from "../src/game/shot-3d-director.js";
+import { createShot3D, createShot3DDirector } from "../src/game/shot-3d-director.js";
 import {
   GOAL_CAGE_POINTS,
   GOAL_FRAME_SEGMENTS,
@@ -524,6 +524,56 @@ describe("Rapier goalkeeper world", () => {
     expect(ball.lastContact.point.x).toBeLessThan(-3.6);
     expect(ball.lastContact.strength).toBeGreaterThan(20);
     expect(ball.velocity.z).toBeLessThan(0);
+
+    world.dispose();
+  });
+
+  it("turns the rare frame-shot plan into a real Rapier post collision", async () => {
+    const world = await createRapierGoalkeeperWorld();
+    const shot = createShot3D({
+      random: () => 0.5,
+      elapsed: 20,
+      shotId: 191,
+      difficulty: "medium",
+      easterEggRoll: 0,
+    });
+
+    world.setGloveTarget({ x: 0, y: 3, z: 3.15 });
+    world.launchShot(shot.ballPlan);
+    for (let i = 0; i < 96 && world.getBallState().live; i += 1) {
+      world.step(1 / 120);
+    }
+    const ball = world.getBallState();
+
+    expect(shot.shotVariant).toBe("frame");
+    expect(shot.easterEggPart).toBe("left-post");
+    expect(ball.outcome).toBe("missed");
+    expect(ball.lastContact?.type).toBe("frame");
+    expect(ball.lastContact?.part).toBe("left-post");
+
+    world.dispose();
+  });
+
+  it("lets the rare off-target plan fly past the goal without becoming a goal", async () => {
+    const world = await createRapierGoalkeeperWorld();
+    const shot = createShot3D({
+      random: () => 0.5,
+      elapsed: 20,
+      shotId: 192,
+      difficulty: "medium",
+      easterEggRoll: 0.006,
+    });
+
+    world.setGloveTarget({ x: 0, y: 3, z: 3.15 });
+    world.launchShot(shot.ballPlan);
+    for (let i = 0; i < 96 && world.getBallState().live; i += 1) {
+      world.step(1 / 120);
+    }
+    const ball = world.getBallState();
+
+    expect(shot.shotVariant).toBe("wide");
+    expect(ball.outcome).toBe("missed");
+    expect(ball.lastContact?.type).toBe("wide");
 
     world.dispose();
   });

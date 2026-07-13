@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_SHOT_DIFFICULTY,
+  SHOT_3D,
   SHOT_DIFFICULTIES,
+  SHOT_EASTER_EGG,
+  createShot3D,
   createShot3DDirector,
   getAdaptivePenaltySide,
   predictShotPosition,
+  resolveEasterEggShotVariant,
   resolveShotDifficulty,
   updateShot3DDirector,
 } from "../src/game/shot-3d-director.js";
@@ -39,6 +43,44 @@ describe("3D shot director", () => {
     expect(predicted.x).toBeCloseTo(shot.target.x, 1);
     expect(predicted.y).toBeCloseTo(shot.target.y, 1);
     expect(predicted.z).toBeCloseTo(shot.target.z, 1);
+  });
+
+  it("keeps frame and off-target easter eggs below one percent combined", () => {
+    expect(SHOT_EASTER_EGG.frameChance).toBe(0.005);
+    expect(SHOT_EASTER_EGG.wideChance).toBe(0.003);
+    expect(SHOT_EASTER_EGG.totalChance).toBe(0.008);
+    expect(resolveEasterEggShotVariant(0)).toBe("frame");
+    expect(resolveEasterEggShotVariant(0.0049)).toBe("frame");
+    expect(resolveEasterEggShotVariant(0.005)).toBe("wide");
+    expect(resolveEasterEggShotVariant(0.0079)).toBe("wide");
+    expect(resolveEasterEggShotVariant(0.008)).toBe("standard");
+  });
+
+  it("aims forced easter eggs at real frame geometry or clearly outside the goal", () => {
+    const frameShot = createShot3D({
+      random: () => 0.5,
+      elapsed: 20,
+      shotId: 91,
+      difficulty: "medium",
+      easterEggRoll: 0,
+    });
+    const wideShot = createShot3D({
+      random: () => 0.5,
+      elapsed: 20,
+      shotId: 92,
+      difficulty: "medium",
+      easterEggRoll: 0.006,
+    });
+
+    expect(frameShot.shotVariant).toBe("frame");
+    expect(frameShot.ballPlan.shotVariant).toBe("frame");
+    expect(Math.abs(frameShot.target.x)).toBeCloseTo(SHOT_3D.goalHalfWidth + 0.06, 5);
+    expect(frameShot.target.y).toBeGreaterThan(0.5);
+    expect(frameShot.target.y).toBeLessThan(SHOT_3D.goalHeight);
+
+    expect(wideShot.shotVariant).toBe("wide");
+    expect(wideShot.ballPlan.shotVariant).toBe("wide");
+    expect(Math.abs(wideShot.target.x)).toBeGreaterThan(SHOT_3D.goalHalfWidth + 0.5);
   });
 
   it("late shots arrive faster with shorter cues", () => {
