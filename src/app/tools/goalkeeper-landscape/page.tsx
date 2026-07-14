@@ -1,16 +1,23 @@
 import type { Metadata, Viewport } from "next";
 import GoalkeeperLandscapeRuntime, { GOALKEEPER_SCRIPT_SRC } from "./GoalkeeperLandscapeRuntime";
 
-const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-CpaU7AQg.css";
+const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-B_UnKrEs.css";
 
 export const metadata: Metadata = {
   title: "弹力手套守门挑战｜Lucas Yin",
   description: "一个支持 60 秒挑战与真实点球大战的横屏守门游戏。",
+  manifest: "/tools/goalkeeper-landscape/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "守门挑战",
+  },
   other: {
     "screen-orientation": "landscape",
     "x5-orientation": "landscape",
     "x5-fullscreen": "true",
     "full-screen": "yes",
+    "mobile-web-app-capable": "yes",
   },
 };
 

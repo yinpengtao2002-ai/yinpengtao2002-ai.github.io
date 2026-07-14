@@ -701,12 +701,11 @@ export async function createThreeGameRuntime(options) {
 
     if (pendingLandscapeStart) return;
     pendingLandscapeStart = true;
-    requestLandscapeOrientation(windowRef, stage).then(function afterLandscapeRequest(locked) {
+    requestLandscapeOrientation(windowRef, stage).then(function afterLandscapeRequest() {
       if (!pendingLandscapeStart) return;
-      if (locked || !shouldForceMobileLandscape(windowRef)) {
-        pendingLandscapeStart = false;
-        resetRound();
-      }
+      pendingLandscapeStart = false;
+      resize();
+      resetRound();
     });
   }
 

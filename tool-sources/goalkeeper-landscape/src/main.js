@@ -4,11 +4,18 @@ import {
   installGoalkeeperRuntime,
   releaseGoalkeeperMount,
 } from "./game/runtime-mount-guard.js";
+import {
+  requestLandscapeOrientation,
+  syncMobileLandscape,
+} from "./ui/mobile-landscape.js";
 
 var canvas = document.getElementById("gameCanvas");
 var stage = document.getElementById("stage");
 var requestedMountId = new URL(import.meta.url).searchParams.get("mount");
 var mountId = requestedMountId || "standalone-goalkeeper";
+
+syncMobileLandscape(stage, window);
+void requestLandscapeOrientation(window, stage);
 
 if (!requestedMountId) claimGoalkeeperMount(window, mountId);
 

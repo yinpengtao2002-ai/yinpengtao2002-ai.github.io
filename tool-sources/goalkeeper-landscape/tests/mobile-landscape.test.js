@@ -24,7 +24,7 @@ function makeStage({
 }
 
 describe("mobile landscape helpers", () => {
-  it("marks portrait touch devices for automatic landscape entry", () => {
+  it("immediately uses the rotated landscape surface on portrait touch devices", () => {
     const stage = makeStage();
     const windowRef = {
       innerWidth: 390,
@@ -34,7 +34,7 @@ describe("mobile landscape helpers", () => {
 
     expect(shouldForceMobileLandscape(windowRef)).toBe(true);
     expect(syncMobileLandscape(stage, windowRef)).toBe(true);
-    expect(stage.dataset.mobileLandscape).toBe("auto");
+    expect(stage.dataset.mobileLandscape).toBe("forced");
   });
 
   it("keeps native layout for an already-landscape viewport", () => {
@@ -95,8 +95,8 @@ describe("mobile landscape helpers", () => {
     expect(stage.dataset.mobileLandscape).toBe("native");
   });
 
-  it("falls back to the manual landscape gate only when locking is unavailable", async () => {
-    const stage = makeStage({ mode: "auto" });
+  it("keeps the automatic rotated surface when orientation locking is unavailable", async () => {
+    const stage = makeStage({ mode: "forced" });
     const windowRef = {
       innerWidth: 390,
       innerHeight: 844,
@@ -105,9 +105,28 @@ describe("mobile landscape helpers", () => {
     };
 
     await expect(requestLandscapeOrientation(windowRef, stage)).resolves.toBe(false);
-    expect(stage.dataset.mobileLandscape).toBe("manual");
+    expect(stage.dataset.mobileLandscape).toBe("forced");
     expect(syncMobileLandscape(stage, windowRef)).toBe(true);
-    expect(stage.dataset.mobileLandscape).toBe("manual");
+    expect(stage.dataset.mobileLandscape).toBe("forced");
+  });
+
+  it("keeps the automatic rotated surface when a zero-click request is rejected", async () => {
+    const requestFullscreen = vi.fn().mockRejectedValue(new Error("gesture required"));
+    const lock = vi.fn().mockRejectedValue(new Error("gesture required"));
+    const stage = makeStage({ mode: "forced" });
+    stage.requestFullscreen = requestFullscreen;
+    const windowRef = {
+      innerWidth: 390,
+      innerHeight: 844,
+      matchMedia: () => ({ matches: true }),
+      document: { fullscreenElement: null },
+      screen: { orientation: { lock } },
+    };
+
+    await expect(requestLandscapeOrientation(windowRef, stage)).resolves.toBe(false);
+    expect(requestFullscreen).toHaveBeenCalledTimes(1);
+    expect(lock).toHaveBeenCalledWith("landscape");
+    expect(stage.dataset.mobileLandscape).toBe("forced");
   });
 
   it("does not fullscreen an already-landscape viewport", async () => {

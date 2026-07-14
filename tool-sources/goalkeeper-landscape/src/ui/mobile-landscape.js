@@ -13,9 +13,7 @@ export function shouldForceMobileLandscape(windowRef) {
 export function syncMobileLandscape(stage, windowRef) {
   var shouldForce = shouldForceMobileLandscape(windowRef);
   if (stage?.dataset) {
-    stage.dataset.mobileLandscape = shouldForce
-      ? stage.dataset.mobileLandscape === "manual" ? "manual" : "auto"
-      : "native";
+    stage.dataset.mobileLandscape = shouldForce ? "forced" : "native";
   }
   return shouldForce;
 }
@@ -56,7 +54,7 @@ export async function requestLandscapeOrientation(windowRef, stage) {
 
   var orientation = windowRef?.screen?.orientation;
   if (!orientation?.lock) {
-    if (stage?.dataset) stage.dataset.mobileLandscape = "manual";
+    if (stage?.dataset) stage.dataset.mobileLandscape = "forced";
     return false;
   }
 
@@ -78,7 +76,7 @@ export async function requestLandscapeOrientation(windowRef, stage) {
     if (stage?.dataset) stage.dataset.mobileLandscape = "native";
     return true;
   } catch (error) {
-    if (stage?.dataset) stage.dataset.mobileLandscape = "manual";
+    if (stage?.dataset) stage.dataset.mobileLandscape = "forced";
     return false;
   }
 }

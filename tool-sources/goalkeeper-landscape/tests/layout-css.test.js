@@ -6,19 +6,41 @@ import { dirname, resolve } from "node:path";
 const testDir = dirname(fileURLToPath(import.meta.url));
 const stylesPath = resolve(testDir, "../styles.css");
 const indexPath = resolve(testDir, "../index.html");
+const mainPath = resolve(testDir, "../src/main.js");
+const manifestPath = resolve(testDir, "../public/manifest.webmanifest");
 
 describe("responsive layout css", () => {
-  it("keeps the portrait start action available before automatic landscape entry", () => {
+  it("rotates the portrait mobile surface into landscape without a manual gate", () => {
     const css = readFileSync(stylesPath, "utf8");
     const html = readFileSync(indexPath, "utf8");
 
-    expect(css).toContain('.stage[data-mobile-landscape="auto"]');
-    expect(css).toContain('.stage[data-mobile-landscape="manual"]');
-    expect(css).toContain('.stage[data-mobile-landscape="manual"] > :not(.rotate-hint)');
-    expect(css).not.toContain('.stage[data-mobile-landscape="auto"] > :not(.rotate-hint)');
-    expect(html).toContain("开始后自动横屏");
-    expect(css).toContain("请横屏体验");
-    expect(css).not.toContain("transform: rotate(90deg) translateY(-100%);");
+    expect(css).toContain("width: 100svh;");
+    expect(css).toContain("height: 100vw;");
+    expect(css).toContain("transform: rotate(90deg) translateY(-100%);");
+    expect(css).toContain("transform-origin: left top;");
+    expect(css).toContain('@media (orientation: portrait) and (pointer: coarse)');
+    expect(css).toContain('.stage[data-mobile-landscape="forced"]');
+    expect(css).not.toContain('.stage[data-mobile-landscape="manual"] > :not(.rotate-hint)');
+    expect(html).not.toContain("请横屏体验");
+  });
+
+  it("attempts fullscreen and orientation lock as soon as the mobile module loads", () => {
+    const main = readFileSync(mainPath, "utf8");
+
+    expect(main).toContain("syncMobileLandscape(stage, window)");
+    expect(main).toContain("requestLandscapeOrientation(window, stage)");
+    expect(main.indexOf("requestLandscapeOrientation(window, stage)")).toBeLessThan(main.indexOf("async function boot()"));
+  });
+
+  it("declares a fullscreen landscape PWA launch mode", () => {
+    const html = readFileSync(indexPath, "utf8");
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+
+    expect(html).toContain('rel="manifest" href="/tools/goalkeeper-landscape/manifest.webmanifest"');
+    expect(manifest.start_url).toBe("/tools/goalkeeper-landscape/");
+    expect(manifest.scope).toBe("/tools/goalkeeper-landscape/");
+    expect(manifest.display).toBe("fullscreen");
+    expect(manifest.orientation).toBe("landscape");
   });
 
   it("reserves left edge space for bottom controls in mobile landscape", () => {

@@ -1785,47 +1785,8 @@ button {
     transform: none;
   }
 
-  .stage[data-mobile-landscape="auto"],
-  .stage[data-mobile-landscape="manual"] {
-    background: #102422;
-  }
-
-  .stage[data-mobile-landscape="manual"] > :not(.rotate-hint) {
-    visibility: hidden;
-  }
-
-  .stage[data-mobile-landscape="manual"] .rotate-hint {
-    position: absolute;
-    inset: 0;
-    z-index: 20;
-    display: grid;
-    place-content: center;
-    justify-items: center;
-    gap: 28px;
-    padding: 28px;
-    border-radius: 0;
-    color: #eef7f0;
-    background: #102422;
-    font-size: 0;
-    text-align: center;
-    pointer-events: auto;
-  }
-
-  .stage[data-mobile-landscape="manual"] .rotate-hint::before {
-    content: "";
-    width: 46px;
-    height: 74px;
-    border: 3px solid rgba(238, 247, 240, 0.9);
-    border-radius: 8px;
-    box-shadow: inset 0 -8px 0 rgba(238, 247, 240, 0.08);
-    transform: rotate(-90deg);
-  }
-
-  .stage[data-mobile-landscape="manual"] .rotate-hint::after {
-    content: "请横屏体验";
-    font-size: 18px;
-    font-weight: 800;
-    letter-spacing: 0;
+  .rotate-hint {
+    display: none;
   }
 
   .game-hud {
@@ -1972,6 +1933,24 @@ button {
   .start-disc {
     width: clamp(88px, 18svh, 120px);
     height: clamp(88px, 18svh, 120px);
+  }
+}
+
+@media (orientation: portrait) {
+  .stage[data-mobile-landscape="forced"] {
+    width: 100svh;
+    height: 100vw;
+    transform: rotate(90deg) translateY(-100%);
+    transform-origin: left top;
+  }
+}
+
+@media (orientation: portrait) and (pointer: coarse) {
+  .stage {
+    width: 100svh;
+    height: 100vw;
+    transform: rotate(90deg) translateY(-100%);
+    transform-origin: left top;
   }
 }
 
