@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { SMAAPass } from "three/addons/postprocessing/SMAAPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { Sky } from "three/addons/objects/Sky.js";
 import {
@@ -32,6 +33,7 @@ export const POSTPROCESSING_ADDON_SOURCES = [
   "three/addons/postprocessing/EffectComposer",
   "three/addons/postprocessing/RenderPass",
   "three/addons/postprocessing/UnrealBloomPass",
+  "three/addons/postprocessing/SMAAPass",
   "three/addons/postprocessing/OutputPass",
 ];
 
@@ -71,6 +73,43 @@ export function getSaveContactFeedbackState(state = {}) {
   return {
     ...state,
     streak: (state.streak || 0) + 1,
+  };
+}
+
+export function getRenderQualityPlan(
+  width,
+  height,
+  devicePixelRatio,
+  tuning = SCENE_TUNING.postprocessing,
+) {
+  var cssWidth = Math.max(1, Math.round(Number(width) || 1));
+  var cssHeight = Math.max(1, Math.round(Number(height) || 1));
+  var requestedPixelRatio = Math.max(1, Number(devicePixelRatio) || 1);
+  var pixelRatioCap = Math.max(1, Number(tuning.pixelRatioCap) || 1);
+  var basePixelCount = cssWidth * cssHeight;
+  var maxPixelCount = Math.max(basePixelCount, Number(tuning.maxPixelCount) || basePixelCount);
+  var budgetPixelRatio = Math.sqrt(maxPixelCount / basePixelCount);
+  var pixelRatio = Math.max(
+    1,
+    Math.min(requestedPixelRatio, pixelRatioCap, budgetPixelRatio),
+  );
+
+  // A downward-rounded ratio keeps the reported render target inside the GPU budget.
+  pixelRatio = Math.floor(pixelRatio * 1000) / 1000;
+  var renderWidth = Math.max(1, Math.floor(cssWidth * pixelRatio));
+  var renderHeight = Math.max(1, Math.floor(cssHeight * pixelRatio));
+
+  return {
+    system: "adaptive-retina-render-target",
+    antialiasSystem: "hardware-msaa-plus-smaa",
+    cssWidth,
+    cssHeight,
+    requestedPixelRatio,
+    pixelRatio,
+    renderWidth,
+    renderHeight,
+    pixelCount: renderWidth * renderHeight,
+    maxPixelCount,
   };
 }
 
@@ -193,7 +232,8 @@ export const SCENE_TUNING = {
     baseRadius: 0.08,
     maxRadius: 0.22,
     eventDecay: 0.04,
-    pixelRatioCap: 1.45,
+    pixelRatioCap: 2,
+    maxPixelCount: 5_200_000,
   },
   feedback: {
     assetSystem: "matchday-feedback-kit",
@@ -1551,10 +1591,12 @@ function createPostprocessingPipeline(renderer, scene, camera, tuning = SCENE_TU
     tuning.baseRadius,
     tuning.threshold,
   );
+  var smaaPass = new SMAAPass();
   var outputPass = new OutputPass();
 
   composer.addPass(renderPass);
   composer.addPass(bloomPass);
+  composer.addPass(smaaPass);
   composer.addPass(outputPass);
 
   return {
@@ -1563,9 +1605,10 @@ function createPostprocessingPipeline(renderer, scene, camera, tuning = SCENE_TU
     composer,
     renderPass,
     bloomPass,
+    smaaPass,
     outputPass,
     resize(width, height, pixelRatio) {
-      composer.setPixelRatio(Math.min(Math.max(1, pixelRatio || 1), tuning.pixelRatioCap));
+      composer.setPixelRatio(Math.max(1, pixelRatio || 1));
       composer.setSize(width, height);
     },
     apply(plan) {
@@ -2474,10 +2517,17 @@ export function createGoalkeeperScene(canvas) {
   function resize(bounds) {
     var width = Math.max(1, Math.round(bounds.width || canvas.clientWidth || 1280));
     var height = Math.max(1, Math.round(bounds.height || canvas.clientHeight || 720));
-    var pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
-    renderer.setPixelRatio(pixelRatio);
+    var qualityPlan = getRenderQualityPlan(width, height, window.devicePixelRatio || 1, tuning.postprocessing);
+    renderer.setPixelRatio(qualityPlan.pixelRatio);
     renderer.setSize(width, height, false);
-    postprocessingPipeline?.resize(width, height, pixelRatio);
+    postprocessingPipeline?.resize(width, height, qualityPlan.pixelRatio);
+    if (canvas.dataset) {
+      canvas.dataset.renderQualitySystem = qualityPlan.system;
+      canvas.dataset.renderPixelRatio = String(qualityPlan.pixelRatio);
+      canvas.dataset.renderWidth = String(qualityPlan.renderWidth);
+      canvas.dataset.renderHeight = String(qualityPlan.renderHeight);
+      canvas.dataset.antialiasSystem = qualityPlan.antialiasSystem;
+    }
     camera.aspect = width / height;
     cameraFraming = applyCameraTuning(camera, camera.aspect, tuning);
     camera.updateProjectionMatrix();
