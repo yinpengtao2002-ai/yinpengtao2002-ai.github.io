@@ -16,20 +16,22 @@ export const GLOVE_3D = {
   maxSpeedTouch: 21,
 };
 
-export const TOUCH_GLOVE_OFFSET_PX = 28;
+export const TOUCH_GLOVE_OFFSET_PX = 76;
+export const TOUCH_GLOVE_MAX_HEIGHT_RATIO = 0.22;
+
+export function getTouchGlovePointer(pointer, bounds, inputMode) {
+  if (inputMode !== "touch") return pointer;
+  var height = Math.max(1, Number(bounds?.height) || 1);
+  var offset = Math.min(TOUCH_GLOVE_OFFSET_PX, height * TOUCH_GLOVE_MAX_HEIGHT_RATIO);
+  return {
+    x: pointer.x,
+    y: Math.max(0, pointer.y - offset),
+  };
+}
 
 export function resolveInputPointerWorldTarget(directTarget, shiftedTarget, inputMode) {
   if (inputMode !== "touch" || !shiftedTarget) return directTarget;
-  var upwardDistance = Math.max(0, shiftedTarget.y - directTarget.y);
-  if (upwardDistance <= 0.000001) return directTarget;
-  var lowerReach = Math.max(0, directTarget.y - GLOVE_3D.minY);
-  var lowerBoundaryProgress = clamp(lowerReach / (upwardDistance * 1.25), 0, 1);
-  var lowerBoundaryFade = 0.25 + lowerBoundaryProgress * 0.75;
-  return {
-    x: directTarget.x,
-    y: directTarget.y + upwardDistance * lowerBoundaryFade,
-    z: directTarget.z,
-  };
+  return shiftedTarget;
 }
 
 function withHands(center) {

@@ -23,8 +23,8 @@ import {
 import { createPointerInput } from "../input/pointer-input.js";
 import {
   GLOVE_3D,
-  TOUCH_GLOVE_OFFSET_PX,
   createGloveController,
+  getTouchGlovePointer,
   resolveInputPointerWorldTarget,
   updateGloveController,
 } from "../input/glove-controller.js";
@@ -654,9 +654,10 @@ export async function createThreeGameRuntime(options) {
     var inputMode = input.getMode();
     lastPointerInput = pointer;
     var directWorldTarget = scene.projectPointerToGlovePlane?.(pointer, bounds, GLOVE_3D.planeZ) || null;
+    var touchGlovePointer = getTouchGlovePointer(pointer, bounds, inputMode);
     var shiftedWorldTarget = inputMode === "touch"
       ? scene.projectPointerToGlovePlane?.(
-          { x: pointer.x, y: Math.max(0, pointer.y - TOUCH_GLOVE_OFFSET_PX) },
+          touchGlovePointer,
           bounds,
           GLOVE_3D.planeZ,
         ) || null
