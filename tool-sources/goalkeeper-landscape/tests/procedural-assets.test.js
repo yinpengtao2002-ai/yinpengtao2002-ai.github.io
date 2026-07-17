@@ -403,6 +403,8 @@ describe("procedural 3D assets", () => {
     expect(texture.userData.panelSystem).toBe("classic-dark-pentagon-panel-layout");
     expect(texture.userData.panelCoverageSystem).toBe("dense-classic-32-panel-readability");
     expect(texture.userData.paletteSystem).toBe("neutral-white-charcoal-no-yellow-cast");
+    expect(texture.userData.readabilitySystem).toBe("white-charcoal-signal-coral-flight-readability");
+    expect(texture.userData.signalAccentColor).toBe("#ff633e");
   });
 
   it("distributes classic dark football panels across the full spherical UV", () => {
@@ -413,6 +415,24 @@ describe("procedural 3D assets", () => {
     expect(layout.darkPanels.some((panel) => panel.x < layout.width * 0.08)).toBe(true);
     expect(layout.darkPanels.some((panel) => panel.x > layout.width * 0.92)).toBe(true);
     expect(new Set(layout.darkPanels.map((panel) => Math.round(panel.y))).size).toBeGreaterThanOrEqual(4);
+    expect(layout.darkPanels.filter((panel) => panel.signalAccent).length).toBe(4);
+  });
+
+  it("adds a thin dark silhouette around the match ball for light net and sky backgrounds", async () => {
+    const assetsModule = await import("../src/three/procedural-assets.js");
+
+    expect(assetsModule.createFootballReadabilityOutline).toBeTypeOf("function");
+
+    const outline = assetsModule.createFootballReadabilityOutline(
+      new THREE.SphereGeometry(0.12, 16, 12),
+    );
+
+    expect(outline.userData.readabilitySystem).toBe("thin-charcoal-ball-silhouette");
+    expect(outline.material.color.getHexString()).toBe("11191d");
+    expect(outline.material.side).toBe(THREE.BackSide);
+    expect(outline.material.depthWrite).toBe(false);
+    expect(outline.scale.x).toBeGreaterThanOrEqual(1.035);
+    expect(outline.scale.x).toBeLessThanOrEqual(1.055);
   });
 
   it("keeps the floor clear of football pitch markings while preserving goalmouth depth", () => {

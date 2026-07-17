@@ -188,10 +188,15 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.ball.shadowHeightFade).toBeGreaterThanOrEqual(1.2);
   });
 
-  it("keeps only a restrained neutral halo on a live ball near the goal mouth", () => {
+  it("keeps only a restrained signal ring on a live ball near the goal mouth", () => {
     expect(SCENE_TUNING.ball.netReadabilitySystem).toBe("near-net-ball-priority-halo");
     expect(SCENE_TUNING.ball.renderOrder).toBeGreaterThanOrEqual(12);
     expect(SCENE_TUNING.ball.haloRenderOrder).toBeGreaterThanOrEqual(SCENE_TUNING.ball.renderOrder);
+    expect(SCENE_TUNING.ball.haloGeometrySystem).toBe("thin-ring-no-ball-shell");
+    expect(SCENE_TUNING.ball.haloInnerRadius).toBeGreaterThan(SCENE_TUNING.ball.haloRadius * 0.85);
+    expect(SCENE_TUNING.ball.haloInnerRadius).toBeLessThan(SCENE_TUNING.ball.haloRadius);
+    expect(SCENE_TUNING.ball.haloColor).toBe("#ff633e");
+    expect(SCENE_TUNING.ball.liveHaloOpacity).toBeGreaterThanOrEqual(0.1);
     expect(SCENE_TUNING.ball.nearNetHaloBoost).toBeLessThanOrEqual(0.08);
     expect(SCENE_TUNING.ball.nearNetHaloMaxOpacity).toBeLessThanOrEqual(0.2);
   });
@@ -200,7 +205,7 @@ describe("goalkeeper 3D scene tuning", () => {
     const sceneModule = await import("../src/three/goalkeeper-scene.js");
 
     expect(sceneModule.getBallHaloAppearancePlan).toBeTypeOf("function");
-    expect(SCENE_TUNING.ball.haloColor).toBe("#ffffff");
+    expect(SCENE_TUNING.ball.haloColor).toBe("#ff633e");
     expect(SCENE_TUNING.ball.goalHaloOpacity).toBe(0);
     expect(SCENE_TUNING.ball.settledHaloOpacity).toBe(0);
 
@@ -213,11 +218,11 @@ describe("goalkeeper 3D scene tuning", () => {
       { x: 0, y: 1.2, z: SHOT_3D.netPlaneZ - 0.2 },
     );
 
-    expect(goal).toMatchObject({ visible: false, opacity: 0, color: "#ffffff" });
+    expect(goal).toMatchObject({ visible: false, opacity: 0, color: "#ff633e" });
     expect(live.visible).toBe(true);
     expect(live.opacity).toBeGreaterThan(0);
     expect(live.opacity).toBeLessThanOrEqual(0.2);
-    expect(live.color).toBe("#ffffff");
+    expect(live.color).toBe("#ff633e");
   });
 
   it("uses ring-only goal feedback so no warm contact disc sits behind the scored ball", async () => {

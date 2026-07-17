@@ -707,6 +707,7 @@ export function getClassicFootballPanelLayout(width = 1024, height = 512) {
       y: row.y * height,
       radius: radius * (rowIndex === 0 || rowIndex === panelRows.length - 1 ? 0.86 : 1),
       rotation: row.rotation + columnIndex * 0.08,
+      signalAccent: columnIndex === rowIndex % row.xs.length,
     })),
   );
 
@@ -733,6 +734,11 @@ function drawFootballPentagon(ctx, panel, width, allowWrap = true) {
     else ctx.lineTo(point.x, point.y);
   });
   ctx.closePath();
+  if (panel.signalAccent) {
+    ctx.strokeStyle = "#ff633e";
+    ctx.lineWidth = 14;
+    ctx.stroke();
+  }
   var panelGradient = ctx.createRadialGradient(
     panel.x - panel.radius * 0.22,
     panel.y - panel.radius * 0.28,
@@ -763,8 +769,10 @@ function drawFootballPentagon(ctx, panel, width, allowWrap = true) {
       outerX,
       outerY,
     );
-    ctx.strokeStyle = "rgba(31, 39, 42, 0.72)";
-    ctx.lineWidth = 3.2;
+    ctx.strokeStyle = panel.signalAccent && index % 2 === 0
+      ? "rgba(255, 99, 62, 0.9)"
+      : "rgba(31, 39, 42, 0.72)";
+    ctx.lineWidth = panel.signalAccent && index % 2 === 0 ? 4.4 : 3.2;
     ctx.stroke();
   });
 
@@ -831,6 +839,8 @@ export function createFootballTexture() {
   texture.userData.panelSystem = "classic-dark-pentagon-panel-layout";
   texture.userData.panelCoverageSystem = layout.system;
   texture.userData.paletteSystem = "neutral-white-charcoal-no-yellow-cast";
+  texture.userData.readabilitySystem = "white-charcoal-signal-coral-flight-readability";
+  texture.userData.signalAccentColor = "#ff633e";
   texture.userData.materialSystem = "stitched-classic-match-ball";
   texture.userData.finishSystem = "micro-scuffed-satin-panels";
   texture.userData.surfaceDetailSystem = "micro-scuffs-valve-and-panel-depth";
@@ -851,9 +861,30 @@ export function createFootballMaterial() {
   });
   material.userData.materialPipelineSystem = "procedural-match-ball-pbr";
   material.userData.paletteSystem = "neutral-white-charcoal-no-yellow-cast";
+  material.userData.readabilitySystem = "white-charcoal-signal-coral-flight-readability";
+  material.userData.signalAccentColor = "#ff633e";
   material.userData.surfaceDetailSystem = "raised-seam-and-scuffed-panel-relief";
   material.userData.polishSystem = MATCHDAY_ASSET_POLISH_SYSTEM;
   return material;
+}
+
+export function createFootballReadabilityOutline(geometry) {
+  var outline = new THREE.Mesh(
+    geometry,
+    new THREE.MeshBasicMaterial({
+      color: "#11191d",
+      transparent: true,
+      opacity: 0.82,
+      side: THREE.BackSide,
+      depthWrite: false,
+    }),
+  );
+  outline.name = "football-readability-outline";
+  outline.scale.setScalar(1.044);
+  outline.renderOrder = 11;
+  outline.userData.readabilitySystem = "thin-charcoal-ball-silhouette";
+  outline.userData.visualPurpose = "separate-ball-from-light-net-sky-and-goal-frame";
+  return outline;
 }
 
 function createFallbackFootballTexture() {
@@ -867,14 +898,15 @@ function createFallbackFootballTexture() {
       var nearestPanel = layout.darkPanels.reduce((nearest, panel) => {
         var wrappedDx = Math.min(Math.abs(x - panel.x), width - Math.abs(x - panel.x));
         var distance = Math.hypot(wrappedDx, y - panel.y) / panel.radius;
-        return Math.min(nearest, distance);
-      }, Number.POSITIVE_INFINITY);
-      var accent = nearestPanel < 0.78;
-      var seam = nearestPanel >= 0.78 && nearestPanel < 0.86;
+        return distance < nearest.distance ? { distance, signalAccent: panel.signalAccent } : nearest;
+      }, { distance: Number.POSITIVE_INFINITY, signalAccent: false });
+      var accent = nearestPanel.distance < 0.78;
+      var signalRing = nearestPanel.signalAccent && nearestPanel.distance >= 0.78 && nearestPanel.distance < 0.94;
+      var seam = !signalRing && nearestPanel.distance >= 0.78 && nearestPanel.distance < 0.86;
       var neutralPanel = 246 - Math.floor(Math.abs(y / height - 0.48) * 20);
-      data[index] = seam ? 42 : accent ? 22 : neutralPanel;
-      data[index + 1] = seam ? 47 : accent ? 27 : neutralPanel;
-      data[index + 2] = seam ? 49 : accent ? 30 : neutralPanel;
+      data[index] = signalRing ? 255 : seam ? 42 : accent ? 22 : neutralPanel;
+      data[index + 1] = signalRing ? 99 : seam ? 47 : accent ? 27 : neutralPanel;
+      data[index + 2] = signalRing ? 62 : seam ? 49 : accent ? 30 : neutralPanel;
       data[index + 3] = 255;
     }
   }
@@ -887,6 +919,8 @@ function createFallbackFootballTexture() {
   texture.userData.panelSystem = "classic-dark-pentagon-panel-layout";
   texture.userData.panelCoverageSystem = layout.system;
   texture.userData.paletteSystem = "neutral-white-charcoal-no-yellow-cast";
+  texture.userData.readabilitySystem = "white-charcoal-signal-coral-flight-readability";
+  texture.userData.signalAccentColor = "#ff633e";
   texture.userData.materialSystem = "stitched-classic-match-ball";
   texture.userData.finishSystem = "micro-scuffed-satin-panels";
   texture.userData.surfaceDetailSystem = "micro-scuffs-valve-and-panel-depth";

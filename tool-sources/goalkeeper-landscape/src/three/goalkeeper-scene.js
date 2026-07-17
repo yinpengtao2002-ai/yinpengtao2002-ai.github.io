@@ -12,6 +12,7 @@ import {
 import {
   createFieldGroup,
   createFootballMaterial,
+  createFootballReadabilityOutline,
   createGloveMesh,
   createGoalAndNet,
   createShooterModel,
@@ -127,6 +128,8 @@ export const SCENE_TUNING = {
   ball: {
     radius: 0.12,
     haloRadius: 0.24,
+    haloInnerRadius: 0.218,
+    haloGeometrySystem: "thin-ring-no-ball-shell",
     shadowRadius: 0.14,
     shadowAssetSystem: "height-aware-ball-shadow",
     shadowGroundOpacity: 0.34,
@@ -142,12 +145,12 @@ export const SCENE_TUNING = {
     netReadabilitySystem: "near-net-ball-priority-halo",
     renderOrder: 12,
     haloRenderOrder: 13,
-    haloColor: "#ffffff",
-    liveHaloOpacity: 0.1,
+    haloColor: "#ff633e",
+    liveHaloOpacity: 0.11,
     goalHaloOpacity: 0,
     settledHaloOpacity: 0,
-    nearNetHaloBoost: 0.06,
-    nearNetHaloMaxOpacity: 0.16,
+    nearNetHaloBoost: 0.055,
+    nearNetHaloMaxOpacity: 0.165,
     showShotTrail: false,
     flightSpinGlintSystem: "attached-ball-spin-glint-kit",
     flightSpinGlintCount: 2,
@@ -2095,13 +2098,19 @@ export function createGoalkeeperScene(canvas) {
   var shooter = createShooterModel();
   var ballMaterial = createFootballMaterial();
   var ballGeometry = new THREE.SphereGeometry(tuning.ball.radius, 32, 24);
-  var haloGeometry = new THREE.CircleGeometry(tuning.ball.haloRadius, 32);
+  var haloGeometry = new THREE.RingGeometry(
+    tuning.ball.haloInnerRadius,
+    tuning.ball.haloRadius,
+    40,
+  );
   var shadowGeometry = new THREE.CircleGeometry(tuning.ball.shadowRadius, 24);
   function createBallView(name) {
     var mesh = new THREE.Mesh(
       ballGeometry,
       ballMaterial.clone(),
     );
+    var outline = createFootballReadabilityOutline(ballGeometry);
+    mesh.add(outline);
     var halo = new THREE.Mesh(
       haloGeometry,
       new THREE.MeshBasicMaterial({
@@ -2566,7 +2575,8 @@ export function createGoalkeeperScene(canvas) {
 
     view.halo.position.set(position.x, position.y, position.z - 0.025);
     view.halo.lookAt(camera.position);
-    view.halo.scale.setScalar(0.22 + depth * 0.64);
+    var haloScale = (tuning.ball.radius * visualScale * 1.12) / tuning.ball.haloRadius;
+    view.halo.scale.setScalar(haloScale);
     var haloPlan = getBallHaloAppearancePlan(ballState, position, tuning.ball);
     view.halo.material.color.set(haloPlan.color);
     view.halo.material.opacity = haloPlan.opacity;
