@@ -34,10 +34,12 @@ import { createShot3DDirector } from "../src/game/shot-3d-director.js";
 import { RAPIER_GOAL, createRapierGoalkeeperWorld } from "../src/physics/rapier-world.js";
 
 describe("three game runtime timing", () => {
-  it("resolves penalty mode from the URL and locks it to extreme difficulty", () => {
+  it("keeps extreme as the penalty default while accepting hard as the standard option", () => {
     expect(resolveRuntimeMode({ location: { search: "?mode=penalty&difficulty=easy" } })).toBe("penalty");
     expect(resolveRuntimeMode({ location: { search: "?mode=unknown" } })).toBe("timed");
     expect(getModeDifficulty("penalty", "easy")).toBe("extreme");
+    expect(getModeDifficulty("penalty", "hard")).toBe("hard");
+    expect(getModeDifficulty("penalty", "extreme")).toBe("extreme");
     expect(getModeDifficulty("timed", "hard")).toBe("hard");
   });
 

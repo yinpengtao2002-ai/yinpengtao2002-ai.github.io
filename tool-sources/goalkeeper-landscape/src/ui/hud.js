@@ -840,11 +840,16 @@ export function createHud(documentRef) {
         button.setAttribute("aria-pressed", active ? "true" : "false");
       });
       refs.difficultyButtons.forEach((button) => {
-        var extreme = button.dataset.difficulty === "extreme";
-        setClass(button, "hidden", penaltyMode ? !extreme : extreme);
+        var difficulty = button.dataset.difficulty;
+        var available = penaltyMode
+          ? difficulty === "hard" || difficulty === "extreme"
+          : difficulty !== "extreme";
+        setClass(button, "hidden", !available);
+        if (difficulty === "hard") button.textContent = penaltyMode ? "标准" : "困难";
+        if (difficulty === "extreme") button.textContent = penaltyMode ? "极限" : "极难";
       });
       if (refs.startKicker) refs.startKicker.textContent = penaltyMode ? "真实五轮 · 平局骤死" : "60 秒守门挑战";
-      if (refs.startTitle) refs.startTitle.textContent = penaltyMode ? "极限点球大战" : "弹力手套守门";
+      if (refs.startTitle) refs.startTitle.textContent = penaltyMode ? "点球大战" : "弹力手套守门";
       if (refs.startRuleA) refs.startRuleA.textContent = penaltyMode ? "5 轮" : "60 秒";
       if (refs.startRuleB) refs.startRuleB.textContent = penaltyMode ? "双方交替" : "5 失球";
       if (refs.startRuleC) refs.startRuleC.textContent = penaltyMode ? "平局骤死" : "x3 连扑";

@@ -192,7 +192,8 @@ export function getOutcomeAudioEvent(state, previousState = null) {
 }
 
 export function getModeDifficulty(mode, selectedDifficulty) {
-  return mode === "penalty" ? "extreme" : resolveShotDifficulty(selectedDifficulty).id;
+  if (mode === "penalty") return selectedDifficulty === "hard" ? "hard" : "extreme";
+  return resolveShotDifficulty(selectedDifficulty).id;
 }
 
 export function getPenaltySequenceAction(state, outcomeTimer, teamResolved) {
@@ -581,8 +582,15 @@ export async function createThreeGameRuntime(options) {
   var documentRef = options.documentRef || document;
   var windowRef = options.windowRef || window;
   var selectedMode = resolveRuntimeMode(windowRef);
-  var selectedTimedDifficulty = resolveRuntimeDifficulty(windowRef);
-  var selectedDifficulty = getModeDifficulty(selectedMode, selectedTimedDifficulty);
+  var requestedDifficulty = resolveRuntimeDifficulty(windowRef);
+  var selectedTimedDifficulty = requestedDifficulty === "extreme" ? DEFAULT_SHOT_DIFFICULTY : requestedDifficulty;
+  var selectedPenaltyDifficulty = selectedMode === "penalty"
+    ? getModeDifficulty("penalty", requestedDifficulty)
+    : "extreme";
+  var selectedDifficulty = getModeDifficulty(
+    selectedMode,
+    selectedMode === "penalty" ? selectedPenaltyDifficulty : selectedTimedDifficulty,
+  );
 
   windowRef.goalkeeperBootStatus = "hud";
   var hud = createHud(documentRef);
@@ -664,7 +672,10 @@ export async function createThreeGameRuntime(options) {
   }
 
   function resetRound() {
-    selectedDifficulty = getModeDifficulty(selectedMode, selectedTimedDifficulty);
+    selectedDifficulty = getModeDifficulty(
+      selectedMode,
+      selectedMode === "penalty" ? selectedPenaltyDifficulty : selectedTimedDifficulty,
+    );
     audio.prime();
     audio.startMusic?.();
     audio.setMusicPaused?.(false);
@@ -1052,16 +1063,23 @@ export async function createThreeGameRuntime(options) {
       updateHud();
     },
     onDifficulty(value) {
-      if (selectedMode === "penalty") return;
-      selectedTimedDifficulty = resolveShotDifficulty(value).id;
-      selectedDifficulty = selectedTimedDifficulty;
+      if (selectedMode === "penalty") {
+        selectedPenaltyDifficulty = getModeDifficulty("penalty", value);
+        selectedDifficulty = selectedPenaltyDifficulty;
+      } else {
+        selectedTimedDifficulty = resolveShotDifficulty(value).id;
+        selectedDifficulty = selectedTimedDifficulty;
+      }
       director = { ...director, difficulty: selectedDifficulty };
       hud.updateDifficulty(selectedDifficulty);
     },
     onMode(value) {
       if (state.running && !state.ended) return;
       selectedMode = resolveGameMode(value).id;
-      selectedDifficulty = getModeDifficulty(selectedMode, selectedTimedDifficulty);
+      selectedDifficulty = getModeDifficulty(
+        selectedMode,
+        selectedMode === "penalty" ? selectedPenaltyDifficulty : selectedTimedDifficulty,
+      );
       state = createGameState({ mode: selectedMode });
       director = createShot3DDirector({ seed: Date.now() % 100000, difficulty: selectedDifficulty });
       hud.updateMode(selectedMode);
@@ -1141,7 +1159,10 @@ export async function createThreeGameRuntime(options) {
     setMode(value) {
       if (state.running && !state.ended) return false;
       selectedMode = resolveGameMode(value).id;
-      selectedDifficulty = getModeDifficulty(selectedMode, selectedTimedDifficulty);
+      selectedDifficulty = getModeDifficulty(
+        selectedMode,
+        selectedMode === "penalty" ? selectedPenaltyDifficulty : selectedTimedDifficulty,
+      );
       state = createGameState({ mode: selectedMode });
       director = createShot3DDirector({ seed: Date.now() % 100000, difficulty: selectedDifficulty });
       hud.updateMode(selectedMode);

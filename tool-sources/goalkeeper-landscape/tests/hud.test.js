@@ -203,17 +203,20 @@ describe("hud", () => {
     expect(documentRef.elements.hardDifficulty.classList.contains("is-active")).toBe(true);
   });
 
-  it("switches between timed and penalty modes while reserving extreme for shootouts", () => {
+  it("shows standard and extreme difficulty choices only during penalty shootouts", () => {
     const documentRef = createDocument();
     const hud = createHud(documentRef);
     let selectedMode = "timed";
+    let selectedDifficulty = "";
 
     hud.bind({
       onStart() {},
       onRestart() {},
       onPause() {},
       onSound() {},
-      onDifficulty() {},
+      onDifficulty(value) {
+        selectedDifficulty = value;
+      },
       onMode(value) {
         selectedMode = value;
       },
@@ -229,9 +232,17 @@ describe("hud", () => {
     expect(selectedMode).toBe("penalty");
     hud.updateMode(selectedMode);
     expect(documentRef.elements.penaltyMode.classList.contains("is-active")).toBe(true);
+    expect(documentRef.elements.hardDifficulty.classList.contains("hidden")).toBe(false);
     expect(documentRef.elements.extremeDifficulty.classList.contains("hidden")).toBe(false);
+    expect(documentRef.elements.easyDifficulty.classList.contains("hidden")).toBe(true);
     expect(documentRef.elements.mediumDifficulty.classList.contains("hidden")).toBe(true);
+    expect(documentRef.elements.hardDifficulty.textContent).toBe("标准");
+    expect(documentRef.elements.extremeDifficulty.textContent).toBe("极限");
+    expect(documentRef.elements.startTitle.textContent).toBe("点球大战");
     expect(documentRef.elements.stage.dataset.mode).toBe("penalty");
+
+    documentRef.elements.hardDifficulty.click();
+    expect(selectedDifficulty).toBe("hard");
   });
 
   it("renders a real penalty scoreline with kick-by-kick marks and sudden death", () => {
