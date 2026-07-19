@@ -73,7 +73,7 @@ describe("responsive layout css", () => {
 
     expect(css).toContain("short-landscape-result-panel");
     expect(css).toContain(".end-overlay");
-    expect(css).toContain("max-height: calc(100svh - 16px);");
+    expect(css).toContain("max-height: calc(100svh - 82px);");
     expect(css).toContain("round-result-review-cards");
     expect(css).toContain(".result-review");
     expect(css).toContain(".result-review span");
@@ -212,6 +212,19 @@ describe("responsive layout css", () => {
     expect(html).toContain('class="result-copyblock"');
     expect(html).not.toContain('id="resultReview"');
     expect(html).not.toContain('id="resultTags"');
+  });
+
+  it("keeps setup controls visible and clickable after a round ends", () => {
+    const css = readFileSync(stylesPath, "utf8");
+    const resultControlRule = css.match(/\.bottom-controls\[data-control-mode="result"\]\s*\{([^}]*)\}/s)?.[1] || "";
+    const endOverlayRule = css.match(/\.end-overlay\s*\{([^}]*)\}/s)?.[1] || "";
+
+    expect(resultControlRule).toContain("z-index: 6;");
+    expect(resultControlRule).not.toContain("visibility: hidden;");
+    expect(resultControlRule).not.toContain("opacity: 0;");
+    expect(resultControlRule).not.toContain("pointer-events: none;");
+    expect(endOverlayRule).toContain("pointer-events: none;");
+    expect(endOverlayRule).toContain("padding-bottom: max(");
   });
 
   it("compacts the live bottom control rail so setup controls do not sit in the shot lane", () => {

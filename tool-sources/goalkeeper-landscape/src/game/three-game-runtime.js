@@ -58,7 +58,7 @@ const PARRIED_GROUND_SPIN_RETENTION = 0.9;
 const PARRIED_MIN_BOUNCE_SPEED = 0.26;
 const AIRBORNE_LINEAR_DAMPING_60HZ = 0.998;
 const AIRBORNE_SPIN_DAMPING_60HZ = 0.997;
-export const SAVE_ASSIST_MARGIN = 0.18;
+export const SAVE_ASSIST_MARGIN = 0.2;
 
 function clamp01(value) {
   return Math.max(0, Math.min(1, value || 0));

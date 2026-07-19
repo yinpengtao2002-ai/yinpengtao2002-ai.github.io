@@ -998,6 +998,11 @@ button {
   pointer-events: auto;
 }
 
+.end-overlay {
+  padding-bottom: max(84px, calc(env(safe-area-inset-bottom) + 76px));
+  pointer-events: none;
+}
+
 .hidden {
   display: none;
 }
@@ -1725,7 +1730,7 @@ button {
 
   .end-overlay {
     --short-landscape-result-panel: 1;
-    padding: 8px max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left));
+    padding: 8px max(12px, env(safe-area-inset-right)) max(68px, calc(env(safe-area-inset-bottom) + 60px)) max(12px, env(safe-area-inset-left));
   }
 
   .result-panel {
@@ -2382,9 +2387,7 @@ button {
 }
 
 .bottom-controls[data-control-mode="result"] {
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
+  z-index: 6;
 }
 
 .hud-pause-button {
@@ -2637,7 +2640,7 @@ button {
 
   .result-panel {
     width: min(540px, calc(100vw - 28px));
-    max-height: calc(100svh - 16px);
+    max-height: calc(100svh - 82px);
     padding: 12px;
     gap: 14px;
     border-radius: 8px;
