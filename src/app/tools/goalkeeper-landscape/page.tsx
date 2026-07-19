@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import GoalkeeperLandscapeRuntime, { GOALKEEPER_SCRIPT_SRC } from "./GoalkeeperLandscapeRuntime";
 
-const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-By2NcdgY.css";
+const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-Dp8z1TrR.css";
 
 export const metadata: Metadata = {
-  title: "弹力手套守门挑战｜Lucas Yin",
-  description: "一个支持 60 秒挑战与真实点球大战的横屏守门游戏。",
+  title: "守门挑战｜Lucas Yin",
+  description: "横屏 3D 守门游戏，支持经典模式和点球大战。",
   manifest: "/tools/goalkeeper-landscape/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -31,10 +31,10 @@ export default function GoalkeeperLandscapePage() {
   return (
     <>
       <link rel="stylesheet" crossOrigin="anonymous" href={GOALKEEPER_STYLESHEET_HREF} />
-      <main className="app" aria-label="弹力手套守门挑战" data-script-src={GOALKEEPER_SCRIPT_SRC}>
+      <main className="app" aria-label="守门挑战" data-script-src={GOALKEEPER_SCRIPT_SRC}>
         <section className="game-shell">
           <div className="stage" id="stage">
-            <canvas id="gameCanvas" width="1280" height="720" aria-label="弹力手套守门挑战游戏" />
+            <canvas id="gameCanvas" width="1280" height="720" aria-label="守门挑战游戏" />
 
             <section className="game-hud broadcast-scorebug" id="gameHud" data-hud-system="broadcast-scorebug-compact-hud" aria-label="比赛状态">
               <div className="glass-panel hud-score hud-metric">
@@ -135,16 +135,16 @@ export default function GoalkeeperLandscapePage() {
 
             <div className="overlay start-overlay" id="startOverlay">
               <div className="start-panel" data-ui-system="match-hud-flow-polish">
-                <p className="start-kicker" id="startKicker">60 秒守门挑战</p>
-                <h1 id="startTitle">弹力手套守门</h1>
-                <div className="start-rules" aria-label="挑战规则">
-                  <span id="startRuleA"><strong>60</strong> 秒</span>
-                  <span id="startRuleB"><strong>5</strong> 失球</span>
-                  <span id="startRuleC"><strong>x3</strong> 连扑</span>
+                <p className="start-kicker" id="startKicker">经典模式</p>
+                <h1 id="startTitle">守住球门</h1>
+                <div className="start-rules" aria-label="比赛规则">
+                  <span id="startRuleA">限时 60 秒</span>
+                  <span id="startRuleB">失 5 球结束</span>
+                  <span id="startRuleC">连扑加分</span>
                 </div>
-                <button className="start-disc" id="startButton" type="button" aria-label="开始挑战">
+                <button className="start-disc" id="startButton" type="button" aria-label="开始比赛">
                   <span aria-hidden="true">▶</span>
-                  <strong id="startButtonLabel">开始挑战</strong>
+                  <strong id="startButtonLabel">开始比赛</strong>
                 </button>
               </div>
             </div>

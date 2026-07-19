@@ -7,7 +7,7 @@ import {
 } from "./penalty-shootout.js";
 
 export const GAME_MODES = {
-  timed: { id: "timed", label: "60 秒挑战" },
+  timed: { id: "timed", label: "经典模式" },
   penalty: { id: "penalty", label: "点球大战" },
 };
 

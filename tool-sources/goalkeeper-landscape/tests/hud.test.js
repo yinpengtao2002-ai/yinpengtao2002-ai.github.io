@@ -141,6 +141,23 @@ function createDocument() {
 }
 
 describe("hud", () => {
+  it("hides the pointer only while a round is actively running", () => {
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+
+    hud.update(createGameState(), true, { audioStatus: "ready" });
+    expect(documentRef.elements.stage.dataset.gameActive).toBe("false");
+
+    hud.update({ ...createGameState(), running: true }, true, { audioStatus: "ready" });
+    expect(documentRef.elements.stage.dataset.gameActive).toBe("true");
+
+    hud.update({ ...createGameState(), running: true, paused: true }, true, { audioStatus: "ready" });
+    expect(documentRef.elements.stage.dataset.gameActive).toBe("false");
+
+    hud.update({ ...createGameState(), ended: true }, true, { audioStatus: "ready" });
+    expect(documentRef.elements.stage.dataset.gameActive).toBe("false");
+  });
+
   it("surfaces browser audio readiness instead of pretending sound is already audible", () => {
     expect(HudModule.getSoundStatusLabel).toBeTypeOf("function");
     const documentRef = createDocument();
@@ -252,6 +269,13 @@ describe("hud", () => {
     expect(documentRef.elements.penaltyMode.getAttribute("aria-pressed")).toBe("false");
     expect(documentRef.elements.extremeDifficulty.classList.contains("hidden")).toBe(true);
     expect(documentRef.elements.mediumDifficulty.classList.contains("hidden")).toBe(false);
+    expect(documentRef.elements.startKicker.textContent).toBe("经典模式");
+    expect(documentRef.elements.startTitle.textContent).toBe("守住球门");
+    expect(documentRef.elements.startRuleA.textContent).toBe("限时 60 秒");
+    expect(documentRef.elements.startRuleB.textContent).toBe("失 5 球结束");
+    expect(documentRef.elements.startRuleC.textContent).toBe("连扑加分");
+    expect(documentRef.elements.startButtonLabel.textContent).toBe("开始比赛");
+    expect(documentRef.elements.startButton.getAttribute("aria-label")).toBe("开始比赛");
 
     documentRef.elements.penaltyMode.click();
     expect(selectedMode).toBe("penalty");
@@ -263,7 +287,13 @@ describe("hud", () => {
     expect(documentRef.elements.mediumDifficulty.classList.contains("hidden")).toBe(true);
     expect(documentRef.elements.hardDifficulty.textContent).toBe("标准");
     expect(documentRef.elements.extremeDifficulty.textContent).toBe("极限");
+    expect(documentRef.elements.startKicker.textContent).toBe("点球模式");
     expect(documentRef.elements.startTitle.textContent).toBe("点球大战");
+    expect(documentRef.elements.startRuleA.textContent).toBe("五轮对决");
+    expect(documentRef.elements.startRuleB.textContent).toBe("轮流罚球");
+    expect(documentRef.elements.startRuleC.textContent).toBe("平局决胜");
+    expect(documentRef.elements.startButtonLabel.textContent).toBe("开始比赛");
+    expect(documentRef.elements.startButton.getAttribute("aria-label")).toBe("开始比赛");
     expect(documentRef.elements.stage.dataset.mode).toBe("penalty");
 
     documentRef.elements.hardDifficulty.click();

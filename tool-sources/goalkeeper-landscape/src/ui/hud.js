@@ -856,13 +856,13 @@ export function createHud(documentRef) {
         if (difficulty === "hard") button.textContent = penaltyMode ? "标准" : "困难";
         if (difficulty === "extreme") button.textContent = penaltyMode ? "极限" : "极难";
       });
-      if (refs.startKicker) refs.startKicker.textContent = penaltyMode ? "真实五轮 · 平局骤死" : "60 秒守门挑战";
-      if (refs.startTitle) refs.startTitle.textContent = penaltyMode ? "点球大战" : "弹力手套守门";
-      if (refs.startRuleA) refs.startRuleA.textContent = penaltyMode ? "5 轮" : "60 秒";
-      if (refs.startRuleB) refs.startRuleB.textContent = penaltyMode ? "双方交替" : "5 失球";
-      if (refs.startRuleC) refs.startRuleC.textContent = penaltyMode ? "平局骤死" : "x3 连扑";
-      if (refs.startButtonLabel) refs.startButtonLabel.textContent = penaltyMode ? "开始点球大战" : "开始挑战";
-      if (refs.startButton) refs.startButton.setAttribute("aria-label", penaltyMode ? "开始点球大战" : "开始挑战");
+      if (refs.startKicker) refs.startKicker.textContent = penaltyMode ? "点球模式" : "经典模式";
+      if (refs.startTitle) refs.startTitle.textContent = penaltyMode ? "点球大战" : "守住球门";
+      if (refs.startRuleA) refs.startRuleA.textContent = penaltyMode ? "五轮对决" : "限时 60 秒";
+      if (refs.startRuleB) refs.startRuleB.textContent = penaltyMode ? "轮流罚球" : "失 5 球结束";
+      if (refs.startRuleC) refs.startRuleC.textContent = penaltyMode ? "平局决胜" : "连扑加分";
+      if (refs.startButtonLabel) refs.startButtonLabel.textContent = "开始比赛";
+      if (refs.startButton) refs.startButton.setAttribute("aria-label", "开始比赛");
     },
     updateDifficulty(selectedDifficulty) {
       refs.difficultyButtons.forEach((button) => {
@@ -883,6 +883,9 @@ export function createHud(documentRef) {
       var penaltyMode = state.mode === "penalty";
       var penaltyResult = penaltyMode ? getPenaltyResultPlan(state) : null;
       var penaltyRoundBreak = context.penaltyRoundBreak || { visible: false };
+      if (refs.stage) {
+        refs.stage.dataset.gameActive = state.running && !state.paused && !state.ended ? "true" : "false";
+      }
       if (refs.scoreLabel) refs.scoreLabel.textContent = penaltyMode ? "扑出" : "扑救分";
       if (refs.timeLabel) refs.timeLabel.textContent = penaltyMode ? "轮次" : "时间";
       if (refs.streakLabel) refs.streakLabel.textContent = penaltyMode ? "阶段" : "连扑";

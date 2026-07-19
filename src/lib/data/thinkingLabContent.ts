@@ -28,7 +28,7 @@ export const goalkeeperLandscapeContent: ContentItem = {
   id: 9003,
   slug: "goalkeeper-landscape",
   title: "守门小游戏",
-  description: "横屏体验的弹力手套守门挑战。",
+  description: "横屏 3D 守门游戏，支持经典模式和点球大战。",
   date: "2026-07-07",
   category: "工具",
   href: "/tools/goalkeeper-landscape",

@@ -24,6 +24,25 @@ describe("responsive layout css", () => {
     expect(html).not.toContain("请横屏体验");
   });
 
+  it("uses natural match language instead of prototype labels", () => {
+    const html = readFileSync(indexPath, "utf8");
+
+    expect(html).toContain("经典模式");
+    expect(html).toContain("守住球门");
+    expect(html).toContain("限时 60 秒");
+    expect(html).toContain("失 5 球结束");
+    expect(html).toContain("连扑加分");
+    expect(html).toContain("开始比赛");
+    expect(html).not.toContain("弹力手套");
+  });
+
+  it("keeps the pointer visible outside live play", () => {
+    const css = readFileSync(stylesPath, "utf8");
+
+    expect(css).toMatch(/#gameCanvas\s*\{[^}]*cursor:\s*default;/s);
+    expect(css).toMatch(/\.stage\[data-game-active="true"\]\s+#gameCanvas\s*\{[^}]*cursor:\s*none;/s);
+  });
+
   it("attempts fullscreen and orientation lock as soon as the mobile module loads", () => {
     const main = readFileSync(mainPath, "utf8");
 
@@ -39,6 +58,7 @@ describe("responsive layout css", () => {
     expect(html).toContain('rel="manifest" href="/tools/goalkeeper-landscape/manifest.webmanifest"');
     expect(manifest.start_url).toBe("/tools/goalkeeper-landscape/");
     expect(manifest.scope).toBe("/tools/goalkeeper-landscape/");
+    expect(manifest.name).toBe("守门挑战");
     expect(manifest.display).toBe("fullscreen");
     expect(manifest.orientation).toBe("landscape");
   });
