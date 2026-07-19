@@ -1420,8 +1420,8 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(SCENE_TUNING.postprocessing.threshold).toBeGreaterThanOrEqual(0.88);
     expect(SCENE_TUNING.postprocessing.maxRadius).toBeLessThanOrEqual(0.24);
     expect(SCENE_TUNING.postprocessing.eventDecay).toBeLessThanOrEqual(0.045);
-    expect(SCENE_TUNING.postprocessing.pixelRatioCap).toBeGreaterThanOrEqual(2);
-    expect(SCENE_TUNING.postprocessing.maxPixelCount).toBeGreaterThanOrEqual(5_000_000);
+    expect(SCENE_TUNING.postprocessing.pixelRatioCap).toBeGreaterThanOrEqual(2.5);
+    expect(SCENE_TUNING.postprocessing.maxPixelCount).toBeGreaterThanOrEqual(7_000_000);
 
     expect(sceneModule.getEventBloomPlan).toBeTypeOf("function");
     expect(sceneModule.getRenderQualityPlan).toBeTypeOf("function");
@@ -1465,13 +1465,13 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(state.life).toBeLessThan(1);
 
     const mobileQuality = sceneModule.getRenderQualityPlan(844, 390, 3);
-    expect(mobileQuality.pixelRatio).toBe(2);
-    expect(mobileQuality.renderWidth).toBe(1688);
-    expect(mobileQuality.renderHeight).toBe(780);
+    expect(mobileQuality.pixelRatio).toBe(2.5);
+    expect(mobileQuality.renderWidth).toBe(2110);
+    expect(mobileQuality.renderHeight).toBe(975);
     expect(mobileQuality.antialiasSystem).toBe("hardware-msaa-plus-smaa");
 
     const retinaDesktopQuality = sceneModule.getRenderQualityPlan(1920, 1080, 2);
-    expect(retinaDesktopQuality.pixelRatio).toBeGreaterThan(1.5);
+    expect(retinaDesktopQuality.pixelRatio).toBeGreaterThan(1.8);
     expect(retinaDesktopQuality.pixelRatio).toBeLessThan(2);
     expect(retinaDesktopQuality.pixelCount).toBeLessThanOrEqual(
       SCENE_TUNING.postprocessing.maxPixelCount,

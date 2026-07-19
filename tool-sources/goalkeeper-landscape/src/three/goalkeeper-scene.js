@@ -167,7 +167,7 @@ export const SCENE_TUNING = {
     retiredReplayAirHideHeight: 0.24,
   },
   gloves: {
-    scale: 0.64,
+    scale: 0.68,
     impactSystem: "glove-impact-compression-rebound",
     contactDeformationSystem: "localized-glove-palm-deformation",
     impactDecay: 0.055,
@@ -235,8 +235,8 @@ export const SCENE_TUNING = {
     baseRadius: 0.08,
     maxRadius: 0.22,
     eventDecay: 0.04,
-    pixelRatioCap: 2,
-    maxPixelCount: 5_200_000,
+    pixelRatioCap: 2.5,
+    maxPixelCount: 7_000_000,
   },
   feedback: {
     assetSystem: "matchday-feedback-kit",
@@ -1976,7 +1976,12 @@ export function createSkyEnvironment(tuning = SCENE_TUNING.environment) {
 
 export function createGoalkeeperScene(canvas) {
   var tuning = SCENE_TUNING;
-  var renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  var renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true,
+    alpha: false,
+    powerPreference: "high-performance",
+  });
   renderer.setClearColor(tuning.environment.fogColor, 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;

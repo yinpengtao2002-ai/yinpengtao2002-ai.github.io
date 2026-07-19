@@ -335,6 +335,28 @@ describe("procedural 3D assets", () => {
     expect(collectByName(glove, /^glove-silicone-strike-zone-/).length).toBeGreaterThanOrEqual(7);
   });
 
+  it("builds a connected two-segment thumb instead of rotating a flat finger plate", () => {
+    const left = createGloveMesh("left");
+    const right = createGloveMesh("right");
+    const leftBase = collectByName(left, /^glove-thumb-wrap$/)[0];
+    const leftTip = collectByName(left, /^glove-thumb-tip$/)[0];
+    const leftWeb = collectByName(left, /^glove-thumb-web-bridge$/)[0];
+    const rightBase = collectByName(right, /^glove-thumb-wrap$/)[0];
+    const rightTip = collectByName(right, /^glove-thumb-tip$/)[0];
+    const rightWeb = collectByName(right, /^glove-thumb-web-bridge$/)[0];
+
+    expect(left.userData.thumbConstructionSystem).toBe("anatomical-two-segment-wrap-and-web");
+    expect(leftBase.geometry.userData.gloveGeometrySystem).toBe("high-segment-anatomical-thumb-capsule");
+    expect(leftTip.geometry.userData.gloveGeometrySystem).toBe("high-segment-anatomical-thumb-capsule");
+    expect(leftWeb.geometry.userData.gloveGeometrySystem).toBe("contoured-thumb-web-bridge");
+    expect(leftTip.position.x).toBeGreaterThan(leftBase.position.x);
+    expect(rightTip.position.x).toBeLessThan(rightBase.position.x);
+    expect(leftBase.rotation.z).toBeLessThan(0);
+    expect(rightBase.rotation.z).toBeGreaterThan(0);
+    expect(leftWeb.scale.x).toBeGreaterThan(0);
+    expect(rightWeb.scale.x).toBeLessThan(0);
+  });
+
   it("uses reusable PBR latex and textile material detail on gloves instead of flat prototype color", () => {
     const glove = createGloveMesh("right");
     const palm = collectByName(glove, /^glove-latex-palm-continuous$/)[0];
@@ -349,9 +371,17 @@ describe("procedural 3D assets", () => {
     expect(palm.material.userData.gloveMaterialSystem).toBe("pbr-latex-textile-match-glove-materials");
     expect(palm.material.bumpMap?.userData.assetSystem).toBe("procedural-latex-micrograin-glove-texture");
     expect(palm.material.roughnessMap?.userData.assetSystem).toBe("procedural-latex-micrograin-glove-texture");
+    expect(palm.material.bumpMap?.userData.texelDensitySystem).toBe("retina-close-up-512");
+    expect(palm.material.bumpMap?.image.width).toBeGreaterThanOrEqual(512);
+    expect(palm.material.bumpMap?.image.height).toBeGreaterThanOrEqual(512);
+    expect(palm.material.bumpMap?.anisotropy).toBeGreaterThanOrEqual(8);
+    expect(palm.material.bumpMap?.minFilter).toBe(THREE.LinearMipmapLinearFilter);
     expect(palm.material.bumpScale).toBeGreaterThan(0.004);
     expect(palm.material.bumpScale).toBeLessThanOrEqual(0.014);
     expect(backhand.material.bumpMap?.userData.assetSystem).toBe("procedural-woven-cuff-glove-texture");
+    expect(backhand.material.bumpMap?.userData.texelDensitySystem).toBe("retina-close-up-512");
+    expect(backhand.material.bumpMap?.image.width).toBeGreaterThanOrEqual(512);
+    expect(backhand.material.bumpMap?.anisotropy).toBeGreaterThanOrEqual(8);
     expect(cuff.material.bumpMap?.userData.assetSystem).toBe("procedural-woven-cuff-glove-texture");
     expect(strap.material.roughnessMap?.userData.assetSystem).toBe("procedural-woven-cuff-glove-texture");
     expect(textileRibs.length).toBeGreaterThanOrEqual(6);

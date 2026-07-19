@@ -44,6 +44,9 @@ const GLOVE_PBR_MATERIAL_SYSTEM = "pbr-latex-textile-match-glove-materials";
 const GLOVE_LATEX_TEXTURE_SYSTEM = "procedural-latex-micrograin-glove-texture";
 const GLOVE_TEXTILE_TEXTURE_SYSTEM = "procedural-woven-cuff-glove-texture";
 const GLOVE_WEAR_DETAIL_SYSTEM = "subtle-match-use-glove-wear";
+const GLOVE_TEXTURE_SIZE = 512;
+const GLOVE_TEXEL_DENSITY_SYSTEM = "retina-close-up-512";
+const gloveSurfaceTextureCache = new Map();
 const LAUNCHER_PBR_MATERIAL_SYSTEM = "pbr-painted-metal-rubber-launcher-materials";
 const LAUNCHER_DECAL_SYSTEM = "three-decalgeometry-launcher-label-wear-kit";
 const LAUNCHER_PAINT_TEXTURE_SYSTEM = "procedural-painted-metal-launcher-texture";
@@ -521,7 +524,9 @@ function createFootballSurfaceMap(kind) {
 }
 
 function createGloveLatexSurfaceMap(kind) {
-  var texture = createSurfaceDetailTexture(128, (x, y, size) => {
+  var cacheKey = "latex-" + kind;
+  if (gloveSurfaceTextureCache.has(cacheKey)) return gloveSurfaceTextureCache.get(cacheKey);
+  var texture = createSurfaceDetailTexture(GLOVE_TEXTURE_SIZE, (x, y, size) => {
     var nx = x / size;
     var ny = y / size;
     var grain = Math.sin(x * 17.13 + y * 31.71) * 0.5 + 0.5;
@@ -533,11 +538,18 @@ function createGloveLatexSurfaceMap(kind) {
   }, 3.2, 3.2);
   texture.userData.assetSystem = GLOVE_LATEX_TEXTURE_SYSTEM;
   texture.userData.surfaceKind = kind;
+  texture.userData.texelDensitySystem = GLOVE_TEXEL_DENSITY_SYSTEM;
+  texture.anisotropy = 8;
+  texture.generateMipmaps = true;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  gloveSurfaceTextureCache.set(cacheKey, texture);
   return texture;
 }
 
 function createGloveTextileSurfaceMap(kind) {
-  var texture = createSurfaceDetailTexture(128, (x, y, size) => {
+  var cacheKey = "textile-" + kind;
+  if (gloveSurfaceTextureCache.has(cacheKey)) return gloveSurfaceTextureCache.get(cacheKey);
+  var texture = createSurfaceDetailTexture(GLOVE_TEXTURE_SIZE, (x, y, size) => {
     var nx = x / size;
     var ny = y / size;
     var warp = Math.sin(nx * Math.PI * 2 * 20) * 0.5 + 0.5;
@@ -549,6 +561,11 @@ function createGloveTextileSurfaceMap(kind) {
   }, 2.4, 1.8);
   texture.userData.assetSystem = GLOVE_TEXTILE_TEXTURE_SYSTEM;
   texture.userData.surfaceKind = kind;
+  texture.userData.texelDensitySystem = GLOVE_TEXEL_DENSITY_SYSTEM;
+  texture.anisotropy = 8;
+  texture.generateMipmaps = true;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  gloveSurfaceTextureCache.set(cacheKey, texture);
   return texture;
 }
 
@@ -3948,10 +3965,10 @@ const DEFAULT_GLOVE_VISUAL_PROFILE = {
   fingerGap: 0.011,
   fingerTaper: 0.86,
   latexWrap: 0.014,
-  thumbWidth: 0.09,
-  thumbLength: 0.2,
-  thumbReach: 0.215,
-  thumbRotation: 0.7,
+  thumbWidth: 0.1,
+  thumbLength: 0.17,
+  thumbRotation: 0.88,
+  thumbCurl: 0.12,
   cuffWidth: 0.35,
   cuffLength: 0.19,
   preCurve: 0.12,
@@ -3978,7 +3995,8 @@ function createTaperedGlovePlateGeometry(bottomWidth, topWidth, height, depth, c
     depth,
     steps: 1,
     bevelEnabled: true,
-    bevelSegments: 3,
+    bevelSegments: 6,
+    curveSegments: 16,
     bevelSize: Math.min(0.009, depth * 0.18),
     bevelThickness: Math.min(0.008, depth * 0.18),
   });
@@ -4003,13 +4021,45 @@ function createRoundedFingerPlateGeometry(bottomWidth, topWidth, height, depth) 
     depth,
     steps: 1,
     bevelEnabled: true,
-    bevelSegments: 4,
+    bevelSegments: 7,
+    curveSegments: 20,
     bevelSize: Math.min(0.008, topWidth * 0.1),
     bevelThickness: Math.min(0.008, depth * 0.2),
   });
   geometry.center();
   geometry.computeVertexNormals();
   geometry.userData.gloveGeometrySystem = "rounded-tapered-precurved-finger";
+  return geometry;
+}
+
+function createAnatomicalThumbGeometry(width, length, depth) {
+  var radius = width * 0.5;
+  var straightLength = Math.max(0.008, length - width);
+  var geometry = new THREE.CapsuleGeometry(radius, straightLength, 10, 20);
+  geometry.scale(1, 1, depth / width);
+  geometry.computeVertexNormals();
+  geometry.userData.gloveGeometrySystem = "high-segment-anatomical-thumb-capsule";
+  return geometry;
+}
+
+function createThumbWebBridgeGeometry(width, height, depth) {
+  var shape = new THREE.Shape();
+  shape.moveTo(0, -height * 0.5);
+  shape.quadraticCurveTo(width * 0.48, -height * 0.46, width, height * 0.02);
+  shape.quadraticCurveTo(width * 0.72, height * 0.34, 0, height * 0.5);
+  shape.closePath();
+  var geometry = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    steps: 2,
+    bevelEnabled: true,
+    bevelSegments: 6,
+    curveSegments: 18,
+    bevelSize: Math.min(0.007, depth * 0.16),
+    bevelThickness: Math.min(0.006, depth * 0.16),
+  });
+  geometry.translate(0, 0, -depth * 0.5);
+  geometry.computeVertexNormals();
+  geometry.userData.gloveGeometrySystem = "contoured-thumb-web-bridge";
   return geometry;
 }
 
@@ -4025,6 +4075,7 @@ function createAuthenticGloveMesh(side, profile) {
   group.userData.polishSystem = MATCHDAY_ASSET_POLISH_SYSTEM;
   group.userData.materialSystem = "continuous-latex-palm-textile-backhand-silicone-strike-zones";
   group.userData.gripSystem = "wrapped-latex-palm-and-thumb";
+  group.userData.thumbConstructionSystem = "anatomical-two-segment-wrap-and-web";
   group.userData.pbrMaterialSystem = GLOVE_PBR_MATERIAL_SYSTEM;
   group.userData.wearDetailSystem = GLOVE_WEAR_DETAIL_SYSTEM;
 
@@ -4166,30 +4217,97 @@ function createAuthenticGloveMesh(side, profile) {
     group.add(gusset);
   }
 
+  var thumbAngle = profile.thumbRotation;
+  var thumbTipAngle = thumbAngle + profile.thumbCurl;
+  var proximalLength = profile.thumbLength * 0.7;
+  var distalLength = profile.thumbLength * 0.56;
+  var proximalDirection = {
+    x: thumbSide * Math.sin(thumbAngle),
+    y: Math.cos(thumbAngle),
+  };
+  var distalDirection = {
+    x: thumbSide * Math.sin(thumbTipAngle),
+    y: Math.cos(thumbTipAngle),
+  };
+  var thumbRoot = {
+    x: thumbSide * profile.palmWidth * 0.43,
+    y: -profile.palmHeight * 0.15,
+  };
+  var thumbBaseCenter = {
+    x: thumbRoot.x + proximalDirection.x * proximalLength * 0.38,
+    y: thumbRoot.y + proximalDirection.y * proximalLength * 0.38,
+  };
+  var thumbJoint = {
+    x: thumbRoot.x + proximalDirection.x * proximalLength * 0.72,
+    y: thumbRoot.y + proximalDirection.y * proximalLength * 0.72,
+  };
+  var thumbTipCenter = {
+    x: thumbJoint.x + distalDirection.x * distalLength * 0.42,
+    y: thumbJoint.y + distalDirection.y * distalLength * 0.42,
+  };
+
+  var thumbWebGeometry = createThumbWebBridgeGeometry(0.105, 0.145, 0.064);
+  var thumbWeb = new THREE.Mesh(thumbWebGeometry, secondaryMaterial);
+  thumbWeb.name = "glove-thumb-web-bridge";
+  thumbWeb.position.set(thumbSide * profile.palmWidth * 0.4, -profile.palmHeight * 0.14, 0.026);
+  thumbWeb.scale.x = thumbSide;
+  group.add(thumbWeb);
+
+  var thumbWebPalm = new THREE.Mesh(thumbWebGeometry.clone(), latexMaterial);
+  thumbWebPalm.name = "glove-thumb-web-latex";
+  thumbWebPalm.position.set(thumbSide * profile.palmWidth * 0.4, -profile.palmHeight * 0.14, -0.035);
+  thumbWebPalm.scale.x = thumbSide;
+  group.add(thumbWebPalm);
+
   var thumbWrap = new THREE.Mesh(
-    createRoundedFingerPlateGeometry(
-      profile.thumbWidth + profile.latexWrap * 2,
-      profile.thumbWidth * 0.84 + profile.latexWrap,
-      profile.thumbLength,
-      0.076,
-    ),
+    createAnatomicalThumbGeometry(profile.thumbWidth + profile.latexWrap * 1.45, proximalLength, 0.078),
     latexMaterial,
   );
   thumbWrap.name = "glove-thumb-wrap";
-  thumbWrap.position.set(thumbSide * profile.thumbReach, -0.005, -0.004);
-  thumbWrap.rotation.z = thumbSide * -profile.thumbRotation;
+  thumbWrap.position.set(thumbBaseCenter.x, thumbBaseCenter.y, -0.004);
+  thumbWrap.rotation.z = thumbSide * -thumbAngle;
   thumbWrap.rotation.x = -profile.preCurve * 0.55;
   group.add(thumbWrap);
 
+  var thumbTip = new THREE.Mesh(
+    createAnatomicalThumbGeometry(profile.thumbWidth * 0.9 + profile.latexWrap, distalLength, 0.073),
+    latexMaterial,
+  );
+  thumbTip.name = "glove-thumb-tip";
+  thumbTip.position.set(thumbTipCenter.x, thumbTipCenter.y, -0.004);
+  thumbTip.rotation.z = thumbSide * -thumbTipAngle;
+  thumbTip.rotation.x = -profile.preCurve * 0.72;
+  group.add(thumbTip);
+
   var thumbBackhand = new THREE.Mesh(
-    createRoundedFingerPlateGeometry(profile.thumbWidth * 0.84, profile.thumbWidth * 0.68, profile.thumbLength * 0.9, 0.045),
+    createAnatomicalThumbGeometry(profile.thumbWidth * 0.82, proximalLength * 0.9, 0.047),
     secondaryMaterial,
   );
   thumbBackhand.name = "glove-thumb-backhand-panel";
-  thumbBackhand.position.set(thumbSide * profile.thumbReach, -0.002, 0.052);
-  thumbBackhand.rotation.z = thumbSide * -profile.thumbRotation;
+  thumbBackhand.position.set(thumbBaseCenter.x, thumbBaseCenter.y, 0.052);
+  thumbBackhand.rotation.z = thumbSide * -thumbAngle;
   thumbBackhand.rotation.x = -profile.preCurve * 0.55;
   group.add(thumbBackhand);
+
+  var thumbTipBackhand = new THREE.Mesh(
+    createAnatomicalThumbGeometry(profile.thumbWidth * 0.72, distalLength * 0.84, 0.043),
+    secondaryMaterial,
+  );
+  thumbTipBackhand.name = "glove-thumb-tip-backhand-panel";
+  thumbTipBackhand.position.set(thumbTipCenter.x, thumbTipCenter.y, 0.049);
+  thumbTipBackhand.rotation.z = thumbSide * -thumbTipAngle;
+  thumbTipBackhand.rotation.x = -profile.preCurve * 0.72;
+  group.add(thumbTipBackhand);
+
+  var thumbStrikeZone = new THREE.Mesh(
+    createAnatomicalThumbGeometry(profile.thumbWidth * 0.34, proximalLength * 0.58, 0.014),
+    strikeMaterial,
+  );
+  thumbStrikeZone.name = "glove-silicone-strike-zone-thumb";
+  thumbStrikeZone.position.set(thumbBaseCenter.x, thumbBaseCenter.y, 0.084);
+  thumbStrikeZone.rotation.z = thumbSide * -thumbAngle;
+  thumbStrikeZone.rotation.x = -profile.preCurve * 0.55;
+  group.add(thumbStrikeZone);
 
   var knuckleWidths = [0.25, 0.21, 0.17];
   knuckleWidths.forEach(function addKnuckleStrike(width, index) {
