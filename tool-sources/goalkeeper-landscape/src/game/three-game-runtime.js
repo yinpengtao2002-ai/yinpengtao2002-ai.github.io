@@ -58,12 +58,7 @@ const PARRIED_GROUND_SPIN_RETENTION = 0.9;
 const PARRIED_MIN_BOUNCE_SPEED = 0.26;
 const AIRBORNE_LINEAR_DAMPING_60HZ = 0.998;
 const AIRBORNE_SPIN_DAMPING_60HZ = 0.997;
-const SAVE_ASSIST_MARGINS = Object.freeze({
-  easy: 0.24,
-  medium: 0.18,
-  hard: 0.12,
-  extreme: 0.08,
-});
+export const SAVE_ASSIST_MARGIN = 0.18;
 
 function clamp01(value) {
   return Math.max(0, Math.min(1, value || 0));
@@ -200,10 +195,6 @@ export function getOutcomeAudioEvent(state, previousState = null) {
 export function getModeDifficulty(mode, selectedDifficulty) {
   if (mode === "penalty") return selectedDifficulty === "hard" ? "hard" : "extreme";
   return resolveShotDifficulty(selectedDifficulty).id;
-}
-
-export function getSaveAssistMarginForDifficulty(difficulty) {
-  return SAVE_ASSIST_MARGINS[resolveShotDifficulty(difficulty).id];
 }
 
 export function getPenaltySequenceAction(state, outcomeTimer, teamResolved) {
@@ -646,7 +637,7 @@ export async function createThreeGameRuntime(options) {
   function syncSaveAssist() {
     physics.setSaveAssist({
       enabled: saveAssistEnabled,
-      margin: getSaveAssistMarginForDifficulty(selectedDifficulty),
+      margin: SAVE_ASSIST_MARGIN,
     });
   }
 
@@ -969,7 +960,7 @@ export async function createThreeGameRuntime(options) {
     var gloveScreenPoint = scene.projectWorldPointToScreen?.(gloveController.center, bounds);
     stage.dataset.difficulty = selectedDifficulty;
     stage.dataset.saveAssist = saveAssistEnabled ? "true" : "false";
-    stage.dataset.saveAssistMargin = String(getSaveAssistMarginForDifficulty(selectedDifficulty));
+    stage.dataset.saveAssistMargin = String(SAVE_ASSIST_MARGIN);
     stage.dataset.mode = selectedMode;
     stage.dataset.bootStatus = windowRef.goalkeeperBootStatus || "";
     stage.dataset.phase = director.phase;
@@ -1164,7 +1155,7 @@ export async function createThreeGameRuntime(options) {
     getSaveAssist() {
       return {
         enabled: saveAssistEnabled,
-        margin: getSaveAssistMarginForDifficulty(selectedDifficulty),
+        margin: SAVE_ASSIST_MARGIN,
       };
     },
     getAudioState() {
