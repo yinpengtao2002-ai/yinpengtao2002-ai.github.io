@@ -133,6 +133,32 @@ function getVisualPocketContact(previousPosition, ballPosition, gloveTarget, bal
   };
 }
 
+function getSaveAssistContact(previousPosition, ballPosition, gloveTarget, ballRadius, margin) {
+  if (!previousPosition || !ballPosition || !gloveTarget?.center || margin <= 0) return null;
+  var closest = closestPointOnSegment(gloveTarget.center, previousPosition, ballPosition);
+  var delta = subtract3(closest.point, gloveTarget.center);
+  var horizontalReach = GLOVE_3D.spread + GLOVE_3D.colliderRadius + ballRadius * 0.82 + margin;
+  var verticalBase = delta.y < 0 ? 0.36 : 0.31;
+  var verticalReach = verticalBase + margin * 0.72;
+  var zReach = ballRadius + 0.1;
+  var normalizedReach =
+    (delta.x * delta.x) / (horizontalReach * horizontalReach) +
+    (delta.y * delta.y) / (verticalReach * verticalReach);
+
+  if (normalizedReach > 1 || Math.abs(delta.z) > zReach) return null;
+
+  var planarDistance = Math.hypot(delta.x, delta.y);
+  return {
+    part: { side: "both", part: "save-assist", radius: verticalReach },
+    center: gloveTarget.center,
+    point: closest.point,
+    delta,
+    distance: Math.max(planarDistance, Math.abs(delta.z)),
+    limit: Math.max(ballRadius + 0.2, planarDistance + 0.018),
+    assisted: true,
+  };
+}
+
 function createPartOffsets(side) {
   var thumbSide = side === "left" ? 1 : -1;
   var palmRadius = GLOVE_3D.colliderRadius;
@@ -167,6 +193,7 @@ class RapierGoalkeeperWorld {
     this.gloveVelocity = { x: 0, y: 0, z: 0 };
     this.gloveSwipeMemory = 0;
     this.gloveRiseMemory = 0;
+    this.saveAssist = { enabled: false, margin: 0 };
     this.gloveBodies = {};
     this.gloveParts = [];
     this.goalFrameColliders = [];
@@ -290,6 +317,13 @@ class RapierGoalkeeperWorld {
 
   setGloveTarget(center) {
     this.gloveTarget = makeTarget(center);
+  }
+
+  setSaveAssist(options = {}) {
+    this.saveAssist = {
+      enabled: Boolean(options.enabled),
+      margin: clamp(Number(options.margin) || 0, 0, 0.35),
+    };
   }
 
   updateGloves(dt) {
@@ -424,6 +458,15 @@ class RapierGoalkeeperWorld {
     if (!best) {
       best = getVisualPocketContact(previousPosition, ballPosition, this.gloveTarget, this.ballRadius);
     }
+    if (!best && this.saveAssist.enabled && ballVelocity.z > 1) {
+      best = getSaveAssistContact(
+        previousPosition,
+        ballPosition,
+        this.gloveTarget,
+        this.ballRadius,
+        this.saveAssist.margin,
+      );
+    }
 
     if (!best) return;
 
@@ -445,7 +488,7 @@ class RapierGoalkeeperWorld {
     var catchWindow = 0.18;
     var catchQuality = clamp(1 - pocketPlanarDistance / catchWindow, 0, 1) * clamp(1 - gloveSwipeSpeed / 18, 0.35, 1);
 
-    if (catchQuality > 0.58 && incomingSpeed <= 31 && Math.abs(pocketDelta.z) <= this.ballRadius + 0.13) {
+    if (!best.assisted && catchQuality > 0.58 && incomingSpeed <= 31 && Math.abs(pocketDelta.z) <= this.ballRadius + 0.13) {
       var catchPosition = {
         x: this.gloveTarget.center.x,
         y: this.gloveTarget.center.y,
@@ -482,7 +525,9 @@ class RapierGoalkeeperWorld {
     var slapSpeed = Math.min(14, gloveSwipeSpeed * 0.62) * swipeFactor;
     var lateralPush = 0.75 + gloveSwipeSpeed * (0.035 + swipeFactor * 0.045);
     var pocketOffsetFactor = clamp(Math.abs(pocketDelta.x) / 0.32, 0, 1);
-    var brushThroughFactor = clamp((Math.abs(pocketDelta.x) - 0.29) / 0.16, 0, 1) * (1 - swipeFactor * 0.72);
+    var brushThroughFactor = best.assisted
+      ? 0
+      : clamp((Math.abs(pocketDelta.x) - 0.29) / 0.16, 0, 1) * (1 - swipeFactor * 0.72);
     var sideDirection =
       swipeFactor > 0.25 && Math.abs(effectiveGloveVelocity.x) > 1
         ? Math.sign(effectiveGloveVelocity.x)
@@ -491,7 +536,7 @@ class RapierGoalkeeperWorld {
       sideDirection * (pocketOffsetFactor * (3.6 + incomingSpeed * 0.05) + swipeFactor * Math.min(2.6, gloveSwipeSpeed * 0.075));
     var awaySpeed = clamp(softBlockSpeed * (0.5 - pocketOffsetFactor * 0.24) + slapSpeed * (0.24 + swipeFactor * 0.06), 1.2, 7.6);
     var throughSpeed = incomingSpeed * (0.22 + brushThroughFactor * 0.34);
-    var nextZ = brushThroughFactor > 0.34 ? throughSpeed : -awaySpeed;
+    var nextZ = best.assisted ? -Math.max(4.8, awaySpeed) : brushThroughFactor > 0.34 ? throughSpeed : -awaySpeed;
     var downwardPunch = 0.08 + incomingSpeed * 0.004 + slapSpeed * 0.006;
     var cushionedLift = incomingSpeed * 0.035 + slapSpeed * 0.055;
     var riseSpeed = Math.min(34, Math.max(Math.max(0, effectiveGloveVelocity.y), this.gloveRiseMemory));
@@ -538,6 +583,7 @@ class RapierGoalkeeperWorld {
       gloveSpeed: gloveSwipeSpeed,
       softBlockSpeed: softBlockSpeed,
       slapSpeed: slapSpeed,
+      assisted: Boolean(best.assisted),
     };
   }
 

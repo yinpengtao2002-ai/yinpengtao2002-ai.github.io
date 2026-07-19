@@ -204,6 +204,83 @@ describe("Rapier goalkeeper world", () => {
     world.dispose();
   });
 
+  it("keeps a narrow glove miss as a goal when save assist is disabled", async () => {
+    const world = await createRapierGoalkeeperWorld();
+
+    world.setSaveAssist({ enabled: false, margin: 0.18 });
+    world.setGloveTarget({ x: 0, y: 1.25, z: 3.15 });
+    world.step(1 / 30);
+    world.launchShot({
+      origin: { x: 0.7, y: 1.25, z: 2.35 },
+      target: { x: 0.7, y: 1.25, z: 4.65 },
+      velocity: { x: 0, y: 0, z: 28 },
+      angularVelocity: { x: 0, y: 10, z: 0 },
+      curveForce: { x: 0, y: 0, z: 0 },
+      radius: 0.11,
+    });
+
+    for (let i = 0; i < 80; i += 1) world.step(1 / 120);
+    const ball = world.getBallState();
+
+    expect(ball.outcome).toBe("goal");
+    expect(ball.lastContact?.assisted).not.toBe(true);
+
+    world.dispose();
+  });
+
+  it("turns a narrow glove miss into an outward parry when save assist is enabled", async () => {
+    const world = await createRapierGoalkeeperWorld();
+
+    world.setSaveAssist({ enabled: true, margin: 0.18 });
+    world.setGloveTarget({ x: 0, y: 1.25, z: 3.15 });
+    world.step(1 / 30);
+    world.launchShot({
+      origin: { x: 0.7, y: 1.25, z: 2.35 },
+      target: { x: 0.7, y: 1.25, z: 4.65 },
+      velocity: { x: 0, y: 0, z: 28 },
+      angularVelocity: { x: 0, y: 10, z: 0 },
+      curveForce: { x: 0, y: 0, z: 0 },
+      radius: 0.11,
+    });
+
+    for (let i = 0; i < 24; i += 1) world.step(1 / 120);
+    const ball = world.getBallState();
+
+    expect(["deflected", "saved"]).toContain(ball.outcome);
+    expect(ball.lastContact).toMatchObject({
+      type: "glove",
+      part: "save-assist",
+      assisted: true,
+    });
+    expect(ball.velocity.z).toBeLessThan(0);
+
+    world.dispose();
+  });
+
+  it("does not assist a shot outside the configured save margin", async () => {
+    const world = await createRapierGoalkeeperWorld();
+
+    world.setSaveAssist({ enabled: true, margin: 0.18 });
+    world.setGloveTarget({ x: 0, y: 1.25, z: 3.15 });
+    world.step(1 / 30);
+    world.launchShot({
+      origin: { x: 0.82, y: 1.25, z: 2.35 },
+      target: { x: 0.82, y: 1.25, z: 4.65 },
+      velocity: { x: 0, y: 0, z: 28 },
+      angularVelocity: { x: 0, y: 10, z: 0 },
+      curveForce: { x: 0, y: 0, z: 0 },
+      radius: 0.11,
+    });
+
+    for (let i = 0; i < 80; i += 1) world.step(1 / 120);
+    const ball = world.getBallState();
+
+    expect(ball.outcome).toBe("goal");
+    expect(ball.lastContact?.assisted).not.toBe(true);
+
+    world.dispose();
+  });
+
   it("adds a controlled sideways slap only when the glove swipes quickly into the save", async () => {
     const world = await createRapierGoalkeeperWorld();
 

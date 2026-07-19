@@ -1647,7 +1647,6 @@ export function getMatchEventFeedbackPlan(event = {}, tuning = SCENE_TUNING.feed
       hudTone: isStreak ? "streak" : "save",
       audioEvent: isStreak ? "save-streak" : "clean-save",
       visualEffects: [
-        "feedback-impact-ring",
         "feedback-save-spark",
         "feedback-save-contact-shockwave",
         "feedback-save-pressure-arc",
@@ -1657,7 +1656,7 @@ export function getMatchEventFeedbackPlan(event = {}, tuning = SCENE_TUNING.feed
       flashColor: profile.flashColor,
       effectIntensity: impactStrength * (isStreak ? 1.08 : 1),
       cameraShake: Math.min(tuning.maxCameraShake * 0.86, (profile.cameraShake || 0) * (isStreak ? 1.14 : 1)),
-      ringCount: Math.min(tuning.impactRingCount || defaultRingCount, isStreak ? 4 : 3),
+      ringCount: 0,
       durationMs: isStreak ? 760 : 620,
       net: {
         recoilStrength: 0,

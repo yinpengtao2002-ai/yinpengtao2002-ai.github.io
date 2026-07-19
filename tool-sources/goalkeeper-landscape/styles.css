@@ -855,6 +855,65 @@ button {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 6px 12px rgba(20, 33, 28, 0.16);
 }
 
+.save-assist-switch {
+  min-height: clamp(44px, 4.4vw, 66px);
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 999px;
+  padding: 0 clamp(10px, 1vw, 14px);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #244136;
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: 0 7px 16px rgba(20, 33, 28, 0.12);
+  font: inherit;
+  font-size: clamp(11px, 0.92vw, 14px);
+  font-weight: 900;
+  letter-spacing: 0;
+  white-space: nowrap;
+  transition: color 160ms ease, background 160ms ease, opacity 160ms ease;
+}
+
+.save-assist-track {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: rgba(36, 65, 54, 0.22);
+  box-shadow: inset 0 1px 3px rgba(20, 33, 28, 0.18);
+  transition: background 160ms ease;
+}
+
+.save-assist-track i {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 5px rgba(20, 33, 28, 0.24);
+  transition: transform 160ms ease;
+}
+
+.save-assist-switch.is-active {
+  color: #ffffff;
+  background: linear-gradient(180deg, #3b6b5c, #24483d);
+}
+
+.save-assist-switch.is-active .save-assist-track {
+  background: #82d3a0;
+}
+
+.save-assist-switch.is-active .save-assist-track i {
+  transform: translateX(14px);
+}
+
+.save-assist-switch:disabled {
+  opacity: 0.56;
+}
+
 .utility-button {
   min-width: clamp(96px, 10vw, 148px);
   min-height: clamp(44px, 4.4vw, 66px);
@@ -1438,6 +1497,13 @@ button {
     padding: 3px;
   }
 
+  .save-assist-switch {
+    min-height: 38px;
+    padding: 0 8px;
+    gap: 5px;
+    font-size: 10px;
+  }
+
   .difficulty-button {
     min-width: 42px;
     height: 30px;
@@ -1479,7 +1545,14 @@ button {
     padding: 10px;
   }
 
+  .game-shell {
+    width: 100%;
+    min-height: 0;
+  }
+
   .stage {
+    width: 100%;
+    height: calc(100svh - 20px);
     border-radius: 14px;
   }
 
@@ -1524,6 +1597,13 @@ button {
   .difficulty-control {
     min-height: 38px;
     padding: 3px;
+  }
+
+  .save-assist-switch {
+    min-height: 38px;
+    padding: 0 7px;
+    gap: 5px;
+    font-size: 9px;
   }
 
   .difficulty-button {
@@ -2234,9 +2314,30 @@ button {
   }
 
   .mode-control,
-  .difficulty-control {
+  .difficulty-control,
+  .save-assist-switch {
     min-height: 36px;
     padding: 3px;
+  }
+
+  .save-assist-switch {
+    padding: 0 7px;
+    gap: 5px;
+    font-size: 9px;
+  }
+
+  .save-assist-track {
+    width: 28px;
+    height: 16px;
+  }
+
+  .save-assist-track i {
+    width: 12px;
+    height: 12px;
+  }
+
+  .save-assist-switch.is-active .save-assist-track i {
+    transform: translateX(12px);
   }
 
   .mode-button,

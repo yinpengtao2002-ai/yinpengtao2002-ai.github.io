@@ -46,6 +46,7 @@ function createDocument() {
     "concededValue",
     "pauseButton",
     "soundButton",
+    "saveAssistSwitch",
     "startButton",
     "restartButton",
     "pauseResumeButton",
@@ -201,6 +202,30 @@ describe("hud", () => {
     expect(selected).toBe("hard");
     hud.updateDifficulty(selected);
     expect(documentRef.elements.hardDifficulty.classList.contains("is-active")).toBe(true);
+  });
+
+  it("defaults the save assist switch on and reports toggle changes", () => {
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    let assistEnabled = null;
+
+    hud.bind({
+      onAssist(value) {
+        assistEnabled = value;
+      },
+    });
+    hud.updateAssist(true);
+
+    expect(documentRef.elements.saveAssistSwitch.getAttribute("role")).toBe("switch");
+    expect(documentRef.elements.saveAssistSwitch.getAttribute("aria-checked")).toBe("true");
+    expect(documentRef.elements.saveAssistSwitch.classList.contains("is-active")).toBe(true);
+
+    documentRef.elements.saveAssistSwitch.click();
+    expect(assistEnabled).toBe(false);
+
+    hud.updateAssist(false);
+    expect(documentRef.elements.saveAssistSwitch.getAttribute("aria-checked")).toBe("false");
+    expect(documentRef.elements.saveAssistSwitch.classList.contains("is-active")).toBe(false);
   });
 
   it("shows standard and extreme difficulty choices only during penalty shootouts", () => {

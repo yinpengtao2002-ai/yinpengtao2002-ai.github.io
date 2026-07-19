@@ -747,13 +747,13 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(streakSave.cameraShake).toBeGreaterThan(0);
     expect(streakSave.cameraShake).toBeLessThan(dangerGoal.cameraShake);
     expect(streakSave.visualEffects).toEqual(expect.arrayContaining([
-      "feedback-impact-ring",
       "feedback-save-spark",
       "feedback-save-pressure-arc",
       "feedback-save-afterimage",
       "feedback-streak-pulse",
     ]));
-    expect(streakSave.ringCount).toBeGreaterThanOrEqual(3);
+    expect(streakSave.visualEffects).not.toContain("feedback-impact-ring");
+    expect(streakSave.ringCount).toBe(0);
     expect(streakSave.net.recoilStrength).toBe(0);
     expect(streakSave.durationMs).toBeGreaterThanOrEqual(520);
 

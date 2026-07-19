@@ -548,6 +548,7 @@ export function createHud(documentRef) {
     concededValue: documentRef.getElementById("concededValue"),
     pauseButton: documentRef.getElementById("pauseButton"),
     soundButton: documentRef.getElementById("soundButton"),
+    saveAssistSwitch: documentRef.getElementById("saveAssistSwitch"),
     soundStatus: documentRef.getElementById("soundStatus"),
     startButton: documentRef.getElementById("startButton"),
     restartButton: documentRef.getElementById("restartButton"),
@@ -810,6 +811,10 @@ export function createHud(documentRef) {
       button.disabled = isLive;
       button.setAttribute("aria-disabled", isLive ? "true" : "false");
     });
+    if (refs.saveAssistSwitch) {
+      refs.saveAssistSwitch.disabled = isLive;
+      refs.saveAssistSwitch.setAttribute("aria-disabled", isLive ? "true" : "false");
+    }
 
     setVisible(refs.pauseButton, isLive);
     if (refs.pauseButton) refs.pauseButton.disabled = !isLive;
@@ -824,6 +829,9 @@ export function createHud(documentRef) {
       refs.pauseButton?.addEventListener("click", actions.onPause);
       refs.pauseResumeButton?.addEventListener("click", actions.onPause);
       refs.soundButton?.addEventListener("click", actions.onSound);
+      refs.saveAssistSwitch?.addEventListener("click", () => {
+        actions.onAssist?.(refs.saveAssistSwitch.getAttribute("aria-checked") !== "true");
+      });
       refs.difficultyButtons.forEach((button) => {
         button.addEventListener("click", () => actions.onDifficulty?.(button.dataset.difficulty));
       });
@@ -862,6 +870,13 @@ export function createHud(documentRef) {
         button.classList.toggle("is-active", active);
         button.setAttribute("aria-pressed", active ? "true" : "false");
       });
+    },
+    updateAssist(enabled) {
+      if (!refs.saveAssistSwitch) return;
+      refs.saveAssistSwitch.setAttribute("role", "switch");
+      refs.saveAssistSwitch.setAttribute("aria-checked", enabled ? "true" : "false");
+      refs.saveAssistSwitch.setAttribute("aria-label", enabled ? "扑救辅助已开启" : "扑救辅助已关闭");
+      refs.saveAssistSwitch.classList.toggle("is-active", enabled);
     },
     update(state, soundEnabled, context = {}) {
       var penaltyPlan = getPenaltyHudPlan(state);

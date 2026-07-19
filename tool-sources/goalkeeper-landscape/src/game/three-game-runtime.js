@@ -58,6 +58,12 @@ const PARRIED_GROUND_SPIN_RETENTION = 0.9;
 const PARRIED_MIN_BOUNCE_SPEED = 0.26;
 const AIRBORNE_LINEAR_DAMPING_60HZ = 0.998;
 const AIRBORNE_SPIN_DAMPING_60HZ = 0.997;
+const SAVE_ASSIST_MARGINS = Object.freeze({
+  easy: 0.24,
+  medium: 0.18,
+  hard: 0.12,
+  extreme: 0.08,
+});
 
 function clamp01(value) {
   return Math.max(0, Math.min(1, value || 0));
@@ -194,6 +200,10 @@ export function getOutcomeAudioEvent(state, previousState = null) {
 export function getModeDifficulty(mode, selectedDifficulty) {
   if (mode === "penalty") return selectedDifficulty === "hard" ? "hard" : "extreme";
   return resolveShotDifficulty(selectedDifficulty).id;
+}
+
+export function getSaveAssistMarginForDifficulty(difficulty) {
+  return SAVE_ASSIST_MARGINS[resolveShotDifficulty(difficulty).id];
 }
 
 export function getPenaltySequenceAction(state, outcomeTimer, teamResolved) {
@@ -616,6 +626,7 @@ export async function createThreeGameRuntime(options) {
   var groundContactAudioCooldown = 0;
   var outcomeTimer = 0;
   var lingeringBalls = [];
+  var saveAssistEnabled = true;
   var forcedGloveTarget = null;
   var forcedGloveTimer = 0;
   var roundIntroTimer = 0;
@@ -631,6 +642,15 @@ export async function createThreeGameRuntime(options) {
   var debugKeysEnabled =
     windowRef.location &&
     (windowRef.location.hostname === "127.0.0.1" || windowRef.location.hostname === "localhost");
+
+  function syncSaveAssist() {
+    physics.setSaveAssist({
+      enabled: saveAssistEnabled,
+      margin: getSaveAssistMarginForDifficulty(selectedDifficulty),
+    });
+  }
+
+  syncSaveAssist();
 
   function resize() {
     var needsLandscape = syncMobileLandscape(stage, windowRef);
@@ -677,6 +697,7 @@ export async function createThreeGameRuntime(options) {
       selectedMode,
       selectedMode === "penalty" ? selectedPenaltyDifficulty : selectedTimedDifficulty,
     );
+    syncSaveAssist();
     audio.prime();
     audio.startMusic?.();
     audio.setMusicPaused?.(false);
@@ -947,6 +968,8 @@ export async function createThreeGameRuntime(options) {
     var ball = physics.getBallState();
     var gloveScreenPoint = scene.projectWorldPointToScreen?.(gloveController.center, bounds);
     stage.dataset.difficulty = selectedDifficulty;
+    stage.dataset.saveAssist = saveAssistEnabled ? "true" : "false";
+    stage.dataset.saveAssistMargin = String(getSaveAssistMarginForDifficulty(selectedDifficulty));
     stage.dataset.mode = selectedMode;
     stage.dataset.bootStatus = windowRef.goalkeeperBootStatus || "";
     stage.dataset.phase = director.phase;
@@ -1072,7 +1095,13 @@ export async function createThreeGameRuntime(options) {
         selectedDifficulty = selectedTimedDifficulty;
       }
       director = { ...director, difficulty: selectedDifficulty };
+      syncSaveAssist();
       hud.updateDifficulty(selectedDifficulty);
+    },
+    onAssist(value) {
+      saveAssistEnabled = Boolean(value);
+      syncSaveAssist();
+      hud.updateAssist(saveAssistEnabled);
     },
     onMode(value) {
       if (state.running && !state.ended) return;
@@ -1083,6 +1112,7 @@ export async function createThreeGameRuntime(options) {
       );
       state = createGameState({ mode: selectedMode });
       director = createShot3DDirector({ seed: Date.now() % 100000, difficulty: selectedDifficulty });
+      syncSaveAssist();
       hud.updateMode(selectedMode);
       hud.updateDifficulty(selectedDifficulty);
       updateHud();
@@ -1090,6 +1120,7 @@ export async function createThreeGameRuntime(options) {
   });
   hud.updateMode(selectedMode);
   hud.updateDifficulty(selectedDifficulty);
+  hud.updateAssist(saveAssistEnabled);
 
   function onDebugKey(event) {
     if (!debugKeysEnabled) return;
@@ -1130,6 +1161,12 @@ export async function createThreeGameRuntime(options) {
     getMode() {
       return selectedMode;
     },
+    getSaveAssist() {
+      return {
+        enabled: saveAssistEnabled,
+        margin: getSaveAssistMarginForDifficulty(selectedDifficulty),
+      };
+    },
     getAudioState() {
       return {
         enabled: audio.isEnabled(),
@@ -1166,10 +1203,18 @@ export async function createThreeGameRuntime(options) {
       );
       state = createGameState({ mode: selectedMode });
       director = createShot3DDirector({ seed: Date.now() % 100000, difficulty: selectedDifficulty });
+      syncSaveAssist();
       hud.updateMode(selectedMode);
       hud.updateDifficulty(selectedDifficulty);
       updateHud();
       return true;
+    },
+    setSaveAssist(value) {
+      saveAssistEnabled = Boolean(value);
+      syncSaveAssist();
+      hud.updateAssist(saveAssistEnabled);
+      render();
+      return saveAssistEnabled;
     },
     forcePenaltyTeamResult(result) {
       if (state.mode !== "penalty" || state.shootout?.phase !== "team-kick") return false;

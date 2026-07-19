@@ -50,6 +50,13 @@ describe("responsive layout css", () => {
     expect(css).toContain("left: max(64px, env(safe-area-inset-left));");
   });
 
+  it("keeps the native mobile landscape stage inside its padded viewport", () => {
+    const css = readFileSync(stylesPath, "utf8");
+
+    expect(css).toMatch(/@media \(max-width: 760px\)[\s\S]*?\.game-shell\s*\{[^}]*width:\s*100%;/);
+    expect(css).toMatch(/@media \(max-width: 760px\)[\s\S]*?\.stage\s*\{[^}]*width:\s*100%;[^}]*height:\s*calc\(100svh - 20px\);/);
+  });
+
   it("defines a polished match-flow HUD layer instead of a single temporary start button", () => {
     const css = readFileSync(stylesPath, "utf8");
 

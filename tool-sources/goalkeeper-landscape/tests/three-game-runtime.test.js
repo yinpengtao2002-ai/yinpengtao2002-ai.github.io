@@ -43,6 +43,15 @@ describe("three game runtime timing", () => {
     expect(getModeDifficulty("timed", "hard")).toBe("hard");
   });
 
+  it("shrinks the save assist tolerance as shot difficulty rises", () => {
+    expect(RuntimeModule.getSaveAssistMarginForDifficulty).toBeTypeOf("function");
+    expect(RuntimeModule.getSaveAssistMarginForDifficulty("easy")).toBe(0.24);
+    expect(RuntimeModule.getSaveAssistMarginForDifficulty("medium")).toBe(0.18);
+    expect(RuntimeModule.getSaveAssistMarginForDifficulty("hard")).toBe(0.12);
+    expect(RuntimeModule.getSaveAssistMarginForDifficulty("extreme")).toBe(0.08);
+    expect(RuntimeModule.getSaveAssistMarginForDifficulty("unknown")).toBe(0.18);
+  });
+
   it("retires the local glove demo switch after selecting the production model", () => {
     expect(RuntimeModule.resolveGloveDemoStyle).toBeUndefined();
   });
