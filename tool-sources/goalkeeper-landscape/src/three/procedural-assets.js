@@ -50,6 +50,12 @@ const LAUNCHER_PAINT_TEXTURE_SYSTEM = "procedural-painted-metal-launcher-texture
 const LAUNCHER_GUNMETAL_TEXTURE_SYSTEM = "procedural-gunmetal-launcher-texture";
 const LAUNCHER_RUBBER_TEXTURE_SYSTEM = "procedural-rubber-tire-launcher-texture";
 const LAUNCHER_DISTANCE_CLARITY_SYSTEM = "distance-clarity-silhouette-kit";
+const FOOTBALL_PRIMARY_COLOR = "#071a36";
+const FOOTBALL_SIGNAL_COLOR = "#e31b23";
+const FOOTBALL_HIGHLIGHT_COLOR = "#f7f9ff";
+const FOOTBALL_ASSET_SYSTEM = "psg-midnight-match-ball-texture";
+const FOOTBALL_PALETTE_SYSTEM = "psg-midnight-navy-university-red-white";
+const FOOTBALL_READABILITY_SYSTEM = "dark-navy-red-white-flight-contrast";
 
 export function getMatchdayAssetPolishProfile() {
   return {
@@ -734,11 +740,6 @@ function drawFootballPentagon(ctx, panel, width, allowWrap = true) {
     else ctx.lineTo(point.x, point.y);
   });
   ctx.closePath();
-  if (panel.signalAccent) {
-    ctx.strokeStyle = "#ff633e";
-    ctx.lineWidth = 14;
-    ctx.stroke();
-  }
   var panelGradient = ctx.createRadialGradient(
     panel.x - panel.radius * 0.22,
     panel.y - panel.radius * 0.28,
@@ -747,13 +748,19 @@ function drawFootballPentagon(ctx, panel, width, allowWrap = true) {
     panel.y,
     panel.radius,
   );
-  panelGradient.addColorStop(0, "#30383b");
-  panelGradient.addColorStop(0.58, "#151b1e");
-  panelGradient.addColorStop(1, "#090d0f");
+  if (panel.signalAccent) {
+    panelGradient.addColorStop(0, "#f14b55");
+    panelGradient.addColorStop(0.58, FOOTBALL_SIGNAL_COLOR);
+    panelGradient.addColorStop(1, "#970817");
+  } else {
+    panelGradient.addColorStop(0, "#1b4d86");
+    panelGradient.addColorStop(0.58, "#0d315f");
+    panelGradient.addColorStop(1, "#041127");
+  }
   ctx.fillStyle = panelGradient;
   ctx.fill();
-  ctx.strokeStyle = "rgba(9, 14, 16, 0.86)";
-  ctx.lineWidth = 5;
+  ctx.strokeStyle = panel.signalAccent ? "rgba(255,255,255,0.96)" : "rgba(224,235,250,0.9)";
+  ctx.lineWidth = panel.signalAccent ? 6.4 : 5.2;
   ctx.stroke();
 
   points.forEach((point, index) => {
@@ -770,9 +777,9 @@ function drawFootballPentagon(ctx, panel, width, allowWrap = true) {
       outerY,
     );
     ctx.strokeStyle = panel.signalAccent && index % 2 === 0
-      ? "rgba(255, 99, 62, 0.9)"
-      : "rgba(31, 39, 42, 0.72)";
-    ctx.lineWidth = panel.signalAccent && index % 2 === 0 ? 4.4 : 3.2;
+      ? "rgba(227, 27, 35, 0.96)"
+      : "rgba(230, 239, 252, 0.8)";
+    ctx.lineWidth = panel.signalAccent && index % 2 === 0 ? 5.2 : 3.8;
     ctx.stroke();
   });
 
@@ -794,10 +801,10 @@ export function createFootballTexture() {
   var ctx = canvas.getContext("2d");
   var layout = getClassicFootballPanelLayout(canvas.width, canvas.height);
   var baseGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  baseGradient.addColorStop(0, "#eef2f1");
-  baseGradient.addColorStop(0.22, "#ffffff");
-  baseGradient.addColorStop(0.7, "#f7f9f8");
-  baseGradient.addColorStop(1, "#dce2e0");
+  baseGradient.addColorStop(0, "#0d2c58");
+  baseGradient.addColorStop(0.24, "#081f3f");
+  baseGradient.addColorStop(0.7, FOOTBALL_PRIMARY_COLOR);
+  baseGradient.addColorStop(1, "#041127");
   ctx.fillStyle = baseGradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -805,8 +812,8 @@ export function createFootballTexture() {
   ctx.lineJoin = "round";
   layout.darkPanels.forEach((panel) => drawFootballPentagon(ctx, panel, canvas.width));
 
-  ctx.globalAlpha = 0.16;
-  ctx.strokeStyle = "#697174";
+  ctx.globalAlpha = 0.2;
+  ctx.strokeStyle = "#bfd6f4";
   ctx.lineWidth = 1.5;
   for (var scuff = 0; scuff < 28; scuff += 1) {
     var sx = 44 + ((scuff * 83) % 930);
@@ -821,13 +828,13 @@ export function createFootballTexture() {
 
   ctx.beginPath();
   ctx.arc(574, 248, 9, 0, Math.PI * 2);
-  ctx.fillStyle = "#182226";
+  ctx.fillStyle = "#020711";
   ctx.fill();
   ctx.beginPath();
   ctx.arc(574, 248, 4, 0, Math.PI * 2);
-  ctx.fillStyle = "#4f5d5e";
+  ctx.fillStyle = FOOTBALL_HIGHLIGHT_COLOR;
   ctx.fill();
-  ctx.strokeStyle = "rgba(255,255,255,0.55)";
+  ctx.strokeStyle = "rgba(227,27,35,0.88)";
   ctx.lineWidth = 2;
   ctx.stroke();
 
@@ -835,12 +842,14 @@ export function createFootballTexture() {
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 8;
   texture.wrapS = THREE.RepeatWrapping;
-  texture.userData.assetSystem = "classic-neutral-match-ball-texture";
-  texture.userData.panelSystem = "classic-dark-pentagon-panel-layout";
+  texture.userData.assetSystem = FOOTBALL_ASSET_SYSTEM;
+  texture.userData.panelSystem = "midnight-navy-red-pentagon-panel-layout";
   texture.userData.panelCoverageSystem = layout.system;
-  texture.userData.paletteSystem = "neutral-white-charcoal-no-yellow-cast";
-  texture.userData.readabilitySystem = "white-charcoal-signal-coral-flight-readability";
-  texture.userData.signalAccentColor = "#ff633e";
+  texture.userData.paletteSystem = FOOTBALL_PALETTE_SYSTEM;
+  texture.userData.readabilitySystem = FOOTBALL_READABILITY_SYSTEM;
+  texture.userData.primaryColor = FOOTBALL_PRIMARY_COLOR;
+  texture.userData.signalAccentColor = FOOTBALL_SIGNAL_COLOR;
+  texture.userData.highlightColor = FOOTBALL_HIGHLIGHT_COLOR;
   texture.userData.materialSystem = "stitched-classic-match-ball";
   texture.userData.finishSystem = "micro-scuffed-satin-panels";
   texture.userData.surfaceDetailSystem = "micro-scuffs-valve-and-panel-depth";
@@ -856,13 +865,15 @@ export function createFootballMaterial() {
     bumpMap: createFootballSurfaceMap("bump"),
     bumpScale: 0.018,
     roughnessMap: createFootballSurfaceMap("roughness"),
-    roughness: 0.44,
+    roughness: 0.4,
     metalness: 0.015,
+    emissive: FOOTBALL_PRIMARY_COLOR,
+    emissiveIntensity: 0.12,
   });
   material.userData.materialPipelineSystem = "procedural-match-ball-pbr";
-  material.userData.paletteSystem = "neutral-white-charcoal-no-yellow-cast";
-  material.userData.readabilitySystem = "white-charcoal-signal-coral-flight-readability";
-  material.userData.signalAccentColor = "#ff633e";
+  material.userData.paletteSystem = FOOTBALL_PALETTE_SYSTEM;
+  material.userData.readabilitySystem = FOOTBALL_READABILITY_SYSTEM;
+  material.userData.signalAccentColor = FOOTBALL_SIGNAL_COLOR;
   material.userData.surfaceDetailSystem = "raised-seam-and-scuffed-panel-relief";
   material.userData.polishSystem = MATCHDAY_ASSET_POLISH_SYSTEM;
   return material;
@@ -900,13 +911,17 @@ function createFallbackFootballTexture() {
         var distance = Math.hypot(wrappedDx, y - panel.y) / panel.radius;
         return distance < nearest.distance ? { distance, signalAccent: panel.signalAccent } : nearest;
       }, { distance: Number.POSITIVE_INFINITY, signalAccent: false });
-      var accent = nearestPanel.distance < 0.78;
-      var signalRing = nearestPanel.signalAccent && nearestPanel.distance >= 0.78 && nearestPanel.distance < 0.94;
-      var seam = !signalRing && nearestPanel.distance >= 0.78 && nearestPanel.distance < 0.86;
-      var neutralPanel = 246 - Math.floor(Math.abs(y / height - 0.48) * 20);
-      data[index] = signalRing ? 255 : seam ? 42 : accent ? 22 : neutralPanel;
-      data[index + 1] = signalRing ? 99 : seam ? 47 : accent ? 27 : neutralPanel;
-      data[index + 2] = signalRing ? 62 : seam ? 49 : accent ? 30 : neutralPanel;
+      var panel = nearestPanel.distance < 0.78;
+      var signalPanel = panel && nearestPanel.signalAccent;
+      var signalRing = nearestPanel.signalAccent && nearestPanel.distance >= 0.86 && nearestPanel.distance < 0.94;
+      var seam = nearestPanel.distance >= 0.78 && nearestPanel.distance < 0.86;
+      var verticalShade = Math.floor((y / height) * 9);
+      var baseRed = 11 - Math.floor(verticalShade * 0.55);
+      var baseGreen = 36 - verticalShade;
+      var baseBlue = 72 - verticalShade * 2;
+      data[index] = signalRing ? 227 : seam ? 247 : signalPanel ? 227 : panel ? 15 : baseRed;
+      data[index + 1] = signalRing ? 27 : seam ? 249 : signalPanel ? 27 : panel ? 49 : baseGreen;
+      data[index + 2] = signalRing ? 35 : seam ? 255 : signalPanel ? 35 : panel ? 91 : baseBlue;
       data[index + 3] = 255;
     }
   }
@@ -915,12 +930,14 @@ function createFallbackFootballTexture() {
   texture.anisotropy = 8;
   texture.wrapS = THREE.RepeatWrapping;
   texture.needsUpdate = true;
-  texture.userData.assetSystem = "classic-neutral-match-ball-texture";
-  texture.userData.panelSystem = "classic-dark-pentagon-panel-layout";
+  texture.userData.assetSystem = FOOTBALL_ASSET_SYSTEM;
+  texture.userData.panelSystem = "midnight-navy-red-pentagon-panel-layout";
   texture.userData.panelCoverageSystem = layout.system;
-  texture.userData.paletteSystem = "neutral-white-charcoal-no-yellow-cast";
-  texture.userData.readabilitySystem = "white-charcoal-signal-coral-flight-readability";
-  texture.userData.signalAccentColor = "#ff633e";
+  texture.userData.paletteSystem = FOOTBALL_PALETTE_SYSTEM;
+  texture.userData.readabilitySystem = FOOTBALL_READABILITY_SYSTEM;
+  texture.userData.primaryColor = FOOTBALL_PRIMARY_COLOR;
+  texture.userData.signalAccentColor = FOOTBALL_SIGNAL_COLOR;
+  texture.userData.highlightColor = FOOTBALL_HIGHLIGHT_COLOR;
   texture.userData.materialSystem = "stitched-classic-match-ball";
   texture.userData.finishSystem = "micro-scuffed-satin-panels";
   texture.userData.surfaceDetailSystem = "micro-scuffs-valve-and-panel-depth";

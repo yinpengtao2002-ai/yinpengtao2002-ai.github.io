@@ -393,18 +393,20 @@ describe("procedural 3D assets", () => {
     expect(surface.material.userData.grassReadabilityGuard).toBe("synthetic-polymer-floor-no-turf-blades");
   });
 
-  it("uses a recognizable neutral-white football texture instead of a yellow stylized shell", () => {
+  it("uses a dark PSG-inspired football palette that stays readable in flight", () => {
     const texture = createFootballTexture();
 
-    expect(texture.userData.assetSystem).toBe("classic-neutral-match-ball-texture");
+    expect(texture.userData.assetSystem).toBe("psg-midnight-match-ball-texture");
     expect(texture.image.width).toBeGreaterThanOrEqual(512);
     expect(texture.image.width / texture.image.height).toBe(2);
     expect(texture.anisotropy).toBeGreaterThanOrEqual(4);
-    expect(texture.userData.panelSystem).toBe("classic-dark-pentagon-panel-layout");
+    expect(texture.userData.panelSystem).toBe("midnight-navy-red-pentagon-panel-layout");
     expect(texture.userData.panelCoverageSystem).toBe("dense-classic-32-panel-readability");
-    expect(texture.userData.paletteSystem).toBe("neutral-white-charcoal-no-yellow-cast");
-    expect(texture.userData.readabilitySystem).toBe("white-charcoal-signal-coral-flight-readability");
-    expect(texture.userData.signalAccentColor).toBe("#ff633e");
+    expect(texture.userData.paletteSystem).toBe("psg-midnight-navy-university-red-white");
+    expect(texture.userData.readabilitySystem).toBe("dark-navy-red-white-flight-contrast");
+    expect(texture.userData.primaryColor).toBe("#071a36");
+    expect(texture.userData.signalAccentColor).toBe("#e31b23");
+    expect(texture.userData.highlightColor).toBe("#f7f9ff");
   });
 
   it("distributes classic dark football panels across the full spherical UV", () => {
@@ -730,14 +732,18 @@ describe("procedural 3D assets", () => {
     expect(surface.material.roughness).toBeGreaterThanOrEqual(0.86);
 
     expect(ballMaterial.userData.materialPipelineSystem).toBe("procedural-match-ball-pbr");
-    expect(ballMaterial.map.userData.assetSystem).toBe("classic-neutral-match-ball-texture");
+    expect(ballMaterial.map.userData.assetSystem).toBe("psg-midnight-match-ball-texture");
     expect(ballMaterial.bumpMap).toBeTruthy();
     expect(ballMaterial.roughnessMap).toBeTruthy();
     expect(ballMaterial.bumpScale).toBeGreaterThan(0.01);
     expect(ballMaterial.roughness).toBeGreaterThanOrEqual(0.38);
     expect(ballMaterial.metalness).toBeLessThanOrEqual(0.03);
     expect(ballMaterial.color.getHexString()).toBe("ffffff");
-    expect(ballMaterial.userData.paletteSystem).toBe("neutral-white-charcoal-no-yellow-cast");
+    expect(ballMaterial.userData.paletteSystem).toBe("psg-midnight-navy-university-red-white");
+    expect(ballMaterial.userData.readabilitySystem).toBe("dark-navy-red-white-flight-contrast");
+    expect(ballMaterial.userData.signalAccentColor).toBe("#e31b23");
+    expect(ballMaterial.emissive.getHexString()).toBe("071a36");
+    expect(ballMaterial.emissiveIntensity).toBeGreaterThanOrEqual(0.1);
   });
 
   it("uses one continuous low-occlusion 120mm square match net", () => {

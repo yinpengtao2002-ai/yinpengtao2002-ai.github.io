@@ -44,7 +44,7 @@ describe("three game runtime timing", () => {
   });
 
   it("keeps save assist tolerance fixed independently of shot difficulty", () => {
-    expect(RuntimeModule.SAVE_ASSIST_MARGIN).toBe(0.2);
+    expect(RuntimeModule.SAVE_ASSIST_MARGIN).toBe(0.3);
     expect(RuntimeModule.getSaveAssistMarginForDifficulty).toBeUndefined();
   });
 
