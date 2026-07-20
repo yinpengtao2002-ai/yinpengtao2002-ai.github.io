@@ -63,6 +63,8 @@ export function createGloveImpactCandidate(contact) {
   if (!contact.ballCenter || !contact.gloveCenter) return null;
 
   var ballCenter = clonePoint(contact.ballCenter);
+  var replayBallCenter = contact.replayBallCenter ? clonePoint(contact.replayBallCenter) : null;
+  var displayedBallCenter = replayBallCenter || ballCenter;
   var gloveCenter = clonePoint(contact.gloveCenter);
   var contactPoint = clonePoint(contact.contactPoint || contact.ballCenter);
   var ballRadius = Math.max(0.01, Number(contact.ballRadius) || 0.11);
@@ -78,6 +80,7 @@ export function createGloveImpactCandidate(contact) {
     assisted: Boolean(contact.assisted),
     ballRadius,
     ballCenter,
+    replayBallCenter,
     gloveCenter,
     contactPoint,
     colliderCenter,
@@ -87,6 +90,11 @@ export function createGloveImpactCandidate(contact) {
       x: ballCenter.x - gloveCenter.x,
       y: ballCenter.y - gloveCenter.y,
       z: ballCenter.z - gloveCenter.z,
+    },
+    replayOffset: {
+      x: displayedBallCenter.x - gloveCenter.x,
+      y: displayedBallCenter.y - gloveCenter.y,
+      z: displayedBallCenter.z - gloveCenter.z,
     },
     contactOffset: {
       x: contactPoint.x - gloveCenter.x,
@@ -120,6 +128,8 @@ export function getGloveImpactVisual(review) {
   var gloveSide = impact?.side || "both";
   var gloves = getGlovePair(impact?.side);
   var gloveCenter = getActiveGloveCenter(gloveSide, gloves);
+  var ballOffset = impact?.replayOffset || impact?.offset || { x: 0, y: 0, z: 0 };
+  var displayedBallCenter = impact?.replayBallCenter || impact?.ballCenter || null;
   var contactOffset = impact?.contactOffset || impact?.offset || { x: 0, y: 0, z: 0 };
   var overlapDepth = clamp(impact?.overlapDepth || 0, 0, (impact?.ballRadius || 0) * 2);
   var ballRadius = impact ? impact.ballRadius * scale : 0;
@@ -127,7 +137,7 @@ export function getGloveImpactVisual(review) {
     ? getSphereIntersectionRadius(
         impact.ballRadius,
         impact.colliderRadius,
-        distanceBetweenPoints(impact.ballCenter, impact.colliderCenter),
+        distanceBetweenPoints(displayedBallCenter, impact.colliderCenter),
       )
     : null;
   var patchRadius = impact
@@ -143,8 +153,8 @@ export function getGloveImpactVisual(review) {
     : null;
   var ball = impact
     ? {
-        x: gloveCenter.x + impact.offset.x * scale,
-        y: gloveCenter.y - impact.offset.y * scale,
+        x: gloveCenter.x + ballOffset.x * scale,
+        y: gloveCenter.y - ballOffset.y * scale,
         radius: ballRadius,
       }
     : null;
@@ -577,6 +587,7 @@ export function drawGloveImpactReview(canvas, review) {
   if (!context) return null;
   var visual = getGloveImpactVisual(review);
   var impactContactOffset = review?.impact?.contactOffset || review?.impact?.offset || null;
+  var impactReplayOffset = review?.impact?.replayOffset || review?.impact?.offset || null;
   var scale = Math.min(canvas.width / visual.width, canvas.height / visual.height) || 1;
   var renderTransform = getGloveImpactRenderTransform(visual);
   context.setTransform(1, 0, 0, 1, 0, 0);
@@ -645,6 +656,8 @@ export function drawGloveImpactReview(canvas, review) {
   canvas.dataset.gloveCenterY = String(Math.round(visual.gloveCenter.y * 100) / 100);
   canvas.dataset.ballOffsetX = review?.impact ? String(review.impact.offset.x) : "";
   canvas.dataset.ballOffsetY = review?.impact ? String(review.impact.offset.y) : "";
+  canvas.dataset.replayBallOffsetX = impactReplayOffset ? String(impactReplayOffset.x) : "";
+  canvas.dataset.replayBallOffsetY = impactReplayOffset ? String(impactReplayOffset.y) : "";
   canvas.dataset.contactOffsetX = impactContactOffset ? String(impactContactOffset.x) : "";
   canvas.dataset.contactOffsetY = impactContactOffset ? String(impactContactOffset.y) : "";
   canvas.dataset.renderScale = String(renderTransform.scale);

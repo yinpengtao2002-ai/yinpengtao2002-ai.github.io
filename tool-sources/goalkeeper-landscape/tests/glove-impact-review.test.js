@@ -152,19 +152,27 @@ describe("glove impact review", () => {
     expect(visual.contact.radius).toBeCloseTo(expectedRadius, 5);
   });
 
-  it("keeps a successful assisted-save contact patch on the glove surface", () => {
+  it("renders a synthetic save at its effective contact pose while preserving the real ball center", () => {
     const candidate = createGloveImpactCandidate(makeContact({
       assisted: true,
-      ballCenter: { x: 0.82, y: 1.2, z: 3.15 },
-      contactPoint: { x: 0.48, y: 1.2, z: 3.15 },
+      ballCenter: { x: 0.82, y: 1.6, z: 3.15 },
+      replayBallCenter: { x: 0.5, y: 1.3, z: 3.15 },
+      contactPoint: { x: 0.48, y: 1.3, z: 3.15 },
+      colliderCenter: { x: 0.4, y: 1.3, z: 3.15 },
+      colliderRadius: 0.13,
+      colliderShape: "sphere",
       overlapDepth: 0.018,
     }));
     const review = finalizeGloveImpactReview(candidate, "saved");
     const visual = getGloveImpactVisual(review);
 
     expect(review.impact.assisted).toBe(true);
+    expect(review.impact.ballCenter).toEqual({ x: 0.82, y: 1.6, z: 3.15 });
+    expect(review.impact.replayBallCenter).toEqual({ x: 0.5, y: 1.3, z: 3.15 });
     expect(Math.abs(visual.contact.x - visual.gloveCenter.x)).toBeLessThan(40);
     expect(visual.ball.radius).toBeCloseTo(0.11 * GLOVE_IMPACT_CANVAS.pixelsPerMeter);
+    expect(Math.hypot(visual.ball.x - visual.contact.x, visual.ball.y - visual.contact.y))
+      .toBeLessThan(visual.ball.radius);
     expect(visual.contact.radius).toBeLessThan(visual.ball.radius);
   });
 

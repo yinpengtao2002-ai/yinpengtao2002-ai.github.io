@@ -700,6 +700,16 @@ class RapierGoalkeeperWorld {
       y: contactSurfaceCenter.y + contactDirection.y * contactSurfaceRadius,
       z: contactSurfaceCenter.z + contactDirection.z * contactSurfaceRadius,
     };
+    var replayBallCenter = null;
+    if (best.contactSource) {
+      var replayOverlap = Math.min(0.018, this.ballRadius * 0.16);
+      var replayDistance = Math.max(0, contactSurfaceRadius + this.ballRadius - replayOverlap);
+      replayBallCenter = {
+        x: contactSurfaceCenter.x + contactDirection.x * replayDistance,
+        y: contactSurfaceCenter.y + contactDirection.y * replayDistance,
+        z: contactSurfaceCenter.z + contactDirection.z * replayDistance,
+      };
+    }
     this.lastContact = {
       eventId: this.nextContactEventId(),
       type: "glove",
@@ -708,6 +718,7 @@ class RapierGoalkeeperWorld {
       contactSource: best.contactSource || null,
       point: best.point,
       ballCenter: vector(best.point),
+      replayBallCenter: replayBallCenter ? vector(replayBallCenter) : null,
       gloveCenter: vector(impactGloveCenter),
       contactPoint: contactPoint,
       colliderCenter: vector(contactSurfaceCenter),
