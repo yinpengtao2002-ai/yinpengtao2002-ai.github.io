@@ -204,6 +204,41 @@ describe("glove impact review", () => {
     expect(Number(canvas.dataset.ballOffsetY)).toBeCloseTo(0);
   });
 
+  it("keeps the complete ball inside the review canvas for an outer-edge save", () => {
+    const calls = [];
+    const context = new Proxy({}, {
+      get(target, property) {
+        if (property in target) return target[property];
+        return (...args) => calls.push({ name: property, args });
+      },
+      set(target, property, value) {
+        target[property] = value;
+        return true;
+      },
+    });
+    const canvas = {
+      width: 440,
+      height: 352,
+      dataset: {},
+      getContext: () => context,
+    };
+    const review = finalizeGloveImpactReview(createGloveImpactCandidate(makeContact({
+      side: "left",
+      gloveCenter: { x: 0.3, y: 1.2, z: 3.15 },
+      ballCenter: { x: 0.056, y: 1.2, z: 3.15 },
+      contactPoint: { x: 0.166, y: 1.2, z: 3.15 },
+      overlapDepth: 0.018,
+    })), "saved");
+
+    drawGloveImpactReview(canvas, review);
+
+    expect(Number(canvas.dataset.ballX)).toBeLessThan(0);
+    expect(Number(canvas.dataset.renderBallLeft)).toBeGreaterThanOrEqual(4);
+    expect(Number(canvas.dataset.renderBallRight)).toBeLessThanOrEqual(GLOVE_IMPACT_CANVAS.width - 4);
+    expect(Number(canvas.dataset.renderScale)).toBeLessThan(1);
+    expect(Number(canvas.dataset.ballOffsetX)).toBeCloseTo(-0.244);
+  });
+
   it("highlights both gloves and clips the contact against both for a two-handed catch", () => {
     const calls = [];
     const context = new Proxy({}, {

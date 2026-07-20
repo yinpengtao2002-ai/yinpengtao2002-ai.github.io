@@ -364,6 +364,54 @@ export function getGloveOutlinePolygon(side, curveSegments = 10) {
   return polygon;
 }
 
+function getGloveImpactContentBounds(visual) {
+  var points = visual.gloves.flatMap((glove) => (
+    getGloveOutlinePolygon(glove.side, 24).map((point) => toCanvasPoint(glove, point))
+  ));
+  if (visual.ball) {
+    points.push(
+      { x: visual.ball.x - visual.ball.radius, y: visual.ball.y - visual.ball.radius },
+      { x: visual.ball.x + visual.ball.radius, y: visual.ball.y + visual.ball.radius },
+    );
+  }
+  if (points.length === 0) {
+    return { minX: 0, minY: 0, maxX: visual.width, maxY: visual.height };
+  }
+  return {
+    minX: Math.min(...points.map((point) => point.x)),
+    minY: Math.min(...points.map((point) => point.y)),
+    maxX: Math.max(...points.map((point) => point.x)),
+    maxY: Math.max(...points.map((point) => point.y)),
+  };
+}
+
+export function getGloveImpactRenderTransform(visual, padding = 5) {
+  var bounds = getGloveImpactContentBounds(visual);
+  var contentWidth = Math.max(1, bounds.maxX - bounds.minX);
+  var contentHeight = Math.max(1, bounds.maxY - bounds.minY);
+  var availableWidth = Math.max(1, visual.width - padding * 2);
+  var availableHeight = Math.max(1, visual.height - padding * 2);
+  var scale = Math.min(1, availableWidth / contentWidth, availableHeight / contentHeight);
+  var offsetX = 0;
+  var offsetY = 0;
+
+  if (scale < 0.999999) {
+    offsetX = (visual.width - (bounds.minX + bounds.maxX) * scale) * 0.5;
+    offsetY = (visual.height - (bounds.minY + bounds.maxY) * scale) * 0.5;
+  } else {
+    if (bounds.minX < padding) offsetX = padding - bounds.minX;
+    if (bounds.maxX + offsetX > visual.width - padding) {
+      offsetX = visual.width - padding - bounds.maxX;
+    }
+    if (bounds.minY < padding) offsetY = padding - bounds.minY;
+    if (bounds.maxY + offsetY > visual.height - padding) {
+      offsetY = visual.height - padding - bounds.maxY;
+    }
+  }
+
+  return { scale, offsetX, offsetY, bounds };
+}
+
 function traceGlove(context, glove) {
   var points = getGloveOutline(glove.side).map((point) => toCanvasPoint(glove, point));
   var first = points[0];
@@ -530,9 +578,17 @@ export function drawGloveImpactReview(canvas, review) {
   var visual = getGloveImpactVisual(review);
   var impactContactOffset = review?.impact?.contactOffset || review?.impact?.offset || null;
   var scale = Math.min(canvas.width / visual.width, canvas.height / visual.height) || 1;
+  var renderTransform = getGloveImpactRenderTransform(visual);
   context.setTransform(1, 0, 0, 1, 0, 0);
   context.clearRect(0, 0, canvas.width, canvas.height);
-  context.setTransform(scale, 0, 0, scale, 0, 0);
+  context.setTransform(
+    scale * renderTransform.scale,
+    0,
+    0,
+    scale * renderTransform.scale,
+    scale * renderTransform.offsetX,
+    scale * renderTransform.offsetY,
+  );
 
   visual.gloves.forEach((glove) => drawGlove(context, glove));
 
@@ -591,5 +647,17 @@ export function drawGloveImpactReview(canvas, review) {
   canvas.dataset.ballOffsetY = review?.impact ? String(review.impact.offset.y) : "";
   canvas.dataset.contactOffsetX = impactContactOffset ? String(impactContactOffset.x) : "";
   canvas.dataset.contactOffsetY = impactContactOffset ? String(impactContactOffset.y) : "";
+  canvas.dataset.renderScale = String(renderTransform.scale);
+  canvas.dataset.renderOffsetX = String(renderTransform.offsetX);
+  canvas.dataset.renderOffsetY = String(renderTransform.offsetY);
+  if (visual.ball) {
+    var renderedBallX = visual.ball.x * renderTransform.scale + renderTransform.offsetX;
+    var renderedBallRadius = visual.ball.radius * renderTransform.scale;
+    canvas.dataset.renderBallLeft = String(renderedBallX - renderedBallRadius);
+    canvas.dataset.renderBallRight = String(renderedBallX + renderedBallRadius);
+  } else {
+    canvas.dataset.renderBallLeft = "";
+    canvas.dataset.renderBallRight = "";
+  }
   return visual;
 }
