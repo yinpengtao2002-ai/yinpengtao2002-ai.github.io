@@ -443,6 +443,38 @@ describe("Rapier goalkeeper world", () => {
     world.dispose();
   });
 
+  it("preserves a fast lateral follow-through when the edge contact lands one substep later", async () => {
+    for (const direction of [-1, 1]) {
+      const world = await createRapierGoalkeeperWorld();
+
+      world.setSaveAssist({ enabled: false, margin: 0 });
+      world.setGloveTarget({ x: -0.8 * direction, y: 1.25, z: 3.15 });
+      world.step(1 / 30);
+      world.launchShot({
+        origin: { x: 0.2 * direction, y: 1.25, z: 2.72 },
+        target: { x: 0.2 * direction, y: 1.25, z: 4.65 },
+        velocity: { x: 0, y: 0, z: 24 },
+        angularVelocity: { x: 0, y: 10, z: 0 },
+        curveForce: { x: 0, y: 0, z: 0 },
+        radius: 0.11,
+      });
+      world.setGloveTarget({ x: 0.65 * direction, y: 1.25, z: 3.15 });
+
+      world.step(1 / 120);
+      expect(world.getBallState().lastContact).toBeNull();
+
+      world.step(1 / 120);
+      const ball = world.getBallState();
+
+      expect(ball.lastContact?.type).toBe("glove");
+      expect(ball.lastContact?.part).toBe("little");
+      expect(ball.lastContact.normal.x * direction).toBeLessThan(0);
+      expect(ball.velocity.x * direction).toBeGreaterThan(3);
+
+      world.dispose();
+    }
+  });
+
   it("can palm the ball upward when the glove rises into the shot", async () => {
     const world = await createRapierGoalkeeperWorld();
 

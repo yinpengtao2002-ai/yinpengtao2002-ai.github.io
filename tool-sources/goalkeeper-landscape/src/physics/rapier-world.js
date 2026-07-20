@@ -272,6 +272,7 @@ class RapierGoalkeeperWorld {
     this.time = 0;
     this.gloveTarget = makeTarget({ x: 0, y: 1.2, z: GLOVE_3D.planeZ });
     this.gloveVelocity = { x: 0, y: 0, z: 0 };
+    this.gloveSwipeVelocity = { x: 0, y: 0, z: 0 };
     this.gloveSwipeMemory = 0;
     this.gloveRiseMemory = 0;
     this.saveAssist = { enabled: false, margin: 0 };
@@ -377,6 +378,7 @@ class RapierGoalkeeperWorld {
     this.deflectionAge = null;
     this.previousBallPosition = null;
     this.time = 0;
+    this.gloveSwipeVelocity = { x: 0, y: 0, z: 0 };
     this.gloveSwipeMemory = 0;
     this.gloveRiseMemory = 0;
   }
@@ -428,6 +430,13 @@ class RapierGoalkeeperWorld {
       z: (this.gloveTarget.center.z - previousCenter.z) / safeDt,
     };
     var planarSpeed = Math.hypot(this.gloveVelocity.x, this.gloveVelocity.y);
+    this.gloveSwipeVelocity = planarSpeed > 0.5
+      ? vector(this.gloveVelocity)
+      : {
+          x: this.gloveSwipeVelocity.x * 0.88,
+          y: this.gloveSwipeVelocity.y * 0.88,
+          z: this.gloveSwipeVelocity.z * 0.88,
+        };
     this.gloveSwipeMemory = Math.max(planarSpeed, this.gloveSwipeMemory * 0.88);
     this.gloveRiseMemory = Math.max(Math.max(0, this.gloveVelocity.y), this.gloveRiseMemory * 0.86);
     this.gloveBodies.left.setNextKinematicTranslation(this.gloveTarget.left);
@@ -583,7 +592,8 @@ class RapierGoalkeeperWorld {
     }
 
     var rawGloveSpeed = Math.hypot(this.gloveVelocity.x, this.gloveVelocity.y);
-    var gloveSwipeSpeed = Math.min(34, Math.max(rawGloveSpeed, this.gloveSwipeMemory));
+    var rememberedGloveSpeed = Math.hypot(this.gloveSwipeVelocity.x, this.gloveSwipeVelocity.y);
+    var gloveSwipeSpeed = Math.min(34, Math.max(rawGloveSpeed, rememberedGloveSpeed, this.gloveSwipeMemory));
     var incomingSpeed = Math.max(0, ballVelocity.z - Math.min(0, this.gloveVelocity.z));
     var pocketClosest = closestPointOnSegment(this.gloveTarget.center, previousPosition, ballPosition);
     var pocketDelta = subtract3(pocketClosest.point, this.gloveTarget.center);
@@ -622,11 +632,16 @@ class RapierGoalkeeperWorld {
       return;
     }
 
-    var gloveVelocityScale = rawGloveSpeed > gloveSwipeSpeed && rawGloveSpeed > 0 ? gloveSwipeSpeed / rawGloveSpeed : 1;
+    var useCurrentGloveVelocity = rawGloveSpeed > 1;
+    var sourceGloveVelocity = useCurrentGloveVelocity ? this.gloveVelocity : this.gloveSwipeVelocity;
+    var sourceGloveSpeed = Math.hypot(sourceGloveVelocity.x, sourceGloveVelocity.y);
+    var gloveVelocityScale = sourceGloveSpeed > gloveSwipeSpeed && sourceGloveSpeed > 0
+      ? gloveSwipeSpeed / sourceGloveSpeed
+      : 1;
     var effectiveGloveVelocity = {
-      x: this.gloveVelocity.x * gloveVelocityScale,
-      y: this.gloveVelocity.y * gloveVelocityScale,
-      z: this.gloveVelocity.z,
+      x: sourceGloveVelocity.x * gloveVelocityScale,
+      y: sourceGloveVelocity.y * gloveVelocityScale,
+      z: sourceGloveVelocity.z,
     };
     var swipeFactor = clamp((gloveSwipeSpeed - 6) / 18, 0, 1);
     var softBlockSpeed = clamp(incomingSpeed * 0.25 + 0.9, 5.6, 9.8);
@@ -729,6 +744,8 @@ class RapierGoalkeeperWorld {
       normal: normal,
       strength: contactStrength,
       gloveSpeed: gloveSwipeSpeed,
+      gloveMotion: vector(effectiveGloveVelocity),
+      gloveMotionSource: useCurrentGloveVelocity ? "current" : rememberedGloveSpeed > 1 ? "follow-through" : "stationary",
       softBlockSpeed: softBlockSpeed,
       slapSpeed: slapSpeed,
       assisted: Boolean(best.assisted),
