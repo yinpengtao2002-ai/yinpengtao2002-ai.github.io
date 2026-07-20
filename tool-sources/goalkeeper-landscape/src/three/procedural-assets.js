@@ -2,6 +2,12 @@ import * as THREE from "three";
 import { DecalGeometry } from "three/addons/geometries/DecalGeometry.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { MAX_CONCEDED, ROUND_SECONDS } from "../config/game-config.js";
+import {
+  GLOVE_ANATOMY,
+  GLOVE_REST_POSE,
+  getGloveFingerLayout,
+  getGloveThumbLayout,
+} from "../config/glove-anatomy.js";
 import { LAUNCHER_GEOMETRY } from "../game/launcher-geometry.js";
 import {
   GOAL_CAGE_POINTS,
@@ -3957,22 +3963,22 @@ const DEFAULT_GLOVE_VISUAL_PROFILE = {
   seamColor: "#817a70",
   cuffColor: "#d64c38",
   strapColor: "#252a2d",
-  palmWidth: 0.39,
-  palmHeight: 0.35,
-  palmTopWidth: 0.41,
-  fingerWidths: [0.075, 0.082, 0.08, 0.071],
-  fingerLengths: [0.21, 0.263, 0.244, 0.19],
-  fingerGap: 0.011,
+  palmWidth: GLOVE_ANATOMY.palmWidth,
+  palmHeight: GLOVE_ANATOMY.palmHeight,
+  palmTopWidth: GLOVE_ANATOMY.palmTopWidth,
+  fingerWidths: GLOVE_ANATOMY.fingers.map((finger) => finger.width),
+  fingerLengths: GLOVE_ANATOMY.fingers.map((finger) => finger.length),
+  fingerGap: GLOVE_ANATOMY.fingerGap,
   fingerTaper: 0.86,
-  latexWrap: 0.014,
-  thumbWidth: 0.088,
-  thumbLength: 0.165,
-  thumbRotation: 0.72,
-  thumbCurl: 0.14,
-  cuffWidth: 0.35,
-  cuffLength: 0.19,
+  latexWrap: GLOVE_ANATOMY.latexWrap,
+  thumbWidth: GLOVE_ANATOMY.thumb.width,
+  thumbLength: GLOVE_ANATOMY.thumb.proximalLength + GLOVE_ANATOMY.thumb.distalLength,
+  thumbRotation: GLOVE_ANATOMY.thumb.proximalAngle,
+  thumbCurl: GLOVE_ANATOMY.thumb.proximalAngle - GLOVE_ANATOMY.thumb.distalAngle,
+  cuffWidth: GLOVE_ANATOMY.cuffWidth,
+  cuffLength: GLOVE_ANATOMY.cuffLength,
   preCurve: 0.12,
-  pose: { pitch: -0.055, yaw: 0.035, roll: 0.055 },
+  pose: GLOVE_REST_POSE,
 };
 
 function createTaperedGlovePlateGeometry(bottomWidth, topWidth, height, depth, cornerRadius = 0.025) {
@@ -4149,14 +4155,12 @@ function createAuthenticGloveMesh(side, profile) {
   backhand.position.set(0, 0.008, 0.035);
   group.add(backhand);
 
-  var totalFingerWidth = profile.fingerWidths.reduce((sum, width) => sum + width, 0)
-    + profile.fingerGap * (profile.fingerWidths.length - 1);
-  var fingerCursor = -totalFingerWidth * 0.5;
+  var fingerLayout = getGloveFingerLayout(side);
   var fingerCenters = [];
-  profile.fingerWidths.forEach(function addAuthenticFinger(width, index) {
-    var length = profile.fingerLengths[index];
-    var centerX = fingerCursor + width * 0.5;
-    fingerCursor += width + profile.fingerGap;
+  fingerLayout.forEach(function addAuthenticFinger(finger, index) {
+    var width = finger.width;
+    var length = finger.length;
+    var centerX = finger.center.x;
     fingerCenters.push(centerX);
 
     var wrap = new THREE.Mesh(
@@ -4168,25 +4172,25 @@ function createAuthenticGloveMesh(side, profile) {
       ),
       latexMaterial,
     );
-    wrap.name = "glove-latex-finger-wrap-" + index;
+    wrap.name = "glove-latex-finger-wrap-" + finger.name;
     wrap.position.set(centerX, profile.palmHeight * 0.5 + length * 0.5 - 0.024, -0.018);
     wrap.rotation.x = -profile.preCurve * (0.72 + index * 0.05);
-    wrap.rotation.z = (index - 1.5) * 0.018;
+    wrap.rotation.z = finger.rotation;
     group.add(wrap);
 
     var shell = new THREE.Mesh(
       createRoundedFingerPlateGeometry(width, width * profile.fingerTaper, length, 0.052),
-      index === 0 || index === 3 ? secondaryMaterial : backhandMaterial,
+      finger.name === "index" || finger.name === "little" ? secondaryMaterial : backhandMaterial,
     );
-    shell.name = "glove-finger-backhand-shell-" + index;
+    shell.name = "glove-finger-backhand-shell-" + finger.name;
     shell.position.set(centerX, profile.palmHeight * 0.5 + length * 0.5 - 0.021, 0.042);
     shell.rotation.x = -profile.preCurve * (0.72 + index * 0.05);
-    shell.rotation.z = (index - 1.5) * 0.018;
+    shell.rotation.z = finger.rotation;
     shell.userData.cutSystem = profile.cutSystem;
     group.add(shell);
 
     var strikeZone = makeRoundedPart(
-      "glove-silicone-strike-zone-finger-" + index,
+      "glove-silicone-strike-zone-finger-" + finger.name,
       width * 0.54,
       Math.max(0.075, length * 0.46),
       0.009,
@@ -4196,7 +4200,7 @@ function createAuthenticGloveMesh(side, profile) {
       profile.palmHeight * 0.5 + length * 0.48,
       0.087,
     );
-    strikeZone.rotation.z = (index - 1.5) * 0.024;
+    strikeZone.rotation.z = finger.rotation * 1.3;
     group.add(strikeZone);
   });
 
@@ -4217,45 +4221,25 @@ function createAuthenticGloveMesh(side, profile) {
     group.add(gusset);
   }
 
-  var thumbAngle = profile.thumbRotation;
-  var thumbTipAngle = thumbAngle - profile.thumbCurl;
-  var proximalLength = profile.thumbLength * 0.72;
-  var distalLength = profile.thumbLength * 0.52;
-  var proximalDirection = {
-    x: thumbSide * Math.sin(thumbAngle),
-    y: Math.cos(thumbAngle),
-  };
-  var distalDirection = {
-    x: thumbSide * Math.sin(thumbTipAngle),
-    y: Math.cos(thumbTipAngle),
-  };
-  var thumbRoot = {
-    x: thumbSide * profile.palmWidth * 0.39,
-    y: -profile.palmHeight * 0.12,
-  };
-  var thumbBaseCenter = {
-    x: thumbRoot.x + proximalDirection.x * proximalLength * 0.4,
-    y: thumbRoot.y + proximalDirection.y * proximalLength * 0.4,
-  };
-  var thumbJoint = {
-    x: thumbRoot.x + proximalDirection.x * proximalLength * 0.76,
-    y: thumbRoot.y + proximalDirection.y * proximalLength * 0.76,
-  };
-  var thumbTipCenter = {
-    x: thumbJoint.x + distalDirection.x * distalLength * 0.46,
-    y: thumbJoint.y + distalDirection.y * distalLength * 0.46,
-  };
+  var thumbLayout = getGloveThumbLayout(side);
+  var thumbAngle = thumbLayout.proximalAngle;
+  var thumbTipAngle = thumbLayout.distalAngle;
+  var proximalLength = thumbLayout.proximalLength;
+  var distalLength = thumbLayout.distalLength;
+  var thumbRoot = thumbLayout.root;
+  var thumbBaseCenter = thumbLayout.proximalCenter;
+  var thumbTipCenter = thumbLayout.distalCenter;
 
-  var thumbWebGeometry = createThumbWebBridgeGeometry(0.088, 0.13, 0.064);
+  var thumbWebGeometry = createThumbWebBridgeGeometry(profile.thumbWidth, 0.13, 0.064);
   var thumbWeb = new THREE.Mesh(thumbWebGeometry, secondaryMaterial);
   thumbWeb.name = "glove-thumb-web-bridge";
-  thumbWeb.position.set(thumbSide * profile.palmWidth * 0.37, -profile.palmHeight * 0.1, 0.026);
+  thumbWeb.position.set(thumbSide * profile.palmWidth * 0.39, thumbRoot.y + 0.01, 0.026);
   thumbWeb.scale.x = thumbSide;
   group.add(thumbWeb);
 
   var thumbWebPalm = new THREE.Mesh(thumbWebGeometry.clone(), latexMaterial);
   thumbWebPalm.name = "glove-thumb-web-latex";
-  thumbWebPalm.position.set(thumbSide * profile.palmWidth * 0.37, -profile.palmHeight * 0.1, -0.035);
+  thumbWebPalm.position.set(thumbSide * profile.palmWidth * 0.39, thumbRoot.y + 0.01, -0.035);
   thumbWebPalm.scale.x = thumbSide;
   group.add(thumbWebPalm);
 

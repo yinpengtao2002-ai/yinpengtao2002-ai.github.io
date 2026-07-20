@@ -360,6 +360,30 @@ describe("procedural 3D assets", () => {
     expect(rightWeb.scale.x).toBeLessThan(0);
   });
 
+  it("keeps the resting glove mesh aligned with the unrotated collision anatomy", () => {
+    const left = createGloveMesh("left");
+    const right = createGloveMesh("right");
+
+    expect(left.userData.restPose).toEqual({ pitch: 0, yaw: 0, roll: 0 });
+    expect(right.userData.restPose).toEqual({ pitch: 0, yaw: 0, roll: 0 });
+  });
+
+  it("mirrors the named finger order so each index finger stays beside its thumb", () => {
+    const left = createGloveMesh("left");
+    const right = createGloveMesh("right");
+    const leftIndex = left.getObjectByName("glove-finger-backhand-shell-index");
+    const leftLittle = left.getObjectByName("glove-finger-backhand-shell-little");
+    const rightIndex = right.getObjectByName("glove-finger-backhand-shell-index");
+    const rightLittle = right.getObjectByName("glove-finger-backhand-shell-little");
+
+    expect(leftIndex.position.x).toBeGreaterThan(0);
+    expect(leftLittle.position.x).toBeLessThan(0);
+    expect(rightIndex.position.x).toBeLessThan(0);
+    expect(rightLittle.position.x).toBeGreaterThan(0);
+    expect(leftIndex.position.x).toBeCloseTo(-rightIndex.position.x);
+    expect(leftLittle.position.x).toBeCloseTo(-rightLittle.position.x);
+  });
+
   it("uses reusable PBR latex and textile material detail on gloves instead of flat prototype color", () => {
     const glove = createGloveMesh("right");
     const palm = collectByName(glove, /^glove-latex-palm-continuous$/)[0];

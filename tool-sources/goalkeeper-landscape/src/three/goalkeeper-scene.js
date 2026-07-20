@@ -21,6 +21,7 @@ import {
   updateShooterModel,
 } from "./procedural-assets.js";
 import { MAX_CONCEDED } from "../config/game-config.js";
+import { GLOVE_MODEL_SCALE } from "../config/glove-anatomy.js";
 import { getContactEventSignature } from "../game/contact-event.js";
 import { SHOT_3D } from "../game/shot-3d-director.js";
 import {
@@ -167,7 +168,7 @@ export const SCENE_TUNING = {
     retiredReplayAirHideHeight: 0.24,
   },
   gloves: {
-    scale: 0.68,
+    scale: GLOVE_MODEL_SCALE,
     impactSystem: "glove-impact-compression-rebound",
     contactDeformationSystem: "localized-glove-palm-deformation",
     impactDecay: 0.055,
@@ -435,6 +436,14 @@ export function getGloveVisualTransform(side, baseScale, impact, tuning = SCENE_
       y: 0,
       z: tuning.impactKickback * amount,
     },
+  };
+}
+
+export function getGloveSceneRotation(visualTransform) {
+  return {
+    x: Number.isFinite(visualTransform?.rotation?.x) ? visualTransform.rotation.x : 0,
+    y: Number.isFinite(visualTransform?.rotation?.y) ? visualTransform.rotation.y : 0,
+    z: Number.isFinite(visualTransform?.rotation?.z) ? visualTransform.rotation.z : 0,
   };
 }
 
@@ -3007,24 +3016,16 @@ export function createGoalkeeperScene(canvas) {
     var right = gloves?.right || { x: 0.34, y: 1.2, z: 3.15 };
     var leftTransform = getGloveVisualTransform("left", tuning.gloves.scale, gloveImpactState.left, tuning.gloves);
     var rightTransform = getGloveVisualTransform("right", tuning.gloves.scale, gloveImpactState.right, tuning.gloves);
-    var leftModelPose = leftGlove.userData.restPose || { pitch: 0, yaw: 0, roll: 0 };
-    var rightModelPose = rightGlove.userData.restPose || { pitch: 0, yaw: 0, roll: 0 };
+    var leftRotation = getGloveSceneRotation(leftTransform);
+    var rightRotation = getGloveSceneRotation(rightTransform);
     leftGlove.position.set(left.x + leftTransform.offset.x, left.y + leftTransform.offset.y, left.z + leftTransform.offset.z);
     rightGlove.position.set(
       right.x + rightTransform.offset.x,
       right.y + rightTransform.offset.y,
       right.z + rightTransform.offset.z,
     );
-    leftGlove.rotation.set(
-      -0.12 + leftModelPose.pitch + leftTransform.rotation.x,
-      0.08 + leftModelPose.yaw + leftTransform.rotation.y,
-      -0.1 - leftModelPose.roll + leftTransform.rotation.z,
-    );
-    rightGlove.rotation.set(
-      -0.12 + rightModelPose.pitch + rightTransform.rotation.x,
-      -0.08 - rightModelPose.yaw + rightTransform.rotation.y,
-      0.1 + rightModelPose.roll + rightTransform.rotation.z,
-    );
+    leftGlove.rotation.set(leftRotation.x, leftRotation.y, leftRotation.z);
+    rightGlove.rotation.set(rightRotation.x, rightRotation.y, rightRotation.z);
     leftGlove.scale.set(leftTransform.scale.x, leftTransform.scale.y, leftTransform.scale.z);
     rightGlove.scale.set(rightTransform.scale.x, rightTransform.scale.y, rightTransform.scale.z);
   }

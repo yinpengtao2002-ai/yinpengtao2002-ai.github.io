@@ -1,5 +1,6 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { SHOT_3D } from "../game/shot-3d-director.js";
+import { getGloveColliderLayout } from "../config/glove-anatomy.js";
 import { GLOVE_3D } from "../input/glove-controller.js";
 import { clamp, dot3, length3, normalize3, subtract3 } from "../math/vector.js";
 import {
@@ -82,6 +83,57 @@ function closestPointOnSegment(point, start, end) {
   };
 }
 
+function closestPointsBetweenSegments(startA, endA, startB, endB) {
+  var directionA = subtract3(endA, startA);
+  var directionB = subtract3(endB, startB);
+  var relativeStart = subtract3(startA, startB);
+  var lengthA = dot3(directionA, directionA);
+  var lengthB = dot3(directionB, directionB);
+  var epsilon = 0.0000001;
+  var positionA = 0;
+  var positionB = 0;
+
+  if (lengthA <= epsilon && lengthB <= epsilon) {
+    return { pointA: vector(startA), pointB: vector(startB) };
+  }
+  if (lengthA <= epsilon) {
+    positionB = clamp(dot3(directionB, relativeStart) / lengthB, 0, 1);
+  } else {
+    var projectionA = dot3(directionA, relativeStart);
+    if (lengthB <= epsilon) {
+      positionA = clamp(-projectionA / lengthA, 0, 1);
+    } else {
+      var projectionB = dot3(directionB, relativeStart);
+      var crossProjection = dot3(directionA, directionB);
+      var denominator = lengthA * lengthB - crossProjection * crossProjection;
+      positionA = denominator > epsilon
+        ? clamp((crossProjection * projectionB - projectionA * lengthB) / denominator, 0, 1)
+        : 0;
+      positionB = (crossProjection * positionA + projectionB) / lengthB;
+      if (positionB < 0) {
+        positionB = 0;
+        positionA = clamp(-projectionA / lengthA, 0, 1);
+      } else if (positionB > 1) {
+        positionB = 1;
+        positionA = clamp((crossProjection - projectionA) / lengthA, 0, 1);
+      }
+    }
+  }
+
+  return {
+    pointA: {
+      x: startA.x + directionA.x * positionA,
+      y: startA.y + directionA.y * positionA,
+      z: startA.z + directionA.z * positionA,
+    },
+    pointB: {
+      x: startB.x + directionB.x * positionB,
+      y: startB.y + directionB.y * positionB,
+      z: startB.z + directionB.z * positionB,
+    },
+  };
+}
+
 function isStrongVelocityChange(previousVelocity, velocity) {
   if (!previousVelocity || !velocity) return false;
   var delta = subtract3(previousVelocity, velocity);
@@ -137,7 +189,7 @@ function getSaveAssistContact(previousPosition, ballPosition, gloveTarget, ballR
   if (!previousPosition || !ballPosition || !gloveTarget?.center || margin <= 0) return null;
   var closest = closestPointOnSegment(gloveTarget.center, previousPosition, ballPosition);
   var delta = subtract3(closest.point, gloveTarget.center);
-  var horizontalReach = GLOVE_3D.spread + GLOVE_3D.colliderRadius + ballRadius * 0.82 + margin;
+  var horizontalReach = GLOVE_3D.spread + GLOVE_3D.colliderRadius + ballRadius + margin + 0.015;
   var verticalBase = delta.y < 0 ? 0.36 : 0.31;
   var verticalReach = verticalBase + margin * 0.72;
   var zReach = ballRadius + 0.1;
@@ -157,20 +209,6 @@ function getSaveAssistContact(previousPosition, ballPosition, gloveTarget, ballR
     limit: Math.max(ballRadius + 0.2, planarDistance + 0.018),
     assisted: true,
   };
-}
-
-function createPartOffsets(side) {
-  var thumbSide = side === "left" ? 1 : -1;
-  var palmRadius = GLOVE_3D.colliderRadius;
-  return [
-    { part: "palm", offset: { x: 0, y: 0, z: 0 }, radius: palmRadius },
-    { part: "wrist", offset: { x: 0, y: -0.22, z: 0.01 }, radius: 0.13 },
-    { part: "thumb", offset: { x: thumbSide * 0.145, y: 0.045, z: 0 }, radius: 0.09 },
-    { part: "finger", offset: { x: -0.115, y: 0.21, z: 0.01 }, radius: 0.105 },
-    { part: "finger", offset: { x: -0.04, y: 0.24, z: 0.01 }, radius: 0.112 },
-    { part: "finger", offset: { x: 0.04, y: 0.24, z: 0.01 }, radius: 0.112 },
-    { part: "finger", offset: { x: 0.115, y: 0.21, z: 0.01 }, radius: 0.105 },
-  ];
 }
 
 class RapierGoalkeeperWorld {
@@ -209,8 +247,12 @@ class RapierGoalkeeperWorld {
         this.R.RigidBodyDesc.kinematicPositionBased().setTranslation(position.x, position.y, position.z),
       );
       this.gloveBodies[side] = body;
-      createPartOffsets(side).forEach((part) => {
-        var desc = this.R.ColliderDesc.ball(part.radius)
+      getGloveColliderLayout(side).forEach((part) => {
+        var desc = part.shape === "capsule"
+          ? this.R.ColliderDesc.capsule(part.halfLength, part.radius)
+            .setRotation(rotationFromYAxis(part.direction))
+          : this.R.ColliderDesc.ball(part.radius);
+        desc
           .setTranslation(part.offset.x, part.offset.y, part.offset.z)
           .setRestitution(0.3)
           .setFriction(0.48);
@@ -220,6 +262,9 @@ class RapierGoalkeeperWorld {
           part: part.part,
           body: body,
           offset: part.offset,
+          direction: part.direction,
+          halfLength: part.halfLength,
+          shape: part.shape,
           radius: part.radius,
           collider: collider,
         });
@@ -435,23 +480,36 @@ class RapierGoalkeeperWorld {
     var best = null;
     this.gloveParts.forEach((part) => {
       var bodyPosition = part.body.translation();
-      var center = {
+      var partCenter = {
         x: bodyPosition.x + part.offset.x,
         y: bodyPosition.y + part.offset.y,
         z: bodyPosition.z + part.offset.z,
       };
-      var closest = closestPointOnSegment(center, previousPosition, ballPosition);
-      var delta = subtract3(closest.point, center);
+      var axisOffset = {
+        x: (part.direction?.x || 0) * (part.halfLength || 0),
+        y: (part.direction?.y || 0) * (part.halfLength || 0),
+        z: (part.direction?.z || 0) * (part.halfLength || 0),
+      };
+      var axisStart = subtract3(partCenter, axisOffset);
+      var axisEnd = {
+        x: partCenter.x + axisOffset.x,
+        y: partCenter.y + axisOffset.y,
+        z: partCenter.z + axisOffset.z,
+      };
+      var closest = closestPointsBetweenSegments(previousPosition, ballPosition, axisStart, axisEnd);
+      var delta = subtract3(closest.pointA, closest.pointB);
       var distance = length3(delta);
-      var limit = part.radius + this.ballRadius + 0.035;
+      var geometricLimit = part.radius + this.ballRadius;
+      var limit = geometricLimit + 0.018;
       if (distance <= limit && (!best || distance < best.distance)) {
         best = {
           part: part,
-          center: center,
-          point: closest.point,
+          center: closest.pointB,
+          point: closest.pointA,
           delta: delta,
           distance: distance,
           limit: limit,
+          geometricLimit: geometricLimit,
         };
       }
     });
@@ -606,8 +664,11 @@ class RapierGoalkeeperWorld {
       ballCenter: vector(best.point),
       gloveCenter: vector(impactGloveCenter),
       contactPoint: contactPoint,
+      colliderCenter: vector(contactSurfaceCenter),
+      colliderRadius: contactSurfaceRadius,
+      colliderShape: best.part.shape || "assist-region",
       ballRadius: this.ballRadius,
-      overlapDepth: Math.max(0, best.limit - best.distance),
+      overlapDepth: Math.max(0, (best.geometricLimit || best.limit) - best.distance),
       normal: normal,
       strength: contactStrength,
       gloveSpeed: gloveSwipeSpeed,

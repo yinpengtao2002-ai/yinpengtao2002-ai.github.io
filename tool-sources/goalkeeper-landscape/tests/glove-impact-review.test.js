@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  GLOVE_IMPACT_CANVAS,
   createGloveImpactCandidate,
   drawGloveImpactReview,
   finalizeGloveImpactReview,
@@ -43,7 +44,7 @@ describe("glove impact review", () => {
     expect(right.digits[0].tip.y).toBeLessThan(right.palmCenter.y);
     expect(right.digits[0].tip.y).toBeGreaterThan(right.digits[1].tip.y + 35);
     expect(left.digits.map((digit) => digit.tip.x)).toEqual(
-      right.digits.map((digit) => 180 - digit.tip.x),
+      right.digits.map((digit) => GLOVE_IMPACT_CANVAS.width - digit.tip.x),
     );
   });
   it("keeps a caught ball centered with substantial overlap", () => {
@@ -57,10 +58,27 @@ describe("glove impact review", () => {
     expect(visual.ball.y).toBeCloseTo(visual.gloveCenter.y);
     expect(visual.gloves.map((glove) => glove.side)).toEqual(["left", "right"]);
     expect(visual.gloves.filter((glove) => glove.active).map((glove) => glove.side)).toEqual(["right"]);
-    expect(visual.ball.radius).toBeGreaterThan(38);
-    expect(visual.ball.radius * 2).toBeGreaterThan(141 * visual.gloves[0].scale * 0.7);
+    expect(visual.ball.radius).toBeCloseTo(0.11 * GLOVE_IMPACT_CANVAS.pixelsPerMeter);
+    expect(visual.ball.radius * 2).toBeGreaterThan(visual.gloves[0].height * 0.5);
     expect(visual.contact.x).toBeCloseTo(visual.gloveCenter.x);
     expect(visual.contact.y).toBeCloseTo(visual.gloveCenter.y);
+  });
+
+  it("uses one physical scale for the ball center, contact point, and ball radius", () => {
+    const candidate = createGloveImpactCandidate(makeContact({
+      ballCenter: { x: 0.4, y: 1.32, z: 3.15 },
+      gloveCenter: { x: 0.3, y: 1.2, z: 3.15 },
+      contactPoint: { x: 0.35, y: 1.26, z: 3.15 },
+      overlapDepth: 0.04,
+    }));
+    const visual = getGloveImpactVisual(finalizeGloveImpactReview(candidate, "saved"));
+    const scale = GLOVE_IMPACT_CANVAS.pixelsPerMeter;
+
+    expect(visual.ball.x - visual.gloveCenter.x).toBeCloseTo(0.1 * scale);
+    expect(visual.ball.y - visual.gloveCenter.y).toBeCloseTo(-0.12 * scale);
+    expect(visual.contact.x - visual.gloveCenter.x).toBeCloseTo(0.05 * scale);
+    expect(visual.contact.y - visual.gloveCenter.y).toBeCloseTo(-0.06 * scale);
+    expect(visual.ball.radius).toBeCloseTo(0.11 * scale);
   });
 
   it("keeps a successful assisted-save contact patch on the glove surface", () => {
@@ -75,8 +93,8 @@ describe("glove impact review", () => {
 
     expect(review.impact.assisted).toBe(true);
     expect(Math.abs(visual.contact.x - visual.gloveCenter.x)).toBeLessThan(40);
-    expect(visual.ball.radius).toBeGreaterThan(38);
-    expect(visual.contact.radius).toBeLessThan(visual.ball.radius / 4);
+    expect(visual.ball.radius).toBeCloseTo(0.11 * GLOVE_IMPACT_CANVAS.pixelsPerMeter);
+    expect(visual.contact.radius).toBeLessThan(visual.ball.radius);
   });
 
   it("draws the regulation-size ball before clipping the smaller contact patch to the glove", () => {
@@ -109,6 +127,10 @@ describe("glove impact review", () => {
     expect(arcIndexes).toHaveLength(3);
     expect(arcIndexes[0]).toBeLessThan(clipIndex);
     expect(clipIndex).toBeLessThan(arcIndexes[1]);
+    expect(canvas.dataset.contactPart).toBe("palm");
+    expect(Number(canvas.dataset.pixelsPerMeter)).toBe(GLOVE_IMPACT_CANVAS.pixelsPerMeter);
+    expect(Number(canvas.dataset.ballOffsetX)).toBeCloseTo(0);
+    expect(Number(canvas.dataset.ballOffsetY)).toBeCloseTo(0);
   });
 
   it("highlights both gloves and clips the contact against both for a two-handed catch", () => {
@@ -141,7 +163,7 @@ describe("glove impact review", () => {
 
     expect(visual.gloves).toHaveLength(2);
     expect(visual.gloves.every((glove) => glove.active)).toBe(true);
-    expect(visual.gloveCenter.x).toBeCloseTo(90);
+    expect(visual.gloveCenter.x).toBeCloseTo(GLOVE_IMPACT_CANVAS.centerX);
     expect(arcCount).toBe(5);
   });
 
@@ -156,7 +178,7 @@ describe("glove impact review", () => {
 
     expect(review.result).toBe("goal");
     expect(review.impact.overlapRatio).toBeLessThan(0.12);
-    expect(visual.ball.radius).toBeGreaterThan(38);
+    expect(visual.ball.radius).toBeCloseTo(0.11 * GLOVE_IMPACT_CANVAS.pixelsPerMeter);
     expect(Math.abs(visual.contact.x - visual.gloveCenter.x)).toBeLessThan(40);
   });
 
@@ -168,7 +190,7 @@ describe("glove impact review", () => {
     expect(selectGloveImpactCandidate(centered, glancing)).toEqual(centered);
   });
 
-  it("maps world contact positions into the goalkeeper-view horizontal direction", () => {
+  it("preserves the local left-right contact position on each glove", () => {
     const left = finalizeGloveImpactReview(createGloveImpactCandidate(makeContact({
       side: "left",
       ballCenter: { x: 0.18, y: 1.28, z: 3.15 },
@@ -182,9 +204,9 @@ describe("glove impact review", () => {
 
     expect(leftVisual.gloveSide).toBe("left");
     expect(rightVisual.gloveSide).toBe("right");
-    expect(leftVisual.ball.x).toBeGreaterThan(leftVisual.gloveCenter.x);
-    expect(rightVisual.ball.x).toBeLessThan(rightVisual.gloveCenter.x);
-    expect(leftVisual.ball.x).toBeCloseTo(180 - rightVisual.ball.x);
+    expect(leftVisual.ball.x).toBeLessThan(leftVisual.gloveCenter.x);
+    expect(rightVisual.ball.x).toBeGreaterThan(rightVisual.gloveCenter.x);
+    expect(leftVisual.ball.x).toBeCloseTo(GLOVE_IMPACT_CANVAS.width - rightVisual.ball.x);
     expect(leftVisual.ball.y).toBeCloseTo(rightVisual.ball.y);
     expect(leftVisual.ball.radius).toBeCloseTo(rightVisual.ball.radius);
   });

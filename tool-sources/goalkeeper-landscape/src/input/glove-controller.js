@@ -1,4 +1,5 @@
 import { clamp } from "../math/vector.js";
+import { GLOVE_ANATOMY, GLOVE_MODEL_SCALE } from "../config/glove-anatomy.js";
 
 export const GLOVE_3D = {
   goalHalfWidth: 3.66,
@@ -9,7 +10,7 @@ export const GLOVE_3D = {
   centerLimitX: 4.28,
   pointerWorldWidth: 2.34,
   spread: 0.3,
-  colliderRadius: 0.2,
+  colliderRadius: GLOVE_ANATOMY.palmWidth * 0.48 * GLOVE_MODEL_SCALE,
   mouseFollow: 0.76,
   touchFollow: 0.48,
   maxSpeedMouse: 30,

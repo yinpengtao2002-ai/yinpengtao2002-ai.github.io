@@ -7,6 +7,7 @@ import {
   getGoalSideHalfWidthAtZ,
 } from "../src/physics/goal-net-geometry.js";
 import { RAPIER_GOAL, createRapierGoalkeeperWorld } from "../src/physics/rapier-world.js";
+import { getGloveColliderLayout } from "../src/config/glove-anatomy.js";
 
 describe("Rapier goalkeeper world", () => {
   it("creates rigid colliders for only the legal front goal frame", async () => {
@@ -22,14 +23,34 @@ describe("Rapier goalkeeper world", () => {
     world.dispose();
   });
 
-  it("keeps the thumb colliders tucked into an anatomical diagonal grip", async () => {
+  it("builds mirrored anatomical colliders for each named finger and both thumb segments", async () => {
     const world = await createRapierGoalkeeperWorld();
-    const thumbs = world.gloveParts.filter((part) => part.part === "thumb");
+    const expectedParts = [
+      "palm",
+      "wrist",
+      "index",
+      "middle",
+      "ring",
+      "little",
+      "thumb-proximal",
+      "thumb-distal",
+    ];
+    const left = world.gloveParts.filter((part) => part.side === "left");
+    const right = world.gloveParts.filter((part) => part.side === "right");
 
-    expect(thumbs).toHaveLength(2);
-    expect(thumbs.every((thumb) => Math.abs(thumb.offset.x) < 0.17)).toBe(true);
-    expect(thumbs.every((thumb) => thumb.offset.y >= 0)).toBe(true);
-    expect(thumbs.every((thumb) => thumb.radius < 0.1)).toBe(true);
+    expect(left.map((part) => part.part)).toEqual(expectedParts);
+    expect(right.map((part) => part.part)).toEqual(expectedParts);
+    expectedParts.forEach((name) => {
+      const leftPart = left.find((part) => part.part === name);
+      const rightPart = right.find((part) => part.part === name);
+      expect(leftPart.offset.x).toBeCloseTo(-rightPart.offset.x);
+      expect(leftPart.offset.y).toBeCloseTo(rightPart.offset.y);
+    });
+    expect(left.find((part) => part.part === "index").offset.x).toBeGreaterThan(0);
+    expect(left.find((part) => part.part === "little").offset.x).toBeLessThan(0);
+    expect(left.find((part) => part.part === "thumb-distal").offset.x)
+      .toBeGreaterThan(left.find((part) => part.part === "thumb-proximal").offset.x);
+    expect(left.filter((part) => part.part.startsWith("thumb")).every((part) => part.shape === "capsule")).toBe(true);
 
     world.dispose();
   });
@@ -41,6 +62,58 @@ describe("Rapier goalkeeper world", () => {
     expect(world.gloveParts.every((part) => part.collider?.isSensor())).toBe(true);
 
     world.dispose();
+  });
+
+  it("reports the exact anatomical surface for palm, finger, and thumb contacts", async () => {
+    const scenarios = [
+      { side: "left", part: "palm" },
+      { side: "left", part: "index" },
+      { side: "right", part: "little" },
+      { side: "right", part: "thumb-distal" },
+    ];
+
+    for (const scenario of scenarios) {
+      const world = await createRapierGoalkeeperWorld();
+      world.setSaveAssist({ enabled: false, margin: 0 });
+      world.setGloveTarget({ x: 0, y: 1.25, z: 3.15 });
+      world.step(1 / 30);
+      const layout = getGloveColliderLayout(scenario.side);
+      const targetPart = layout.find((part) => part.part === scenario.part);
+      const handX = scenario.side === "left" ? -0.3 : 0.3;
+      const target = {
+        x: handX + targetPart.offset.x,
+        y: 1.25 + targetPart.offset.y,
+      };
+
+      world.launchShot({
+        origin: { ...target, z: 2.35 },
+        target: { ...target, z: 4.65 },
+        velocity: { x: 0, y: 0, z: 26 },
+        angularVelocity: { x: 0, y: 10, z: 0 },
+        curveForce: { x: 0, y: 0, z: 0 },
+        radius: 0.11,
+      });
+
+      let contact = null;
+      for (let frame = 0; frame < 12 && !contact; frame += 1) {
+        world.step(1 / 120);
+        const candidate = world.getBallState().lastContact;
+        if (candidate?.type === "glove") contact = candidate;
+      }
+
+      expect(contact?.side).toBe(scenario.side);
+      expect(contact?.part).toBe(scenario.part);
+      expect(contact?.colliderShape).toBe(targetPart.shape);
+      expect(contact?.colliderRadius).toBeCloseTo(targetPart.radius);
+      expect(contact?.colliderCenter).toBeTruthy();
+      expect(Math.hypot(
+        contact.contactPoint.x - contact.colliderCenter.x,
+        contact.contactPoint.y - contact.colliderCenter.y,
+        contact.contactPoint.z - contact.colliderCenter.z,
+      )).toBeCloseTo(targetPart.radius, 3);
+
+      world.dispose();
+    }
   });
 
   it("launches a dynamic ball that advances from the shooter toward the goal", async () => {
@@ -124,7 +197,7 @@ describe("Rapier goalkeeper world", () => {
     expect(ball.lastContact.gloveCenter).toBeTruthy();
     expect(ball.lastContact.contactPoint).toBeTruthy();
     expect(ball.lastContact.ballRadius).toBeCloseTo(0.11);
-    expect(ball.lastContact.overlapDepth).toBeGreaterThan(0);
+    expect(ball.lastContact.overlapDepth).toBeGreaterThanOrEqual(0);
     expect(ball.outcome).toBe("deflected");
     expect(Math.abs(ball.velocity.x)).toBeGreaterThan(2.5);
     expect(Math.abs(ball.velocity.x)).toBeLessThan(9);

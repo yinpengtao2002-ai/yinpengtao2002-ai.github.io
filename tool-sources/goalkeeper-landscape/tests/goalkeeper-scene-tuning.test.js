@@ -125,6 +125,9 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(sceneModule.triggerGloveImpactState).toBeTypeOf("function");
     expect(sceneModule.advanceGloveImpactState).toBeTypeOf("function");
     expect(sceneModule.getGloveVisualTransform).toBeTypeOf("function");
+    expect(sceneModule.getGloveSceneRotation).toBeTypeOf("function");
+
+    expect(sceneModule.getGloveSceneRotation()).toEqual({ x: 0, y: 0, z: 0 });
 
     const state = sceneModule.createGloveImpactState();
     sceneModule.triggerGloveImpactState(
@@ -151,6 +154,7 @@ describe("goalkeeper 3D scene tuning", () => {
     expect(visual.scale.y).toBeLessThan(SCENE_TUNING.gloves.scale);
     expect(visual.scale.z).toBeGreaterThan(SCENE_TUNING.gloves.scale);
     expect(Math.abs(visual.rotation.z)).toBeGreaterThan(0.01);
+    expect(sceneModule.getGloveSceneRotation(visual)).toEqual(visual.rotation);
 
     sceneModule.advanceGloveImpactState(state);
     expect(state.left.life).toBeLessThan(1);

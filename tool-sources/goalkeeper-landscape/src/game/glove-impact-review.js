@@ -1,17 +1,28 @@
+import {
+  GLOVE_ANATOMY,
+  GLOVE_MODEL_SCALE,
+  getGloveFingerLayout,
+  getGloveThumbLayout,
+} from "../config/glove-anatomy.js";
+import { GLOVE_3D } from "../input/glove-controller.js";
+
 export const GLOVE_IMPACT_CANVAS = {
-  width: 180,
-  height: 184,
-  centerX: 90,
-  centerY: 96,
-  pixelsPerMeter: 165,
+  width: 220,
+  height: 176,
+  centerX: 110,
+  centerY: 106,
+  pixelsPerMeter: 220,
 };
 
-const GLOVE_REFERENCE_LENGTH_METERS = 0.29;
-const GLOVE_SILHOUETTE_LENGTH_PIXELS = 141;
-const GLOVE_PAIR_SCALE = 0.8;
 const GLOVE_PAIR_CENTERS = {
-  left: { x: 62, y: 107 },
-  right: { x: 118, y: 107 },
+  left: {
+    x: GLOVE_IMPACT_CANVAS.centerX - GLOVE_3D.spread * GLOVE_IMPACT_CANVAS.pixelsPerMeter,
+    y: GLOVE_IMPACT_CANVAS.centerY,
+  },
+  right: {
+    x: GLOVE_IMPACT_CANVAS.centerX + GLOVE_3D.spread * GLOVE_IMPACT_CANVAS.pixelsPerMeter,
+    y: GLOVE_IMPACT_CANVAS.centerY,
+  },
 };
 
 function clamp(value, min, max) {
@@ -43,6 +54,9 @@ export function createGloveImpactCandidate(contact) {
     part: contact.part || "palm",
     assisted: Boolean(contact.assisted),
     ballRadius,
+    ballCenter,
+    gloveCenter,
+    contactPoint,
     offset: {
       x: ballCenter.x - gloveCenter.x,
       y: ballCenter.y - gloveCenter.y,
@@ -76,31 +90,27 @@ export function finalizeGloveImpactReview(candidate, outcome) {
 
 export function getGloveImpactVisual(review) {
   var impact = review?.impact || null;
-  var scale = GLOVE_IMPACT_CANVAS.pixelsPerMeter * GLOVE_PAIR_SCALE;
+  var scale = GLOVE_IMPACT_CANVAS.pixelsPerMeter;
   var gloveSide = impact?.side || "both";
   var gloves = getGlovePair(impact?.side);
   var gloveCenter = getActiveGloveCenter(gloveSide, gloves);
   var contactOffset = impact?.contactOffset || impact?.offset || { x: 0, y: 0, z: 0 };
-  var overlapRatio = clamp(impact?.overlapRatio || 0, 0, 1);
-  var patchRatio = Math.sqrt(clamp(2 * overlapRatio - overlapRatio * overlapRatio, 0, 1));
-  var ballRadius = impact
-    ? impact.ballRadius * (GLOVE_SILHOUETTE_LENGTH_PIXELS / GLOVE_REFERENCE_LENGTH_METERS) * GLOVE_PAIR_SCALE
+  var overlapDepth = clamp(impact?.overlapDepth || 0, 0, (impact?.ballRadius || 0) * 2);
+  var ballRadius = impact ? impact.ballRadius * scale : 0;
+  var patchRadius = impact
+    ? Math.sqrt(Math.max(0, 2 * impact.ballRadius * overlapDepth - overlapDepth * overlapDepth)) * scale
     : 0;
   var contact = impact
     ? {
-        x: gloveCenter.x - contactOffset.x * scale,
+        x: gloveCenter.x + contactOffset.x * scale,
         y: gloveCenter.y - contactOffset.y * scale,
-        radius: impact.ballRadius * scale * clamp(patchRatio, 0.28, 1),
+        radius: Math.max(2.2, patchRadius),
       }
     : null;
-  var directionX = impact ? -(impact.offset.x - contactOffset.x) : 0;
-  var directionY = impact ? -(impact.offset.y - contactOffset.y) : 0;
-  var directionLength = Math.hypot(directionX, directionY);
-  var ballCenterDistance = ballRadius * (1 - overlapRatio * 0.35);
   var ball = impact
     ? {
-        x: contact.x + (directionLength > 0.01 ? directionX / directionLength * ballCenterDistance : 0),
-        y: contact.y + (directionLength > 0.01 ? directionY / directionLength * ballCenterDistance : 0),
+        x: gloveCenter.x + impact.offset.x * scale,
+        y: gloveCenter.y - impact.offset.y * scale,
         radius: ballRadius,
       }
     : null;
@@ -142,30 +152,31 @@ export function getGloveImpactReviewCopy(review) {
   return { result: "触球后偏出", detail: "手套改变了球路" };
 }
 
-const GLOVE_SILHOUETTE = {
-  palmCenter: { x: 91, y: 107 },
-  digits: [
-    { name: "thumb", tip: { x: 39, y: 91 } },
-    { name: "index", tip: { x: 59, y: 39 } },
-    { name: "middle", tip: { x: 87, y: 22 } },
-    { name: "ring", tip: { x: 116, y: 31 } },
-    { name: "little", tip: { x: 145, y: 49 } },
-  ],
-};
-
-function mirrorPoint(point) {
-  return { x: GLOVE_IMPACT_CANVAS.width - point.x, y: point.y };
-}
-
 export function getGloveSilhouette(side = "right") {
-  var mirror = side === "left";
+  var center = { x: GLOVE_IMPACT_CANVAS.centerX, y: GLOVE_IMPACT_CANVAS.centerY };
+  var thumb = getGloveThumbLayout(side, GLOVE_MODEL_SCALE);
+  var fingers = getGloveFingerLayout(side, GLOVE_MODEL_SCALE);
   return {
-    side: mirror ? "left" : "right",
-    palmCenter: mirror ? mirrorPoint(GLOVE_SILHOUETTE.palmCenter) : { ...GLOVE_SILHOUETTE.palmCenter },
-    digits: GLOVE_SILHOUETTE.digits.map((digit) => ({
-      name: digit.name,
-      tip: mirror ? mirrorPoint(digit.tip) : { ...digit.tip },
-    })),
+    side: side === "left" ? "left" : "right",
+    palmCenter: { ...center },
+    thumb: {
+      root: toCanvasPoint({ center }, thumb.root),
+      joint: toCanvasPoint({ center }, thumb.joint),
+      tip: toCanvasPoint({ center }, thumb.tip),
+    },
+    digits: [
+      { name: "thumb", tip: toCanvasPoint({ center }, thumb.tip) },
+      ...fingers.map((finger) => ({
+        name: finger.name,
+        tip: toCanvasPoint(
+          { center },
+          {
+            x: finger.center.x + finger.direction.x * (finger.length * 0.5),
+            y: finger.center.y + finger.direction.y * (finger.length * 0.5),
+          },
+        ),
+      })),
+    ],
   };
 }
 
@@ -173,7 +184,9 @@ function getGlovePair(activeSide) {
   return ["left", "right"].map((side) => ({
     side,
     center: { ...GLOVE_PAIR_CENTERS[side] },
-    scale: GLOVE_PAIR_SCALE,
+    scale: GLOVE_MODEL_SCALE,
+    height: (GLOVE_ANATOMY.palmHeight + Math.max(...GLOVE_ANATOMY.fingers.map((finger) => finger.length)))
+      * GLOVE_MODEL_SCALE * GLOVE_IMPACT_CANVAS.pixelsPerMeter,
     active: activeSide === side || activeSide === "both",
   }));
 }
@@ -188,92 +201,174 @@ function getActiveGloveCenter(side, gloves) {
   };
 }
 
-function applyGloveTransform(context, glove) {
-  context.translate(glove.center.x, glove.center.y);
-  context.scale(glove.side === "left" ? -glove.scale : glove.scale, glove.scale);
-  context.translate(-GLOVE_SILHOUETTE.palmCenter.x, -GLOVE_SILHOUETTE.palmCenter.y);
+function toCanvasPoint(glove, point) {
+  return {
+    x: glove.center.x + (point?.x || 0) * GLOVE_IMPACT_CANVAS.pixelsPerMeter,
+    y: glove.center.y - (point?.y || 0) * GLOVE_IMPACT_CANVAS.pixelsPerMeter,
+  };
 }
 
-function traceGlove(context) {
-  var x = (value) => value;
-  var [thumb, index, middle, ring, little] = GLOVE_SILHOUETTE.digits.map((digit) => digit.tip);
+function getGloveOutline(side) {
+  var scale = GLOVE_MODEL_SCALE;
+  var thumb = getGloveThumbLayout(side, scale);
+  var fingers = getGloveFingerLayout(side, scale);
+  var thumbSide = thumb.thumbSide;
+  var palmHalfWidth = GLOVE_ANATOMY.palmWidth * 0.5 * scale;
+  var palmHalfHeight = GLOVE_ANATOMY.palmHeight * 0.5 * scale;
+  var cuffHalfWidth = GLOVE_ANATOMY.cuffWidth * 0.5 * scale;
+  var cuffBottom = -palmHalfHeight - GLOVE_ANATOMY.cuffLength * scale + 0.018 * scale;
+  var outline = [
+    { x: thumbSide * cuffHalfWidth * 0.86, y: cuffBottom },
+    { x: thumbSide * cuffHalfWidth, y: -palmHalfHeight - 0.02 * scale },
+    { x: thumbSide * palmHalfWidth, y: -palmHalfHeight * 0.5 },
+    { x: thumbSide * palmHalfWidth * 1.02, y: thumb.root.y - 0.025 * scale },
+    { x: thumb.root.x + thumbSide * thumb.width * 0.44, y: thumb.root.y - thumb.width * 0.18 },
+    { x: thumb.tip.x + thumbSide * thumb.width * 0.42, y: thumb.tip.y - thumb.width * 0.08 },
+    { x: thumb.tip.x + thumbSide * thumb.width * 0.14, y: thumb.tip.y + thumb.width * 0.48 },
+    { x: thumb.joint.x - thumbSide * thumb.width * 0.42, y: thumb.joint.y + thumb.width * 0.4 },
+    { x: thumbSide * palmHalfWidth * 0.96, y: palmHalfHeight * 0.72 },
+  ];
+
+  fingers.forEach((finger, index) => {
+    var halfWidth = finger.radius;
+    var tipCenter = {
+      x: finger.center.x + finger.direction.x * (finger.length * 0.5 - halfWidth * 0.55),
+      y: finger.center.y + finger.direction.y * (finger.length * 0.5 - halfWidth * 0.55),
+    };
+    var sideEdgeX = finger.center.x + thumbSide * halfWidth;
+    var outerEdgeX = finger.center.x - thumbSide * halfWidth;
+    outline.push(
+      { x: sideEdgeX, y: palmHalfHeight * 0.92 },
+      { x: tipCenter.x + thumbSide * halfWidth, y: tipCenter.y },
+      { x: tipCenter.x, y: tipCenter.y + halfWidth * 0.64 },
+      { x: tipCenter.x - thumbSide * halfWidth, y: tipCenter.y },
+    );
+    if (index < fingers.length - 1) {
+      var next = fingers[index + 1];
+      outline.push({
+        x: (outerEdgeX + next.center.x + thumbSide * next.radius) * 0.5,
+        y: palmHalfHeight + 0.02 * scale,
+      });
+    }
+  });
+
+  outline.push(
+    { x: -thumbSide * palmHalfWidth, y: palmHalfHeight * 0.74 },
+    { x: -thumbSide * palmHalfWidth * 1.02, y: -palmHalfHeight * 0.56 },
+    { x: -thumbSide * cuffHalfWidth, y: -palmHalfHeight - 0.02 * scale },
+    { x: -thumbSide * cuffHalfWidth * 0.86, y: cuffBottom },
+  );
+  return outline;
+}
+
+function traceGlove(context, glove) {
+  var points = getGloveOutline(glove.side).map((point) => toCanvasPoint(glove, point));
+  var first = points[0];
+  var last = points[points.length - 1];
   context.beginPath();
-  context.moveTo(x(66), 163);
-  context.lineTo(x(56), 143);
-  context.bezierCurveTo(x(51), 133, x(49), 120, x(49), 108);
-  context.lineTo(x(52), 112);
-  context.bezierCurveTo(x(50), 106, x(50), 101, x(50), 97);
-  context.lineTo(x(45), 101);
-  context.bezierCurveTo(x(40), 106, x(33), 106, x(29), 101);
-  context.bezierCurveTo(x(26), 96, x(30), 91, thumb.x, thumb.y);
-  context.bezierCurveTo(x(45), 89, x(50), 93, x(54), 99);
-  context.lineTo(x(48), 60);
-  context.bezierCurveTo(x(47), 49, x(51), 40, index.x, index.y);
-  context.bezierCurveTo(x(67), 38, x(70), 48, x(70), 59);
-  context.lineTo(x(70), 72);
-  context.bezierCurveTo(x(70), 77, x(73), 80, x(76), 77);
-  context.lineTo(x(76), 43);
-  context.bezierCurveTo(x(76), 31, x(80), 23, middle.x, middle.y);
-  context.bezierCurveTo(x(95), 22, x(99), 31, x(98), 43);
-  context.lineTo(x(97), 72);
-  context.bezierCurveTo(x(97), 77, x(100), 80, x(103), 76);
-  context.lineTo(x(104), 50);
-  context.bezierCurveTo(x(105), 39, x(109), 31, ring.x, ring.y);
-  context.bezierCurveTo(x(124), 32, x(128), 41, x(126), 53);
-  context.lineTo(x(123), 78);
-  context.bezierCurveTo(x(122), 83, x(125), 86, x(129), 82);
-  context.lineTo(x(132), 64);
-  context.bezierCurveTo(x(133), 55, x(138), 49, little.x, little.y);
-  context.bezierCurveTo(x(152), 50, x(155), 59, x(153), 69);
-  context.lineTo(x(146), 106);
-  context.bezierCurveTo(x(143), 124, x(135), 141, x(124), 151);
-  context.lineTo(x(120), 163);
+  context.moveTo((last.x + first.x) * 0.5, (last.y + first.y) * 0.5);
+  points.forEach((point, index) => {
+    var next = points[(index + 1) % points.length];
+    context.quadraticCurveTo(point.x, point.y, (point.x + next.x) * 0.5, (point.y + next.y) * 0.5);
+  });
   context.closePath();
 }
 
-function drawGloveDetails(context) {
-  var x = (value) => value;
+function traceEllipse(context, centerX, centerY, radiusX, radiusY) {
+  var kappa = 0.5522847498;
+  context.moveTo(centerX + radiusX, centerY);
+  context.bezierCurveTo(
+    centerX + radiusX,
+    centerY + radiusY * kappa,
+    centerX + radiusX * kappa,
+    centerY + radiusY,
+    centerX,
+    centerY + radiusY,
+  );
+  context.bezierCurveTo(
+    centerX - radiusX * kappa,
+    centerY + radiusY,
+    centerX - radiusX,
+    centerY + radiusY * kappa,
+    centerX - radiusX,
+    centerY,
+  );
+  context.bezierCurveTo(
+    centerX - radiusX,
+    centerY - radiusY * kappa,
+    centerX - radiusX * kappa,
+    centerY - radiusY,
+    centerX,
+    centerY - radiusY,
+  );
+  context.bezierCurveTo(
+    centerX + radiusX * kappa,
+    centerY - radiusY,
+    centerX + radiusX,
+    centerY - radiusY * kappa,
+    centerX + radiusX,
+    centerY,
+  );
+  context.closePath();
+}
+
+function drawGloveDetails(context, glove) {
+  var fingers = getGloveFingerLayout(glove.side, GLOVE_MODEL_SCALE);
+  var thumb = getGloveThumbLayout(glove.side, GLOVE_MODEL_SCALE);
   context.save();
   context.strokeStyle = "rgba(247, 250, 253, 0.5)";
   context.lineWidth = 1.4;
   context.lineCap = "round";
 
-  [
-    [70, 70, 70, 102],
-    [97, 69, 96, 101],
-    [123, 76, 119, 103],
-  ].forEach(([startX, startY, endX, endY]) => {
+  fingers.forEach((finger) => {
+    var start = toCanvasPoint(glove, {
+      x: finger.center.x,
+      y: GLOVE_ANATOMY.palmHeight * 0.5 * GLOVE_MODEL_SCALE,
+    });
+    var end = toCanvasPoint(glove, {
+      x: finger.center.x,
+      y: finger.center.y + finger.length * 0.18,
+    });
     context.beginPath();
-    context.moveTo(x(startX), startY);
-    context.quadraticCurveTo(x((startX + endX) / 2), 87, x(endX), endY);
+    context.moveTo(start.x, start.y);
+    context.lineTo(end.x, end.y);
     context.stroke();
   });
 
+  var thumbJoint = toCanvasPoint(glove, thumb.joint);
+  var thumbWidth = thumb.width * GLOVE_IMPACT_CANVAS.pixelsPerMeter;
   context.beginPath();
-  context.moveTo(x(52), 109);
-  context.bezierCurveTo(x(66), 95, x(86), 92, x(105), 99);
-  context.bezierCurveTo(x(120), 104, x(128), 116, x(124), 133);
-  context.bezierCurveTo(x(107), 143, x(81), 143, x(62), 133);
-  context.bezierCurveTo(x(56), 125, x(53), 117, x(52), 109);
+  traceEllipse(
+    context,
+    thumbJoint.x,
+    thumbJoint.y,
+    Math.max(2, thumbWidth * 0.42),
+    Math.max(1.6, thumbWidth * 0.34),
+  );
   context.stroke();
 
+  var palmCenter = toCanvasPoint(glove, { x: 0, y: -0.01 * GLOVE_MODEL_SCALE });
   context.beginPath();
-  context.moveTo(x(57), 144);
-  context.lineTo(x(123), 151);
+  traceEllipse(
+    context,
+    palmCenter.x,
+    palmCenter.y,
+    GLOVE_ANATOMY.palmWidth * GLOVE_MODEL_SCALE * GLOVE_IMPACT_CANVAS.pixelsPerMeter * 0.38,
+    GLOVE_ANATOMY.palmHeight * GLOVE_MODEL_SCALE * GLOVE_IMPACT_CANVAS.pixelsPerMeter * 0.32,
+  );
   context.stroke();
   context.restore();
 }
 
 function drawGlove(context, glove) {
   context.save();
-  applyGloveTransform(context, glove);
-  traceGlove(context);
+  traceGlove(context, glove);
   context.fillStyle = glove.active ? "rgba(184, 193, 205, 0.76)" : "rgba(161, 171, 184, 0.46)";
   context.strokeStyle = glove.active ? "rgba(236, 241, 247, 0.92)" : "rgba(218, 225, 234, 0.62)";
   context.lineWidth = 2;
   context.fill();
   context.stroke();
-  drawGloveDetails(context);
+  drawGloveDetails(context, glove);
   context.restore();
 }
 
@@ -324,6 +419,7 @@ export function drawGloveImpactReview(canvas, review) {
   var context = canvas?.getContext?.("2d");
   if (!context) return null;
   var visual = getGloveImpactVisual(review);
+  var impactContactOffset = review?.impact?.contactOffset || review?.impact?.offset || null;
   var scale = Math.min(canvas.width / visual.width, canvas.height / visual.height) || 1;
   context.setTransform(1, 0, 0, 1, 0, 0);
   context.clearRect(0, 0, canvas.width, canvas.height);
@@ -337,10 +433,8 @@ export function drawGloveImpactReview(canvas, review) {
 
     visual.gloves.filter((glove) => glove.active).forEach((glove) => {
       context.save();
-      applyGloveTransform(context, glove);
-      traceGlove(context);
+      traceGlove(context, glove);
       context.clip();
-      context.setTransform(scale, 0, 0, scale, 0, 0);
       context.beginPath();
       context.arc(visual.ball.x, visual.ball.y, visual.ball.radius, 0, Math.PI * 2);
       context.fillStyle = "rgba(" + color + ", 0.3)";
@@ -365,5 +459,13 @@ export function drawGloveImpactReview(canvas, review) {
   canvas.dataset.contactY = visual.contact ? String(Math.round(visual.contact.y * 100) / 100) : "";
   canvas.dataset.contactRadius = visual.contact ? String(Math.round(visual.contact.radius * 100) / 100) : "";
   canvas.dataset.activeGloves = visual.gloves.filter((glove) => glove.active).map((glove) => glove.side).join(",");
+  canvas.dataset.contactPart = review?.impact?.part || "";
+  canvas.dataset.pixelsPerMeter = String(GLOVE_IMPACT_CANVAS.pixelsPerMeter);
+  canvas.dataset.gloveCenterX = String(Math.round(visual.gloveCenter.x * 100) / 100);
+  canvas.dataset.gloveCenterY = String(Math.round(visual.gloveCenter.y * 100) / 100);
+  canvas.dataset.ballOffsetX = review?.impact ? String(review.impact.offset.x) : "";
+  canvas.dataset.ballOffsetY = review?.impact ? String(review.impact.offset.y) : "";
+  canvas.dataset.contactOffsetX = impactContactOffset ? String(impactContactOffset.x) : "";
+  canvas.dataset.contactOffsetY = impactContactOffset ? String(impactContactOffset.y) : "";
   return visual;
 }
