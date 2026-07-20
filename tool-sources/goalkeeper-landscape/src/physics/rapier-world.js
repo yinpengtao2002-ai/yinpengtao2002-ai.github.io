@@ -506,6 +506,10 @@ class RapierGoalkeeperWorld {
         side: "both",
         part: "pocket",
         point: pocketClosest.point,
+        ballCenter: vector(pocketClosest.point),
+        gloveCenter: vector(this.gloveTarget.center),
+        ballRadius: this.ballRadius,
+        overlapDepth: this.ballRadius * 2 * catchQuality,
         normal: { x: 0, y: 0, z: -1 },
         strength: incomingSpeed * 0.42,
         catchQuality: catchQuality,
@@ -572,12 +576,22 @@ class RapierGoalkeeperWorld {
     );
     this.outcome = "deflected";
     this.deflectionAge = 0;
+    var impactSide = best.part.side;
+    var impactGloveCenter = impactSide === "left"
+      ? this.gloveTarget.left
+      : impactSide === "right"
+        ? this.gloveTarget.right
+        : this.gloveTarget.center;
     this.lastContact = {
       eventId: this.nextContactEventId(),
       type: "glove",
-      side: best.part.side,
+      side: impactSide,
       part: best.part.part,
       point: best.point,
+      ballCenter: vector(best.point),
+      gloveCenter: vector(impactGloveCenter),
+      ballRadius: this.ballRadius,
+      overlapDepth: Math.max(0, best.limit - best.distance),
       normal: normal,
       strength: contactStrength,
       gloveSpeed: gloveSwipeSpeed,

@@ -1,4 +1,5 @@
 import { MAX_CONCEDED, ROUND_SECONDS } from "../config/game-config.js";
+import { drawGloveImpactReview, getGloveImpactReviewCopy } from "../game/glove-impact-review.js";
 
 export const ROUND_RESULT_SUMMARY_MARKER = "round-result-summary";
 export const HUD_FLOW_POLISH_MARKER = "match-hud-flow-polish";
@@ -611,6 +612,10 @@ export function createHud(documentRef) {
     penaltyRoundBreakLabel: documentRef.getElementById("penaltyRoundBreakLabel"),
     penaltyRoundBreakScore: documentRef.getElementById("penaltyRoundBreakScore"),
     penaltyRoundBreakDetail: documentRef.getElementById("penaltyRoundBreakDetail"),
+    gloveImpactReview: documentRef.getElementById("gloveImpactReview"),
+    gloveImpactCanvas: documentRef.getElementById("gloveImpactCanvas"),
+    gloveImpactResult: documentRef.getElementById("gloveImpactResult"),
+    gloveImpactDetail: documentRef.getElementById("gloveImpactDetail"),
   };
 
   function setVisible(element, visible) {
@@ -821,6 +826,24 @@ export function createHud(documentRef) {
     if (refs.soundButton) refs.soundButton.disabled = false;
   }
 
+  function updateGloveImpactReview(review) {
+    var panel = refs.gloveImpactReview;
+    if (!panel) return;
+    var visible = Boolean(review?.visible);
+    var copy = getGloveImpactReviewCopy(review);
+    var hasImpact = Boolean(review?.impact);
+
+    panel.dataset.result = review?.result || "";
+    panel.dataset.hasImpact = hasImpact ? "true" : "false";
+    panel.setAttribute("aria-label", visible ? "上球触点，" + copy.result + "，" + copy.detail : "");
+    setClass(panel, "is-visible", visible);
+    setClass(panel, "is-save", review?.result === "save");
+    setClass(panel, "is-goal", review?.result === "goal");
+    if (refs.gloveImpactResult) refs.gloveImpactResult.textContent = visible ? copy.result : "";
+    if (refs.gloveImpactDetail) refs.gloveImpactDetail.textContent = visible ? copy.detail : "";
+    if (refs.gloveImpactCanvas) drawGloveImpactReview(refs.gloveImpactCanvas, review);
+  }
+
   return {
     refs,
     bind(actions) {
@@ -984,6 +1007,7 @@ export function createHud(documentRef) {
       updatePressureCue(state);
       updateMatchProgress(state);
       updateControlRail(state);
+      updateGloveImpactReview(context.gloveImpactReview);
       setVisible(refs.startOverlay, !state.running && !state.ended);
       setVisible(refs.pauseOverlay, state.running && state.paused && !state.ended);
       setVisible(refs.endOverlay, state.ended);

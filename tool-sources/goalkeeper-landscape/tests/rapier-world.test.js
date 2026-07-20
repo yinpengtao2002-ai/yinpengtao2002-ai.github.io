@@ -108,6 +108,10 @@ describe("Rapier goalkeeper world", () => {
 
     expect(ball.lastContact?.type).toBe("glove");
     expect(ball.lastContact?.eventId).toBeTypeOf("number");
+    expect(ball.lastContact.ballCenter).toBeTruthy();
+    expect(ball.lastContact.gloveCenter).toBeTruthy();
+    expect(ball.lastContact.ballRadius).toBeCloseTo(0.11);
+    expect(ball.lastContact.overlapDepth).toBeGreaterThan(0);
     expect(ball.outcome).toBe("deflected");
     expect(Math.abs(ball.velocity.x)).toBeGreaterThan(2.5);
     expect(Math.abs(ball.velocity.x)).toBeLessThan(9);
@@ -147,6 +151,11 @@ describe("Rapier goalkeeper world", () => {
     expect(ball.outcome).toBe("saved");
     expect(Math.hypot(ball.velocity.x, ball.velocity.y, ball.velocity.z)).toBeLessThan(0.8);
     expect(ball.lastContact.catchQuality).toBeGreaterThan(0.75);
+    expect(ball.lastContact.ballCenter.x).toBeCloseTo(0);
+    expect(ball.lastContact.ballCenter.y).toBeCloseTo(1.25, 1);
+    expect(ball.lastContact.gloveCenter).toMatchObject({ x: 0, y: 1.25, z: 3.15 });
+    expect(ball.lastContact.ballRadius).toBeCloseTo(0.11);
+    expect(ball.lastContact.overlapDepth).toBeGreaterThan(0.18);
 
     world.dispose();
   });

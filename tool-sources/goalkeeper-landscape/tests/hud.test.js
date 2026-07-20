@@ -35,6 +35,32 @@ function createElement() {
   };
 }
 
+function createCanvasElement() {
+  var element = createElement();
+  var context = {
+    beginPath() {},
+    moveTo() {},
+    lineTo() {},
+    bezierCurveTo() {},
+    quadraticCurveTo() {},
+    closePath() {},
+    clearRect() {},
+    save() {},
+    restore() {},
+    scale() {},
+    translate() {},
+    arc() {},
+    clip() {},
+    fill() {},
+    stroke() {},
+    setTransform() {},
+  };
+  element.width = 360;
+  element.height = 368;
+  element.getContext = () => context;
+  return element;
+}
+
 function createDocument() {
   var elements = {};
   [
@@ -107,9 +133,13 @@ function createDocument() {
     "finalSavesLabel",
     "finalBestStreakLabel",
     "finalConcededLabel",
+    "gloveImpactReview",
+    "gloveImpactResult",
+    "gloveImpactDetail",
   ].forEach((id) => {
     elements[id] = createElement();
   });
+  elements.gloveImpactCanvas = createCanvasElement();
   elements.easyDifficulty = createElement();
   elements.easyDifficulty.dataset.difficulty = "easy";
   elements.mediumDifficulty = createElement();
@@ -141,6 +171,41 @@ function createDocument() {
 }
 
 describe("hud", () => {
+  it("renders the previous glove contact without changing the play field", () => {
+    const documentRef = createDocument();
+    const hud = createHud(documentRef);
+    const review = {
+      visible: true,
+      result: "goal",
+      impact: {
+        eventId: 17,
+        contactType: "glove",
+        side: "right",
+        part: "thumb",
+        ballRadius: 0.11,
+        offset: { x: 0.28, y: 0.04, z: 0 },
+        overlapDepth: 0.015,
+        overlapRatio: 0.068,
+      },
+    };
+
+    hud.update({ ...createGameState(), running: true }, true, { gloveImpactReview: review });
+
+    expect(documentRef.elements.gloveImpactReview.classList.contains("is-visible")).toBe(true);
+    expect(documentRef.elements.gloveImpactReview.dataset.result).toBe("goal");
+    expect(documentRef.elements.gloveImpactReview.dataset.hasImpact).toBe("true");
+    expect(documentRef.elements.gloveImpactReview.getAttribute("aria-label")).toContain("触球后失分");
+    expect(documentRef.elements.gloveImpactResult.textContent).toBe("触球后失分");
+    expect(documentRef.elements.gloveImpactDetail.textContent).toBe("擦边接触，球路改变不足");
+    expect(Number(documentRef.elements.gloveImpactCanvas.dataset.ballRadius)).toBeGreaterThan(15);
+
+    hud.update({ ...createGameState(), running: true }, true, {
+      gloveImpactReview: { visible: true, result: "goal", impact: null },
+    });
+    expect(documentRef.elements.gloveImpactReview.dataset.hasImpact).toBe("false");
+    expect(documentRef.elements.gloveImpactResult.textContent).toBe("未触球");
+  });
+
   it("hides the pointer only while a round is actively running", () => {
     const documentRef = createDocument();
     const hud = createHud(documentRef);

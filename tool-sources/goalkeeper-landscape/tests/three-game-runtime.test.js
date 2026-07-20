@@ -7,10 +7,12 @@ import {
   PENALTY_KICK_COUNTDOWN_SECONDS,
   PENALTY_ROUND_SCORE_HOLD_SECONDS,
   applyForcedGloveTarget,
+  captureGloveImpactCandidate,
   advanceLingeringBalls,
   advanceRoundIntroTimer,
   createDebugSavePlan,
   createDebugFramePlan,
+  createDebugGrazeGoalPlan,
   getRoundIntroCue,
   getLingeringBallDurationForOutcome,
   getNextShotDelayForOutcome,
@@ -28,12 +30,79 @@ import {
   getPenaltyRoundBreak,
   getPenaltyTeamAnnouncement,
   prepareNextPenaltyShot,
+  publishGloveImpactReview,
   shouldPlayLingeringGroundAudio,
 } from "../src/game/three-game-runtime.js";
 import { createShot3DDirector } from "../src/game/shot-3d-director.js";
 import { RAPIER_GOAL, createRapierGoalkeeperWorld } from "../src/physics/rapier-world.js";
 
 describe("three game runtime timing", () => {
+  it("keeps the strongest glove contact until the shot outcome is published", () => {
+    const glancingBall = {
+      outcome: "deflected",
+      lastContact: {
+        eventId: 31,
+        type: "glove",
+        side: "right",
+        ballCenter: { x: 0.55, y: 1.2, z: 3.15 },
+        gloveCenter: { x: 0.3, y: 1.2, z: 3.15 },
+        ballRadius: 0.11,
+        overlapDepth: 0.02,
+      },
+    };
+    const caughtBall = {
+      outcome: "saved",
+      lastContact: {
+        ...glancingBall.lastContact,
+        eventId: 32,
+        type: "catch",
+        side: "both",
+        ballCenter: { x: 0.3, y: 1.2, z: 3.15 },
+        overlapDepth: 0.2,
+      },
+    };
+
+    const first = captureGloveImpactCandidate(null, glancingBall);
+    const strongest = captureGloveImpactCandidate(first, caughtBall);
+    const review = publishGloveImpactReview(strongest, caughtBall);
+
+    expect(strongest.eventId).toBe(32);
+    expect(review.result).toBe("save");
+    expect(review.impact.eventId).toBe(32);
+  });
+
+  it("retains a glove graze when the final contact has already changed to the net", () => {
+    const candidate = captureGloveImpactCandidate(null, {
+      outcome: "deflected",
+      lastContact: {
+        eventId: 41,
+        type: "glove",
+        side: "left",
+        ballCenter: { x: -0.54, y: 1.4, z: 3.15 },
+        gloveCenter: { x: -0.3, y: 1.35, z: 3.15 },
+        ballRadius: 0.11,
+        overlapDepth: 0.016,
+      },
+    });
+    const scoredBall = {
+      outcome: "goal",
+      lastContact: { eventId: 42, type: "net", sourceContactEventId: 41 },
+    };
+    const review = publishGloveImpactReview(candidate, scoredBall);
+
+    expect(review.result).toBe("goal");
+    expect(review.impact.eventId).toBe(41);
+    expect(review.impact.overlapRatio).toBeLessThan(0.1);
+  });
+
+  it("publishes a cleared no-touch review after a clean goal", () => {
+    expect(publishGloveImpactReview(null, { outcome: "goal", lastContact: { type: "net" } })).toEqual({
+      visible: true,
+      result: "goal",
+      impact: null,
+    });
+  });
+
   it("keeps extreme as the penalty default while accepting hard as the standard option", () => {
     expect(resolveRuntimeMode({ location: { search: "?mode=penalty&difficulty=easy" } })).toBe("penalty");
     expect(resolveRuntimeMode({ location: { search: "?mode=unknown" } })).toBe("timed");
@@ -634,6 +703,30 @@ describe("three game runtime timing", () => {
     expect(ball.lastContact?.type).toBe("frame");
     expect(ball.lastContact.part).toBe("left-post");
     expect(ball.outcome).toBe("missed");
+
+    world.dispose();
+  });
+
+  it("keeps the forced-graze debug path aligned with a glove touch that still goes in", async () => {
+    const world = await createRapierGoalkeeperWorld();
+    const plan = createDebugGrazeGoalPlan();
+
+    world.setGloveTarget({ x: 0.74, y: 1.25, z: 3.15 });
+    world.step(DEBUG_FORCE_GLOVE_SETTLE_DT);
+    world.launchShot(plan);
+
+    let gloveContact = null;
+    for (let i = 0; i < 28; i += 1) {
+      world.step(1 / 120);
+      const frame = world.getBallState();
+      if (frame.lastContact?.type === "glove") gloveContact = frame.lastContact;
+    }
+
+    const ball = world.getBallState();
+    expect(gloveContact?.eventId).toBeTypeOf("number");
+    expect(gloveContact?.overlapDepth).toBeGreaterThan(0);
+    expect(ball.outcome).toBe("goal");
+    expect(ball.lastContact?.sourceContactEventId).toBe(gloveContact.eventId);
 
     world.dispose();
   });

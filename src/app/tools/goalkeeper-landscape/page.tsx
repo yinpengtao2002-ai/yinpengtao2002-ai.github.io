@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import GoalkeeperLandscapeRuntime, { GOALKEEPER_SCRIPT_SRC } from "./GoalkeeperLandscapeRuntime";
 
-const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-Dp8z1TrR.css";
+const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-DVmUflTQ.css";
 
 export const metadata: Metadata = {
   title: "守门挑战｜Lucas Yin",
@@ -102,6 +102,15 @@ export default function GoalkeeperLandscapePage() {
             >
               <span className="match-progress-fill" id="matchProgressFill" />
             </div>
+
+            <aside className="glove-impact-review" id="gloveImpactReview" aria-live="polite">
+              <div className="glove-impact-heading">
+                <span>上球触点</span>
+                <strong id="gloveImpactResult" />
+              </div>
+              <canvas id="gloveImpactCanvas" width="360" height="368" aria-hidden="true" />
+              <span className="glove-impact-detail" id="gloveImpactDetail" />
+            </aside>
 
             <div className="bottom-controls" id="bottomControls" aria-label="游戏控制">
               <div className="setup-controls">

@@ -13,8 +13,8 @@
     <title>守门挑战</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2369c97a'/%3E%3Ccircle cx='32' cy='32' r='16' fill='%23fffdf2'/%3E%3Cpath d='M20 32h24M32 20v24' stroke='%23222' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
     <link rel="manifest" href="/tools/goalkeeper-landscape/manifest.webmanifest">
-    <script type="module" crossorigin src="/tools/goalkeeper-landscape/assets/index-B8YQ5sN-.js"></script>
-    <link rel="stylesheet" crossorigin href="/tools/goalkeeper-landscape/assets/index-Dp8z1TrR.css">
+    <script type="module" crossorigin src="/tools/goalkeeper-landscape/assets/index-B1pLKuHJ.js"></script>
+    <link rel="stylesheet" crossorigin href="/tools/goalkeeper-landscape/assets/index-DVmUflTQ.css">
   </head>
   <body>
     <main class="app" aria-label="守门挑战">
@@ -79,6 +79,15 @@
           <div class="match-progress" id="matchProgress" role="progressbar" aria-valuemin="0" aria-valuemax="60" aria-valuenow="60" aria-valuetext="剩余 60 秒" data-hud-system="match-progress-hud">
             <span class="match-progress-fill" id="matchProgressFill"></span>
           </div>
+
+          <aside class="glove-impact-review" id="gloveImpactReview" aria-live="polite">
+            <div class="glove-impact-heading">
+              <span>上球触点</span>
+              <strong id="gloveImpactResult"></strong>
+            </div>
+            <canvas id="gloveImpactCanvas" width="360" height="368" aria-hidden="true"></canvas>
+            <span class="glove-impact-detail" id="gloveImpactDetail"></span>
+          </aside>
 
           <div class="bottom-controls" id="bottomControls" aria-label="游戏控制">
             <div class="setup-controls">

@@ -2660,3 +2660,107 @@ button {
     width: min(540px, calc(100svh - 28px));
   }
 }
+
+.glove-impact-review {
+  position: absolute;
+  z-index: 18;
+  top: 92px;
+  right: max(14px, env(safe-area-inset-right));
+  width: 142px;
+  padding: 8px;
+  border: 1px solid rgba(220, 228, 238, 0.22);
+  border-radius: 7px;
+  background: rgba(11, 16, 23, 0.58);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+  color: #f5f8fb;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 160ms ease, transform 160ms ease;
+  pointer-events: none;
+}
+
+.glove-impact-review.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.glove-impact-review.is-save {
+  border-color: rgba(94, 224, 164, 0.4);
+}
+
+.glove-impact-review.is-goal {
+  border-color: rgba(255, 105, 105, 0.42);
+}
+
+.glove-impact-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 16px;
+}
+
+.glove-impact-heading span {
+  color: rgba(225, 232, 240, 0.68);
+  font-size: 9px;
+  line-height: 1;
+}
+
+.glove-impact-heading strong {
+  color: #f5f8fb;
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.glove-impact-review.is-save .glove-impact-heading strong {
+  color: #76e9b5;
+}
+
+.glove-impact-review.is-goal .glove-impact-heading strong {
+  color: #ff8989;
+}
+
+#gloveImpactCanvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 180 / 184;
+  margin-top: 2px;
+}
+
+.glove-impact-detail {
+  display: block;
+  min-height: 12px;
+  overflow-wrap: anywhere;
+  color: rgba(235, 240, 246, 0.76);
+  font-size: 9px;
+  line-height: 1.25;
+  text-align: center;
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .glove-impact-review {
+    top: 64px;
+    right: max(7px, env(safe-area-inset-right));
+    width: 106px;
+    padding: 6px;
+    border-radius: 6px;
+  }
+
+  .glove-impact-heading span,
+  .glove-impact-detail {
+    font-size: 8px;
+  }
+
+  .glove-impact-heading strong {
+    font-size: 9px;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 760px) {
+  .glove-impact-review {
+    top: 64px;
+    right: max(7px, env(safe-area-inset-bottom));
+    width: 106px;
+  }
+}

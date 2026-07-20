@@ -2,6 +2,11 @@ import { createAudioEngine } from "../audio/audio-engine.js";
 import { MAX_CONCEDED } from "../config/game-config.js";
 import { getContactEventSignature } from "./contact-event.js";
 import {
+  createGloveImpactCandidate,
+  finalizeGloveImpactReview,
+  selectGloveImpactCandidate,
+} from "./glove-impact-review.js";
+import {
   createGameState,
   recordGoal,
   recordMiss,
@@ -135,6 +140,17 @@ export function createDebugFramePlan() {
   };
 }
 
+export function createDebugGrazeGoalPlan() {
+  return {
+    origin: { x: 0.38, y: 1.25, z: 2.7 },
+    target: { x: 0.38, y: 1.25, z: 4.65 },
+    velocity: { x: 0, y: 0, z: 28 },
+    angularVelocity: { x: 0, y: 10, z: 0 },
+    curveForce: { x: 0, y: 0, z: 0 },
+    radius: 0.11,
+  };
+}
+
 function makeCloseMissPlan() {
   return {
     origin: { x: 0, y: 1.2, z: 3.55 },
@@ -260,6 +276,14 @@ export function shouldPlayLingeringGroundAudio(director) {
 
 export function getMissMessageForBall(ball) {
   return ball?.lastContact?.type === "frame" ? "frame" : "miss";
+}
+
+export function captureGloveImpactCandidate(current, ball) {
+  return selectGloveImpactCandidate(current, createGloveImpactCandidate(ball?.lastContact));
+}
+
+export function publishGloveImpactReview(candidate, ball) {
+  return finalizeGloveImpactReview(candidate, ball?.outcome);
 }
 
 function cloneVector(value) {
@@ -611,6 +635,8 @@ export async function createThreeGameRuntime(options) {
   var gloveController = createGloveController();
   var launchedShotId = null;
   var handledOutcome = null;
+  var currentGloveImpactCandidate = null;
+  var publishedGloveImpactReview = null;
   var handledContactAudio = null;
   var handledRoundEndAudio = false;
   var handledGroundContactAudio = "";
@@ -698,6 +724,8 @@ export async function createThreeGameRuntime(options) {
     physics.resetBall();
     launchedShotId = null;
     handledOutcome = null;
+    currentGloveImpactCandidate = null;
+    publishedGloveImpactReview = null;
     handledContactAudio = null;
     handledRoundEndAudio = false;
     handledGroundContactAudio = "";
@@ -831,6 +859,9 @@ export async function createThreeGameRuntime(options) {
 
   function handleBallOutcome(ball) {
     if (!ball || handledOutcome) return;
+    if (["goal", "saved", "missed"].includes(ball.outcome)) {
+      publishedGloveImpactReview = publishGloveImpactReview(currentGloveImpactCandidate, ball);
+    }
     if (ball.outcome === "goal") {
       var previousState = state;
       state = recordGoal(state);
@@ -867,6 +898,7 @@ export async function createThreeGameRuntime(options) {
     physics.launchShot(director.currentShot.ballPlan);
     launchedShotId = shotId;
     handledOutcome = null;
+    currentGloveImpactCandidate = null;
     outcomeTimer = 0;
     audio.play("shot");
   }
@@ -932,6 +964,7 @@ export async function createThreeGameRuntime(options) {
 
     if (launchedShotId !== null) {
       var ball = physics.getBallState();
+      currentGloveImpactCandidate = captureGloveImpactCandidate(currentGloveImpactCandidate, ball);
       playContactAudio(ball);
       handleBallOutcome(ball);
       finishCurrentShotAfterReplay(dt);
@@ -992,6 +1025,8 @@ export async function createThreeGameRuntime(options) {
       : "";
     stage.dataset.shotTargetX = String(Math.round((director.currentShot?.target?.x || 0) * 100) / 100);
     stage.dataset.musicStatus = audio.getMusicStatus?.() || "unavailable";
+    stage.dataset.gloveImpactResult = publishedGloveImpactReview?.result || "";
+    stage.dataset.gloveImpactEventId = String(publishedGloveImpactReview?.impact?.eventId ?? "");
   }
 
   function getHudContext() {
@@ -1004,6 +1039,7 @@ export async function createThreeGameRuntime(options) {
       penaltyRoundBreak: penaltyRoundBreak
         ? { ...penaltyRoundBreak, visible: penaltyRoundBreak.visible && penaltyRoundBreakTimer > 0 && !state.ended }
         : { visible: false },
+      gloveImpactReview: publishedGloveImpactReview,
     };
   }
 
@@ -1049,6 +1085,7 @@ export async function createThreeGameRuntime(options) {
     };
     launchedShotId = null;
     handledOutcome = null;
+    currentGloveImpactCandidate = null;
     handledContactAudio = null;
     handledGroundContactAudio = "";
     groundContactAudioCooldown = 0;
@@ -1121,6 +1158,9 @@ export async function createThreeGameRuntime(options) {
     if (event.key === "]") {
       forcePlan(makeCloseMissPlan(), { x: 3.1, y: 2.55, z: 3.15 });
     }
+    if (event.key.toLowerCase() === "g") {
+      forcePlan(createDebugGrazeGoalPlan(), { x: 0.74, y: 1.25, z: 3.15 });
+    }
   }
 
   var runtime = {
@@ -1167,6 +1207,9 @@ export async function createThreeGameRuntime(options) {
     },
     getBall() {
       return physics.getBallState();
+    },
+    getGloveImpactReview() {
+      return publishedGloveImpactReview;
     },
     getGloves() {
       return physics.getGloveState();
@@ -1225,6 +1268,9 @@ export async function createThreeGameRuntime(options) {
     },
     forceFrame() {
       forcePlan(createDebugFramePlan(), { x: 0, y: 3, z: 3.15 });
+    },
+    forceGrazeGoal() {
+      forcePlan(createDebugGrazeGoalPlan(), { x: 0.74, y: 1.25, z: 3.15 });
     },
     dispose() {
       this.stop();
