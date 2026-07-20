@@ -37,6 +37,27 @@ function clonePoint(point) {
   };
 }
 
+function distanceBetweenPoints(a, b) {
+  return Math.hypot(
+    (a?.x || 0) - (b?.x || 0),
+    (a?.y || 0) - (b?.y || 0),
+    (a?.z || 0) - (b?.z || 0),
+  );
+}
+
+export function getSphereIntersectionRadius(ballRadius, colliderRadius, centerDistance) {
+  var ball = Math.max(0, Number(ballRadius) || 0);
+  var collider = Math.max(0, Number(colliderRadius) || 0);
+  var distance = Math.max(0, Number(centerDistance) || 0);
+  if (ball === 0 || collider === 0 || distance >= ball + collider) return 0;
+  if (distance <= Math.abs(ball - collider) || distance < 0.000001) return Math.min(ball, collider);
+
+  var planeDistance = (
+    distance * distance + ball * ball - collider * collider
+  ) / (2 * distance);
+  return Math.sqrt(Math.max(0, ball * ball - planeDistance * planeDistance));
+}
+
 export function createGloveImpactCandidate(contact) {
   if (!contact || !["glove", "catch"].includes(contact.type)) return null;
   if (!contact.ballCenter || !contact.gloveCenter) return null;
@@ -46,6 +67,8 @@ export function createGloveImpactCandidate(contact) {
   var contactPoint = clonePoint(contact.contactPoint || contact.ballCenter);
   var ballRadius = Math.max(0.01, Number(contact.ballRadius) || 0.11);
   var overlapDepth = clamp(Number(contact.overlapDepth) || 0, 0, ballRadius * 2);
+  var colliderCenter = contact.colliderCenter ? clonePoint(contact.colliderCenter) : null;
+  var colliderRadius = Math.max(0, Number(contact.colliderRadius) || 0);
 
   return {
     eventId: contact.eventId ?? null,
@@ -57,6 +80,9 @@ export function createGloveImpactCandidate(contact) {
     ballCenter,
     gloveCenter,
     contactPoint,
+    colliderCenter,
+    colliderRadius,
+    colliderShape: contact.colliderShape || null,
     offset: {
       x: ballCenter.x - gloveCenter.x,
       y: ballCenter.y - gloveCenter.y,
@@ -97,14 +123,22 @@ export function getGloveImpactVisual(review) {
   var contactOffset = impact?.contactOffset || impact?.offset || { x: 0, y: 0, z: 0 };
   var overlapDepth = clamp(impact?.overlapDepth || 0, 0, (impact?.ballRadius || 0) * 2);
   var ballRadius = impact ? impact.ballRadius * scale : 0;
+  var physicalPatchRadius = impact?.colliderCenter && impact.colliderRadius > 0
+    ? getSphereIntersectionRadius(
+        impact.ballRadius,
+        impact.colliderRadius,
+        distanceBetweenPoints(impact.ballCenter, impact.colliderCenter),
+      )
+    : null;
   var patchRadius = impact
-    ? Math.sqrt(Math.max(0, 2 * impact.ballRadius * overlapDepth - overlapDepth * overlapDepth)) * scale
+    ? (physicalPatchRadius ?? Math.sqrt(Math.max(0, 2 * impact.ballRadius * overlapDepth - overlapDepth * overlapDepth)))
+      * scale
     : 0;
   var contact = impact
     ? {
         x: gloveCenter.x + contactOffset.x * scale,
         y: gloveCenter.y - contactOffset.y * scale,
-        radius: Math.max(2.2, patchRadius),
+        radius: patchRadius,
       }
     : null;
   var ball = impact
@@ -217,15 +251,57 @@ function getGloveOutline(side) {
   var palmHalfHeight = GLOVE_ANATOMY.palmHeight * 0.5 * scale;
   var cuffHalfWidth = GLOVE_ANATOMY.cuffWidth * 0.5 * scale;
   var cuffBottom = -palmHalfHeight - GLOVE_ANATOMY.cuffLength * scale + 0.018 * scale;
+  var thumbRadius = (GLOVE_ANATOMY.thumb.width + GLOVE_ANATOMY.latexWrap * 1.45) * 0.5 * scale;
+  var thumbTipRadius = thumbRadius * 0.86;
+  var proximalOutward = {
+    x: thumbSide * thumb.proximalDirection.y,
+    y: -thumbSide * thumb.proximalDirection.x,
+  };
+  var distalOutward = {
+    x: thumbSide * thumb.distalDirection.y,
+    y: -thumbSide * thumb.distalDirection.x,
+  };
   var outline = [
     { x: thumbSide * cuffHalfWidth * 0.86, y: cuffBottom },
     { x: thumbSide * cuffHalfWidth, y: -palmHalfHeight - 0.02 * scale },
     { x: thumbSide * palmHalfWidth, y: -palmHalfHeight * 0.5 },
-    { x: thumbSide * palmHalfWidth * 1.02, y: thumb.root.y - 0.025 * scale },
-    { x: thumb.root.x + thumbSide * thumb.width * 0.44, y: thumb.root.y - thumb.width * 0.18 },
-    { x: thumb.tip.x + thumbSide * thumb.width * 0.42, y: thumb.tip.y - thumb.width * 0.08 },
-    { x: thumb.tip.x + thumbSide * thumb.width * 0.14, y: thumb.tip.y + thumb.width * 0.48 },
-    { x: thumb.joint.x - thumbSide * thumb.width * 0.42, y: thumb.joint.y + thumb.width * 0.4 },
+    { x: thumbSide * palmHalfWidth * 1.02, y: thumb.root.y - thumbRadius * 0.4 },
+    {
+      x: thumb.root.x + proximalOutward.x * thumbRadius,
+      y: thumb.root.y + proximalOutward.y * thumbRadius,
+    },
+    {
+      x: thumb.joint.x + proximalOutward.x * thumbRadius,
+      y: thumb.joint.y + proximalOutward.y * thumbRadius,
+    },
+    {
+      x: thumb.joint.x + distalOutward.x * thumbTipRadius,
+      y: thumb.joint.y + distalOutward.y * thumbTipRadius,
+    },
+    {
+      x: thumb.tip.x + distalOutward.x * thumbTipRadius,
+      y: thumb.tip.y + distalOutward.y * thumbTipRadius,
+    },
+    {
+      x: thumb.tip.x + thumb.distalDirection.x * thumbTipRadius,
+      y: thumb.tip.y + thumb.distalDirection.y * thumbTipRadius,
+    },
+    {
+      x: thumb.tip.x - distalOutward.x * thumbTipRadius,
+      y: thumb.tip.y - distalOutward.y * thumbTipRadius,
+    },
+    {
+      x: thumb.joint.x - distalOutward.x * thumbTipRadius,
+      y: thumb.joint.y - distalOutward.y * thumbTipRadius,
+    },
+    {
+      x: thumb.joint.x - proximalOutward.x * thumbRadius,
+      y: thumb.joint.y - proximalOutward.y * thumbRadius,
+    },
+    {
+      x: thumb.root.x - proximalOutward.x * thumbRadius * 0.75,
+      y: thumb.root.y - proximalOutward.y * thumbRadius * 0.75,
+    },
     { x: thumbSide * palmHalfWidth * 0.96, y: palmHalfHeight * 0.72 },
   ];
 
@@ -259,6 +335,33 @@ function getGloveOutline(side) {
     { x: -thumbSide * cuffHalfWidth * 0.86, y: cuffBottom },
   );
   return outline;
+}
+
+export function getGloveOutlinePolygon(side, curveSegments = 10) {
+  var controls = getGloveOutline(side);
+  var segments = Math.max(2, Math.floor(curveSegments));
+  var polygon = [];
+  controls.forEach((control, index) => {
+    var previous = controls[(index - 1 + controls.length) % controls.length];
+    var next = controls[(index + 1) % controls.length];
+    var start = {
+      x: (previous.x + control.x) * 0.5,
+      y: (previous.y + control.y) * 0.5,
+    };
+    var end = {
+      x: (control.x + next.x) * 0.5,
+      y: (control.y + next.y) * 0.5,
+    };
+    for (var step = 0; step < segments; step += 1) {
+      var t = step / segments;
+      var inverse = 1 - t;
+      polygon.push({
+        x: inverse * inverse * start.x + 2 * inverse * t * control.x + t * t * end.x,
+        y: inverse * inverse * start.y + 2 * inverse * t * control.y + t * t * end.y,
+      });
+    }
+  });
+  return polygon;
 }
 
 function traceGlove(context, glove) {
@@ -337,13 +440,19 @@ function drawGloveDetails(context, glove) {
 
   var thumbJoint = toCanvasPoint(glove, thumb.joint);
   var thumbWidth = thumb.width * GLOVE_IMPACT_CANVAS.pixelsPerMeter;
+  var thumbCreaseHalf = thumbWidth * 0.3;
+  var thumbCreaseDirection = {
+    x: thumb.distalDirection.y,
+    y: thumb.distalDirection.x,
+  };
   context.beginPath();
-  traceEllipse(
-    context,
-    thumbJoint.x,
-    thumbJoint.y,
-    Math.max(2, thumbWidth * 0.42),
-    Math.max(1.6, thumbWidth * 0.34),
+  context.moveTo(
+    thumbJoint.x - thumbCreaseDirection.x * thumbCreaseHalf,
+    thumbJoint.y - thumbCreaseDirection.y * thumbCreaseHalf,
+  );
+  context.lineTo(
+    thumbJoint.x + thumbCreaseDirection.x * thumbCreaseHalf,
+    thumbJoint.y + thumbCreaseDirection.y * thumbCreaseHalf,
   );
   context.stroke();
 
@@ -440,13 +549,28 @@ export function drawGloveImpactReview(canvas, review) {
       context.fillStyle = "rgba(" + color + ", 0.3)";
       context.fill();
       if (visual.contact) {
-        context.beginPath();
-        context.arc(visual.contact.x, visual.contact.y, visual.contact.radius, 0, Math.PI * 2);
-        context.fillStyle = "rgba(" + color + ", 0.9)";
-        context.strokeStyle = "rgba(250, 252, 255, 0.96)";
-        context.lineWidth = 1.6;
-        context.fill();
-        context.stroke();
+        var markerRadius = Math.max(1.6, visual.contact.radius);
+        if (visual.contact.radius >= 1.6) {
+          context.beginPath();
+          context.arc(visual.contact.x, visual.contact.y, visual.contact.radius, 0, Math.PI * 2);
+          context.fillStyle = "rgba(" + color + ", 0.9)";
+          context.strokeStyle = "rgba(250, 252, 255, 0.96)";
+          context.lineWidth = 1.6;
+          context.fill();
+          context.stroke();
+        } else {
+          if (visual.contact.radius > 0.05) {
+            context.beginPath();
+            context.arc(visual.contact.x, visual.contact.y, visual.contact.radius, 0, Math.PI * 2);
+            context.fillStyle = "rgba(" + color + ", 0.9)";
+            context.fill();
+          }
+          context.beginPath();
+          context.arc(visual.contact.x, visual.contact.y, markerRadius, 0, Math.PI * 2);
+          context.strokeStyle = "rgba(250, 252, 255, 0.96)";
+          context.lineWidth = 1.6;
+          context.stroke();
+        }
       }
       context.restore();
     });

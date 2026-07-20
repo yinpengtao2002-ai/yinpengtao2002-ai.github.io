@@ -7,7 +7,11 @@ import {
   getGoalSideHalfWidthAtZ,
 } from "../src/physics/goal-net-geometry.js";
 import { RAPIER_GOAL, createRapierGoalkeeperWorld } from "../src/physics/rapier-world.js";
-import { getGloveColliderLayout } from "../src/config/glove-anatomy.js";
+import {
+  GLOVE_ANATOMY,
+  getGloveColliderLayout,
+  getGloveThumbLayout,
+} from "../src/config/glove-anatomy.js";
 
 describe("Rapier goalkeeper world", () => {
   it("creates rigid colliders for only the legal front goal frame", async () => {
@@ -53,6 +57,22 @@ describe("Rapier goalkeeper world", () => {
     expect(left.filter((part) => part.part.startsWith("thumb")).every((part) => part.shape === "capsule")).toBe(true);
 
     world.dispose();
+  });
+
+  it("uses a human-like outward thumb bend and a cuff-shaped wrist collider", () => {
+    expect(GLOVE_ANATOMY.thumb.distalAngle).toBeGreaterThan(GLOVE_ANATOMY.thumb.proximalAngle);
+
+    ["left", "right"].forEach((side) => {
+      const thumb = getGloveThumbLayout(side);
+      const wrist = getGloveColliderLayout(side).find((part) => part.part === "wrist");
+      const thumbDirection = side === "left" ? 1 : -1;
+
+      expect((thumb.tip.x - thumb.joint.x) * thumbDirection)
+        .toBeGreaterThan((thumb.joint.x - thumb.root.x) * thumbDirection * 0.55);
+      expect(Math.abs(wrist.direction.x)).toBeCloseTo(1);
+      expect(wrist.direction.y).toBeCloseTo(0);
+      expect(wrist.halfLength).toBeGreaterThan(wrist.radius * 0.65);
+    });
   });
 
   it("uses sensor-only glove colliders so one manual solver owns the save impulse", async () => {
@@ -293,7 +313,10 @@ describe("Rapier goalkeeper world", () => {
 
     expect(ball.outcome).toBe("saved");
     expect(ball.lastContact?.type).toBe("glove");
-    expect(ball.lastContact?.part).toBe("visual-pocket");
+    expect(ball.lastContact?.contactSource).toBe("visual-pocket");
+    expect(ball.lastContact?.part).not.toBe("visual-pocket");
+    expect(ball.lastContact?.colliderCenter).toBeTruthy();
+    expect(ball.lastContact?.colliderRadius).toBeGreaterThan(0);
     expect(ball.lastContact?.saveResolution).toBe("glove-deflected-away-from-goal");
 
     world.dispose();
@@ -344,9 +367,12 @@ describe("Rapier goalkeeper world", () => {
     expect(["deflected", "saved"]).toContain(ball.outcome);
     expect(ball.lastContact).toMatchObject({
       type: "glove",
-      part: "save-assist",
+      contactSource: "save-assist",
       assisted: true,
     });
+    expect(ball.lastContact.part).not.toBe("save-assist");
+    expect(ball.lastContact.colliderCenter).toBeTruthy();
+    expect(ball.lastContact.colliderRadius).toBeGreaterThan(0);
     expect(ball.velocity.z).toBeLessThan(0);
 
     world.dispose();

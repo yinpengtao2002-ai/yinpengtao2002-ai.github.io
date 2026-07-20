@@ -21,13 +21,13 @@ export const GLOVE_ANATOMY = {
     { name: "little", centerX: 0.135, width: 0.071, length: 0.19 },
   ],
   thumb: {
-    width: 0.082,
-    proximalLength: 0.12,
-    distalLength: 0.082,
-    proximalAngle: 0.78,
-    distalAngle: 0.58,
-    rootX: 0.16,
-    rootY: -0.045,
+    width: 0.084,
+    proximalLength: 0.115,
+    distalLength: 0.075,
+    proximalAngle: 0.7,
+    distalAngle: 0.82,
+    rootX: 0.155,
+    rootY: -0.04,
   },
 };
 
@@ -131,8 +131,10 @@ export function getGloveColliderLayout(side) {
   var scale = GLOVE_MODEL_SCALE;
   var fingers = getGloveFingerLayout(side, scale);
   var thumb = getGloveThumbLayout(side, scale);
-  var thumbRadius = (GLOVE_ANATOMY.thumb.width + GLOVE_ANATOMY.latexWrap * 1.45) * 0.5 * scale;
+  var thumbRadius = (GLOVE_ANATOMY.thumb.width + GLOVE_ANATOMY.latexWrap * 1.45) * 0.5 * scale * 0.9;
   var cuffCenterY = (-GLOVE_ANATOMY.palmHeight * 0.5 - GLOVE_ANATOMY.cuffLength * 0.5 + 0.018) * scale;
+  var cuffRadius = GLOVE_ANATOMY.cuffLength * 0.44 * scale;
+  var cuffHalfWidth = GLOVE_ANATOMY.cuffWidth * 0.43 * scale;
 
   return [
     {
@@ -147,9 +149,9 @@ export function getGloveColliderLayout(side) {
       part: "wrist",
       shape: "capsule",
       offset: { x: 0, y: cuffCenterY, z: 0.006 },
-      direction: { x: 0, y: 1, z: 0 },
-      halfLength: 0.018 * scale,
-      radius: GLOVE_ANATOMY.cuffWidth * 0.43 * scale,
+      direction: { x: 1, y: 0, z: 0 },
+      halfLength: Math.max(0.004, cuffHalfWidth - cuffRadius),
+      radius: cuffRadius,
     },
     ...fingers.map((finger) => ({
       part: finger.name,
