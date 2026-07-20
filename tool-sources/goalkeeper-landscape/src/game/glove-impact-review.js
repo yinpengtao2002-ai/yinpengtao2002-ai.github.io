@@ -6,6 +6,14 @@ export const GLOVE_IMPACT_CANVAS = {
   pixelsPerMeter: 165,
 };
 
+const GLOVE_REFERENCE_LENGTH_METERS = 0.29;
+const GLOVE_SILHOUETTE_LENGTH_PIXELS = 141;
+const GLOVE_PAIR_SCALE = 0.8;
+const GLOVE_PAIR_CENTERS = {
+  left: { x: 62, y: 107 },
+  right: { x: 118, y: 107 },
+};
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
@@ -68,26 +76,43 @@ export function finalizeGloveImpactReview(candidate, outcome) {
 
 export function getGloveImpactVisual(review) {
   var impact = review?.impact || null;
-  var scale = GLOVE_IMPACT_CANVAS.pixelsPerMeter;
-  var gloveSide = impact?.side || "right";
-  var gloveCenter = getGloveSilhouette(gloveSide).palmCenter;
-  var showContactPatch = review?.result === "save" && impact?.contactOffset;
-  var visualOffset = showContactPatch ? impact.contactOffset : impact?.offset;
+  var scale = GLOVE_IMPACT_CANVAS.pixelsPerMeter * GLOVE_PAIR_SCALE;
+  var gloveSide = impact?.side || "both";
+  var gloves = getGlovePair(impact?.side);
+  var gloveCenter = getActiveGloveCenter(gloveSide, gloves);
+  var contactOffset = impact?.contactOffset || impact?.offset || { x: 0, y: 0, z: 0 };
   var overlapRatio = clamp(impact?.overlapRatio || 0, 0, 1);
   var patchRatio = Math.sqrt(clamp(2 * overlapRatio - overlapRatio * overlapRatio, 0, 1));
+  var ballRadius = impact
+    ? impact.ballRadius * (GLOVE_SILHOUETTE_LENGTH_PIXELS / GLOVE_REFERENCE_LENGTH_METERS) * GLOVE_PAIR_SCALE
+    : 0;
+  var contact = impact
+    ? {
+        x: gloveCenter.x + contactOffset.x * scale,
+        y: gloveCenter.y - contactOffset.y * scale,
+        radius: impact.ballRadius * scale * clamp(patchRatio, 0.28, 1),
+      }
+    : null;
+  var directionX = impact ? impact.offset.x - contactOffset.x : 0;
+  var directionY = impact ? -(impact.offset.y - contactOffset.y) : 0;
+  var directionLength = Math.hypot(directionX, directionY);
+  var ballCenterDistance = ballRadius * (1 - overlapRatio * 0.35);
+  var ball = impact
+    ? {
+        x: contact.x + (directionLength > 0.01 ? directionX / directionLength * ballCenterDistance : 0),
+        y: contact.y + (directionLength > 0.01 ? directionY / directionLength * ballCenterDistance : 0),
+        radius: ballRadius,
+      }
+    : null;
   return {
     width: GLOVE_IMPACT_CANVAS.width,
     height: GLOVE_IMPACT_CANVAS.height,
     gloveCenter: gloveCenter,
     gloveSide: gloveSide,
+    gloves,
     result: review?.result || "miss",
-    ball: impact
-      ? {
-          x: gloveCenter.x + visualOffset.x * scale,
-          y: gloveCenter.y - visualOffset.y * scale,
-          radius: impact.ballRadius * scale * (showContactPatch ? clamp(patchRatio, 0.28, 1) : 1),
-        }
-      : null,
+    ball,
+    contact,
   };
 }
 
@@ -144,9 +169,33 @@ export function getGloveSilhouette(side = "right") {
   };
 }
 
-function traceGlove(context, side) {
-  var mirror = side === "left";
-  var x = (value) => mirror ? GLOVE_IMPACT_CANVAS.width - value : value;
+function getGlovePair(activeSide) {
+  return ["left", "right"].map((side) => ({
+    side,
+    center: { ...GLOVE_PAIR_CENTERS[side] },
+    scale: GLOVE_PAIR_SCALE,
+    active: activeSide === side || activeSide === "both",
+  }));
+}
+
+function getActiveGloveCenter(side, gloves) {
+  if (side === "left" || side === "right") {
+    return { ...gloves.find((glove) => glove.side === side).center };
+  }
+  return {
+    x: (gloves[0].center.x + gloves[1].center.x) / 2,
+    y: (gloves[0].center.y + gloves[1].center.y) / 2,
+  };
+}
+
+function applyGloveTransform(context, glove) {
+  context.translate(glove.center.x, glove.center.y);
+  context.scale(glove.side === "left" ? -glove.scale : glove.scale, glove.scale);
+  context.translate(-GLOVE_SILHOUETTE.palmCenter.x, -GLOVE_SILHOUETTE.palmCenter.y);
+}
+
+function traceGlove(context) {
+  var x = (value) => value;
   var [thumb, index, middle, ring, little] = GLOVE_SILHOUETTE.digits.map((digit) => digit.tip);
   context.beginPath();
   context.moveTo(x(66), 163);
@@ -181,9 +230,8 @@ function traceGlove(context, side) {
   context.closePath();
 }
 
-function drawGloveDetails(context, side) {
-  var mirror = side === "left";
-  var x = (value) => mirror ? GLOVE_IMPACT_CANVAS.width - value : value;
+function drawGloveDetails(context) {
+  var x = (value) => value;
   context.save();
   context.strokeStyle = "rgba(247, 250, 253, 0.5)";
   context.lineWidth = 1.4;
@@ -215,6 +263,62 @@ function drawGloveDetails(context, side) {
   context.restore();
 }
 
+function drawGlove(context, glove) {
+  context.save();
+  applyGloveTransform(context, glove);
+  traceGlove(context);
+  context.fillStyle = glove.active ? "rgba(184, 193, 205, 0.76)" : "rgba(161, 171, 184, 0.46)";
+  context.strokeStyle = glove.active ? "rgba(236, 241, 247, 0.92)" : "rgba(218, 225, 234, 0.62)";
+  context.lineWidth = 2;
+  context.fill();
+  context.stroke();
+  drawGloveDetails(context);
+  context.restore();
+}
+
+function drawFootballReference(context, ball, color) {
+  context.save();
+  context.beginPath();
+  context.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+  context.fillStyle = "rgba(238, 243, 249, 0.14)";
+  context.strokeStyle = "rgba(" + color + ", 0.96)";
+  context.lineWidth = 2.4;
+  context.fill();
+  context.stroke();
+
+  var panelRadius = ball.radius * 0.17;
+  context.beginPath();
+  for (var index = 0; index < 5; index += 1) {
+    var angle = -Math.PI / 2 + index * Math.PI * 2 / 5;
+    var panelX = ball.x + Math.cos(angle) * panelRadius;
+    var panelY = ball.y + Math.sin(angle) * panelRadius;
+    if (index === 0) context.moveTo(panelX, panelY);
+    else context.lineTo(panelX, panelY);
+  }
+  context.closePath();
+  context.fillStyle = "rgba(12, 24, 44, 0.48)";
+  context.strokeStyle = "rgba(245, 248, 252, 0.46)";
+  context.lineWidth = 1.1;
+  context.fill();
+  context.stroke();
+
+  context.beginPath();
+  for (var spoke = 0; spoke < 5; spoke += 1) {
+    var spokeAngle = -Math.PI / 2 + spoke * Math.PI * 2 / 5;
+    context.moveTo(
+      ball.x + Math.cos(spokeAngle) * panelRadius,
+      ball.y + Math.sin(spokeAngle) * panelRadius,
+    );
+    context.lineTo(
+      ball.x + Math.cos(spokeAngle) * ball.radius * 0.58,
+      ball.y + Math.sin(spokeAngle) * ball.radius * 0.58,
+    );
+  }
+  context.strokeStyle = "rgba(245, 248, 252, 0.32)";
+  context.stroke();
+  context.restore();
+}
+
 export function drawGloveImpactReview(canvas, review) {
   var context = canvas?.getContext?.("2d");
   if (!context) return null;
@@ -224,47 +328,41 @@ export function drawGloveImpactReview(canvas, review) {
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.setTransform(scale, 0, 0, scale, 0, 0);
 
-  context.save();
-  traceGlove(context, visual.gloveSide);
-  context.fillStyle = "rgba(184, 193, 205, 0.72)";
-  context.strokeStyle = "rgba(236, 241, 247, 0.9)";
-  context.lineWidth = 2;
-  context.fill();
-  context.stroke();
-  drawGloveDetails(context, visual.gloveSide);
-  context.restore();
+  visual.gloves.forEach((glove) => drawGlove(context, glove));
 
   if (visual.ball) {
     var color = review.result === "save" ? "94, 224, 164" : review.result === "goal" ? "255, 105, 105" : "212, 220, 230";
-    if (review.result !== "save") {
+    drawFootballReference(context, visual.ball, color);
+
+    visual.gloves.filter((glove) => glove.active).forEach((glove) => {
       context.save();
+      applyGloveTransform(context, glove);
+      traceGlove(context);
+      context.clip();
+      context.setTransform(scale, 0, 0, scale, 0, 0);
       context.beginPath();
       context.arc(visual.ball.x, visual.ball.y, visual.ball.radius, 0, Math.PI * 2);
-      context.fillStyle = "rgba(" + color + ", 0.18)";
-      context.strokeStyle = "rgba(" + color + ", 0.96)";
-      context.lineWidth = 2.4;
+      context.fillStyle = "rgba(" + color + ", 0.3)";
       context.fill();
-      context.stroke();
+      if (visual.contact) {
+        context.beginPath();
+        context.arc(visual.contact.x, visual.contact.y, visual.contact.radius, 0, Math.PI * 2);
+        context.fillStyle = "rgba(" + color + ", 0.9)";
+        context.strokeStyle = "rgba(250, 252, 255, 0.96)";
+        context.lineWidth = 1.6;
+        context.fill();
+        context.stroke();
+      }
       context.restore();
-    }
-
-    context.save();
-    traceGlove(context, visual.gloveSide);
-    context.clip();
-    context.beginPath();
-    context.arc(visual.ball.x, visual.ball.y, visual.ball.radius, 0, Math.PI * 2);
-    context.fillStyle = "rgba(" + color + (review.result === "save" ? ", 0.88)" : ", 0.78)");
-    context.fill();
-    if (review.result === "save") {
-      context.strokeStyle = "rgba(" + color + ", 0.98)";
-      context.lineWidth = 2;
-      context.stroke();
-    }
-    context.restore();
+    });
   }
 
   canvas.dataset.ballX = visual.ball ? String(Math.round(visual.ball.x * 100) / 100) : "";
   canvas.dataset.ballY = visual.ball ? String(Math.round(visual.ball.y * 100) / 100) : "";
   canvas.dataset.ballRadius = visual.ball ? String(Math.round(visual.ball.radius * 100) / 100) : "";
+  canvas.dataset.contactX = visual.contact ? String(Math.round(visual.contact.x * 100) / 100) : "";
+  canvas.dataset.contactY = visual.contact ? String(Math.round(visual.contact.y * 100) / 100) : "";
+  canvas.dataset.contactRadius = visual.contact ? String(Math.round(visual.contact.radius * 100) / 100) : "";
+  canvas.dataset.activeGloves = visual.gloves.filter((glove) => glove.active).map((glove) => glove.side).join(",");
   return visual;
 }

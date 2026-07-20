@@ -52,7 +52,12 @@ describe("glove impact review", () => {
     expect(review.impact.overlapRatio).toBeGreaterThan(0.8);
     expect(visual.ball.x).toBeCloseTo(visual.gloveCenter.x);
     expect(visual.ball.y).toBeCloseTo(visual.gloveCenter.y);
-    expect(visual.ball.radius).toBeGreaterThan(15);
+    expect(visual.gloves.map((glove) => glove.side)).toEqual(["left", "right"]);
+    expect(visual.gloves.filter((glove) => glove.active).map((glove) => glove.side)).toEqual(["right"]);
+    expect(visual.ball.radius).toBeGreaterThan(38);
+    expect(visual.ball.radius * 2).toBeGreaterThan(141 * visual.gloves[0].scale * 0.7);
+    expect(visual.contact.x).toBeCloseTo(visual.gloveCenter.x);
+    expect(visual.contact.y).toBeCloseTo(visual.gloveCenter.y);
   });
 
   it("keeps a successful assisted-save contact patch on the glove surface", () => {
@@ -66,11 +71,12 @@ describe("glove impact review", () => {
     const visual = getGloveImpactVisual(review);
 
     expect(review.impact.assisted).toBe(true);
-    expect(Math.abs(visual.ball.x - visual.gloveCenter.x)).toBeLessThan(40);
-    expect(visual.ball.radius).toBeLessThan(review.impact.ballRadius * 165);
+    expect(Math.abs(visual.contact.x - visual.gloveCenter.x)).toBeLessThan(40);
+    expect(visual.ball.radius).toBeGreaterThan(38);
+    expect(visual.contact.radius).toBeLessThan(visual.ball.radius / 4);
   });
 
-  it("clips a successful save patch to the glove before drawing the marker", () => {
+  it("draws the regulation-size ball before clipping the smaller contact patch to the glove", () => {
     const calls = [];
     const context = new Proxy({}, {
       get(target, property) {
@@ -92,14 +98,54 @@ describe("glove impact review", () => {
 
     drawGloveImpactReview(canvas, review);
 
-    expect(calls.findIndex((call) => call.name === "clip")).toBeLessThan(
-      calls.findIndex((call) => call.name === "arc"),
-    );
+    const arcIndexes = calls
+      .map((call, index) => call.name === "arc" ? index : -1)
+      .filter((index) => index >= 0);
+    const clipIndex = calls.findIndex((call) => call.name === "clip");
+
+    expect(arcIndexes).toHaveLength(3);
+    expect(arcIndexes[0]).toBeLessThan(clipIndex);
+    expect(clipIndex).toBeLessThan(arcIndexes[1]);
+  });
+
+  it("highlights both gloves and clips the contact against both for a two-handed catch", () => {
+    const calls = [];
+    const context = new Proxy({}, {
+      get(target, property) {
+        if (property in target) return target[property];
+        return (...args) => calls.push({ name: property, args });
+      },
+      set(target, property, value) {
+        target[property] = value;
+        return true;
+      },
+    });
+    const canvas = {
+      width: 180,
+      height: 184,
+      dataset: {},
+      getContext: () => context,
+    };
+    const review = finalizeGloveImpactReview(createGloveImpactCandidate(makeContact({
+      type: "catch",
+      side: "both",
+      ballCenter: { x: 0, y: 1.2, z: 3.15 },
+      gloveCenter: { x: 0, y: 1.2, z: 3.15 },
+      contactPoint: { x: 0, y: 1.2, z: 3.15 },
+    })), "saved");
+    const visual = drawGloveImpactReview(canvas, review);
+    const arcCount = calls.filter((call) => call.name === "arc").length;
+
+    expect(visual.gloves).toHaveLength(2);
+    expect(visual.gloves.every((glove) => glove.active)).toBe(true);
+    expect(visual.gloveCenter.x).toBeCloseTo(90);
+    expect(arcCount).toBe(5);
   });
 
   it("keeps the full ball mostly outside the glove for a glancing touch", () => {
     const candidate = createGloveImpactCandidate(makeContact({
       ballCenter: { x: 0.61, y: 1.2, z: 3.15 },
+      contactPoint: { x: 0.48, y: 1.2, z: 3.15 },
       overlapDepth: 0.018,
     }));
     const review = finalizeGloveImpactReview(candidate, "goal");
@@ -107,8 +153,8 @@ describe("glove impact review", () => {
 
     expect(review.result).toBe("goal");
     expect(review.impact.overlapRatio).toBeLessThan(0.12);
-    expect(visual.ball.x - visual.gloveCenter.x).toBeGreaterThan(visual.ball.radius * 2);
-    expect(visual.ball.radius).toBeCloseTo(18.15, 1);
+    expect(visual.ball.radius).toBeGreaterThan(38);
+    expect(Math.abs(visual.contact.x - visual.gloveCenter.x)).toBeLessThan(40);
   });
 
   it("selects the strongest overlap from multiple contacts", () => {
@@ -138,12 +184,18 @@ describe("glove impact review", () => {
     expect(leftVisual.ball.radius).toBeCloseTo(rightVisual.ball.radius);
   });
 
-  it("publishes a no-contact result with only the glove", () => {
-    expect(finalizeGloveImpactReview(null, "goal")).toEqual({
+  it("keeps both gray gloves visible when the ball never made contact", () => {
+    const review = finalizeGloveImpactReview(null, "goal");
+    const visual = getGloveImpactVisual(review);
+
+    expect(review).toEqual({
       visible: true,
       result: "goal",
       impact: null,
     });
+    expect(visual.gloves).toHaveLength(2);
+    expect(visual.gloves.every((glove) => !glove.active)).toBe(true);
+    expect(visual.ball).toBeNull();
   });
 
   it("explains the difference between a save, a graze that goes in, and no contact", () => {
