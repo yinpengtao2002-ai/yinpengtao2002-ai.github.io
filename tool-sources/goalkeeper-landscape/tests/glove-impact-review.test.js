@@ -38,7 +38,10 @@ describe("glove impact review", () => {
     expect(right.digits).toHaveLength(5);
     expect(right.digits[2].tip.y).toBeLessThan(right.digits[1].tip.y);
     expect(right.digits[1].tip.y).toBeLessThan(right.digits[4].tip.y);
-    expect(right.digits[0].tip.x).toBeLessThan(right.palmCenter.x - 35);
+    expect(right.palmCenter.x - right.digits[0].tip.x).toBeGreaterThan(38);
+    expect(right.palmCenter.x - right.digits[0].tip.x).toBeLessThan(58);
+    expect(right.digits[0].tip.y).toBeLessThan(right.palmCenter.y);
+    expect(right.digits[0].tip.y).toBeGreaterThan(right.digits[1].tip.y + 35);
     expect(left.digits.map((digit) => digit.tip.x)).toEqual(
       right.digits.map((digit) => 180 - digit.tip.x),
     );
@@ -165,7 +168,7 @@ describe("glove impact review", () => {
     expect(selectGloveImpactCandidate(centered, glancing)).toEqual(centered);
   });
 
-  it("mirrors left and right contacts around the same glove center", () => {
+  it("maps world contact positions into the goalkeeper-view horizontal direction", () => {
     const left = finalizeGloveImpactReview(createGloveImpactCandidate(makeContact({
       side: "left",
       ballCenter: { x: 0.18, y: 1.28, z: 3.15 },
@@ -179,6 +182,8 @@ describe("glove impact review", () => {
 
     expect(leftVisual.gloveSide).toBe("left");
     expect(rightVisual.gloveSide).toBe("right");
+    expect(leftVisual.ball.x).toBeGreaterThan(leftVisual.gloveCenter.x);
+    expect(rightVisual.ball.x).toBeLessThan(rightVisual.gloveCenter.x);
     expect(leftVisual.ball.x).toBeCloseTo(180 - rightVisual.ball.x);
     expect(leftVisual.ball.y).toBeCloseTo(rightVisual.ball.y);
     expect(leftVisual.ball.radius).toBeCloseTo(rightVisual.ball.radius);

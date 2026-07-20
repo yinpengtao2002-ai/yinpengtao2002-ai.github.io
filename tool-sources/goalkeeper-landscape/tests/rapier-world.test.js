@@ -22,6 +22,18 @@ describe("Rapier goalkeeper world", () => {
     world.dispose();
   });
 
+  it("keeps the thumb colliders tucked into an anatomical diagonal grip", async () => {
+    const world = await createRapierGoalkeeperWorld();
+    const thumbs = world.gloveParts.filter((part) => part.part === "thumb");
+
+    expect(thumbs).toHaveLength(2);
+    expect(thumbs.every((thumb) => Math.abs(thumb.offset.x) < 0.17)).toBe(true);
+    expect(thumbs.every((thumb) => thumb.offset.y >= 0)).toBe(true);
+    expect(thumbs.every((thumb) => thumb.radius < 0.1)).toBe(true);
+
+    world.dispose();
+  });
+
   it("uses sensor-only glove colliders so one manual solver owns the save impulse", async () => {
     const world = await createRapierGoalkeeperWorld();
 

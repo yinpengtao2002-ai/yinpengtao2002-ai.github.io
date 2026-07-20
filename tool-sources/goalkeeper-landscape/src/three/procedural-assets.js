@@ -3965,10 +3965,10 @@ const DEFAULT_GLOVE_VISUAL_PROFILE = {
   fingerGap: 0.011,
   fingerTaper: 0.86,
   latexWrap: 0.014,
-  thumbWidth: 0.1,
-  thumbLength: 0.17,
-  thumbRotation: 0.88,
-  thumbCurl: 0.12,
+  thumbWidth: 0.088,
+  thumbLength: 0.165,
+  thumbRotation: 0.72,
+  thumbCurl: 0.14,
   cuffWidth: 0.35,
   cuffLength: 0.19,
   preCurve: 0.12,
@@ -4218,9 +4218,9 @@ function createAuthenticGloveMesh(side, profile) {
   }
 
   var thumbAngle = profile.thumbRotation;
-  var thumbTipAngle = thumbAngle + profile.thumbCurl;
-  var proximalLength = profile.thumbLength * 0.7;
-  var distalLength = profile.thumbLength * 0.56;
+  var thumbTipAngle = thumbAngle - profile.thumbCurl;
+  var proximalLength = profile.thumbLength * 0.72;
+  var distalLength = profile.thumbLength * 0.52;
   var proximalDirection = {
     x: thumbSide * Math.sin(thumbAngle),
     y: Math.cos(thumbAngle),
@@ -4230,32 +4230,32 @@ function createAuthenticGloveMesh(side, profile) {
     y: Math.cos(thumbTipAngle),
   };
   var thumbRoot = {
-    x: thumbSide * profile.palmWidth * 0.43,
-    y: -profile.palmHeight * 0.15,
+    x: thumbSide * profile.palmWidth * 0.39,
+    y: -profile.palmHeight * 0.12,
   };
   var thumbBaseCenter = {
-    x: thumbRoot.x + proximalDirection.x * proximalLength * 0.38,
-    y: thumbRoot.y + proximalDirection.y * proximalLength * 0.38,
+    x: thumbRoot.x + proximalDirection.x * proximalLength * 0.4,
+    y: thumbRoot.y + proximalDirection.y * proximalLength * 0.4,
   };
   var thumbJoint = {
-    x: thumbRoot.x + proximalDirection.x * proximalLength * 0.72,
-    y: thumbRoot.y + proximalDirection.y * proximalLength * 0.72,
+    x: thumbRoot.x + proximalDirection.x * proximalLength * 0.76,
+    y: thumbRoot.y + proximalDirection.y * proximalLength * 0.76,
   };
   var thumbTipCenter = {
-    x: thumbJoint.x + distalDirection.x * distalLength * 0.42,
-    y: thumbJoint.y + distalDirection.y * distalLength * 0.42,
+    x: thumbJoint.x + distalDirection.x * distalLength * 0.46,
+    y: thumbJoint.y + distalDirection.y * distalLength * 0.46,
   };
 
-  var thumbWebGeometry = createThumbWebBridgeGeometry(0.105, 0.145, 0.064);
+  var thumbWebGeometry = createThumbWebBridgeGeometry(0.088, 0.13, 0.064);
   var thumbWeb = new THREE.Mesh(thumbWebGeometry, secondaryMaterial);
   thumbWeb.name = "glove-thumb-web-bridge";
-  thumbWeb.position.set(thumbSide * profile.palmWidth * 0.4, -profile.palmHeight * 0.14, 0.026);
+  thumbWeb.position.set(thumbSide * profile.palmWidth * 0.37, -profile.palmHeight * 0.1, 0.026);
   thumbWeb.scale.x = thumbSide;
   group.add(thumbWeb);
 
   var thumbWebPalm = new THREE.Mesh(thumbWebGeometry.clone(), latexMaterial);
   thumbWebPalm.name = "glove-thumb-web-latex";
-  thumbWebPalm.position.set(thumbSide * profile.palmWidth * 0.4, -profile.palmHeight * 0.14, -0.035);
+  thumbWebPalm.position.set(thumbSide * profile.palmWidth * 0.37, -profile.palmHeight * 0.1, -0.035);
   thumbWebPalm.scale.x = thumbSide;
   group.add(thumbWebPalm);
 

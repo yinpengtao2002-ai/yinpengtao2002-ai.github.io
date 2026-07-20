@@ -353,6 +353,9 @@ describe("procedural 3D assets", () => {
     expect(rightTip.position.x).toBeLessThan(rightBase.position.x);
     expect(leftBase.rotation.z).toBeLessThan(0);
     expect(rightBase.rotation.z).toBeGreaterThan(0);
+    expect(Math.abs(leftBase.rotation.z)).toBeLessThan(0.8);
+    expect(Math.abs(leftTip.rotation.z)).toBeLessThan(Math.abs(leftBase.rotation.z));
+    expect(leftBase.geometry.parameters.radius).toBeLessThan(0.055);
     expect(leftWeb.scale.x).toBeGreaterThan(0);
     expect(rightWeb.scale.x).toBeLessThan(0);
   });

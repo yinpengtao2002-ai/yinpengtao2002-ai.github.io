@@ -88,12 +88,12 @@ export function getGloveImpactVisual(review) {
     : 0;
   var contact = impact
     ? {
-        x: gloveCenter.x + contactOffset.x * scale,
+        x: gloveCenter.x - contactOffset.x * scale,
         y: gloveCenter.y - contactOffset.y * scale,
         radius: impact.ballRadius * scale * clamp(patchRatio, 0.28, 1),
       }
     : null;
-  var directionX = impact ? impact.offset.x - contactOffset.x : 0;
+  var directionX = impact ? -(impact.offset.x - contactOffset.x) : 0;
   var directionY = impact ? -(impact.offset.y - contactOffset.y) : 0;
   var directionLength = Math.hypot(directionX, directionY);
   var ballCenterDistance = ballRadius * (1 - overlapRatio * 0.35);
@@ -145,7 +145,7 @@ export function getGloveImpactReviewCopy(review) {
 const GLOVE_SILHOUETTE = {
   palmCenter: { x: 91, y: 107 },
   digits: [
-    { name: "thumb", tip: { x: 21, y: 92 } },
+    { name: "thumb", tip: { x: 39, y: 91 } },
     { name: "index", tip: { x: 59, y: 39 } },
     { name: "middle", tip: { x: 87, y: 22 } },
     { name: "ring", tip: { x: 116, y: 31 } },
@@ -201,11 +201,12 @@ function traceGlove(context) {
   context.moveTo(x(66), 163);
   context.lineTo(x(56), 143);
   context.bezierCurveTo(x(51), 133, x(49), 120, x(49), 108);
-  context.lineTo(x(37), 118);
-  context.bezierCurveTo(x(30), 124, x(21), 121, x(16), 112);
-  context.bezierCurveTo(x(11), 103, x(13), 96, thumb.x, thumb.y);
-  context.bezierCurveTo(x(25), 82, x(32), 79, x(38), 84);
-  context.lineTo(x(49), 96);
+  context.lineTo(x(52), 112);
+  context.bezierCurveTo(x(50), 106, x(50), 101, x(50), 97);
+  context.lineTo(x(45), 101);
+  context.bezierCurveTo(x(40), 106, x(33), 106, x(29), 101);
+  context.bezierCurveTo(x(26), 96, x(30), 91, thumb.x, thumb.y);
+  context.bezierCurveTo(x(45), 89, x(50), 93, x(54), 99);
   context.lineTo(x(48), 60);
   context.bezierCurveTo(x(47), 49, x(51), 40, index.x, index.y);
   context.bezierCurveTo(x(67), 38, x(70), 48, x(70), 59);

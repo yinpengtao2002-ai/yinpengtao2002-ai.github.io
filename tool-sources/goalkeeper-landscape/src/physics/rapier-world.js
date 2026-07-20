@@ -165,7 +165,7 @@ function createPartOffsets(side) {
   return [
     { part: "palm", offset: { x: 0, y: 0, z: 0 }, radius: palmRadius },
     { part: "wrist", offset: { x: 0, y: -0.22, z: 0.01 }, radius: 0.13 },
-    { part: "thumb", offset: { x: thumbSide * 0.18, y: -0.02, z: 0 }, radius: 0.105 },
+    { part: "thumb", offset: { x: thumbSide * 0.145, y: 0.045, z: 0 }, radius: 0.09 },
     { part: "finger", offset: { x: -0.115, y: 0.21, z: 0.01 }, radius: 0.105 },
     { part: "finger", offset: { x: -0.04, y: 0.24, z: 0.01 }, radius: 0.112 },
     { part: "finger", offset: { x: 0.04, y: 0.24, z: 0.01 }, radius: 0.112 },
