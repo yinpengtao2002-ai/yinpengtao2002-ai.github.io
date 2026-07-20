@@ -379,12 +379,7 @@ describe("Rapier goalkeeper world", () => {
     expect(ball.lastContact.part).not.toBe("save-assist");
     expect(ball.lastContact.colliderCenter).toBeTruthy();
     expect(ball.lastContact.colliderRadius).toBeGreaterThan(0);
-    expect(ball.lastContact.replayBallCenter).toBeTruthy();
-    expect(Math.hypot(
-      ball.lastContact.replayBallCenter.x - ball.lastContact.colliderCenter.x,
-      ball.lastContact.replayBallCenter.y - ball.lastContact.colliderCenter.y,
-      ball.lastContact.replayBallCenter.z - ball.lastContact.colliderCenter.z,
-    )).toBeLessThan(ball.lastContact.ballRadius + ball.lastContact.colliderRadius);
+    expect(ball.lastContact.replayBallCenter).toBeNull();
     expect(ball.velocity.z).toBeLessThan(0);
 
     world.dispose();

@@ -701,7 +701,7 @@ class RapierGoalkeeperWorld {
       z: contactSurfaceCenter.z + contactDirection.z * contactSurfaceRadius,
     };
     var replayBallCenter = null;
-    if (best.contactSource) {
+    if (best.contactSource === "visual-pocket") {
       var replayOverlap = Math.min(0.018, this.ballRadius * 0.16);
       var replayDistance = Math.max(0, contactSurfaceRadius + this.ballRadius - replayOverlap);
       replayBallCenter = {

@@ -152,11 +152,28 @@ describe("glove impact review", () => {
     expect(visual.contact.radius).toBeCloseTo(expectedRadius, 5);
   });
 
-  it("renders a synthetic save at its effective contact pose while preserving the real ball center", () => {
+  it("keeps a save-assist ball at its real position and explains the visible gap", () => {
+    const calls = [];
+    const context = new Proxy({}, {
+      get(target, property) {
+        if (property in target) return target[property];
+        return (...args) => calls.push({ name: property, args });
+      },
+      set(target, property, value) {
+        target[property] = value;
+        return true;
+      },
+    });
+    const canvas = {
+      width: 440,
+      height: 352,
+      dataset: {},
+      getContext: () => context,
+    };
     const candidate = createGloveImpactCandidate(makeContact({
       assisted: true,
+      contactSource: "save-assist",
       ballCenter: { x: 0.82, y: 1.6, z: 3.15 },
-      replayBallCenter: { x: 0.5, y: 1.3, z: 3.15 },
       contactPoint: { x: 0.48, y: 1.3, z: 3.15 },
       colliderCenter: { x: 0.4, y: 1.3, z: 3.15 },
       colliderRadius: 0.13,
@@ -167,13 +184,30 @@ describe("glove impact review", () => {
     const visual = getGloveImpactVisual(review);
 
     expect(review.impact.assisted).toBe(true);
+    expect(review.impact.contactSource).toBe("save-assist");
     expect(review.impact.ballCenter).toEqual({ x: 0.82, y: 1.6, z: 3.15 });
-    expect(review.impact.replayBallCenter).toEqual({ x: 0.5, y: 1.3, z: 3.15 });
-    expect(Math.abs(visual.contact.x - visual.gloveCenter.x)).toBeLessThan(40);
+    expect(review.impact.replayBallCenter).toBeNull();
     expect(visual.ball.radius).toBeCloseTo(0.11 * GLOVE_IMPACT_CANVAS.pixelsPerMeter);
-    expect(Math.hypot(visual.ball.x - visual.contact.x, visual.ball.y - visual.contact.y))
-      .toBeLessThan(visual.ball.radius);
-    expect(visual.contact.radius).toBeLessThan(visual.ball.radius);
+    expect(visual.contact).toBeNull();
+    expect(Math.hypot(visual.ball.x - visual.gloveCenter.x, visual.ball.y - visual.gloveCenter.y))
+      .toBeGreaterThan(visual.ball.radius);
+    expect(getGloveImpactReviewCopy(review)).toEqual({
+      result: "辅助扑出",
+      detail: "扑救辅助生效，足球未直接接触手套",
+    });
+
+    drawGloveImpactReview(canvas, review);
+    expect(calls.filter((call) => call.name === "clip")).toHaveLength(0);
+
+    const legacyVisual = getGloveImpactVisual({
+      ...review,
+      impact: {
+        ...review.impact,
+        replayBallCenter: { x: 0.5, y: 1.3, z: 3.15 },
+        replayOffset: { x: 0.2, y: -0.3, z: 0 },
+      },
+    });
+    expect(legacyVisual.ball).toEqual(visual.ball);
   });
 
   it("draws the regulation-size ball before clipping the smaller contact patch to the glove", () => {

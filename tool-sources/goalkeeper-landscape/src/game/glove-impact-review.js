@@ -78,6 +78,7 @@ export function createGloveImpactCandidate(contact) {
     side: contact.side === "left" ? "left" : contact.side === "right" ? "right" : "both",
     part: contact.part || "palm",
     assisted: Boolean(contact.assisted),
+    contactSource: contact.contactSource || null,
     ballRadius,
     ballCenter,
     replayBallCenter,
@@ -128,8 +129,13 @@ export function getGloveImpactVisual(review) {
   var gloveSide = impact?.side || "both";
   var gloves = getGlovePair(impact?.side);
   var gloveCenter = getActiveGloveCenter(gloveSide, gloves);
-  var ballOffset = impact?.replayOffset || impact?.offset || { x: 0, y: 0, z: 0 };
-  var displayedBallCenter = impact?.replayBallCenter || impact?.ballCenter || null;
+  var ballOffset = impact?.assisted
+    ? impact?.offset
+    : impact?.replayOffset || impact?.offset;
+  ballOffset ||= { x: 0, y: 0, z: 0 };
+  var displayedBallCenter = impact?.assisted
+    ? impact?.ballCenter || null
+    : impact?.replayBallCenter || impact?.ballCenter || null;
   var contactOffset = impact?.contactOffset || impact?.offset || { x: 0, y: 0, z: 0 };
   var overlapDepth = clamp(impact?.overlapDepth || 0, 0, (impact?.ballRadius || 0) * 2);
   var ballRadius = impact ? impact.ballRadius * scale : 0;
@@ -144,7 +150,7 @@ export function getGloveImpactVisual(review) {
     ? (physicalPatchRadius ?? Math.sqrt(Math.max(0, 2 * impact.ballRadius * overlapDepth - overlapDepth * overlapDepth)))
       * scale
     : 0;
-  var contact = impact
+  var contact = impact && !impact.assisted
     ? {
         x: gloveCenter.x + contactOffset.x * scale,
         y: gloveCenter.y - contactOffset.y * scale,
@@ -175,6 +181,12 @@ export function getGloveImpactReviewCopy(review) {
     return {
       result: "未触球",
       detail: review?.result === "goal" ? "球直接进入球门" : "本球没有手套接触",
+    };
+  }
+  if (review.result === "save" && review.impact.assisted) {
+    return {
+      result: "辅助扑出",
+      detail: "扑救辅助生效，足球未直接接触手套",
     };
   }
   if (review.result === "save") {
@@ -607,40 +619,42 @@ export function drawGloveImpactReview(canvas, review) {
     var color = review.result === "save" ? "94, 224, 164" : review.result === "goal" ? "255, 105, 105" : "212, 220, 230";
     drawFootballReference(context, visual.ball, color);
 
-    visual.gloves.filter((glove) => glove.active).forEach((glove) => {
-      context.save();
-      traceGlove(context, glove);
-      context.clip();
-      context.beginPath();
-      context.arc(visual.ball.x, visual.ball.y, visual.ball.radius, 0, Math.PI * 2);
-      context.fillStyle = "rgba(" + color + ", 0.3)";
-      context.fill();
-      if (visual.contact) {
-        var markerRadius = Math.max(1.6, visual.contact.radius);
-        if (visual.contact.radius >= 1.6) {
-          context.beginPath();
-          context.arc(visual.contact.x, visual.contact.y, visual.contact.radius, 0, Math.PI * 2);
-          context.fillStyle = "rgba(" + color + ", 0.9)";
-          context.strokeStyle = "rgba(250, 252, 255, 0.96)";
-          context.lineWidth = 1.6;
-          context.fill();
-          context.stroke();
-        } else {
-          if (visual.contact.radius > 0.05) {
+    if (!review?.impact?.assisted) {
+      visual.gloves.filter((glove) => glove.active).forEach((glove) => {
+        context.save();
+        traceGlove(context, glove);
+        context.clip();
+        context.beginPath();
+        context.arc(visual.ball.x, visual.ball.y, visual.ball.radius, 0, Math.PI * 2);
+        context.fillStyle = "rgba(" + color + ", 0.3)";
+        context.fill();
+        if (visual.contact) {
+          var markerRadius = Math.max(1.6, visual.contact.radius);
+          if (visual.contact.radius >= 1.6) {
             context.beginPath();
             context.arc(visual.contact.x, visual.contact.y, visual.contact.radius, 0, Math.PI * 2);
             context.fillStyle = "rgba(" + color + ", 0.9)";
+            context.strokeStyle = "rgba(250, 252, 255, 0.96)";
+            context.lineWidth = 1.6;
             context.fill();
+            context.stroke();
+          } else {
+            if (visual.contact.radius > 0.05) {
+              context.beginPath();
+              context.arc(visual.contact.x, visual.contact.y, visual.contact.radius, 0, Math.PI * 2);
+              context.fillStyle = "rgba(" + color + ", 0.9)";
+              context.fill();
+            }
+            context.beginPath();
+            context.arc(visual.contact.x, visual.contact.y, markerRadius, 0, Math.PI * 2);
+            context.strokeStyle = "rgba(250, 252, 255, 0.96)";
+            context.lineWidth = 1.6;
+            context.stroke();
           }
-          context.beginPath();
-          context.arc(visual.contact.x, visual.contact.y, markerRadius, 0, Math.PI * 2);
-          context.strokeStyle = "rgba(250, 252, 255, 0.96)";
-          context.lineWidth = 1.6;
-          context.stroke();
         }
-      }
-      context.restore();
-    });
+        context.restore();
+      });
+    }
   }
 
   canvas.dataset.ballX = visual.ball ? String(Math.round(visual.ball.x * 100) / 100) : "";
