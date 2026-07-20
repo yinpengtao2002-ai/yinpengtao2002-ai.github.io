@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createGloveImpactCandidate,
+  drawGloveImpactReview,
   finalizeGloveImpactReview,
   getGloveSilhouette,
   getGloveImpactReviewCopy,
@@ -52,6 +53,48 @@ describe("glove impact review", () => {
     expect(visual.ball.x).toBeCloseTo(visual.gloveCenter.x);
     expect(visual.ball.y).toBeCloseTo(visual.gloveCenter.y);
     expect(visual.ball.radius).toBeGreaterThan(15);
+  });
+
+  it("keeps a successful assisted-save contact patch on the glove surface", () => {
+    const candidate = createGloveImpactCandidate(makeContact({
+      assisted: true,
+      ballCenter: { x: 0.82, y: 1.2, z: 3.15 },
+      contactPoint: { x: 0.48, y: 1.2, z: 3.15 },
+      overlapDepth: 0.018,
+    }));
+    const review = finalizeGloveImpactReview(candidate, "saved");
+    const visual = getGloveImpactVisual(review);
+
+    expect(review.impact.assisted).toBe(true);
+    expect(Math.abs(visual.ball.x - visual.gloveCenter.x)).toBeLessThan(40);
+    expect(visual.ball.radius).toBeLessThan(review.impact.ballRadius * 165);
+  });
+
+  it("clips a successful save patch to the glove before drawing the marker", () => {
+    const calls = [];
+    const context = new Proxy({}, {
+      get(target, property) {
+        if (property in target) return target[property];
+        return (...args) => calls.push({ name: property, args });
+      },
+      set(target, property, value) {
+        target[property] = value;
+        return true;
+      },
+    });
+    const canvas = {
+      width: 180,
+      height: 184,
+      dataset: {},
+      getContext: () => context,
+    };
+    const review = finalizeGloveImpactReview(createGloveImpactCandidate(makeContact()), "saved");
+
+    drawGloveImpactReview(canvas, review);
+
+    expect(calls.findIndex((call) => call.name === "clip")).toBeLessThan(
+      calls.findIndex((call) => call.name === "arc"),
+    );
   });
 
   it("keeps the full ball mostly outside the glove for a glancing touch", () => {

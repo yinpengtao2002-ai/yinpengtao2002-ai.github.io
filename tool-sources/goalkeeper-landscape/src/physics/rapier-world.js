@@ -508,6 +508,7 @@ class RapierGoalkeeperWorld {
         point: pocketClosest.point,
         ballCenter: vector(pocketClosest.point),
         gloveCenter: vector(this.gloveTarget.center),
+        contactPoint: vector(this.gloveTarget.center),
         ballRadius: this.ballRadius,
         overlapDepth: this.ballRadius * 2 * catchQuality,
         normal: { x: 0, y: 0, z: -1 },
@@ -577,11 +578,25 @@ class RapierGoalkeeperWorld {
     this.outcome = "deflected";
     this.deflectionAge = 0;
     var impactSide = best.part.side;
+    if (impactSide === "both") {
+      impactSide = best.point.x < this.gloveTarget.center.x ? "left" : "right";
+    }
     var impactGloveCenter = impactSide === "left"
       ? this.gloveTarget.left
       : impactSide === "right"
         ? this.gloveTarget.right
         : this.gloveTarget.center;
+    var contactSurfaceCenter = best.part.side === "both" ? impactGloveCenter : best.center;
+    var contactSurfaceRadius = best.part.side === "both" ? GLOVE_3D.colliderRadius : best.part.radius;
+    var contactDirectionDelta = subtract3(best.point, contactSurfaceCenter);
+    var contactDirection = length3(contactDirectionDelta) < 0.0001
+      ? { x: 0, y: 0, z: -1 }
+      : normalize3(contactDirectionDelta);
+    var contactPoint = {
+      x: contactSurfaceCenter.x + contactDirection.x * contactSurfaceRadius,
+      y: contactSurfaceCenter.y + contactDirection.y * contactSurfaceRadius,
+      z: contactSurfaceCenter.z + contactDirection.z * contactSurfaceRadius,
+    };
     this.lastContact = {
       eventId: this.nextContactEventId(),
       type: "glove",
@@ -590,6 +605,7 @@ class RapierGoalkeeperWorld {
       point: best.point,
       ballCenter: vector(best.point),
       gloveCenter: vector(impactGloveCenter),
+      contactPoint: contactPoint,
       ballRadius: this.ballRadius,
       overlapDepth: Math.max(0, best.limit - best.distance),
       normal: normal,

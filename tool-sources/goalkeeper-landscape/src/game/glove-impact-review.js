@@ -24,6 +24,7 @@ export function createGloveImpactCandidate(contact) {
 
   var ballCenter = clonePoint(contact.ballCenter);
   var gloveCenter = clonePoint(contact.gloveCenter);
+  var contactPoint = clonePoint(contact.contactPoint || contact.ballCenter);
   var ballRadius = Math.max(0.01, Number(contact.ballRadius) || 0.11);
   var overlapDepth = clamp(Number(contact.overlapDepth) || 0, 0, ballRadius * 2);
 
@@ -38,6 +39,11 @@ export function createGloveImpactCandidate(contact) {
       x: ballCenter.x - gloveCenter.x,
       y: ballCenter.y - gloveCenter.y,
       z: ballCenter.z - gloveCenter.z,
+    },
+    contactOffset: {
+      x: contactPoint.x - gloveCenter.x,
+      y: contactPoint.y - gloveCenter.y,
+      z: contactPoint.z - gloveCenter.z,
     },
     overlapDepth,
     overlapRatio: clamp(overlapDepth / (ballRadius * 2), 0, 1),
@@ -63,20 +69,23 @@ export function finalizeGloveImpactReview(candidate, outcome) {
 export function getGloveImpactVisual(review) {
   var impact = review?.impact || null;
   var scale = GLOVE_IMPACT_CANVAS.pixelsPerMeter;
+  var gloveSide = impact?.side || "right";
+  var gloveCenter = getGloveSilhouette(gloveSide).palmCenter;
+  var showContactPatch = review?.result === "save" && impact?.contactOffset;
+  var visualOffset = showContactPatch ? impact.contactOffset : impact?.offset;
+  var overlapRatio = clamp(impact?.overlapRatio || 0, 0, 1);
+  var patchRatio = Math.sqrt(clamp(2 * overlapRatio - overlapRatio * overlapRatio, 0, 1));
   return {
     width: GLOVE_IMPACT_CANVAS.width,
     height: GLOVE_IMPACT_CANVAS.height,
-    gloveCenter: {
-      x: GLOVE_IMPACT_CANVAS.centerX,
-      y: GLOVE_IMPACT_CANVAS.centerY,
-    },
-    gloveSide: impact?.side || "right",
+    gloveCenter: gloveCenter,
+    gloveSide: gloveSide,
     result: review?.result || "miss",
     ball: impact
       ? {
-          x: GLOVE_IMPACT_CANVAS.centerX + impact.offset.x * scale,
-          y: GLOVE_IMPACT_CANVAS.centerY - impact.offset.y * scale,
-          radius: impact.ballRadius * scale,
+          x: gloveCenter.x + visualOffset.x * scale,
+          y: gloveCenter.y - visualOffset.y * scale,
+          radius: impact.ballRadius * scale * (showContactPatch ? clamp(patchRatio, 0.28, 1) : 1),
         }
       : null,
   };
@@ -227,23 +236,30 @@ export function drawGloveImpactReview(canvas, review) {
 
   if (visual.ball) {
     var color = review.result === "save" ? "94, 224, 164" : review.result === "goal" ? "255, 105, 105" : "212, 220, 230";
-    context.save();
-    context.beginPath();
-    context.arc(visual.ball.x, visual.ball.y, visual.ball.radius, 0, Math.PI * 2);
-    context.fillStyle = "rgba(" + color + ", 0.18)";
-    context.strokeStyle = "rgba(" + color + ", 0.96)";
-    context.lineWidth = 2.4;
-    context.fill();
-    context.stroke();
-    context.restore();
+    if (review.result !== "save") {
+      context.save();
+      context.beginPath();
+      context.arc(visual.ball.x, visual.ball.y, visual.ball.radius, 0, Math.PI * 2);
+      context.fillStyle = "rgba(" + color + ", 0.18)";
+      context.strokeStyle = "rgba(" + color + ", 0.96)";
+      context.lineWidth = 2.4;
+      context.fill();
+      context.stroke();
+      context.restore();
+    }
 
     context.save();
     traceGlove(context, visual.gloveSide);
     context.clip();
     context.beginPath();
     context.arc(visual.ball.x, visual.ball.y, visual.ball.radius, 0, Math.PI * 2);
-    context.fillStyle = "rgba(" + color + ", 0.78)";
+    context.fillStyle = "rgba(" + color + (review.result === "save" ? ", 0.88)" : ", 0.78)");
     context.fill();
+    if (review.result === "save") {
+      context.strokeStyle = "rgba(" + color + ", 0.98)";
+      context.lineWidth = 2;
+      context.stroke();
+    }
     context.restore();
   }
 

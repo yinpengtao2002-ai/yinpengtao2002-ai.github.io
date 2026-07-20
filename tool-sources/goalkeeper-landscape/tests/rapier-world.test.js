@@ -110,6 +110,7 @@ describe("Rapier goalkeeper world", () => {
     expect(ball.lastContact?.eventId).toBeTypeOf("number");
     expect(ball.lastContact.ballCenter).toBeTruthy();
     expect(ball.lastContact.gloveCenter).toBeTruthy();
+    expect(ball.lastContact.contactPoint).toBeTruthy();
     expect(ball.lastContact.ballRadius).toBeCloseTo(0.11);
     expect(ball.lastContact.overlapDepth).toBeGreaterThan(0);
     expect(ball.outcome).toBe("deflected");
