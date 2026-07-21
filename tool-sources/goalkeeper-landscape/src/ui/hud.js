@@ -617,6 +617,17 @@ export function createHud(documentRef) {
     gloveImpactResult: documentRef.getElementById("gloveImpactResult"),
     gloveImpactDetail: documentRef.getElementById("gloveImpactDetail"),
   };
+  var eventDisposers = [];
+
+  function bindEvent(element, name, listener) {
+    if (!element || typeof listener !== "function") return;
+    element.addEventListener(name, listener);
+    eventDisposers.push(() => element.removeEventListener(name, listener));
+  }
+
+  function disposeBindings() {
+    eventDisposers.splice(0).forEach((dispose) => dispose());
+  }
 
   function setVisible(element, visible) {
     if (element) element.classList.toggle("hidden", !visible);
@@ -847,21 +858,23 @@ export function createHud(documentRef) {
   return {
     refs,
     bind(actions) {
-      refs.startButton?.addEventListener("click", actions.onStart);
-      refs.restartButton?.addEventListener("click", actions.onRestart);
-      refs.pauseButton?.addEventListener("click", actions.onPause);
-      refs.pauseResumeButton?.addEventListener("click", actions.onPause);
-      refs.soundButton?.addEventListener("click", actions.onSound);
-      refs.saveAssistSwitch?.addEventListener("click", () => {
+      disposeBindings();
+      bindEvent(refs.startButton, "click", actions.onStart);
+      bindEvent(refs.restartButton, "click", actions.onRestart);
+      bindEvent(refs.pauseButton, "click", actions.onPause);
+      bindEvent(refs.pauseResumeButton, "click", actions.onPause);
+      bindEvent(refs.soundButton, "click", actions.onSound);
+      bindEvent(refs.saveAssistSwitch, "click", () => {
         actions.onAssist?.(refs.saveAssistSwitch.getAttribute("aria-checked") !== "true");
       });
       refs.difficultyButtons.forEach((button) => {
-        button.addEventListener("click", () => actions.onDifficulty?.(button.dataset.difficulty));
+        bindEvent(button, "click", () => actions.onDifficulty?.(button.dataset.difficulty));
       });
       refs.modeButtons.forEach((button) => {
-        button.addEventListener("click", () => actions.onMode?.(button.dataset.mode));
+        bindEvent(button, "click", () => actions.onMode?.(button.dataset.mode));
       });
     },
+    dispose: disposeBindings,
     updateMode(selectedMode) {
       var penaltyMode = selectedMode === "penalty";
       if (refs.stage) refs.stage.dataset.mode = penaltyMode ? "penalty" : "timed";

@@ -601,6 +601,43 @@ export function resolveRuntimeMode(windowRef) {
   return resolveGameMode(value).id;
 }
 
+export function createRoundStartController(options) {
+  var pending = false;
+  var disposed = false;
+
+  function resetIfActive() {
+    if (disposed) return false;
+    pending = false;
+    options.resetRound();
+    return true;
+  }
+
+  return {
+    start() {
+      if (disposed) return Promise.resolve(false);
+      options.primeAudio?.();
+      if (!options.shouldForceLandscape()) return Promise.resolve(resetIfActive());
+      if (pending) return Promise.resolve(false);
+
+      pending = true;
+      return Promise.resolve(options.requestLandscape()).then(() => {
+        if (disposed || !pending) return false;
+        pending = false;
+        options.resize();
+        return resetIfActive();
+      });
+    },
+    completeAfterResize(needsLandscape) {
+      if (needsLandscape || !pending) return false;
+      return resetIfActive();
+    },
+    dispose() {
+      disposed = true;
+      pending = false;
+    },
+  };
+}
+
 export async function createThreeGameRuntime(options) {
   var canvas = options.canvas;
   var stage = options.stage;
@@ -655,7 +692,7 @@ export async function createThreeGameRuntime(options) {
   var lastPointerInput = { x: 0, y: 0 };
   var lastFrame = 0;
   var runningLoop = false;
-  var pendingLandscapeStart = false;
+  var roundStartController = null;
   var debugKeysEnabled =
     windowRef.location &&
     (windowRef.location.hostname === "127.0.0.1" || windowRef.location.hostname === "localhost");
@@ -680,10 +717,7 @@ export async function createThreeGameRuntime(options) {
     lastPointerInput = input.getPointer(bounds);
     scene.resize(bounds);
     render();
-    if (pendingLandscapeStart && !needsLandscape) {
-      pendingLandscapeStart = false;
-      resetRound();
-    }
+    roundStartController?.completeAfterResize(needsLandscape);
   }
 
   function updateGloveFromPointer(dt) {
@@ -744,22 +778,16 @@ export async function createThreeGameRuntime(options) {
   }
 
   function startRoundWithMobileLandscape() {
-    audio.prime();
-    if (!shouldForceMobileLandscape(windowRef)) {
-      pendingLandscapeStart = false;
-      resetRound();
-      return;
-    }
-
-    if (pendingLandscapeStart) return;
-    pendingLandscapeStart = true;
-    requestLandscapeOrientation(windowRef, stage).then(function afterLandscapeRequest() {
-      if (!pendingLandscapeStart) return;
-      pendingLandscapeStart = false;
-      resize();
-      resetRound();
-    });
+    return roundStartController.start();
   }
+
+  roundStartController = createRoundStartController({
+    primeAudio: () => audio.prime(),
+    shouldForceLandscape: () => shouldForceMobileLandscape(windowRef),
+    requestLandscape: () => requestLandscapeOrientation(windowRef, stage),
+    resize,
+    resetRound,
+  });
 
   function rememberLingeringBall(ball, outcome) {
     var duration = getLingeringBallDurationForOutcome(outcome);
@@ -1274,6 +1302,8 @@ export async function createThreeGameRuntime(options) {
     },
     dispose() {
       this.stop();
+      roundStartController.dispose();
+      hud.dispose?.();
       physics.dispose();
       scene.dispose();
       audio.stopMusic?.();

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import * as RuntimeModule from "../src/game/three-game-runtime.js";
 import {
   DEBUG_FORCE_GLOVE_SETTLE_DT,
@@ -37,6 +37,32 @@ import { createShot3DDirector } from "../src/game/shot-3d-director.js";
 import { RAPIER_GOAL, createRapierGoalkeeperWorld } from "../src/physics/rapier-world.js";
 
 describe("three game runtime timing", () => {
+  it("cancels a pending landscape restart when its runtime is disposed", async () => {
+    let resolveLandscape;
+    const landscapeRequest = new Promise((resolve) => {
+      resolveLandscape = resolve;
+    });
+    const resetRound = vi.fn();
+    const resize = vi.fn();
+
+    expect(RuntimeModule.createRoundStartController).toBeTypeOf("function");
+    const controller = RuntimeModule.createRoundStartController({
+      primeAudio: vi.fn(),
+      shouldForceLandscape: () => true,
+      requestLandscape: () => landscapeRequest,
+      resize,
+      resetRound,
+    });
+
+    const pendingStart = controller.start();
+    controller.dispose();
+    resolveLandscape();
+    await pendingStart;
+
+    expect(resize).not.toHaveBeenCalled();
+    expect(resetRound).not.toHaveBeenCalled();
+  });
+
   it("keeps the strongest glove contact until the shot outcome is published", () => {
     const glancingBall = {
       outcome: "deflected",

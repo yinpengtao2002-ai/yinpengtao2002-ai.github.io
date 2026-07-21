@@ -21,10 +21,14 @@ function createElement() {
       },
     },
     addEventListener(name, listener) {
-      this.listeners[name] = listener;
+      if (!this.listeners[name]) this.listeners[name] = new Set();
+      this.listeners[name].add(listener);
+    },
+    removeEventListener(name, listener) {
+      this.listeners[name]?.delete(listener);
     },
     click() {
-      this.listeners.click?.({ currentTarget: this });
+      this.listeners.click?.forEach((listener) => listener({ currentTarget: this }));
     },
     setAttribute(name, value) {
       this.attributes[name] = value;
@@ -171,6 +175,31 @@ function createDocument() {
 }
 
 describe("hud", () => {
+  it("removes restart listeners when a runtime HUD is disposed", () => {
+    const documentRef = createDocument();
+    const staleHud = createHud(documentRef);
+    const currentHud = createHud(documentRef);
+    let staleRestarts = 0;
+    let currentRestarts = 0;
+
+    staleHud.bind({
+      onRestart() {
+        staleRestarts += 1;
+      },
+    });
+    currentHud.bind({
+      onRestart() {
+        currentRestarts += 1;
+      },
+    });
+
+    staleHud.dispose();
+    currentHud.refs.restartButton.click();
+
+    expect(staleRestarts).toBe(0);
+    expect(currentRestarts).toBe(1);
+  });
+
   it("renders the previous glove contact without changing the play field", () => {
     const documentRef = createDocument();
     const hud = createHud(documentRef);
