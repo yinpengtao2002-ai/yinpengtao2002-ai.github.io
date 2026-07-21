@@ -68,6 +68,9 @@ function createElement() {
     click() {
       listeners.get("click")?.forEach((listener) => listener({ currentTarget: this }));
     },
+    listenerCount(name) {
+      return listeners.get(name)?.size || 0;
+    },
     getAttribute(name) {
       return this.attributes[name];
     },
@@ -106,8 +109,12 @@ describe("runtime disposal", () => {
       windowRef,
     });
 
+    const restartButton = documentRef.getElementById("restartButton");
+    expect(restartButton.listenerCount("click")).toBe(1);
+
     runtime.dispose();
-    documentRef.getElementById("restartButton").click();
+    expect(restartButton.listenerCount("click")).toBe(0);
+    restartButton.click();
 
     expect(fakes.audio.startMusic).not.toHaveBeenCalled();
     expect(runtime.getState().running).toBe(false);
