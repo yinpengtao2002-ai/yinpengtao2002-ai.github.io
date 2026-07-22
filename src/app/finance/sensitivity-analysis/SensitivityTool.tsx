@@ -1,11 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
-import { bootFinanceBrowserEngine } from "@/lib/finance/browser-tool-loader";
+import { useEffect, useState } from "react";
+import { bootFinanceBrowserEngine, type FinanceBrowserEngine } from "@/lib/finance/browser-tool-loader";
 
 export default function SensitivityTool() {
+    const [bootAttempt, setBootAttempt] = useState(0);
+    const [bootError, setBootError] = useState("");
+
     useEffect(() => {
         let cancelled = false;
+        let engine: FinanceBrowserEngine | undefined;
+        setBootError("");
 
         void bootFinanceBrowserEngine({
             engineName: "ProfitBridgeSensitivity",
@@ -16,15 +21,28 @@ export default function SensitivityTool() {
             ],
             isCancelled: () => cancelled,
             errorMessage: "Failed to start sensitivity analysis tool",
+            onError: () => {
+                if (!cancelled) setBootError("敏感性引擎加载失败，请重试。");
+            },
+        }).then((loaded) => {
+            engine = loaded;
+            if (cancelled) loaded?.dispose();
         });
 
         return () => {
             cancelled = true;
+            engine?.dispose();
         };
-    }, []);
+    }, [bootAttempt]);
 
     return (
         <div id="sensitivity-tool-root" className="sensitivity-tool">
+            {bootError ? (
+                <div className="engine-load-error" role="alert">
+                    <span>{bootError}</span>
+                    <button type="button" className="btn btn-secondary" onClick={() => setBootAttempt((value) => value + 1)}>重试加载</button>
+                </div>
+            ) : null}
             <aside id="sidebar" className="sidebar">
                 <button id="sidebar-toggle" className="sidebar-toggle" type="button" title="收起控制台" aria-label="收起控制台">
                     ‹
@@ -83,6 +101,15 @@ export default function SensitivityTool() {
                     </div>
                 </section>
 
+                <section className="sidebar-block" aria-labelledby="sensitivity-assumption-title">
+                    <h2 className="sidebar-title" id="sensitivity-assumption-title">当前模型假设</h2>
+                    <div className="field-note">
+                        <p>所有 Driver 均按非负值计算。</p>
+                        <p>所得税按固定金额处理，不随税前利润自动变化。</p>
+                        <p>利润总额 = 销量 × 单位收入 - 销量 × 单位变动成本 - 固定扣减项 + 利润贡献项。</p>
+                    </div>
+                </section>
+
                 <section className="sidebar-block">
                     <h2 className="sidebar-title">联动分析</h2>
                     <div className="form-grid">
@@ -117,7 +144,7 @@ export default function SensitivityTool() {
                 控制台
             </button>
 
-            <main className="main-content">
+            <div className="main-content">
                 <header className="model-header">
                     <div>
                         <p className="eyebrow">Financial Modeling</p>
@@ -189,7 +216,7 @@ export default function SensitivityTool() {
                     <span>利润敏感性分析</span>
                     <span>销量、单车边际、固定扣减项与利润总额</span>
                 </footer>
-            </main>
+            </div>
         </div>
     );
 }

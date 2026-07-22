@@ -7,7 +7,10 @@ import {
 export async function middleware(request: NextRequest) {
   const accessToken = readPrivateToolAccessTokenFromHeaders(request.headers);
 
-  if (!(await verifyPrivateToolAccessTokenForMiddleware(accessToken))) {
+  if (!(await verifyPrivateToolAccessTokenForMiddleware(accessToken, Date.now(), {
+    audience: "lucas-private-tools",
+    scope: "lucas:stock-decision",
+  }))) {
     return NextResponse.json({ error: "access_denied" }, { status: 401 });
   }
 

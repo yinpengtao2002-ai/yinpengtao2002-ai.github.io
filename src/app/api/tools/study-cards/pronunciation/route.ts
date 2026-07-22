@@ -245,7 +245,7 @@ async function callSpeechProviderWithFallbackModels(provider: SpeechProvider, wo
 }
 
 export async function POST(req: NextRequest) {
-  const rateLimitError = enforceRateLimit(req, PRONUNCIATION_RATE_LIMIT);
+  const rateLimitError = await enforceRateLimit(req, PRONUNCIATION_RATE_LIMIT);
 
   if (rateLimitError) {
     return rateLimitError;

@@ -332,6 +332,47 @@ details[open] > .sidebar-summary::after {
     font-family: var(--font-sans);
 }
 
+.margin-field-governance {
+    display: grid;
+    gap: 0.65rem;
+    padding: 0.8rem;
+    border: 1px solid rgba(217, 119, 87, 0.35);
+    border-radius: 10px;
+    background: rgba(217, 119, 87, 0.05);
+}
+
+.margin-field-governance[hidden] {
+    display: none;
+}
+
+.margin-field-governance h3,
+.margin-field-governance p {
+    margin: 0;
+}
+
+.margin-field-governance h3 {
+    font-size: 0.88rem;
+}
+
+.margin-field-governance p,
+.margin-field-governance label {
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    line-height: 1.5;
+}
+
+.margin-field-governance-fields,
+.margin-field-governance-fields label {
+    display: grid;
+    gap: 0.4rem;
+}
+
+.margin-field-governance-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
 /* 按钮 */
 .btn-primary {
     background: var(--accent-orange);
@@ -495,6 +536,43 @@ details[open] > .sidebar-summary::after {
     font-size: 0.76rem;
     font-weight: 850;
     line-height: 1.2;
+}
+
+.dimension-train-actions {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.16rem;
+}
+
+.dimension-train-actions button {
+    display: inline-flex;
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(116, 113, 104, 0.2);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 0.58rem;
+    font-weight: 850;
+    line-height: 1;
+}
+
+.dimension-train-actions button:hover:not(:disabled),
+.dimension-train-actions button:focus-visible {
+    border-color: rgba(106, 155, 204, 0.52);
+    color: var(--accent-blue);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(106, 155, 204, 0.12);
+}
+
+.dimension-train-actions button:disabled {
+    cursor: not-allowed;
+    opacity: 0.34;
 }
 
 .dimension-train-car.filtered,
@@ -1513,6 +1591,14 @@ details[open] > .usage-summary::after {
     font-family: var(--font-sans);
 }
 
+.chart-accessible-summary {
+    margin: 0.45rem 0 0;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 0.74rem;
+    line-height: 1.55;
+}
+
 .waterfall-chart-container {
     position: relative;
     width: 100%;
@@ -1629,6 +1715,19 @@ details[open] > .usage-summary::after {
     color: var(--text-secondary);
     font-size: 0.76rem;
     font-weight: 700;
+}
+
+.visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    border: 0 !important;
+    padding: 0 !important;
+    clip: rect(0 0 0 0) !important;
+    clip-path: inset(50%) !important;
+    white-space: nowrap !important;
 }
 
 .waterfall-tooltip-main strong {

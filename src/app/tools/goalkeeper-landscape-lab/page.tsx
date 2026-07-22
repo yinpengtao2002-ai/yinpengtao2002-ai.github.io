@@ -163,7 +163,7 @@ const assetCandidates: AssetCandidate[] = [
 ];
 
 export const metadata: Metadata = {
-  title: "Goalkeeper Landscape Lab｜Lucas Yin",
+  title: "Goalkeeper Landscape Lab",
   description: "Hidden goalkeeper game workbench for physics scenarios and asset review.",
 };
 
@@ -177,7 +177,7 @@ export default function GoalkeeperLandscapeLabPage() {
   const activeScenario = physicsScenarios[0];
 
   return (
-    <main className={styles.page} aria-label="Goalkeeper Landscape Lab">
+    <div className={styles.page} aria-label="Goalkeeper Landscape Lab">
       <aside className={styles.rail} aria-label="Goalkeeper Landscape Lab controls">
         <div className={styles.brandBlock}>
           <span className={styles.kicker}>Hidden Workbench</span>
@@ -239,6 +239,6 @@ export default function GoalkeeperLandscapeLabPage() {
           </div>
         </section>
       </section>
-    </main>
+    </div>
   );
 }

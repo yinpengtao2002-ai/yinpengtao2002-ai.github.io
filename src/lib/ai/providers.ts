@@ -18,6 +18,7 @@ export const AI_PRIMARY_API_URL_ENV = "AI_PRIMARY_API_URL";
 export const AI_PRIMARY_MODEL_ENV = "AI_PRIMARY_MODEL";
 export const AI_PRIMARY_TTS_MODEL_ENV = "AI_PRIMARY_TTS_MODEL";
 export const AI_PRIMARY_TTS_VOICE_ENV = "AI_PRIMARY_TTS_VOICE";
+export const AI_PROVIDER_ORDER_ENV = "AI_PROVIDER_ORDER";
 
 const AI_PRIMARY_API_URL = "https://api.dstopology.com";
 const AI_PRIMARY_MODEL = "gpt-5.5";
@@ -64,20 +65,27 @@ export function getChatProviders(timeoutMs: number): ChatProvider[] {
   const deepseekApiKey = readEnv(process.env.DEEPSEEK_API_KEY);
   const deepseekApiUrl = readEnv(process.env.DEEPSEEK_API_URL) || DEEPSEEK_API_URL;
 
-  return [
-    {
-      model: DEEPSEEK_MODEL,
-      apiUrl: deepseekApiUrl,
-      apiKey: deepseekApiKey,
-      timeoutMs,
-    },
-    {
+  const providers = {
+    primary: {
       model: primaryModel,
       apiUrl: primaryApiUrl,
       apiKey: primaryApiKey,
       timeoutMs,
     },
-  ];
+    deepseek: {
+      model: DEEPSEEK_MODEL,
+      apiUrl: deepseekApiUrl,
+      apiKey: deepseekApiKey,
+      timeoutMs,
+    },
+  } satisfies Record<"primary" | "deepseek", ChatProvider>;
+  const requestedOrder = readEnv(process.env.AI_PROVIDER_ORDER)
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter((item): item is keyof typeof providers => item === "primary" || item === "deepseek");
+  const order = [...new Set([...requestedOrder, "primary", "deepseek"])] as Array<keyof typeof providers>;
+
+  return order.map((name) => providers[name]);
 }
 
 export function getSpeechProvider(timeoutMs: number): SpeechProvider {

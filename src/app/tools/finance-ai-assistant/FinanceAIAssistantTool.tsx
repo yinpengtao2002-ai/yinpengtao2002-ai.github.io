@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type DragEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type DragEvent } from "react";
 import Link from "next/link";
 import { ArrowUp, Clock3, Download, Eye, Loader2, LockKeyhole, RotateCcw, Trash2, UploadCloud } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -10,6 +10,7 @@ import rehypeKatex from "rehype-katex";
 import * as XLSX from "xlsx";
 import "katex/dist/katex.min.css";
 import { buildChartSpec, buildDirectChartSpec } from "@/lib/finance/charts";
+import { buildPlotlyAccessibleData } from "@/lib/finance/chart-accessibility";
 import financeTemplates from "@/lib/finance/templates.js";
 import { resolveFinanceActionFilterMembers } from "@/lib/finance-ai/filter-resolution";
 import {
@@ -64,9 +65,8 @@ type APIResponse = {
   message?: string;
   assumptions?: string[];
   modules?: FinanceActionModule[];
-  error?: string;
   errorCode?: string;
-  errors?: string[];
+  requestId?: string;
 };
 
 type ComputedModule = {
@@ -112,18 +112,21 @@ const ASSISTANT_AVATAR_IMAGE = "/images/product-stage/finance-ai-assistant-avata
 const FINANCE_AI_QUESTION_INPUT_MAX_HEIGHT = 128;
 const FINANCE_AI_UPLOAD_MAX_BYTES = 10 * 1024 * 1024;
 const FINANCE_AI_UPLOAD_MAX_ROWS = 20_000;
-const { OPERATING_DETAIL_HEADERS, getBudgetOperatingDetailTemplateRows } = financeTemplates;
-const SAMPLE_TEMPLATE_HEADERS = OPERATING_DETAIL_HEADERS;
-const SAMPLE_TEMPLATE_ROWS = getBudgetOperatingDetailTemplateRows(24);
-const ACTUAL_SAMPLE_TEMPLATE_ROWS = SAMPLE_TEMPLATE_ROWS.filter((row) => row["数据口径"] === "实际");
-const BUDGET_SAMPLE_TEMPLATE_ROWS = SAMPLE_TEMPLATE_ROWS.filter((row) => row["数据口径"] === "预算");
+const {
+  OPERATING_DETAIL_SCENARIO_SHEET_HEADERS,
+  getBudgetScenarioSheetTemplateRows,
+} = financeTemplates;
+const SCENARIO_SHEET_HEADERS = OPERATING_DETAIL_SCENARIO_SHEET_HEADERS;
+const SAMPLE_TEMPLATE_HEADERS = SCENARIO_SHEET_HEADERS;
+const ACTUAL_SAMPLE_TEMPLATE_ROWS = getBudgetScenarioSheetTemplateRows("actual", 24);
+const BUDGET_SAMPLE_TEMPLATE_ROWS = getBudgetScenarioSheetTemplateRows("budget", 24);
 const SAMPLE_TEMPLATE_README_ROWS = [
   ["项目", "说明"],
-  ["推荐格式", "实际和预算可以分别放在名为“实际”“预算”的工作表中，也可以放在同一张表里用“数据口径”区分。"],
+  ["推荐格式", "实际和预算请分别放在名为“实际”“预算”的工作表中；不要把预算/实际写成经营明细里的行项目。"],
   ["月份", "月份列只填写纯月份，例如 2026-04；不要写 4月实际、5月预算。"],
   ["维度", "大区、国家、品牌、品牌市场、经营模式、业务单元、车型、燃油品类都可以替换为真实业务维度。"],
   ["指标", "销量是体量分母；净收入、成本、边际、利润等总额指标可以继续向右新增。"],
-  ["口径识别", "上传后页面会根据 sheet 名自动生成“数据口径”维度，AI 可用它区分实际、预算、目标或预测。"],
+  ["口径识别", "上传后页面会根据工作表名称识别实际、预算、目标或预测，并在内部生成分析口径。"],
 ];
 
 const EMPTY_STATE_PREVIEW_WATERFALL_CONNECTOR_LINE = "var(--finance-ai-empty-preview-waterfall-connector-line)";
@@ -1367,41 +1370,18 @@ function getAPIErrorMessage(payload: APIResponse, fallback: string) {
   }
 
   if (payload.errorCode === "provider_timeout") {
-    return "DeepSeek 分析超时了，可以直接重试一次，或先把问题缩窄到一个月份、一个指标或一个维度。";
+    return "AI 服务分析超时了，可以直接重试一次，或先把问题缩窄到一个月份、一个指标或一个维度。";
   }
 
   if (payload.errorCode === "provider_empty_response") {
-    return "DeepSeek 这次没有返回正文内容，可以直接重试一次，或把问题缩窄到一个月份、一个指标或一个维度。";
-  }
-
-  if (payload.errorCode === "provider_invalid_plan" && payload.errors?.length) {
-    return getPlanClarificationMessage(payload.errors);
+    return "AI 服务这次没有返回正文内容，可以直接重试一次，或把问题缩窄到一个月份、一个指标或一个维度。";
   }
 
   if (payload.errorCode === "provider_invalid_json") {
     return "上游模型这次没有按约定返回图表数据，可以直接重试一次。";
   }
 
-  if (payload.errors?.length) {
-    return payload.errors.join(" ");
-  }
-
-  return payload.error || fallback;
-}
-
-function getPlanClarificationMessage(errors: string[]) {
-  const errorText = errors.join(" ");
-  const needsMetric = /指标不存在|指标.*未填写|需要至少 1 个指标|明细表需要/.test(errorText);
-  const needsDimension = /需要.*维度字段|维度不存在|筛选字段不存在/.test(errorText);
-  const needsPeriod = /期间不存在|需要指定期间|开始期间|结束期间|排名环比需要/.test(errorText);
-  const hints = [
-    needsMetric ? "指标" : "",
-    needsDimension ? "拆分维度" : "",
-    needsPeriod ? "期间" : "",
-  ].filter(Boolean);
-  const hintText = hints.length ? hints.join("、") : "分析口径";
-
-  return `我还需要确认一个口径：这次问题里的${hintText}还不够明确。你可以补一句类似“看最新月份，按国家/车型拆，指标看销量和单车边际”；如果你想问某个国家，也可以直接说“5月巴西销量和单车边际，按车型拆”。`;
+  return payload.message || fallback;
 }
 
 function AssistantAvatar({ compact = false }: { compact?: boolean }) {
@@ -1594,6 +1574,8 @@ function resolveFinanceAIChartSpecTokens(spec: FinanceChartSpec): FinanceChartSp
 
 function PlotlyChart({ spec, className = "finance-ai-chart-host" }: { spec: FinanceChartSpec; className?: string }) {
   const nodeRef = useRef<HTMLDivElement | null>(null);
+  const summaryId = `${useId()}-chart-summary`;
+  const accessibleData = buildPlotlyAccessibleData(spec.data, { title: spec.title });
 
   useEffect(() => {
     let cancelled = false;
@@ -1624,7 +1606,34 @@ function PlotlyChart({ spec, className = "finance-ai-chart-host" }: { spec: Fina
     };
   }, [spec]);
 
-  return <div ref={nodeRef} className={className} aria-label={spec.title} />;
+  return (
+    <>
+      <div ref={nodeRef} className={className} aria-label={spec.title} aria-describedby={summaryId} />
+      <div className="finance-chart-accessibility">
+        <p id={summaryId} className="finance-chart-accessibility-summary">{accessibleData.summary}</p>
+        <details className="finance-chart-accessibility-details">
+          <summary>查看{spec.title}数据表</summary>
+          <div className="finance-chart-accessibility-table-wrap">
+            <table>
+              <caption>
+                {spec.title}数据表，共 {accessibleData.totalRowCount} 行
+              </caption>
+              <thead>
+                <tr>{accessibleData.columns.map((column) => <th key={column} scope="col">{column}</th>)}</tr>
+              </thead>
+              <tbody>
+                {accessibleData.rows.map((row, rowIndex) => (
+                  <tr key={`${spec.title}-${rowIndex}`}>
+                    {row.map((value, columnIndex) => <td key={`${rowIndex}-${columnIndex}`}>{value}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+    </>
+  );
 }
 
 export default function FinanceAIAssistantTool() {
@@ -1880,7 +1889,7 @@ export default function FinanceAIAssistantTool() {
   }
 
   return (
-    <main className="finance-ai-page">
+    <div className="finance-ai-page">
       <section className={`finance-ai-assistant-panel ${workbook ? "is-ready" : ""}`}>
         <header className="finance-ai-chat-header">
           <AssistantAvatar />
@@ -2053,6 +2062,6 @@ export default function FinanceAIAssistantTool() {
           ))}
         </div>
       </section>
-    </main>
+    </div>
   );
 }

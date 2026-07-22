@@ -20,11 +20,13 @@ function makeProvider(overrides = {}) {
   };
 }
 
-test("shared AI provider helper parses JSON from fenced or narrated responses", async () => {
+test("shared AI provider helper accepts one complete JSON object only", async () => {
   const { extractJsonObject } = await importProviderHelper();
 
   assert.deepEqual(extractJsonObject("```json\n{\"ok\":true}\n```"), { ok: true });
-  assert.deepEqual(extractJsonObject("前置说明 {\"answer\":\"可以\"} 后置说明"), { answer: "可以" });
+  assert.deepEqual(extractJsonObject("{\"answer\":\"可以\"}"), { answer: "可以" });
+  assert.throws(() => extractJsonObject("前置说明 {\"answer\":\"可以\"} 后置说明"), /single JSON object/);
+  assert.throws(() => extractJsonObject("{\"a\":1}\n{\"b\":2}"), /single JSON object/);
   assert.throws(() => extractJsonObject("没有 JSON"), /AI response did not contain JSON/);
 });
 
@@ -88,6 +90,26 @@ test("shared AI provider helper reports empty provider content with finish reaso
     assert.equal(result.errorCode, "provider_empty_response");
     assert.equal(result.attempts[0].errorCode, "provider_empty_response");
     assert.equal(result.attempts[0].finishReason, "length");
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("shared AI provider helper never returns an upstream error body to callers", async () => {
+  const { callFirstConfiguredProvider } = await importProviderHelper();
+  const originalFetch = global.fetch;
+  global.fetch = async () => new Response("secret account quota and gateway details", { status: 429 });
+
+  try {
+    const result = await callFirstConfiguredProvider(
+      [makeProvider()],
+      [{ role: "user", content: "test" }],
+      { jsonMode: false },
+    );
+
+    assert.equal(result.ok, false);
+    assert.doesNotMatch(result.error, /secret|quota|gateway/i);
+    assert.doesNotMatch(result.attempts[0].error, /secret|quota|gateway/i);
   } finally {
     global.fetch = originalFetch;
   }

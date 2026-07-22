@@ -996,7 +996,7 @@ export default function StudyCardsTool() {
   }
 
   return (
-    <main className={pageClassName}>
+    <div className={pageClassName}>
       <Link href="/thinking-lab" className="study-cards-back-link" aria-label="返回工具与思考">
         <ArrowLeft aria-hidden="true" />
         <span>返回</span>
@@ -1319,6 +1319,6 @@ export default function StudyCardsTool() {
           </section>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

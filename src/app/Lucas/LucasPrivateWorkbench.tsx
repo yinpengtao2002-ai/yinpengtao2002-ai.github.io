@@ -58,7 +58,7 @@ export default function LucasPrivateWorkbench({ accessToken }: LucasPrivateWorkb
   }, [accessToken]);
 
   return (
-    <main className={styles.framePage}>
+    <div className={styles.framePage}>
       <header className={styles.frameHeader}>
         <div>
           <p className={styles.eyebrow}>Lucas Lab</p>
@@ -93,10 +93,10 @@ export default function LucasPrivateWorkbench({ accessToken }: LucasPrivateWorkb
             className={styles.stockFrame}
             title="股票决策系统"
             srcDoc={stockDecisionHtml}
-            sandbox="allow-scripts allow-same-origin"
+            sandbox="allow-scripts"
           />
         ) : null}
       </section>
-    </main>
+    </div>
   );
 }

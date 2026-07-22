@@ -14,6 +14,10 @@ const sensitivityEngine = await readFile(
   new URL("../src/app/finance/sensitivity-analysis/sensitivity-engine.js", import.meta.url),
   "utf8"
 );
+const sensitivityTool = await readFile(
+  new URL("../src/app/finance/sensitivity-analysis/SensitivityTool.tsx", import.meta.url),
+  "utf8"
+);
 const monthlyCss = await readFile(new URL("../src/app/finance/monthly-trend/tool.css", import.meta.url), "utf8");
 const monthlyEngine = await readFile(
   new URL("../src/app/finance/monthly-trend/monthly-trend-engine.js", import.meta.url),
@@ -103,7 +107,7 @@ test("Plotly finance workbenches resize charts after the control console changes
     ["profit structure", profitStructureEngine],
   ].forEach(([label, source]) => {
     assert.match(source, /function resizePlotlyCharts\(\)\s*\{[\s\S]*Plotly\.Plots\.resize\(plot\)/, `${label} should resize rendered Plotly charts`);
-    assert.match(source, /function schedulePlotResize\(\)\s*\{[\s\S]*requestAnimationFrame\(resizePlotlyCharts\)[\s\S]*setTimeout\(resizePlotlyCharts,\s*\d+\)/, `${label} should schedule an immediate and delayed resize`);
+    assert.match(source, /function schedulePlotResize\(\)\s*\{[\s\S]*(?:window\.requestAnimationFrame|requestAnimationFrame|lifecycle\.frame)\(resizePlotlyCharts\)[\s\S]*(?:window\.setTimeout|setTimeout|lifecycle\.timeout)\(resizePlotlyCharts,\s*\d+\)/, `${label} should schedule an immediate and delayed resize`);
   });
 
   const businessToggle = businessEngine.match(/function setSidebarOpen\(open\)\s*\{([\s\S]*?)\n    \}/);
@@ -411,8 +415,8 @@ test("Perspective BI explains the active native chart drop zones inside the work
   assert.match(perspectiveEngine, /function scheduleWorkbenchGuideSync/);
   assert.match(perspectiveEngine, /MutationObserver[\s\S]*scheduleWorkbenchGuideSync\(root\)/s);
   assert.match(perspectiveEngine, /#plugin_selector_container\s*>\s*\.plugin-select-item\[data-plugin\]/);
-  assert.match(perspectiveEngine, /viewer\.addEventListener\("click", syncGuide, true\)/);
-  assert.match(perspectiveEngine, /viewer\.addEventListener\("keyup", syncGuide, true\)/);
+  assert.match(perspectiveEngine, /lifecycle\.listen\(viewer, "click", syncGuide, true\)/);
+  assert.match(perspectiveEngine, /lifecycle\.listen\(viewer, "keyup", syncGuide, true\)/);
   assert.match(perspectiveEngine, /attributeFilter: \[[^\]]*"data-plugin"[^\]]*\]/);
   assert.match(perspectiveEngine, /\.column-selector-column\[data-label="Open"\]::before \{ content: "开盘"/);
   assert.match(perspectiveEngine, /\.column-selector-column\[data-label="Close"\]::before \{ content: "收盘"/);
@@ -527,7 +531,7 @@ test("finance model charts are locked against accidental zoom and drag by defaul
 });
 
 test("monthly trend rebinds sidebar controls when the route remounts", () => {
-  assert.match(monthlyEngine, /function initApp\(\)\s*\{\s*initSidebar\(\);\s*initResponsiveMonthAxis\(\);\s*initChartResizeObserver\(\);\s*bindControls\(\);\s*if \(state\.initialized\)/s);
+  assert.match(monthlyEngine, /function initApp\(\)\s*\{[\s\S]*lifecycle\.start\(\);\s*initSidebar\(\);\s*initResponsiveMonthAxis\(\);\s*initChartResizeObserver\(\);\s*bindControls\(\);\s*if \(state\.initialized\)/s);
   assert.doesNotMatch(monthlyEngine, /if \(state\.initialized\)\s*\{[\s\S]*?return;\s*\}[\s\S]*?bindControls\(\);/s);
 });
 
@@ -583,15 +587,22 @@ test("monthly trend keeps the base table schema business-facing", () => {
   assert.doesNotMatch(monthlyEngine, /coreTrendMetrics\(\)\.slice\(0,\s*3\)/);
 });
 
-test("monthly trend uses the same sales-split base table logic as margin analysis", () => {
+test("monthly trend shares the operating-detail template without relying on sales-column position", () => {
   assert.match(monthlyEngine, /const TEMPLATE_HEADERS\s*=\s*OPERATING_DETAIL_HEADERS/);
   assert.match(monthlyEngine, /createOperatingDetailSampleRows/);
   assert.match(monthlyEngine, /function analyzeMonthlyUploadHeaders\(/);
-  assert.match(monthlyEngine, /const salesIndex\s*=[\s\S]*findIndex[\s\S]*isVolumeMetricName/);
-  assert.match(monthlyEngine, /const dimensionColumns\s*=[\s\S]*index < salesIndex/);
-  assert.match(monthlyEngine, /const metricColumns\s*=[\s\S]*index > salesIndex/);
-  assert.match(financeTemplatesSource, /OPERATING_DETAIL_TEMPLATE_NOTE[\s\S]*销量列之前[\s\S]*销量列之后/);
+  assert.match(monthlyEngine, /function inferMonthlyUploadFields\(/);
+  assert.match(monthlyEngine, /inferFinanceFieldRoles\(rows/);
+  assert.match(monthlyEngine, /dimensionColumns:\s*inference\.dimensionColumns/);
+  assert.match(monthlyEngine, /metricColumns:\s*\[inference\.denominatorColumn,\s*\.\.\.inference\.metricColumns\]/);
+  assert.doesNotMatch(monthlyEngine, /index < salesIndex|index > salesIndex/);
   assert.doesNotMatch(monthlyEngine, /const TEMPLATE_HEADERS\s*=\s*Object\.keys/);
+});
+
+test("sensitivity analysis makes its current model assumptions visible", () => {
+  assert.match(sensitivityTool, /所有 Driver 均按非负值计算/);
+  assert.match(sensitivityTool, /所得税按固定金额处理/);
+  assert.match(sensitivityTool, /利润总额 = 销量 × 单位收入 - 销量 × 单位变动成本 - 固定扣减项 \+ 利润贡献项/);
 });
 
 test("monthly trend names each multi metric trend line by business meaning", () => {

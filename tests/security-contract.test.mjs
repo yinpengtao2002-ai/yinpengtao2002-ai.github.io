@@ -1,7 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { enforceRateLimit, resetRateLimitForTests } from "../src/lib/security/rate-limit.ts";
+import {
+  enforceRateLimit,
+  getRateLimitBackendStatus,
+  resetRateLimitForTests,
+} from "../src/lib/security/rate-limit.ts";
 
 async function readProjectFile(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
@@ -60,15 +64,16 @@ test("AI-facing API routes apply abuse-control rate limits before provider calls
   for (const path of routeFiles) {
     const source = await readProjectFile(path);
     assert.match(source, /enforceRateLimit/, `${path} should call enforceRateLimit`);
+    assert.match(source, /await enforceRateLimit/, `${path} should await persistent rate limiting`);
     assert.match(source, /rateLimitError/, `${path} should return a rate-limit response`);
   }
 });
 
-test("legacy finance AI access endpoint delegates to private tool access", async () => {
-  const legacyRoute = await readProjectFile("src/app/api/tools/finance-ai-assistant/access/route.ts");
-
-  assert.match(legacyRoute, /private-tool-access\/route/);
-  assert.match(legacyRoute, /export\s+\{\s*POST\s*\}/);
+test("legacy finance AI access endpoint is removed", async () => {
+  await assert.rejects(
+    () => readProjectFile("src/app/api/tools/finance-ai-assistant/access/route.ts"),
+    /ENOENT/,
+  );
 });
 
 test("private tool access client endpoints include trailing slashes", async () => {
@@ -77,7 +82,7 @@ test("private tool access client endpoints include trailing slashes", async () =
 
   assert.match(nextConfig, /trailingSlash:\s*true/);
   assert.match(constants, /PRIVATE_TOOL_ACCESS_ENDPOINT\s*=\s*"\/api\/private-tool-access\/"/);
-  assert.match(constants, /LEGACY_FINANCE_AI_ACCESS_ENDPOINT\s*=\s*"\/api\/tools\/finance-ai-assistant\/access\/"/);
+  assert.doesNotMatch(constants, /LEGACY_FINANCE_AI_ACCESS/);
 });
 
 test("rate limiter buckets requests by route and forwarded client IP", async () => {
@@ -89,10 +94,10 @@ test("rate limiter buckets requests by route and forwarded client IP", async () 
     },
   });
 
-  assert.equal(enforceRateLimit(request, { keyPrefix: "contract", limit: 2, windowMs: 60_000 }), null);
-  assert.equal(enforceRateLimit(request, { keyPrefix: "contract", limit: 2, windowMs: 60_000 }), null);
+  assert.equal(await enforceRateLimit(request, { keyPrefix: "contract", limit: 2, windowMs: 60_000 }), null);
+  assert.equal(await enforceRateLimit(request, { keyPrefix: "contract", limit: 2, windowMs: 60_000 }), null);
 
-  const rejected = enforceRateLimit(request, { keyPrefix: "contract", limit: 2, windowMs: 60_000 });
+  const rejected = await enforceRateLimit(request, { keyPrefix: "contract", limit: 2, windowMs: 60_000 });
   assert.ok(rejected);
   assert.equal(rejected.status, 429);
   assert.equal(rejected.headers.get("Retry-After"), "60");
@@ -101,4 +106,29 @@ test("rate limiter buckets requests by route and forwarded client IP", async () 
 
   const payload = await rejected.json();
   assert.equal(payload.errorCode, "rate_limited");
+  assert.equal(typeof payload.requestId, "string");
+  assert.equal(payload.retryAfter, 60);
+});
+
+test("production rate limiting requires Upstash while local tests use memory", () => {
+  assert.deepEqual(getRateLimitBackendStatus({ NODE_ENV: "production" }), {
+    mode: "unavailable",
+    reason: "missing_upstash_configuration",
+  });
+  assert.deepEqual(getRateLimitBackendStatus({
+    NODE_ENV: "production",
+    UPSTASH_REDIS_REST_URL: "https://example.upstash.io",
+    UPSTASH_REDIS_REST_TOKEN: "token",
+  }), { mode: "upstash" });
+  assert.deepEqual(getRateLimitBackendStatus({ NODE_ENV: "test" }), { mode: "memory" });
+});
+
+test("rate limiter uses one Redis script for atomic increment and TTL", async () => {
+  const source = await readProjectFile("src/lib/security/rate-limit.ts");
+  assert.match(source, /UPSTASH_REDIS_REST_URL/);
+  assert.match(source, /UPSTASH_REDIS_REST_TOKEN/);
+  assert.match(source, /redis\.call\('INCR'/);
+  assert.match(source, /redis\.call\('PEXPIRE'/);
+  assert.match(source, /redis\.call\('PTTL'/);
+  assert.match(source, /missing_upstash_configuration/);
 });

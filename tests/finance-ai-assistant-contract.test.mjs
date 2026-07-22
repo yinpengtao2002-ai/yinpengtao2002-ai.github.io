@@ -11,7 +11,7 @@ import { POST } from "../src/app/api/tools/finance-ai-assistant/route.ts";
 import { POST as POSTAccess } from "../src/app/api/private-tool-access/route.ts";
 
 process.env.PRIVATE_TOOL_ACCESS_KEY = "test-private-tool-access-key";
-process.env.FINANCE_AI_ACCESS_KEY = "";
+process.env.PRIVATE_TOOL_TOKEN_SECRET = "test-private-tool-token-secret";
 
 async function readProjectFile(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
@@ -103,7 +103,6 @@ test("finance AI assistant API exposes planning and explanation responsibilities
   const context = await readProjectFile("src/lib/finance-ai/context.ts");
   const packageJson = await readProjectFile("package.json");
 
-  assert.match(route, /\/api\/tools\/finance-ai-assistant/);
   assert.match(route, /mode/);
   assert.match(route, /plan/);
   assert.match(route, /explain/);
@@ -117,7 +116,6 @@ test("finance AI assistant API exposes planning and explanation responsibilities
   assert.doesNotMatch(route, /884819/);
   assert.match(providerHelper, /response_format/);
   assert.match(route, /callFirstConfiguredChatProvider/);
-  assert.match(route, /workbook/);
   assert.match(route, /UNSUPPORTED_DIRECT_WORKBOOK_MODES/);
   assert.doesNotMatch(route, /buildFinanceAIDirectAnalyzePrompt/);
   assert.doesNotMatch(route, /buildFinanceAIDataRequestPrompt/);
@@ -369,9 +367,34 @@ test("finance AI assistant API validates provider action plans before returning 
 
     assert.equal(response.status, 502);
     assert.equal(payload.errorCode, "provider_invalid_plan");
-    assert.match(payload.errors.join("\n"), /指标不存在/);
+    assert.equal(payload.message, "AI 返回的分析计划未通过校验，请重试。");
+    assert.equal(typeof payload.requestId, "string");
+    assert.equal("errors" in payload, false);
   }, JSON.stringify({
     modules: [{ type: "bar_rank", metric: "不存在指标", dimension: "国家", period: "2026-03" }],
+  }));
+});
+
+test("finance AI assistant rejects unknown provider plan fields", async () => {
+  await withMockedProvider(async () => {
+    const response = await POST(makeRequest({
+      mode: "plan",
+      question: "巴西 3 月边际怎么看？",
+      schema: makeSchema(),
+    }));
+    const payload = await response.json();
+
+    assert.equal(response.status, 502);
+    assert.equal(payload.errorCode, "provider_invalid_json");
+    assert.equal("unexpectedField" in payload, false);
+  }, JSON.stringify({
+    modules: [{
+      type: "bar_rank",
+      metric: "边际",
+      dimension: "国家",
+      period: "2026-03",
+      unexpectedField: "must not be accepted",
+    }],
   }));
 });
 
@@ -715,7 +738,8 @@ test("finance AI assistant rejects direct workbook modes before provider calls",
 
       assert.equal(response.status, 400);
       assert.equal(payload.errorCode, "unsupported_mode");
-      assert.match(payload.error, /only supports plan and explain/i);
+      assert.equal(payload.message, "当前仅支持分析计划和结果解读模式。");
+      assert.equal("error" in payload, false);
     }
 
     assert.equal(calls.length, 0);
@@ -733,7 +757,9 @@ test("finance AI assistant reports empty provider content as a distinct diagnosi
 
     assert.equal(response.status, 502);
     assert.equal(payload.errorCode, "provider_empty_response");
-    assert.equal(payload.attempts[0].errorCode, "provider_empty_response");
+    assert.equal(payload.message, "AI 服务暂时不可用，请稍后重试。");
+    assert.equal(typeof payload.requestId, "string");
+    assert.equal("attempts" in payload, false);
   }, "");
 });
 
@@ -809,21 +835,16 @@ test("finance AI assistant uses lighter provider settings for explanation calls"
   assert.match(route, /callFirstConfiguredProvider\([\s\S]*\{ jsonMode: false, timeoutMs: FINANCE_AI_EXPLAIN_TIMEOUT_MS, maxTokens: 700 \}/s);
 });
 
-test("finance AI assistant API can run a tiny provider diagnostic without workbook data", async () => {
+test("finance AI assistant API rejects the removed public provider diagnostic", async () => {
   await withMockedProvider(async (calls) => {
     const response = await POST(makeRequest({
       mode: "diagnose",
     }));
     const payload = await response.json();
-    const providerBody = JSON.stringify(calls[0]);
-
-    assert.equal(response.status, 200);
-    assert.equal(payload.ok, true);
-    assert.equal(payload.provider, "deepseek-v4-pro");
-    assert.equal(payload.contentLength, 2);
-    assert.match(providerBody, /ping/);
-    assert.doesNotMatch(providerBody, /workbook/);
-    assert.doesNotMatch(providerBody, /底稿/);
+    assert.equal(response.status, 400);
+    assert.equal(payload.errorCode, "unsupported_mode");
+    assert.equal(payload.message, "当前仅支持分析计划和结果解读模式。");
+    assert.equal(calls.length, 0);
   }, "OK");
 });
 
@@ -904,7 +925,7 @@ test("finance AI assistant page is an independent chat workbench", async () => {
   assert.match(client, /answerItems/);
   assert.match(client, /visibleItemCount 只是图表可见项限制/);
   assert.match(client, /provider_timeout/);
-  assert.match(client, /DeepSeek 分析超时/);
+  assert.match(client, /AI 服务分析超时/);
   assert.match(client, /const provisionalAssistantId = `assistant-\$\{Date\.now\(\)\}`/);
   assert.match(client, /正在补充解读/);
   assert.match(client, /setMessages\(\(current\) => \[\s*\.\.\.current,\s*\{\s*id: provisionalAssistantId/s);
@@ -1340,10 +1361,9 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(client, /if \(!workbook\) \{[\s\S]*window\.scrollTo\(\{ top: 0, left: 0, behavior: "auto" \}\)/);
   assert.match(client, /downloadSampleTemplate/);
   assert.match(client, /finance\/templates\.js/);
-  assert.match(client, /OPERATING_DETAIL_HEADERS/);
-  assert.match(client, /getBudgetOperatingDetailTemplateRows/);
-  assert.match(client, /"数据口径"\] === "实际"/);
-  assert.match(client, /"数据口径"\] === "预算"/);
+  assert.match(client, /OPERATING_DETAIL_SCENARIO_SHEET_HEADERS/);
+  assert.match(client, /getBudgetScenarioSheetTemplateRows/);
+  assert.match(client, /SCENARIO_SHEET_HEADERS/);
   assert.match(client, /book_append_sheet\(workbook,\s*actualWorksheet,\s*"实际"\)/);
   assert.match(client, /book_append_sheet\(workbook,\s*budgetWorksheet,\s*"预算"\)/);
   assert.match(client, /book_append_sheet\(workbook,\s*readmeWorksheet,\s*"填表说明"\)/);
@@ -1363,7 +1383,7 @@ test("finance AI assistant page follows the site chat assistant interaction styl
   assert.match(client, /resolveFinanceActionFilterMembers\(rows, schema, plan\.modules, question\)/);
   assert.match(client, /filterResolution\.ok/);
   assert.doesNotMatch(client, /AI 计划没有通过校验/);
-  assert.match(client, /我还需要确认一个口径/);
+  assert.match(client, /throw new Error\(filterResolution\.message\)/);
   assert.doesNotMatch(client, /<p>\{message\.text\}<\/p>/);
   assert.match(styles, /\.finance-ai-page\s*\{[\s\S]*background:\s*var\(--finance-ai-page-surface\)/s);
   assert.doesNotMatch(styles, /\.finance-ai-access-gate/);

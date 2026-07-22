@@ -3,7 +3,7 @@ import ToolBackButton from "@/components/finance/ToolBackButton";
 import PerspectiveBITool from "./PerspectiveBITool";
 
 export const metadata: Metadata = {
-    title: "Perspective BI 分析台｜数据透视工具｜Lucas Yin",
+    title: "Perspective BI 分析台｜数据透视工具",
     description: "上传 CSV 或 Excel 明细数据，先确认字段口径，再使用 Perspective 完成字段拖拽、分组、筛选、排序、透视表和图表分析。",
 };
 

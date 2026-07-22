@@ -5,6 +5,32 @@ import {
     getOperatingDetailTemplateRows
 } from "../../../lib/finance/templates.js";
 import { FINANCE_WORKBENCH_MOBILE_QUERY } from "../../../lib/finance/workbench-breakpoints.ts";
+import {
+    aggregateMetricRows,
+    inferFinanceFieldRoles,
+    inferMetricAggregation,
+    normalizeFinancePeriod,
+    parseFinanceNumber
+} from "../../../lib/finance/core.ts";
+import {
+    clearFinanceEngineBindingMarkers,
+    createFinanceEngineLifecycle
+} from "../../../lib/finance/browser-engine-lifecycle.ts";
+import {
+    closeFinanceFieldGovernance,
+    showFinanceFieldGovernance
+} from "../../../lib/finance/field-governance.ts";
+import { renderPlotlyAccessibleData } from "../../../lib/finance/chart-accessibility.ts";
+
+function renderAccessiblePlot(target, data, layout, config) {
+    const result = window.Plotly.react(target, data, layout, config);
+    const chartId = typeof target === "string" ? target : target?.id;
+    if (chartId) renderPlotlyAccessibleData(chartId, data);
+    return result;
+}
+
+const lifecycle = createFinanceEngineLifecycle();
+let closeFieldGovernance = () => undefined;
 
 const TEMPLATE_HEADERS = OPERATING_DETAIL_HEADERS;
 const TEMPLATE_HEADER_NOTE = OPERATING_DETAIL_TEMPLATE_NOTE;
@@ -75,39 +101,6 @@ function isBlank(value) {
     return value === undefined || value === null || String(value).trim() === "";
 }
 
-function toNumber(value) {
-    if (typeof value === "number" && Number.isFinite(value)) return value;
-    if (isBlank(value)) return 0;
-
-    let text = String(value).trim();
-    let negative = false;
-    if (/^\(.*\)$/.test(text)) {
-        negative = true;
-        text = text.slice(1, -1);
-    }
-
-    text = text
-        .replace(/[,，]/g, "")
-        .replace(/[￥¥$€£]/g, "")
-        .replace(/%/g, "")
-        .trim();
-
-    const parsed = Number.parseFloat(text);
-    if (!Number.isFinite(parsed)) return 0;
-    return negative ? -parsed : parsed;
-}
-
-function formatMonth(value) {
-    if (value instanceof Date && Number.isFinite(value.getTime())) {
-        return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}`;
-    }
-    const text = String(value ?? "").trim();
-    if (!text) return "未填写";
-    const dateMatch = text.match(/^(\d{4})[-/.年]?(\d{1,2})/);
-    if (dateMatch) return `${dateMatch[1]}-${String(Number(dateMatch[2])).padStart(2, "0")}`;
-    return text;
-}
-
 function collectHeaders(rows) {
     const seen = new Set();
     const headers = [];
@@ -122,50 +115,105 @@ function collectHeaders(rows) {
     return headers;
 }
 
-function normalizeUploadedRows(inputRows = []) {
+function inferProfitStructureFields(rows, headers, monthColumn, volumeColumn, fieldRoleOverrides = {}) {
+    const inference = inferFinanceFieldRoles(rows, {
+        headers,
+        explicitRoles: {
+            ...fieldRoleOverrides,
+            [monthColumn]: "period",
+            [volumeColumn]: "denominator"
+        },
+        ignoredHeaders: NON_ANALYSIS_DIMENSION_COLUMNS
+    });
+    return {
+        dimensions: inference.dimensionColumns,
+        metricColumns: inference.metricColumns,
+        ambiguousColumns: inference.ambiguousColumns
+    };
+}
+
+function normalizeUploadedRows(inputRows = [], fieldRoleOverrides = {}) {
     const sourceRows = Array.isArray(inputRows) ? inputRows.filter(Boolean) : [];
     const sourceHeaders = collectHeaders(sourceRows);
     const monthColumn = findHeader(sourceHeaders, MONTH_ALIASES);
     const volumeColumn = findHeader(sourceHeaders, VOLUME_ALIASES);
-    const volumeIndex = volumeColumn ? sourceHeaders.indexOf(volumeColumn) : -1;
-    const nonAnalysisDimensionSet = addAliasSet(NON_ANALYSIS_DIMENSION_COLUMNS);
-    const dimensions = sourceHeaders
-        .slice(0, volumeIndex >= 0 ? volumeIndex : sourceHeaders.length)
-        .filter((header) => header && header !== monthColumn && !nonAnalysisDimensionSet.has(normalizeToken(header)));
-    const metricColumns = volumeIndex >= 0
-        ? sourceHeaders.slice(volumeIndex + 1).filter((header) => header && header !== monthColumn)
-        : [];
+    const { dimensions, metricColumns, ambiguousColumns } = inferProfitStructureFields(
+        sourceRows,
+        sourceHeaders,
+        monthColumn,
+        volumeColumn,
+        fieldRoleOverrides
+    );
+    const metricAggregations = Object.fromEntries(
+        metricColumns.map((metric) => [metric, inferMetricAggregation(metric, sourceHeaders)])
+    );
+    const dataIssues = [];
     const schema = {
         sourceHeaders,
         monthColumn,
         volumeColumn,
         dimensions,
         metricColumns,
-        financialColumns: metricColumns
+        financialColumns: metricColumns,
+        metricAggregations,
+        ambiguousColumns,
+        dataIssues
     };
 
-    const rows = sourceRows.map((row) => {
+    const rows = sourceRows.map((row, rowIndex) => {
         const dimensionValues = {};
         for (const dimension of dimensions) {
             const value = row[dimension];
-            dimensionValues[dimension] = isBlank(value) ? "未填写" : String(value).trim();
+            dimensionValues[dimension] = isBlank(value) ? "空白" : String(value).trim();
         }
 
+        const period = monthColumn ? normalizeFinancePeriod(row[monthColumn]) : null;
+        if (monthColumn && !period) {
+            dataIssues.push({
+                row: rowIndex + 2,
+                column: monthColumn,
+                status: isBlank(row[monthColumn]) ? "blank" : "invalid",
+                reason: "invalid_period",
+                raw: row[monthColumn]
+            });
+        }
+        const volumeResult = volumeColumn ? parseFinanceNumber(row[volumeColumn]) : { status: "blank", raw: undefined };
+        if (volumeColumn && volumeResult.status !== "valid") {
+            dataIssues.push({
+                row: rowIndex + 2,
+                column: volumeColumn,
+                status: volumeResult.status,
+                reason: volumeResult.reason || "required_blank",
+                raw: volumeResult.raw
+            });
+        }
         const metrics = {};
         for (const column of metricColumns) {
-            metrics[column] = toNumber(row[column]);
+            const parsed = parseFinanceNumber(row[column]);
+            if (parsed.status === "valid") {
+                metrics[column] = parsed.value;
+            } else {
+                metrics[column] = null;
+                dataIssues.push({
+                    row: rowIndex + 2,
+                    column,
+                    status: parsed.status,
+                    reason: parsed.reason || "required_blank",
+                    raw: parsed.raw
+                });
+            }
         }
 
         return {
-            month: monthColumn ? formatMonth(row[monthColumn]) : "未填写",
-            volume: volumeColumn ? toNumber(row[volumeColumn]) : 0,
+            month: period?.key || "未填写",
+            volume: volumeResult.status === "valid" ? volumeResult.value : 0,
             metrics,
             dimensionValues,
             raw: row
         };
     }).filter((row) => {
         const hasDimension = Object.values(row.dimensionValues).some((value) => !isBlank(value));
-        const hasMetric = Object.values(row.metrics).some((value) => value !== 0);
+        const hasMetric = Object.values(row.metrics).some((value) => value !== 0 && value !== null);
         return hasDimension || row.volume || hasMetric;
     });
 
@@ -205,8 +253,9 @@ function metricUnitLabel(metric, denominator = "销量") {
     return isRateLikeMetric(metric) ? metric : `${metric} / ${denominator || "销量"}`;
 }
 
-function unitMetricValue(metric, value, volume) {
-    return isRateLikeMetric(metric) ? value : ratio(value, volume);
+function unitMetricValue(metric, value, volume, aggregation = { mode: "sum" }) {
+    if (value === null || value === undefined) return null;
+    return aggregation.mode === "sum" && !isRateLikeMetric(metric) ? ratio(value, volume) : value;
 }
 
 function preferredMetric(metricColumns, aliases) {
@@ -215,7 +264,7 @@ function preferredMetric(metricColumns, aliases) {
 }
 
 function pickPrimaryMetric(schema, selectedMetric = "") {
-    const metricColumns = buildMetricOptions(schema);
+    const metricColumns = buildMetricOptions(schema).filter((metric) => schema?.metricAggregations?.[metric]?.mode !== "non_aggregatable");
     if (metricColumns.includes(selectedMetric)) return selectedMetric;
     return preferredMetric(metricColumns, PRIMARY_VALUE_ALIASES)
         || metricColumns.find((metric) => !isRateLikeMetric(metric))
@@ -224,7 +273,9 @@ function pickPrimaryMetric(schema, selectedMetric = "") {
 }
 
 function pickSecondaryMetric(schema, primaryMetric = "", selectedMetric = "") {
-    const metricColumns = buildMetricOptions(schema).filter((metric) => metric !== primaryMetric);
+    const metricColumns = buildMetricOptions(schema).filter((metric) => (
+        metric !== primaryMetric && schema?.metricAggregations?.[metric]?.mode !== "non_aggregatable"
+    ));
     if (metricColumns.includes(selectedMetric)) return selectedMetric;
     return preferredMetric(metricColumns, REVENUE_ALIASES)
         || metricColumns.find((metric) => !isRateLikeMetric(metric))
@@ -263,8 +314,12 @@ function rowPassesFilters(row, filters = {}) {
     });
 }
 
-function emptyMetrics(metricColumns) {
-    return Object.fromEntries(metricColumns.map((metric) => [metric, 0]));
+function aggregateProfitMetrics(rows, schema, metricColumns) {
+    const rawRows = rows.map((row) => row.raw || {});
+    return Object.fromEntries(metricColumns.map((metric) => [
+        metric,
+        aggregateMetricRows(rawRows, schema.metricAggregations[metric], metric)
+    ]));
 }
 
 function summarizeProfitStructure(rows, schema, options = {}) {
@@ -290,30 +345,36 @@ function summarizeProfitStructure(rows, schema, options = {}) {
                 name,
                 dimensionValues: Object.fromEntries(selectedDimensions.map((dimension) => [dimension, row.dimensionValues[dimension] || "未填写"])),
                 volume: 0,
-                metrics: emptyMetrics(metricColumns)
+                metrics: {},
+                sourceRows: []
             });
         }
         const group = groups.get(name);
         group.volume += row.volume;
-        for (const metric of metricColumns) {
-            group.metrics[metric] += row.metrics[metric] || 0;
-        }
+        group.sourceRows.push(row);
     }
 
-    const totals = activeRows.reduce((acc, row) => {
-        acc.volume += row.volume;
-        for (const metric of metricColumns) {
-            acc.metrics[metric] += row.metrics[metric] || 0;
-        }
-        return acc;
-    }, { volume: 0, metrics: emptyMetrics(metricColumns) });
-    totals.unitMetrics = Object.fromEntries(metricColumns.map((metric) => [metric, unitMetricValue(metric, totals.metrics[metric], totals.volume)]));
+    for (const group of groups.values()) {
+        group.metrics = aggregateProfitMetrics(group.sourceRows, schema, metricColumns);
+    }
+
+    const totals = {
+        volume: activeRows.reduce((sum, row) => sum + row.volume, 0),
+        metrics: aggregateProfitMetrics(activeRows, schema, metricColumns)
+    };
+    totals.unitMetrics = Object.fromEntries(metricColumns.map((metric) => [
+        metric,
+        unitMetricValue(metric, totals.metrics[metric], totals.volume, schema.metricAggregations[metric])
+    ]));
 
     const primaryTotal = analysis.primaryMetric ? totals.metrics[analysis.primaryMetric] || 0 : 0;
     const totalUnitValue = analysis.primaryMetric ? totals.unitMetrics[analysis.primaryMetric] || 0 : 0;
     const baseItems = Array.from(groups.values())
         .map((item) => {
-            const unitMetrics = Object.fromEntries(metricColumns.map((metric) => [metric, unitMetricValue(metric, item.metrics[metric], item.volume)]));
+            const unitMetrics = Object.fromEntries(metricColumns.map((metric) => [
+                metric,
+                unitMetricValue(metric, item.metrics[metric], item.volume, schema.metricAggregations[metric])
+            ]));
             const primaryValue = analysis.primaryMetric ? item.metrics[analysis.primaryMetric] || 0 : 0;
             const secondaryValue = analysis.secondaryMetric ? item.metrics[analysis.secondaryMetric] || 0 : 0;
             const primaryUnitValue = analysis.primaryMetric ? unitMetrics[analysis.primaryMetric] || 0 : 0;
@@ -321,6 +382,7 @@ function summarizeProfitStructure(rows, schema, options = {}) {
             const dragContribution = item.volume * qualityGap;
             return {
                 ...item,
+                sourceRows: undefined,
                 unitMetrics,
                 primaryValue,
                 secondaryValue,
@@ -341,7 +403,10 @@ function summarizeProfitStructure(rows, schema, options = {}) {
         rows: activeRows,
         totals,
         items: baseItems,
-        analysis
+        analysis,
+        aggregationWarnings: metricColumns
+            .filter((metric) => schema.metricAggregations[metric]?.mode === "non_aggregatable")
+            .map((metric) => `${metric} 缺少重算所需的底层计数，不提供合计`)
     };
 }
 
@@ -357,6 +422,7 @@ function formatNumber(value, digits = 2) {
 }
 
 function formatMetricValue(value) {
+    if (value === null || value === undefined || !Number.isFinite(Number(value))) return "—";
     const abs = Math.abs(value || 0);
     const digits = abs >= 100 ? 0 : abs >= 10 ? 1 : 2;
     return formatNumber(value, digits);
@@ -444,10 +510,20 @@ function buildSummaryCards(summary) {
         { label: "销量", value: formatVolume(summary.totals.volume), note: "上传销量合计" }
     ];
     for (const metric of summary.metricColumns.slice(0, 5)) {
+        const aggregation = summary.schema?.metricAggregations?.[metric] || { mode: "sum" };
+        const note = aggregation.mode === "non_aggregatable"
+            ? "缺少重算所需的底层计数，不提供伪合计"
+            : aggregation.mode === "ratio"
+                ? `按 ${aggregation.numeratorColumn} / ${aggregation.denominatorColumn} 重算`
+                : aggregation.mode === "snapshot"
+                    ? "取当前范围最新期间值"
+                    : aggregation.mode === "weighted_average"
+                        ? `按 ${aggregation.weightColumn} 加权`
+                        : "上传指标合计";
         cards.push({
             label: metric,
-            value: formatMetricValue(summary.totals.metrics[metric] || 0),
-            note: "上传指标合计"
+            value: formatMetricValue(summary.totals.metrics[metric]),
+            note
         });
     }
     return cards;
@@ -642,7 +718,7 @@ function renderDimensionDiagnostics(id, summary) {
     const compact = isCompactViewport();
     const items = [...diagnostics].reverse();
 
-    window.Plotly.react(id, [{
+    renderAccessiblePlot(id, [{
         type: "bar",
         orientation: "h",
         x: items.map((item) => item.score),
@@ -702,7 +778,7 @@ function renderQualityMap(id, summary) {
         };
     }).filter((trace) => trace.x.length);
 
-    window.Plotly.react(id, traces, chartLayout({
+    renderAccessiblePlot(id, traces, chartLayout({
         xaxis: {
             title: summary.analysis.quality.xTitle,
             tickformat: ".0%",
@@ -781,7 +857,9 @@ function renderDimensionControls() {
 }
 
 function renderMetricControls() {
-    const metricColumns = buildMetricOptions(state.schema);
+    const metricColumns = buildMetricOptions(state.schema).filter((metric) => (
+        state.schema?.metricAggregations?.[metric]?.mode !== "non_aggregatable"
+    ));
     const primary = byId("profit-structure-primary-metric");
     const secondary = byId("profit-structure-secondary-metric");
     state.selectedPrimaryMetric = pickPrimaryMetric(state.schema, state.selectedPrimaryMetric);
@@ -867,23 +945,45 @@ function renderAll() {
         secondaryMetric: state.selectedSecondaryMetric
     });
     const status = byId("profit-structure-data-status");
-    if (status) status.textContent = `${state.currentSourceLabel} · ${summary.rows.length} 行 · ${summary.metricColumns.length} 指标`;
+    if (status) {
+        const warning = summary.aggregationWarnings.length ? ` · ${summary.aggregationWarnings.join("；")}` : "";
+        status.textContent = `${state.currentSourceLabel} · ${summary.rows.length} 行 · ${summary.metricColumns.length} 指标${warning}`;
+    }
     renderMetrics(summary);
     renderStructureCharts(summary);
 }
 
-function loadRows(inputRows, sourceLabel = "示例数据") {
-    const { rows, schema } = normalizeUploadedRows(inputRows);
+function loadRows(inputRows, sourceLabel = "示例数据", fieldRoleOverrides = {}) {
+    const { rows, schema } = normalizeUploadedRows(inputRows, fieldRoleOverrides);
     if (!schema.volumeColumn) {
         showMessage("error", "需要包含“销量”列，销量列用于规模与单位值分析。");
         return;
     }
     if (!schema.dimensions.length) {
-        showMessage("error", "需要至少一个维度列。销量列之前的字段会自动识别为维度。");
+        showMessage("error", "需要至少一个维度列。系统会结合表头和样本类型识别业务维度。");
         return;
     }
     if (!schema.metricColumns.length) {
-        showMessage("error", "销量列之后需要至少一个上传指标。");
+        showMessage("error", "需要至少一个可分析数值指标。");
+        return;
+    }
+    if (schema.ambiguousColumns.length) {
+        showMessage("error", `请确认以下字段用途后继续：${schema.ambiguousColumns.join("、")}`);
+        closeFieldGovernance();
+        closeFieldGovernance = showFinanceFieldGovernance({
+            host: byId("profit-structure-field-governance"),
+            columns: schema.ambiguousColumns,
+            onConfirm: (overrides) => loadRows(inputRows, sourceLabel, {
+                ...fieldRoleOverrides,
+                ...overrides
+            })
+        });
+        return;
+    }
+    closeFieldGovernance();
+    if (schema.dataIssues.length) {
+        const preview = schema.dataIssues.slice(0, 5).map((issue) => `第 ${issue.row} 行「${issue.column}」${issue.status === "blank" ? "为空" : "无法识别"}`);
+        showMessage("error", `数据质量校验未通过：${schema.dataIssues.length} 个必填单元格存在问题。${preview.join("；")}`);
         return;
     }
     state.rows = rows;
@@ -964,7 +1064,7 @@ function bindOnce(target, eventName, handler, key = eventName) {
     if (!target) return;
     const bindKey = `bound${normalizeToken(key) || eventName}`;
     if (target.dataset?.[bindKey] === "true") return;
-    target.addEventListener(eventName, handler);
+    lifecycle.listen(target, eventName, handler);
     if (target.dataset) target.dataset[bindKey] = "true";
 }
 
@@ -977,8 +1077,8 @@ function resizePlotlyCharts() {
 
 function schedulePlotResize() {
     if (typeof window === "undefined") return;
-    window.requestAnimationFrame(resizePlotlyCharts);
-    window.setTimeout(resizePlotlyCharts, 320);
+    lifecycle.frame(resizePlotlyCharts);
+    lifecycle.timeout(resizePlotlyCharts, 320);
 }
 
 function initChartResizeObserver() {
@@ -988,10 +1088,10 @@ function initChartResizeObserver() {
 
     const mainContent = document.querySelector(".profit-structure-tool .main-content");
     if (mainContent && typeof ResizeObserver !== "undefined") {
-        const observer = new ResizeObserver(schedulePlotResize);
+        const observer = lifecycle.observe(new ResizeObserver(schedulePlotResize));
         observer.observe(mainContent);
     }
-    window.addEventListener("resize", schedulePlotResize);
+    lifecycle.listen(window, "resize", schedulePlotResize);
     if (root) root.dataset.plotResizeObserverBound = "true";
 }
 
@@ -1077,6 +1177,9 @@ function bindControls() {
 }
 
 function initApp() {
+    const root = byId("profit-structure-root");
+    if (!root) return;
+    lifecycle.start();
     initSidebar();
     initChartResizeObserver();
     bindControls();
@@ -1089,8 +1192,18 @@ function initApp() {
     loadRows(createSampleRows(), "示例数据");
 }
 
+function dispose() {
+    lifecycle.dispose();
+    closeFieldGovernance();
+    closeFinanceFieldGovernance(byId("profit-structure-field-governance"));
+    clearFinanceEngineBindingMarkers(byId("profit-structure-root"));
+    document.querySelectorAll(".profit-structure-tool .js-plotly-plot").forEach((plot) => {
+        if (typeof Plotly !== "undefined") Plotly.purge(plot);
+    });
+}
+
 if (typeof window !== "undefined") {
-    window.ProfitStructureModel = { initApp };
+    window.ProfitStructureModel = { initApp, dispose };
 }
 
 const profitStructureModelApi = {
@@ -1107,7 +1220,8 @@ const profitStructureModelApi = {
     defaultDimensionPath,
     summarizeProfitStructure,
     createSampleRows,
-    initApp
+    initApp,
+    dispose
 };
 
 export default profitStructureModelApi;

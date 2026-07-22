@@ -9,7 +9,7 @@ const LucasPrivateWorkbench = lazy(() => import("./LucasPrivateWorkbench"));
 
 type AccessResponse = {
   token?: string;
-  error?: string;
+  message?: string;
   errorCode?: string;
 };
 
@@ -22,7 +22,7 @@ function getAccessErrorMessage(payload: AccessResponse, fallback: string) {
     return "访问码不正确。";
   }
 
-  return payload.error || fallback;
+  return payload.message || fallback;
 }
 
 export default function LucasAccessGate() {
@@ -67,12 +67,12 @@ export default function LucasAccessGate() {
     return (
       <Suspense
         fallback={
-          <main className={styles.page}>
+          <div className={styles.page}>
             <section className={styles.loadingPanel} aria-live="polite">
               <Loader2 className={styles.spin} aria-hidden="true" />
               <span>正在打开 Lucas 工作台</span>
             </section>
-          </main>
+          </div>
         }
       >
         <LucasPrivateWorkbench accessToken={accessToken} />
@@ -81,7 +81,7 @@ export default function LucasAccessGate() {
   }
 
   return (
-    <main className={styles.gatePage}>
+    <div className={styles.gatePage}>
       <section className={styles.gateCard} aria-label="Lucas private access">
         <span className={styles.gateIcon} aria-hidden="true">
           <KeyRound />
@@ -115,6 +115,6 @@ export default function LucasAccessGate() {
         </form>
         {accessError ? <p className={styles.gateError}>{accessError}</p> : null}
       </section>
-    </main>
+    </div>
   );
 }

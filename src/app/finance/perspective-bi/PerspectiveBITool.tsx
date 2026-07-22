@@ -2,12 +2,12 @@
 
 import { createElement, useEffect, useState } from "react";
 import { KeyRound, Loader2 } from "lucide-react";
-import { bootFinanceBrowserEngine } from "@/lib/finance/browser-tool-loader";
+import { bootFinanceBrowserEngine, type FinanceBrowserEngine } from "@/lib/finance/browser-tool-loader";
 import { PRIVATE_TOOL_ACCESS_ENDPOINT } from "@/lib/private-tool-access/constants";
 
 type AccessResponse = {
     token?: string;
-    error?: string;
+    message?: string;
     errorCode?: string;
 };
 
@@ -20,7 +20,7 @@ function getAccessErrorMessage(payload: AccessResponse, fallback: string) {
         return "内测密钥不正确。";
     }
 
-    return payload.error || fallback;
+    return payload.message || fallback;
 }
 
 export default function PerspectiveBITool() {
@@ -28,6 +28,8 @@ export default function PerspectiveBITool() {
     const [accessKey, setAccessKey] = useState("");
     const [accessBusy, setAccessBusy] = useState(false);
     const [accessError, setAccessError] = useState("");
+    const [bootAttempt, setBootAttempt] = useState(0);
+    const [bootError, setBootError] = useState("");
 
     useEffect(() => {
         if (!accessToken) {
@@ -35,18 +37,27 @@ export default function PerspectiveBITool() {
         }
 
         let cancelled = false;
+        let engine: FinanceBrowserEngine | undefined;
+        setBootError("");
 
         void bootFinanceBrowserEngine({
             engineName: "PerspectiveBIModel",
             importEngine: () => import("./perspective-bi-engine.js"),
             isCancelled: () => cancelled,
             errorMessage: "Failed to start Perspective BI model",
+            onError: () => {
+                if (!cancelled) setBootError("BI 引擎加载失败，请重试。");
+            },
+        }).then((loaded) => {
+            engine = loaded;
+            if (cancelled) loaded?.dispose();
         });
 
         return () => {
             cancelled = true;
+            engine?.dispose();
         };
-    }, [accessToken]);
+    }, [accessToken, bootAttempt]);
 
     async function handleAccessSubmit() {
         const key = accessKey.trim();
@@ -121,7 +132,13 @@ export default function PerspectiveBITool() {
 
     return (
         <div id="perspective-bi-root" className="perspective-bi-tool">
-            <main className="main-content">
+            {bootError ? (
+                <div className="engine-load-error" role="alert">
+                    <span>{bootError}</span>
+                    <button type="button" className="btn btn-secondary" onClick={() => setBootAttempt((value) => value + 1)}>重试加载</button>
+                </div>
+            ) : null}
+            <div className="main-content">
                 <header className="model-header">
                     <div>
                         <p className="eyebrow">Financial Modeling</p>
@@ -288,7 +305,7 @@ export default function PerspectiveBITool() {
                         </div>
                     </article>
                 </section>
-            </main>
+            </div>
         </div>
     );
 }

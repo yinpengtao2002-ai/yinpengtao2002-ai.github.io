@@ -4,7 +4,7 @@ import GoalkeeperLandscapeRuntime, { GOALKEEPER_SCRIPT_SRC } from "./GoalkeeperL
 const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-C3Y5dsvI.css";
 
 export const metadata: Metadata = {
-  title: "守门挑战｜Lucas Yin",
+  title: "守门挑战",
   description: "横屏 3D 守门游戏，支持经典模式和点球大战。",
   manifest: "/tools/goalkeeper-landscape/manifest.webmanifest",
   appleWebApp: {
@@ -31,7 +31,7 @@ export default function GoalkeeperLandscapePage() {
   return (
     <>
       <link rel="stylesheet" crossOrigin="anonymous" href={GOALKEEPER_STYLESHEET_HREF} />
-      <main className="app" aria-label="守门挑战" data-script-src={GOALKEEPER_SCRIPT_SRC}>
+      <div className="app" aria-label="守门挑战" data-script-src={GOALKEEPER_SCRIPT_SRC}>
         <section className="game-shell">
           <div className="stage" id="stage">
             <canvas id="gameCanvas" width="1280" height="720" aria-label="守门挑战游戏" />
@@ -196,7 +196,7 @@ export default function GoalkeeperLandscapePage() {
             <div className="rotate-hint">开始后自动横屏</div>
           </div>
         </section>
-      </main>
+      </div>
       <GoalkeeperLandscapeRuntime />
     </>
   );

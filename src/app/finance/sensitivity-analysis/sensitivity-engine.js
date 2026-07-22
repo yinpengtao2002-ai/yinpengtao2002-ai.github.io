@@ -7,6 +7,20 @@ import {
     FINANCE_WORKBENCH_MOBILE_QUERY,
     isFinanceWorkbenchMobileViewport
 } from "../../../lib/finance/workbench-breakpoints.ts";
+import {
+    clearFinanceEngineBindingMarkers,
+    createFinanceEngineLifecycle
+} from "../../../lib/finance/browser-engine-lifecycle.ts";
+import { renderPlotlyAccessibleData } from "../../../lib/finance/chart-accessibility.ts";
+
+const lifecycle = createFinanceEngineLifecycle();
+
+function renderAccessiblePlot(target, data, layout, config) {
+    const result = Plotly.react(target, data, layout, config);
+    const chartId = typeof target === "string" ? target : target?.id;
+    if (chartId) renderPlotlyAccessibleData(chartId, data);
+    return result;
+}
 
 let DRIVER_DEFINITIONS = [
     {
@@ -526,6 +540,7 @@ function createMatrixData() {
 function initApp() {
     const root = document.getElementById("sensitivity-tool-root");
     if (!root || root.dataset.initialized === "true") return;
+    lifecycle.start();
     root.dataset.initialized = "true";
 
     renderControlInputs();
@@ -551,67 +566,79 @@ function renderControlInputs() {
         assumptionsContainer.innerHTML = "";
     }
 
-    adjustmentsContainer.innerHTML = groups.map((group) => {
+    adjustmentsContainer.replaceChildren();
+    groups.forEach((group) => {
         const drivers = DRIVER_DEFINITIONS.filter((driver) => driver.group === group.key);
-        return `
-            <div class="field-group">
-                <div class="field-group-title">${group.title}</div>
-                ${drivers.map((driver) => `
-                    <div class="adjustment-field">
-                        <div class="adjustment-head">
-                            <span>${driver.name}</span>
-                            <strong id="adjustment-label-${driver.key}">${formatSignedPercent(AppState.adjustments[driver.key] || 0)}</strong>
-                        </div>
-                        <input
-                            id="adjustment-${driver.key}"
-                            class="adjustment-slider adjustment-input"
-                            type="range"
-                            min="${ADJUSTMENT_MIN}"
-                            max="${ADJUSTMENT_MAX}"
-                            step="${ADJUSTMENT_STEP}"
-                            data-key="${driver.key}"
-                            value="${AppState.adjustments[driver.key] || 0}"
-                        >
-                        <div class="adjustment-meta">
-                            <span id="adjustment-current-${driver.key}">${formatDriverAnalysisValue(driver.key, AppState.assumptions[driver.key])}</span>
-                            <label>
-                                <input
-                                    class="adjustment-number adjustment-input"
-                                    type="number"
-                                    min="${ADJUSTMENT_MIN}"
-                                    max="${ADJUSTMENT_MAX}"
-                                    step="${ADJUSTMENT_STEP}"
-                                    data-key="${driver.key}"
-                                    value="${AppState.adjustments[driver.key] || 0}"
-                                >
-                                %
-                            </label>
-                        </div>
-                    </div>
-                `).join("")}
-            </div>
-        `;
-    }).join("");
+        const groupElement = document.createElement("div");
+        groupElement.className = "field-group";
+        const groupTitle = document.createElement("div");
+        groupTitle.className = "field-group-title";
+        groupTitle.textContent = group.title;
+        groupElement.append(groupTitle);
 
-    const options = DRIVER_DEFINITIONS.map((driver) => (
-        `<option value="${driver.key}">${driver.name}</option>`
-    )).join("");
-    xSelect.innerHTML = options;
-    ySelect.innerHTML = options;
+        drivers.forEach((driver) => {
+            const field = document.createElement("div");
+            field.className = "adjustment-field";
+
+            const head = document.createElement("div");
+            head.className = "adjustment-head";
+            const label = document.createElement("span");
+            label.textContent = driver.name;
+            const valueLabel = document.createElement("strong");
+            valueLabel.id = `adjustment-label-${driver.key}`;
+            valueLabel.textContent = formatSignedPercent(AppState.adjustments[driver.key] || 0);
+            head.append(label, valueLabel);
+
+            const slider = document.createElement("input");
+            slider.id = `adjustment-${driver.key}`;
+            slider.className = "adjustment-slider adjustment-input";
+            slider.type = "range";
+            slider.min = String(ADJUSTMENT_MIN);
+            slider.max = String(ADJUSTMENT_MAX);
+            slider.step = String(ADJUSTMENT_STEP);
+            slider.dataset.key = driver.key;
+            slider.value = String(AppState.adjustments[driver.key] || 0);
+
+            const meta = document.createElement("div");
+            meta.className = "adjustment-meta";
+            const current = document.createElement("span");
+            current.id = `adjustment-current-${driver.key}`;
+            current.textContent = formatDriverAnalysisValue(driver.key, AppState.assumptions[driver.key]);
+            const numberLabel = document.createElement("label");
+            const numberInput = document.createElement("input");
+            numberInput.className = "adjustment-number adjustment-input";
+            numberInput.type = "number";
+            numberInput.min = String(ADJUSTMENT_MIN);
+            numberInput.max = String(ADJUSTMENT_MAX);
+            numberInput.step = String(ADJUSTMENT_STEP);
+            numberInput.dataset.key = driver.key;
+            numberInput.value = String(AppState.adjustments[driver.key] || 0);
+            numberLabel.append(numberInput, "%");
+            meta.append(current, numberLabel);
+
+            field.append(head, slider, meta);
+            groupElement.append(field);
+        });
+
+        adjustmentsContainer.append(groupElement);
+    });
+
+    xSelect.replaceChildren(...DRIVER_DEFINITIONS.map((driver) => new Option(driver.name, driver.key)));
+    ySelect.replaceChildren(...DRIVER_DEFINITIONS.map((driver) => new Option(driver.name, driver.key)));
     xSelect.value = AppState.xDriver;
     ySelect.value = AppState.yDriver;
 }
 
 function initControlEvents() {
-    document.getElementById("metric-select").addEventListener("change", (event) => {
+    lifecycle.listen(document.getElementById("metric-select"), "change", (event) => {
         AppState.metric = event.target.value;
         renderAll();
     });
-    document.getElementById("unit-select").addEventListener("change", (event) => {
+    lifecycle.listen(document.getElementById("unit-select"), "change", (event) => {
         AppState.displayUnit = event.target.value;
         renderAll();
     });
-    document.getElementById("target-profit-input").addEventListener("input", (event) => {
+    lifecycle.listen(document.getElementById("target-profit-input"), "input", (event) => {
         const rawValue = String(event.target.value || "").trim();
         const value = Number(rawValue);
         if (rawValue === "") {
@@ -622,7 +649,7 @@ function initControlEvents() {
         AppState.targetProfit = Number.isFinite(value) ? value : null;
         renderAll();
     });
-    document.getElementById("x-driver-select").addEventListener("change", (event) => {
+    lifecycle.listen(document.getElementById("x-driver-select"), "change", (event) => {
         AppState.xDriver = event.target.value;
         if (AppState.xDriver === AppState.yDriver) {
             AppState.yDriver = DRIVER_DEFINITIONS.find((driver) => driver.key !== AppState.xDriver).key;
@@ -630,7 +657,7 @@ function initControlEvents() {
         }
         renderAll();
     });
-    document.getElementById("y-driver-select").addEventListener("change", (event) => {
+    lifecycle.listen(document.getElementById("y-driver-select"), "change", (event) => {
         AppState.yDriver = event.target.value;
         if (AppState.xDriver === AppState.yDriver) {
             AppState.xDriver = DRIVER_DEFINITIONS.find((driver) => driver.key !== AppState.yDriver).key;
@@ -638,22 +665,22 @@ function initControlEvents() {
         }
         renderAll();
     });
-    document.getElementById("matrix-steps").addEventListener("change", (event) => {
+    lifecycle.listen(document.getElementById("matrix-steps"), "change", (event) => {
         AppState.matrixSteps = Number(event.target.value);
         renderAll();
     });
-    document.getElementById("btn-reset").addEventListener("click", resetModel);
-    document.getElementById("btn-demo").addEventListener("click", () => {
+    lifecycle.listen(document.getElementById("btn-reset"), "click", resetModel);
+    lifecycle.listen(document.getElementById("btn-demo"), "click", () => {
         resetModel();
         showMessage("success", "已加载利润示例数据。");
     });
-    document.getElementById("btn-csv-template").addEventListener("click", () => downloadTemplate("csv"));
-    document.getElementById("btn-xlsx-template").addEventListener("click", () => downloadTemplate("xlsx"));
-    document.getElementById("sidebar-toggle").addEventListener("click", () => toggleSidebar(false));
-    document.getElementById("sidebar-expand").addEventListener("click", () => toggleSidebar(true));
-    document.getElementById("sidebar-backdrop")?.addEventListener("click", () => toggleSidebar(false));
+    lifecycle.listen(document.getElementById("btn-csv-template"), "click", () => downloadTemplate("csv"));
+    lifecycle.listen(document.getElementById("btn-xlsx-template"), "click", () => downloadTemplate("xlsx"));
+    lifecycle.listen(document.getElementById("sidebar-toggle"), "click", () => toggleSidebar(false));
+    lifecycle.listen(document.getElementById("sidebar-expand"), "click", () => toggleSidebar(true));
+    lifecycle.listen(document.getElementById("sidebar-backdrop"), "click", () => toggleSidebar(false));
 
-    document.getElementById("adjustment-inputs").addEventListener("input", (event) => {
+    lifecycle.listen(document.getElementById("adjustment-inputs"), "input", (event) => {
         if (!event.target.classList.contains("adjustment-input")) return;
         const key = event.target.dataset.key;
         AppState.adjustments[key] = round(clampNumber(Number(event.target.value || 0), ADJUSTMENT_MIN, ADJUSTMENT_MAX), 1);
@@ -665,18 +692,18 @@ function initFileUpload() {
     const uploadZone = document.getElementById("upload-zone");
     const fileInput = document.getElementById("file-input");
 
-    uploadZone.addEventListener("dragover", (event) => {
+    lifecycle.listen(uploadZone, "dragover", (event) => {
         event.preventDefault();
         uploadZone.classList.add("drag-over");
     });
-    uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("drag-over"));
-    uploadZone.addEventListener("drop", (event) => {
+    lifecycle.listen(uploadZone, "dragleave", () => uploadZone.classList.remove("drag-over"));
+    lifecycle.listen(uploadZone, "drop", (event) => {
         event.preventDefault();
         uploadZone.classList.remove("drag-over");
         const file = event.dataTransfer.files[0];
         if (file) handleFile(file);
     });
-    fileInput.addEventListener("change", (event) => {
+    lifecycle.listen(fileInput, "change", (event) => {
         const file = event.target.files[0];
         if (file) handleFile(file);
         event.target.value = "";
@@ -686,7 +713,7 @@ function initFileUpload() {
 function handleFile(file) {
     const fileName = file.name.toLowerCase();
     if (fileName.endsWith(".csv")) {
-        const reader = new FileReader();
+        const reader = lifecycle.trackAbortable(new FileReader());
         reader.onload = (event) => {
             try {
                 applyImportedRows(parseCsv(event.target.result));
@@ -700,7 +727,7 @@ function handleFile(file) {
     }
 
     if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
-        const reader = new FileReader();
+        const reader = lifecycle.trackAbortable(new FileReader());
         reader.onload = (event) => {
             try {
                 const workbook = XLSX.read(new Uint8Array(event.target.result), { type: "array" });
@@ -1126,7 +1153,7 @@ function renderTornadoChart() {
     const chartHeight = Math.max(compact ? 480 : 440, rows.length * (compact ? 30 : 34) + (compact ? 90 : 110));
     const metricLabel = METRIC_DEFINITIONS.profit.label;
 
-    Plotly.react("tornado-chart", [
+    renderAccessiblePlot("tornado-chart", [
         {
             x: rows.map((row) => row.lowDelta),
             y: rows.map((row) => row.name),
@@ -1334,7 +1361,7 @@ function renderTargetProfitChart(result) {
         });
     }
 
-    Plotly.react("target-profit-chart", traces, getLockedPlotLayout({
+    renderAccessiblePlot("target-profit-chart", traces, getLockedPlotLayout({
         height: compact ? 360 : 420,
         margin: { l: compact ? 42 : 58, r: compact ? 8 : 22, t: compact ? 18 : 26, b: compact ? 50 : 58 },
         paper_bgcolor: "rgba(0,0,0,0)",
@@ -1373,7 +1400,7 @@ function renderMatrixChart() {
         formatMetric(value)
     ]));
 
-    Plotly.react("matrix-chart", [
+    renderAccessiblePlot("matrix-chart", [
         {
             x: xIndexes,
             y: yIndexes,
@@ -1507,7 +1534,7 @@ function renderWaterfallChart(targetId, options) {
         `${label}<br>${formatAmount(options.values[index], 1)}`
     ));
 
-    Plotly.react(targetId, [
+    renderAccessiblePlot(targetId, [
         {
             type: "waterfall",
             orientation: "v",
@@ -1586,7 +1613,7 @@ function initResponsiveSidebar() {
     if (typeof window === "undefined") return;
     const media = window.matchMedia(FINANCE_WORKBENCH_MOBILE_QUERY);
     toggleSidebar(!media.matches);
-    media.addEventListener("change", (event) => toggleSidebar(!event.matches));
+    lifecycle.listen(media, "change", (event) => toggleSidebar(!event.matches));
 }
 
 function resizePlotlyCharts() {
@@ -1598,28 +1625,31 @@ function resizePlotlyCharts() {
 
 function schedulePlotResize() {
     if (typeof window === "undefined") return;
-    window.requestAnimationFrame(resizePlotlyCharts);
-    window.setTimeout(resizePlotlyCharts, 280);
+    lifecycle.frame(resizePlotlyCharts);
+    lifecycle.timeout(resizePlotlyCharts, 280);
 }
 
 function initChartResizeObserver() {
     if (typeof window === "undefined") return;
     const mainContent = document.querySelector(".sensitivity-tool .main-content");
     if (mainContent && typeof ResizeObserver !== "undefined") {
-        const observer = new ResizeObserver(schedulePlotResize);
+        const observer = lifecycle.observe(new ResizeObserver(schedulePlotResize));
         observer.observe(mainContent);
     }
-    window.addEventListener("resize", schedulePlotResize);
+    lifecycle.listen(window, "resize", schedulePlotResize);
 }
 
 function showMessage(type, text) {
     const area = document.getElementById("message-area");
     if (!area) return;
-    area.innerHTML = `<div class="message ${type}">${text}</div>`;
+    const message = document.createElement("div");
+    message.className = `message ${type}`;
+    message.textContent = text;
+    area.replaceChildren(message);
     window.clearTimeout(showMessage.timer);
     if (type !== "error") {
-        showMessage.timer = window.setTimeout(() => {
-            area.innerHTML = "";
+        showMessage.timer = lifecycle.timeout(() => {
+            area.replaceChildren();
         }, 3200);
     }
 }
@@ -1733,9 +1763,17 @@ function getLockedPlotLayout(layout) {
 }
 
 if (typeof window !== "undefined") {
-    window.ProfitBridgeSensitivity = {
-        initApp
-    };
+    window.ProfitBridgeSensitivity = { initApp, dispose };
+}
+
+function dispose() {
+    lifecycle.dispose();
+    const root = document.getElementById("sensitivity-tool-root");
+    clearFinanceEngineBindingMarkers(root);
+    if (root) delete root.dataset.initialized;
+    document.querySelectorAll(".sensitivity-tool .js-plotly-plot").forEach((plot) => {
+        if (typeof Plotly !== "undefined") Plotly.purge(plot);
+    });
 }
 
 const sensitivityModelApi = {
@@ -1750,7 +1788,8 @@ const sensitivityModelApi = {
     normalizeImportedValue,
     getPlotConfig,
     getLockedPlotLayout,
-    initApp
+    initApp,
+    dispose
 };
 
 if (typeof module !== "undefined" && module.exports) {

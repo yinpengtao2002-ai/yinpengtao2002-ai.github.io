@@ -70,7 +70,7 @@ export default function FinanceAIChartDemo() {
   const specs = useMemo(() => buildFinanceAIChartDemoSpecs(), []);
 
   return (
-    <main className="finance-ai-demo-shell">
+    <div className="finance-ai-demo-shell">
       <header className="finance-ai-demo-header">
         <p className="finance-ai-kicker">Chart Demo</p>
         <h1>财务分析 AI 助手图表样式</h1>
@@ -95,6 +95,6 @@ export default function FinanceAIChartDemo() {
           </article>
         ))}
       </section>
-    </main>
+    </div>
   );
 }

@@ -4,18 +4,21 @@ import { enforceRateLimit } from "../../../lib/security/rate-limit.ts";
 const PRIVATE_TOOL_ACCESS_RATE_LIMIT = { keyPrefix: "api-private-tool-access", limit: 8, windowMs: 5 * 60_000 };
 
 function errorResponse(status: number, errorCode: string, message: string) {
-  return Response.json({ error: message, errorCode }, { status });
+  return Response.json(
+    { message, errorCode },
+    { status, headers: { "Cache-Control": "no-store", Pragma: "no-cache" } },
+  );
 }
 
 export async function POST(req: Request) {
-  const rateLimitError = enforceRateLimit(req, PRIVATE_TOOL_ACCESS_RATE_LIMIT);
+  const rateLimitError = await enforceRateLimit(req, PRIVATE_TOOL_ACCESS_RATE_LIMIT);
 
   if (rateLimitError) {
     return rateLimitError;
   }
 
   if (!isPrivateToolAccessConfigured()) {
-    return errorResponse(503, "access_not_configured", "访问码还没有在部署环境配置。");
+    return errorResponse(503, "access_not_configured", "访问码或 Token 签名密钥还没有在部署环境配置。");
   }
 
   let body: Record<string, unknown>;
@@ -33,9 +36,11 @@ export async function POST(req: Request) {
   const token = createPrivateToolAccessToken();
   const expiresAt = getPrivateToolAccessTokenExpiry(token);
 
-  return Response.json({
-    token,
-    expiresAt: expiresAt?.toISOString() ?? null,
-  });
+  return Response.json(
+    {
+      token,
+      expiresAt: expiresAt?.toISOString() ?? null,
+    },
+    { headers: { "Cache-Control": "no-store", Pragma: "no-cache" } },
+  );
 }
-

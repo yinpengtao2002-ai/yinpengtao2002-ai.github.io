@@ -1,11 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
-import { bootFinanceBrowserEngine } from "@/lib/finance/browser-tool-loader";
+import { useEffect, useState } from "react";
+import { bootFinanceBrowserEngine, type FinanceBrowserEngine } from "@/lib/finance/browser-tool-loader";
 
 export default function MonthlyTrendTool() {
+    const [bootAttempt, setBootAttempt] = useState(0);
+    const [bootError, setBootError] = useState("");
+
     useEffect(() => {
         let cancelled = false;
+        let engine: FinanceBrowserEngine | undefined;
+        setBootError("");
 
         void bootFinanceBrowserEngine({
             engineName: "MonthlyTrendModel",
@@ -16,15 +21,28 @@ export default function MonthlyTrendTool() {
             ],
             isCancelled: () => cancelled,
             errorMessage: "Failed to start monthly trend model",
+            onError: () => {
+                if (!cancelled) setBootError("趋势引擎加载失败，请重试。");
+            },
+        }).then((loaded) => {
+            engine = loaded;
+            if (cancelled) loaded?.dispose();
         });
 
         return () => {
             cancelled = true;
+            engine?.dispose();
         };
-    }, []);
+    }, [bootAttempt]);
 
     return (
         <div id="monthly-trend-root" className="monthly-trend-tool">
+            {bootError ? (
+                <div className="engine-load-error" role="alert">
+                    <span>{bootError}</span>
+                    <button type="button" className="btn btn-secondary" onClick={() => setBootAttempt((value) => value + 1)}>重试加载</button>
+                </div>
+            ) : null}
             <aside id="monthly-sidebar" className="sidebar">
                 <button id="monthly-sidebar-toggle" className="sidebar-toggle" type="button" title="收起控制台" aria-label="收起控制台">
                     ‹
@@ -35,6 +53,7 @@ export default function MonthlyTrendTool() {
                     <h1 className="sidebar-heading">分月指标趋势分析模型</h1>
                     <p className="sidebar-copy">上传连续月份明细，按自定义维度查看趋势、环比同比、结构和质量变化。</p>
                     <div id="monthly-message-area" className="message-area" aria-live="polite" />
+                    <section id="monthly-field-governance" className="finance-field-governance" data-finance-field-governance hidden />
                 </section>
 
                 <section className="sidebar-block">
@@ -78,7 +97,7 @@ export default function MonthlyTrendTool() {
                 控制台
             </button>
 
-            <main className="main-content">
+            <div className="main-content">
                 <header className="model-header">
                     <div>
                         <p className="eyebrow">Financial Modeling</p>
@@ -158,7 +177,7 @@ export default function MonthlyTrendTool() {
                     </article>
                 </section>
 
-            </main>
+            </div>
         </div>
     );
 }

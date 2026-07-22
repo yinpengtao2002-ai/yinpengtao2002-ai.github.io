@@ -7,21 +7,14 @@ export const dynamic = "force-static";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages: MetadataRoute.Sitemap = [
-    { url: BASE_URL, lastModified: new Date(), priority: 1.0 },
-    { url: `${BASE_URL}/finance`, lastModified: new Date(), priority: 0.9 },
-    { url: `${BASE_URL}/thinking-lab`, lastModified: new Date(), priority: 0.8 },
-    { url: `${BASE_URL}/tools/study-cards`, lastModified: new Date(), priority: 0.7 },
-    { url: `${BASE_URL}/tools/subtitle-workbench`, lastModified: new Date(), priority: 0.7 },
-    { url: `${BASE_URL}/tools/goalkeeper-landscape`, lastModified: new Date(), priority: 0.7 },
-    {
-      url: `${BASE_URL}/finance/finance-ai-assistant`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.85,
-    },
+    { url: BASE_URL, priority: 1.0 },
+    { url: `${BASE_URL}/finance`, priority: 0.9 },
+    { url: `${BASE_URL}/thinking-lab`, priority: 0.8 },
+    { url: `${BASE_URL}/tools/study-cards`, priority: 0.7 },
+    { url: `${BASE_URL}/tools/subtitle-workbench`, priority: 0.7 },
+    { url: `${BASE_URL}/tools/goalkeeper-landscape`, priority: 0.7 },
     {
       url: `${BASE_URL}/finance/finance-ai-assistant/demo`,
-      lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.72,
     },
@@ -32,7 +25,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...thinkingContent,
   ].map((item) => ({
     url: `${BASE_URL}${item.href}`,
-    lastModified: item.date ? new Date(item.date) : new Date(),
+    ...(item.date ? { lastModified: new Date(item.date) } : {}),
     priority: item.href.startsWith("/finance/") ? 0.85 : 0.75,
   }));
 

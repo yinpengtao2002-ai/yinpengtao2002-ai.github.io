@@ -3,7 +3,7 @@ import ToolBackButton from "@/components/finance/ToolBackButton";
 import MonthlyTrendTool from "./MonthlyTrendTool";
 
 export const metadata: Metadata = {
-    title: "分月指标趋势分析模型｜多期间分析工具｜Lucas Yin",
+    title: "分月指标趋势分析模型｜多期间分析工具",
     description: "上传连续月份数据，按自定义维度分析销量、单车质量、环比同比、同期对比和结构占比。",
 };
 

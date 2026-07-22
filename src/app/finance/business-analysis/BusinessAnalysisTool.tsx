@@ -1,11 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
-import { bootFinanceBrowserEngine } from "@/lib/finance/browser-tool-loader";
+import { useEffect, useState } from "react";
+import { bootFinanceBrowserEngine, type FinanceBrowserEngine } from "@/lib/finance/browser-tool-loader";
 
 export default function BusinessAnalysisTool() {
+    const [bootAttempt, setBootAttempt] = useState(0);
+    const [bootError, setBootError] = useState("");
+
     useEffect(() => {
         let cancelled = false;
+        let engine: FinanceBrowserEngine | undefined;
+        setBootError("");
 
         void bootFinanceBrowserEngine({
             engineName: "BusinessAnalysisModel",
@@ -16,15 +21,28 @@ export default function BusinessAnalysisTool() {
             ],
             isCancelled: () => cancelled,
             errorMessage: "Failed to start business analysis model",
+            onError: () => {
+                if (!cancelled) setBootError("分析引擎加载失败，请重试。");
+            },
+        }).then((loaded) => {
+            engine = loaded;
+            if (cancelled) loaded?.dispose();
         });
 
         return () => {
             cancelled = true;
+            engine?.dispose();
         };
-    }, []);
+    }, [bootAttempt]);
 
     return (
         <div id="business-analysis-root" className="business-tool">
+            {bootError ? (
+                <div className="engine-load-error" role="alert">
+                    <span>{bootError}</span>
+                    <button type="button" className="btn btn-secondary" onClick={() => setBootAttempt((value) => value + 1)}>重试加载</button>
+                </div>
+            ) : null}
             <aside id="business-sidebar" className="sidebar">
                 <button id="sidebar-toggle" className="sidebar-toggle" type="button" title="收起控制台" aria-label="收起控制台">
                     ‹
@@ -35,6 +53,7 @@ export default function BusinessAnalysisTool() {
                     <h1 className="sidebar-heading">预算实际对比模型</h1>
                     <p className="sidebar-copy">上传实际与预算两张子表，经营明细负责维度下钻，固定科目可在下方直接维护。</p>
                     <div id="message-area" className="message-area" aria-live="polite" />
+                    <section id="business-field-governance" className="finance-field-governance" data-finance-field-governance hidden />
                 </section>
 
                 <section className="sidebar-block">
@@ -110,6 +129,7 @@ export default function BusinessAnalysisTool() {
                     </div>
                     <div id="sidebar-dimension-train" className="dimension-train sidebar-dimension-train" data-dimension-train aria-label="左侧维度下钻顺序" />
                     <p className="dimension-train-hint">拖动维度卡片调整顺序，已下钻层级会保留。</p>
+                    <p id="business-dimension-order-status" className="sr-only" aria-live="polite" />
                 </section>
 
                 <section className="sidebar-block sidebar-dimension-drill-block">
@@ -135,7 +155,7 @@ export default function BusinessAnalysisTool() {
                 控制台
             </button>
 
-            <main className="main-content">
+            <div className="main-content">
                 <header className="model-header">
                     <div>
                         <p className="eyebrow">Financial Modeling</p>
@@ -219,7 +239,7 @@ export default function BusinessAnalysisTool() {
                     <span>预算实际对比模型</span>
                     <span>销量、净收入总额、单车净收入、边际总额、单车边际、利润总额与维度归因</span>
                 </footer>
-            </main>
+            </div>
         </div>
     );
 }

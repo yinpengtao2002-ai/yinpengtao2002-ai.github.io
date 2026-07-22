@@ -96,7 +96,7 @@ test("default dimension path starts with the stable geography tree and then cros
   assert.deepEqual(defaultDimensionPath(schema), ["大区", "国家", "品牌", "车型", "燃油品类"]);
 });
 
-test("uploaded rows treat every column before volume as a selectable dimension and every column after volume as an uploaded metric", () => {
+test("uploaded rows infer dimensions and metrics from headers and sample types", () => {
   const { rows, schema } = normalizeUploadedRows([
     {
       月份: "2026-01",
@@ -118,6 +118,72 @@ test("uploaded rows treat every column before volume as a selectable dimension a
   assert.equal("margin" in rows[0], false);
   assert.equal("marginRate" in rows[0], false);
   assert.equal(rows[0].dimensionValues.客户, "客户A");
+});
+
+test("field inference keeps a text dimension after volume and a numeric metric before volume", () => {
+  const { rows, schema } = normalizeUploadedRows([
+    { 月份: "2026-01", 净收入: 1000, 销量: 100, 渠道: "经销", 边际: 200 },
+    { 月份: "2026-02", 净收入: 1200, 销量: 120, 渠道: "直营", 边际: 300 },
+  ]);
+
+  assert.deepEqual(schema.dimensions, ["渠道"]);
+  assert.deepEqual(schema.metricColumns, ["净收入", "边际"]);
+  assert.equal(rows[0].dimensionValues.渠道, "经销");
+  assert.deepEqual(rows[0].metrics, { 净收入: 1000, 边际: 200 });
+});
+
+test("ambiguous empty fields are reported instead of silently classified", () => {
+  const { schema } = normalizeUploadedRows([
+    { 月份: "2026-01", 大区: "欧洲", 待确认字段: "", 销量: 100, 边际: 20 },
+    { 月份: "2026-02", 大区: "欧洲", 待确认字段: "", 销量: 120, 边际: 30 },
+  ]);
+  assert.deepEqual(schema.ambiguousColumns, ["待确认字段"]);
+});
+
+test("profit structure validates numeric cells and applies Chinese unit scales", () => {
+  const { rows, schema } = normalizeUploadedRows([
+    { 月份: "2026-01", 大区: "欧洲", 销量: 100, 净收入: "1.2亿", 边际: "500万" },
+    { 月份: "2026-02", 大区: "欧洲", 销量: "#VALUE!", 净收入: 100, 边际: "" },
+  ]);
+  assert.equal(rows[0].metrics.净收入, 120_000_000);
+  assert.equal(rows[0].metrics.边际, 5_000_000);
+  assert.deepEqual(schema.dataIssues.map((issue) => ({ row: issue.row, column: issue.column, status: issue.status })), [
+    { row: 3, column: "销量", status: "invalid" },
+    { row: 3, column: "边际", status: "blank" },
+  ]);
+});
+
+test("profit structure recomputes known ratios and does not sum NPS", () => {
+  const { rows, schema } = normalizeUploadedRows([
+    { 月份: "2026-01", 大区: "欧洲", 销量: 100, 净收入: 100, 边际: 20, 边际率: 0.2, NPS: 8 },
+    { 月份: "2026-02", 大区: "欧洲", 销量: 300, 净收入: 300, 边际: 90, 边际率: 0.3, NPS: 6 },
+  ]);
+  const summary = summarizeProfitStructure(rows, schema, { dimensions: ["大区"] });
+
+  assert.deepEqual(schema.metricAggregations.边际率, {
+    mode: "ratio",
+    numeratorColumn: "边际",
+    denominatorColumn: "净收入",
+  });
+  assert.deepEqual(schema.metricAggregations.NPS, {
+    mode: "non_aggregatable",
+    reason: "rate_requires_source_counts",
+  });
+  assert.equal(summary.totals.metrics.边际率, 0.275);
+  assert.equal(summary.totals.metrics.NPS, null);
+  assert.match(summary.aggregationWarnings.join(" "), /NPS/);
+  const npsCard = buildSummaryCards(summary, schema).find((card) => card.label === "NPS");
+  assert.deepEqual(npsCard, { label: "NPS", value: "—", note: "缺少重算所需的底层计数，不提供伪合计" });
+});
+
+test("snapshot metrics use the latest period value", () => {
+  const { rows, schema } = normalizeUploadedRows([
+    { 月份: "2026-01", 大区: "欧洲", 销量: 100, 期末库存: 50 },
+    { 月份: "2026-02", 大区: "欧洲", 销量: 100, 期末库存: 40 },
+  ]);
+  const summary = summarizeProfitStructure(rows, schema, { dimensions: ["大区"] });
+  assert.equal(schema.metricAggregations.期末库存.mode, "snapshot");
+  assert.equal(summary.totals.metrics.期末库存, 40);
 });
 
 test("summarizes uploaded metrics by selected dimensions and computes quality gap", () => {
@@ -181,6 +247,7 @@ test("summary cards and diagnostic blueprints follow uploaded metric names and r
   const combinedText = JSON.stringify({ cards, charts, summary });
 
   assert.deepEqual(cards.map((card) => card.label), ["销量", "GMV", "服务成本", "NPS"]);
+  assert.equal(cards.at(-1).value, "—");
   assert.deepEqual(charts.map((chart) => chart.kind), [
     "dimension-diagnostics",
     "quality-map",
@@ -246,7 +313,7 @@ test("profit structure tool requires the private tool access key before booting 
   assert.match(tool, /多维利润质量诊断模型内测访问/);
   assert.match(tool, /type="password"/);
   assert.match(tool, /if \(!accessToken\) {\s+return;\s+}/);
-  assert.match(tool, /\}, \[accessToken\]\);/);
+  assert.match(tool, /\}, \[accessToken, bootAttempt\]\);/);
 });
 
 test("source files for the tool do not expose rejected panels or rejected chart names", async () => {

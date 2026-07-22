@@ -3,7 +3,7 @@ import ToolBackButton from "@/components/finance/ToolBackButton";
 import BusinessAnalysisTool from "./BusinessAnalysisTool";
 
 export const metadata: Metadata = {
-    title: "预算实际对比模型｜财务复盘工具｜Lucas Yin",
+    title: "预算实际对比模型｜财务复盘工具",
     description: "按企业 FBP 口径比较实际与预算的销量、净收入总额、单车净收入、边际总额、单车边际和利润总额，用于边际复盘与多维度归因分析。",
 };
 

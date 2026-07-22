@@ -9,18 +9,78 @@ import type {
   FinanceSchema,
 } from "../../../../lib/finance-ai/types.ts";
 
-const API_ROUTE_PATH = "/api/tools/finance-ai-assistant";
 const PLANNING_BOUNDARY = "AI 不负责计算数字";
 const FINANCE_AI_RATE_LIMIT = { keyPrefix: "api-finance-ai-assistant", limit: 20, windowMs: 60_000 };
 const FINANCE_AI_PLAN_TIMEOUT_MS = 60000;
 const FINANCE_AI_EXPLAIN_TIMEOUT_MS = 25000;
+const FINANCE_AI_MAX_BODY_BYTES = 256 * 1024;
+const FINANCE_AI_MAX_QUESTION_CHARS = 2_000;
 const UNSUPPORTED_DIRECT_WORKBOOK_MODES = new Set(["analyze", "data_request", "analyze_selection"]);
 
 type FinanceProviderCallOptions = ProviderCallOptions & {
   jsonMode: boolean;
 };
 
+const FINANCE_PLAN_KEYS = new Set(["modules"]);
+const FINANCE_PLAN_MODULE_KEYS = new Set([
+  "type",
+  "metric",
+  "metrics",
+  "period",
+  "fromPeriod",
+  "toPeriod",
+  "fromScenario",
+  "toScenario",
+  "highlightPeriod",
+  "dimension",
+  "seriesDimension",
+  "xDimension",
+  "yDimension",
+  "xMetric",
+  "yMetric",
+  "sizeMetric",
+  "sort",
+  "comparison",
+  "comparisons",
+  "limit",
+  "seriesLimit",
+  "detailTable",
+  "filters",
+  "chart",
+]);
+const FINANCE_PLAN_CHART_KEYS = new Set(["type", "highlightPeriod"]);
+
+function assertNoUnknownKeys(record: Record<string, unknown>, allowedKeys: Set<string>) {
+  if (Object.keys(record).some((key) => !allowedKeys.has(key))) {
+    throw new Error("AI response contained unsupported fields");
+  }
+}
+
+function assertStrictPlanShape(value: unknown) {
+  const plan = asRecord(value);
+  assertNoUnknownKeys(plan, FINANCE_PLAN_KEYS);
+  if (!Array.isArray(plan.modules)) {
+    throw new Error("AI response missed required modules");
+  }
+
+  plan.modules.forEach((module) => {
+    const record = asRecord(module);
+    if (Object.keys(record).length === 0) {
+      throw new Error("AI response contained an invalid module");
+    }
+    assertNoUnknownKeys(record, FINANCE_PLAN_MODULE_KEYS);
+    if ("chart" in record) {
+      const chart = asRecord(record.chart);
+      if (Object.keys(chart).length === 0) {
+        throw new Error("AI response contained an invalid chart");
+      }
+      assertNoUnknownKeys(chart, FINANCE_PLAN_CHART_KEYS);
+    }
+  });
+}
+
 function normalizePlan(value: unknown): FinanceActionPlan {
+  assertStrictPlanShape(value);
   const record = value && typeof value === "object" && !Array.isArray(value)
     ? value as Partial<FinanceActionPlan>
     : {};
@@ -194,32 +254,38 @@ async function callFirstConfiguredProvider(
   return callFirstConfiguredChatProvider(getChatProviders(timeoutMs), messages, {
     ...options,
     timeoutMs,
-    timeoutMessage: "DeepSeek 分析超时了，请稍后重试，或把问题缩窄到一个月份、一个指标或一个维度。",
-    emptyResponseMessage: "DeepSeek 这次没有返回正文内容。",
+    timeoutMessage: "AI 服务分析超时了，请稍后重试，或把问题缩窄到一个月份、一个指标或一个维度。",
+    emptyResponseMessage: "AI 服务这次没有返回正文内容。",
     notConfiguredMessage: "No finance AI provider is configured.",
     failureMessage: "Finance AI provider failed.",
   });
 }
 
 function errorResponse(
+  requestId: string,
   status: number,
   errorCode: string,
   message: string,
-  details?: Record<string, unknown>,
 ) {
   return Response.json(
     {
-      error: message,
       errorCode,
-      route: API_ROUTE_PATH,
-      ...details,
+      message,
+      requestId,
     },
-    { status },
+    {
+      status,
+      headers: {
+        "Cache-Control": "no-store",
+        "X-Request-Id": requestId,
+      },
+    },
   );
 }
 
 export async function POST(req: Request) {
-  const rateLimitError = enforceRateLimit(req, FINANCE_AI_RATE_LIMIT);
+  const requestId = crypto.randomUUID();
+  const rateLimitError = await enforceRateLimit(req, FINANCE_AI_RATE_LIMIT);
 
   if (rateLimitError) {
     return rateLimitError;
@@ -228,60 +294,48 @@ export async function POST(req: Request) {
   let body: Record<string, unknown>;
 
   try {
-    body = await req.json();
+    const rawBody = await req.text();
+    if (new TextEncoder().encode(rawBody).byteLength > FINANCE_AI_MAX_BODY_BYTES) {
+      return errorResponse(requestId, 413, "request_too_large", "请求内容过长。");
+    }
+    const parsed = JSON.parse(rawBody) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return errorResponse(requestId, 400, "invalid_json", "请求内容必须是 JSON 对象。");
+    }
+    body = parsed as Record<string, unknown>;
   } catch {
-    return errorResponse(400, "invalid_json", "Request body must be valid JSON.");
+    return errorResponse(requestId, 400, "invalid_json", "请求内容不是有效的 JSON。");
   }
 
   const mode = String(body.mode || "");
+  const question = typeof body.question === "string" ? body.question.trim() : "";
+
+  if (question.length > FINANCE_AI_MAX_QUESTION_CHARS) {
+    return errorResponse(requestId, 400, "question_too_long", "问题不能超过 2,000 个字符。");
+  }
 
   if (UNSUPPORTED_DIRECT_WORKBOOK_MODES.has(mode)) {
     return errorResponse(
+      requestId,
       400,
       "unsupported_mode",
-      "Finance AI assistant only supports plan and explain modes for uploaded workbook analysis; workbook rows stay in the browser session and are computed locally.",
+      "当前仅支持分析计划和结果解读模式。",
     );
-  }
-
-  if (mode === "diagnose") {
-    const providerResult = await callFirstConfiguredProvider(
-      [
-        {
-          role: "system",
-          content: "You are a connection diagnostic endpoint. Reply with exactly OK.",
-        },
-        { role: "user", content: "ping" },
-      ],
-      { jsonMode: false },
-    );
-
-    if (!providerResult.ok) {
-      return errorResponse(providerResult.status, providerResult.errorCode, providerResult.error, {
-        attempts: providerResult.attempts,
-      });
-    }
-
-    return Response.json({
-      ok: true,
-      provider: providerResult.provider,
-      contentLength: providerResult.content.trim().length,
-    });
   }
 
   if (mode === "plan") {
     const schema = body.schema as FinanceSchema | undefined;
-    const question = typeof body.question === "string" ? body.question.trim() : "";
 
     if (!schema) {
-      return errorResponse(400, "missing_schema", "Plan mode requires a finance schema.");
+      return errorResponse(requestId, 400, "missing_schema", "缺少财务数据结构。");
     }
 
     if (!isFinanceSchema(schema)) {
-      return errorResponse(400, "invalid_schema", "Plan mode requires a valid finance schema.");
+      return errorResponse(requestId, 400, "invalid_schema", "财务数据结构无效。");
     }
 
     if (!question) {
-      return errorResponse(400, "missing_question", "Plan mode requires a question.");
+      return errorResponse(requestId, 400, "missing_question", "请输入要分析的问题。");
     }
 
     const chatState = normalizeChatState(body.state);
@@ -304,9 +358,8 @@ export async function POST(req: Request) {
     );
 
     if (!providerResult.ok) {
-      return errorResponse(providerResult.status, providerResult.errorCode, providerResult.error, {
-        attempts: providerResult.attempts,
-      });
+      console.error(JSON.stringify({ event: "finance_ai_provider_error", requestId, ...providerResult }));
+      return errorResponse(requestId, providerResult.status, providerResult.errorCode, "AI 服务暂时不可用，请稍后重试。");
     }
 
     try {
@@ -319,27 +372,27 @@ export async function POST(req: Request) {
       const validated = validateFinanceActionPlan(schema, plan);
 
       if (!validated.ok) {
-        return errorResponse(502, "provider_invalid_plan", "AI plan failed validation.", {
-          provider: providerResult.provider,
-          errors: validated.errors,
-          modules: validated.modules,
-        });
+        console.error(JSON.stringify({ event: "finance_ai_invalid_plan", requestId, errors: validated.errors }));
+        return errorResponse(requestId, 502, "provider_invalid_plan", "AI 返回的分析计划未通过校验，请重试。");
       }
 
       return Response.json({ modules: validated.modules });
-    } catch (error) {
+    } catch {
       return errorResponse(
+        requestId,
         502,
         "provider_invalid_json",
-        error instanceof Error ? error.message : "AI response was not valid JSON.",
-        { provider: providerResult.provider },
+        "AI 返回的数据格式不正确，请重试。",
       );
     }
   }
 
   if (mode === "explain") {
+    if (!question) {
+      return errorResponse(requestId, 400, "missing_question", "请输入要解读的问题。");
+    }
     const prompt = buildFinanceAIExplanationPrompt({
-      userQuestion: typeof body.question === "string" ? body.question : "",
+      userQuestion: question,
       computedSummary: body.computedSummary,
     });
     const providerResult = await callFirstConfiguredProvider(
@@ -354,13 +407,12 @@ export async function POST(req: Request) {
     );
 
     if (!providerResult.ok) {
-      return errorResponse(providerResult.status, providerResult.errorCode, providerResult.error, {
-        attempts: providerResult.attempts,
-      });
+      console.error(JSON.stringify({ event: "finance_ai_provider_error", requestId, ...providerResult }));
+      return errorResponse(requestId, providerResult.status, providerResult.errorCode, "AI 服务暂时不可用，请稍后重试。");
     }
 
     return Response.json({ message: providerResult.content.trim() });
   }
 
-  return errorResponse(400, "unsupported_mode", "Unsupported finance AI assistant mode.");
+  return errorResponse(requestId, 400, "unsupported_mode", "当前仅支持分析计划和结果解读模式。");
 }

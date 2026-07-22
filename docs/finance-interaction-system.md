@@ -1,12 +1,15 @@
 # 财务交互中枢
 
-最后核对时间：2026-06-18
+最后核对时间：2026-07-22
 
 这份文档记录财务模型里可以复用的交互逻辑。图表已经开始进入 `src/lib/finance/charts/`，筛选、下钻、表格列筛选也要逐步进入统一中枢，避免每个模型重新做一套相似逻辑。
 
 ## 当前边界
 
 - `src/lib/finance/filters/`：共享筛选状态逻辑，包括筛选值标准化、搜索、全选/反选/清空、include/exclude 判断、级联筛选修剪。
+- `src/lib/finance/core.ts`：上传后的字段角色预检。显式模板角色优先，其次按表头和样本类型识别。
+- `src/lib/finance/field-governance.ts`：Monthly、Profit Structure 与 Business Analysis 共用的字段映射确认面板；无法判断的空字段在计算前阻断，由用户确认后重新执行预检。静态 Margin 使用同一交互口径的本地 DOM 适配层。
+- `public/tools/shared/finance-core.js`：静态 Margin 工具的共享期间、数值和 CSV 预检入口。
 - `public/tools/margin-analysis/app.js`：单车指标变动归因模型目前保留最成熟的 Excel-style 筛选器交互，是筛选器中枢的行为参考来源。
 - `src/app/finance/business-analysis/business-analysis-engine.js`：预算实际对比模型优先接入共享筛选状态逻辑，现有 UI 外壳先保留，减少一次性改动风险。
 
@@ -21,10 +24,10 @@
 
 | 模型 slug | 当前筛选/下钻交互 | 应接入的中枢能力 |
 | --- | --- | --- |
-| margin-analysis | 侧边栏维度 Excel-style 筛选、级联筛选、瀑布图下钻、明细表列筛选 | filter-state、cascading-filter、detail-table-filter、drill-path |
-| business-analysis | 当前层 Excel-style 筛选、维度路径、瀑布图下钻、侧栏维度顺序 | filter-state、cascading-filter、drill-path |
-| monthly-trend | 多维度筛选卡、联动候选项 | filter-state、cascading-filter |
-| profit-structure | 维度/组合粒度筛选、诊断下钻 | filter-state、cascading-filter |
+| margin-analysis | 上传预检、侧边栏维度 Excel-style 筛选、级联筛选、瀑布图下钻、明细表列筛选、拖动及键盘调整维度顺序 | field-governance、filter-state、cascading-filter、detail-table-filter、drill-path |
+| business-analysis | 上传预检、当前层 Excel-style 筛选、维度路径、瀑布图下钻、侧栏拖动及键盘调整维度顺序 | field-governance、filter-state、cascading-filter、drill-path |
+| monthly-trend | 上传预检、多维度筛选卡、联动候选项 | field-governance、filter-state、cascading-filter |
+| profit-structure | 上传预检、维度/组合粒度筛选、诊断下钻 | field-governance、filter-state、cascading-filter |
 | finance-ai-assistant | 明细表列筛选、聊天上下文中的过滤条件 | detail-table-filter、filter-state |
 | perspective-bi | 字段角色确认和原生 viewer 筛选 | 只复用字段治理和上传预检，不强行替换 Perspective 原生筛选 |
 
@@ -33,7 +36,8 @@
 1. 先抽 `filter-state` 纯函数，供预算实际对比模型使用。
 2. 再处理单车指标变动归因模型的静态脚本加载方式，让它也能直接引用同一个中枢。
 3. 抽明细表列筛选，把单车归因明细表和财务 AI 明细表的文本/数字筛选统一。
-4. 最后抽 `drill-path`，让维度路径、返回上一层、清空筛选和当前层提示统一。
+4. 已完成：补齐共享 `field-governance` 映射确认区，让歧义字段可在页面内确认角色，而不只提示修改源文件。
+5. 最后抽 `drill-path`，让维度路径、返回上一层、清空筛选和当前层提示统一。
 
 ## AI 操作要求
 

@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Home, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import { scrollToSection } from "@/lib/scroll";
 import { useViewportProfile } from "@/lib/useLowMotionMode";
@@ -44,8 +44,32 @@ export default function SiteNavigation() {
     const pathname = usePathname() || "/";
     const { isMobileLike } = useViewportProfile();
     const [open, setOpen] = useState(false);
+    const navigationHidden = shouldHideNavigation(pathname);
+    const mobileToggleRef = useRef<HTMLButtonElement>(null);
+    const firstMobileLinkRef = useRef<HTMLAnchorElement>(null);
 
-    if (shouldHideNavigation(pathname)) return null;
+    useEffect(() => {
+        if (!open || !isMobileLike || navigationHidden) return;
+
+        const focusFrame = window.requestAnimationFrame(() => {
+            firstMobileLinkRef.current?.focus();
+        });
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                event.preventDefault();
+                setOpen(false);
+                mobileToggleRef.current?.focus();
+            }
+        };
+
+        window.addEventListener("keydown", handleEscape);
+        return () => {
+            window.cancelAnimationFrame(focusFrame);
+            window.removeEventListener("keydown", handleEscape);
+        };
+    }, [isMobileLike, navigationHidden, open]);
+
+    if (navigationHidden) return null;
 
     const itemIsActive = (item: (typeof NAV_ITEMS)[number]) => {
         return isActive(pathname, item.activePath);
@@ -72,10 +96,11 @@ export default function SiteNavigation() {
         return (
             <header aria-label="网站导航" style={{ position: "fixed", top: 16, left: 16, zIndex: 45, fontFamily: NAV_FONT }}>
                 <button
+                    ref={mobileToggleRef}
                     type="button"
                     onClick={() => setOpen((value) => !value)}
                     aria-expanded={open}
-                    aria-label="打开网站导航"
+                    aria-label={open ? "关闭网站导航" : "打开网站导航"}
                     style={{
                         display: "inline-flex",
                         alignItems: "center",
@@ -115,13 +140,15 @@ export default function SiteNavigation() {
                             WebkitBackdropFilter: "blur(16px)",
                         }}
                     >
-                        {NAV_ITEMS.map((item) => {
+                        {NAV_ITEMS.map((item, index) => {
                             const active = itemIsActive(item);
                             return (
                                 <Link
+                                    ref={index === 0 ? firstMobileLinkRef : undefined}
                                     key={item.label}
                                     href={item.href}
                                     onClick={(event) => handleClick(event, item)}
+                                    aria-current={active ? "page" : undefined}
                                     style={{
                                         display: "flex",
                                         alignItems: "center",
@@ -178,6 +205,7 @@ export default function SiteNavigation() {
                             key={item.label}
                             href={item.href}
                             onClick={(event) => handleClick(event, item)}
+                            aria-current={active ? "page" : undefined}
                             style={{
                                 position: "relative",
                                 display: "inline-flex",

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import StudyCardsTool from "./StudyCardsTool";
 
 export const metadata: Metadata = {
-  title: "AI 单词卡｜Lucas Yin",
+  title: "AI 单词卡",
   description: "从英文文章或单词清单生成背诵卡，逐张记中文释义和例句。",
 };
 

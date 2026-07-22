@@ -9,18 +9,33 @@ import {
     searchFilterOptions
 } from "@/lib/finance/filters";
 import {
-    OPERATING_DETAIL_HEADERS,
+    OPERATING_DETAIL_SCENARIO_SHEET_HEADERS,
     buildMonthKeys,
     createBudgetOperatingDetailRows,
     createOperatingDetailSampleRows,
-    getBudgetOperatingDetailTemplateRows
+    getBudgetScenarioSheetTemplateRows
 } from "../../../lib/finance/templates.js";
 import {
     FINANCE_WORKBENCH_MOBILE_QUERY,
     isFinanceWorkbenchMobileViewport
 } from "../../../lib/finance/workbench-breakpoints.ts";
+import {
+    inferFinanceFieldRoles,
+    parseFinanceNumber
+} from "../../../lib/finance/core.ts";
+import {
+    clearFinanceEngineBindingMarkers,
+    createFinanceEngineLifecycle
+} from "../../../lib/finance/browser-engine-lifecycle.ts";
+import {
+    closeFinanceFieldGovernance,
+    showFinanceFieldGovernance
+} from "../../../lib/finance/field-governance.ts";
+import { renderPlotlyAccessibleData } from "../../../lib/finance/chart-accessibility.ts";
 
 (function () {
+    const lifecycle = createFinanceEngineLifecycle();
+    let closeFieldGovernance = () => undefined;
     const DEFAULT_DIMENSIONS = ["大区", "国家", "品牌", "品牌市场", "经营模式", "业务单元", "车型", "燃油品类"];
     const RESERVED_LONG_TABLE_COLUMNS = [
         "月份", "年月", "期间", "日期", "年度", "year", "Year",
@@ -85,9 +100,14 @@ import {
         return map;
     }, {});
 
-    const TEMPLATE_HEADERS = OPERATING_DETAIL_HEADERS;
+    const SCENARIO_SHEET_HEADERS = OPERATING_DETAIL_SCENARIO_SHEET_HEADERS;
     const WIDE_VOLUME_ALIASES = ["发车量", "发车", "销量", "销售量", "Sales Volume", "volume"];
     const WIDE_NON_DIMENSION_COLUMNS = ["月份", "年月", "期间", "日期", "数据口径", "口径", "版本", "scenario", "Scenario", "备注", "说明", "单位", "unit"];
+    const LONG_NUMERIC_ALIASES = [
+        "金额", "数量", "值", "amount", "Amount", "value",
+        "实际", "实际值", "实际数据", "actual", "Actual",
+        "预算", "预算值", "budget", "Budget"
+    ];
     const MANUAL_SUBJECT_FIELDS = ["subject", "actual", "budget"];
 
     const state = {
@@ -122,11 +142,18 @@ import {
         return document.getElementById(id);
     }
 
+    function renderAccessiblePlot(target, data, layout, config) {
+        const result = Plotly.react(target, data, layout, config);
+        const chartId = typeof target === "string" ? target : target?.id;
+        if (chartId) renderPlotlyAccessibleData(chartId, data);
+        return result;
+    }
+
     function bindOnce(element, eventName, handler, key = eventName) {
         if (!element) return;
         const bindKey = `bound${normalizeToken(key) || eventName}`;
         if (element.dataset?.[bindKey] === "true") return;
-        element.addEventListener(eventName, handler);
+        lifecycle.listen(element, eventName, handler);
         if (element.dataset) element.dataset[bindKey] = "true";
     }
 
@@ -151,21 +178,8 @@ import {
     }
 
     function toNumber(value) {
-        if (typeof value === "number") return Number.isFinite(value) ? value : 0;
-        if (value === null || value === undefined) return 0;
-
-        const raw = String(value).trim();
-        if (!raw) return 0;
-
-        const isNegative = raw.includes("(") && raw.includes(")");
-        const cleaned = raw
-            .replace(/[,%￥¥元辆台]/g, "")
-            .replace(/[万亿]/g, "")
-            .replace(/[()]/g, "")
-            .trim();
-        const numeric = Number(cleaned);
-        if (!Number.isFinite(numeric)) return 0;
-        return isNegative ? -numeric : numeric;
+        const parsed = parseFinanceNumber(value);
+        return parsed.status === "valid" ? parsed.value : 0;
     }
 
     function pick(row, aliases) {
@@ -242,10 +256,6 @@ import {
         return new Set(RESERVED_LONG_TABLE_COLUMNS.map(normalizeToken));
     }
 
-    function aliasSet(values) {
-        return new Set(values.map(normalizeToken));
-    }
-
     function collectHeaders(rows) {
         const seen = new Set();
         const headers = [];
@@ -258,11 +268,6 @@ import {
             });
         });
         return headers;
-    }
-
-    function findHeaderByAliases(headers, aliases) {
-        const aliasesNormalized = aliasSet(aliases);
-        return safeArray(headers).find((header) => aliasesNormalized.has(normalizeToken(header))) || "";
     }
 
     function groupBy(rows, keyFn) {
@@ -542,7 +547,7 @@ import {
         if (!area) return;
         area.innerHTML = `<div class="message ${type}">${text}</div>`;
         window.clearTimeout(showMessage.timer);
-        showMessage.timer = window.setTimeout(() => {
+        showMessage.timer = lifecycle.timeout(() => {
             area.innerHTML = "";
         }, 3600);
     }
@@ -800,12 +805,13 @@ import {
         });
     }
 
-    function inferDimensionColumns(rows) {
+    function inferDimensionColumns(rows, fieldRoleOverrides = {}) {
         const reserved = reservedColumnSet();
         const columns = [];
         safeArray(rows).forEach((row) => {
             Object.keys(row || {}).forEach((column) => {
                 if (!column || reserved.has(normalizeToken(column))) return;
+                if (fieldRoleOverrides[column] && fieldRoleOverrides[column] !== "dimension") return;
                 if (!columns.includes(column)) columns.push(column);
             });
         });
@@ -874,14 +880,70 @@ import {
         return "";
     }
 
-    function inferWideDimensionColumns(rows) {
+    function inferWideDimensionColumns(rows, fieldRoleOverrides = {}) {
         const headers = collectHeaders(rows);
-        const salesColumn = findHeaderByAliases(headers, WIDE_VOLUME_ALIASES);
-        const salesIndex = salesColumn ? headers.indexOf(salesColumn) : -1;
-        const nonDimensionColumns = aliasSet(WIDE_NON_DIMENSION_COLUMNS);
-        const candidates = (salesIndex >= 0 ? headers.slice(0, salesIndex) : headers)
-            .filter((header) => header && !nonDimensionColumns.has(normalizeToken(header)));
+        const inference = inferFinanceFieldRoles(rows, {
+            headers,
+            explicitRoles: fieldRoleOverrides,
+            periodAliases: ["月份", "年月", "期间", "日期", "month", "period", "date"],
+            denominatorAliases: WIDE_VOLUME_ALIASES,
+            ignoredHeaders: WIDE_NON_DIMENSION_COLUMNS
+        });
+        const candidates = inference.dimensionColumns;
         return orderedDimensions(candidates.length ? candidates : DEFAULT_DIMENSIONS);
+    }
+
+    function sourceLocationForRow(row, index) {
+        return row?.__sourceLocation || { sheet: "上传数据", row: index + 2 };
+    }
+
+    function numericIssueReason(reason) {
+        if (reason === "not_finite") return "不是有限数值";
+        if (reason === "unsupported_type") return "不支持的数据类型";
+        return "无法识别为数值";
+    }
+
+    function validateBusinessSourceRows(rows, fieldRoleOverrides = {}) {
+        const sourceRows = safeArray(rows);
+        const headers = collectHeaders(sourceRows);
+        const inference = inferFinanceFieldRoles(sourceRows, {
+            headers,
+            explicitRoles: fieldRoleOverrides,
+            periodAliases: ["月份", "年月", "期间", "日期", "month", "period", "date"],
+            denominatorAliases: WIDE_VOLUME_ALIASES,
+            ignoredHeaders: WIDE_NON_DIMENSION_COLUMNS
+        });
+        const numericColumns = new Set([
+            ...inference.metricColumns,
+            ...(inference.denominatorColumn ? [inference.denominatorColumn] : []),
+            ...headers.filter((header) => LONG_NUMERIC_ALIASES.some((alias) => normalizeToken(alias) === normalizeToken(header)))
+        ]);
+        const issues = [];
+
+        sourceRows.forEach((row, index) => {
+            const location = sourceLocationForRow(row, index);
+            numericColumns.forEach((column) => {
+                const parsed = parseFinanceNumber(row?.[column]);
+                if (parsed.status !== "invalid") return;
+                issues.push({
+                    sheet: location.sheet,
+                    row: location.row,
+                    column,
+                    status: parsed.status,
+                    reason: numericIssueReason(parsed.reason)
+                });
+            });
+        });
+
+        return { issues, ambiguousColumns: inference.ambiguousColumns };
+    }
+
+    function formatBusinessValidationMessage(issues, title = "数据质量校验未通过") {
+        const preview = issues.slice(0, 5).map((issue) => (
+            `${escapeHtml(issue.sheet)} 第 ${issue.row} 行「${escapeHtml(issue.column)}」${escapeHtml(issue.reason)}`
+        ));
+        const remainder = Math.max(0, issues.length - preview.length);
+        return `${title}：${issues.length} 个非空数值单元格存在问题。${preview.join("；")}${remainder ? `；另有 ${remainder} 个` : ""}`;
     }
 
     function operatingDetailScenarioKey(row, dimensionColumns) {
@@ -956,10 +1018,10 @@ import {
             .sort((a, b) => Object.values(a.dimensions || {}).join("").localeCompare(Object.values(b.dimensions || {}).join(""), "zh-CN"));
     }
 
-    function parseWideRows(rows) {
+    function parseWideRows(rows, fieldRoleOverrides = {}) {
         const parsed = [];
         const normalizedRows = safeArray(rows).map(normalizeRowKeys);
-        const dimensionColumns = inferWideDimensionColumns(normalizedRows);
+        const dimensionColumns = inferWideDimensionColumns(normalizedRows, fieldRoleOverrides);
 
         normalizedRows.forEach((row) => {
             const actualAssumptions = applyAggregateFallback(row, buildAssumptions(row), "");
@@ -985,9 +1047,9 @@ import {
         });
     }
 
-    function parseOperatingDetailScenarioRows(rows) {
+    function parseOperatingDetailScenarioRows(rows, fieldRoleOverrides = {}) {
         const normalizedRows = safeArray(rows).map(normalizeRowKeys);
-        const dimensionColumns = inferWideDimensionColumns(normalizedRows);
+        const dimensionColumns = inferWideDimensionColumns(normalizedRows, fieldRoleOverrides);
         const groups = new Map();
 
         normalizedRows.forEach((row) => {
@@ -1020,12 +1082,12 @@ import {
             .sort((a, b) => Object.values(a.dimensions || {}).join("").localeCompare(Object.values(b.dimensions || {}).join(""), "zh-CN"));
     }
 
-    function parseRows(rows) {
+    function parseRows(rows, fieldRoleOverrides = {}) {
         const parsed = hasLongFormat(rows)
-            ? parseLongRows(rows, inferDimensionColumns(rows.map(normalizeRowKeys)))
+            ? parseLongRows(rows, inferDimensionColumns(rows.map(normalizeRowKeys), fieldRoleOverrides))
             : hasOperatingDetailScenarioRows(rows)
-                ? parseOperatingDetailScenarioRows(rows)
-                : parseWideRows(rows);
+                ? parseOperatingDetailScenarioRows(rows, fieldRoleOverrides)
+                : parseWideRows(rows, fieldRoleOverrides);
         parsed.availableDimensions = inferAvailableDimensions(parsed);
         return parsed;
     }
@@ -1163,20 +1225,54 @@ import {
             .filter((item) => item.values.length);
     }
 
-    function moveDimensionInOrder(fromIndex, toIndex) {
+    function announceDimensionOrder(dimension, index, total) {
+        const status = byId("business-dimension-order-status");
+        if (!status) return;
+        status.textContent = `“${dimensionLabel(dimension)}”已移动到第 ${index + 1} 位，共 ${total} 个维度。`;
+    }
+
+    function moveDimensionInOrder(fromIndex, toIndex, options = {}) {
         const dimensions = currentDimensions();
-        if (fromIndex === toIndex) return;
-        if (fromIndex < 0 || toIndex < 0 || fromIndex >= dimensions.length || toIndex >= dimensions.length) return;
+        if (fromIndex === toIndex) return false;
+        if (fromIndex < 0 || toIndex < 0 || fromIndex >= dimensions.length || toIndex >= dimensions.length) return false;
         const lockThroughIndex = selectedDimensionItems().length ? dimensions.indexOf(currentAnalysisDimension()) : -1;
         if (lockThroughIndex >= 0 && (fromIndex <= lockThroughIndex || toIndex <= lockThroughIndex)) {
             showMessage("error", "已下钻层级已锁定，可拖动当前层后面的维度。");
-            return;
+            return false;
         }
 
         const [moved] = dimensions.splice(fromIndex, 1);
         dimensions.splice(toIndex, 0, moved);
         state.selectedDimensions = dimensions;
         updateAll();
+        if (options.announce !== false) announceDimensionOrder(moved, toIndex, dimensions.length);
+        if (options.focusContainer && options.focusAction) {
+            window.requestAnimationFrame(() => {
+                options.focusContainer
+                    .querySelector(`[data-dimension-index="${toIndex}"] [data-dimension-move="${options.focusAction}"]`)
+                    ?.focus();
+            });
+        }
+        return true;
+    }
+
+    function moveDimensionByAction(fromIndex, action, focusContainer) {
+        const dimensions = currentDimensions();
+        const lockThroughIndex = selectedDimensionItems().length ? dimensions.indexOf(currentAnalysisDimension()) : -1;
+        const firstMovableIndex = Math.max(0, lockThroughIndex + 1);
+        const lastIndex = dimensions.length - 1;
+        let toIndex = fromIndex;
+
+        if (action === "first") toIndex = firstMovableIndex;
+        if (action === "up") toIndex = Math.max(firstMovableIndex, fromIndex - 1);
+        if (action === "down") toIndex = Math.min(lastIndex, fromIndex + 1);
+        if (action === "last") toIndex = lastIndex;
+
+        moveDimensionInOrder(fromIndex, toIndex, {
+            announce: true,
+            focusAction: action,
+            focusContainer,
+        });
     }
 
     function renderDimensionTrain() {
@@ -1192,46 +1288,69 @@ import {
             summary.textContent = activeDimension ? `当前层：${dimensionLabel(activeDimension)}` : "";
         });
 
-        const markup = dimensions.map((dimension, index) => `
-            <button
-                type="button"
+        const markup = dimensions.map((dimension, index) => {
+            const locked = lockThroughIndex >= 0 && index <= lockThroughIndex;
+            const firstMovableIndex = Math.max(0, lockThroughIndex + 1);
+            const label = escapeHtml(dimensionLabel(dimension));
+            return `
+            <div
                 class="dimension-train-car ${safeArray(filters[dimension]).length ? "filtered" : ""} ${dimension === activeDimension ? "active" : ""} ${lockThroughIndex >= 0 && index <= lockThroughIndex ? "locked" : ""}"
                 draggable="${lockThroughIndex < 0 || index > lockThroughIndex ? "true" : "false"}"
                 data-dimension-index="${index}"
                 title="${lockThroughIndex >= 0 && index <= lockThroughIndex ? "已下钻层级已锁定" : "拖动调整后续顺序"}"
+                role="group"
                 aria-current="${dimension === activeDimension ? "step" : "false"}"
+                aria-label="${label}，第 ${index + 1} 位，共 ${dimensions.length} 个维度"
             >
                 <span>${safeArray(filters[dimension]).length ? "已选" : dimension === activeDimension ? "当前" : `${index + 1}`}</span>
-                <strong>${escapeHtml(dimensionLabel(dimension))}</strong>
-            </button>
-        `).join("");
+                <strong>${label}</strong>
+                <div class="dimension-train-actions" aria-label="调整${label}顺序">
+                    <button type="button" data-dimension-move="first" aria-label="将${label}移到首位" ${locked || index === firstMovableIndex ? "disabled" : ""}>首</button>
+                    <button type="button" data-dimension-move="up" aria-label="将${label}上移" ${locked || index <= firstMovableIndex ? "disabled" : ""}>↑</button>
+                    <button type="button" data-dimension-move="down" aria-label="将${label}下移" ${locked || index >= dimensions.length - 1 ? "disabled" : ""}>↓</button>
+                    <button type="button" data-dimension-move="last" aria-label="将${label}移到末位" ${locked || index === dimensions.length - 1 ? "disabled" : ""}>末</button>
+                </div>
+            </div>
+        `;
+        }).join("");
 
         containers.forEach((container) => {
             container.innerHTML = markup;
 
-            Array.from(container.querySelectorAll("[data-dimension-index]")).forEach((button) => {
-                button.addEventListener("dragstart", (event) => {
-                    button.classList.add("dragging");
-                    event.dataTransfer?.setData("text/plain", button.getAttribute("data-dimension-index") || "0");
+            Array.from(container.querySelectorAll("[data-dimension-index]")).forEach((card) => {
+                card.addEventListener("dragstart", (event) => {
+                    if (card.getAttribute("draggable") !== "true") {
+                        event.preventDefault();
+                        return;
+                    }
+                    card.classList.add("dragging");
+                    event.dataTransfer?.setData("text/plain", card.getAttribute("data-dimension-index") || "0");
                     if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
                 });
-                button.addEventListener("dragend", () => {
-                    button.classList.remove("dragging");
+                card.addEventListener("dragend", () => {
+                    card.classList.remove("dragging");
                 });
-                button.addEventListener("dragover", (event) => {
+                card.addEventListener("dragover", (event) => {
                     event.preventDefault();
-                    button.classList.add("drop-target");
+                    card.classList.add("drop-target");
                     if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
                 });
-                button.addEventListener("dragleave", () => {
-                    button.classList.remove("drop-target");
+                card.addEventListener("dragleave", () => {
+                    card.classList.remove("drop-target");
                 });
-                button.addEventListener("drop", (event) => {
+                card.addEventListener("drop", (event) => {
                     event.preventDefault();
-                    button.classList.remove("drop-target");
+                    card.classList.remove("drop-target");
                     const fromIndex = Number(event.dataTransfer?.getData("text/plain"));
-                    const toIndex = Number(button.getAttribute("data-dimension-index"));
+                    const toIndex = Number(card.getAttribute("data-dimension-index"));
                     moveDimensionInOrder(fromIndex, toIndex);
+                });
+                Array.from(card.querySelectorAll("[data-dimension-move]")).forEach((moveButton) => {
+                    moveButton.addEventListener("click", (event) => {
+                        event.stopPropagation();
+                        const fromIndex = Number(card.getAttribute("data-dimension-index"));
+                        moveDimensionByAction(fromIndex, moveButton.getAttribute("data-dimension-move"), container);
+                    });
                 });
             });
         });
@@ -1770,7 +1889,7 @@ import {
                 borderpad: 4
             }];
 
-        Plotly.react("unit-margin-chart", [
+        renderAccessiblePlot("unit-margin-chart", [
             {
                 type: "scatter",
                 mode: "markers+text",
@@ -2002,7 +2121,7 @@ import {
             endText
         ];
 
-        Plotly.react("variance-chart", [
+        renderAccessiblePlot("variance-chart", [
             bridgeTrace({ measures, labels, values, text })
         ], bridgeLayout(labels, {
             margin: { l: 64, r: 24, t: 54, b: 96 },
@@ -2043,7 +2162,7 @@ import {
             ...(isMarginScope ? [] : [formatAmount(actual.profit)])
         ];
 
-        Plotly.react("profit-bridge-chart", [
+        renderAccessiblePlot("profit-bridge-chart", [
             bridgeTrace({ measures, labels, values, text })
         ], bridgeLayout(labels, {
             margin: { l: 58, r: 24, t: 58, b: 64 }
@@ -2257,9 +2376,9 @@ import {
         const root = byId("business-analysis-root");
         if (!root || root.dataset.waterfallTouchDismissBound === "true") return;
 
-        document.addEventListener("touchstart", beginWaterfallTouchGesture, { passive: true });
-        document.addEventListener("touchmove", updateWaterfallTouchGesture, { passive: true });
-        document.addEventListener("click", (event) => {
+        lifecycle.listen(document, "touchstart", beginWaterfallTouchGesture, { passive: true });
+        lifecycle.listen(document, "touchmove", updateWaterfallTouchGesture, { passive: true });
+        lifecycle.listen(document, "click", (event) => {
             if (!isTouchLikeViewport()) return;
             const touchHost = byId("dimension-waterfall-touch-card");
             if (!touchHost || !touchHost.innerHTML.trim()) return;
@@ -2430,7 +2549,7 @@ import {
         ];
         const chart = byId("dimension-waterfall-chart");
 
-        Plotly.react("dimension-waterfall-chart", [{
+        renderAccessiblePlot("dimension-waterfall-chart", [{
             type: "waterfall",
             measure: ["absolute", ...waterfallRows.map(() => "relative"), "total"],
             x: labels.map(waterfallAxisLabel),
@@ -2460,7 +2579,7 @@ import {
         updateBridgeTitles(hasActiveDimensionFilter());
         renderMetrics(enrichSummary(emptyPnl(), emptyPnl()));
         ["unit-margin-chart", "variance-chart", "profit-bridge-chart"].forEach((id) => {
-            Plotly.react(id, [], plotLayout({
+            renderAccessiblePlot(id, [], plotLayout({
                 annotations: [{
                     text: "当前筛选无数据",
                     x: 0.5,
@@ -2515,13 +2634,11 @@ import {
     }
 
     function buildScenarioTemplateRows(scenario = "actual") {
-        const rows = getBudgetOperatingDetailTemplateRows(24);
-        const scenarioLabel = scenario === "budget" ? "预算" : "实际";
-        return rows.filter((row) => row["数据口径"] === scenarioLabel);
+        return getBudgetScenarioSheetTemplateRows(scenario, 24);
     }
 
     function buildTemplateRows() {
-        return getBudgetOperatingDetailTemplateRows(24);
+        return buildScenarioTemplateRows("actual");
     }
 
     function downloadBlob(filename, content, type) {
@@ -2544,12 +2661,12 @@ import {
     function buildTemplateRules() {
         return [
             ["模块", "规则"],
-            ["模板结构", "使用同一张经营明细事实表；CSV 用“数据口径”列区分实际、预算、目标或预测，Excel 也保留同样表头。"],
-            ["上传区", "经营明细（边际以上）：月份、数据口径、业务维度、销量、净收入、成本、边际等；需要保留可下钻维度。"],
+            ["模板结构", "Excel 模板使用“实际”和“预算”两个工作表表达对比口径；不要把预算/实际写成经营明细里的行项目。CSV 只能表达单个工作表，建议分别准备实际表和预算表，或优先使用 Excel 模板。"],
+            ["上传区", "经营明细（边际以上）：月份、业务维度、销量、净收入、成本、边际等；需要保留可下钻维度。"],
             ["固定科目", "固定科目不放在上传模板内，在页面左侧固定科目表格中粘贴或手工维护。"],
-            ["必填字段", "月份、数据口径、销量。净收入、成本、边际至少保留一个可分析金额指标。"],
+            ["必填字段", "月份、销量。净收入、成本、边际至少保留一个可分析金额指标。预算/实际由工作表名称表达。"],
             ["维度字段", "大区、国家、品牌、品牌市场、经营模式、业务单元、车型、燃油品类都是示例维度；用户可以少填、改名或新增维度列。"],
-            ["维度识别", "模型会把销量列之前的业务字段识别为维度。月份、数据口径、备注、说明等字段不会作为预算差异下钻维度。"],
+            ["维度识别", "模型会把销量列之前的业务字段识别为维度。月份、备注、说明等字段不会作为预算差异下钻维度。"],
             ["维度展示", "模型会默认展示并纳入下钻所有可识别维度，用户只需要在页面左侧调整维度顺序。"],
             ["总额优先", "默认按总额填报：净收入、成本、边际均直接填金额；成本等扣减项建议按负数填写。"],
             ["单车可选", "如果用户只有单车口径，可以填销量 + 单车净收入/单车成本，模型会换算总额；默认模板不强制展示单车字段。"],
@@ -2596,7 +2713,7 @@ import {
 
     function downloadCsvTemplate() {
         const rows = buildTemplateRows();
-        const headers = TEMPLATE_HEADERS;
+        const headers = SCENARIO_SHEET_HEADERS;
         const csv = [
             headers.map(csvCell).join(","),
             ...rows.map((row) => headers.map((header) => csvCell(row[header])).join(","))
@@ -2611,12 +2728,12 @@ import {
         }
         const workbook = XLSX.utils.book_new();
         const actualSheet = setWorksheetWidths(
-            XLSX.utils.json_to_sheet(buildScenarioTemplateRows("actual"), { header: TEMPLATE_HEADERS }),
-            TEMPLATE_HEADERS.map((header) => Math.max(12, String(header).length + 8))
+            XLSX.utils.json_to_sheet(buildScenarioTemplateRows("actual"), { header: SCENARIO_SHEET_HEADERS }),
+            SCENARIO_SHEET_HEADERS.map((header) => Math.max(12, String(header).length + 8))
         );
         const budgetSheet = setWorksheetWidths(
-            XLSX.utils.json_to_sheet(buildScenarioTemplateRows("budget"), { header: TEMPLATE_HEADERS }),
-            TEMPLATE_HEADERS.map((header) => Math.max(12, String(header).length + 8))
+            XLSX.utils.json_to_sheet(buildScenarioTemplateRows("budget"), { header: SCENARIO_SHEET_HEADERS }),
+            SCENARIO_SHEET_HEADERS.map((header) => Math.max(12, String(header).length + 8))
         );
         XLSX.utils.book_append_sheet(workbook, actualSheet, "实际");
         XLSX.utils.book_append_sheet(workbook, budgetSheet, "预算");
@@ -2765,7 +2882,7 @@ import {
         }, "manual-subject-paste-input");
 
         if (!window.manualSubjectPasteWatcher) {
-            window.manualSubjectPasteWatcher = window.setInterval(() => {
+            window.manualSubjectPasteWatcher = lifecycle.interval(() => {
                 const currentBox = byId("manual-subject-paste");
                 if (currentBox) applyManualPasteBoxValue(currentBox, { silent: true });
             }, 500);
@@ -2842,14 +2959,36 @@ import {
         ];
     }
 
-    function applySourceRows(message) {
+    function applySourceRows(message, fieldRoleOverrides = {}) {
         const rows = combinedSourceRows();
         if (!rows.length) {
             showMessage("error", "还没有可分析的数据，请先上传经营明细或填写科目行。");
             return;
         }
 
-        const parsed = parseRows(rows);
+        const validation = validateBusinessSourceRows(rows, fieldRoleOverrides);
+        if (validation.ambiguousColumns.length) {
+            showMessage("error", `请确认以下字段用途后继续：${validation.ambiguousColumns.join("、")}`);
+            closeFieldGovernance();
+            closeFieldGovernance = showFinanceFieldGovernance({
+                host: byId("business-field-governance"),
+                columns: validation.ambiguousColumns,
+                roles: ["dimension", "ignore"],
+                description: "这些空字段无法判断是否用于下钻。请选择作为维度，或忽略该字段。",
+                onConfirm: (overrides) => applySourceRows(message, {
+                    ...fieldRoleOverrides,
+                    ...overrides
+                })
+            });
+            return;
+        }
+        closeFieldGovernance();
+        if (validation.issues.length) {
+            showMessage("error", formatBusinessValidationMessage(validation.issues, "数据质量校验未通过"));
+            return;
+        }
+
+        const parsed = parseRows(rows, fieldRoleOverrides);
         if (!parsed.length) {
             showMessage("error", "没有识别到有效数据，请检查模板列名。");
             return;
@@ -2908,15 +3047,29 @@ import {
 
     function rowsFromSheet(workbook, sheetName, scenario = "") {
         const worksheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(worksheet, { defval: "" }).map(normalizeRowKeys);
+        const rows = XLSX.utils.sheet_to_json(worksheet, { defval: "" }).map((sourceRow, index) => {
+            const row = normalizeRowKeys(sourceRow);
+            Object.defineProperty(row, "__sourceLocation", {
+                value: { sheet: sheetName, row: index + 2 },
+                enumerable: false,
+                configurable: true
+            });
+            return row;
+        });
         if (!scenario) return rows;
 
         return rows.map((row) => {
             const amount = pick(row, ["金额", "数量", "值", "amount", "Amount", "value"]);
-            const next = { "数据口径": scenario === "actual" ? "实际" : "预算", ...row };
+            const scenarioLabel = scenario === "actual" ? "实际" : "预算";
+            const next = { ...row, "数据口径": scenarioLabel };
             if (amount !== undefined && pick(row, ["实际", "实际值", "实际数据", "actual", "Actual"]) === undefined && pick(row, ["预算", "预算值", "budget", "Budget"]) === undefined) {
                 next[scenario === "actual" ? "实际" : "预算"] = amount;
             }
+            Object.defineProperty(next, "__sourceLocation", {
+                value: row.__sourceLocation,
+                enumerable: false,
+                configurable: true
+            });
             return next;
         });
     }
@@ -2946,7 +3099,7 @@ import {
 
     function handleFile(file, source = "operation") {
         if (!file) return;
-        const reader = new FileReader();
+        const reader = lifecycle.trackAbortable(new FileReader());
         reader.onload = (event) => {
             try {
                 const rows = readUploadRows(file, event.target.result);
@@ -3000,8 +3153,8 @@ import {
 
     function schedulePlotResize() {
         if (typeof window === "undefined") return;
-        window.requestAnimationFrame(resizePlotlyCharts);
-        window.setTimeout(resizePlotlyCharts, 320);
+        lifecycle.frame(resizePlotlyCharts);
+        lifecycle.timeout(resizePlotlyCharts, 320);
     }
 
     function initChartResizeObserver() {
@@ -3011,10 +3164,10 @@ import {
 
         const mainContent = document.querySelector(".business-tool .main-content");
         if (mainContent && typeof ResizeObserver !== "undefined") {
-            const observer = new ResizeObserver(schedulePlotResize);
+            const observer = lifecycle.observe(new ResizeObserver(schedulePlotResize));
             observer.observe(mainContent);
         }
-        window.addEventListener("resize", schedulePlotResize);
+        lifecycle.listen(window, "resize", schedulePlotResize);
         if (root) root.dataset.plotResizeObserverBound = "true";
     }
 
@@ -3048,7 +3201,7 @@ import {
         setSidebarOpen(!isMobileSidebarViewport());
 
         if (root && root.dataset.sidebarMediaBound !== "true") {
-            window.matchMedia(FINANCE_WORKBENCH_MOBILE_QUERY).addEventListener("change", (event) => {
+            lifecycle.listen(window.matchMedia(FINANCE_WORKBENCH_MOBILE_QUERY), "change", (event) => {
                 setSidebarOpen(!event.matches);
             });
             root.dataset.sidebarMediaBound = "true";
@@ -3103,7 +3256,7 @@ import {
         });
 
         if (root && root.dataset.currentLayerFilterDismissBound !== "true") {
-            document.addEventListener("click", (event) => {
+            lifecycle.listen(document, "click", (event) => {
                 if (!state.currentFilterMenuOpen) return;
                 if (event.target?.closest?.(".current-layer-filter")) return;
                 state.currentFilterMenuOpen = "";
@@ -3162,6 +3315,7 @@ import {
     function initApp() {
         const root = byId("business-analysis-root");
         if (!root || typeof Plotly === "undefined") return;
+        lifecycle.start();
         if (root.dataset.initialized === "true") {
             initChartResizeObserver();
             bindSidebar();
@@ -3183,8 +3337,21 @@ import {
         loadDemoData();
     }
 
+    function dispose() {
+        lifecycle.dispose();
+        closeFieldGovernance();
+        closeFinanceFieldGovernance(byId("business-field-governance"));
+        const root = byId("business-analysis-root");
+        clearFinanceEngineBindingMarkers(root);
+        delete window.manualSubjectPasteWatcher;
+        state.waterfallTouchGesture = null;
+        document.querySelectorAll(".business-tool .js-plotly-plot").forEach((plot) => {
+            if (typeof Plotly !== "undefined") Plotly.purge(plot);
+        });
+    }
+
     if (typeof window !== "undefined") {
-        window.BusinessAnalysisModel = { initApp };
+        window.BusinessAnalysisModel = { initApp, dispose };
     }
 
     if (typeof module !== "undefined" && module.exports) {
@@ -3195,7 +3362,8 @@ import {
             buildScenarioTemplateRows,
             parseRows,
             summarize,
-            initApp
+            initApp,
+            dispose
         };
     }
 })();

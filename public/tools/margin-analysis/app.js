@@ -15,6 +15,13 @@ const NON_ANALYSIS_DIMENSION_HEADERS = ['数据口径', '口径', '版本', '备
 const ALL_DIMENSIONS = Array.from({ length: 20 }, (_, index) => `Dim_${String.fromCharCode(65 + index)}`);
 const ATTRIBUTION_METHOD_LAYERED = 'layered';
 const ATTRIBUTION_METHOD_BOTTOM_UP = 'bottom-up';
+const METRIC_DISPLAY_NUMBER = 'number';
+const METRIC_DISPLAY_PERCENT = 'percent';
+const SharedFinanceCore = globalThis.FinanceCore;
+
+if (!SharedFinanceCore) {
+    throw new Error('共享财务解析模块加载失败');
+}
 
 const AppState = {
     dataLoaded: false,
@@ -36,6 +43,8 @@ const AppState = {
     customDimNames: { ...DEFAULT_DIMENSION_NAMES },
     unitName: '车',
     unitMetricType: '边际',
+    denominatorLabel: '销量',
+    metricDisplayFormat: 'number',
     metricColumns: [],
     selectedMetricKey: null,
     availableDimsInData: [],
@@ -58,7 +67,13 @@ const DIM_ICONS = {
 const TEMPLATE_HEADERS = [
     '月份', '数据口径', ...TEMPLATE_DIMENSION_HEADERS, '备注', '销量', '净收入', '成本', '边际'
 ];
-const TEMPLATE_HEADER_NOTE = '可直接修改标题行；请保留“月份”和“销量”。“数据口径”用于区分实际、预算、目标或预测；单车归因通常只填“实际”。“备注”用于记录业务解释，不参与默认归因下钻。销量列之前的业务字段会按表头自动识别为维度，可新增或删除维度列，直接插入或删除即可；销量列之后的数值列会识别为可分析指标，例如净收入、成本、边际。成本等扣减项建议按负数填写。';
+const TEMPLATE_ROLE_ROW = TEMPLATE_HEADERS.map((header) => {
+    if (header === '销量') return '分母';
+    if (['净收入', '成本', '边际'].includes(header)) return '分子';
+    return '';
+});
+TEMPLATE_ROLE_ROW[0] = '指标角色';
+const TEMPLATE_HEADER_NOTE = '可直接修改标题行；请保留“月份”和一列“分母”。“指标角色”行用于标记计算口径：把销量、净收入等基数列标为“分母”，把净收入、成本、边际、毛利等分析指标标为“分子”。单车归因不需要填写预算/实际口径，基期和当期通过“月份”选择；“数据口径”可留空或填“实际”。“备注”用于记录业务解释，不参与默认归因下钻。业务字段会结合表头、样本类型和指标角色识别，可直接插入或删除维度列；无法判断的空字段会在页面内请你确认。成本等扣减项建议按负数填写；如果要看比率指标，可把“净收入”等列标为分母，把“毛利”等列标为分子，并在指标口径中选择比率指标。';
 
 
 // ==================== DOM Ready ====================
@@ -201,7 +216,7 @@ function handleFileUpload(file) {
         reader.onload = (e) => {
             try {
                 const text = e.target.result;
-                const rows = parseCSV(text);
+                const rows = parseCSV(text, file.name);
                 processLoadedData(rows, file.name);
             } catch (err) {
                 showMessage('error', `CSV 解析失败: ${err.message}`);
@@ -215,9 +230,10 @@ function handleFileUpload(file) {
             try {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const firstSheetName = workbook.SheetNames[0];
+                const firstSheet = workbook.Sheets[firstSheetName];
                 const sheetRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '', blankrows: false });
-                const rows = sheetRowsToObjects(sheetRows);
+                const rows = sheetRowsToObjects(sheetRows, firstSheetName);
                 processLoadedData(rows, file.name);
             } catch (err) {
                 showMessage('error', `Excel 解析失败: ${err.message}`);
@@ -255,6 +271,7 @@ function downloadTemplate(format) {
 
 function downloadCsvTemplate() {
     const rows = [
+        TEMPLATE_ROLE_ROW,
         TEMPLATE_HEADERS,
         ...getTemplateRows().map(row => TEMPLATE_HEADERS.map(header => row[header] ?? ''))
     ];
@@ -357,6 +374,7 @@ function buildTemplateWorksheetXml() {
     const rows = [
         [TEMPLATE_HEADER_NOTE],
         [],
+        TEMPLATE_ROLE_ROW,
         TEMPLATE_HEADERS,
         ...getTemplateRows().map(row => TEMPLATE_HEADERS.map(header => row[header] ?? ''))
     ];
@@ -557,64 +575,51 @@ function escapeTsvCell(value) {
         .replace(/\r?\n/g, ' ');
 }
 
+function neutralizeSpreadsheetTextCell(value) {
+    const text = String(value ?? '');
+    return /^[=+\-@]/.test(text) ? `'${text}` : text;
+}
+
 
 // ==================== CSV 解析 ====================
-function parseCSV(text) {
-    const lines = text.trim().split(/\r?\n/);
-    if (lines.length < 2) throw new Error('CSV 文件至少需要标题行和一行数据');
-
-    return sheetRowsToObjects(lines.map(line => parseCSVLine(line)));
+function parseCSV(text, sourceSheet = 'CSV') {
+    const sheetRows = SharedFinanceCore.parseRfc4180Csv(text, {
+        maxBytes: 10 * 1024 * 1024,
+        maxRows: 20_002,
+        maxColumns: 200,
+        maxCellCharacters: 100_000
+    });
+    if (sheetRows.length < 2) throw new Error('CSV 文件至少需要标题行和一行数据');
+    return sheetRowsToObjects(sheetRows, sourceSheet);
 }
 
-function parseCSVLine(line) {
-    const result = [];
-    let current = '';
-    let inQuotes = false;
-
-    for (let i = 0; i < line.length; i++) {
-        const ch = line[i];
-        if (inQuotes) {
-            if (ch === '"') {
-                if (i + 1 < line.length && line[i + 1] === '"') {
-                    current += '"';
-                    i++;
-                } else {
-                    inQuotes = false;
-                }
-            } else {
-                current += ch;
-            }
-        } else {
-            if (ch === '"') {
-                inQuotes = true;
-            } else if (ch === ',') {
-                result.push(current.trim());
-                current = '';
-            } else {
-                current += ch;
-            }
-        }
-    }
-    result.push(current.trim());
-    return result;
-}
-
-function sheetRowsToObjects(sheetRows) {
+function sheetRowsToObjects(sheetRows, sourceSheet = '工作表') {
     const rows = Array.isArray(sheetRows) ? sheetRows : [];
     const headerIndex = findTemplateHeaderRowIndex(rows);
     const headerRow = rows[headerIndex] || [];
     const headers = headerRow.map(cell => String(cell ?? '').trim());
+    const metricRolesByHeader = getMetricRolesForHeaderRow(rows, headerIndex, headers);
 
-    return rows.slice(headerIndex + 1)
-        .map((row) => {
+    const objects = rows.slice(headerIndex + 1)
+        .map((row, rowOffset) => {
             const item = {};
             headers.forEach((header, index) => {
                 if (!header) return;
                 item[header] = Array.isArray(row) && index < row.length ? row[index] : '';
             });
+            Object.defineProperty(item, '__sourceLocation', {
+                value: { sheet: sourceSheet, row: headerIndex + rowOffset + 2 },
+                enumerable: false
+            });
             return item;
         })
         .filter(row => Object.values(row).some(value => String(value ?? '').trim() !== ''));
+
+    Object.defineProperty(objects, '__metricRolesByHeader', {
+        value: metricRolesByHeader,
+        enumerable: false
+    });
+    return objects;
 }
 
 function findTemplateHeaderRowIndex(rows) {
@@ -625,8 +630,14 @@ function findTemplateHeaderRowIndex(rows) {
         const cells = row.map(cell => String(cell ?? '').trim()).filter(Boolean);
         if (cells.length === 0) continue;
         if (cells.length === 1 && cells[0] === TEMPLATE_HEADER_NOTE) continue;
+        if (isMetricRoleRow(row)) continue;
 
-        const schema = analyzeUploadHeaders(cells);
+        const headers = row.map(cell => String(cell ?? '').trim());
+        const metricRolesByHeader = getMetricRolesForHeaderRow(rows, index, headers);
+        const sampleRows = rows.slice(index + 1, index + 41).map(dataRow => Object.fromEntries(
+            headers.map((header, columnIndex) => [header, dataRow?.[columnIndex] ?? '']).filter(([header]) => header)
+        ));
+        const schema = analyzeUploadHeaders(cells, metricRolesByHeader, sampleRows);
         if (schema.hasMonth && schema.hasSalesVolume && schema.metricColumns.length > 0 && schema.dimCols.length > 0) {
             return index;
         }
@@ -635,19 +646,67 @@ function findTemplateHeaderRowIndex(rows) {
     return fallbackIndex >= 0 ? fallbackIndex : 0;
 }
 
+function getMetricRolesForHeaderRow(rows, headerIndex, headers) {
+    const roleRow = findMetricRoleRowBeforeHeader(rows, headerIndex);
+    if (!roleRow) return {};
+    return buildMetricRolesByHeader(headers, roleRow);
+}
+
+function findMetricRoleRowBeforeHeader(rows, headerIndex) {
+    for (let index = headerIndex - 1; index >= 0; index--) {
+        const row = Array.isArray(rows[index]) ? rows[index] : [];
+        if (!row.some(cell => String(cell ?? '').trim())) continue;
+        return isMetricRoleRow(row) ? row : null;
+    }
+    return null;
+}
+
+function buildMetricRolesByHeader(headers, roleRow) {
+    const roles = {};
+    headers.forEach((header, index) => {
+        const normalizedRole = normalizeMetricRole(roleRow?.[index]);
+        if (header && normalizedRole) roles[header] = normalizedRole;
+    });
+    return roles;
+}
+
+function isMetricRoleRow(row) {
+    if (!Array.isArray(row)) return false;
+    const firstCell = normalizeHeaderAlias(row[0]);
+    if (firstCell === normalizeHeaderAlias('指标角色') || firstCell === 'metricrole') return true;
+    return row.some(cell => Boolean(normalizeMetricRole(cell)));
+}
+
+function normalizeMetricRole(value) {
+    const normalized = normalizeHeaderAlias(value);
+    if (!normalized) return '';
+    if (['分母', 'denominator', 'denom', 'base', '基数'].includes(normalized)) return 'denominator';
+    if (['分子', 'numerator', 'metric', 'value', '指标', '金额'].includes(normalized)) return 'numerator';
+    return '';
+}
+
 
 // ==================== 数据处理管线 ====================
-function processLoadedData(rows, sourceName) {
+function processLoadedData(rows, sourceName, fieldRoleOverrides = {}) {
     if (!rows || rows.length === 0) {
         showMessage('error', '数据为空，请检查文件内容');
         return;
     }
 
+    const sourceRows = rows;
+
     // 1. 标准化列名：业务表头直接作为维度显示名，内部自动映射到 Dim_A / Dim_B ...
-    const normalizedInput = normalizeUploadedRows(rows);
+    const normalizedInput = normalizeUploadedRows(rows, fieldRoleOverrides);
     rows = normalizedInput.rows;
     const dimCols = normalizedInput.dimCols;
     const metricColumns = normalizedInput.metricColumns;
+
+    if (normalizedInput.ambiguousColumns.length > 0) {
+        showMessage('error', `请确认以下字段用途后继续：${normalizedInput.ambiguousColumns.join('、')}`);
+        showMarginFieldGovernance(sourceRows, sourceName, normalizedInput.ambiguousColumns, fieldRoleOverrides);
+        return;
+    }
+    closeMarginFieldGovernance();
 
     if (dimCols.length === 0) {
         showMessage('error', `缺少维度列：请至少保留一个业务维度列，例如“大区”或“国家”。当前列名: ${normalizedInput.sourceHeaders.join(', ')}`);
@@ -658,18 +717,16 @@ function processLoadedData(rows, sourceName) {
         return;
     }
 
-    // 2. 清理数值 & 类型转换
-    rows = rows.map(row => {
-        row['Sales Volume'] = cleanNumeric(row['Sales Volume']);
-        metricColumns.forEach(metric => {
-            row[metric.key] = cleanNumeric(row[metric.key]);
-        });
-        row['Month'] = cleanText(row['Month']);
-        dimCols.forEach(d => {
-            row[d] = cleanText(row[d]);
-        });
-        return row;
+    // 2. 在计算前统一规范期间和必填数值；非法值不再静默变成 0
+    const validated = validateMarginNumericRows(rows, metricColumns, dimCols, {
+        sheet: sourceName || '工作表',
+        denominatorLabel: normalizedInput.denominatorLabel || '销量'
     });
+    if (validated.issues.length > 0) {
+        showMessage('error', formatMarginDataIssues(validated.issues));
+        return;
+    }
+    rows = validated.rows;
 
     // 3. 移除完全空行 (销量和所有指标都为 0)
     rows = rows.filter(r => r['Sales Volume'] !== 0 || metricColumns.some(metric => r[metric.key] !== 0));
@@ -679,25 +736,19 @@ function processLoadedData(rows, sourceName) {
         return;
     }
 
-    // 4. 校验有效数据是否存在空月份，避免把未配置字段当作独立期间参与计算
-    const missingMonthRows = rows.filter(r => !r['Month']);
-    if (missingMonthRows.length > 0) {
-        showMessage('error', `部分字段没有配置：发现 ${missingMonthRows.length} 行 Month 为空，请补充月份后重新上传。`);
-        return;
-    }
-
-    // 5. 存储并切换 UI
+    // 4. 存储并切换 UI
     AppState.rawRows = rows;
     AppState.metricColumns = metricColumns;
     AppState.selectedMetricKey = resolveInitialMetricKey(metricColumns);
+    AppState.denominatorLabel = normalizedInput.denominatorLabel || '销量';
     syncSelectedMetricType();
     AppState.df = applySelectedMetricToRows(rows, AppState.selectedMetricKey);
     AppState.availableDimsInData = dimCols;
     AppState.customDimNames = { ...DEFAULT_DIMENSION_NAMES, ...normalizedInput.dimNames };
 
     // 提取月份
-    const monthSet = new Set(rows.map(r => r['Month']));
-    AppState.months = Array.from(monthSet).sort();
+    const periodSelection = selectDefaultComparisonPeriods(rows.map(r => r['Month']));
+    AppState.months = periodSelection.months;
 
     if (AppState.months.length < 2) {
         showMessage('error', '需要至少两个月份的数据');
@@ -705,8 +756,8 @@ function processLoadedData(rows, sourceName) {
     }
 
     // 默认基期和当期
-    AppState.baseMonth = AppState.months[0];
-    AppState.currMonth = AppState.months[Math.min(1, AppState.months.length - 1)];
+    AppState.baseMonth = periodSelection.baseMonth;
+    AppState.currMonth = periodSelection.currMonth;
 
     // 默认下钻顺序：启用全部上传维度，用户可自行删除不需要的维度
     AppState.drillOrder = [...dimCols];
@@ -724,11 +775,12 @@ function processLoadedData(rows, sourceName) {
     onDataLoaded();
 }
 
-function normalizeUploadedRows(inputRows) {
+function normalizeUploadedRows(inputRows, fieldRoleOverrides = {}) {
     const sourceHeaders = Object.keys(inputRows[0] || {})
         .map(header => String(header).trim())
         .filter(Boolean);
-    const schema = analyzeUploadHeaders(sourceHeaders);
+    const metricRolesByHeader = inputRows?.__metricRolesByHeader || {};
+    const schema = analyzeUploadHeaders(sourceHeaders, metricRolesByHeader, inputRows, fieldRoleOverrides);
 
     const normalizedRows = inputRows.map((row) => {
         const normalizedRow = {};
@@ -738,12 +790,18 @@ function normalizeUploadedRows(inputRows) {
         });
         const firstMetric = schema.metricColumns[0];
         if (firstMetric) normalizedRow['Total Margin'] = normalizedRow[firstMetric.key];
+        if (row?.__sourceLocation) {
+            Object.defineProperty(normalizedRow, '__sourceLocation', {
+                value: row.__sourceLocation,
+                enumerable: false
+            });
+        }
         return normalizedRow;
     });
 
     const missingCols = [];
     if (!schema.hasMonth) missingCols.push('月份');
-    if (!schema.hasSalesVolume) missingCols.push('销量');
+    if (!schema.hasSalesVolume) missingCols.push('分母/销量');
     if (schema.metricColumns.length === 0) missingCols.push('指标列');
 
     return {
@@ -751,53 +809,80 @@ function normalizeUploadedRows(inputRows) {
         dimCols: schema.dimCols,
         dimNames: schema.dimNames,
         metricColumns: schema.metricColumns,
+        denominatorLabel: schema.denominatorLabel,
+        ambiguousColumns: schema.ambiguousColumns,
         missingCols,
         sourceHeaders
     };
 }
 
-function analyzeUploadHeaders(sourceHeaders) {
+function analyzeUploadHeaders(sourceHeaders, metricRolesByHeader = {}, sampleRows = [], fieldRoleOverrides = {}) {
     const columnMapping = buildColumnMapping();
     const columnKeyBySource = {};
     const dimCols = [];
     const dimNames = {};
     const metricColumns = [];
-    const salesIndex = sourceHeaders.findIndex(sourceHeader =>
-        getMappedColumnName(sourceHeader, columnMapping) === 'Sales Volume'
-    );
+    const ambiguousColumns = [];
+    const hasExplicitDenominator = sourceHeaders.some(sourceHeader => (
+        getMetricRoleForHeader(sourceHeader, metricRolesByHeader) === 'denominator'
+    ));
+    const denominatorHeader = sourceHeaders.find(sourceHeader => (
+        getMetricRoleForHeader(sourceHeader, metricRolesByHeader) === 'denominator'
+        || getMappedColumnName(sourceHeader, columnMapping) === 'Sales Volume'
+    )) || '销量';
     let hasMonth = false;
     let hasSalesVolume = false;
 
     sourceHeaders.forEach((sourceHeader) => {
         const mappedColumn = getMappedColumnName(sourceHeader, columnMapping);
+        const metricRole = getMetricRoleForHeader(sourceHeader, metricRolesByHeader);
         if (mappedColumn === 'Month') {
             columnKeyBySource[sourceHeader] = 'Month';
             hasMonth = true;
             return;
         }
-        if (mappedColumn === 'Sales Volume') {
+        if (metricRole === 'denominator' || (!hasExplicitDenominator && metricRole !== 'numerator' && mappedColumn === 'Sales Volume')) {
             columnKeyBySource[sourceHeader] = 'Sales Volume';
             hasSalesVolume = true;
         }
     });
 
-    sourceHeaders.forEach((sourceHeader, index) => {
+    sourceHeaders.forEach((sourceHeader) => {
         if (columnKeyBySource[sourceHeader]) return;
         if (isNonAnalysisDimensionHeader(sourceHeader)) return;
 
         const mappedColumn = getMappedColumnName(sourceHeader, columnMapping);
-        const isLegacyMetric = mappedColumn === 'Total Margin';
-        const isMetricAfterSales = salesIndex >= 0 && index > salesIndex;
+        const metricRole = getMetricRoleForHeader(sourceHeader, metricRolesByHeader);
+        const override = fieldRoleOverrides[sourceHeader];
+        const populatedValues = (sampleRows || []).map(row => row?.[sourceHeader]).filter(value => (
+            value !== null && value !== undefined && String(value).trim() !== ''
+        ));
+        const numericRate = populatedValues.length
+            ? populatedValues.filter(value => SharedFinanceCore.parseFinanceNumber(value).status === 'valid').length / populatedValues.length
+            : 0;
+        const isMetric = override === 'metric'
+            || metricRole === 'numerator'
+            || mappedColumn === 'Total Margin'
+            || isKnownMarginMetricHeader(sourceHeader)
+            || (populatedValues.length > 0 && numericRate >= 0.8);
 
-        if (isLegacyMetric || isMetricAfterSales) {
+        if (override === 'ignore') return;
+        if (isMetric) {
             const metricKey = `Metric_${metricColumns.length + 1}`;
             const metricType = deriveMetricTypeFromHeader(sourceHeader);
             metricColumns.push({
                 key: metricKey,
                 sourceHeader,
-                metricType
+                metricType,
+                denominatorLabel: denominatorHeader
             });
             columnKeyBySource[sourceHeader] = metricKey;
+            return;
+        }
+
+        if (mappedColumn === 'Sales Volume') return;
+        if (!override && populatedValues.length === 0 && !isKnownMarginDimensionHeader(sourceHeader)) {
+            ambiguousColumns.push(sourceHeader);
             return;
         }
 
@@ -819,9 +904,85 @@ function analyzeUploadHeaders(sourceHeaders) {
         dimCols,
         dimNames,
         metricColumns,
+        ambiguousColumns,
         hasMonth,
-        hasSalesVolume
+        hasSalesVolume,
+        denominatorLabel: denominatorHeader
     };
+}
+
+function isKnownMarginDimensionHeader(sourceHeader) {
+    return /大区|区域|国家|城市|省份|品牌|市场|渠道|客户|经销商|门店|车型|车系|产品|品类|业务单元|经营模式|燃油|能源|部门|组织|项目|供应商|场景|口径|版本|编码|代码|编号|region|country|city|brand|market|channel|customer|dealer|store|model|product|category|segment|businessunit|department|project|vendor|scenario|code|id/i.test(normalizeHeaderAlias(sourceHeader));
+}
+
+function isKnownMarginMetricHeader(sourceHeader) {
+    return /销量|数量|收入|成本|费用|边际|毛利|利润|金额|库存|率|占比|比例|单价|均价|平均|nps|score|gmv|revenue|sales|cost|expense|margin|profit|amount|inventory|rate|ratio|average|price/i.test(String(sourceHeader));
+}
+
+function closeMarginFieldGovernance() {
+    const host = document.getElementById('margin-field-governance');
+    if (!host) return;
+    host.replaceChildren();
+    host.hidden = true;
+}
+
+function showMarginFieldGovernance(rows, sourceName, columns, currentOverrides = {}) {
+    const host = document.getElementById('margin-field-governance');
+    if (!host) return;
+    closeMarginFieldGovernance();
+    host.hidden = false;
+
+    const title = document.createElement('h3');
+    title.textContent = '确认字段用途';
+    const copy = document.createElement('p');
+    copy.textContent = '这些字段缺少样本值，暂时无法判断用途。确认后再开始计算。';
+    const fields = document.createElement('div');
+    fields.className = 'margin-field-governance-fields';
+    const selects = new Map();
+
+    columns.forEach(column => {
+        const label = document.createElement('label');
+        const name = document.createElement('span');
+        name.textContent = column;
+        const select = document.createElement('select');
+        select.className = 'form-select';
+        select.setAttribute('aria-label', `${column}字段用途`);
+        [['dimension', '维度'], ['metric', '数值指标'], ['ignore', '忽略']].forEach(([value, text]) => {
+            select.add(new Option(text, value));
+        });
+        label.append(name, select);
+        fields.append(label);
+        selects.set(column, select);
+    });
+
+    const actions = document.createElement('div');
+    actions.className = 'margin-field-governance-actions';
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'btn-secondary';
+    cancel.textContent = '取消';
+    const confirm = document.createElement('button');
+    confirm.type = 'button';
+    confirm.className = 'btn-primary';
+    confirm.textContent = '确认并继续';
+    actions.append(cancel, confirm);
+    host.append(title, copy, fields, actions);
+
+    cancel.addEventListener('click', closeMarginFieldGovernance, { once: true });
+    confirm.addEventListener('click', () => {
+        const overrides = { ...currentOverrides };
+        selects.forEach((select, column) => { overrides[column] = select.value; });
+        closeMarginFieldGovernance();
+        processLoadedData(rows, sourceName, overrides);
+    }, { once: true });
+}
+
+function getMetricRoleForHeader(sourceHeader, metricRolesByHeader = {}) {
+    const exactRole = normalizeMetricRole(metricRolesByHeader[sourceHeader]);
+    if (exactRole) return exactRole;
+    const normalizedSource = normalizeHeaderAlias(sourceHeader);
+    const matchedHeader = Object.keys(metricRolesByHeader || {}).find(header => normalizeHeaderAlias(header) === normalizedSource);
+    return normalizeMetricRole(matchedHeader ? metricRolesByHeader[matchedHeader] : '');
 }
 
 function isNonAnalysisDimensionHeader(sourceHeader) {
@@ -895,19 +1056,92 @@ function getNextDimensionKey(usedDims) {
 }
 
 function cleanNumeric(val) {
-    if (typeof val === 'number') return isNaN(val) ? 0 : val;
-    let s = String(val);
-    s = s.replace(/,/g, '').replace(/\s/g, '')
-         .replace(/¥/g, '').replace(/\$/g, '').replace(/￥/g, '');
-    if (['', 'nan', 'None', 'null', '-', 'undefined'].includes(s)) return 0;
-    const n = Number(s);
-    return isNaN(n) ? 0 : n;
+    const parsed = SharedFinanceCore.parseFinanceNumber(val);
+    return parsed.status === 'valid' ? parsed.value : 0;
 }
 
 function cleanText(val) {
     if (val == null) return '';
     const text = String(val).trim();
     return ['', 'nan', 'NaN', 'None', 'null', 'undefined'].includes(text) ? '' : text;
+}
+
+function selectDefaultComparisonPeriods(periodValues) {
+    const periodsByKey = new Map();
+    (periodValues || []).forEach((value) => {
+        const period = SharedFinanceCore.normalizeFinancePeriod(value);
+        if (period) periodsByKey.set(period.key, period);
+    });
+    const months = Array.from(periodsByKey.values())
+        .sort((left, right) => left.sort - right.sort)
+        .map((period) => period.key);
+    return {
+        months,
+        baseMonth: months.length >= 2 ? months[months.length - 2] : (months[0] || null),
+        currMonth: months.length ? months[months.length - 1] : null
+    };
+}
+
+function validateMarginNumericRows(rows, metricColumns, dimCols, source = {}) {
+    const issues = [];
+    const firstDataRow = Number.isInteger(source.firstDataRow) ? source.firstDataRow : 2;
+    const normalizedRows = (rows || []).map((row, rowIndex) => {
+        const normalized = { ...row };
+        const sourceLocation = row?.__sourceLocation || {
+            sheet: source.sheet || '工作表',
+            row: firstDataRow + rowIndex
+        };
+        const requiredColumns = [
+            { key: 'Sales Volume', label: source.denominatorLabel || '销量' },
+            ...(metricColumns || []).map((metric) => ({ key: metric.key, label: metric.sourceHeader || metric.metricType || metric.key }))
+        ];
+
+        const period = SharedFinanceCore.normalizeFinancePeriod(row?.Month);
+        if (period) {
+            normalized.Month = period.key;
+        } else {
+            issues.push({
+                status: cleanText(row?.Month) ? 'invalid' : 'blank',
+                reason: 'invalid_period',
+                sheet: sourceLocation.sheet,
+                row: sourceLocation.row,
+                column: '月份',
+                raw: row?.Month
+            });
+        }
+
+        requiredColumns.forEach((column) => {
+            const parsed = SharedFinanceCore.parseFinanceNumber(row?.[column.key]);
+            if (parsed.status === 'valid') {
+                normalized[column.key] = parsed.value;
+                return;
+            }
+            issues.push({
+                status: parsed.status,
+                reason: parsed.reason || 'required_blank',
+                sheet: sourceLocation.sheet,
+                row: sourceLocation.row,
+                column: column.label,
+                raw: parsed.raw
+            });
+        });
+
+        (dimCols || []).forEach((dimension) => {
+            normalized[dimension] = cleanText(row?.[dimension]) || '空白';
+        });
+        return normalized;
+    });
+
+    return { rows: normalizedRows, issues };
+}
+
+function formatMarginDataIssues(issues) {
+    const preview = (issues || []).slice(0, 6).map((issue) => {
+        const reason = issue.status === 'blank' ? '为空' : '无法识别';
+        return `${issue.sheet} 第 ${issue.row} 行「${issue.column}」${reason}`;
+    });
+    const remainder = Math.max(0, (issues || []).length - preview.length);
+    return `数据质量校验未通过：${issues.length} 个必填单元格存在问题。${preview.join('；')}${remainder ? `；另有 ${remainder} 个` : ''}`;
 }
 
 
@@ -1021,6 +1255,7 @@ function onDataLoaded() {
 
     // 填充分析指标选择器
     populateMetricSelector();
+    updateMetricCopy();
 
     // 填充下钻顺序选择器
     populateDrillOrder();
@@ -1060,8 +1295,9 @@ function populateMonthSelectors() {
 function initUserSettings() {
     const unitInput = document.getElementById('input-unit-name');
     const metricInput = document.getElementById('input-metric-type');
+    const metricFormatInput = document.getElementById('input-metric-format');
     const methodInput = document.getElementById('input-attribution-method');
-    if (!unitInput && !metricInput && !methodInput) return;
+    if (!unitInput && !metricInput && !metricFormatInput && !methodInput) return;
 
     if (unitInput) {
         unitInput.value = getUnitName();
@@ -1081,6 +1317,17 @@ function initUserSettings() {
             AppState.selectedMetricKey = metricInput.value;
             syncSelectedMetricType();
             refreshCurrentMetricRows();
+            updateMetricCopy();
+            if (AppState.dataLoaded) triggerUpdate();
+        });
+    }
+
+    if (metricFormatInput) {
+        metricFormatInput.value = getMetricDisplayFormat();
+        metricFormatInput.addEventListener('change', () => {
+            AppState.metricDisplayFormat = normalizeMetricDisplayFormat(metricFormatInput.value);
+            metricFormatInput.value = AppState.metricDisplayFormat;
+            populateMetricSelector();
             updateMetricCopy();
             if (AppState.dataLoaded) triggerUpdate();
         });
@@ -1118,7 +1365,12 @@ function populateMetricSelector() {
     metrics.forEach((metric) => {
         const option = document.createElement('option');
         option.value = metric.key;
-        option.textContent = buildUnitMetricLabel(getUnitName(), metric.metricType);
+        option.textContent = buildMetricDisplayLabel(
+            metric.metricType,
+            getUnitName(),
+            metric.denominatorLabel || getDenominatorLabel(),
+            getMetricDisplayFormat()
+        );
         metricInput.appendChild(option);
     });
 
@@ -1165,10 +1417,35 @@ function getUnitMetricType() {
     return normalizeMetricSetting(AppState.unitMetricType, '边际');
 }
 
+function getDenominatorLabel() {
+    return normalizeMetricSetting(AppState.denominatorLabel, '销量');
+}
+
+function normalizeMetricDisplayFormat(value) {
+    return value === METRIC_DISPLAY_PERCENT ? METRIC_DISPLAY_PERCENT : METRIC_DISPLAY_NUMBER;
+}
+
+function getMetricDisplayFormat() {
+    return normalizeMetricDisplayFormat(AppState.metricDisplayFormat);
+}
+
 function buildUnitMetricLabel(unitName = '车', metricType = '边际') {
     const safeMetricType = normalizeMetricSetting(metricType, '边际');
     if (safeMetricType.startsWith('单')) return safeMetricType;
     return `单${normalizeMetricSetting(unitName, '车')}${safeMetricType}`;
+}
+
+function buildRatioMetricLabel(metricType, denominatorLabel) {
+    const safeMetricType = normalizeMetricSetting(metricType, '指标');
+    const safeDenominator = normalizeMetricSetting(denominatorLabel, '分母');
+    return `${safeMetricType}/${safeDenominator}`;
+}
+
+function buildMetricDisplayLabel(metricType = '边际', unitName = '车', denominatorLabel = '销量', displayFormat = getMetricDisplayFormat()) {
+    if (normalizeMetricDisplayFormat(displayFormat) === METRIC_DISPLAY_PERCENT) {
+        return buildRatioMetricLabel(metricType, denominatorLabel);
+    }
+    return buildUnitMetricLabel(unitName, metricType);
 }
 
 function normalizeAttributionMethod(value) {
@@ -1195,10 +1472,20 @@ function updateAttributionMethodNote() {
 }
 
 function getUnitMetricLabel() {
-    return buildUnitMetricLabel(getUnitName(), getUnitMetricType());
+    const metric = getSelectedMetricConfig();
+    return buildMetricDisplayLabel(
+        metric?.metricType || getUnitMetricType(),
+        getUnitName(),
+        metric?.denominatorLabel || getDenominatorLabel(),
+        getMetricDisplayFormat()
+    );
 }
 
 function getTotalMetricLabel() {
+    const metric = getSelectedMetricConfig();
+    if (metric && getMetricDisplayFormat() === METRIC_DISPLAY_PERCENT) {
+        return normalizeMetricSetting(metric.metricType, '指标');
+    }
     const unitMetricLabel = getUnitMetricLabel();
     const currentPrefix = `单${getUnitName()}`;
     if (unitMetricLabel.startsWith(currentPrefix)) return `${unitMetricLabel.slice(currentPrefix.length)}总额`;
@@ -1210,12 +1497,16 @@ function getTotalMetricLabel() {
 function updateMetricCopy() {
     const unitMetricLabel = getUnitMetricLabel();
     const totalMetricLabel = getTotalMetricLabel();
+    const denominatorLabel = getDenominatorLabel();
 
     document.querySelectorAll('[data-unit-metric-label]').forEach((el) => {
         el.textContent = unitMetricLabel;
     });
     document.querySelectorAll('[data-total-metric-label]').forEach((el) => {
         el.textContent = totalMetricLabel;
+    });
+    document.querySelectorAll('[data-denominator-label]').forEach((el) => {
+        el.textContent = denominatorLabel;
     });
 
 }
@@ -1394,9 +1685,17 @@ function buildDrillTrainCar(dim, index, activeIndex, orderLength) {
     car.dataset.dimension = dim;
     car.dataset.baselineTarget = dim;
     car.title = '拖动调整顺序';
+    car.setAttribute('role', 'group');
+    car.setAttribute('aria-label', `${getDimensionLabel(dim)}，第 ${index + 1} 位，共 ${orderLength} 个维度`);
     car.innerHTML = `
         <span>${hasFilter ? '已选' : index === activeIndex ? '当前' : index + 1}</span>
         <strong>${escapeHTML(DIM_ICONS[dim] || '')} ${escapeHTML(getDimensionLabel(dim))}</strong>
+        <div class="dimension-train-actions" aria-label="调整${escapeHTML(getDimensionLabel(dim))}顺序">
+            <button type="button" data-margin-dimension-move="first" aria-label="将${escapeHTML(getDimensionLabel(dim))}移到首位" ${index === 0 ? 'disabled' : ''}>首</button>
+            <button type="button" data-margin-dimension-move="up" aria-label="将${escapeHTML(getDimensionLabel(dim))}上移" ${index === 0 ? 'disabled' : ''}>↑</button>
+            <button type="button" data-margin-dimension-move="down" aria-label="将${escapeHTML(getDimensionLabel(dim))}下移" ${index === orderLength - 1 ? 'disabled' : ''}>↓</button>
+            <button type="button" data-margin-dimension-move="last" aria-label="将${escapeHTML(getDimensionLabel(dim))}移到末位" ${index === orderLength - 1 ? 'disabled' : ''}>末</button>
+        </div>
         <button type="button" class="dimension-train-remove" ${orderLength <= 1 ? 'disabled' : ''} aria-label="移除${escapeHTML(getDimensionLabel(dim))}">×</button>
     `;
     if (isBaseline) car.insertBefore(buildImpactBaselineAnchor(), car.firstChild);
@@ -1407,6 +1706,13 @@ function buildDrillTrainCar(dim, index, activeIndex, orderLength) {
         event.stopPropagation();
         if (orderLength <= 1) return;
         applyDrillOrder(AppState.drillOrder.filter(item => item !== dim));
+    });
+
+    car.querySelectorAll('[data-margin-dimension-move]').forEach((moveButton) => {
+        moveButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            moveDrillDimensionByAction(index, moveButton.dataset.marginDimensionMove);
+        });
     });
 
     car.addEventListener('dragstart', (event) => {
@@ -1440,20 +1746,45 @@ function buildDrillTrainCar(dim, index, activeIndex, orderLength) {
     });
 
     car.addEventListener('click', (event) => {
-        if (event.target.closest('.dimension-train-remove')) return;
+        if (event.target.closest('button')) return;
         if (isMobile()) applyImpactBaselineSelection(dim);
     });
 
     return car;
 }
 
-function moveDrillDimensionInOrder(fromIndex, toIndex) {
+function announceDrillOrder(dimension, index, total) {
+    const status = document.getElementById('margin-dimension-order-status');
+    if (!status) return;
+    status.textContent = `“${getDimensionLabel(dimension)}”已移动到第 ${index + 1} 位，共 ${total} 个维度。`;
+}
+
+function moveDrillDimensionInOrder(fromIndex, toIndex, options = {}) {
     const order = [...AppState.drillOrder];
-    if (fromIndex === toIndex) return;
-    if (fromIndex < 0 || toIndex < 0 || fromIndex >= order.length || toIndex >= order.length) return;
+    if (fromIndex === toIndex) return false;
+    if (fromIndex < 0 || toIndex < 0 || fromIndex >= order.length || toIndex >= order.length) return false;
     const [moved] = order.splice(fromIndex, 1);
     order.splice(toIndex, 0, moved);
     applyDrillOrder(order);
+    announceDrillOrder(moved, toIndex, order.length);
+    if (options.focusAction) {
+        window.requestAnimationFrame(() => {
+            document
+                .querySelector(`[data-dimension-index="${toIndex}"] [data-margin-dimension-move="${options.focusAction}"]`)
+                ?.focus();
+        });
+    }
+    return true;
+}
+
+function moveDrillDimensionByAction(fromIndex, action) {
+    const lastIndex = AppState.drillOrder.length - 1;
+    let toIndex = fromIndex;
+    if (action === 'first') toIndex = 0;
+    if (action === 'up') toIndex = Math.max(0, fromIndex - 1);
+    if (action === 'down') toIndex = Math.min(lastIndex, fromIndex + 1);
+    if (action === 'last') toIndex = lastIndex;
+    moveDrillDimensionInOrder(fromIndex, toIndex, { focusAction: action });
 }
 
 function applyDrillOrder(nextOrder) {
@@ -1872,8 +2203,10 @@ function calculateGlobalMetrics(data, month) {
     const monthData = data.filter(r => r['Month'] === month);
     const totalVol = monthData.reduce((s, r) => s + r['Sales Volume'], 0);
     const totalMargin = monthData.reduce((s, r) => s + r['Total Margin'], 0);
-    const avgMargin = totalVol > 0 ? totalMargin / totalVol : 0;
-    return { totalVol, totalMargin, avgMargin };
+    if (totalVol === 0) {
+        return { totalVol, totalMargin, avgMargin: null, status: 'undefined_zero_volume' };
+    }
+    return { totalVol, totalMargin, avgMargin: totalMargin / totalVol };
 }
 
 
@@ -1908,31 +2241,31 @@ function addRowToPVMBucket(bucket, row) {
  * @returns {Array} 当前维度层级的 PVM 效应数组
  */
 function calculateDimensionPVMEffects(data, baseMonth, currMonth, groupDim, totalVolCurr, totalVolBase, avgMarginBase) {
-    const baseAgg = {};
-    const currAgg = {};
+    const baseAgg = new Map();
+    const currAgg = new Map();
 
     function getDimValue(row) {
-        return row[groupDim] || '';
+        return String(row[groupDim] ?? '');
     }
 
     data.forEach(row => {
         const key = getDimValue(row);
         if (row['Month'] === baseMonth) {
-            if (!baseAgg[key]) baseAgg[key] = createPVMBucket();
-            addRowToPVMBucket(baseAgg[key], row);
+            if (!baseAgg.has(key)) baseAgg.set(key, createPVMBucket());
+            addRowToPVMBucket(baseAgg.get(key), row);
         }
         if (row['Month'] === currMonth) {
-            if (!currAgg[key]) currAgg[key] = createPVMBucket();
-            addRowToPVMBucket(currAgg[key], row);
+            if (!currAgg.has(key)) currAgg.set(key, createPVMBucket());
+            addRowToPVMBucket(currAgg.get(key), row);
         }
     });
 
-    const allKeys = new Set([...Object.keys(baseAgg), ...Object.keys(currAgg)]);
+    const allKeys = new Set([...baseAgg.keys(), ...currAgg.keys()]);
     const safeAvgMarginBase = Number.isFinite(avgMarginBase) ? avgMarginBase : 0;
 
     return [...allKeys].map(key => {
-        const baseData = baseAgg[key] || createPVMBucket();
-        const currData = currAgg[key] || createPVMBucket();
+        const baseData = baseAgg.get(key) || createPVMBucket();
+        const currData = currAgg.get(key) || createPVMBucket();
         const weightBase = totalVolBase > 0 ? baseData.vol / totalVolBase : 0;
         const weightCurr = totalVolCurr > 0 ? currData.vol / totalVolCurr : 0;
         const marginUnitBase = baseData.vol !== 0 ? baseData.margin / baseData.vol : 0;
@@ -2225,6 +2558,12 @@ function triggerUpdate() {
     // 1. 全局指标
     const globalBase = calculateGlobalMetrics(AppState.df, baseMonth);
     const globalCurr = calculateGlobalMetrics(AppState.df, currMonth);
+    if (globalBase.avgMargin === null || globalCurr.avgMargin === null) {
+        AppState.calculationResults = { globalBase, globalCurr, totalDiff: null, levelResults: [] };
+        renderCharts();
+        showMessage('error', '所选期间销量为 0，单位指标无法计算，结果显示为 —。');
+        return;
+    }
     const totalDiff = globalCurr.avgMargin - globalBase.avgMargin;
 
     // 2. 为每个下钻层级计算 PVM 效应
@@ -2616,6 +2955,10 @@ function getAttributionLevelRenderContext(level) {
 }
 
 function getAttributionViewConfig(levelResult, dimName, unitMetricLabel, viewMode, globalBase, globalCurr) {
+    const metricDisplayFormat = getMetricDisplayFormat();
+    const denominatorLabel = getDenominatorLabel();
+    const metricUnitSuffix = getMetricUnitSuffix(metricDisplayFormat, getUnitName());
+    const metricAxisTitle = (label) => metricUnitSuffix ? `${label} (${metricUnitSuffix})` : label;
     if (viewMode === ATTRIBUTION_VIEW_GLOBAL && canUseGlobalImpactView(levelResult)) {
         const impactValue = levelResult.globalEffects.reduce((sum, row) => sum + (row.Total_Contribution || 0), 0);
         const impactContext = levelResult.impactBaselineContext || {
@@ -2634,9 +2977,11 @@ function getAttributionViewConfig(levelResult, dimName, unitMetricLabel, viewMod
             startValue: 0,
             endValue: impactValue,
             chartOptions: {
+                metricDisplayFormat,
+                denominatorLabel,
                 startLabel: '贡献起点',
                 endLabel: `对${impactTargetLabel}影响`,
-                yAxisTitle: `${impactMetricLabel} (¥)`,
+                yAxisTitle: metricAxisTitle(impactMetricLabel),
                 annotationLabel: `对${impactTargetLabel}影响`,
                 showPercent: false,
                 totalVolBase: impactContext.base.totalVol,
@@ -2657,14 +3002,33 @@ function getAttributionViewConfig(levelResult, dimName, unitMetricLabel, viewMod
         effects: levelResult.effects,
         displayData: levelResult.displayData,
         isGlobal: false,
-        tableLabel: levelResult.isDrilled ? '自身单车变动' : '整体单车变动',
+        tableLabel: levelResult.isDrilled ? `自身${unitMetricLabel}变动` : `整体${unitMetricLabel}变动`,
         title: levelResult.isDrilled
             ? `${dimName}贡献分解（下钻对象自身）`
             : `${dimName}贡献分解（按当前维度）`,
         startValue: levelResult.levelAvgMarginBase,
         endValue: levelResult.levelAvgMarginCurr,
-        chartOptions: {}
+        chartOptions: {
+            metricDisplayFormat,
+            denominatorLabel
+        }
     };
+}
+
+
+function buildWaterfallAccessibleSummary(title, labels, values, baseValue, currentValue, metricDisplayFormat) {
+    const contributions = labels.slice(1, -1).map((label, index) => ({
+        label: String(label || '空白'),
+        value: Number(values[index + 1]) || 0
+    }));
+    const strongest = contributions.reduce((best, item) => (
+        !best || Math.abs(item.value) > Math.abs(best.value) ? item : best
+    ), null);
+    const change = currentValue - baseValue;
+    const strongestText = strongest
+        ? `；最大影响项为${strongest.label} ${formatSignedMetricValue(strongest.value, metricDisplayFormat)}`
+        : '';
+    return `${title}：基期为 ${formatMetricValue(baseValue, metricDisplayFormat)}，当期为 ${formatMetricValue(currentValue, metricDisplayFormat)}，变动 ${formatSignedMetricValue(change, metricDisplayFormat)}${strongestText}。`;
 }
 
 
@@ -2676,6 +3040,8 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
     let labels, values, measures, barMetas;
 
     const unitMetricLabel = getUnitMetricLabel();
+    const metricDisplayFormat = normalizeMetricDisplayFormat(chartOptions.metricDisplayFormat || getMetricDisplayFormat());
+    const denominatorLabel = chartOptions.denominatorLabel || getDenominatorLabel();
     const dimName = AppState.customDimNames[dimCol] || dimCol;
     const startLabel = chartOptions.startLabel || `基期${unitMetricLabel}`;
     const endLabel = chartOptions.endLabel || `当期${unitMetricLabel}`;
@@ -2694,10 +3060,10 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
         values = [baseMargin, ...top10.map(r => r.Total_Contribution), othersSum, 0];
         measures = ['absolute', ...Array(11).fill('relative'), 'total'];
         barMetas = [
-            createWaterfallTotalMeta('base', startLabel, baseMargin, baseMargin, currMargin, unitMetricLabel, totalVolBase, totalVolCurr, chartOptions.startMeta),
-            ...top10.map(row => createWaterfallItemMeta(row, dimCol, dimName, unitMetricLabel, level, totalVolBase, totalVolCurr)),
-            createWaterfallOtherMeta(otherRows, dimCol, dimName, unitMetricLabel, totalVolBase, totalVolCurr),
-            createWaterfallTotalMeta('current', endLabel, currMargin, baseMargin, currMargin, unitMetricLabel, totalVolBase, totalVolCurr, chartOptions.endMeta)
+            createWaterfallTotalMeta('base', startLabel, baseMargin, baseMargin, currMargin, unitMetricLabel, totalVolBase, totalVolCurr, { ...chartOptions.startMeta, metricDisplayFormat, denominatorLabel }),
+            ...top10.map(row => createWaterfallItemMeta(row, dimCol, dimName, unitMetricLabel, level, totalVolBase, totalVolCurr, metricDisplayFormat, denominatorLabel)),
+            createWaterfallOtherMeta(otherRows, dimCol, dimName, unitMetricLabel, totalVolBase, totalVolCurr, metricDisplayFormat, denominatorLabel),
+            createWaterfallTotalMeta('current', endLabel, currMargin, baseMargin, currMargin, unitMetricLabel, totalVolBase, totalVolCurr, { ...chartOptions.endMeta, metricDisplayFormat, denominatorLabel })
         ];
     } else {
         // 先负后正排序
@@ -2707,9 +3073,9 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
         values = [baseMargin, ...sortedData.map(r => r.Total_Contribution), 0];
         measures = ['absolute', ...Array(sortedData.length).fill('relative'), 'total'];
         barMetas = [
-            createWaterfallTotalMeta('base', startLabel, baseMargin, baseMargin, currMargin, unitMetricLabel, totalVolBase, totalVolCurr, chartOptions.startMeta),
-            ...sortedData.map(row => createWaterfallItemMeta(row, dimCol, dimName, unitMetricLabel, level, totalVolBase, totalVolCurr)),
-            createWaterfallTotalMeta('current', endLabel, currMargin, baseMargin, currMargin, unitMetricLabel, totalVolBase, totalVolCurr, chartOptions.endMeta)
+            createWaterfallTotalMeta('base', startLabel, baseMargin, baseMargin, currMargin, unitMetricLabel, totalVolBase, totalVolCurr, { ...chartOptions.startMeta, metricDisplayFormat, denominatorLabel }),
+            ...sortedData.map(row => createWaterfallItemMeta(row, dimCol, dimName, unitMetricLabel, level, totalVolBase, totalVolCurr, metricDisplayFormat, denominatorLabel)),
+            createWaterfallTotalMeta('current', endLabel, currMargin, baseMargin, currMargin, unitMetricLabel, totalVolBase, totalVolCurr, { ...chartOptions.endMeta, metricDisplayFormat, denominatorLabel })
         ];
     }
 
@@ -2740,9 +3106,9 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
 
     // 文本标签
     const textLabels = values.map((v, i) => {
-        if (i === 0) return `¥${formatMetricNumber(baseMargin)}`;
-        if (i === values.length - 1) return `¥${formatMetricNumber(currMargin)}`;
-        return formatSignedNumber(v);
+        if (i === 0) return formatMetricValue(baseMargin, metricDisplayFormat);
+        if (i === values.length - 1) return formatMetricValue(currMargin, metricDisplayFormat);
+        return formatSignedMetricValue(v, metricDisplayFormat);
     });
 
     // 变动金额注释
@@ -2791,7 +3157,7 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
             fixedrange: true
         },
         yaxis: {
-            title: { text: chartOptions.yAxisTitle || `${unitMetricLabel} (¥)`, font: { size: 13, color: '#b0aea5' } },
+            title: { text: chartOptions.yAxisTitle || (getMetricUnitSuffix(metricDisplayFormat, getUnitName()) ? `${unitMetricLabel} (${getMetricUnitSuffix(metricDisplayFormat, getUnitName())})` : unitMetricLabel), font: { size: 13, color: '#b0aea5' } },
             gridcolor: 'rgba(232, 230, 220, 0.5)',
             tickfont: { size: 11, color: '#b0aea5' },
             tickformat: getMetricTickFormat(yRangeMin, yRangeMax),
@@ -2811,7 +3177,7 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
             y: 1.08,
             xref: 'paper',
             yref: 'paper',
-            text: `<b>${chartOptions.annotationLabel || '变动'}: ¥${formatSignedNumber(deltaVal)}</b>${chartOptions.showPercent === false ? '' : `  <span style="color: ${deltaColor}">(${pctChange >= 0 ? '+' : ''}${pctChange.toFixed(2)}%)</span>`}`,
+            text: `<b>${chartOptions.annotationLabel || '变动'}: ${formatSignedMetricValue(deltaVal, metricDisplayFormat)}</b>${chartOptions.showPercent === false ? '' : `  <span style="color: ${deltaColor}">(${pctChange >= 0 ? '+' : ''}${pctChange.toFixed(2)}%)</span>`}`,
             showarrow: false,
             font: { size: 15, color: deltaColor, family: PLOT_FONT_FAMILY },
             bgcolor: 'rgba(255, 255, 255, 0.95)',
@@ -2845,6 +3211,24 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
 
     const graphDiv = document.getElementById(containerId);
     if (!graphDiv) return Promise.resolve();
+    const summaryId = `waterfall-chart-summary-${level}`;
+    let accessibleSummary = document.getElementById(summaryId);
+    if (!accessibleSummary) {
+        accessibleSummary = document.createElement('p');
+        accessibleSummary.id = summaryId;
+        accessibleSummary.className = 'chart-accessible-summary';
+        graphDiv.insertAdjacentElement('beforebegin', accessibleSummary);
+    }
+    accessibleSummary.textContent = buildWaterfallAccessibleSummary(
+        title,
+        labels,
+        values,
+        baseMargin,
+        currMargin,
+        metricDisplayFormat
+    );
+    graphDiv.setAttribute('aria-label', title);
+    graphDiv.setAttribute('aria-describedby', `${summaryId} detail-table-content-${level}`);
     const plotMethod = graphDiv?.classList?.contains('js-plotly-plot') ? Plotly.react : Plotly.newPlot;
 
     return plotMethod(containerId, [trace], layout, config).then(() => {
@@ -2853,7 +3237,7 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
     });
 }
 
-function createWaterfallItemMeta(row, dimCol, dimName, unitMetricLabel, level, totalVolBase, totalVolCurr) {
+function createWaterfallItemMeta(row, dimCol, dimName, unitMetricLabel, level, totalVolBase, totalVolCurr, metricDisplayFormat = getMetricDisplayFormat(), denominatorLabel = getDenominatorLabel()) {
     const contribution = row.Total_Contribution || 0;
     const mix = row.Mix_Effect || 0;
     const rate = row.Rate_Effect || 0;
@@ -2870,6 +3254,8 @@ function createWaterfallItemMeta(row, dimCol, dimName, unitMetricLabel, level, t
         dimName,
         level,
         unitMetricLabel,
+        metricDisplayFormat,
+        denominatorLabel,
         contribution,
         mix,
         rate,
@@ -2884,7 +3270,7 @@ function createWaterfallItemMeta(row, dimCol, dimName, unitMetricLabel, level, t
     };
 }
 
-function createWaterfallOtherMeta(rows, dimCol, dimName, unitMetricLabel, totalVolBase, totalVolCurr) {
+function createWaterfallOtherMeta(rows, dimCol, dimName, unitMetricLabel, totalVolBase, totalVolCurr, metricDisplayFormat = getMetricDisplayFormat(), denominatorLabel = getDenominatorLabel()) {
     const contribution = rows.reduce((s, r) => s + (r.Total_Contribution || 0), 0);
     const mix = rows.reduce((s, r) => s + (r.Mix_Effect || 0), 0);
     const rate = rows.reduce((s, r) => s + (r.Rate_Effect || 0), 0);
@@ -2901,6 +3287,8 @@ function createWaterfallOtherMeta(rows, dimCol, dimName, unitMetricLabel, totalV
         dimCol,
         dimName,
         unitMetricLabel,
+        metricDisplayFormat,
+        denominatorLabel,
         contribution,
         mix,
         rate,
@@ -2925,6 +3313,8 @@ function createWaterfallTotalMeta(type, label, value, baseMargin, currMargin, un
         currMargin,
         contribution: type === 'current' ? currMargin - baseMargin : 0,
         unitMetricLabel,
+        metricDisplayFormat: normalizeMetricDisplayFormat(options.metricDisplayFormat || getMetricDisplayFormat()),
+        denominatorLabel: options.denominatorLabel || getDenominatorLabel(),
         volBase: totalVolBase,
         volCurr: totalVolCurr,
         displayMetricLabel: options.displayMetricLabel || unitMetricLabel,
@@ -3075,6 +3465,8 @@ function positionWaterfallTooltip(tooltip, event) {
 }
 
 function buildWaterfallTooltipHTML(meta, mode = 'hover') {
+    const metricDisplayFormat = normalizeMetricDisplayFormat(meta?.metricDisplayFormat || getMetricDisplayFormat());
+    const denominatorLabel = meta?.denominatorLabel || getDenominatorLabel();
     const touchReturn = mode === 'touch'
         ? '<button type="button" class="waterfall-touch-return" data-waterfall-touch-return>返回图表</button>'
         : '';
@@ -3092,12 +3484,12 @@ function buildWaterfallTooltipHTML(meta, mode = 'hover') {
                 <div class="waterfall-tooltip-title">${escapeHTML(meta.label)}</div>
                 <div class="waterfall-tooltip-main">
                     <span>${escapeHTML(displayMetricLabel)}</span>
-                    <strong>¥${formatMetricNumber(meta.value)}</strong>
+                    <strong>${formatMetricValue(meta.value, metricDisplayFormat)}</strong>
                 </div>
                 <div class="waterfall-tooltip-grid">
-                    <span>基期销量</span><b>${formatNumber(meta.volBase)}</b>
-                    <span>当期销量</span><b>${formatNumber(meta.volCurr)}</b>
-                    <span>较基期变动</span><b class="${delta >= 0 ? 'positive' : 'negative'}">${formatSignedNumber(delta)}</b>
+                    <span>基期${escapeHTML(denominatorLabel)}</span><b>${formatMetricNumber(meta.volBase)}</b>
+                    <span>当期${escapeHTML(denominatorLabel)}</span><b>${formatMetricNumber(meta.volCurr)}</b>
+                    <span>较基期变动</span><b class="${delta >= 0 ? 'positive' : 'negative'}">${formatSignedMetricValue(delta, metricDisplayFormat)}</b>
                     <span>点击状态</span><b>${statusText}</b>
                 </div>
                 ${mode === 'touch' ? buildWaterfallTouchActionHTML(meta) : ''}
@@ -3126,24 +3518,24 @@ function buildWaterfallTooltipHTML(meta, mode = 'hover') {
             <div class="waterfall-tooltip-title">${title}</div>
             <div class="waterfall-tooltip-main">
                 <span>总贡献</span>
-                <strong class="${tone}">${formatSignedNumber(meta.contribution)}</strong>
+                <strong class="${tone}">${formatSignedMetricValue(meta.contribution, metricDisplayFormat)}</strong>
             </div>
             <div class="waterfall-effect-list">
                 <div class="waterfall-effect-card">
                     <span>结构效应</span>
-                    <b class="${mixTone}">${formatSignedNumber(meta.mix)}</b>
+                    <b class="${mixTone}">${formatSignedMetricValue(meta.mix, metricDisplayFormat)}</b>
                 </div>
                 <div class="waterfall-effect-card">
                     <span>费率效应</span>
-                    <b class="${rateTone}">${formatSignedNumber(meta.rate)}</b>
+                    <b class="${rateTone}">${formatSignedMetricValue(meta.rate, metricDisplayFormat)}</b>
                 </div>
             </div>
             <div class="waterfall-tooltip-grid">
-                <span>基期销量</span><b>${formatNumber(meta.volBase)} (${formatPercent(meta.weightBasePct)})</b>
-                <span>当期销量</span><b>${formatNumber(meta.volCurr)} (${formatPercent(meta.weightCurrPct)})</b>
-                <span>销量占比变化</span><b class="${weightTone}">${formatPercentPoint(meta.weightChangePct)}</b>
-                <span>基期${escapeHTML(meta.unitMetricLabel)}</span><b>¥${formatMetricNumber(meta.unitBase)}</b>
-                <span>当期${escapeHTML(meta.unitMetricLabel)}</span><b>¥${formatMetricNumber(meta.unitCurr)}</b>
+                <span>基期${escapeHTML(denominatorLabel)}</span><b>${formatMetricNumber(meta.volBase)} (${formatPercent(meta.weightBasePct)})</b>
+                <span>当期${escapeHTML(denominatorLabel)}</span><b>${formatMetricNumber(meta.volCurr)} (${formatPercent(meta.weightCurrPct)})</b>
+                <span>${escapeHTML(denominatorLabel)}占比变化</span><b class="${weightTone}">${formatPercentPoint(meta.weightChangePct)}</b>
+                <span>基期${escapeHTML(meta.unitMetricLabel)}</span><b>${formatMetricValue(meta.unitBase, metricDisplayFormat)}</b>
+                <span>当期${escapeHTML(meta.unitMetricLabel)}</span><b>${formatMetricValue(meta.unitCurr, metricDisplayFormat)}</b>
             </div>
             <div class="waterfall-tooltip-hint">${clickHint}</div>
             ${mode === 'touch' ? buildWaterfallTouchActionHTML(meta) : ''}
@@ -3292,17 +3684,22 @@ function escapeHTML(value) {
 // ==================== 明细数据表构建 ====================
 function buildDetailTable(displayData, dimCol, dimName, isGlobal) {
     const unitMetricLabel = getUnitMetricLabel();
+    const denominatorLabel = getDenominatorLabel();
+    const metricDisplayFormat = getMetricDisplayFormat();
+    const formatDenominator = value => formatMetricNumber(value);
+    const formatDetailMetric = value => formatMetricValue(value, metricDisplayFormat);
+    const formatDetailSignedMetric = value => formatSignedMetricValue(value, metricDisplayFormat);
     const columns = [
         { label: dimName, type: 'text', getValue: row => row[dimCol] || '', format: value => value || '-' },
-        { label: '基期销量', type: 'number', getValue: row => row.Vol_Base, format: formatNumber },
+        { label: `基期${denominatorLabel}`, type: 'number', getValue: row => row.Vol_Base, format: formatDenominator },
         { label: '基期占比%', type: 'number', getValue: row => row.Weight_Base_Pct, format: formatPercent },
-        { label: '当期销量', type: 'number', getValue: row => row.Vol_Curr, format: formatNumber },
+        { label: `当期${denominatorLabel}`, type: 'number', getValue: row => row.Vol_Curr, format: formatDenominator },
         { label: '当期占比%', type: 'number', getValue: row => row.Weight_Curr_Pct, format: formatPercent },
-        { label: `基期${unitMetricLabel}`, type: 'number', getValue: row => row.Margin_Unit_Base, format: formatCurrency },
-        { label: `当期${unitMetricLabel}`, type: 'number', getValue: row => row.Margin_Unit_Curr, format: formatCurrency },
-        { label: isGlobal ? '结构效应（整体）' : '结构效应', type: 'number', effectKey: 'Mix_Effect', getValue: row => row.Mix_Effect, format: formatSignedNumber },
-        { label: isGlobal ? '费率效应（整体）' : '费率效应', type: 'number', effectKey: 'Rate_Effect', getValue: row => row.Rate_Effect, format: formatSignedNumber },
-        { label: isGlobal ? `对整体${unitMetricLabel}贡献` : '总贡献', type: 'number', effectKey: 'Total_Contribution', getValue: row => row.Total_Contribution, format: formatSignedNumber }
+        { label: `基期${unitMetricLabel}`, type: 'number', getValue: row => row.Margin_Unit_Base, format: formatDetailMetric },
+        { label: `当期${unitMetricLabel}`, type: 'number', getValue: row => row.Margin_Unit_Curr, format: formatDetailMetric },
+        { label: isGlobal ? '结构效应（整体）' : '结构效应', type: 'number', effectKey: 'Mix_Effect', getValue: row => row.Mix_Effect, format: formatDetailSignedMetric },
+        { label: isGlobal ? '费率效应（整体）' : '费率效应', type: 'number', effectKey: 'Rate_Effect', getValue: row => row.Rate_Effect, format: formatDetailSignedMetric },
+        { label: isGlobal ? `对整体${unitMetricLabel}贡献` : '总贡献', type: 'number', effectKey: 'Total_Contribution', getValue: row => row.Total_Contribution, format: formatDetailSignedMetric }
     ];
     const rowMetas = [];
     const filterState = {
@@ -3486,10 +3883,14 @@ function getVisibleDetailDataRowCount(state) {
 }
 
 function buildDetailExportRows(state) {
-    const headers = (state?.columns || []).map(column => String(column.label ?? ''));
+    const columns = state?.columns || [];
+    const headers = columns.map(column => neutralizeSpreadsheetTextCell(column.label));
     const rows = getCurrentDetailRowMetas(state).map(meta => {
         const cells = meta.cells || [];
-        return headers.map((_, index) => String(cells[index] ?? ''));
+        return columns.map((column, index) => {
+            const value = String(cells[index] ?? '');
+            return column.type === 'text' ? neutralizeSpreadsheetTextCell(value) : value;
+        });
     });
     return [headers, ...rows];
 }
@@ -4141,6 +4542,7 @@ function buildWaterfallAxisRange(baseMargin = 0, currMargin = 0, values = []) {
 }
 
 function getMetricTickFormat(minValue = 0, maxValue = 0) {
+    if (getMetricDisplayFormat() === METRIC_DISPLAY_PERCENT) return ',.1%';
     const maxAbs = Math.max(Math.abs(Number(minValue) || 0), Math.abs(Number(maxValue) || 0));
     if (maxAbs >= 100) return ',.0f';
     if (maxAbs >= 10) return ',.1f';
@@ -4150,9 +4552,30 @@ function getMetricTickFormat(minValue = 0, maxValue = 0) {
 
 
 // ==================== 数值格式化工具 ====================
-function formatNumber(num) {
+function formatMetricValue(num, format = getMetricDisplayFormat()) {
+    if (normalizeMetricDisplayFormat(format) === METRIC_DISPLAY_PERCENT) {
+        return formatPercentRatio(num);
+    }
+    return formatMetricNumber(num);
+}
+
+function formatSignedMetricValue(num, format = getMetricDisplayFormat()) {
     if (num == null || isNaN(num)) return '-';
-    return Math.round(num).toLocaleString('en-US');
+    if (normalizeMetricDisplayFormat(format) === METRIC_DISPLAY_PERCENT) {
+        const value = Math.abs(Number(num)) < 1e-12 ? 0 : Number(num);
+        const sign = value >= 0 ? '+' : '';
+        return sign + formatPercentRatio(value);
+    }
+    return formatSignedMetricNumber(num);
+}
+
+function formatPercentRatio(num) {
+    if (num == null || isNaN(num)) return '-';
+    const value = Math.abs(Number(num)) < 1e-12 ? 0 : Number(num);
+    return (value * 100).toLocaleString('en-US', {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1
+    }) + '%';
 }
 
 function getMetricPrecision(num) {
@@ -4172,19 +4595,14 @@ function formatMetricNumber(num) {
     });
 }
 
-function formatCurrency(num) {
-    if (num == null || isNaN(num)) return '-';
-    return '¥' + formatMetricNumber(num);
+function getMetricUnitSuffix(format = getMetricDisplayFormat(), unitName = getUnitName()) {
+    void unitName;
+    return normalizeMetricDisplayFormat(format) === METRIC_DISPLAY_PERCENT ? '%' : '';
 }
 
 function formatPercent(num) {
     if (num == null || isNaN(num)) return '-';
     return num.toFixed(1) + '%';
-}
-
-function formatSignedNumber(num) {
-    if (num == null || isNaN(num)) return '-';
-    return formatSignedMetricNumber(num);
 }
 
 function formatSignedMetricNumber(num) {
@@ -4208,19 +4626,28 @@ if (typeof module !== 'undefined' && module.exports) {
         resolveExcelFilterAppliedValues,
         resolveExcelFilterSearchValues,
         normalizeUploadedRows,
+        analyzeUploadHeaders,
         getTemplateRows,
         sheetRowsToObjects,
         TEMPLATE_HEADERS,
+        TEMPLATE_ROLE_ROW,
         TEMPLATE_HEADER_NOTE,
         buildUnitMetricLabel,
+        buildMetricDisplayLabel,
         buildWaterfallTooltipHTML,
         formatPercentPoint,
         formatMetricNumber,
         formatSignedMetricNumber,
+        formatMetricValue,
+        formatSignedMetricValue,
         buildWaterfallAxisRange,
         getMetricTickFormat,
         buildDetailExportRows,
         buildDetailClipboardText,
+        parseCSV,
+        selectDefaultComparisonPeriods,
+        validateMarginNumericRows,
+        getMetricUnitSuffix,
         buildTemplateStylesXml,
         buildTemplateWorksheetXml,
         buildXlsxTemplateEntries,

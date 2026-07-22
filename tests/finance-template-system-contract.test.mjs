@@ -89,15 +89,17 @@ test("operating detail model engines use the shared template hub", async () => {
   const financeAITool = await readProjectFile("../src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
 
   for (const [name, source] of [
-    ["business-analysis", businessEngine],
     ["monthly-trend", monthlyEngine],
     ["profit-structure", profitStructureEngine],
     ["perspective-bi", perspectiveBIEngine],
-    ["finance-ai-assistant", financeAITool],
   ]) {
     assert.match(source, /finance\/templates\.js/, `${name} should import the template hub`);
     assert.match(source, /OPERATING_DETAIL_HEADERS/, `${name} should use the shared operating detail headers`);
   }
+  assert.match(businessEngine, /finance\/templates\.js/, "business-analysis should import the template hub");
+  assert.match(businessEngine, /OPERATING_DETAIL_SCENARIO_SHEET_HEADERS/, "business-analysis should use scenario sheet headers for visible templates");
+  assert.match(financeAITool, /finance\/templates\.js/, "finance-ai-assistant should import the template hub");
+  assert.match(financeAITool, /OPERATING_DETAIL_SCENARIO_SHEET_HEADERS/, "finance-ai-assistant should use scenario sheet headers for visible templates");
 
   for (const [name, source] of [
     ["business-analysis", businessEngine],
@@ -108,7 +110,28 @@ test("operating detail model engines use the shared template hub", async () => {
     assert.match(source, /createOperatingDetailSampleRows/, `${name} should use the shared operating detail sample`);
   }
   assert.match(businessEngine, /parseOperatingDetailScenarioRows/, "business-analysis should pair actual and budget rows by 数据口径");
-  assert.match(financeAITool, /getBudgetOperatingDetailTemplateRows/, "finance AI template download should use shared budget operating detail rows");
+  assert.match(financeAITool, /getBudgetScenarioSheetTemplateRows/, "finance AI template download should use shared budget scenario sheet rows");
+});
+
+test("scenario comparison templates use sheets instead of visible actual budget row fields", async () => {
+  const templates = await import("../src/lib/finance/templates.js");
+  const {
+    OPERATING_DETAIL_HEADERS,
+    OPERATING_DETAIL_SCENARIO_SHEET_HEADERS,
+  } = templates.default;
+  const businessEngine = await readProjectFile("../src/app/finance/business-analysis/business-analysis-engine.js");
+  const financeAITool = await readProjectFile("../src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
+  const marginApp = await readProjectFile("../public/tools/margin-analysis/app.js");
+
+  assert.deepEqual(
+    OPERATING_DETAIL_SCENARIO_SHEET_HEADERS,
+    OPERATING_DETAIL_HEADERS.filter((header) => header !== "数据口径")
+  );
+  assert.match(businessEngine, /SCENARIO_SHEET_HEADERS/);
+  assert.match(financeAITool, /SCENARIO_SHEET_HEADERS/);
+  assert.doesNotMatch(businessEngine, /CSV 用“数据口径”列区分实际、预算/);
+  assert.doesNotMatch(financeAITool, /同一张表里用“数据口径”区分/);
+  assert.match(marginApp, /单车归因不需要填写预算\/实际口径/);
 });
 
 test("monthly trend sample startup keeps its month label formatter available", async () => {

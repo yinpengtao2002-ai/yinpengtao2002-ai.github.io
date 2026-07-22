@@ -74,7 +74,7 @@ export default function ThinkingLabClient({ articles }: { articles: ContentItem[
 
   return (
     <div className="thinking-index-page">
-      <main className="thinking-index-shell">
+      <div className="thinking-index-shell">
         <section className="thinking-index-hero">
           <p className="thinking-index-eyebrow">
             TOOLS & THINKING
@@ -164,7 +164,7 @@ export default function ThinkingLabClient({ articles }: { articles: ContentItem[
             </div>
           </aside>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

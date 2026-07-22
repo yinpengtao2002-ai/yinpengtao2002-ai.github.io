@@ -237,6 +237,7 @@ test("legacy finance browser engines share one typed script loader boundary", as
 
   assert.match(loader, /export function loadBrowserScript/);
   assert.match(loader, /export type FinanceBrowserEngine/);
+  assert.match(loader, /dispose:\s*\(\)\s*=>\s*void/);
   assert.match(loader, /export type FinanceBrowserEngineName/);
   assert.match(loader, /export async function bootFinanceBrowserEngine/);
   assert.match(loader, /__financeToolScripts/);
@@ -256,6 +257,7 @@ test("legacy finance browser engines share one typed script loader boundary", as
 
     assert.match(source, /@\/lib\/finance\/browser-tool-loader/, `${path} should import the shared loader`);
     assert.match(source, /bootFinanceBrowserEngine/, `${path} should use the shared boot boundary`);
+    assert.match(source, /engine\?\.dispose\(\)/, `${path} should dispose the loaded engine on unmount`);
     assert.doesNotMatch(source, /function loadBrowserScript/, `${path} should not keep a local script loader`);
     assert.doesNotMatch(source, /__financeToolScripts/, `${path} should not own the browser script cache type`);
     assert.doesNotMatch(source, /declare global/, `${path} should not redeclare the browser engine global`);
@@ -349,17 +351,21 @@ test("spreadsheet parser uses the patched SheetJS npm alias and matching browser
   assert.match(vendorScript, /node_modules\/xlsx\/dist\/xlsx\.full\.min\.js/);
 });
 
-test("Next runtime and PostCSS dependency stay on patched versions", () => {
-  assert.equal(packageData.dependencies?.next, "16.2.10");
-  assert.equal(packageData.devDependencies?.["eslint-config-next"], "16.2.10");
+test("Next runtime, Sharp and PostCSS dependencies stay on patched versions", () => {
+  assert.equal(packageData.dependencies?.next, "16.2.11");
+  assert.equal(packageData.dependencies?.sharp, "0.35.0");
+  assert.equal(packageData.devDependencies?.["eslint-config-next"], "16.2.11");
+  assert.equal(packageData.overrides?.sharp, "0.35.0");
   assert.equal(packageData.overrides?.next?.postcss, "^8.5.10");
 
   const installedNext = packageLockData.packages?.["node_modules/next"];
+  const installedSharp = packageLockData.packages?.["node_modules/sharp"];
   const installedEslintConfig = packageLockData.packages?.["node_modules/eslint-config-next"];
   const installedNextPostcss = packageLockData.packages?.["node_modules/next/node_modules/postcss"];
 
-  assert.equal(installedNext?.version, "16.2.10");
-  assert.equal(installedEslintConfig?.version, "16.2.10");
+  assert.equal(installedNext?.version, "16.2.11");
+  assert.equal(installedSharp?.version, "0.35.0");
+  assert.equal(installedEslintConfig?.version, "16.2.11");
   assert.ok(installedNextPostcss, "Next should keep a resolved PostCSS dependency in the lockfile");
   assertVersionAtLeast(installedNextPostcss.version, "8.5.10", "Next nested PostCSS");
   assert.notEqual(installedNextPostcss.version, "8.4.31");
@@ -377,7 +383,7 @@ test("Mermaid parser and sanitizer dependencies stay on patched versions", () =>
 
   assert.equal(installedMermaid?.version, "11.16.0");
   assertVersionAtLeast(installedParser?.version ?? "0.0.0", "1.2.0", "Mermaid parser");
-  assertVersionAtLeast(installedDomPurify?.version ?? "0.0.0", "3.4.11", "DOMPurify");
+  assertVersionAtLeast(installedDomPurify?.version ?? "0.0.0", "3.4.12", "DOMPurify");
   assertVersionAtLeast(installedUuid?.version ?? "0.0.0", "11.1.1", "uuid");
   assertVersionAtLeast(installedLodashEs?.version ?? "0.0.0", "4.18.1", "lodash-es");
 
@@ -408,6 +414,6 @@ test("Perspective BI requires the private tool access key before booting", async
   assert.match(tool, /Perspective BI 分析台内测访问/);
   assert.match(tool, /type="password"/);
   assert.match(tool, /if \(!accessToken\) {\s+return;\s+}/);
-  assert.match(tool, /\}, \[accessToken\]\);/);
+  assert.match(tool, /\}, \[accessToken, bootAttempt\]\);/);
   assert.match(styles, /\.perspective-access-gate/);
 });

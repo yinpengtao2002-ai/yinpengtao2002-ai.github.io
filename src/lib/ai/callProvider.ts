@@ -51,21 +51,45 @@ export class ProviderEmptyResponseError extends Error {
   }
 }
 
+class ProviderHttpError extends Error {
+  status: number;
+
+  constructor(status: number) {
+    super("AI provider request failed.");
+    this.name = "ProviderHttpError";
+    this.status = status;
+  }
+}
+
 export function hasConfiguredProvider(providers: ChatProvider[]) {
   return providers.some((provider) => Boolean(provider.apiKey && provider.apiUrl));
 }
 
 export function extractJsonObject(text: string) {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1]?.trim();
-  const candidate = fenced || text.trim();
-  const firstBrace = candidate.indexOf("{");
-  const lastBrace = candidate.lastIndexOf("}");
+  const trimmed = text.trim();
+  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)```$/i)?.[1]?.trim();
+  const candidate = fenced ?? trimmed;
 
-  if (firstBrace < 0 || lastBrace <= firstBrace) {
+  if (!candidate.includes("{")) {
     throw new Error("AI response did not contain JSON");
   }
 
-  return JSON.parse(candidate.slice(firstBrace, lastBrace + 1));
+  if (!candidate.startsWith("{") || !candidate.endsWith("}")) {
+    throw new Error("AI response must contain a single JSON object");
+  }
+
+  try {
+    const parsed = JSON.parse(candidate);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new Error("AI response must contain a single JSON object");
+    }
+    return parsed;
+  } catch (error) {
+    if (error instanceof Error && error.message === "AI response must contain a single JSON object") {
+      throw error;
+    }
+    throw new Error("AI response must contain a single JSON object");
+  }
 }
 
 function isAbortError(error: unknown) {
@@ -88,6 +112,10 @@ function getUpstreamStatus(error: unknown) {
     return 504;
   }
 
+  if (error instanceof ProviderHttpError && error.status === 429) {
+    return 429;
+  }
+
   return 502;
 }
 
@@ -98,6 +126,10 @@ function getUpstreamErrorCode(error: unknown) {
 
   if (error instanceof ProviderEmptyResponseError) {
     return "provider_empty_response";
+  }
+
+  if (error instanceof ProviderHttpError && error.status === 429) {
+    return "provider_rate_limited";
   }
 
   return "provider_failed";
@@ -112,7 +144,11 @@ function getUpstreamErrorMessage(error: unknown, options: ProviderCallOptions) {
     return options.emptyResponseMessage ?? "AI response was empty";
   }
 
-  return error instanceof Error ? error.message : "Upstream request failed";
+  return error instanceof ProviderHttpError
+    ? "AI provider request failed."
+    : error instanceof Error
+      ? error.message
+      : "AI provider request failed.";
 }
 
 export async function callProvider(
@@ -145,7 +181,13 @@ export async function callProvider(
 
     if (!response.ok) {
       const detail = await response.text().catch(() => "");
-      throw new Error(detail.slice(0, 500) || `Upstream responded with ${response.status}`);
+      console.error(JSON.stringify({
+        event: "ai_provider_http_error",
+        provider: provider.model,
+        status: response.status,
+        detail: detail.slice(0, 500),
+      }));
+      throw new ProviderHttpError(response.status);
     }
 
     const payload = await response.json();
@@ -216,8 +258,14 @@ export async function callFirstConfiguredProvider(
 
   return {
     ok: false,
-    status: timeoutAttempt ? 504 : 502,
-    errorCode: timeoutAttempt ? "provider_timeout" : emptyAttempt ? "provider_empty_response" : "provider_failed",
+    status: timeoutAttempt ? 504 : attempts.some((attempt) => attempt.errorCode === "provider_rate_limited") ? 429 : 502,
+    errorCode: timeoutAttempt
+      ? "provider_timeout"
+      : attempts.some((attempt) => attempt.errorCode === "provider_rate_limited")
+        ? "provider_rate_limited"
+        : emptyAttempt
+          ? "provider_empty_response"
+          : "provider_failed",
     error: attempts.at(-1)?.error || options.failureMessage || "AI provider failed.",
     attempts,
   };
