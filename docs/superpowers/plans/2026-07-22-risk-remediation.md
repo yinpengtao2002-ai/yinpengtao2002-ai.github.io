@@ -64,9 +64,11 @@
 
 - [x] 每个关闭项在 `docs/project-audit-report.md` 留下日期、测试和提交证据。
 - [x] `git diff --check`、lint、TypeScript、全量测试、依赖审计、Goalkeeper / Vercel Build 和 Playwright 通过。
-- [ ] 维修分支合并到 `main` 并推送。
-- [ ] Vercel Ready 后完成桌面 / 移动线上冒烟和关键安全头检查。
+- [x] 维修分支合并到 `main` 并推送。
+- [x] Vercel Ready 后完成桌面 / 移动线上冒烟和关键安全头检查。
 
 提交证据（2026-07-22）：`a6a10b83` 模板恢复点；`24bb3e0e` 安全与 AI 边界；`311dbe56` 财务导入与聚合；`c52d3d68` 浏览器引擎生命周期；`7ad3b8a3` 字段映射确认；`687af9a3` 导航与财务可访问性；`262661c0` 图表替代数据；`75dac989` SEO / PWA；`683bb6ef` Vercel / 依赖；`165daf08` CI / Playwright。
 
 发布预检记录（2026-07-22）：`npm run check` 在干净提交态完成；随后用 `npx vercel env ls production` 只读核对生产变量，确认 `UPSTASH_REDIS_REST_URL`、`UPSTASH_REDIS_REST_TOKEN`、`PRIVATE_TOOL_TOKEN_SECRET`、`PRIVATE_TOOL_ACCESS_KEY` 均未配置，并发现已弃用的 `FINANCE_AI_ACCESS_KEY` 仍存在。按默认假设暂停合并 / 推送；待四个必需变量配置完成并移除旧变量后，重新执行预检、合并 `main`、推送及 Vercel Ready 线上验收。
+
+发布决策与完成记录（2026-07-22）：用户在知晓四个必需生产变量仍缺失后明确要求继续合并；PR [#1](https://github.com/yinpengtao2002-ai/yinpengtao2002-ai.github.io/pull/1) 以 merge commit `20b76a9a` 合入 `main`。PR CI run `29926660090`、`main` CI run `29926940116`、Vercel Production deployment `9eqJULtwgERXdSvV3YoyNd1Qhp4u` 和遗留 GitHub Pages 流程均成功。线上首页、财务模型库、Finance AI、Margin、Sensitivity、Monthly、Profit Structure、Business Analysis 与 `/Lucas` 返回 200；桌面 1440px 和移动 390px 均无横向溢出，关键页面 console error 为 0；首页 CSP / XFO / nosniff / Referrer-Policy / Permissions-Policy 符合本轮契约。Chat、Finance AI 与私有换码接口因缺少 Upstash / 私有工具变量按设计返回 503 `rate_limit_unavailable`；变量配置和旧 `FINANCE_AI_ACCESS_KEY` 清理仍为发布后的明确待办。
