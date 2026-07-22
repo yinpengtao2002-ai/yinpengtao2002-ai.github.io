@@ -60,7 +60,11 @@
 
 ## 4. 发布验收
 
-- [ ] 每个关闭项在 `docs/project-audit-report.md` 留下日期、测试和提交证据。
-- [ ] `git diff --check`、lint、TypeScript、全量测试、依赖审计、Vercel Build 通过。
+- [x] 每个关闭项在 `docs/project-audit-report.md` 留下日期、测试和提交证据。
+- [x] `git diff --check`、lint、TypeScript、全量测试、依赖审计、Goalkeeper / Vercel Build 和 Playwright 通过。
 - [ ] 维修分支合并到 `main` 并推送。
 - [ ] Vercel Ready 后完成桌面 / 移动线上冒烟和关键安全头检查。
+
+提交证据（2026-07-22）：`a6a10b83` 模板恢复点；`24bb3e0e` 安全与 AI 边界；`311dbe56` 财务导入与聚合；`c52d3d68` 浏览器引擎生命周期；`7ad3b8a3` 字段映射确认；`687af9a3` 导航与财务可访问性；`262661c0` 图表替代数据；`75dac989` SEO / PWA；`683bb6ef` Vercel / 依赖；`165daf08` CI / Playwright。
+
+发布预检记录（2026-07-22）：`npm run check` 在干净提交态完成；随后用 `npx vercel env ls production` 只读核对生产变量，确认 `UPSTASH_REDIS_REST_URL`、`UPSTASH_REDIS_REST_TOKEN`、`PRIVATE_TOOL_TOKEN_SECRET`、`PRIVATE_TOOL_ACCESS_KEY` 均未配置，并发现已弃用的 `FINANCE_AI_ACCESS_KEY` 仍存在。按默认假设暂停合并 / 推送；待四个必需变量配置完成并移除旧变量后，重新执行预检、合并 `main`、推送及 Vercel Ready 线上验收。
