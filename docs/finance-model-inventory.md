@@ -15,6 +15,7 @@
 - `src/lib/finance/filters/*`：财务模型共用筛选状态、搜索、include/exclude 判断和级联筛选修剪。
 - `src/lib/finance/templates.js`：财务模型共用模板族登记、经营明细事实表通用表头、预算/实际分 sheet 表头和共享示例数据生成器；除敏感性分析之外，当前模型默认复用 `operating-detail`。
 - `src/lib/finance/core.ts`、`public/tools/shared/finance-core.js`：共用字段角色、期间、数值、CSV 和指标聚合语义；静态 Margin 通过浏览器版本复用同一口径。
+- `src/lib/finance/field-governance.ts`：Monthly、Profit Structure 与 Business Analysis 共用的安全字段映射确认面板；静态 Margin 使用相同交互语义的本地适配，不依赖字段位置推断。
 - `src/lib/finance/browser-tool-loader.ts`、`src/lib/finance/browser-engine-lifecycle.ts`：五个旧式浏览器引擎的 typed 启动、vendor script 超时/重试和统一资源清理边界；工具壳卸载时必须调用引擎 `dispose()`。
 - `docs/finance-chart-system.md`：财务图表中枢、共享算法边界和模型依赖地图；改图表中枢或共享计算口径时要先核对这里。
 - `docs/finance-interaction-system.md`：财务交互中枢、筛选器/下钻/明细表筛选依赖地图；改筛选和下钻交互时要先核对这里。
@@ -169,7 +170,7 @@
 - 上传 CSV/XLS/XLSX 分月明细数据。
 - 支持 CSV/XLSX 模板下载；模板族为 `operating-detail`，表头和示例数据来自 `src/lib/finance/templates.js`。
 - 选择关注指标。
-- 引擎按显式角色、表头和样本类型识别月份、指标与维度，列位置不影响分类；空字段无法判断角色时会在计算前提示。
+- 引擎按显式角色、表头和样本类型识别月份、指标与维度，列位置不影响分类；空字段无法判断角色时会在页面内确认后再计算。
 - 期间统一规范为 `YYYY-MM`；必填数值支持括号负数、百分号和万/亿倍率，空值或非法值会显示来源位置并阻止计算。
 - 根据识别出的维度生成下钻路径和上级筛选控件。
 - 支持在控制台重置筛选。

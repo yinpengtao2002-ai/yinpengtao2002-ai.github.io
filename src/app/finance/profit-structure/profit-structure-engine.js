@@ -16,8 +16,13 @@ import {
     clearFinanceEngineBindingMarkers,
     createFinanceEngineLifecycle
 } from "../../../lib/finance/browser-engine-lifecycle.ts";
+import {
+    closeFinanceFieldGovernance,
+    showFinanceFieldGovernance
+} from "../../../lib/finance/field-governance.ts";
 
 const lifecycle = createFinanceEngineLifecycle();
+let closeFieldGovernance = () => undefined;
 
 const TEMPLATE_HEADERS = OPERATING_DETAIL_HEADERS;
 const TEMPLATE_HEADER_NOTE = OPERATING_DETAIL_TEMPLATE_NOTE;
@@ -102,10 +107,11 @@ function collectHeaders(rows) {
     return headers;
 }
 
-function inferProfitStructureFields(rows, headers, monthColumn, volumeColumn) {
+function inferProfitStructureFields(rows, headers, monthColumn, volumeColumn, fieldRoleOverrides = {}) {
     const inference = inferFinanceFieldRoles(rows, {
         headers,
         explicitRoles: {
+            ...fieldRoleOverrides,
             [monthColumn]: "period",
             [volumeColumn]: "denominator"
         },
@@ -118,7 +124,7 @@ function inferProfitStructureFields(rows, headers, monthColumn, volumeColumn) {
     };
 }
 
-function normalizeUploadedRows(inputRows = []) {
+function normalizeUploadedRows(inputRows = [], fieldRoleOverrides = {}) {
     const sourceRows = Array.isArray(inputRows) ? inputRows.filter(Boolean) : [];
     const sourceHeaders = collectHeaders(sourceRows);
     const monthColumn = findHeader(sourceHeaders, MONTH_ALIASES);
@@ -127,7 +133,8 @@ function normalizeUploadedRows(inputRows = []) {
         sourceRows,
         sourceHeaders,
         monthColumn,
-        volumeColumn
+        volumeColumn,
+        fieldRoleOverrides
     );
     const metricAggregations = Object.fromEntries(
         metricColumns.map((metric) => [metric, inferMetricAggregation(metric, sourceHeaders)])
@@ -938,8 +945,8 @@ function renderAll() {
     renderStructureCharts(summary);
 }
 
-function loadRows(inputRows, sourceLabel = "示例数据") {
-    const { rows, schema } = normalizeUploadedRows(inputRows);
+function loadRows(inputRows, sourceLabel = "示例数据", fieldRoleOverrides = {}) {
+    const { rows, schema } = normalizeUploadedRows(inputRows, fieldRoleOverrides);
     if (!schema.volumeColumn) {
         showMessage("error", "需要包含“销量”列，销量列用于规模与单位值分析。");
         return;
@@ -953,9 +960,19 @@ function loadRows(inputRows, sourceLabel = "示例数据") {
         return;
     }
     if (schema.ambiguousColumns.length) {
-        showMessage("error", `以下空字段无法判断是维度还是指标，请补充样本值或修改表头后重试：${schema.ambiguousColumns.join("、")}`);
+        showMessage("error", `请确认以下字段用途后继续：${schema.ambiguousColumns.join("、")}`);
+        closeFieldGovernance();
+        closeFieldGovernance = showFinanceFieldGovernance({
+            host: byId("profit-structure-field-governance"),
+            columns: schema.ambiguousColumns,
+            onConfirm: (overrides) => loadRows(inputRows, sourceLabel, {
+                ...fieldRoleOverrides,
+                ...overrides
+            })
+        });
         return;
     }
+    closeFieldGovernance();
     if (schema.dataIssues.length) {
         const preview = schema.dataIssues.slice(0, 5).map((issue) => `第 ${issue.row} 行「${issue.column}」${issue.status === "blank" ? "为空" : "无法识别"}`);
         showMessage("error", `数据质量校验未通过：${schema.dataIssues.length} 个必填单元格存在问题。${preview.join("；")}`);
@@ -1169,6 +1186,8 @@ function initApp() {
 
 function dispose() {
     lifecycle.dispose();
+    closeFieldGovernance();
+    closeFinanceFieldGovernance(byId("profit-structure-field-governance"));
     clearFinanceEngineBindingMarkers(byId("profit-structure-root"));
     document.querySelectorAll(".profit-structure-tool .js-plotly-plot").forEach((plot) => {
         if (typeof Plotly !== "undefined") Plotly.purge(plot);

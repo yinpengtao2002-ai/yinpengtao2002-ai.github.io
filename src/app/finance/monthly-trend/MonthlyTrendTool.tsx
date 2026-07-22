@@ -53,6 +53,7 @@ export default function MonthlyTrendTool() {
                     <h1 className="sidebar-heading">分月指标趋势分析模型</h1>
                     <p className="sidebar-copy">上传连续月份明细，按自定义维度查看趋势、环比同比、结构和质量变化。</p>
                     <div id="monthly-message-area" className="message-area" aria-live="polite" />
+                    <section id="monthly-field-governance" className="finance-field-governance" data-finance-field-governance hidden />
                 </section>
 
                 <section className="sidebar-block">

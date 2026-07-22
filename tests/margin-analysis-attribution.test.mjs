@@ -682,9 +682,10 @@ test("left drill filter search supports keep-search and apply-current-selection 
 
 test("spreadsheet template can carry a visible note above the detected header row", () => {
     assert.match(TEMPLATE_HEADER_NOTE, /可直接修改标题行/);
-    assert.match(TEMPLATE_HEADER_NOTE, /新增或删除维度列/);
-    assert.match(TEMPLATE_HEADER_NOTE, /插入或删除/);
-    assert.match(TEMPLATE_HEADER_NOTE, /销量列之后的数值列/);
+    assert.match(TEMPLATE_HEADER_NOTE, /插入或删除维度列/);
+    assert.match(TEMPLATE_HEADER_NOTE, /表头、样本类型和指标角色/);
+    assert.match(TEMPLATE_HEADER_NOTE, /页面内请你确认/);
+    assert.doesNotMatch(TEMPLATE_HEADER_NOTE, /销量列之后的数值列/);
     assert.match(TEMPLATE_HEADER_NOTE, /数据口径/);
     assert.match(TEMPLATE_HEADER_NOTE, /备注/);
     assert.match(TEMPLATE_HEADER_NOTE, /扣减项建议按负数填写/);

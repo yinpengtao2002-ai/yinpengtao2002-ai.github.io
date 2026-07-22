@@ -332,6 +332,47 @@ details[open] > .sidebar-summary::after {
     font-family: var(--font-sans);
 }
 
+.margin-field-governance {
+    display: grid;
+    gap: 0.65rem;
+    padding: 0.8rem;
+    border: 1px solid rgba(217, 119, 87, 0.35);
+    border-radius: 10px;
+    background: rgba(217, 119, 87, 0.05);
+}
+
+.margin-field-governance[hidden] {
+    display: none;
+}
+
+.margin-field-governance h3,
+.margin-field-governance p {
+    margin: 0;
+}
+
+.margin-field-governance h3 {
+    font-size: 0.88rem;
+}
+
+.margin-field-governance p,
+.margin-field-governance label {
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    line-height: 1.5;
+}
+
+.margin-field-governance-fields,
+.margin-field-governance-fields label {
+    display: grid;
+    gap: 0.4rem;
+}
+
+.margin-field-governance-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
 /* 按钮 */
 .btn-primary {
     background: var(--accent-orange);

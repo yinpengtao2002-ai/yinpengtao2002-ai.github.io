@@ -27,9 +27,14 @@ import {
     clearFinanceEngineBindingMarkers,
     createFinanceEngineLifecycle
 } from "../../../lib/finance/browser-engine-lifecycle.ts";
+import {
+    closeFinanceFieldGovernance,
+    showFinanceFieldGovernance
+} from "../../../lib/finance/field-governance.ts";
 
 (function () {
     const lifecycle = createFinanceEngineLifecycle();
+    let closeFieldGovernance = () => undefined;
     const DEFAULT_DIMENSIONS = ["大区", "国家", "品牌", "品牌市场", "经营模式", "业务单元", "车型", "燃油品类"];
     const RESERVED_LONG_TABLE_COLUMNS = [
         "月份", "年月", "期间", "日期", "年度", "year", "Year",
@@ -792,12 +797,13 @@ import {
         });
     }
 
-    function inferDimensionColumns(rows) {
+    function inferDimensionColumns(rows, fieldRoleOverrides = {}) {
         const reserved = reservedColumnSet();
         const columns = [];
         safeArray(rows).forEach((row) => {
             Object.keys(row || {}).forEach((column) => {
                 if (!column || reserved.has(normalizeToken(column))) return;
+                if (fieldRoleOverrides[column] && fieldRoleOverrides[column] !== "dimension") return;
                 if (!columns.includes(column)) columns.push(column);
             });
         });
@@ -866,10 +872,11 @@ import {
         return "";
     }
 
-    function inferWideDimensionColumns(rows) {
+    function inferWideDimensionColumns(rows, fieldRoleOverrides = {}) {
         const headers = collectHeaders(rows);
         const inference = inferFinanceFieldRoles(rows, {
             headers,
+            explicitRoles: fieldRoleOverrides,
             periodAliases: ["月份", "年月", "期间", "日期", "month", "period", "date"],
             denominatorAliases: WIDE_VOLUME_ALIASES,
             ignoredHeaders: WIDE_NON_DIMENSION_COLUMNS
@@ -888,11 +895,12 @@ import {
         return "无法识别为数值";
     }
 
-    function validateBusinessSourceRows(rows) {
+    function validateBusinessSourceRows(rows, fieldRoleOverrides = {}) {
         const sourceRows = safeArray(rows);
         const headers = collectHeaders(sourceRows);
         const inference = inferFinanceFieldRoles(sourceRows, {
             headers,
+            explicitRoles: fieldRoleOverrides,
             periodAliases: ["月份", "年月", "期间", "日期", "month", "period", "date"],
             denominatorAliases: WIDE_VOLUME_ALIASES,
             ignoredHeaders: WIDE_NON_DIMENSION_COLUMNS
@@ -919,7 +927,7 @@ import {
             });
         });
 
-        return { issues };
+        return { issues, ambiguousColumns: inference.ambiguousColumns };
     }
 
     function formatBusinessValidationMessage(issues, title = "数据质量校验未通过") {
@@ -1002,10 +1010,10 @@ import {
             .sort((a, b) => Object.values(a.dimensions || {}).join("").localeCompare(Object.values(b.dimensions || {}).join(""), "zh-CN"));
     }
 
-    function parseWideRows(rows) {
+    function parseWideRows(rows, fieldRoleOverrides = {}) {
         const parsed = [];
         const normalizedRows = safeArray(rows).map(normalizeRowKeys);
-        const dimensionColumns = inferWideDimensionColumns(normalizedRows);
+        const dimensionColumns = inferWideDimensionColumns(normalizedRows, fieldRoleOverrides);
 
         normalizedRows.forEach((row) => {
             const actualAssumptions = applyAggregateFallback(row, buildAssumptions(row), "");
@@ -1031,9 +1039,9 @@ import {
         });
     }
 
-    function parseOperatingDetailScenarioRows(rows) {
+    function parseOperatingDetailScenarioRows(rows, fieldRoleOverrides = {}) {
         const normalizedRows = safeArray(rows).map(normalizeRowKeys);
-        const dimensionColumns = inferWideDimensionColumns(normalizedRows);
+        const dimensionColumns = inferWideDimensionColumns(normalizedRows, fieldRoleOverrides);
         const groups = new Map();
 
         normalizedRows.forEach((row) => {
@@ -1066,12 +1074,12 @@ import {
             .sort((a, b) => Object.values(a.dimensions || {}).join("").localeCompare(Object.values(b.dimensions || {}).join(""), "zh-CN"));
     }
 
-    function parseRows(rows) {
+    function parseRows(rows, fieldRoleOverrides = {}) {
         const parsed = hasLongFormat(rows)
-            ? parseLongRows(rows, inferDimensionColumns(rows.map(normalizeRowKeys)))
+            ? parseLongRows(rows, inferDimensionColumns(rows.map(normalizeRowKeys), fieldRoleOverrides))
             : hasOperatingDetailScenarioRows(rows)
-                ? parseOperatingDetailScenarioRows(rows)
-                : parseWideRows(rows);
+                ? parseOperatingDetailScenarioRows(rows, fieldRoleOverrides)
+                : parseWideRows(rows, fieldRoleOverrides);
         parsed.availableDimensions = inferAvailableDimensions(parsed);
         return parsed;
     }
@@ -2886,20 +2894,36 @@ import {
         ];
     }
 
-    function applySourceRows(message) {
+    function applySourceRows(message, fieldRoleOverrides = {}) {
         const rows = combinedSourceRows();
         if (!rows.length) {
             showMessage("error", "还没有可分析的数据，请先上传经营明细或填写科目行。");
             return;
         }
 
-        const validation = validateBusinessSourceRows(rows);
+        const validation = validateBusinessSourceRows(rows, fieldRoleOverrides);
+        if (validation.ambiguousColumns.length) {
+            showMessage("error", `请确认以下字段用途后继续：${validation.ambiguousColumns.join("、")}`);
+            closeFieldGovernance();
+            closeFieldGovernance = showFinanceFieldGovernance({
+                host: byId("business-field-governance"),
+                columns: validation.ambiguousColumns,
+                roles: ["dimension", "ignore"],
+                description: "这些空字段无法判断是否用于下钻。请选择作为维度，或忽略该字段。",
+                onConfirm: (overrides) => applySourceRows(message, {
+                    ...fieldRoleOverrides,
+                    ...overrides
+                })
+            });
+            return;
+        }
+        closeFieldGovernance();
         if (validation.issues.length) {
             showMessage("error", formatBusinessValidationMessage(validation.issues, "数据质量校验未通过"));
             return;
         }
 
-        const parsed = parseRows(rows);
+        const parsed = parseRows(rows, fieldRoleOverrides);
         if (!parsed.length) {
             showMessage("error", "没有识别到有效数据，请检查模板列名。");
             return;
@@ -3250,6 +3274,8 @@ import {
 
     function dispose() {
         lifecycle.dispose();
+        closeFieldGovernance();
+        closeFinanceFieldGovernance(byId("business-field-governance"));
         const root = byId("business-analysis-root");
         clearFinanceEngineBindingMarkers(root);
         delete window.manualSubjectPasteWatcher;

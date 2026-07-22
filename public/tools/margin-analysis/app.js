@@ -73,7 +73,7 @@ const TEMPLATE_ROLE_ROW = TEMPLATE_HEADERS.map((header) => {
     return '';
 });
 TEMPLATE_ROLE_ROW[0] = '指标角色';
-const TEMPLATE_HEADER_NOTE = '可直接修改标题行；请保留“月份”和一列“分母”。“指标角色”行用于标记计算口径：把销量、净收入等基数列标为“分母”，把净收入、成本、边际、毛利等分析指标标为“分子”。单车归因不需要填写预算/实际口径，基期和当期通过“月份”选择；“数据口径”可留空或填“实际”。“备注”用于记录业务解释，不参与默认归因下钻。分母列之前的业务字段会按表头自动识别为维度，可新增或删除维度列，直接插入或删除即可；分子列会识别为可分析指标。没有指标角色行时，系统仍兼容旧格式：销量列之后的数值列会识别为可分析指标。成本等扣减项建议按负数填写；如果要看比率指标，可把“净收入”等列标为分母，把“毛利”等列标为分子，并在指标口径中选择比率指标。';
+const TEMPLATE_HEADER_NOTE = '可直接修改标题行；请保留“月份”和一列“分母”。“指标角色”行用于标记计算口径：把销量、净收入等基数列标为“分母”，把净收入、成本、边际、毛利等分析指标标为“分子”。单车归因不需要填写预算/实际口径，基期和当期通过“月份”选择；“数据口径”可留空或填“实际”。“备注”用于记录业务解释，不参与默认归因下钻。业务字段会结合表头、样本类型和指标角色识别，可直接插入或删除维度列；无法判断的空字段会在页面内请你确认。成本等扣减项建议按负数填写；如果要看比率指标，可把“净收入”等列标为分母，把“毛利”等列标为分子，并在指标口径中选择比率指标。';
 
 
 // ==================== DOM Ready ====================
@@ -634,7 +634,10 @@ function findTemplateHeaderRowIndex(rows) {
 
         const headers = row.map(cell => String(cell ?? '').trim());
         const metricRolesByHeader = getMetricRolesForHeaderRow(rows, index, headers);
-        const schema = analyzeUploadHeaders(cells, metricRolesByHeader);
+        const sampleRows = rows.slice(index + 1, index + 41).map(dataRow => Object.fromEntries(
+            headers.map((header, columnIndex) => [header, dataRow?.[columnIndex] ?? '']).filter(([header]) => header)
+        ));
+        const schema = analyzeUploadHeaders(cells, metricRolesByHeader, sampleRows);
         if (schema.hasMonth && schema.hasSalesVolume && schema.metricColumns.length > 0 && schema.dimCols.length > 0) {
             return index;
         }
@@ -684,17 +687,26 @@ function normalizeMetricRole(value) {
 
 
 // ==================== 数据处理管线 ====================
-function processLoadedData(rows, sourceName) {
+function processLoadedData(rows, sourceName, fieldRoleOverrides = {}) {
     if (!rows || rows.length === 0) {
         showMessage('error', '数据为空，请检查文件内容');
         return;
     }
 
+    const sourceRows = rows;
+
     // 1. 标准化列名：业务表头直接作为维度显示名，内部自动映射到 Dim_A / Dim_B ...
-    const normalizedInput = normalizeUploadedRows(rows);
+    const normalizedInput = normalizeUploadedRows(rows, fieldRoleOverrides);
     rows = normalizedInput.rows;
     const dimCols = normalizedInput.dimCols;
     const metricColumns = normalizedInput.metricColumns;
+
+    if (normalizedInput.ambiguousColumns.length > 0) {
+        showMessage('error', `请确认以下字段用途后继续：${normalizedInput.ambiguousColumns.join('、')}`);
+        showMarginFieldGovernance(sourceRows, sourceName, normalizedInput.ambiguousColumns, fieldRoleOverrides);
+        return;
+    }
+    closeMarginFieldGovernance();
 
     if (dimCols.length === 0) {
         showMessage('error', `缺少维度列：请至少保留一个业务维度列，例如“大区”或“国家”。当前列名: ${normalizedInput.sourceHeaders.join(', ')}`);
@@ -763,12 +775,12 @@ function processLoadedData(rows, sourceName) {
     onDataLoaded();
 }
 
-function normalizeUploadedRows(inputRows) {
+function normalizeUploadedRows(inputRows, fieldRoleOverrides = {}) {
     const sourceHeaders = Object.keys(inputRows[0] || {})
         .map(header => String(header).trim())
         .filter(Boolean);
     const metricRolesByHeader = inputRows?.__metricRolesByHeader || {};
-    const schema = analyzeUploadHeaders(sourceHeaders, metricRolesByHeader);
+    const schema = analyzeUploadHeaders(sourceHeaders, metricRolesByHeader, inputRows, fieldRoleOverrides);
 
     const normalizedRows = inputRows.map((row) => {
         const normalizedRow = {};
@@ -798,26 +810,26 @@ function normalizeUploadedRows(inputRows) {
         dimNames: schema.dimNames,
         metricColumns: schema.metricColumns,
         denominatorLabel: schema.denominatorLabel,
+        ambiguousColumns: schema.ambiguousColumns,
         missingCols,
         sourceHeaders
     };
 }
 
-function analyzeUploadHeaders(sourceHeaders, metricRolesByHeader = {}) {
+function analyzeUploadHeaders(sourceHeaders, metricRolesByHeader = {}, sampleRows = [], fieldRoleOverrides = {}) {
     const columnMapping = buildColumnMapping();
     const columnKeyBySource = {};
     const dimCols = [];
     const dimNames = {};
     const metricColumns = [];
-    const hasExplicitMetricRoles = Object.values(metricRolesByHeader || {}).some(role => normalizeMetricRole(role));
-    const denominatorIndex = sourceHeaders.findIndex(sourceHeader =>
+    const ambiguousColumns = [];
+    const hasExplicitDenominator = sourceHeaders.some(sourceHeader => (
         getMetricRoleForHeader(sourceHeader, metricRolesByHeader) === 'denominator'
-    );
-    const legacySalesIndex = sourceHeaders.findIndex(sourceHeader =>
-        getMappedColumnName(sourceHeader, columnMapping) === 'Sales Volume'
-    );
-    const salesIndex = denominatorIndex >= 0 ? denominatorIndex : legacySalesIndex;
-    const denominatorHeader = salesIndex >= 0 ? sourceHeaders[salesIndex] : '销量';
+    ));
+    const denominatorHeader = sourceHeaders.find(sourceHeader => (
+        getMetricRoleForHeader(sourceHeader, metricRolesByHeader) === 'denominator'
+        || getMappedColumnName(sourceHeader, columnMapping) === 'Sales Volume'
+    )) || '销量';
     let hasMonth = false;
     let hasSalesVolume = false;
 
@@ -829,22 +841,33 @@ function analyzeUploadHeaders(sourceHeaders, metricRolesByHeader = {}) {
             hasMonth = true;
             return;
         }
-        if (metricRole === 'denominator' || (denominatorIndex < 0 && metricRole !== 'numerator' && mappedColumn === 'Sales Volume')) {
+        if (metricRole === 'denominator' || (!hasExplicitDenominator && metricRole !== 'numerator' && mappedColumn === 'Sales Volume')) {
             columnKeyBySource[sourceHeader] = 'Sales Volume';
             hasSalesVolume = true;
         }
     });
 
-    sourceHeaders.forEach((sourceHeader, index) => {
+    sourceHeaders.forEach((sourceHeader) => {
         if (columnKeyBySource[sourceHeader]) return;
         if (isNonAnalysisDimensionHeader(sourceHeader)) return;
 
         const mappedColumn = getMappedColumnName(sourceHeader, columnMapping);
         const metricRole = getMetricRoleForHeader(sourceHeader, metricRolesByHeader);
-        const isLegacyMetric = !hasExplicitMetricRoles && mappedColumn === 'Total Margin';
-        const isMetricAfterSales = !hasExplicitMetricRoles && salesIndex >= 0 && index > salesIndex;
+        const override = fieldRoleOverrides[sourceHeader];
+        const populatedValues = (sampleRows || []).map(row => row?.[sourceHeader]).filter(value => (
+            value !== null && value !== undefined && String(value).trim() !== ''
+        ));
+        const numericRate = populatedValues.length
+            ? populatedValues.filter(value => SharedFinanceCore.parseFinanceNumber(value).status === 'valid').length / populatedValues.length
+            : 0;
+        const isMetric = override === 'metric'
+            || metricRole === 'numerator'
+            || mappedColumn === 'Total Margin'
+            || isKnownMarginMetricHeader(sourceHeader)
+            || (populatedValues.length > 0 && numericRate >= 0.8);
 
-        if (metricRole === 'numerator' || isLegacyMetric || isMetricAfterSales) {
+        if (override === 'ignore') return;
+        if (isMetric) {
             const metricKey = `Metric_${metricColumns.length + 1}`;
             const metricType = deriveMetricTypeFromHeader(sourceHeader);
             metricColumns.push({
@@ -857,7 +880,11 @@ function analyzeUploadHeaders(sourceHeaders, metricRolesByHeader = {}) {
             return;
         }
 
-        if (hasExplicitMetricRoles && (mappedColumn === 'Sales Volume' || mappedColumn === 'Total Margin')) return;
+        if (mappedColumn === 'Sales Volume') return;
+        if (!override && populatedValues.length === 0 && !isKnownMarginDimensionHeader(sourceHeader)) {
+            ambiguousColumns.push(sourceHeader);
+            return;
+        }
 
         const legacyDim = getLegacyDimensionKey(sourceHeader);
         const dimKey = legacyDim && !dimCols.includes(legacyDim)
@@ -877,10 +904,77 @@ function analyzeUploadHeaders(sourceHeaders, metricRolesByHeader = {}) {
         dimCols,
         dimNames,
         metricColumns,
+        ambiguousColumns,
         hasMonth,
         hasSalesVolume,
         denominatorLabel: denominatorHeader
     };
+}
+
+function isKnownMarginDimensionHeader(sourceHeader) {
+    return /大区|区域|国家|城市|省份|品牌|市场|渠道|客户|经销商|门店|车型|车系|产品|品类|业务单元|经营模式|燃油|能源|部门|组织|项目|供应商|场景|口径|版本|编码|代码|编号|region|country|city|brand|market|channel|customer|dealer|store|model|product|category|segment|businessunit|department|project|vendor|scenario|code|id/i.test(normalizeHeaderAlias(sourceHeader));
+}
+
+function isKnownMarginMetricHeader(sourceHeader) {
+    return /销量|数量|收入|成本|费用|边际|毛利|利润|金额|库存|率|占比|比例|单价|均价|平均|nps|score|gmv|revenue|sales|cost|expense|margin|profit|amount|inventory|rate|ratio|average|price/i.test(String(sourceHeader));
+}
+
+function closeMarginFieldGovernance() {
+    const host = document.getElementById('margin-field-governance');
+    if (!host) return;
+    host.replaceChildren();
+    host.hidden = true;
+}
+
+function showMarginFieldGovernance(rows, sourceName, columns, currentOverrides = {}) {
+    const host = document.getElementById('margin-field-governance');
+    if (!host) return;
+    closeMarginFieldGovernance();
+    host.hidden = false;
+
+    const title = document.createElement('h3');
+    title.textContent = '确认字段用途';
+    const copy = document.createElement('p');
+    copy.textContent = '这些字段缺少样本值，暂时无法判断用途。确认后再开始计算。';
+    const fields = document.createElement('div');
+    fields.className = 'margin-field-governance-fields';
+    const selects = new Map();
+
+    columns.forEach(column => {
+        const label = document.createElement('label');
+        const name = document.createElement('span');
+        name.textContent = column;
+        const select = document.createElement('select');
+        select.className = 'form-select';
+        select.setAttribute('aria-label', `${column}字段用途`);
+        [['dimension', '维度'], ['metric', '数值指标'], ['ignore', '忽略']].forEach(([value, text]) => {
+            select.add(new Option(text, value));
+        });
+        label.append(name, select);
+        fields.append(label);
+        selects.set(column, select);
+    });
+
+    const actions = document.createElement('div');
+    actions.className = 'margin-field-governance-actions';
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'btn-secondary';
+    cancel.textContent = '取消';
+    const confirm = document.createElement('button');
+    confirm.type = 'button';
+    confirm.className = 'btn-primary';
+    confirm.textContent = '确认并继续';
+    actions.append(cancel, confirm);
+    host.append(title, copy, fields, actions);
+
+    cancel.addEventListener('click', closeMarginFieldGovernance, { once: true });
+    confirm.addEventListener('click', () => {
+        const overrides = { ...currentOverrides };
+        selects.forEach((select, column) => { overrides[column] = select.value; });
+        closeMarginFieldGovernance();
+        processLoadedData(rows, sourceName, overrides);
+    }, { once: true });
 }
 
 function getMetricRoleForHeader(sourceHeader, metricRolesByHeader = {}) {
@@ -4458,6 +4552,7 @@ if (typeof module !== 'undefined' && module.exports) {
         resolveExcelFilterAppliedValues,
         resolveExcelFilterSearchValues,
         normalizeUploadedRows,
+        analyzeUploadHeaders,
         getTemplateRows,
         sheetRowsToObjects,
         TEMPLATE_HEADERS,

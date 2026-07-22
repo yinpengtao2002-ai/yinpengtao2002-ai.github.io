@@ -53,6 +53,7 @@ export default function BusinessAnalysisTool() {
                     <h1 className="sidebar-heading">预算实际对比模型</h1>
                     <p className="sidebar-copy">上传实际与预算两张子表，经营明细负责维度下钻，固定科目可在下方直接维护。</p>
                     <div id="message-area" className="message-area" aria-live="polite" />
+                    <section id="business-field-governance" className="finance-field-governance" data-finance-field-governance hidden />
                 </section>
 
                 <section className="sidebar-block">

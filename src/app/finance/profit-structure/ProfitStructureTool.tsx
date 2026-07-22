@@ -152,6 +152,7 @@ export default function ProfitStructureTool() {
                     <h1 className="sidebar-heading">多维利润质量诊断模型</h1>
                     <p className="sidebar-copy">上传经营明细，选择质量指标和诊断粒度，判断先看哪个维度、哪些组合正在拖累整体质量。</p>
                     <div id="profit-structure-message-area" className="message-area" aria-live="polite" />
+                    <section id="profit-structure-field-governance" className="finance-field-governance" data-finance-field-governance hidden />
                 </section>
 
                 <section className="sidebar-block">

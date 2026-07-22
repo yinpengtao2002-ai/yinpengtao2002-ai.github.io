@@ -51,14 +51,14 @@ test("business analysis uses shared numeric parsing and sample-aware field roles
   assert.match(engine, /inferFinanceFieldRoles/);
   assert.match(engine, /parseFinanceNumber/);
   assert.match(engine, /function toNumber\(value\)\s*\{[\s\S]*parseFinanceNumber\(value\)/);
-  assert.match(engine, /function inferWideDimensionColumns\(rows\)\s*\{[\s\S]*inferFinanceFieldRoles\(rows/);
+  assert.match(engine, /function inferWideDimensionColumns\(rows, fieldRoleOverrides = \{\}\)\s*\{[\s\S]*inferFinanceFieldRoles\(rows/);
   assert.doesNotMatch(engine, /\.replace\(\/\[万亿\]\//);
   assert.doesNotMatch(engine, /headers\.slice\(0, salesIndex\)/);
 });
 
 test("business analysis blocks non-empty invalid numeric cells before calculation", () => {
-  assert.match(engine, /function validateBusinessSourceRows\(rows\)/);
-  assert.match(engine, /const validation = validateBusinessSourceRows\(rows\)/);
+  assert.match(engine, /function validateBusinessSourceRows\(rows, fieldRoleOverrides = \{\}\)/);
+  assert.match(engine, /const validation = validateBusinessSourceRows\(rows, fieldRoleOverrides\)/);
   assert.match(engine, /if \(validation\.issues\.length\)[\s\S]*数据质量校验未通过[\s\S]*return;/);
   assert.match(engine, /__sourceLocation/);
 });

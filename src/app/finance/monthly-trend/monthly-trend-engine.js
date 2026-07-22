@@ -14,6 +14,10 @@ import {
     clearFinanceEngineBindingMarkers,
     createFinanceEngineLifecycle
 } from "../../../lib/finance/browser-engine-lifecycle.ts";
+import {
+    closeFinanceFieldGovernance,
+    showFinanceFieldGovernance
+} from "../../../lib/finance/field-governance.ts";
 
 const MONTHLY_PERIOD_ALIASES = ["月份", "月度", "月", "期间", "年月", "会计期间", "month", "date", "period"];
 const MONTHLY_VOLUME_ALIASES = ["销量", "销售量", "发车量", "台数", "数量", "volume", "qty", "quantity", "units"];
@@ -57,7 +61,7 @@ export function inferMonthlyUploadFields(rows, options = {}) {
     const monthColumn = options.monthColumn || findMonthlyAlias(headers, MONTHLY_PERIOD_ALIASES);
     const yearColumn = options.yearColumn || findMonthlyYearColumn(rows, headers);
     const volumeColumn = options.volumeColumn || findMonthlyAlias(headers, MONTHLY_VOLUME_ALIASES);
-    const explicitRoles = {};
+    const explicitRoles = { ...(options.fieldRoleOverrides || {}) };
     if (monthColumn) explicitRoles[monthColumn] = "period";
     if (yearColumn) explicitRoles[yearColumn] = "ignore";
     if (volumeColumn) explicitRoles[volumeColumn] = "denominator";
@@ -76,7 +80,8 @@ export function inferMonthlyUploadFields(rows, options = {}) {
         salesIndex: headers.indexOf(inference.denominatorColumn),
         dimensionColumns: inference.dimensionColumns,
         metricColumns: [inference.denominatorColumn, ...inference.metricColumns].filter(Boolean),
-        ambiguousColumns: inference.ambiguousColumns
+        ambiguousColumns: inference.ambiguousColumns,
+        roles: inference.roles
     };
 }
 
@@ -129,6 +134,7 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
 
 (function () {
     const lifecycle = createFinanceEngineLifecycle();
+    let closeFieldGovernance = () => undefined;
     const COLORS = {
         orange: "#d97757",
         blue: "#5c8fba",
@@ -233,7 +239,7 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
         return parsed.status === "valid" ? parsed.value : 0;
     }
 
-    function inferColumns(rows) {
+    function inferColumns(rows, options = {}) {
         const headers = Object.keys(rows.find((row) => Object.keys(row).length) || {});
         const normalizedAliases = MONTH_ALIASES.map(normalizeToken);
         const normalizedYearAliases = YEAR_ALIASES.map(normalizeToken);
@@ -261,7 +267,12 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
             monthColumn = headers.find((header) => header !== yearColumn && normalizedAliases.includes(normalizeToken(header))) || monthColumn;
         }
 
-        const schema = inferMonthlyUploadFields(rows, { headers, monthColumn, yearColumn });
+        const schema = inferMonthlyUploadFields(rows, {
+            headers,
+            monthColumn,
+            yearColumn,
+            fieldRoleOverrides: options.fieldRoleOverrides
+        });
         const metricColumns = schema.metricColumns;
         const dimensionColumns = schema.dimensionColumns;
 
@@ -274,6 +285,7 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
             yearColumn,
             metricColumns,
             dimensionColumns,
+            ambiguousColumns: schema.ambiguousColumns,
             selectedMetric,
             selectedDimensions
         };
@@ -1826,22 +1838,32 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
         }, 4500);
     }
 
-    function loadRows(rows, sourceName) {
+    function loadRows(rows, sourceName, fieldRoleOverrides = {}) {
         const normalizedRows = compactRows(rows);
         if (!normalizedRows.length) {
             showMessage("没有读取到有效数据。", "error");
             return;
         }
 
-        const inferred = inferColumns(normalizedRows);
+        const inferred = inferColumns(normalizedRows, { fieldRoleOverrides });
         if (!inferred.monthColumn || !inferred.metricColumns.length || !volumeMetricColumn(inferred.metricColumns) || !analysisMetricColumns(inferred.metricColumns).length) {
             showMessage("需要月份列、销量列和至少一个总额指标列。", "error");
             return;
         }
         if (inferred.ambiguousColumns.length) {
-            showMessage(`以下空字段无法判断是维度还是指标，请补充样本值或修改表头：${inferred.ambiguousColumns.join("、")}`, "error");
+            showMessage(`请确认以下字段用途后继续：${inferred.ambiguousColumns.join("、")}`, "error");
+            closeFieldGovernance();
+            closeFieldGovernance = showFinanceFieldGovernance({
+                host: byId("monthly-field-governance"),
+                columns: inferred.ambiguousColumns,
+                onConfirm: (overrides) => loadRows(normalizedRows, sourceName, {
+                    ...fieldRoleOverrides,
+                    ...overrides
+                })
+            });
             return;
         }
+        closeFieldGovernance();
         const validated = validateMonthlyUploadRows(normalizedRows, inferred, { sheet: sourceName || "工作表" });
         if (validated.issues.length) {
             const preview = validated.issues.slice(0, 5).map((issue) => `第 ${issue.row} 行「${issue.column}」${issue.status === "blank" ? "为空" : "无法识别"}`);
@@ -2118,6 +2140,8 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
 
     function dispose() {
         lifecycle.dispose();
+        closeFieldGovernance();
+        closeFinanceFieldGovernance(byId("monthly-field-governance"));
         excelFilterDismissInitialized = false;
         clearFinanceEngineBindingMarkers(byId("monthly-trend-root"));
         document.querySelectorAll(".monthly-trend-tool .js-plotly-plot").forEach((plot) => {

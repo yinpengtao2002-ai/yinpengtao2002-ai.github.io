@@ -366,6 +366,46 @@
   flex: 0 0 auto;
 }
 
+.finance-field-governance {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--card) 96%, var(--accent));
+}
+
+.finance-field-governance-title {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.finance-field-governance-copy {
+  margin: 6px 0 10px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.finance-field-governance-fields,
+.finance-field-governance-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.finance-field-governance-field {
+  display: grid;
+  gap: 5px;
+  color: var(--foreground);
+  font-size: 12px;
+}
+
+.finance-field-governance-actions {
+  grid-template-columns: 1fr 1fr;
+  margin-top: 10px;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

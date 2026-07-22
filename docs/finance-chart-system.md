@@ -16,7 +16,7 @@
 当前中心化进度：
 
 - `src/lib/finance/core.ts` 与 `public/tools/shared/finance-core.js` 已统一常见期间、有限数值、括号负数、百分号、万/亿倍率和 `sum / ratio / weighted_average / snapshot / non_aggregatable` 聚合语义。
-- 字段角色识别已按显式角色、表头语义、样本类型的顺序执行；`monthly-trend`、`profit-structure` 和 `business-analysis` 不再以销量列左右位置决定维度与指标。
+- 字段角色识别已按显式角色、表头语义、样本类型的顺序执行；`margin-analysis`、`monthly-trend`、`profit-structure` 和 `business-analysis` 不再以销量列左右位置决定维度与指标。空白歧义字段会进入页面内确认区，确认前不计算。
 - `margin-analysis` 已使用共享 RFC 4180 解析、最近两期默认选择、数值质量阻断和 `Map` 聚合；零销量单位指标返回未定义状态，通用指标展示不再假设人民币。
 - `profit-structure` 对已知比率按分子/分母重算，NPS 等缺少底层计数的指标不生成伪合计，期末型指标取最新期间值。
 - `src/lib/finance/charts/types.ts` 已承接 `FinanceChartSpec`、图表类型、明细表 variant/meta、直接图表输入和中心 builder 输入类型。
@@ -56,7 +56,7 @@
 3. 下一步：抽出 `waterfall-bridge`，让财务 AI、敏感性、预算实际先共用同一套桥图规格。
 4. 抽出 `pvm.ts`，让单车归因和财务 AI 使用同一套结构效应 / 费率效应公式。
 5. 抽出热力图、气泡散点、横向排名和 KPI 卡的模型接入规则。
-6. 进行中：字段识别、期间/数值解析和基础指标聚合已进入共享 core；下一步补齐跨模型字段映射确认 UI，并继续迁移 PVM / FBP 纯函数。
+6. 进行中：字段识别、字段映射确认、期间/数值解析和基础指标聚合已进入共享边界；下一步继续迁移 PVM / FBP 纯函数。
 
 ## AI 操作要求
 

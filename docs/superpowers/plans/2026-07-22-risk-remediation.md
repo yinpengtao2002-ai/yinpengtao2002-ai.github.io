@@ -26,7 +26,7 @@
 - [x] 共享数值解析器区分 valid / blank / invalid，支持括号、百分号、万/亿。
 - [x] 非法必填值阻止计算并显示来源位置。
 - [x] 指标按 sum / ratio / weighted / snapshot / non-aggregatable 聚合。
-- [ ] 字段治理不再只依赖销量列左右位置，歧义时阻止计算并提示。（共享识别和阻断已完成；页面内映射确认区待补。）
+- [x] 字段治理不再只依赖销量列左右位置；歧义字段在页面内确认维度 / 指标 / 忽略后才继续计算。
 - [x] Margin 使用 Map、安全处理特殊键，零销量单位指标返回未定义。
 - [x] CSV 状态机支持 RFC 4180 多行字段和资源上限。
 - [x] 通用 Margin 输出不硬编码人民币符号。
@@ -34,7 +34,7 @@
 - [x] 财务引擎实现可重复 `initApp()` / `dispose()`，卸载清理全部资源。
 - [x] 脚本加载失败可重试，有超时和用户可见错误入口。
 
-验证记录（2026-07-22，财务正确性与生命周期）：共享 core、Margin、Monthly、Profit Structure、Business Analysis、模板契约与 Sensitivity 定向组合全部通过；生命周期与 tooling 定向组合 24/24；站点测试 427/427、Margin 52/52、Sensitivity 7/7、TypeScript、lint（0 errors，4 个既有 Goalkeeper warnings）、`git diff --check` 与 Vercel Build 通过。本地 production Playwright 桌面与 390px 冒烟无控制台错误、无横向溢出。字段映射确认 UI 仍保持未关闭状态。
+验证记录（2026-07-22，财务正确性与生命周期）：共享 core、Margin、Monthly、Profit Structure、Business Analysis、字段治理、模板契约与 Sensitivity 定向组合全部通过；生命周期与 tooling 定向组合 24/24；站点测试 427/427、Margin 52/52、Sensitivity 7/7、TypeScript、lint（0 errors，4 个既有 Goalkeeper warnings）、`git diff --check` 与 Vercel Build 通过。本地 production Playwright 桌面与 390px 冒烟无控制台错误、无横向溢出。Margin 不再使用销量列位置兜底，Monthly、Profit Structure 与 Business Analysis 的歧义字段可在页面内确认后继续。
 
 ## 3. 可访问性、SEO 与工程守门
 
