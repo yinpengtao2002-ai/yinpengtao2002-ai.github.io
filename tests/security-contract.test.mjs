@@ -26,6 +26,40 @@ test("global security headers are configured in Next", async () => {
   assert.match(nextConfig, /Permissions-Policy/);
 });
 
+test("goalkeeper route allows WebAssembly without weakening the global script policy", async () => {
+  const { default: nextConfig } = await import("../next.config.ts");
+  const headerRules = await nextConfig.headers();
+  const globalRuleIndex = headerRules.findIndex((rule) => rule.source === "/:path*");
+  const goalkeeperRuleIndex = headerRules.findIndex(
+    (rule) => rule.source === "/tools/goalkeeper-landscape/:path*",
+  );
+  const globalRule = headerRules[globalRuleIndex];
+  const goalkeeperRule = headerRules[goalkeeperRuleIndex];
+
+  assert.ok(globalRule, "global security header rule should exist");
+  assert.ok(goalkeeperRule, "goalkeeper should have a route-specific security header rule");
+  assert.ok(
+    goalkeeperRuleIndex > globalRuleIndex,
+    "goalkeeper security headers should override the matching global rule",
+  );
+
+  const globalCsp = globalRule.headers.find((header) => header.key === "Content-Security-Policy")?.value;
+  const goalkeeperCsp = goalkeeperRule.headers.find(
+    (header) => header.key === "Content-Security-Policy",
+  )?.value;
+
+  assert.ok(globalCsp, "global CSP should be configured");
+  assert.ok(goalkeeperCsp, "goalkeeper CSP should be configured");
+  assert.doesNotMatch(globalCsp, /'wasm-unsafe-eval'|'unsafe-eval'/);
+  assert.match(goalkeeperCsp, /script-src [^;]*'wasm-unsafe-eval'/);
+  assert.doesNotMatch(goalkeeperCsp, /script-src [^;]*\s'unsafe-eval'(?:\s|;)/);
+  assert.match(goalkeeperCsp, /script-src-attr 'none'/);
+  assert.equal(
+    goalkeeperRule.headers.find((header) => header.key === "X-Frame-Options")?.value,
+    "DENY",
+  );
+});
+
 test("local development CSP does not upgrade same-origin API fetches to HTTPS", async () => {
   const nextConfig = await readProjectFile("next.config.ts");
 

@@ -33,6 +33,16 @@ const sameOriginFrameContentSecurityPolicy = [
   ...upgradeInsecureRequestsDirective,
 ].join("; ");
 
+const goalkeeperContentSecurityPolicy = [
+  ...baseContentSecurityPolicyDirectives.map((directive) =>
+    directive.startsWith("script-src ")
+      ? "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:"
+      : directive,
+  ),
+  "frame-ancestors 'none'",
+  ...upgradeInsecureRequestsDirective,
+].join("; ");
+
 const sharedSecurityHeaders = [
   {
     key: "X-Content-Type-Options",
@@ -72,6 +82,18 @@ const sameOriginFrameHeaders = [
   ...sharedSecurityHeaders,
 ];
 
+const goalkeeperHeaders = [
+  {
+    key: "Content-Security-Policy",
+    value: goalkeeperContentSecurityPolicy,
+  },
+  {
+    key: "X-Frame-Options",
+    value: "DENY",
+  },
+  ...sharedSecurityHeaders,
+];
+
 const nextConfig: NextConfig = {
   // Pin the workspace root so Turbopack does not infer the parent home folder.
   turbopack: {
@@ -103,6 +125,10 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: denyFramingHeaders,
+      },
+      {
+        source: "/tools/goalkeeper-landscape/:path*",
+        headers: goalkeeperHeaders,
       },
       {
         source: "/tools/margin-analysis/:path*",

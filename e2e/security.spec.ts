@@ -9,6 +9,24 @@ test("production pages send the hardened content security policy", async ({ page
   expect(policy).not.toContain("'unsafe-eval'");
 });
 
+test("goalkeeper route mounts its WebAssembly runtime under an isolated CSP", async ({ page }) => {
+  const consoleErrors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+
+  const response = await page.goto("/tools/goalkeeper-landscape/");
+  const policy = response?.headers()["content-security-policy"] ?? "";
+
+  expect(policy).toContain("'wasm-unsafe-eval'");
+  expect(policy).not.toContain("'unsafe-eval'");
+  await expect.poll(
+    () => page.evaluate(() => Boolean(Reflect.get(window, "goalkeeperRuntime"))),
+  ).toBe(true);
+  expect(await page.locator("canvas").count()).toBeGreaterThan(0);
+  expect(consoleErrors).toEqual([]);
+});
+
 test("private srcDoc remains script-capable without same-origin privileges", async ({ page }) => {
   await page.route("**/api/private-tool-access/", async (route) => {
     await route.fulfill({
