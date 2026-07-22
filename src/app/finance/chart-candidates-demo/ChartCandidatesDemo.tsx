@@ -143,7 +143,7 @@ function CandidateVisual({ kind }: { kind: ChartKind }) {
 
 export default function ChartCandidatesDemo() {
   return (
-    <main className={styles.shell}>
+    <div className={styles.shell}>
       <header className={styles.header}>
         <div>
           <p className={styles.kicker}>Finance Chart Lab</p>
@@ -186,6 +186,6 @@ export default function ChartCandidatesDemo() {
           </article>
         ))}
       </section>
-    </main>
+    </div>
   );
 }

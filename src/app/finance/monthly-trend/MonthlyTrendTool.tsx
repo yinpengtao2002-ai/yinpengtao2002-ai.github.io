@@ -97,7 +97,7 @@ export default function MonthlyTrendTool() {
                 控制台
             </button>
 
-            <main className="main-content">
+            <div className="main-content">
                 <header className="model-header">
                     <div>
                         <p className="eyebrow">Financial Modeling</p>
@@ -177,7 +177,7 @@ export default function MonthlyTrendTool() {
                     </article>
                 </section>
 
-            </main>
+            </div>
         </div>
     );
 }

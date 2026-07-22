@@ -144,7 +144,7 @@ export default function SensitivityTool() {
                 控制台
             </button>
 
-            <main className="main-content">
+            <div className="main-content">
                 <header className="model-header">
                     <div>
                         <p className="eyebrow">Financial Modeling</p>
@@ -216,7 +216,7 @@ export default function SensitivityTool() {
                     <span>利润敏感性分析</span>
                     <span>销量、单车边际、固定扣减项与利润总额</span>
                 </footer>
-            </main>
+            </div>
         </div>
     );
 }

@@ -31,7 +31,7 @@ export default function GoalkeeperLandscapePage() {
   return (
     <>
       <link rel="stylesheet" crossOrigin="anonymous" href={GOALKEEPER_STYLESHEET_HREF} />
-      <main className="app" aria-label="守门挑战" data-script-src={GOALKEEPER_SCRIPT_SRC}>
+      <div className="app" aria-label="守门挑战" data-script-src={GOALKEEPER_SCRIPT_SRC}>
         <section className="game-shell">
           <div className="stage" id="stage">
             <canvas id="gameCanvas" width="1280" height="720" aria-label="守门挑战游戏" />
@@ -196,7 +196,7 @@ export default function GoalkeeperLandscapePage() {
             <div className="rotate-hint">开始后自动横屏</div>
           </div>
         </section>
-      </main>
+      </div>
       <GoalkeeperLandscapeRuntime />
     </>
   );

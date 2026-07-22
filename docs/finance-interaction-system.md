@@ -24,8 +24,8 @@
 
 | 模型 slug | 当前筛选/下钻交互 | 应接入的中枢能力 |
 | --- | --- | --- |
-| margin-analysis | 上传预检、侧边栏维度 Excel-style 筛选、级联筛选、瀑布图下钻、明细表列筛选 | field-governance、filter-state、cascading-filter、detail-table-filter、drill-path |
-| business-analysis | 上传预检、当前层 Excel-style 筛选、维度路径、瀑布图下钻、侧栏维度顺序 | field-governance、filter-state、cascading-filter、drill-path |
+| margin-analysis | 上传预检、侧边栏维度 Excel-style 筛选、级联筛选、瀑布图下钻、明细表列筛选、拖动及键盘调整维度顺序 | field-governance、filter-state、cascading-filter、detail-table-filter、drill-path |
+| business-analysis | 上传预检、当前层 Excel-style 筛选、维度路径、瀑布图下钻、侧栏拖动及键盘调整维度顺序 | field-governance、filter-state、cascading-filter、drill-path |
 | monthly-trend | 上传预检、多维度筛选卡、联动候选项 | field-governance、filter-state、cascading-filter |
 | profit-structure | 上传预检、维度/组合粒度筛选、诊断下钻 | field-governance、filter-state、cascading-filter |
 | finance-ai-assistant | 明细表列筛选、聊天上下文中的过滤条件 | detail-table-filter、filter-state |

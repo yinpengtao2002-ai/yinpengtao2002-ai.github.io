@@ -342,7 +342,7 @@ export default function FinanceAIConversationDemo() {
   }, []);
 
   return (
-    <main className="finance-ai-page">
+    <div className="finance-ai-page">
       <section className="finance-ai-assistant-panel finance-ai-conversation-demo">
         <header className="finance-ai-chat-header">
           <AssistantAvatar />
@@ -394,6 +394,6 @@ export default function FinanceAIConversationDemo() {
           </p>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

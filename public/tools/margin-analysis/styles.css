@@ -538,6 +538,43 @@ details[open] > .sidebar-summary::after {
     line-height: 1.2;
 }
 
+.dimension-train-actions {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.16rem;
+}
+
+.dimension-train-actions button {
+    display: inline-flex;
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(116, 113, 104, 0.2);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 0.58rem;
+    font-weight: 850;
+    line-height: 1;
+}
+
+.dimension-train-actions button:hover:not(:disabled),
+.dimension-train-actions button:focus-visible {
+    border-color: rgba(106, 155, 204, 0.52);
+    color: var(--accent-blue);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(106, 155, 204, 0.12);
+}
+
+.dimension-train-actions button:disabled {
+    cursor: not-allowed;
+    opacity: 0.34;
+}
+
 .dimension-train-car.filtered,
 .dimension-train-car.active {
     border-color: rgba(106, 155, 204, 0.42);
@@ -1670,6 +1707,19 @@ details[open] > .usage-summary::after {
     color: var(--text-secondary);
     font-size: 0.76rem;
     font-weight: 700;
+}
+
+.visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    border: 0 !important;
+    padding: 0 !important;
+    clip: rect(0 0 0 0) !important;
+    clip-path: inset(50%) !important;
+    white-space: nowrap !important;
 }
 
 .waterfall-tooltip-main strong {

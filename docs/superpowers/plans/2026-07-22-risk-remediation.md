@@ -38,14 +38,17 @@
 
 ## 3. 可访问性、SEO 与工程守门
 
-- [ ] 页面只有一个 `<main>`，关键图表有同步文字 / 数据替代。
-- [ ] 移动导航具备动态标签、Escape、焦点恢复和 `aria-current`。
-- [ ] 财务维度排序提供完整键盘操作与结果播报。
-- [ ] Chat 只在回复完成后播报状态。
+- [x] Next 应用由根布局提供唯一 `<main>`；独立 Margin iframe 保留自己的文档主 Landmark。
+- [ ] 关键图表有同步文字 / 数据替代和 `aria-describedby`。
+- [x] 移动导航具备动态标签、Escape、焦点恢复和 `aria-current`。
+- [x] Business 与 Margin 的财务维度排序提供首位 / 上移 / 下移 / 末位键盘操作与结果播报。
+- [x] Chat 流式正文不逐 Token 朗读，只在回复完成后播报状态。
 - [ ] 标题、OG 图片、Sitemap 日期、Maskable 图标符合生产语义。
 - [ ] 删除静态导出承诺，Vercel 为唯一受支持生产目标。
 - [ ] 更新 AI 环境变量文档和已知漏洞依赖。
 - [ ] 根脚本和 GitHub Actions 覆盖 lint、类型、全量测试、审计、Vercel Build。
+
+验证记录（2026-07-22，可访问性第一单元）：新增 4 项失败优先契约，修复后 4/4；TypeScript、站点 431/431、Margin 52/52、Sensitivity 7/7、lint（0 errors，4 个既有 Goalkeeper warnings）、`git diff --check` 与 Vercel Build 通过。关键图表数据替代仍单列为未完成项。
 
 ## 4. 发布验收
 

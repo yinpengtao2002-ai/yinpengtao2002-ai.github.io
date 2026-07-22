@@ -1217,20 +1217,54 @@ import {
             .filter((item) => item.values.length);
     }
 
-    function moveDimensionInOrder(fromIndex, toIndex) {
+    function announceDimensionOrder(dimension, index, total) {
+        const status = byId("business-dimension-order-status");
+        if (!status) return;
+        status.textContent = `“${dimensionLabel(dimension)}”已移动到第 ${index + 1} 位，共 ${total} 个维度。`;
+    }
+
+    function moveDimensionInOrder(fromIndex, toIndex, options = {}) {
         const dimensions = currentDimensions();
-        if (fromIndex === toIndex) return;
-        if (fromIndex < 0 || toIndex < 0 || fromIndex >= dimensions.length || toIndex >= dimensions.length) return;
+        if (fromIndex === toIndex) return false;
+        if (fromIndex < 0 || toIndex < 0 || fromIndex >= dimensions.length || toIndex >= dimensions.length) return false;
         const lockThroughIndex = selectedDimensionItems().length ? dimensions.indexOf(currentAnalysisDimension()) : -1;
         if (lockThroughIndex >= 0 && (fromIndex <= lockThroughIndex || toIndex <= lockThroughIndex)) {
             showMessage("error", "已下钻层级已锁定，可拖动当前层后面的维度。");
-            return;
+            return false;
         }
 
         const [moved] = dimensions.splice(fromIndex, 1);
         dimensions.splice(toIndex, 0, moved);
         state.selectedDimensions = dimensions;
         updateAll();
+        if (options.announce !== false) announceDimensionOrder(moved, toIndex, dimensions.length);
+        if (options.focusContainer && options.focusAction) {
+            window.requestAnimationFrame(() => {
+                options.focusContainer
+                    .querySelector(`[data-dimension-index="${toIndex}"] [data-dimension-move="${options.focusAction}"]`)
+                    ?.focus();
+            });
+        }
+        return true;
+    }
+
+    function moveDimensionByAction(fromIndex, action, focusContainer) {
+        const dimensions = currentDimensions();
+        const lockThroughIndex = selectedDimensionItems().length ? dimensions.indexOf(currentAnalysisDimension()) : -1;
+        const firstMovableIndex = Math.max(0, lockThroughIndex + 1);
+        const lastIndex = dimensions.length - 1;
+        let toIndex = fromIndex;
+
+        if (action === "first") toIndex = firstMovableIndex;
+        if (action === "up") toIndex = Math.max(firstMovableIndex, fromIndex - 1);
+        if (action === "down") toIndex = Math.min(lastIndex, fromIndex + 1);
+        if (action === "last") toIndex = lastIndex;
+
+        moveDimensionInOrder(fromIndex, toIndex, {
+            announce: true,
+            focusAction: action,
+            focusContainer,
+        });
     }
 
     function renderDimensionTrain() {
@@ -1246,46 +1280,69 @@ import {
             summary.textContent = activeDimension ? `当前层：${dimensionLabel(activeDimension)}` : "";
         });
 
-        const markup = dimensions.map((dimension, index) => `
-            <button
-                type="button"
+        const markup = dimensions.map((dimension, index) => {
+            const locked = lockThroughIndex >= 0 && index <= lockThroughIndex;
+            const firstMovableIndex = Math.max(0, lockThroughIndex + 1);
+            const label = escapeHtml(dimensionLabel(dimension));
+            return `
+            <div
                 class="dimension-train-car ${safeArray(filters[dimension]).length ? "filtered" : ""} ${dimension === activeDimension ? "active" : ""} ${lockThroughIndex >= 0 && index <= lockThroughIndex ? "locked" : ""}"
                 draggable="${lockThroughIndex < 0 || index > lockThroughIndex ? "true" : "false"}"
                 data-dimension-index="${index}"
                 title="${lockThroughIndex >= 0 && index <= lockThroughIndex ? "已下钻层级已锁定" : "拖动调整后续顺序"}"
+                role="group"
                 aria-current="${dimension === activeDimension ? "step" : "false"}"
+                aria-label="${label}，第 ${index + 1} 位，共 ${dimensions.length} 个维度"
             >
                 <span>${safeArray(filters[dimension]).length ? "已选" : dimension === activeDimension ? "当前" : `${index + 1}`}</span>
-                <strong>${escapeHtml(dimensionLabel(dimension))}</strong>
-            </button>
-        `).join("");
+                <strong>${label}</strong>
+                <div class="dimension-train-actions" aria-label="调整${label}顺序">
+                    <button type="button" data-dimension-move="first" aria-label="将${label}移到首位" ${locked || index === firstMovableIndex ? "disabled" : ""}>首</button>
+                    <button type="button" data-dimension-move="up" aria-label="将${label}上移" ${locked || index <= firstMovableIndex ? "disabled" : ""}>↑</button>
+                    <button type="button" data-dimension-move="down" aria-label="将${label}下移" ${locked || index >= dimensions.length - 1 ? "disabled" : ""}>↓</button>
+                    <button type="button" data-dimension-move="last" aria-label="将${label}移到末位" ${locked || index === dimensions.length - 1 ? "disabled" : ""}>末</button>
+                </div>
+            </div>
+        `;
+        }).join("");
 
         containers.forEach((container) => {
             container.innerHTML = markup;
 
-            Array.from(container.querySelectorAll("[data-dimension-index]")).forEach((button) => {
-                button.addEventListener("dragstart", (event) => {
-                    button.classList.add("dragging");
-                    event.dataTransfer?.setData("text/plain", button.getAttribute("data-dimension-index") || "0");
+            Array.from(container.querySelectorAll("[data-dimension-index]")).forEach((card) => {
+                card.addEventListener("dragstart", (event) => {
+                    if (card.getAttribute("draggable") !== "true") {
+                        event.preventDefault();
+                        return;
+                    }
+                    card.classList.add("dragging");
+                    event.dataTransfer?.setData("text/plain", card.getAttribute("data-dimension-index") || "0");
                     if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
                 });
-                button.addEventListener("dragend", () => {
-                    button.classList.remove("dragging");
+                card.addEventListener("dragend", () => {
+                    card.classList.remove("dragging");
                 });
-                button.addEventListener("dragover", (event) => {
+                card.addEventListener("dragover", (event) => {
                     event.preventDefault();
-                    button.classList.add("drop-target");
+                    card.classList.add("drop-target");
                     if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
                 });
-                button.addEventListener("dragleave", () => {
-                    button.classList.remove("drop-target");
+                card.addEventListener("dragleave", () => {
+                    card.classList.remove("drop-target");
                 });
-                button.addEventListener("drop", (event) => {
+                card.addEventListener("drop", (event) => {
                     event.preventDefault();
-                    button.classList.remove("drop-target");
+                    card.classList.remove("drop-target");
                     const fromIndex = Number(event.dataTransfer?.getData("text/plain"));
-                    const toIndex = Number(button.getAttribute("data-dimension-index"));
+                    const toIndex = Number(card.getAttribute("data-dimension-index"));
                     moveDimensionInOrder(fromIndex, toIndex);
+                });
+                Array.from(card.querySelectorAll("[data-dimension-move]")).forEach((moveButton) => {
+                    moveButton.addEventListener("click", (event) => {
+                        event.stopPropagation();
+                        const fromIndex = Number(card.getAttribute("data-dimension-index"));
+                        moveDimensionByAction(fromIndex, moveButton.getAttribute("data-dimension-move"), container);
+                    });
                 });
             });
         });

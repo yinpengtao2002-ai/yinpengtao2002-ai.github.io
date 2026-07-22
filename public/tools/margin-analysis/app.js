@@ -1685,9 +1685,17 @@ function buildDrillTrainCar(dim, index, activeIndex, orderLength) {
     car.dataset.dimension = dim;
     car.dataset.baselineTarget = dim;
     car.title = '拖动调整顺序';
+    car.setAttribute('role', 'group');
+    car.setAttribute('aria-label', `${getDimensionLabel(dim)}，第 ${index + 1} 位，共 ${orderLength} 个维度`);
     car.innerHTML = `
         <span>${hasFilter ? '已选' : index === activeIndex ? '当前' : index + 1}</span>
         <strong>${escapeHTML(DIM_ICONS[dim] || '')} ${escapeHTML(getDimensionLabel(dim))}</strong>
+        <div class="dimension-train-actions" aria-label="调整${escapeHTML(getDimensionLabel(dim))}顺序">
+            <button type="button" data-margin-dimension-move="first" aria-label="将${escapeHTML(getDimensionLabel(dim))}移到首位" ${index === 0 ? 'disabled' : ''}>首</button>
+            <button type="button" data-margin-dimension-move="up" aria-label="将${escapeHTML(getDimensionLabel(dim))}上移" ${index === 0 ? 'disabled' : ''}>↑</button>
+            <button type="button" data-margin-dimension-move="down" aria-label="将${escapeHTML(getDimensionLabel(dim))}下移" ${index === orderLength - 1 ? 'disabled' : ''}>↓</button>
+            <button type="button" data-margin-dimension-move="last" aria-label="将${escapeHTML(getDimensionLabel(dim))}移到末位" ${index === orderLength - 1 ? 'disabled' : ''}>末</button>
+        </div>
         <button type="button" class="dimension-train-remove" ${orderLength <= 1 ? 'disabled' : ''} aria-label="移除${escapeHTML(getDimensionLabel(dim))}">×</button>
     `;
     if (isBaseline) car.insertBefore(buildImpactBaselineAnchor(), car.firstChild);
@@ -1698,6 +1706,13 @@ function buildDrillTrainCar(dim, index, activeIndex, orderLength) {
         event.stopPropagation();
         if (orderLength <= 1) return;
         applyDrillOrder(AppState.drillOrder.filter(item => item !== dim));
+    });
+
+    car.querySelectorAll('[data-margin-dimension-move]').forEach((moveButton) => {
+        moveButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            moveDrillDimensionByAction(index, moveButton.dataset.marginDimensionMove);
+        });
     });
 
     car.addEventListener('dragstart', (event) => {
@@ -1731,20 +1746,45 @@ function buildDrillTrainCar(dim, index, activeIndex, orderLength) {
     });
 
     car.addEventListener('click', (event) => {
-        if (event.target.closest('.dimension-train-remove')) return;
+        if (event.target.closest('button')) return;
         if (isMobile()) applyImpactBaselineSelection(dim);
     });
 
     return car;
 }
 
-function moveDrillDimensionInOrder(fromIndex, toIndex) {
+function announceDrillOrder(dimension, index, total) {
+    const status = document.getElementById('margin-dimension-order-status');
+    if (!status) return;
+    status.textContent = `“${getDimensionLabel(dimension)}”已移动到第 ${index + 1} 位，共 ${total} 个维度。`;
+}
+
+function moveDrillDimensionInOrder(fromIndex, toIndex, options = {}) {
     const order = [...AppState.drillOrder];
-    if (fromIndex === toIndex) return;
-    if (fromIndex < 0 || toIndex < 0 || fromIndex >= order.length || toIndex >= order.length) return;
+    if (fromIndex === toIndex) return false;
+    if (fromIndex < 0 || toIndex < 0 || fromIndex >= order.length || toIndex >= order.length) return false;
     const [moved] = order.splice(fromIndex, 1);
     order.splice(toIndex, 0, moved);
     applyDrillOrder(order);
+    announceDrillOrder(moved, toIndex, order.length);
+    if (options.focusAction) {
+        window.requestAnimationFrame(() => {
+            document
+                .querySelector(`[data-dimension-index="${toIndex}"] [data-margin-dimension-move="${options.focusAction}"]`)
+                ?.focus();
+        });
+    }
+    return true;
+}
+
+function moveDrillDimensionByAction(fromIndex, action) {
+    const lastIndex = AppState.drillOrder.length - 1;
+    let toIndex = fromIndex;
+    if (action === 'first') toIndex = 0;
+    if (action === 'up') toIndex = Math.max(0, fromIndex - 1);
+    if (action === 'down') toIndex = Math.min(lastIndex, fromIndex + 1);
+    if (action === 'last') toIndex = lastIndex;
+    moveDrillDimensionInOrder(fromIndex, toIndex, { focusAction: action });
 }
 
 function applyDrillOrder(nextOrder) {

@@ -68,7 +68,7 @@ export default function RootLayout({
       >
         <MotionConfig reducedMotion="user">
           <ClientShell />
-          <main style={{ width: "100%", minWidth: 0, display: "block" }}>
+          <main id="main-content" style={{ width: "100%", minWidth: 0, display: "block" }}>
             <PageTransition>{children}</PageTransition>
           </main>
         </MotionConfig>

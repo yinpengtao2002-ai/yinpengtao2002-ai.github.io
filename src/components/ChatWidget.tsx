@@ -368,6 +368,7 @@ export default function ChatWidget() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
+    const [completionAnnouncement, setCompletionAnnouncement] = useState("");
     const [aiAvailable, setAiAvailable] = useState<boolean | null>(null);
     const [initialized, setInitialized] = useState(false);
     const [viewportHeight, setViewportHeight] = useState<number | null>(null);
@@ -611,6 +612,7 @@ export default function ChatWidget() {
     const sendMessage = async (content: string) => {
         const trimmed = content.trim();
         if (!trimmed || isProcessing) return;
+        setCompletionAnnouncement("");
         const userMessage: Message = { id: `user-${Date.now()}`, role: "user", content: trimmed };
         const updatedMessages = [...messages, userMessage];
         setMessages(updatedMessages);
@@ -622,7 +624,11 @@ export default function ChatWidget() {
         let includeOfflineNotice = false;
         if (aiAvailable !== false) {
             const success = await callChatAPI(updatedMessages, assistantMsgId);
-            if (success) { setIsProcessing(false); return; }
+            if (success) {
+                setCompletionAnnouncement("回复已完成");
+                setIsProcessing(false);
+                return;
+            }
             setAiAvailable(false);
             includeOfflineNotice = true;
         }
@@ -641,6 +647,7 @@ export default function ChatWidget() {
                 cardType: result?.cardType,
             }];
         });
+        setCompletionAnnouncement("回复已完成");
         setIsProcessing(false);
     };
 
@@ -1076,8 +1083,6 @@ export default function ChatWidget() {
                             {/* Messages */}
                             <div
                                 ref={messagesContainerRef}
-                                aria-live="polite"
-                                aria-relevant="additions text"
                                 aria-busy={isProcessing}
                                 style={{
                                     flex: 1,
@@ -1200,6 +1205,9 @@ export default function ChatWidget() {
                                 </AnimatePresence>
                                 <div ref={messagesEndRef} />
                             </div>
+                            <span className="sr-only" aria-live="polite">
+                                {completionAnnouncement}
+                            </span>
 
                             {/* Input */}
                             <div

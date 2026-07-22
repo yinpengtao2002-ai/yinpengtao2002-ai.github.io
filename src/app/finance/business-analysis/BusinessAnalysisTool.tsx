@@ -129,6 +129,7 @@ export default function BusinessAnalysisTool() {
                     </div>
                     <div id="sidebar-dimension-train" className="dimension-train sidebar-dimension-train" data-dimension-train aria-label="左侧维度下钻顺序" />
                     <p className="dimension-train-hint">拖动维度卡片调整顺序，已下钻层级会保留。</p>
+                    <p id="business-dimension-order-status" className="sr-only" aria-live="polite" />
                 </section>
 
                 <section className="sidebar-block sidebar-dimension-drill-block">
@@ -154,7 +155,7 @@ export default function BusinessAnalysisTool() {
                 控制台
             </button>
 
-            <main className="main-content">
+            <div className="main-content">
                 <header className="model-header">
                     <div>
                         <p className="eyebrow">Financial Modeling</p>
@@ -238,7 +239,7 @@ export default function BusinessAnalysisTool() {
                     <span>预算实际对比模型</span>
                     <span>销量、净收入总额、单车净收入、边际总额、单车边际、利润总额与维度归因</span>
                 </footer>
-            </main>
+            </div>
         </div>
     );
 }

@@ -1859,7 +1859,7 @@ export default function FinanceAIAssistantTool() {
   }
 
   return (
-    <main className="finance-ai-page">
+    <div className="finance-ai-page">
       <section className={`finance-ai-assistant-panel ${workbook ? "is-ready" : ""}`}>
         <header className="finance-ai-chat-header">
           <AssistantAvatar />
@@ -2032,6 +2032,6 @@ export default function FinanceAIAssistantTool() {
           ))}
         </div>
       </section>
-    </main>
+    </div>
   );
 }

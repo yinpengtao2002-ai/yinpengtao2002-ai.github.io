@@ -231,7 +231,7 @@ export default function ProfitStructureTool() {
                 控制台
             </button>
 
-            <main className="main-content">
+            <div className="main-content">
                 <header className="model-header">
                     <div>
                         <p className="eyebrow">Financial Modeling</p>
@@ -279,7 +279,7 @@ export default function ProfitStructureTool() {
                         <div id="profit-structure-drag-list" className="drag-panel" />
                     </article>
                 </section>
-            </main>
+            </div>
         </div>
     );
 }

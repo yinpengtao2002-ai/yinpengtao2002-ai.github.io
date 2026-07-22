@@ -58,7 +58,7 @@ export default function LucasPrivateWorkbench({ accessToken }: LucasPrivateWorkb
   }, [accessToken]);
 
   return (
-    <main className={styles.framePage}>
+    <div className={styles.framePage}>
       <header className={styles.frameHeader}>
         <div>
           <p className={styles.eyebrow}>Lucas Lab</p>
@@ -97,6 +97,6 @@ export default function LucasPrivateWorkbench({ accessToken }: LucasPrivateWorkb
           />
         ) : null}
       </section>
-    </main>
+    </div>
   );
 }

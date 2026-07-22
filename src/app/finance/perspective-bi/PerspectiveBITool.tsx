@@ -138,7 +138,7 @@ export default function PerspectiveBITool() {
                     <button type="button" className="btn btn-secondary" onClick={() => setBootAttempt((value) => value + 1)}>重试加载</button>
                 </div>
             ) : null}
-            <main className="main-content">
+            <div className="main-content">
                 <header className="model-header">
                     <div>
                         <p className="eyebrow">Financial Modeling</p>
@@ -305,7 +305,7 @@ export default function PerspectiveBITool() {
                         </div>
                     </article>
                 </section>
-            </main>
+            </div>
         </div>
     );
 }
