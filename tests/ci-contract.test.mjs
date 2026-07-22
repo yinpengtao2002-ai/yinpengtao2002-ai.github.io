@@ -33,6 +33,7 @@ test("GitHub Actions runs the same check on pull requests and main", async () =>
   assert.match(workflow, /pull_request:/);
   assert.match(workflow, /push:[\s\S]*branches:\s*\[main\]/);
   assert.match(workflow, /permissions:[\s\S]*contents:\s*read/);
+  assert.match(workflow, /node-version:\s*24/);
   assert.match(workflow, /npm ci/);
   assert.match(workflow, /npm --prefix tool-sources\/goalkeeper-landscape ci/);
   assert.match(workflow, /playwright install --with-deps chromium/);

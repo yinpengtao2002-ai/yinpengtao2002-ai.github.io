@@ -58,6 +58,8 @@
 
 验证记录（2026-07-22，CI / 浏览器守门单元）：先执行 `tests/ci-contract.test.mjs` 确认统一脚本、Actions 与 Playwright 三项契约均按预期失败，最小实现后 3/3；根 `npm run test` 自动发现 541/541，Goalkeeper 338/338，Playwright 5/5，TypeScript、定向 ESLint、生产依赖审计、Goalkeeper Build 与 Vercel Build 通过。浏览器用例覆盖 CSP / 私有 iframe、财务工具连续进出两轮的监听器 / Observer / Plotly 清理，以及 390px 导航、横向溢出与 console error；完整 `npm run check` 在原子提交后的干净树上执行。
 
+回归记录（2026-07-22，CI Node 运行时）：PR 首次 Actions run `29926231691` 在 Node 20 运行根测试时，34 项因直接导入 `.ts` 报 `ERR_UNKNOWN_FILE_EXTENSION`；本机 Node 26 未暴露该环境差异。新增 Node 24 工作流契约并先确认 2/3 失败，将 Actions 对齐 Vercel 的 Node 24 后 3/3；`npx -y node@24 --test tests/*.test.mjs` 541/541，未增加 loader 或跳过测试。
+
 ## 4. 发布验收
 
 - [x] 每个关闭项在 `docs/project-audit-report.md` 留下日期、测试和提交证据。
