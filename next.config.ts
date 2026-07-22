@@ -73,10 +73,6 @@ const sameOriginFrameHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Use static export only when STATIC_EXPORT=true (for GitHub Pages)
-  // For Cloudflare Pages / Vercel, omit this to enable API routes
-  ...(process.env.STATIC_EXPORT === "true" ? { output: "export" as const } : {}),
-
   // Pin the workspace root so Turbopack does not infer the parent home folder.
   turbopack: {
     root: projectRoot,

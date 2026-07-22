@@ -351,17 +351,21 @@ test("spreadsheet parser uses the patched SheetJS npm alias and matching browser
   assert.match(vendorScript, /node_modules\/xlsx\/dist\/xlsx\.full\.min\.js/);
 });
 
-test("Next runtime and PostCSS dependency stay on patched versions", () => {
-  assert.equal(packageData.dependencies?.next, "16.2.10");
-  assert.equal(packageData.devDependencies?.["eslint-config-next"], "16.2.10");
+test("Next runtime, Sharp and PostCSS dependencies stay on patched versions", () => {
+  assert.equal(packageData.dependencies?.next, "16.2.11");
+  assert.equal(packageData.dependencies?.sharp, "0.35.0");
+  assert.equal(packageData.devDependencies?.["eslint-config-next"], "16.2.11");
+  assert.equal(packageData.overrides?.sharp, "0.35.0");
   assert.equal(packageData.overrides?.next?.postcss, "^8.5.10");
 
   const installedNext = packageLockData.packages?.["node_modules/next"];
+  const installedSharp = packageLockData.packages?.["node_modules/sharp"];
   const installedEslintConfig = packageLockData.packages?.["node_modules/eslint-config-next"];
   const installedNextPostcss = packageLockData.packages?.["node_modules/next/node_modules/postcss"];
 
-  assert.equal(installedNext?.version, "16.2.10");
-  assert.equal(installedEslintConfig?.version, "16.2.10");
+  assert.equal(installedNext?.version, "16.2.11");
+  assert.equal(installedSharp?.version, "0.35.0");
+  assert.equal(installedEslintConfig?.version, "16.2.11");
   assert.ok(installedNextPostcss, "Next should keep a resolved PostCSS dependency in the lockfile");
   assertVersionAtLeast(installedNextPostcss.version, "8.5.10", "Next nested PostCSS");
   assert.notEqual(installedNextPostcss.version, "8.4.31");
@@ -379,7 +383,7 @@ test("Mermaid parser and sanitizer dependencies stay on patched versions", () =>
 
   assert.equal(installedMermaid?.version, "11.16.0");
   assertVersionAtLeast(installedParser?.version ?? "0.0.0", "1.2.0", "Mermaid parser");
-  assertVersionAtLeast(installedDomPurify?.version ?? "0.0.0", "3.4.11", "DOMPurify");
+  assertVersionAtLeast(installedDomPurify?.version ?? "0.0.0", "3.4.12", "DOMPurify");
   assertVersionAtLeast(installedUuid?.version ?? "0.0.0", "11.1.1", "uuid");
   assertVersionAtLeast(installedLodashEs?.version ?? "0.0.0", "4.18.1", "lodash-es");
 

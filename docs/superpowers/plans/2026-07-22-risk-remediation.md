@@ -44,8 +44,8 @@
 - [x] Business 与 Margin 的财务维度排序提供首位 / 上移 / 下移 / 末位键盘操作与结果播报。
 - [x] Chat 流式正文不逐 Token 朗读，只在回复完成后播报状态。
 - [x] 标题、OG 图片、Sitemap 日期、Maskable 图标符合生产语义。
-- [ ] 删除静态导出承诺，Vercel 为唯一受支持生产目标。
-- [ ] 更新 AI 环境变量文档和已知漏洞依赖。
+- [x] 删除静态导出承诺，Vercel 为唯一受支持生产目标。
+- [x] 更新 AI 环境变量文档和已知漏洞依赖。
 - [ ] 根脚本和 GitHub Actions 覆盖 lint、类型、全量测试、审计、Vercel Build。
 
 验证记录（2026-07-22，可访问性第一单元）：新增 4 项失败优先契约，修复后 4/4；TypeScript、站点 431/431、Margin 52/52、Sensitivity 7/7、lint（0 errors，4 个既有 Goalkeeper warnings）、`git diff --check` 与 Vercel Build 通过。当时尚未完成的关键图表数据替代由下一条记录继续关闭。
@@ -53,6 +53,8 @@
 验证记录（2026-07-22，可访问性图表单元）：共享 Plotly 替代数据测试与五个 Next 引擎 / Margin 接入契约 2/2 通过；站点 433/433、Margin 52/52、Sensitivity 7/7、TypeScript、lint（0 errors，4 个既有 Goalkeeper warnings）、`git diff --check` 与 Vercel Build 通过。本地 production Playwright 桌面 / 390px 确认 Business 4/4、Monthly 6/6、Sensitivity 5/5、Margin 8/8 图表带同步结论、数据表或既有归因明细并通过 `aria-describedby` 关联；无横向溢出、console error=0，月份和双变量矩阵摘要均显示业务标签而非内部索引。
 
 验证记录（2026-07-22，SEO / PWA 单元）：新增 3 项失败优先契约，修复后 3/3；站点 436/436、TypeScript、lint（0 errors，4 个既有 Goalkeeper warnings）、`git diff --check` 与 Vercel Build 通过。生产 HTML / Manifest / Sitemap 探测确认标题只追加一次品牌，OG/Twitter 指向 1200×630 图像，Maskable 图标使用独立 192/512 文件，静态页面不伪造构建日期，Finance AI URL 不重复。
+
+验证记录（2026-07-22，Vercel / 环境变量 / 依赖单元）：新增 3 项失败优先契约，修复后与既有 tooling / AI 环境变量契约合计 49/49；站点 439/439、Margin 52/52、Sensitivity 7/7、TypeScript、lint（0 errors，4 个既有 Goalkeeper warnings）、`git diff --check` 与 Next 16.2.11 Vercel Build 通过。`npm ls` 确认 Next 与根依赖复用 Sharp 0.35.0、Mermaid 复用 DOMPurify 3.4.12；`npm audit --omit=dev --audit-level=high` 为 0 vulnerabilities。
 
 ## 4. 发布验收
 
