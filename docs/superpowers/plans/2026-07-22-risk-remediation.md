@@ -46,7 +46,7 @@
 - [x] 标题、OG 图片、Sitemap 日期、Maskable 图标符合生产语义。
 - [x] 删除静态导出承诺，Vercel 为唯一受支持生产目标。
 - [x] 更新 AI 环境变量文档和已知漏洞依赖。
-- [ ] 根脚本和 GitHub Actions 覆盖 lint、类型、全量测试、审计、Vercel Build。
+- [x] 根脚本和 GitHub Actions 覆盖 lint、类型、全量测试、审计、Goalkeeper / Vercel Build 与 Playwright。
 
 验证记录（2026-07-22，可访问性第一单元）：新增 4 项失败优先契约，修复后 4/4；TypeScript、站点 431/431、Margin 52/52、Sensitivity 7/7、lint（0 errors，4 个既有 Goalkeeper warnings）、`git diff --check` 与 Vercel Build 通过。当时尚未完成的关键图表数据替代由下一条记录继续关闭。
 
@@ -55,6 +55,8 @@
 验证记录（2026-07-22，SEO / PWA 单元）：新增 3 项失败优先契约，修复后 3/3；站点 436/436、TypeScript、lint（0 errors，4 个既有 Goalkeeper warnings）、`git diff --check` 与 Vercel Build 通过。生产 HTML / Manifest / Sitemap 探测确认标题只追加一次品牌，OG/Twitter 指向 1200×630 图像，Maskable 图标使用独立 192/512 文件，静态页面不伪造构建日期，Finance AI URL 不重复。
 
 验证记录（2026-07-22，Vercel / 环境变量 / 依赖单元）：新增 3 项失败优先契约，修复后与既有 tooling / AI 环境变量契约合计 49/49；站点 439/439、Margin 52/52、Sensitivity 7/7、TypeScript、lint（0 errors，4 个既有 Goalkeeper warnings）、`git diff --check` 与 Next 16.2.11 Vercel Build 通过。`npm ls` 确认 Next 与根依赖复用 Sharp 0.35.0、Mermaid 复用 DOMPurify 3.4.12；`npm audit --omit=dev --audit-level=high` 为 0 vulnerabilities。
+
+验证记录（2026-07-22，CI / 浏览器守门单元）：先执行 `tests/ci-contract.test.mjs` 确认统一脚本、Actions 与 Playwright 三项契约均按预期失败，最小实现后 3/3；根 `npm run test` 自动发现 541/541，Goalkeeper 338/338，Playwright 5/5，TypeScript、定向 ESLint、生产依赖审计、Goalkeeper Build 与 Vercel Build 通过。浏览器用例覆盖 CSP / 私有 iframe、财务工具连续进出两轮的监听器 / Observer / Plotly 清理，以及 390px 导航、横向溢出与 console error；完整 `npm run check` 在原子提交后的干净树上执行。
 
 ## 4. 发布验收
 
