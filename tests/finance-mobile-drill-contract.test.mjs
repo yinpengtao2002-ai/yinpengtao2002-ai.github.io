@@ -107,7 +107,7 @@ test("Plotly finance workbenches resize charts after the control console changes
     ["profit structure", profitStructureEngine],
   ].forEach(([label, source]) => {
     assert.match(source, /function resizePlotlyCharts\(\)\s*\{[\s\S]*Plotly\.Plots\.resize\(plot\)/, `${label} should resize rendered Plotly charts`);
-    assert.match(source, /function schedulePlotResize\(\)\s*\{[\s\S]*requestAnimationFrame\(resizePlotlyCharts\)[\s\S]*setTimeout\(resizePlotlyCharts,\s*\d+\)/, `${label} should schedule an immediate and delayed resize`);
+    assert.match(source, /function schedulePlotResize\(\)\s*\{[\s\S]*(?:window\.requestAnimationFrame|requestAnimationFrame|lifecycle\.frame)\(resizePlotlyCharts\)[\s\S]*(?:window\.setTimeout|setTimeout|lifecycle\.timeout)\(resizePlotlyCharts,\s*\d+\)/, `${label} should schedule an immediate and delayed resize`);
   });
 
   const businessToggle = businessEngine.match(/function setSidebarOpen\(open\)\s*\{([\s\S]*?)\n    \}/);
@@ -415,8 +415,8 @@ test("Perspective BI explains the active native chart drop zones inside the work
   assert.match(perspectiveEngine, /function scheduleWorkbenchGuideSync/);
   assert.match(perspectiveEngine, /MutationObserver[\s\S]*scheduleWorkbenchGuideSync\(root\)/s);
   assert.match(perspectiveEngine, /#plugin_selector_container\s*>\s*\.plugin-select-item\[data-plugin\]/);
-  assert.match(perspectiveEngine, /viewer\.addEventListener\("click", syncGuide, true\)/);
-  assert.match(perspectiveEngine, /viewer\.addEventListener\("keyup", syncGuide, true\)/);
+  assert.match(perspectiveEngine, /lifecycle\.listen\(viewer, "click", syncGuide, true\)/);
+  assert.match(perspectiveEngine, /lifecycle\.listen\(viewer, "keyup", syncGuide, true\)/);
   assert.match(perspectiveEngine, /attributeFilter: \[[^\]]*"data-plugin"[^\]]*\]/);
   assert.match(perspectiveEngine, /\.column-selector-column\[data-label="Open"\]::before \{ content: "开盘"/);
   assert.match(perspectiveEngine, /\.column-selector-column\[data-label="Close"\]::before \{ content: "收盘"/);
@@ -531,7 +531,7 @@ test("finance model charts are locked against accidental zoom and drag by defaul
 });
 
 test("monthly trend rebinds sidebar controls when the route remounts", () => {
-  assert.match(monthlyEngine, /function initApp\(\)\s*\{\s*initSidebar\(\);\s*initResponsiveMonthAxis\(\);\s*initChartResizeObserver\(\);\s*bindControls\(\);\s*if \(state\.initialized\)/s);
+  assert.match(monthlyEngine, /function initApp\(\)\s*\{[\s\S]*lifecycle\.start\(\);\s*initSidebar\(\);\s*initResponsiveMonthAxis\(\);\s*initChartResizeObserver\(\);\s*bindControls\(\);\s*if \(state\.initialized\)/s);
   assert.doesNotMatch(monthlyEngine, /if \(state\.initialized\)\s*\{[\s\S]*?return;\s*\}[\s\S]*?bindControls\(\);/s);
 });
 

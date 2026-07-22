@@ -237,6 +237,7 @@ test("legacy finance browser engines share one typed script loader boundary", as
 
   assert.match(loader, /export function loadBrowserScript/);
   assert.match(loader, /export type FinanceBrowserEngine/);
+  assert.match(loader, /dispose:\s*\(\)\s*=>\s*void/);
   assert.match(loader, /export type FinanceBrowserEngineName/);
   assert.match(loader, /export async function bootFinanceBrowserEngine/);
   assert.match(loader, /__financeToolScripts/);
@@ -256,6 +257,7 @@ test("legacy finance browser engines share one typed script loader boundary", as
 
     assert.match(source, /@\/lib\/finance\/browser-tool-loader/, `${path} should import the shared loader`);
     assert.match(source, /bootFinanceBrowserEngine/, `${path} should use the shared boot boundary`);
+    assert.match(source, /engine\?\.dispose\(\)/, `${path} should dispose the loaded engine on unmount`);
     assert.doesNotMatch(source, /function loadBrowserScript/, `${path} should not keep a local script loader`);
     assert.doesNotMatch(source, /__financeToolScripts/, `${path} should not own the browser script cache type`);
     assert.doesNotMatch(source, /declare global/, `${path} should not redeclare the browser engine global`);
@@ -408,6 +410,6 @@ test("Perspective BI requires the private tool access key before booting", async
   assert.match(tool, /Perspective BI 分析台内测访问/);
   assert.match(tool, /type="password"/);
   assert.match(tool, /if \(!accessToken\) {\s+return;\s+}/);
-  assert.match(tool, /\}, \[accessToken\]\);/);
+  assert.match(tool, /\}, \[accessToken, bootAttempt\]\);/);
   assert.match(styles, /\.perspective-access-gate/);
 });

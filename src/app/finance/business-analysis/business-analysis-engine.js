@@ -23,8 +23,13 @@ import {
     inferFinanceFieldRoles,
     parseFinanceNumber
 } from "../../../lib/finance/core.ts";
+import {
+    clearFinanceEngineBindingMarkers,
+    createFinanceEngineLifecycle
+} from "../../../lib/finance/browser-engine-lifecycle.ts";
 
 (function () {
+    const lifecycle = createFinanceEngineLifecycle();
     const DEFAULT_DIMENSIONS = ["大区", "国家", "品牌", "品牌市场", "经营模式", "业务单元", "车型", "燃油品类"];
     const RESERVED_LONG_TABLE_COLUMNS = [
         "月份", "年月", "期间", "日期", "年度", "year", "Year",
@@ -135,7 +140,7 @@ import {
         if (!element) return;
         const bindKey = `bound${normalizeToken(key) || eventName}`;
         if (element.dataset?.[bindKey] === "true") return;
-        element.addEventListener(eventName, handler);
+        lifecycle.listen(element, eventName, handler);
         if (element.dataset) element.dataset[bindKey] = "true";
     }
 
@@ -529,7 +534,7 @@ import {
         if (!area) return;
         area.innerHTML = `<div class="message ${type}">${text}</div>`;
         window.clearTimeout(showMessage.timer);
-        showMessage.timer = window.setTimeout(() => {
+        showMessage.timer = lifecycle.timeout(() => {
             area.innerHTML = "";
         }, 3600);
     }
@@ -2298,9 +2303,9 @@ import {
         const root = byId("business-analysis-root");
         if (!root || root.dataset.waterfallTouchDismissBound === "true") return;
 
-        document.addEventListener("touchstart", beginWaterfallTouchGesture, { passive: true });
-        document.addEventListener("touchmove", updateWaterfallTouchGesture, { passive: true });
-        document.addEventListener("click", (event) => {
+        lifecycle.listen(document, "touchstart", beginWaterfallTouchGesture, { passive: true });
+        lifecycle.listen(document, "touchmove", updateWaterfallTouchGesture, { passive: true });
+        lifecycle.listen(document, "click", (event) => {
             if (!isTouchLikeViewport()) return;
             const touchHost = byId("dimension-waterfall-touch-card");
             if (!touchHost || !touchHost.innerHTML.trim()) return;
@@ -2804,7 +2809,7 @@ import {
         }, "manual-subject-paste-input");
 
         if (!window.manualSubjectPasteWatcher) {
-            window.manualSubjectPasteWatcher = window.setInterval(() => {
+            window.manualSubjectPasteWatcher = lifecycle.interval(() => {
                 const currentBox = byId("manual-subject-paste");
                 if (currentBox) applyManualPasteBoxValue(currentBox, { silent: true });
             }, 500);
@@ -3005,7 +3010,7 @@ import {
 
     function handleFile(file, source = "operation") {
         if (!file) return;
-        const reader = new FileReader();
+        const reader = lifecycle.trackAbortable(new FileReader());
         reader.onload = (event) => {
             try {
                 const rows = readUploadRows(file, event.target.result);
@@ -3059,8 +3064,8 @@ import {
 
     function schedulePlotResize() {
         if (typeof window === "undefined") return;
-        window.requestAnimationFrame(resizePlotlyCharts);
-        window.setTimeout(resizePlotlyCharts, 320);
+        lifecycle.frame(resizePlotlyCharts);
+        lifecycle.timeout(resizePlotlyCharts, 320);
     }
 
     function initChartResizeObserver() {
@@ -3070,10 +3075,10 @@ import {
 
         const mainContent = document.querySelector(".business-tool .main-content");
         if (mainContent && typeof ResizeObserver !== "undefined") {
-            const observer = new ResizeObserver(schedulePlotResize);
+            const observer = lifecycle.observe(new ResizeObserver(schedulePlotResize));
             observer.observe(mainContent);
         }
-        window.addEventListener("resize", schedulePlotResize);
+        lifecycle.listen(window, "resize", schedulePlotResize);
         if (root) root.dataset.plotResizeObserverBound = "true";
     }
 
@@ -3107,7 +3112,7 @@ import {
         setSidebarOpen(!isMobileSidebarViewport());
 
         if (root && root.dataset.sidebarMediaBound !== "true") {
-            window.matchMedia(FINANCE_WORKBENCH_MOBILE_QUERY).addEventListener("change", (event) => {
+            lifecycle.listen(window.matchMedia(FINANCE_WORKBENCH_MOBILE_QUERY), "change", (event) => {
                 setSidebarOpen(!event.matches);
             });
             root.dataset.sidebarMediaBound = "true";
@@ -3162,7 +3167,7 @@ import {
         });
 
         if (root && root.dataset.currentLayerFilterDismissBound !== "true") {
-            document.addEventListener("click", (event) => {
+            lifecycle.listen(document, "click", (event) => {
                 if (!state.currentFilterMenuOpen) return;
                 if (event.target?.closest?.(".current-layer-filter")) return;
                 state.currentFilterMenuOpen = "";
@@ -3221,6 +3226,7 @@ import {
     function initApp() {
         const root = byId("business-analysis-root");
         if (!root || typeof Plotly === "undefined") return;
+        lifecycle.start();
         if (root.dataset.initialized === "true") {
             initChartResizeObserver();
             bindSidebar();
@@ -3242,8 +3248,19 @@ import {
         loadDemoData();
     }
 
+    function dispose() {
+        lifecycle.dispose();
+        const root = byId("business-analysis-root");
+        clearFinanceEngineBindingMarkers(root);
+        delete window.manualSubjectPasteWatcher;
+        state.waterfallTouchGesture = null;
+        document.querySelectorAll(".business-tool .js-plotly-plot").forEach((plot) => {
+            if (typeof Plotly !== "undefined") Plotly.purge(plot);
+        });
+    }
+
     if (typeof window !== "undefined") {
-        window.BusinessAnalysisModel = { initApp };
+        window.BusinessAnalysisModel = { initApp, dispose };
     }
 
     if (typeof module !== "undefined" && module.exports) {
@@ -3254,7 +3271,8 @@ import {
             buildScenarioTemplateRows,
             parseRows,
             summarize,
-            initApp
+            initApp,
+            dispose
         };
     }
 })();

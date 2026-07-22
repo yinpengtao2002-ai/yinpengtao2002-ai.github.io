@@ -10,6 +10,10 @@ import {
     normalizeFinancePeriod,
     parseFinanceNumber
 } from "../../../lib/finance/core.ts";
+import {
+    clearFinanceEngineBindingMarkers,
+    createFinanceEngineLifecycle
+} from "../../../lib/finance/browser-engine-lifecycle.ts";
 
 const MONTHLY_PERIOD_ALIASES = ["月份", "月度", "月", "期间", "年月", "会计期间", "month", "date", "period"];
 const MONTHLY_VOLUME_ALIASES = ["销量", "销售量", "发车量", "台数", "数量", "volume", "qty", "quantity", "units"];
@@ -124,6 +128,7 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
 }
 
 (function () {
+    const lifecycle = createFinanceEngineLifecycle();
     const COLORS = {
         orange: "#d97757",
         blue: "#5c8fba",
@@ -169,7 +174,7 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
         if (!element) return;
         const bindKey = `bound${normalizeToken(key) || eventName}`;
         if (element.dataset?.[bindKey] === "true") return;
-        element.addEventListener(eventName, handler);
+        lifecycle.listen(element, eventName, handler);
         if (element.dataset) element.dataset[bindKey] = "true";
     }
 
@@ -928,14 +933,14 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
         menu.hidden = false;
         trigger.setAttribute("aria-expanded", "true");
         scrollExcelFilterMenuIntoView(menu);
-        window.setTimeout(() => menu.querySelector(".excel-filter-search")?.focus({ preventScroll: true }), 80);
+        lifecycle.timeout(() => menu.querySelector(".excel-filter-search")?.focus({ preventScroll: true }), 80);
     }
 
     function scrollExcelFilterMenuIntoView(menu) {
         const sidebar = byId("monthly-sidebar");
         if (!sidebar || !menu) return;
 
-        window.requestAnimationFrame(() => {
+        lifecycle.frame(() => {
             const sidebarRect = sidebar.getBoundingClientRect();
             const menuRect = menu.getBoundingClientRect();
             const bottomOverflow = menuRect.bottom - sidebarRect.bottom + 18;
@@ -962,13 +967,13 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
     function initExcelFilterDismiss() {
         if (excelFilterDismissInitialized) return;
         excelFilterDismissInitialized = true;
-        document.addEventListener("click", (event) => {
+        lifecycle.listen(document, "click", (event) => {
             const target = event.target;
             if (!(target instanceof Element)) return;
             if (target.closest(".monthly-trend-tool .excel-filter-shell")) return;
             closeExcelFilterMenus();
         });
-        document.addEventListener("keydown", (event) => {
+        lifecycle.listen(document, "keydown", (event) => {
             if (event.key === "Escape") closeExcelFilterMenus();
         });
     }
@@ -1816,7 +1821,7 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
         if (!area) return;
         area.innerHTML = `<div class="message ${type}">${escapeHtml(text)}</div>`;
         window.clearTimeout(showMessage.timer);
-        showMessage.timer = window.setTimeout(() => {
+        showMessage.timer = lifecycle.timeout(() => {
             area.innerHTML = "";
         }, 4500);
     }
@@ -2013,8 +2018,8 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
 
     function schedulePlotResize() {
         if (typeof window === "undefined") return;
-        window.requestAnimationFrame(resizePlotlyCharts);
-        window.setTimeout(resizePlotlyCharts, 320);
+        lifecycle.frame(resizePlotlyCharts);
+        lifecycle.timeout(resizePlotlyCharts, 320);
     }
 
     function initChartResizeObserver() {
@@ -2024,10 +2029,10 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
 
         const mainContent = document.querySelector(".monthly-trend-tool .main-content");
         if (mainContent && typeof ResizeObserver !== "undefined") {
-            const observer = new ResizeObserver(schedulePlotResize);
+            const observer = lifecycle.observe(new ResizeObserver(schedulePlotResize));
             observer.observe(mainContent);
         }
-        window.addEventListener("resize", schedulePlotResize);
+        lifecycle.listen(window, "resize", schedulePlotResize);
         if (root) root.dataset.plotResizeObserverBound = "true";
     }
 
@@ -2095,6 +2100,9 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
     }
 
     function initApp() {
+        const root = byId("monthly-trend-root");
+        if (!root) return;
+        lifecycle.start();
         initSidebar();
         initResponsiveMonthAxis();
         initChartResizeObserver();
@@ -2108,8 +2116,17 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
         loadRows(createSampleRows(), "示例数据");
     }
 
+    function dispose() {
+        lifecycle.dispose();
+        excelFilterDismissInitialized = false;
+        clearFinanceEngineBindingMarkers(byId("monthly-trend-root"));
+        document.querySelectorAll(".monthly-trend-tool .js-plotly-plot").forEach((plot) => {
+            if (typeof Plotly !== "undefined") Plotly.purge(plot);
+        });
+    }
+
     if (typeof window !== "undefined") {
-        window.MonthlyTrendModel = { initApp };
+        window.MonthlyTrendModel = { initApp, dispose };
     }
 })();
 

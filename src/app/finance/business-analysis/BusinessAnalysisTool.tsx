@@ -1,11 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
-import { bootFinanceBrowserEngine } from "@/lib/finance/browser-tool-loader";
+import { useEffect, useState } from "react";
+import { bootFinanceBrowserEngine, type FinanceBrowserEngine } from "@/lib/finance/browser-tool-loader";
 
 export default function BusinessAnalysisTool() {
+    const [bootAttempt, setBootAttempt] = useState(0);
+    const [bootError, setBootError] = useState("");
+
     useEffect(() => {
         let cancelled = false;
+        let engine: FinanceBrowserEngine | undefined;
+        setBootError("");
 
         void bootFinanceBrowserEngine({
             engineName: "BusinessAnalysisModel",
@@ -16,15 +21,28 @@ export default function BusinessAnalysisTool() {
             ],
             isCancelled: () => cancelled,
             errorMessage: "Failed to start business analysis model",
+            onError: () => {
+                if (!cancelled) setBootError("分析引擎加载失败，请重试。");
+            },
+        }).then((loaded) => {
+            engine = loaded;
+            if (cancelled) loaded?.dispose();
         });
 
         return () => {
             cancelled = true;
+            engine?.dispose();
         };
-    }, []);
+    }, [bootAttempt]);
 
     return (
         <div id="business-analysis-root" className="business-tool">
+            {bootError ? (
+                <div className="engine-load-error" role="alert">
+                    <span>{bootError}</span>
+                    <button type="button" className="btn btn-secondary" onClick={() => setBootAttempt((value) => value + 1)}>重试加载</button>
+                </div>
+            ) : null}
             <aside id="business-sidebar" className="sidebar">
                 <button id="sidebar-toggle" className="sidebar-toggle" type="button" title="收起控制台" aria-label="收起控制台">
                     ‹

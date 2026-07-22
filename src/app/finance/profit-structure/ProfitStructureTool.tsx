@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { KeyRound, Loader2 } from "lucide-react";
-import { bootFinanceBrowserEngine } from "@/lib/finance/browser-tool-loader";
+import { bootFinanceBrowserEngine, type FinanceBrowserEngine } from "@/lib/finance/browser-tool-loader";
 import { PRIVATE_TOOL_ACCESS_ENDPOINT } from "@/lib/private-tool-access/constants";
 
 type AccessResponse = {
@@ -28,6 +28,8 @@ export default function ProfitStructureTool() {
     const [accessKey, setAccessKey] = useState("");
     const [accessBusy, setAccessBusy] = useState(false);
     const [accessError, setAccessError] = useState("");
+    const [bootAttempt, setBootAttempt] = useState(0);
+    const [bootError, setBootError] = useState("");
 
     useEffect(() => {
         if (!accessToken) {
@@ -35,6 +37,8 @@ export default function ProfitStructureTool() {
         }
 
         let cancelled = false;
+        let engine: FinanceBrowserEngine | undefined;
+        setBootError("");
 
         void bootFinanceBrowserEngine({
             engineName: "ProfitStructureModel",
@@ -45,12 +49,19 @@ export default function ProfitStructureTool() {
             ],
             isCancelled: () => cancelled,
             errorMessage: "Failed to start profit structure model",
+            onError: () => {
+                if (!cancelled) setBootError("利润结构引擎加载失败，请重试。");
+            },
+        }).then((loaded) => {
+            engine = loaded;
+            if (cancelled) loaded?.dispose();
         });
 
         return () => {
             cancelled = true;
+            engine?.dispose();
         };
-    }, [accessToken]);
+    }, [accessToken, bootAttempt]);
 
     async function handleAccessSubmit() {
         const key = accessKey.trim();
@@ -125,6 +136,12 @@ export default function ProfitStructureTool() {
 
     return (
         <div id="profit-structure-root" className="profit-structure-tool">
+            {bootError ? (
+                <div className="engine-load-error" role="alert">
+                    <span>{bootError}</span>
+                    <button type="button" className="btn btn-secondary" onClick={() => setBootAttempt((value) => value + 1)}>重试加载</button>
+                </div>
+            ) : null}
             <aside id="profit-structure-sidebar" className="sidebar">
                 <button id="profit-structure-sidebar-toggle" className="sidebar-toggle" type="button" title="收起控制台" aria-label="收起控制台">
                     ‹

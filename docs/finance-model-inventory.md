@@ -15,6 +15,7 @@
 - `src/lib/finance/filters/*`：财务模型共用筛选状态、搜索、include/exclude 判断和级联筛选修剪。
 - `src/lib/finance/templates.js`：财务模型共用模板族登记、经营明细事实表通用表头、预算/实际分 sheet 表头和共享示例数据生成器；除敏感性分析之外，当前模型默认复用 `operating-detail`。
 - `src/lib/finance/core.ts`、`public/tools/shared/finance-core.js`：共用字段角色、期间、数值、CSV 和指标聚合语义；静态 Margin 通过浏览器版本复用同一口径。
+- `src/lib/finance/browser-tool-loader.ts`、`src/lib/finance/browser-engine-lifecycle.ts`：五个旧式浏览器引擎的 typed 启动、vendor script 超时/重试和统一资源清理边界；工具壳卸载时必须调用引擎 `dispose()`。
 - `docs/finance-chart-system.md`：财务图表中枢、共享算法边界和模型依赖地图；改图表中枢或共享计算口径时要先核对这里。
 - `docs/finance-interaction-system.md`：财务交互中枢、筛选器/下钻/明细表筛选依赖地图；改筛选和下钻交互时要先核对这里。
 - `docs/finance-template-system.md`：财务模板中枢、上传模板和示例数据依赖地图；改模板族、示例数据或默认加载数据时要先核对这里。

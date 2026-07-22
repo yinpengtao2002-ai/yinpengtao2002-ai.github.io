@@ -313,7 +313,7 @@ test("profit structure tool requires the private tool access key before booting 
   assert.match(tool, /多维利润质量诊断模型内测访问/);
   assert.match(tool, /type="password"/);
   assert.match(tool, /if \(!accessToken\) {\s+return;\s+}/);
-  assert.match(tool, /\}, \[accessToken\]\);/);
+  assert.match(tool, /\}, \[accessToken, bootAttempt\]\);/);
 });
 
 test("source files for the tool do not expose rejected panels or rejected chart names", async () => {

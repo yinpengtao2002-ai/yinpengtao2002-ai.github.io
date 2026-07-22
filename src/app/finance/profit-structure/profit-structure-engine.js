@@ -12,6 +12,12 @@ import {
     normalizeFinancePeriod,
     parseFinanceNumber
 } from "../../../lib/finance/core.ts";
+import {
+    clearFinanceEngineBindingMarkers,
+    createFinanceEngineLifecycle
+} from "../../../lib/finance/browser-engine-lifecycle.ts";
+
+const lifecycle = createFinanceEngineLifecycle();
 
 const TEMPLATE_HEADERS = OPERATING_DETAIL_HEADERS;
 const TEMPLATE_HEADER_NOTE = OPERATING_DETAIL_TEMPLATE_NOTE;
@@ -1033,7 +1039,7 @@ function bindOnce(target, eventName, handler, key = eventName) {
     if (!target) return;
     const bindKey = `bound${normalizeToken(key) || eventName}`;
     if (target.dataset?.[bindKey] === "true") return;
-    target.addEventListener(eventName, handler);
+    lifecycle.listen(target, eventName, handler);
     if (target.dataset) target.dataset[bindKey] = "true";
 }
 
@@ -1046,8 +1052,8 @@ function resizePlotlyCharts() {
 
 function schedulePlotResize() {
     if (typeof window === "undefined") return;
-    window.requestAnimationFrame(resizePlotlyCharts);
-    window.setTimeout(resizePlotlyCharts, 320);
+    lifecycle.frame(resizePlotlyCharts);
+    lifecycle.timeout(resizePlotlyCharts, 320);
 }
 
 function initChartResizeObserver() {
@@ -1057,10 +1063,10 @@ function initChartResizeObserver() {
 
     const mainContent = document.querySelector(".profit-structure-tool .main-content");
     if (mainContent && typeof ResizeObserver !== "undefined") {
-        const observer = new ResizeObserver(schedulePlotResize);
+        const observer = lifecycle.observe(new ResizeObserver(schedulePlotResize));
         observer.observe(mainContent);
     }
-    window.addEventListener("resize", schedulePlotResize);
+    lifecycle.listen(window, "resize", schedulePlotResize);
     if (root) root.dataset.plotResizeObserverBound = "true";
 }
 
@@ -1146,6 +1152,9 @@ function bindControls() {
 }
 
 function initApp() {
+    const root = byId("profit-structure-root");
+    if (!root) return;
+    lifecycle.start();
     initSidebar();
     initChartResizeObserver();
     bindControls();
@@ -1158,8 +1167,16 @@ function initApp() {
     loadRows(createSampleRows(), "示例数据");
 }
 
+function dispose() {
+    lifecycle.dispose();
+    clearFinanceEngineBindingMarkers(byId("profit-structure-root"));
+    document.querySelectorAll(".profit-structure-tool .js-plotly-plot").forEach((plot) => {
+        if (typeof Plotly !== "undefined") Plotly.purge(plot);
+    });
+}
+
 if (typeof window !== "undefined") {
-    window.ProfitStructureModel = { initApp };
+    window.ProfitStructureModel = { initApp, dispose };
 }
 
 const profitStructureModelApi = {
@@ -1176,7 +1193,8 @@ const profitStructureModelApi = {
     defaultDimensionPath,
     summarizeProfitStructure,
     createSampleRows,
-    initApp
+    initApp,
+    dispose
 };
 
 export default profitStructureModelApi;

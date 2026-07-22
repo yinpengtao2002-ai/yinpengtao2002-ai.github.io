@@ -4,6 +4,12 @@ import "@perspective-dev/viewer-datagrid";
 import "@perspective-dev/viewer-d3fc";
 import * as XLSX from "xlsx";
 import financeTemplates from "../../../lib/finance/templates.js";
+import {
+    clearFinanceEngineBindingMarkers,
+    createFinanceEngineLifecycle
+} from "../../../lib/finance/browser-engine-lifecycle.ts";
+
+const lifecycle = createFinanceEngineLifecycle();
 
 const {
     OPERATING_DETAIL_HEADERS,
@@ -442,7 +448,7 @@ regular-table {
 .column-selector-column[data-label="High"]::before { content: "最高" !important; }
 .column-selector-column[data-label="Low"]::before { content: "最低" !important; }
 `;
-const perspectiveLocalizationRoots = new WeakSet();
+let perspectiveLocalizationRoots = new WeakSet();
 let workbenchGuideSyncScheduled = false;
 
 const state = {
@@ -843,10 +849,10 @@ function scheduleWorkbenchGuideSync(root = byId("perspective-viewer"), event) {
     if (workbenchGuideSyncScheduled) return;
 
     workbenchGuideSyncScheduled = true;
-    requestAnimationFrame(() => {
+    lifecycle.frame(() => {
         workbenchGuideSyncScheduled = false;
         void updateWorkbenchGuideFromViewer(event);
-        setTimeout(() => {
+        lifecycle.timeout(() => {
             void updateWorkbenchGuideFromViewer(event);
         }, 80);
     });
@@ -859,10 +865,10 @@ function bindWorkbenchGuide() {
     const syncGuide = (event) => {
         scheduleWorkbenchGuideSync(viewer, event);
     };
-    viewer.addEventListener("perspective-config-update", syncGuide);
-    viewer.addEventListener("perspective-plugin-update", syncGuide);
-    viewer.addEventListener("click", syncGuide, true);
-    viewer.addEventListener("keyup", syncGuide, true);
+    lifecycle.listen(viewer, "perspective-config-update", syncGuide);
+    lifecycle.listen(viewer, "perspective-plugin-update", syncGuide);
+    lifecycle.listen(viewer, "click", syncGuide, true);
+    lifecycle.listen(viewer, "keyup", syncGuide, true);
     viewer.dataset.workbenchGuideBound = "true";
 }
 
@@ -942,11 +948,11 @@ function observePerspectiveWorkbenchLocalization(root = byId("perspective-viewer
         if (perspectiveLocalizationRoots.has(currentRoot)) return;
         perspectiveLocalizationRoots.add(currentRoot);
 
-        const observer = new MutationObserver(() => {
+        const observer = lifecycle.observe(new MutationObserver(() => {
             localizePerspectiveWorkbench(root);
             scheduleWorkbenchGuideSync(root);
             observePerspectiveWorkbenchLocalization(root);
-        });
+        }));
         observer.observe(currentRoot, {
             childList: true,
             subtree: true,
@@ -1497,13 +1503,20 @@ function getAnalysisRows(rows) {
 async function reloadViewer(sourceLabel) {
     const viewer = byId("perspective-viewer");
     if (!viewer) return;
+    const signal = lifecycle.signal();
 
     await ensurePerspectiveRuntime();
+    if (signal?.aborted) return;
     state.worker = state.worker ?? await perspective.worker();
+    if (signal?.aborted) return;
 
     const analysisRows = getAnalysisRows(state.rows);
     const previousTable = state.table;
     const table = await state.worker.table(analysisRows);
+    if (signal?.aborted) {
+        await table?.delete?.();
+        return;
+    }
     const config = buildConfig(analysisRows);
     state.table = table;
     applyPerspectiveLocalizationVariables(viewer);
@@ -1514,7 +1527,7 @@ async function reloadViewer(sourceLabel) {
     applyPerspectiveLocalizationVariables(viewer);
     observePerspectiveWorkbenchLocalization(viewer);
     localizePerspectiveWorkbench(viewer);
-    requestAnimationFrame(() => {
+    lifecycle.frame(() => {
         applyPerspectiveLocalizationVariables(viewer);
         observePerspectiveWorkbenchLocalization(viewer);
         localizePerspectiveWorkbench(viewer);
@@ -1757,7 +1770,7 @@ function toggleFieldRoles() {
 }
 
 function refreshWorkbenchSize() {
-    requestAnimationFrame(() => {
+    lifecycle.frame(() => {
         window.dispatchEvent(new Event("resize"));
         byId("perspective-viewer")?.notifyResize?.();
     });
@@ -1777,7 +1790,7 @@ function toggleWorkbenchFocus() {
 }
 
 function bindFieldRoleControls() {
-    byId("perspective-field-roles")?.addEventListener("change", (event) => {
+    lifecycle.listen(byId("perspective-field-roles"), "change", (event) => {
         const target = event.target;
         if (target?.matches?.("[data-role-select]")) {
             handleFieldRoleChange(event);
@@ -1788,7 +1801,7 @@ function bindFieldRoleControls() {
         }
     });
 
-    byId("perspective-field-governance-toolbar")?.addEventListener("click", (event) => {
+    lifecycle.listen(byId("perspective-field-governance-toolbar"), "click", (event) => {
         const button = event.target?.closest?.("[data-field-governance-action]");
         const action = button?.getAttribute?.("data-field-governance-action");
         if (!action) return;
@@ -1821,19 +1834,19 @@ function insertCalculatedFieldReference(field) {
 
 function bindCalculatedMetricControls() {
     const panel = byId("perspective-calculated-metric-panel");
-    byId("perspective-calculated-metric-toggle")?.addEventListener("click", toggleCalculatedMetricPanel);
-    byId("perspective-calculated-generate")?.addEventListener("click", handleCalculatedMetricGenerate);
-    panel?.addEventListener("input", (event) => {
+    lifecycle.listen(byId("perspective-calculated-metric-toggle"), "click", toggleCalculatedMetricPanel);
+    lifecycle.listen(byId("perspective-calculated-generate"), "click", handleCalculatedMetricGenerate);
+    lifecycle.listen(panel, "input", (event) => {
         const target = event.target;
         if (target?.matches?.("#perspective-calculated-metric-name, #perspective-calculated-formula")) handleCalculatedMetricChange(event);
     });
-    panel?.addEventListener("change", (event) => {
+    lifecycle.listen(panel, "change", (event) => {
         const target = event.target;
         if (target?.matches?.("#perspective-calculated-metric-type, #perspective-calculated-format")) {
             handleCalculatedMetricChange(event);
         }
     });
-    panel?.addEventListener("click", (event) => {
+    lifecycle.listen(panel, "click", (event) => {
         if (event.target?.closest?.("[data-calculated-field-remove]")) {
             void handleCalculatedFieldRemove(event);
             return;
@@ -1848,43 +1861,45 @@ function bindUpload() {
     const input = byId("perspective-file-input");
     const zone = byId("perspective-upload-zone");
 
-    input?.addEventListener("change", (event) => {
+    lifecycle.listen(input, "change", (event) => {
         const file = event.target.files?.[0];
         if (file) void handleFile(file);
         event.target.value = "";
     });
 
     ["dragenter", "dragover"].forEach((eventName) => {
-        zone?.addEventListener(eventName, (event) => {
+        lifecycle.listen(zone, eventName, (event) => {
             event.preventDefault();
             zone.classList.add("drag-over");
         });
     });
 
     ["dragleave", "drop"].forEach((eventName) => {
-        zone?.addEventListener(eventName, (event) => {
+        lifecycle.listen(zone, eventName, (event) => {
             event.preventDefault();
             zone.classList.remove("drag-over");
         });
     });
 
-    zone?.addEventListener("drop", (event) => {
+    lifecycle.listen(zone, "drop", (event) => {
         const file = event.dataTransfer?.files?.[0];
         if (file) void handleFile(file);
     });
 }
 
 function bindControls() {
-    byId("perspective-btn-csv-template")?.addEventListener("click", downloadCsvTemplate);
-    byId("perspective-btn-xlsx-template")?.addEventListener("click", downloadXlsxTemplate);
-    byId("perspective-field-roles-toggle")?.addEventListener("click", toggleFieldRoles);
-    byId("perspective-btn-focus-workbench")?.addEventListener("click", toggleWorkbenchFocus);
+    lifecycle.listen(byId("perspective-btn-csv-template"), "click", downloadCsvTemplate);
+    lifecycle.listen(byId("perspective-btn-xlsx-template"), "click", downloadXlsxTemplate);
+    lifecycle.listen(byId("perspective-field-roles-toggle"), "click", toggleFieldRoles);
+    lifecycle.listen(byId("perspective-btn-focus-workbench"), "click", toggleWorkbenchFocus);
 }
 
 async function initApp() {
+    const root = byId("perspective-bi-root");
+    if (!root) return;
+    lifecycle.start();
     ensurePerspectiveStyles();
     document.body.classList.remove("perspective-bi-workspace-focus");
-    const root = byId("perspective-bi-root");
     if (root?.dataset.controlsBound !== "true") {
         bindUpload();
         bindControls();
@@ -1901,6 +1916,25 @@ async function initApp() {
     state.initialized = true;
 }
 
+function dispose() {
+    lifecycle.dispose();
+    workbenchGuideSyncScheduled = false;
+    perspectiveLocalizationRoots = new WeakSet();
+    state.initialized = false;
+    state.workbenchFocusMode = false;
+    document.body.classList.remove("perspective-bi-workspace-focus");
+    clearFinanceEngineBindingMarkers(byId("perspective-bi-root"));
+
+    const table = state.table;
+    const worker = state.worker;
+    state.table = null;
+    state.worker = null;
+    void table?.delete?.().catch?.(() => undefined);
+    void worker?.terminate?.().catch?.(() => undefined);
+    const viewer = byId("perspective-viewer");
+    void viewer?.delete?.().catch?.(() => undefined);
+}
+
 if (typeof window !== "undefined") {
-    window.PerspectiveBIModel = { initApp };
+    window.PerspectiveBIModel = { initApp, dispose };
 }

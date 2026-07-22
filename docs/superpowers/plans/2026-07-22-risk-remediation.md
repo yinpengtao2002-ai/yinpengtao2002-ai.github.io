@@ -31,10 +31,10 @@
 - [x] CSV 状态机支持 RFC 4180 多行字段和资源上限。
 - [x] 通用 Margin 输出不硬编码人民币符号。
 - [x] 敏感性页面说明非负 Driver、固定税费和利润公式假设。
-- [ ] 财务引擎实现可重复 `initApp()` / `dispose()`，卸载清理全部资源。
-- [ ] 脚本加载失败可重试，有超时和用户可见错误入口。
+- [x] 财务引擎实现可重复 `initApp()` / `dispose()`，卸载清理全部资源。
+- [x] 脚本加载失败可重试，有超时和用户可见错误入口。
 
-验证记录（2026-07-22，财务正确性）：共享 core、Margin、Monthly、Profit Structure、Business Analysis、模板契约与 Sensitivity 定向组合全部通过；站点测试 427/427、Margin 52/52、Sensitivity 7/7、TypeScript、lint（0 errors，4 个既有 Goalkeeper warnings）、`git diff --check` 与 Vercel Build 通过。字段映射确认 UI 与生命周期仍保持未关闭状态。
+验证记录（2026-07-22，财务正确性与生命周期）：共享 core、Margin、Monthly、Profit Structure、Business Analysis、模板契约与 Sensitivity 定向组合全部通过；生命周期与 tooling 定向组合 24/24；站点测试 427/427、Margin 52/52、Sensitivity 7/7、TypeScript、lint（0 errors，4 个既有 Goalkeeper warnings）、`git diff --check` 与 Vercel Build 通过。本地 production Playwright 桌面与 390px 冒烟无控制台错误、无横向溢出。字段映射确认 UI 仍保持未关闭状态。
 
 ## 3. 可访问性、SEO 与工程守门
 
