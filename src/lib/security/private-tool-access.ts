@@ -1,18 +1,35 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import {
-  LEGACY_FINANCE_AI_ACCESS_HEADER,
-  PRIVATE_TOOL_ACCESS_HEADER,
-} from "../private-tool-access/constants.ts";
+import { PRIVATE_TOOL_ACCESS_HEADER } from "../private-tool-access/constants.ts";
 
-export {
-  LEGACY_FINANCE_AI_ACCESS_HEADER,
-  PRIVATE_TOOL_ACCESS_HEADER,
-};
+export { PRIVATE_TOOL_ACCESS_HEADER };
 
 const TOKEN_TTL_MS = 2 * 60 * 60 * 1000;
+const TOKEN_AUDIENCE = "lucas-private-tools";
+const TOKEN_SCOPES = [
+  "lucas:stock-decision",
+  "finance:profit-structure",
+  "finance:perspective-bi",
+] as const;
+
+export type PrivateToolAccessTokenPayload = {
+  v: 1;
+  aud: string;
+  scope: string[];
+  iat: number;
+  exp: number;
+};
+
+export type PrivateToolTokenExpectation = {
+  audience?: string;
+  scope?: string;
+};
 
 function readAccessKey() {
-  return process.env.PRIVATE_TOOL_ACCESS_KEY?.trim() || process.env.FINANCE_AI_ACCESS_KEY?.trim() || "";
+  return process.env.PRIVATE_TOOL_ACCESS_KEY?.trim() || "";
+}
+
+function readTokenSecret() {
+  return process.env.PRIVATE_TOOL_TOKEN_SECRET?.trim() || "";
 }
 
 function sign(value: string, secret: string) {
@@ -27,7 +44,7 @@ function safeEqual(left: string, right: string) {
 }
 
 export function isPrivateToolAccessConfigured() {
-  return Boolean(readAccessKey());
+  return Boolean(readAccessKey() && readTokenSecret());
 }
 
 export function isPrivateToolAccessKeyValid(key: unknown) {
@@ -41,40 +58,73 @@ export function isPrivateToolAccessKeyValid(key: unknown) {
 }
 
 export function createPrivateToolAccessToken(now = Date.now()) {
-  const secret = readAccessKey();
+  const secret = readTokenSecret();
 
   if (!secret) {
-    throw new Error("PRIVATE_TOOL_ACCESS_KEY is not configured.");
+    throw new Error("PRIVATE_TOOL_TOKEN_SECRET is not configured.");
   }
 
-  const expiresAt = now + TOKEN_TTL_MS;
-  const payload = String(expiresAt);
-  return `${payload}.${sign(payload, secret)}`;
+  const payload: PrivateToolAccessTokenPayload = {
+    v: 1,
+    aud: TOKEN_AUDIENCE,
+    scope: [...TOKEN_SCOPES],
+    iat: Math.floor(now / 1000),
+    exp: Math.floor((now + TOKEN_TTL_MS) / 1000),
+  };
+  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  return `${encodedPayload}.${sign(encodedPayload, secret)}`;
+}
+
+export function decodePrivateToolAccessToken(token: string): PrivateToolAccessTokenPayload | null {
+  const [encodedPayload] = token.split(".");
+  if (!encodedPayload) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8")) as Partial<PrivateToolAccessTokenPayload>;
+    if (
+      payload.v !== 1 ||
+      typeof payload.aud !== "string" ||
+      !Array.isArray(payload.scope) ||
+      !payload.scope.every((item) => typeof item === "string") ||
+      typeof payload.iat !== "number" ||
+      typeof payload.exp !== "number"
+    ) {
+      return null;
+    }
+    return payload as PrivateToolAccessTokenPayload;
+  } catch {
+    return null;
+  }
 }
 
 export function getPrivateToolAccessTokenExpiry(token: string) {
-  const [payload] = token.split(".");
-  const expiresAt = Number(payload);
-  return Number.isFinite(expiresAt) ? new Date(expiresAt) : null;
+  const payload = decodePrivateToolAccessToken(token);
+  return payload ? new Date(payload.exp * 1000) : null;
 }
 
-export function verifyPrivateToolAccessToken(token: unknown, now = Date.now()) {
-  const secret = readAccessKey();
+export function verifyPrivateToolAccessToken(
+  token: unknown,
+  now = Date.now(),
+  expectation: PrivateToolTokenExpectation = {},
+) {
+  const secret = readTokenSecret();
 
   if (!secret || typeof token !== "string") {
     return false;
   }
 
-  const [payload, signature] = token.split(".");
-  const expiresAt = Number(payload);
+  const [encodedPayload, signature, extra] = token.split(".");
+  const payload = decodePrivateToolAccessToken(token);
 
-  if (!payload || !signature || !Number.isFinite(expiresAt) || expiresAt < now) {
+  if (!encodedPayload || !signature || extra || !payload || payload.exp * 1000 < now) {
     return false;
   }
 
-  return safeEqual(signature, sign(payload, secret));
+  if (expectation.audience && payload.aud !== expectation.audience) return false;
+  if (expectation.scope && !payload.scope.includes(expectation.scope)) return false;
+
+  return safeEqual(signature, sign(encodedPayload, secret));
 }
 
 export function readPrivateToolAccessToken(headers: Headers) {
-  return headers.get(PRIVATE_TOOL_ACCESS_HEADER) ?? headers.get(LEGACY_FINANCE_AI_ACCESS_HEADER);
+  return headers.get(PRIVATE_TOOL_ACCESS_HEADER);
 }

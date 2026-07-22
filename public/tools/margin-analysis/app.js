@@ -569,6 +569,11 @@ function escapeTsvCell(value) {
         .replace(/\r?\n/g, ' ');
 }
 
+function neutralizeSpreadsheetTextCell(value) {
+    const text = String(value ?? '');
+    return /^[=+\-@]/.test(text) ? `'${text}` : text;
+}
+
 
 // ==================== CSV 解析 ====================
 function parseCSV(text) {
@@ -3650,10 +3655,14 @@ function getVisibleDetailDataRowCount(state) {
 }
 
 function buildDetailExportRows(state) {
-    const headers = (state?.columns || []).map(column => String(column.label ?? ''));
+    const columns = state?.columns || [];
+    const headers = columns.map(column => neutralizeSpreadsheetTextCell(column.label));
     const rows = getCurrentDetailRowMetas(state).map(meta => {
         const cells = meta.cells || [];
-        return headers.map((_, index) => String(cells[index] ?? ''));
+        return columns.map((column, index) => {
+            const value = String(cells[index] ?? '');
+            return column.type === 'text' ? neutralizeSpreadsheetTextCell(value) : value;
+        });
     });
     return [headers, ...rows];
 }

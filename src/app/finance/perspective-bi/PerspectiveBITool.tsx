@@ -7,7 +7,7 @@ import { PRIVATE_TOOL_ACCESS_ENDPOINT } from "@/lib/private-tool-access/constant
 
 type AccessResponse = {
     token?: string;
-    error?: string;
+    message?: string;
     errorCode?: string;
 };
 
@@ -20,7 +20,7 @@ function getAccessErrorMessage(payload: AccessResponse, fallback: string) {
         return "内测密钥不正确。";
     }
 
-    return payload.error || fallback;
+    return payload.message || fallback;
 }
 
 export default function PerspectiveBITool() {

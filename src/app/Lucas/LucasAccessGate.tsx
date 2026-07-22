@@ -9,7 +9,7 @@ const LucasPrivateWorkbench = lazy(() => import("./LucasPrivateWorkbench"));
 
 type AccessResponse = {
   token?: string;
-  error?: string;
+  message?: string;
   errorCode?: string;
 };
 
@@ -22,7 +22,7 @@ function getAccessErrorMessage(payload: AccessResponse, fallback: string) {
     return "访问码不正确。";
   }
 
-  return payload.error || fallback;
+  return payload.message || fallback;
 }
 
 export default function LucasAccessGate() {

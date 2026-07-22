@@ -8,7 +8,7 @@ import {
 } from "../src/lib/security/private-tool-access-edge.ts";
 
 process.env.PRIVATE_TOOL_ACCESS_KEY = "edge-compatible-private-tool-key";
-process.env.FINANCE_AI_ACCESS_KEY = "";
+process.env.PRIVATE_TOOL_TOKEN_SECRET = "edge-compatible-private-tool-signing-secret";
 
 test("middleware private tool verifier accepts tokens from the server signer", async () => {
   const now = 1_782_493_900_000;
@@ -26,13 +26,16 @@ test("middleware private tool verifier rejects expired or malformed tokens", asy
   assert.equal(await verifyPrivateToolAccessTokenForMiddleware(null, now), false);
 });
 
-test("middleware reads the new private tool header before the legacy header", () => {
+test("middleware accepts only the private tool access header", () => {
   const headers = new Headers({
     "X-Private-Tool-Access": "new-token",
     "X-Finance-AI-Access": "legacy-token",
   });
 
   assert.equal(readPrivateToolAccessTokenFromHeaders(headers), "new-token");
+  assert.equal(readPrivateToolAccessTokenFromHeaders(new Headers({
+    "X-Finance-AI-Access": "legacy-token",
+  })), null);
 });
 
 test("middleware protects the private stock decision API", async () => {

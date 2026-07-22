@@ -8,11 +8,12 @@ const upgradeInsecureRequestsDirective = shouldUpgradeInsecureRequests ? ["upgra
 
 const baseContentSecurityPolicyDirectives = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:",
+  "script-src 'self' 'unsafe-inline' blob:",
+  "script-src-attr 'none'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https:",
+  "connect-src 'self'",
   "media-src 'self' https: blob: data:",
   "frame-src 'self'",
   "object-src 'none'",
@@ -68,6 +69,7 @@ const sameOriginFrameHeaders = [
     key: "X-Frame-Options",
     value: "SAMEORIGIN",
   },
+  ...sharedSecurityHeaders,
 ];
 
 const nextConfig: NextConfig = {

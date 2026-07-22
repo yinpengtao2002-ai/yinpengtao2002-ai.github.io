@@ -186,7 +186,7 @@ async function proxyToPublicStudyCardsApi(body: {
 }
 
 export async function POST(req: NextRequest) {
-  const rateLimitError = enforceRateLimit(req, STUDY_CARDS_RATE_LIMIT);
+  const rateLimitError = await enforceRateLimit(req, STUDY_CARDS_RATE_LIMIT);
 
   if (rateLimitError) {
     return rateLimitError;

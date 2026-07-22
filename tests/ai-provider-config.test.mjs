@@ -53,13 +53,14 @@ test("AI endpoints share DeepSeek primary and GPT fallback provider config", asy
   assert.match(envExample, /DEEPSEEK_API_URL=https:\/\/api\.deepseek\.com\/chat\/completions/);
 });
 
-test("AI provider config orders DeepSeek before GPT fallback", async () => {
+test("AI provider config orders Primary GPT before DeepSeek fallback", async () => {
   const originalEnv = {
     AI_PRIMARY_API_KEY: process.env.AI_PRIMARY_API_KEY,
     AI_PRIMARY_API_URL: process.env.AI_PRIMARY_API_URL,
     AI_PRIMARY_MODEL: process.env.AI_PRIMARY_MODEL,
     DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
     DEEPSEEK_API_URL: process.env.DEEPSEEK_API_URL,
+    AI_PROVIDER_ORDER: process.env.AI_PROVIDER_ORDER,
   };
 
   process.env.AI_PRIMARY_API_KEY = "test-primary-key";
@@ -67,18 +68,19 @@ test("AI provider config orders DeepSeek before GPT fallback", async () => {
   process.env.AI_PRIMARY_MODEL = "";
   process.env.DEEPSEEK_API_KEY = "test-deepseek-key";
   process.env.DEEPSEEK_API_URL = "";
+  delete process.env.AI_PROVIDER_ORDER;
 
   try {
     const { getChatProviders } = await import("../src/lib/ai/providers.ts");
     const providers = getChatProviders(18000);
 
     assert.equal(providers.length, 2);
-    assert.equal(providers[0].model, "deepseek-v4-pro");
-    assert.equal(providers[0].apiUrl, "https://api.deepseek.com/chat/completions");
-    assert.equal(providers[0].apiKey, "test-deepseek-key");
-    assert.equal(providers[1].model, "gpt-5.5");
-    assert.equal(providers[1].apiUrl, "https://api.dstopology.com/v1/chat/completions");
-    assert.equal(providers[1].apiKey, "test-primary-key");
+    assert.equal(providers[0].model, "gpt-5.5");
+    assert.equal(providers[0].apiUrl, "https://api.dstopology.com/v1/chat/completions");
+    assert.equal(providers[0].apiKey, "test-primary-key");
+    assert.equal(providers[1].model, "deepseek-v4-pro");
+    assert.equal(providers[1].apiUrl, "https://api.deepseek.com/chat/completions");
+    assert.equal(providers[1].apiKey, "test-deepseek-key");
   } finally {
     Object.entries(originalEnv).forEach(([key, value]) => {
       if (typeof value === "undefined") {
@@ -109,12 +111,12 @@ test("AI provider config does not reuse the primary NewAPI key for DeepSeek", as
     const { getChatProviders } = await import("../src/lib/ai/providers.ts");
     const providers = getChatProviders(18000);
 
-    assert.equal(providers[0].model, "deepseek-v4-pro");
-    assert.equal(providers[0].apiKey, "");
-    assert.equal(providers[0].apiUrl, "https://api.deepseek.com/chat/completions");
-    assert.equal(providers[1].model, "gpt-5.5");
-    assert.equal(providers[1].apiKey, "test-newapi-key");
-    assert.equal(providers[1].apiUrl, "https://api.dstopology.com/v1/chat/completions");
+    assert.equal(providers[0].model, "gpt-5.5");
+    assert.equal(providers[0].apiKey, "test-newapi-key");
+    assert.equal(providers[0].apiUrl, "https://api.dstopology.com/v1/chat/completions");
+    assert.equal(providers[1].model, "deepseek-v4-pro");
+    assert.equal(providers[1].apiKey, "");
+    assert.equal(providers[1].apiUrl, "https://api.deepseek.com/chat/completions");
   } finally {
     Object.entries(originalEnv).forEach(([key, value]) => {
       if (typeof value === "undefined") {
@@ -123,6 +125,23 @@ test("AI provider config does not reuse the primary NewAPI key for DeepSeek", as
         process.env[key] = value;
       }
     });
+  }
+});
+
+test("AI provider config honors an explicit provider order", async () => {
+  const originalOrder = process.env.AI_PROVIDER_ORDER;
+  process.env.AI_PRIMARY_API_KEY = "test-primary-key";
+  process.env.DEEPSEEK_API_KEY = "test-deepseek-key";
+  process.env.AI_PROVIDER_ORDER = "deepseek,primary";
+
+  try {
+    const { getChatProviders } = await import("../src/lib/ai/providers.ts");
+    const providers = getChatProviders(18000);
+    assert.equal(providers[0].model, "deepseek-v4-pro");
+    assert.equal(providers[1].model, "gpt-5.5");
+  } finally {
+    if (typeof originalOrder === "undefined") delete process.env.AI_PROVIDER_ORDER;
+    else process.env.AI_PROVIDER_ORDER = originalOrder;
   }
 });
 

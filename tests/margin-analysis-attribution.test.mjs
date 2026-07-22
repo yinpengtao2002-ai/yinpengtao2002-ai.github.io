@@ -779,6 +779,25 @@ test("detail table copy uses the current filtered and sorted view", () => {
     assert.match(marginAnalysisStyles, /\.detail-copy-fallback\s*\{/);
 });
 
+test("detail table exports neutralize spreadsheet formulas only in text columns", () => {
+    const state = {
+        columns: [
+            { label: "维度", type: "text" },
+            { label: "数值", type: "number" },
+        ],
+        rowMetas: [
+            { tr: { hidden: false }, cells: ["=HYPERLINK(\"https://example.test\")", "-300"] },
+            { tr: { hidden: false }, cells: ["@IMPORTXML", "+12"] },
+        ],
+    };
+
+    assert.deepEqual(buildDetailExportRows(state), [
+        ["维度", "数值"],
+        ["'=HYPERLINK(\"https://example.test\")", "-300"],
+        ["'@IMPORTXML", "+12"],
+    ]);
+});
+
 test("upload template and sidebar use business dimension headers instead of Dim labels", () => {
     assert.deepEqual(TEMPLATE_HEADERS, ["月份", "数据口径", "大区", "国家", "品牌", "品牌市场", "经营模式", "业务单元", "车型", "燃油品类", "备注", "销量", "净收入", "成本", "边际"]);
     assert.deepEqual(TEMPLATE_ROLE_ROW, ["指标角色", "", "", "", "", "", "", "", "", "", "", "分母", "分子", "分子", "分子"]);

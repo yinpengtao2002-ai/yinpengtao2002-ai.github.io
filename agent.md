@@ -145,7 +145,10 @@ Current models:
 - `/api/chat`, `/api/tools/finance-ai-assistant`, and `/api/tools/study-cards` share `src/lib/ai/providers.ts`.
 - The formal finance AI assistant must preserve the `plan -> deterministic browser compute -> explain` chain. Do not add API modes that send uploaded workbook rows directly to a provider for calculation.
 - The primary provider is GPT (`gpt-5.5`) through `AI_PRIMARY_API_KEY`, `AI_PRIMARY_API_URL`, and optional `AI_PRIMARY_MODEL`; the default URL is `https://api.dstopology.com`, normalized to `/v1/chat/completions`.
-- DeepSeek (`deepseek-v4-pro`) stays as the fallback model. If `DEEPSEEK_API_KEY` is absent, fallback reuses the primary NewAPI key and URL; if `DEEPSEEK_API_KEY` is present, it uses `DEEPSEEK_API_URL`, defaulting to `https://api.deepseek.com/chat/completions`.
+- DeepSeek (`deepseek-v4-pro`) stays as the fallback model and requires its own `DEEPSEEK_API_KEY`; it uses `DEEPSEEK_API_URL`, defaulting to `https://api.deepseek.com/chat/completions`.
+- Provider order defaults to `primary,deepseek` and can be overridden explicitly with `AI_PROVIDER_ORDER`.
+- Production AI and access-code routes require `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`; missing configuration fails closed. Memory limiting is for local development and tests only.
+- Private tools use `PRIVATE_TOOL_ACCESS_KEY` as the human-entered code and a separate high-entropy `PRIVATE_TOOL_TOKEN_SECRET` for signed, scoped two-hour tokens. The formal Finance AI assistant remains public.
 - Do not hard-code real AI secrets in the repo. Configure production keys in Vercel environment variables.
 - Do not reintroduce the old generic fallback variables (`CHAT_API_URL` / `CHAT_API_KEY`); that key path is deprecated.
 - Local development chat falls back to local content unless `.env.local` provides at least one provider key.

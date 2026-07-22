@@ -4,10 +4,29 @@
 >
 > 状态约定：`待处理` / `处理中` / `已修复` / `放弃` / `延后`。未写入处理记录的项默认 `待处理`。
 
+## 2026-07-22 外部审查复核与风险维修
+
+> 本轮把外部审查当作待复核线索，不直接当作仓库事实。每项只有在源码、运行路径或失败测试确认后才进入维修；完成记录同步维护在 `docs/superpowers/plans/2026-07-22-risk-remediation.md`。
+
+| 分组 | 当前状态 | 复核结论 |
+|---|---|---|
+| 上传文件 XSS、表格公式注入、私有 iframe 沙箱 | 已修复 | 上传文本改用 DOM 文本节点，文本导出中和公式，私有 iframe 移除同源能力。 |
+| Chat / Finance AI 请求边界、SSE、错误泄露、Provider 顺序 | 已修复 | 请求体、角色、消息数、问题长度、错误契约、Provider 顺序、严格 JSON 与流式取消均已加回归测试。 |
+| 跨实例限流、私有 Token 密钥分离 | 已修复 | 生产使用 Upstash 原子计数并缺配置失败关闭；私有 Token 使用独立签名密钥和 audience/scope payload。 |
+| 财务期间、数值、聚合、CSV、生命周期 | 待处理 | 已确认存在；按共享解析层与统一 `dispose()` 协议收口。 |
+| 可访问性、SEO、依赖、CI、Vercel 发布契约 | 待处理 | 已确认具体缺口；限于低风险、可回归的改动。 |
+| Finance AI “鉴权绕过” | 放弃 | 当前产品和合同测试明确保持公开；本轮删除误导性的旧 Finance Access 兼容命名，不给公开主接口加访问码。 |
+| 敏感性模型负数 / 动态税率重建 | 延后 | 非负 Driver 与固定税费是当前业务假设；本轮只把假设写清，不扩建税务引擎。 |
+| 全量 TypeScript 迁移、巨型引擎拆分、完整 nonce CSP | 延后 | 属于独立架构工程，不与本轮风险修复混合。 |
+
 ## 整改执行记录
 
 | 日期 | 编号 | 状态 | 处理结论 | 验证 |
 |---|---|---|---|---|
+| 2026-07-22 | 风险 S0-1 | 已修复 | 敏感性上传科目名不再进入 `innerHTML`；Margin CSV/TSV 仅中和文本公式并保留数值负数；Lucas `srcDoc` iframe 移除 `allow-same-origin`；CSP 增加 `script-src-attr 'none'`、移除全局 `unsafe-eval` 并将浏览器连接限制为同源。 | `node --test tests/risk-security-remediation.test.mjs tests/security-contract.test.mjs tests/margin-analysis-attribution.test.mjs`；`npm run test:sensitivity`；`npm run build:vercel` |
+| 2026-07-22 | 风险 S0-2 | 已修复 | Chat 与 Finance AI 增加请求大小、角色、条数和问题长度限制；删除公开 `diagnose`；公开错误只返回通用中文、`errorCode`、`requestId` 与安全 `Retry-After`；Provider 默认 Primary GPT → DeepSeek；JSON 只接受单一完整对象并拒绝未知计划字段；SSE 支持跨块 UTF-8/JSON/`[DONE]`、单次结束、30 秒空闲/120 秒总时长和客户端取消。 | `node --test tests/risk-security-remediation.test.mjs tests/ai-provider-call-contract.test.mjs tests/ai-provider-config.test.mjs tests/finance-ai-assistant-contract.test.mjs`（77 项安全/API 组合通过）；`npx tsc --noEmit`；`npm run lint`；`npm run test:site`（420/420）；`npm run build:vercel` |
+| 2026-07-22 | 风险 S0-3 | 已修复 | 五个 AI/访问码入口改为异步共享限流；生产使用 Upstash Redis 单个 `EVAL` 原子执行 `INCR` / `PEXPIRE` / `PTTL`，缺配置或后端异常均返回 503，本地与测试才使用内存适配器；429 返回 TTL 对应的 `Retry-After`、`requestId` 和 `retryAfter`。 | `node --test tests/security-contract.test.mjs tests/risk-security-remediation.test.mjs`；`npx tsc --noEmit`；`npm run test:site` |
+| 2026-07-22 | 风险 S0-4 | 已修复 | Finance AI 继续公开，删除专用旧 Access Route、兼容 alias 和 `FINANCE_AI_ACCESS_KEY` 示例；其它私有工具改用 `PRIVATE_TOOL_TOKEN_SECRET` 签发版本化 `aud/scope/iat/exp` Token，middleware 只接受新 Header 并校验股票工具 scope，换码响应禁止缓存。 | `node --test tests/private-tool-access-middleware.test.mjs tests/security-contract.test.mjs tests/risk-security-remediation.test.mjs tests/finance-ai-assistant-contract.test.mjs`；`npx tsc --noEmit`；`npm run build:vercel` |
 | 2026-06-21 | 安全 P0-1 | 放弃 | 按产品决策，正式 `finance-ai-assistant` 不要求访问码，保持公开体验；付费 API 滥用风险改由 P0-2 的 rate limit 和后续 P1-5 的 workbook 上限缓解。私有 / 内测工具访问码已在后续 `架构 P2-1a` 中迁移到 `/api/private-tool-access`，旧 `/api/tools/finance-ai-assistant/access` 仅保留兼容委托。 | `node --test tests/finance-ai-assistant-contract.test.mjs` |
 | 2026-06-21 | 安全 P0-2 | 已修复 | 已在 `next.config.ts` 配置基础安全响应头，并为 5 个 AI 相关 POST 入口接入进程级 rate limit。该限流不依赖外部服务，适合作为基础 abuse control；如后续需要跨实例强一致限制，再升级为 Upstash / Vercel KV。 | `node --test tests/security-contract.test.mjs`；`npx tsc --noEmit`；`npm run test:site`；`npm run lint`；`npm run build:vercel`；生产预览 `curl -I -L http://localhost:3022/finance/finance-ai-assistant` 已确认 CSP / X-Frame-Options / nosniff / Referrer-Policy / Permissions-Policy |
 | 2026-06-21 | 安全 P0-2 回归 | 已修复 | 修正上一轮安全头加固的 iframe 误伤：全站默认仍用 `frame-ancestors 'none'` / `X-Frame-Options: DENY` 防外站嵌入；`/tools/margin-analysis/*` 作为同源 iframe 静态财务工具改为 `frame-ancestors 'self'` / `X-Frame-Options: SAMEORIGIN`；`/tools/subtitle-workbench/*` 保持禁止被外站嵌入，但允许 `frame-src https://yptt-subtitle-workbench.hf.space` 加载外部字幕工作台。 | `node --test tests/security-contract.test.mjs`；`npx tsc --noEmit`；`npm run lint`；`git diff --check`；`npm run test:site`；`npm run build:vercel`；本地生产 `curl -I -L http://localhost:3024/tools/margin-analysis/index.html` 已确认 `SAMEORIGIN`，`/tools/subtitle-workbench/` 已确认 `frame-src` 包含 HF 域名，`/finance/margin-analysis` 仍为 `DENY`；Playwright 确认 margin 与 subtitle iframe 内容渲染 |

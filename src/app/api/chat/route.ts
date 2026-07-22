@@ -1,12 +1,15 @@
-import { NextRequest } from "next/server";
-import { buildActiveThinkingArticlePrompt } from "@/lib/chatArticleContext";
-import { thinkingLabContent } from "@/lib/data/thinkingLabContent";
-import { getChatProviders, type ChatProvider } from "@/lib/ai/providers";
-import { financeModels, getFinanceModelBySlug, type FinanceModelItem } from "@/lib/finance/modelRegistry";
-import { enforceRateLimit } from "@/lib/security/rate-limit";
+import { buildActiveThinkingArticlePrompt } from "../../../lib/chatArticleContext.ts";
+import { thinkingLabContent } from "../../../lib/data/thinkingLabContent.ts";
+import { getChatProviders } from "../../../lib/ai/providers.ts";
+import { financeModels, getFinanceModelBySlug, type FinanceModelItem } from "../../../lib/finance/modelRegistry.ts";
+import { enforceRateLimit } from "../../../lib/security/rate-limit.ts";
+import { parsePublicChatRequest, parseRetryAfterSeconds, type PublicAiError } from "../../../lib/ai/public-api.ts";
+import { createSseDataDecoder } from "../../../lib/ai/sse.ts";
 
 const CHAT_PRIMARY_TIMEOUT_MS = 18000;
 const CHAT_RATE_LIMIT = { keyPrefix: "api-chat", limit: 30, windowMs: 60_000 };
+const STREAM_IDLE_TIMEOUT_MS = 30_000;
+const STREAM_TOTAL_TIMEOUT_MS = 120_000;
 
 function buildActiveFinanceModelPrompt(activeFinanceModel?: FinanceModelItem) {
   if (!activeFinanceModel) {
@@ -115,174 +118,222 @@ ${thinkingArticles}
 - 当用户提出与本网站无关的问题时（例如写代码、聊八卦、学术问题等），你可以简要回答，但在回复末尾温和地提醒用户："我最擅长的是帮你浏览和推荐本站的文章内容哦，有什么想了解的随时问我！"`;
 }
 
-export async function POST(req: NextRequest) {
-  const rateLimitError = enforceRateLimit(req, CHAT_RATE_LIMIT);
+function publicErrorResponse(
+  requestId: string,
+  status: number,
+  errorCode: string,
+  message: string,
+  retryAfter?: number,
+) {
+  const payload: PublicAiError = {
+    errorCode,
+    message,
+    requestId,
+    ...(retryAfter ? { retryAfter } : {}),
+  };
+  return Response.json(payload, {
+    status,
+    headers: {
+      "Cache-Control": "no-store",
+      "X-Request-Id": requestId,
+      ...(retryAfter ? { "Retry-After": String(retryAfter) } : {}),
+    },
+  });
+}
 
-  if (rateLimitError) {
-    return rateLimitError;
+async function readWithIdleTimeout(reader: ReadableStreamDefaultReader<Uint8Array>) {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      reader.read(),
+      new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(
+          () => reject(new DOMException("AI stream idle timeout", "AbortError")),
+          STREAM_IDLE_TIMEOUT_MS,
+        );
+      }),
+    ]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
+export async function POST(req: Request) {
+  const requestId = crypto.randomUUID();
+  const rateLimitError = await enforceRateLimit(req, CHAT_RATE_LIMIT);
+
+  if (rateLimitError) return rateLimitError;
+
+  const parsedRequest = parsePublicChatRequest(await req.text());
+  if (!parsedRequest.ok) {
+    return publicErrorResponse(
+      requestId,
+      parsedRequest.status,
+      parsedRequest.errorCode,
+      parsedRequest.message,
+    );
   }
 
-  try {
-    const { messages, currentFinanceModelSlug, currentThinkingArticleHref } = await req.json();
-    const activeFinanceModel =
-      typeof currentFinanceModelSlug === "string" ? getFinanceModelBySlug(currentFinanceModelSlug) : undefined;
-    const activeThinkingArticle =
-      typeof currentThinkingArticleHref === "string" ? getThinkingArticleByHref(currentThinkingArticleHref) : undefined;
+  const { messages, currentFinanceModelSlug, currentThinkingArticleHref } = parsedRequest.value;
+  const activeFinanceModel = currentFinanceModelSlug
+    ? getFinanceModelBySlug(currentFinanceModelSlug)
+    : undefined;
+  const activeThinkingArticle = currentThinkingArticleHref
+    ? getThinkingArticleByHref(currentThinkingArticleHref)
+    : undefined;
+  const chatProviders = getChatProviders(CHAT_PRIMARY_TIMEOUT_MS);
+  let upstreamResponse: Response | null = null;
+  let upstreamController: AbortController | null = null;
+  let lastStatus = 503;
+  let lastRetryAfter: number | undefined;
 
-    const chatProviders = getChatProviders(CHAT_PRIMARY_TIMEOUT_MS);
+  for (const provider of chatProviders) {
+    if (!provider.apiKey || !provider.apiUrl) continue;
 
-    const callUpstream = async (provider: ChatProvider) => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), provider.timeoutMs);
+    const controller = new AbortController();
+    const signal = typeof AbortSignal.any === "function"
+      ? AbortSignal.any([req.signal, controller.signal])
+      : controller.signal;
+    const headerTimeoutId = setTimeout(() => controller.abort(), provider.timeoutMs);
 
-      try {
-        return await fetch(provider.apiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${provider.apiKey}`,
-            "User-Agent": "Mozilla/5.0 (compatible; YinPengtaoWebsite/1.0)",
-            Accept: "application/json, text/event-stream",
-          },
-          body: JSON.stringify({
-            model: provider.model,
-            max_tokens: 4096,
-            stream: true,
-            messages: [
-              { role: "system", content: buildSystemPrompt(activeFinanceModel, activeThinkingArticle) },
-              ...messages.map((m: { role: string; content: string }) => ({
-                role: m.role,
-                content: m.content,
-              })),
-            ],
-          }),
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    };
+    try {
+      const response = await fetch(provider.apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${provider.apiKey}`,
+          "User-Agent": "Mozilla/5.0 (compatible; YinPengtaoWebsite/1.0)",
+          Accept: "application/json, text/event-stream",
+        },
+        body: JSON.stringify({
+          model: provider.model,
+          max_tokens: 4096,
+          stream: true,
+          messages: [
+            { role: "system", content: buildSystemPrompt(activeFinanceModel, activeThinkingArticle) },
+            ...messages,
+          ],
+        }),
+        signal,
+      });
 
-    let res: Response | null = null;
-    let activeProvider = chatProviders[0];
-    let upstreamError = "API not configured";
-    let upstreamStatus = 503;
-
-    for (const provider of chatProviders) {
-      activeProvider = provider;
-
-      if (!provider.apiKey || !provider.apiUrl) {
-        upstreamError = `${provider.model} API not configured`;
-        console.warn(`Skipping model ${provider.model}: API not configured`);
-        continue;
-      }
-
-      try {
-        res = await callUpstream(provider);
-      } catch (err) {
-        upstreamError = err instanceof Error ? err.message : "Upstream request failed";
-        upstreamStatus = 504;
-        console.warn(`Model ${provider.model} request failed: ${upstreamError}`);
-        continue;
-      }
-
-      if (res.ok && res.body) {
+      if (response.ok && response.body) {
+        upstreamResponse = response;
+        upstreamController = controller;
         break;
       }
 
-      upstreamStatus = res.status;
-      upstreamError = await res.text().catch(() => "");
-      console.warn(
-        `Model ${provider.model} failed (${res.status}): ${upstreamError.slice(0, 200)}`
-      );
-      res = null;
+      lastStatus = response.status;
+      if (response.status === 429) {
+        lastRetryAfter = parseRetryAfterSeconds(response.headers.get("Retry-After"));
+      }
+      const detail = await response.text().catch(() => "");
+      console.error(JSON.stringify({
+        event: "chat_upstream_http_error",
+        requestId,
+        provider: provider.model,
+        status: response.status,
+        detail: detail.slice(0, 500),
+      }));
+      controller.abort();
+    } catch (error) {
+      lastStatus = error instanceof DOMException && error.name === "AbortError" ? 504 : 502;
+      console.error(JSON.stringify({
+        event: "chat_upstream_request_error",
+        requestId,
+        provider: provider.model,
+        status: lastStatus,
+        error: error instanceof Error ? error.message : "unknown error",
+      }));
+      controller.abort();
+    } finally {
+      clearTimeout(headerTimeoutId);
     }
-
-    if (!res || !res.ok || !res.body) {
-      const urlHost = (() => {
-        try {
-          return new URL(activeProvider.apiUrl).host;
-        } catch {
-          return "invalid-url";
-        }
-      })();
-      console.error("Upstream API error:", upstreamStatus, upstreamError);
-      return Response.json(
-        {
-          error: "Upstream API error",
-          status: upstreamStatus,
-          detail: upstreamError.slice(0, 500),
-          model: activeProvider.model,
-          urlHost,
-        },
-        { status: upstreamStatus }
-      );
-    }
-
-    // Forward SSE stream, converting OpenAI-compatible format to our format
-    const encoder = new TextEncoder();
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-
-    const readableStream = new ReadableStream({
-      async start(controller) {
-        try {
-          let buffer = "";
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
-
-            for (const line of lines) {
-              if (!line.startsWith("data: ")) continue;
-              const data = line.slice(6).trim();
-              if (data === "[DONE]") {
-                controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-                continue;
-              }
-
-              try {
-                const parsed = JSON.parse(data);
-                const delta = parsed.choices?.[0]?.delta;
-                // For thinking models: skip reasoning_content, only forward content
-                const text = delta?.content;
-                if (text) {
-                  controller.enqueue(
-                    encoder.encode(
-                      `data: ${JSON.stringify({ text })}\n\n`
-                    )
-                  );
-                }
-              } catch {
-                // Skip malformed chunks
-              }
-            }
-          }
-
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-          controller.close();
-        } catch {
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({ error: "Stream error" })}\n\n`
-            )
-          );
-          controller.close();
-        }
-      },
-    });
-
-    return new Response(readableStream, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-      },
-    });
-  } catch {
-    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
+
+  if (!upstreamResponse?.body || !upstreamController) {
+    if (lastStatus === 429 || lastRetryAfter) {
+      const retryAfter = lastRetryAfter ?? 60;
+      return publicErrorResponse(requestId, 429, "provider_rate_limited", "AI 服务繁忙，请稍后重试。", retryAfter);
+    }
+    if (lastStatus === 504) {
+      return publicErrorResponse(requestId, 504, "provider_timeout", "AI 服务响应超时，请稍后重试。");
+    }
+    return publicErrorResponse(requestId, 502, "provider_unavailable", "AI 服务暂时不可用，请稍后重试。");
+  }
+
+  const encoder = new TextEncoder();
+  const reader = upstreamResponse.body.getReader();
+  const activeController = upstreamController;
+  const readableStream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      let emittedDone = false;
+      let upstreamDone = false;
+      const emitDone = () => {
+        if (emittedDone) return;
+        emittedDone = true;
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+      };
+      const parser = createSseDataDecoder((data) => {
+        if (data.trim() === "[DONE]") {
+          upstreamDone = true;
+          emitDone();
+          return;
+        }
+        try {
+          const parsed = JSON.parse(data) as { choices?: Array<{ delta?: { content?: unknown } }> };
+          const content = parsed.choices?.[0]?.delta?.content;
+          if (typeof content === "string" && content) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: content })}\n\n`));
+          }
+        } catch {
+          // Ignore one malformed event while preserving later complete SSE events.
+        }
+      });
+      const totalTimeoutId = setTimeout(() => activeController.abort(), STREAM_TOTAL_TIMEOUT_MS);
+
+      try {
+        while (!upstreamDone) {
+          const { done, value } = await readWithIdleTimeout(reader);
+          if (done) break;
+          parser.push(value);
+        }
+        parser.finish();
+        if (upstreamDone) await reader.cancel().catch(() => undefined);
+        emitDone();
+        controller.close();
+      } catch (error) {
+        console.error(JSON.stringify({
+          event: "chat_upstream_stream_error",
+          requestId,
+          error: error instanceof Error ? error.message : "unknown error",
+        }));
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+          error: "AI 服务连接中断，请重试。",
+          errorCode: "provider_stream_failed",
+          requestId,
+        })}\n\n`));
+        emitDone();
+        controller.close();
+      } finally {
+        clearTimeout(totalTimeoutId);
+        activeController.abort();
+        await reader.cancel().catch(() => undefined);
+      }
+    },
+    async cancel() {
+      activeController.abort();
+      await reader.cancel().catch(() => undefined);
+    },
+  });
+
+  return new Response(readableStream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-store, no-cache",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+      "X-Request-Id": requestId,
+    },
+  });
 }

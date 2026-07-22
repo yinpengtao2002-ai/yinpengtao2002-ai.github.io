@@ -1,10 +1,7 @@
-import {
-  LEGACY_FINANCE_AI_ACCESS_HEADER,
-  PRIVATE_TOOL_ACCESS_HEADER,
-} from "../private-tool-access/constants.ts";
+import { PRIVATE_TOOL_ACCESS_HEADER } from "../private-tool-access/constants.ts";
 
-function readAccessKey() {
-  return process.env.PRIVATE_TOOL_ACCESS_KEY?.trim() || process.env.FINANCE_AI_ACCESS_KEY?.trim() || "";
+function readTokenSecret() {
+  return process.env.PRIVATE_TOOL_TOKEN_SECRET?.trim() || "";
 }
 
 function encodeBase64Url(bytes: Uint8Array) {
@@ -46,22 +43,49 @@ async function sign(value: string, secret: string) {
 }
 
 export function readPrivateToolAccessTokenFromHeaders(headers: Headers) {
-  return headers.get(PRIVATE_TOOL_ACCESS_HEADER) ?? headers.get(LEGACY_FINANCE_AI_ACCESS_HEADER);
+  return headers.get(PRIVATE_TOOL_ACCESS_HEADER);
 }
 
-export async function verifyPrivateToolAccessTokenForMiddleware(token: unknown, now = Date.now()) {
-  const secret = readAccessKey();
+function decodePayload(encodedPayload: string) {
+  try {
+    const base64 = encodedPayload.replaceAll("-", "+").replaceAll("_", "/");
+    const padding = "=".repeat((4 - (base64.length % 4)) % 4);
+    const binary = atob(`${base64}${padding}`);
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    const payload = JSON.parse(new TextDecoder().decode(bytes)) as Record<string, unknown>;
+    return payload.v === 1 &&
+      typeof payload.aud === "string" &&
+      Array.isArray(payload.scope) &&
+      payload.scope.every((item) => typeof item === "string") &&
+      typeof payload.iat === "number" &&
+      typeof payload.exp === "number"
+      ? payload as { v: 1; aud: string; scope: string[]; iat: number; exp: number }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function verifyPrivateToolAccessTokenForMiddleware(
+  token: unknown,
+  now = Date.now(),
+  expectation: { audience?: string; scope?: string } = {},
+) {
+  const secret = readTokenSecret();
 
   if (!secret || typeof token !== "string") {
     return false;
   }
 
-  const [payload, signature] = token.split(".");
-  const expiresAt = Number(payload);
+  const [encodedPayload, signature, extra] = token.split(".");
+  const payload = encodedPayload ? decodePayload(encodedPayload) : null;
 
-  if (!payload || !signature || !Number.isFinite(expiresAt) || expiresAt < now) {
+  if (!encodedPayload || !signature || extra || !payload || payload.exp * 1000 < now) {
     return false;
   }
 
-  return safeEqual(signature, await sign(payload, secret));
+  if (expectation.audience && payload.aud !== expectation.audience) return false;
+  if (expectation.scope && !payload.scope.includes(expectation.scope)) return false;
+
+  return safeEqual(signature, await sign(encodedPayload, secret));
 }

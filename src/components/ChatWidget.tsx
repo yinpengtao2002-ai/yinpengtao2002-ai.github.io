@@ -22,6 +22,7 @@ import {
     type InternalRouteCard,
 } from "@/lib/chatRouteCards";
 import { useViewportProfile } from "@/lib/useLowMotionMode";
+import { createSseDecoder } from "@/lib/ai/sse";
 
 type ContentCardType = "finance" | "thinking";
 
@@ -380,6 +381,12 @@ export default function ChatWidget() {
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const currentFinanceModelSlugRef = useRef<string | null>(null);
     const currentThinkingArticleHrefRef = useRef<string | null>(null);
+    const chatAbortControllerRef = useRef<AbortController | null>(null);
+
+    useEffect(() => () => {
+        chatAbortControllerRef.current?.abort();
+        chatAbortControllerRef.current = null;
+    }, []);
 
     const financeContent: ContentCard[] = staticFinance.map((item) => ({
         id: item.id, title: item.title, description: item.description,
@@ -542,7 +549,9 @@ export default function ChatWidget() {
 
     const callChatAPI = async (allMessages: Message[], assistantMsgId: string): Promise<boolean> => {
         let fullText = "";
+        chatAbortControllerRef.current?.abort();
         const controller = new AbortController();
+        chatAbortControllerRef.current = controller;
         const timeoutId = window.setTimeout(() => controller.abort(), CHAT_API_TIMEOUT_MS);
 
         try {
@@ -562,33 +571,40 @@ export default function ChatWidget() {
             if (!res.ok || !res.body) return false;
             if (aiAvailable === null) setAiAvailable(true);
             const reader = res.body.getReader();
-            const decoder = new TextDecoder();
+            let streamFinished = false;
+            const decoder = createSseDecoder((event) => {
+                if ("done" in event) {
+                    streamFinished = true;
+                    return;
+                }
+                if ("error" in event) {
+                    streamFinished = true;
+                    return;
+                }
+                fullText += event.text;
+                const text = fullText;
+                setMessages((prev) => prev.map((m) => (m.id === assistantMsgId ? { ...m, content: text } : m)));
+            });
             setMessages((prev) =>
                 prev.map((m) => (m.id === "typing" ? { ...m, id: assistantMsgId, isTyping: false, content: "" } : m))
             );
-            while (true) {
+            while (!streamFinished) {
                 const { done, value } = await reader.read();
                 if (done) break;
-                const chunk = decoder.decode(value);
-                for (const line of chunk.split("\n")) {
-                    if (!line.startsWith("data: ")) continue;
-                    const data = line.slice(6);
-                    if (data === "[DONE]") break;
-                    try {
-                        const parsed = JSON.parse(data);
-                        if (parsed.text) {
-                            fullText += parsed.text;
-                            const text = fullText;
-                            setMessages((prev) => prev.map((m) => (m.id === assistantMsgId ? { ...m, content: text } : m)));
-                        }
-                    } catch { /* skip */ }
+                decoder.push(value);
+                if (streamFinished) {
+                    await reader.cancel().catch(() => undefined);
                 }
             }
+            decoder.finish();
             return fullText.length > 0;
         } catch {
             return fullText.length > 0;
         } finally {
             window.clearTimeout(timeoutId);
+            if (chatAbortControllerRef.current === controller) {
+                chatAbortControllerRef.current = null;
+            }
         }
     };
 
@@ -740,6 +756,8 @@ export default function ChatWidget() {
             height: "min(500px, calc(100dvh - 88px))",
         };
     const handleClose = () => {
+        chatAbortControllerRef.current?.abort();
+        chatAbortControllerRef.current = null;
         setKeyboardOpen(false);
         setMobileExpanded(false);
         setIsOpen(false);
