@@ -1,6 +1,6 @@
 # 财务图表中枢
 
-最后核对时间：2026-06-19
+最后核对时间：2026-07-22
 
 这份文档定义财务模型后续要收敛到的中枢系统。目标不是一次性重写所有页面，而是让重复的图表样式、计算口径和同步检查有一个共同来源。每次调整中枢图表、财务算法或模型图表组合，都要同步核对这里和 `docs/finance-model-inventory.md`。
 
@@ -8,11 +8,17 @@
 
 计划中的中枢分两层：
 
-- `src/lib/finance/core/`：字段识别、月份识别、数字清洗、筛选聚合、单车指标、PVM 结构/费率效应、FBP 利润链和预算实际差异。
+- `src/lib/finance/core.ts`：Next 模型共用的字段角色识别、期间规范化、结构化数值解析和指标聚合入口。
+- `public/tools/shared/finance-core.js`：静态工具使用的同构浏览器版本，同时承接 RFC 4180 CSV 状态机。
+- `src/lib/finance/core/`：后续继续承接筛选聚合、单车指标、PVM 结构/费率效应、FBP 利润链和预算实际差异。
 - `src/lib/finance/charts/`：统一 `FinanceChartSpec`、Plotly 主题、图表尺寸、移动端规则、瀑布桥、趋势图、热力图、气泡散点图、横向排名图、Pareto 排名、小多图趋势、系列柱状图和明细表协议。
 
 当前中心化进度：
 
+- `src/lib/finance/core.ts` 与 `public/tools/shared/finance-core.js` 已统一常见期间、有限数值、括号负数、百分号、万/亿倍率和 `sum / ratio / weighted_average / snapshot / non_aggregatable` 聚合语义。
+- 字段角色识别已按显式角色、表头语义、样本类型的顺序执行；`monthly-trend`、`profit-structure` 和 `business-analysis` 不再以销量列左右位置决定维度与指标。
+- `margin-analysis` 已使用共享 RFC 4180 解析、最近两期默认选择、数值质量阻断和 `Map` 聚合；零销量单位指标返回未定义状态，通用指标展示不再假设人民币。
+- `profit-structure` 对已知比率按分子/分母重算，NPS 等缺少底层计数的指标不生成伪合计，期末型指标取最新期间值。
 - `src/lib/finance/charts/types.ts` 已承接 `FinanceChartSpec`、图表类型、明细表 variant/meta、直接图表输入和中心 builder 输入类型。
 - `src/lib/finance/charts/index.ts` 已承接 `buildChartSpec`、`buildDirectChartSpec`、Plotly 主题、瀑布桥、趋势图、排名图、Pareto 排名、小多图趋势、热力图、气泡散点和明细表规格。
 - `src/lib/finance-ai/charts.ts` 只保留兼容转发，旧 import 不再拥有单独图表实现。
@@ -40,7 +46,7 @@
 - 改瀑布桥规则：同步检查 `business-analysis`、`margin-analysis`、`finance-ai-assistant`、`sensitivity-analysis`。
 - 改 PVM 结构/费率效应：同步检查 `margin-analysis` 和 `finance-ai-assistant`，并用同一组输入验证两边结果一致。
 - 改 FBP 利润链：同步检查 `business-analysis` 和 `sensitivity-analysis`，同时确认零值科目不会生成无意义柱子。
-- 改月份、字段识别、数字清洗或上传解析：同步检查 `monthly-trend`、`profit-structure`、`perspective-bi`、`finance-ai-assistant` 和所有上传模板说明。
+- 改期间、字段识别、数值解析、CSV 或指标聚合：同步检查 `business-analysis`、`margin-analysis`、`monthly-trend`、`profit-structure`、`perspective-bi`、`finance-ai-assistant` 和所有上传模板说明。
 - 改模型图表组合、交互模式或模板行为：同步更新 `docs/finance-model-inventory.md` 和本文件的模型依赖地图。
 
 ## 迁移顺序
@@ -50,7 +56,7 @@
 3. 下一步：抽出 `waterfall-bridge`，让财务 AI、敏感性、预算实际先共用同一套桥图规格。
 4. 抽出 `pvm.ts`，让单车归因和财务 AI 使用同一套结构效应 / 费率效应公式。
 5. 抽出热力图、气泡散点、横向排名和 KPI 卡的模型接入规则。
-6. 最后整理字段识别、上传解析和模型清单生成逻辑。
+6. 进行中：字段识别、期间/数值解析和基础指标聚合已进入共享 core；下一步补齐跨模型字段映射确认 UI，并继续迁移 PVM / FBP 纯函数。
 
 ## AI 操作要求
 

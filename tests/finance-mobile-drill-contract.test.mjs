@@ -14,6 +14,10 @@ const sensitivityEngine = await readFile(
   new URL("../src/app/finance/sensitivity-analysis/sensitivity-engine.js", import.meta.url),
   "utf8"
 );
+const sensitivityTool = await readFile(
+  new URL("../src/app/finance/sensitivity-analysis/SensitivityTool.tsx", import.meta.url),
+  "utf8"
+);
 const monthlyCss = await readFile(new URL("../src/app/finance/monthly-trend/tool.css", import.meta.url), "utf8");
 const monthlyEngine = await readFile(
   new URL("../src/app/finance/monthly-trend/monthly-trend-engine.js", import.meta.url),
@@ -583,15 +587,22 @@ test("monthly trend keeps the base table schema business-facing", () => {
   assert.doesNotMatch(monthlyEngine, /coreTrendMetrics\(\)\.slice\(0,\s*3\)/);
 });
 
-test("monthly trend uses the same sales-split base table logic as margin analysis", () => {
+test("monthly trend shares the operating-detail template without relying on sales-column position", () => {
   assert.match(monthlyEngine, /const TEMPLATE_HEADERS\s*=\s*OPERATING_DETAIL_HEADERS/);
   assert.match(monthlyEngine, /createOperatingDetailSampleRows/);
   assert.match(monthlyEngine, /function analyzeMonthlyUploadHeaders\(/);
-  assert.match(monthlyEngine, /const salesIndex\s*=[\s\S]*findIndex[\s\S]*isVolumeMetricName/);
-  assert.match(monthlyEngine, /const dimensionColumns\s*=[\s\S]*index < salesIndex/);
-  assert.match(monthlyEngine, /const metricColumns\s*=[\s\S]*index > salesIndex/);
-  assert.match(financeTemplatesSource, /OPERATING_DETAIL_TEMPLATE_NOTE[\s\S]*销量列之前[\s\S]*销量列之后/);
+  assert.match(monthlyEngine, /function inferMonthlyUploadFields\(/);
+  assert.match(monthlyEngine, /inferFinanceFieldRoles\(rows/);
+  assert.match(monthlyEngine, /dimensionColumns:\s*inference\.dimensionColumns/);
+  assert.match(monthlyEngine, /metricColumns:\s*\[inference\.denominatorColumn,\s*\.\.\.inference\.metricColumns\]/);
+  assert.doesNotMatch(monthlyEngine, /index < salesIndex|index > salesIndex/);
   assert.doesNotMatch(monthlyEngine, /const TEMPLATE_HEADERS\s*=\s*Object\.keys/);
+});
+
+test("sensitivity analysis makes its current model assumptions visible", () => {
+  assert.match(sensitivityTool, /所有 Driver 均按非负值计算/);
+  assert.match(sensitivityTool, /所得税按固定金额处理/);
+  assert.match(sensitivityTool, /利润总额 = 销量 × 单位收入 - 销量 × 单位变动成本 - 固定扣减项 \+ 利润贡献项/);
 });
 
 test("monthly trend names each multi metric trend line by business meaning", () => {

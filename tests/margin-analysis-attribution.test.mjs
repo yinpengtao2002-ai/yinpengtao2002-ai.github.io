@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
+const financeCore = await import("../public/tools/shared/finance-core.js");
+globalThis.FinanceCore = financeCore.default;
 const marginAnalysis = await import("../public/tools/margin-analysis/app.js");
 const marginAnalysisSource = await readFile(new URL("../public/tools/margin-analysis/app.js", import.meta.url), "utf8");
 const marginAnalysisStyles = await readFile(new URL("../public/tools/margin-analysis/styles.css", import.meta.url), "utf8");
@@ -40,6 +42,10 @@ const {
     getMetricTickFormat,
     buildDetailExportRows,
     buildDetailClipboardText,
+    parseCSV,
+    selectDefaultComparisonPeriods,
+    validateMarginNumericRows,
+    getMetricUnitSuffix,
 } = marginAnalysis.default;
 
 const EPSILON = 1e-9;
@@ -62,6 +68,65 @@ function rowByValue(rows, dim, value) {
     assert.ok(row, `Expected row for ${dim}=${value}`);
     return row;
 }
+
+test("margin CSV parser supports RFC 4180 multiline fields and trailing cells", () => {
+    const rows = parseCSV('\uFEFF月份,大区,销量,边际,备注\r\n2026-01,欧洲,10,20,"第一行\r\n第二行"\r\n2026-02,亚洲,12,24,');
+    assert.equal(rows.length, 2);
+    assert.equal(rows[0].备注, "第一行\r\n第二行");
+    assert.equal(rows[1].备注, "");
+});
+
+test("margin period defaults use normalized latest two periods", () => {
+    assert.deepEqual(
+        selectDefaultComparisonPeriods(["2026-1", "2026-10", "2026-2"]),
+        { months: ["2026-01", "2026-02", "2026-10"], baseMonth: "2026-02", currMonth: "2026-10" },
+    );
+});
+
+test("margin numeric validation reports invalid required cells and normalizes units", () => {
+    const result = validateMarginNumericRows([
+        { Month: "2026-01", Dim_A: "", "Sales Volume": "100", Metric_1: "1.2亿" },
+        { Month: "2026-02", Dim_A: "A", "Sales Volume": "", Metric_1: "#VALUE!" },
+    ], [{ key: "Metric_1", sourceHeader: "边际" }], ["Dim_A"], { sheet: "经营明细", firstDataRow: 2 });
+
+    assert.equal(result.rows[0]["Sales Volume"], 100);
+    assert.equal(result.rows[0].Metric_1, 120_000_000);
+    assert.equal(result.rows[0].Dim_A, "空白");
+    assert.deepEqual(result.issues.map((issue) => ({ status: issue.status, sheet: issue.sheet, row: issue.row, column: issue.column })), [
+        { status: "blank", sheet: "经营明细", row: 3, column: "销量" },
+        { status: "invalid", sheet: "经营明细", row: 3, column: "边际" },
+    ]);
+});
+
+test("zero-volume global unit metric is explicitly undefined", () => {
+    assert.deepEqual(calculateGlobalMetrics([
+        { Month: "2026-01", "Sales Volume": 0, "Total Margin": 100 },
+    ], "2026-01"), {
+        totalVol: 0,
+        totalMargin: 100,
+        avgMargin: null,
+        status: "undefined_zero_volume",
+    });
+});
+
+test("dimension aggregation safely preserves special object keys and numeric zero", () => {
+    const rows = [
+        { Month: "base", Dim_A: "__proto__", "Sales Volume": 10, "Total Margin": 100 },
+        { Month: "base", Dim_A: 0, "Sales Volume": 10, "Total Margin": 200 },
+        { Month: "curr", Dim_A: "__proto__", "Sales Volume": 10, "Total Margin": 110 },
+        { Month: "curr", Dim_A: 0, "Sales Volume": 10, "Total Margin": 220 },
+    ];
+    const base = calculateGlobalMetrics(rows, "base");
+    const current = calculateGlobalMetrics(rows, "curr");
+    const effects = calculateDimensionPVMEffects(rows, "base", "curr", "Dim_A", current.totalVol, base.totalVol, base.avgMargin);
+    assert.deepEqual(new Set(effects.map((row) => row.Dim_A)), new Set(["__proto__", "0"]));
+});
+
+test("generic margin chart units do not assume a currency", () => {
+    assert.equal(getMetricUnitSuffix("number", "车"), "");
+    assert.equal(getMetricUnitSuffix("percent", "车"), "%");
+    assert.doesNotMatch(marginAnalysisSource, /metricUnitSuffix\s*=\s*[^;]*['"]¥['"]/);
+});
 
 test("current-dimension attribution splits mix and rate for comparable items", () => {
     const data = [
@@ -810,7 +875,7 @@ test("upload template and sidebar use business dimension headers instead of Dim 
     assert.match(loadedDataCenter[0], /for="input-metric-type">当前分析对象<\/label>/);
     assert.match(loadedDataCenter[0], /<select id="input-metric-type"/);
     assert.match(loadedDataCenter[0], /名称来自底表表头/);
-    assert.match(marginAnalysisSource, /sheetRowsToObjects\(sheetRows\)/);
+    assert.match(marginAnalysisSource, /sheetRowsToObjects\(sheetRows, firstSheetName\)/);
     assert.match(marginAnalysisHtml, /可新增或删除维度列/);
     assert.match(marginAnalysisHtml, /销量列之后的数值列会识别为可分析指标/);
     assert.match(marginAnalysisHtml, /指标角色/);
@@ -856,8 +921,9 @@ test("loaded data center exposes unit name, current metric selector, and visual 
     assert.match(marginAnalysisSource, /metricInput\.addEventListener\('change'/);
 });
 
-test("static margin analysis shell version-busts the app bundle", () => {
-    assert.match(marginAnalysisHtml, /<script src="app\.js\?v=20260715-basis"><\/script>/);
+test("static margin analysis shell version-busts the shared core and app bundle", () => {
+    assert.match(marginAnalysisHtml, /<script src="\.\.\/shared\/finance-core\.js\?v=20260722"><\/script>/);
+    assert.match(marginAnalysisHtml, /<script src="app\.js\?v=20260722-finance-core"><\/script>/);
     assert.doesNotMatch(marginAnalysisHtml, /<script src="app\.js"><\/script>/);
 });
 

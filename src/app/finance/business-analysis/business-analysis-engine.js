@@ -19,6 +19,10 @@ import {
     FINANCE_WORKBENCH_MOBILE_QUERY,
     isFinanceWorkbenchMobileViewport
 } from "../../../lib/finance/workbench-breakpoints.ts";
+import {
+    inferFinanceFieldRoles,
+    parseFinanceNumber
+} from "../../../lib/finance/core.ts";
 
 (function () {
     const DEFAULT_DIMENSIONS = ["大区", "国家", "品牌", "品牌市场", "经营模式", "业务单元", "车型", "燃油品类"];
@@ -88,6 +92,11 @@ import {
     const SCENARIO_SHEET_HEADERS = OPERATING_DETAIL_SCENARIO_SHEET_HEADERS;
     const WIDE_VOLUME_ALIASES = ["发车量", "发车", "销量", "销售量", "Sales Volume", "volume"];
     const WIDE_NON_DIMENSION_COLUMNS = ["月份", "年月", "期间", "日期", "数据口径", "口径", "版本", "scenario", "Scenario", "备注", "说明", "单位", "unit"];
+    const LONG_NUMERIC_ALIASES = [
+        "金额", "数量", "值", "amount", "Amount", "value",
+        "实际", "实际值", "实际数据", "actual", "Actual",
+        "预算", "预算值", "budget", "Budget"
+    ];
     const MANUAL_SUBJECT_FIELDS = ["subject", "actual", "budget"];
 
     const state = {
@@ -151,21 +160,8 @@ import {
     }
 
     function toNumber(value) {
-        if (typeof value === "number") return Number.isFinite(value) ? value : 0;
-        if (value === null || value === undefined) return 0;
-
-        const raw = String(value).trim();
-        if (!raw) return 0;
-
-        const isNegative = raw.includes("(") && raw.includes(")");
-        const cleaned = raw
-            .replace(/[,%￥¥元辆台]/g, "")
-            .replace(/[万亿]/g, "")
-            .replace(/[()]/g, "")
-            .trim();
-        const numeric = Number(cleaned);
-        if (!Number.isFinite(numeric)) return 0;
-        return isNegative ? -numeric : numeric;
+        const parsed = parseFinanceNumber(value);
+        return parsed.status === "valid" ? parsed.value : 0;
     }
 
     function pick(row, aliases) {
@@ -242,10 +238,6 @@ import {
         return new Set(RESERVED_LONG_TABLE_COLUMNS.map(normalizeToken));
     }
 
-    function aliasSet(values) {
-        return new Set(values.map(normalizeToken));
-    }
-
     function collectHeaders(rows) {
         const seen = new Set();
         const headers = [];
@@ -258,11 +250,6 @@ import {
             });
         });
         return headers;
-    }
-
-    function findHeaderByAliases(headers, aliases) {
-        const aliasesNormalized = aliasSet(aliases);
-        return safeArray(headers).find((header) => aliasesNormalized.has(normalizeToken(header))) || "";
     }
 
     function groupBy(rows, keyFn) {
@@ -876,12 +863,66 @@ import {
 
     function inferWideDimensionColumns(rows) {
         const headers = collectHeaders(rows);
-        const salesColumn = findHeaderByAliases(headers, WIDE_VOLUME_ALIASES);
-        const salesIndex = salesColumn ? headers.indexOf(salesColumn) : -1;
-        const nonDimensionColumns = aliasSet(WIDE_NON_DIMENSION_COLUMNS);
-        const candidates = (salesIndex >= 0 ? headers.slice(0, salesIndex) : headers)
-            .filter((header) => header && !nonDimensionColumns.has(normalizeToken(header)));
+        const inference = inferFinanceFieldRoles(rows, {
+            headers,
+            periodAliases: ["月份", "年月", "期间", "日期", "month", "period", "date"],
+            denominatorAliases: WIDE_VOLUME_ALIASES,
+            ignoredHeaders: WIDE_NON_DIMENSION_COLUMNS
+        });
+        const candidates = inference.dimensionColumns;
         return orderedDimensions(candidates.length ? candidates : DEFAULT_DIMENSIONS);
+    }
+
+    function sourceLocationForRow(row, index) {
+        return row?.__sourceLocation || { sheet: "上传数据", row: index + 2 };
+    }
+
+    function numericIssueReason(reason) {
+        if (reason === "not_finite") return "不是有限数值";
+        if (reason === "unsupported_type") return "不支持的数据类型";
+        return "无法识别为数值";
+    }
+
+    function validateBusinessSourceRows(rows) {
+        const sourceRows = safeArray(rows);
+        const headers = collectHeaders(sourceRows);
+        const inference = inferFinanceFieldRoles(sourceRows, {
+            headers,
+            periodAliases: ["月份", "年月", "期间", "日期", "month", "period", "date"],
+            denominatorAliases: WIDE_VOLUME_ALIASES,
+            ignoredHeaders: WIDE_NON_DIMENSION_COLUMNS
+        });
+        const numericColumns = new Set([
+            ...inference.metricColumns,
+            ...(inference.denominatorColumn ? [inference.denominatorColumn] : []),
+            ...headers.filter((header) => LONG_NUMERIC_ALIASES.some((alias) => normalizeToken(alias) === normalizeToken(header)))
+        ]);
+        const issues = [];
+
+        sourceRows.forEach((row, index) => {
+            const location = sourceLocationForRow(row, index);
+            numericColumns.forEach((column) => {
+                const parsed = parseFinanceNumber(row?.[column]);
+                if (parsed.status !== "invalid") return;
+                issues.push({
+                    sheet: location.sheet,
+                    row: location.row,
+                    column,
+                    status: parsed.status,
+                    reason: numericIssueReason(parsed.reason)
+                });
+            });
+        });
+
+        return { issues };
+    }
+
+    function formatBusinessValidationMessage(issues, title = "数据质量校验未通过") {
+        const preview = issues.slice(0, 5).map((issue) => (
+            `${escapeHtml(issue.sheet)} 第 ${issue.row} 行「${escapeHtml(issue.column)}」${escapeHtml(issue.reason)}`
+        ));
+        const remainder = Math.max(0, issues.length - preview.length);
+        return `${title}：${issues.length} 个非空数值单元格存在问题。${preview.join("；")}${remainder ? `；另有 ${remainder} 个` : ""}`;
     }
 
     function operatingDetailScenarioKey(row, dimensionColumns) {
@@ -2847,6 +2888,12 @@ import {
             return;
         }
 
+        const validation = validateBusinessSourceRows(rows);
+        if (validation.issues.length) {
+            showMessage("error", formatBusinessValidationMessage(validation.issues, "数据质量校验未通过"));
+            return;
+        }
+
         const parsed = parseRows(rows);
         if (!parsed.length) {
             showMessage("error", "没有识别到有效数据，请检查模板列名。");
@@ -2906,7 +2953,15 @@ import {
 
     function rowsFromSheet(workbook, sheetName, scenario = "") {
         const worksheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(worksheet, { defval: "" }).map(normalizeRowKeys);
+        const rows = XLSX.utils.sheet_to_json(worksheet, { defval: "" }).map((sourceRow, index) => {
+            const row = normalizeRowKeys(sourceRow);
+            Object.defineProperty(row, "__sourceLocation", {
+                value: { sheet: sheetName, row: index + 2 },
+                enumerable: false,
+                configurable: true
+            });
+            return row;
+        });
         if (!scenario) return rows;
 
         return rows.map((row) => {
@@ -2916,6 +2971,11 @@ import {
             if (amount !== undefined && pick(row, ["实际", "实际值", "实际数据", "actual", "Actual"]) === undefined && pick(row, ["预算", "预算值", "budget", "Budget"]) === undefined) {
                 next[scenario === "actual" ? "实际" : "预算"] = amount;
             }
+            Object.defineProperty(next, "__sourceLocation", {
+                value: row.__sourceLocation,
+                enumerable: false,
+                configurable: true
+            });
             return next;
         });
     }

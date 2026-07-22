@@ -22,17 +22,19 @@
 
 ## 2. 财务正确性与生命周期
 
-- [ ] 共享期间解析器按时间排序并让 Margin 默认最近两期。
-- [ ] 共享数值解析器区分 valid / blank / invalid，支持括号、百分号、万/亿。
-- [ ] 非法必填值阻止计算并显示来源位置。
-- [ ] 指标按 sum / ratio / weighted / snapshot / non-aggregatable 聚合。
-- [ ] 字段治理不再只依赖销量列左右位置，歧义时阻止计算并提示。
-- [ ] Margin 使用 Map、安全处理特殊键，零销量单位指标返回未定义。
-- [ ] CSV 状态机支持 RFC 4180 多行字段和资源上限。
-- [ ] 通用 Margin 输出不硬编码人民币符号。
-- [ ] 敏感性页面说明非负 Driver、固定税费和利润公式假设。
+- [x] 共享期间解析器按时间排序并让 Margin 默认最近两期。
+- [x] 共享数值解析器区分 valid / blank / invalid，支持括号、百分号、万/亿。
+- [x] 非法必填值阻止计算并显示来源位置。
+- [x] 指标按 sum / ratio / weighted / snapshot / non-aggregatable 聚合。
+- [ ] 字段治理不再只依赖销量列左右位置，歧义时阻止计算并提示。（共享识别和阻断已完成；页面内映射确认区待补。）
+- [x] Margin 使用 Map、安全处理特殊键，零销量单位指标返回未定义。
+- [x] CSV 状态机支持 RFC 4180 多行字段和资源上限。
+- [x] 通用 Margin 输出不硬编码人民币符号。
+- [x] 敏感性页面说明非负 Driver、固定税费和利润公式假设。
 - [ ] 财务引擎实现可重复 `initApp()` / `dispose()`，卸载清理全部资源。
 - [ ] 脚本加载失败可重试，有超时和用户可见错误入口。
+
+验证记录（2026-07-22，财务正确性）：共享 core、Margin、Monthly、Profit Structure、Business Analysis、模板契约与 Sensitivity 定向组合全部通过；站点测试 427/427、Margin 52/52、Sensitivity 7/7、TypeScript、lint（0 errors，4 个既有 Goalkeeper warnings）、`git diff --check` 与 Vercel Build 通过。字段映射确认 UI 与生命周期仍保持未关闭状态。
 
 ## 3. 可访问性、SEO 与工程守门
 

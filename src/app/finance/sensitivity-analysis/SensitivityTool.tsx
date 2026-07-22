@@ -83,6 +83,15 @@ export default function SensitivityTool() {
                     </div>
                 </section>
 
+                <section className="sidebar-block" aria-labelledby="sensitivity-assumption-title">
+                    <h2 className="sidebar-title" id="sensitivity-assumption-title">当前模型假设</h2>
+                    <div className="field-note">
+                        <p>所有 Driver 均按非负值计算。</p>
+                        <p>所得税按固定金额处理，不随税前利润自动变化。</p>
+                        <p>利润总额 = 销量 × 单位收入 - 销量 × 单位变动成本 - 固定扣减项 + 利润贡献项。</p>
+                    </div>
+                </section>
+
                 <section className="sidebar-block">
                     <h2 className="sidebar-title">联动分析</h2>
                     <div className="form-grid">

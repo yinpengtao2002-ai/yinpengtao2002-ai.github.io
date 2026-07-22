@@ -5,6 +5,123 @@ import {
     getOperatingDetailTemplateRows
 } from "../../../lib/finance/templates.js";
 import { FINANCE_WORKBENCH_MOBILE_QUERY } from "../../../lib/finance/workbench-breakpoints.ts";
+import {
+    inferFinanceFieldRoles,
+    normalizeFinancePeriod,
+    parseFinanceNumber
+} from "../../../lib/finance/core.ts";
+
+const MONTHLY_PERIOD_ALIASES = ["月份", "月度", "月", "期间", "年月", "会计期间", "month", "date", "period"];
+const MONTHLY_VOLUME_ALIASES = ["销量", "销售量", "发车量", "台数", "数量", "volume", "qty", "quantity", "units"];
+const MONTHLY_IGNORED_HEADERS = ["备注", "说明", "单位", "版本", "数据类型", "类型", "note", "notes", "remark", "remarks", "comment", "comments"];
+
+function monthlyHeaders(rows) {
+    const seen = new Set();
+    const headers = [];
+    (rows || []).forEach((row) => Object.keys(row || {}).forEach((header) => {
+        const clean = String(header).replace(/^\uFEFF/, "").trim();
+        if (!clean || seen.has(clean)) return;
+        seen.add(clean);
+        headers.push(clean);
+    }));
+    return headers;
+}
+
+function normalizedMonthlyHeader(value) {
+    return String(value ?? "").trim().toLowerCase().replace(/[\s_\-（）()%]/g, "");
+}
+
+function findMonthlyAlias(headers, aliases) {
+    const aliasSet = new Set(aliases.map(normalizedMonthlyHeader));
+    return headers.find((header) => aliasSet.has(normalizedMonthlyHeader(header))) || "";
+}
+
+function findMonthlyYearColumn(rows, headers) {
+    const yearAliases = new Set(["年份", "年度", "年", "year", "fiscalyear", "fy"].map(normalizedMonthlyHeader));
+    return headers.find((header) => {
+        if (!yearAliases.has(normalizedMonthlyHeader(header))) return false;
+        const values = rows.map((row) => row?.[header]).filter((value) => String(value ?? "").trim());
+        return values.length > 0 && values.every((value) => {
+            const year = Number(String(value).replace(/[^\d]/g, ""));
+            return Number.isInteger(year) && year >= 1900 && year <= 2999;
+        });
+    }) || "";
+}
+
+export function inferMonthlyUploadFields(rows, options = {}) {
+    const headers = options.headers || monthlyHeaders(rows);
+    const monthColumn = options.monthColumn || findMonthlyAlias(headers, MONTHLY_PERIOD_ALIASES);
+    const yearColumn = options.yearColumn || findMonthlyYearColumn(rows, headers);
+    const volumeColumn = options.volumeColumn || findMonthlyAlias(headers, MONTHLY_VOLUME_ALIASES);
+    const explicitRoles = {};
+    if (monthColumn) explicitRoles[monthColumn] = "period";
+    if (yearColumn) explicitRoles[yearColumn] = "ignore";
+    if (volumeColumn) explicitRoles[volumeColumn] = "denominator";
+    const inference = inferFinanceFieldRoles(rows, {
+        headers,
+        explicitRoles,
+        periodAliases: MONTHLY_PERIOD_ALIASES,
+        denominatorAliases: MONTHLY_VOLUME_ALIASES,
+        ignoredHeaders: MONTHLY_IGNORED_HEADERS
+    });
+    return {
+        headers,
+        monthColumn: inference.periodColumn,
+        yearColumn,
+        volumeColumn: inference.denominatorColumn,
+        salesIndex: headers.indexOf(inference.denominatorColumn),
+        dimensionColumns: inference.dimensionColumns,
+        metricColumns: [inference.denominatorColumn, ...inference.metricColumns].filter(Boolean),
+        ambiguousColumns: inference.ambiguousColumns
+    };
+}
+
+function monthlyPeriodFromRow(row, schema) {
+    const direct = normalizeFinancePeriod(row?.[schema.monthColumn]);
+    if (direct) return direct;
+    if (!schema.yearColumn) return null;
+    const year = Number(String(row?.[schema.yearColumn] ?? "").replace(/[^\d]/g, ""));
+    const month = Number(String(row?.[schema.monthColumn] ?? "").replace(/[^\d]/g, ""));
+    return normalizeFinancePeriod(`${year}-${month}`);
+}
+
+export function validateMonthlyUploadRows(rows, schema, source = {}) {
+    const issues = [];
+    const normalizedRows = (rows || []).map((row, index) => {
+        const normalized = { ...row };
+        const period = monthlyPeriodFromRow(row, schema);
+        if (period) {
+            normalized[schema.monthColumn] = period.key;
+        } else {
+            issues.push({
+                sheet: source.sheet || "工作表",
+                row: index + 2,
+                column: schema.monthColumn || "月份",
+                status: String(row?.[schema.monthColumn] ?? "").trim() ? "invalid" : "blank",
+                reason: "invalid_period"
+            });
+        }
+        (schema.metricColumns || []).forEach((column) => {
+            const parsed = parseFinanceNumber(row?.[column]);
+            if (parsed.status === "valid") {
+                normalized[column] = parsed.value;
+                return;
+            }
+            issues.push({
+                sheet: source.sheet || "工作表",
+                row: index + 2,
+                column,
+                status: parsed.status,
+                reason: parsed.reason || "required_blank"
+            });
+        });
+        (schema.dimensionColumns || []).forEach((column) => {
+            normalized[column] = String(row?.[column] ?? "").trim() || "空白";
+        });
+        return normalized;
+    });
+    return { rows: normalizedRows, issues };
+}
 
 (function () {
     const COLORS = {
@@ -24,7 +141,6 @@ import { FINANCE_WORKBENCH_MOBILE_QUERY } from "../../../lib/finance/workbench-b
     const YEAR_ALIASES = ["年份", "年度", "年", "year", "fiscalyear", "fy"];
     const VOLUME_COLUMN_ALIASES = ["销量", "销售量", "发车量", "台数", "数量", "volume", "qty", "quantity", "units"];
     const PREFERRED_METRICS = ["利润", "毛利", "边际", "净收入", "收入"];
-    const NON_DIMENSION_COLUMNS = ["备注", "说明", "单位", "口径", "版本", "数据类型", "类型", "scenario"];
     const TEMPLATE_HEADERS = OPERATING_DETAIL_HEADERS;
     const TEMPLATE_HEADER_NOTE = OPERATING_DETAIL_TEMPLATE_NOTE;
     const TEMPLATE_ROWS = getOperatingDetailTemplateRows();
@@ -108,25 +224,8 @@ import { FINANCE_WORKBENCH_MOBILE_QUERY } from "../../../lib/finance/workbench-b
     }
 
     function toNumber(value) {
-        if (typeof value === "number") return Number.isFinite(value) ? value : 0;
-        if (value instanceof Date) return 0;
-        if (value === null || value === undefined) return 0;
-
-        const raw = String(value).trim();
-        if (!raw) return 0;
-
-        const isPercent = raw.includes("%");
-        const isNegative = raw.includes("(") && raw.includes(")");
-        const cleaned = raw
-            .replace(/[,，\s￥¥$元台辆个件]/g, "")
-            .replace(/[万亿]/g, "")
-            .replace(/%/g, "")
-            .replace(/[()]/g, "")
-            .trim();
-        const numeric = Number(cleaned);
-        if (!Number.isFinite(numeric)) return 0;
-        const signed = isNegative ? -numeric : numeric;
-        return isPercent ? signed / 100 : signed;
+        const parsed = parseFinanceNumber(value);
+        return parsed.status === "valid" ? parsed.value : 0;
     }
 
     function inferColumns(rows) {
@@ -157,7 +256,7 @@ import { FINANCE_WORKBENCH_MOBILE_QUERY } from "../../../lib/finance/workbench-b
             monthColumn = headers.find((header) => header !== yearColumn && normalizedAliases.includes(normalizeToken(header))) || monthColumn;
         }
 
-        const schema = analyzeMonthlyUploadHeaders(headers, { monthColumn, yearColumn });
+        const schema = inferMonthlyUploadFields(rows, { headers, monthColumn, yearColumn });
         const metricColumns = schema.metricColumns;
         const dimensionColumns = schema.dimensionColumns;
 
@@ -177,40 +276,12 @@ import { FINANCE_WORKBENCH_MOBILE_QUERY } from "../../../lib/finance/workbench-b
 
     function analyzeMonthlyUploadHeaders(headers, context = {}) {
         const sourceHeaders = safeArray(headers).map((header) => String(header || "").trim()).filter(Boolean);
-        const salesIndex = sourceHeaders.findIndex(isVolumeMetricName);
-        const monthColumn = context.monthColumn || sourceHeaders.find(isMonthHeaderName) || "";
-        const yearColumn = context.yearColumn || "";
-        const nonDimensionSet = new Set(NON_DIMENSION_COLUMNS.map(normalizeToken));
-
-        if (salesIndex < 0) {
-            return {
-                salesIndex,
-                dimensionColumns: [],
-                metricColumns: []
-            };
-        }
-
-        const dimensionColumns = sourceHeaders.filter((header, index) => {
-            const isBeforeSales = index < salesIndex;
-            if (header === monthColumn || header === yearColumn) return false;
-            if (!isBeforeSales) return false;
-            if (nonDimensionSet.has(normalizeToken(header))) return false;
-            return true;
+        const sampleRow = Object.fromEntries(sourceHeaders.map((header) => [header, ""]));
+        return inferMonthlyUploadFields(context.rows || [sampleRow], {
+            headers: sourceHeaders,
+            monthColumn: context.monthColumn || sourceHeaders.find(isMonthHeaderName) || "",
+            yearColumn: context.yearColumn || ""
         });
-
-        const metricColumns = sourceHeaders.filter((header, index) => {
-            const isAfterSales = index > salesIndex;
-            if (header === monthColumn || header === yearColumn) return false;
-            if (index === salesIndex) return true;
-            if (!isAfterSales) return false;
-            return !isDerivedMetricColumn(header);
-        });
-
-        return {
-            salesIndex,
-            dimensionColumns,
-            metricColumns
-        };
     }
 
     function columnMatchRate(rows, header, parser) {
@@ -239,15 +310,6 @@ import { FINANCE_WORKBENCH_MOBILE_QUERY } from "../../../lib/finance/workbench-b
 
     function volumeMetricColumn(columns = state.metricColumns) {
         return safeArray(columns).find(isVolumeMetricName) || "";
-    }
-
-    function isDerivedMetricColumn(metric) {
-        if (isVolumeMetricName(metric)) return false;
-        const normalized = normalizeToken(metric);
-        if (!normalized) return false;
-        if (String(metric).includes("%")) return true;
-        if (normalized.includes("率") || normalized.includes("rate") || normalized.includes("ratio")) return true;
-        return ["单车", "单台", "单位", "平均", "均价", "单价", "perunit", "unit"].some((token) => normalized.includes(normalizeToken(token)));
     }
 
     function analysisMetricColumns(columns = state.metricColumns) {
@@ -1771,8 +1833,18 @@ import { FINANCE_WORKBENCH_MOBILE_QUERY } from "../../../lib/finance/workbench-b
             showMessage("需要月份列、销量列和至少一个总额指标列。", "error");
             return;
         }
+        if (inferred.ambiguousColumns.length) {
+            showMessage(`以下空字段无法判断是维度还是指标，请补充样本值或修改表头：${inferred.ambiguousColumns.join("、")}`, "error");
+            return;
+        }
+        const validated = validateMonthlyUploadRows(normalizedRows, inferred, { sheet: sourceName || "工作表" });
+        if (validated.issues.length) {
+            const preview = validated.issues.slice(0, 5).map((issue) => `第 ${issue.row} 行「${issue.column}」${issue.status === "blank" ? "为空" : "无法识别"}`);
+            showMessage(`数据质量校验未通过：${validated.issues.length} 个必填单元格存在问题。${preview.join("；")}`, "error");
+            return;
+        }
 
-        state.sourceRows = normalizedRows;
+        state.sourceRows = validated.rows;
         state.sourceName = sourceName;
         state.headers = inferred.headers;
         state.monthColumn = inferred.monthColumn;
@@ -1786,7 +1858,7 @@ import { FINANCE_WORKBENCH_MOBILE_QUERY } from "../../../lib/finance/workbench-b
         state.unitScale = "raw";
         renderColumnControls();
         renderAll();
-        showMessage(`已读取 ${normalizedRows.length} 行数据。`);
+        showMessage(`已读取 ${validated.rows.length} 行数据。`);
     }
 
     async function handleUpload(file) {
@@ -2036,7 +2108,9 @@ import { FINANCE_WORKBENCH_MOBILE_QUERY } from "../../../lib/finance/workbench-b
         loadRows(createSampleRows(), "示例数据");
     }
 
-    window.MonthlyTrendModel = { initApp };
+    if (typeof window !== "undefined") {
+        window.MonthlyTrendModel = { initApp };
+    }
 })();
 
 if (typeof module !== "undefined" && module.exports) {
