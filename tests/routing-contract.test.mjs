@@ -14,6 +14,10 @@ const subtitleWorkbenchPage = await readFile(
   new URL("../src/app/tools/subtitle-workbench/page.tsx", import.meta.url),
   "utf8"
 );
+const marginAnalysisPage = await readFile(
+  new URL("../src/app/finance/margin-analysis/page.tsx", import.meta.url),
+  "utf8"
+);
 
 test("next config contains permanent redirects for old thinking routes", () => {
   assert.match(nextConfig, /source:\s*"\/ai"/);
@@ -60,6 +64,14 @@ test("subtitle workbench route opens the hosted app directly instead of embeddin
   assert.match(thinkingLabContent, /title:\s*"视频字幕与总结工作台"/);
   assert.doesNotMatch(thinkingClient, /thinking-tool-entry/);
   assert.match(clientShell, /\/tools\/subtitle-workbench/);
+});
+
+test("margin analysis iframe carries a static asset version", () => {
+  assert.match(marginAnalysisPage, /MARGIN_ANALYSIS_TOOL_VERSION\s*=\s*"20260715-basis"/);
+  assert.match(
+    marginAnalysisPage,
+    /src=\{`\/tools\/margin-analysis\/index\.html\?v=\$\{MARGIN_ANALYSIS_TOOL_VERSION\}`\}/
+  );
 });
 
 test("thinking lab separates usable tools from reading content", () => {

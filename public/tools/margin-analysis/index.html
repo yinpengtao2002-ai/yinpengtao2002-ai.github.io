@@ -74,6 +74,13 @@
                                 <option value="Metric_1">单车边际</option>
                             </select>
                         </div>
+                        <div class="form-group compact">
+                            <label class="form-label" for="input-metric-format">指标口径</label>
+                            <select id="input-metric-format" class="form-select">
+                                <option value="number" selected>单车/单位指标</option>
+                                <option value="percent">比率指标</option>
+                            </select>
+                        </div>
                         <div class="form-group compact attribution-method-field">
                             <label class="form-label" for="input-attribution-method">归因口径</label>
                             <select id="input-attribution-method" class="form-select">
@@ -83,7 +90,7 @@
                         </div>
                     </div>
                     <p id="attribution-method-note" class="caption attribution-method-note">当前使用模式一：逐层独立归因；每一层按该层维度重新计算。</p>
-                    <p class="caption">这里只切换当前图表口径，名称来自底表表头；把单位改为“台”会展示为“单台净收入、单台成本、单台边际”。</p>
+                    <p class="caption">名称来自底表表头，系统只识别分母和分子；这里由用户选择可视化口径。单车/单位指标会按单位名称展示，比率指标会按“分子/分母”展示并使用百分比。</p>
                 </div>
             </div>
         </details>
@@ -160,7 +167,10 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td>说明</td><td>月份</td><td>维度</td><td>维度</td><td>维度</td><td>维度</td><td>维度</td><td>销量</td><td>可选指标</td><td>可选指标</td><td>可选指标</td>
+                                <td>指标角色</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>分母</td><td>分子</td><td>分子</td><td>分子</td>
+                            </tr>
+                            <tr>
+                                <td>说明</td><td>月份</td><td>维度</td><td>维度</td><td>维度</td><td>维度</td><td>维度</td><td>默认分母</td><td>可选分子</td><td>可选分子</td><td>可选分子</td>
                             </tr>
                             <tr>
                                 <td>默认</td><td>-</td><td>大区</td><td>国家</td><td>车型</td><td>燃油品类</td><td>品牌</td><td>-</td><td>单车净收入</td><td>单车成本</td><td>单车边际</td>
@@ -169,12 +179,12 @@
                     </table>
                 </div>
                 <div class="tip-box">
-                    💡 <strong>提示</strong>：销量列之前会按表头自动识别为分析维度，可新增或删除维度列；销量列之后的数值列会识别为可分析指标，例如净收入、成本、边际。成本等扣减项建议按负数填写；旧版“指标总额”列仍可直接上传。
+                    💡 <strong>提示</strong>：指标角色行用于标记分母和分子。默认把销量作为分母，净收入、成本、边际作为分子；如果要看比率指标，可以把净收入等列标为分母、毛利等列标为分子，并在数据中心选择“比率指标”。分母列之前的业务字段可新增或删除维度列；没有指标角色行时，销量列之后的数值列会识别为可分析指标；旧版“指标总额”列仍可直接上传。
                 </div>
                 <h3>计算逻辑</h3>
                 <ol>
-                    <li><strong>按当前维度分析</strong>：每张图按正在查看的维度汇总销量和<span data-total-metric-label>边际总额</span>，例如大区、国家或车型。</li>
-                    <li><strong>结构效应 (Mix)</strong>：该维度销量占比变化带来的<span data-unit-metric-label>单车边际</span>影响。</li>
+                    <li><strong>按当前维度分析</strong>：每张图按正在查看的维度汇总<span data-denominator-label>销量</span>和<span data-total-metric-label>边际总额</span>，例如大区、国家或车型。</li>
+                    <li><strong>结构效应 (Mix)</strong>：该维度<span data-denominator-label>销量</span>占比变化带来的<span data-unit-metric-label>单车边际</span>影响。</li>
                     <li><strong>费率效应 (Rate)</strong>：该维度自身<span data-unit-metric-label>单车边际</span>变化带来的影响。</li>
                     <li><strong>下钻阅读</strong>：当某个维度贡献异常时，可以继续下钻到下一层维度查看原因。</li>
                 </ol>
@@ -199,7 +209,7 @@
         <summary class="usage-summary">📐 归因口径说明</summary>
         <div class="usage-content">
             <p class="assumption-note">
-                本工具按当前展示维度计算<span data-unit-metric-label>单车边际</span>变动贡献。可以先从大区、国家、车型等汇总视角定位主要变化，再通过下钻查看更细层级的驱动因素。
+                本工具按当前展示维度计算<span data-unit-metric-label>单车边际</span>变动贡献。默认使用销量作为分母，也可以通过模板里的指标角色行改成净收入等其他分母。可以先从大区、国家、车型等汇总视角定位主要变化，再通过下钻查看更细层级的驱动因素。
             </p>
             <div class="table-wrapper">
                 <table class="assumption-table">
@@ -213,7 +223,7 @@
                     <tbody>
                         <tr>
                             <td class="product-type">可比维度项</td>
-                            <td class="formula">(当期权重 - 基期权重) × (基期<span data-unit-metric-label>单车边际</span> - 基期平均<span data-unit-metric-label>单车边际</span>)</td>
+                            <td class="formula">(当期<span data-denominator-label>销量</span>权重 - 基期<span data-denominator-label>销量</span>权重) × (基期<span data-unit-metric-label>单车边际</span> - 基期平均<span data-unit-metric-label>单车边际</span>)</td>
                             <td class="formula">当期权重 × (当期<span data-unit-metric-label>单车边际</span> - 基期<span data-unit-metric-label>单车边际</span>)</td>
                         </tr>
                         <tr>
@@ -297,7 +307,7 @@
 </main>
 
 <!-- JS 模块 (后续任务中逐步实现) -->
-<script src="app.js"></script>
+<script src="app.js?v=20260715-basis"></script>
 
 </body>
 </html>

@@ -9,11 +9,11 @@ import {
     searchFilterOptions
 } from "@/lib/finance/filters";
 import {
-    OPERATING_DETAIL_HEADERS,
+    OPERATING_DETAIL_SCENARIO_SHEET_HEADERS,
     buildMonthKeys,
     createBudgetOperatingDetailRows,
     createOperatingDetailSampleRows,
-    getBudgetOperatingDetailTemplateRows
+    getBudgetScenarioSheetTemplateRows
 } from "../../../lib/finance/templates.js";
 import {
     FINANCE_WORKBENCH_MOBILE_QUERY,
@@ -85,7 +85,7 @@ import {
         return map;
     }, {});
 
-    const TEMPLATE_HEADERS = OPERATING_DETAIL_HEADERS;
+    const SCENARIO_SHEET_HEADERS = OPERATING_DETAIL_SCENARIO_SHEET_HEADERS;
     const WIDE_VOLUME_ALIASES = ["发车量", "发车", "销量", "销售量", "Sales Volume", "volume"];
     const WIDE_NON_DIMENSION_COLUMNS = ["月份", "年月", "期间", "日期", "数据口径", "口径", "版本", "scenario", "Scenario", "备注", "说明", "单位", "unit"];
     const MANUAL_SUBJECT_FIELDS = ["subject", "actual", "budget"];
@@ -2515,13 +2515,11 @@ import {
     }
 
     function buildScenarioTemplateRows(scenario = "actual") {
-        const rows = getBudgetOperatingDetailTemplateRows(24);
-        const scenarioLabel = scenario === "budget" ? "预算" : "实际";
-        return rows.filter((row) => row["数据口径"] === scenarioLabel);
+        return getBudgetScenarioSheetTemplateRows(scenario, 24);
     }
 
     function buildTemplateRows() {
-        return getBudgetOperatingDetailTemplateRows(24);
+        return buildScenarioTemplateRows("actual");
     }
 
     function downloadBlob(filename, content, type) {
@@ -2544,12 +2542,12 @@ import {
     function buildTemplateRules() {
         return [
             ["模块", "规则"],
-            ["模板结构", "使用同一张经营明细事实表；CSV 用“数据口径”列区分实际、预算、目标或预测，Excel 也保留同样表头。"],
-            ["上传区", "经营明细（边际以上）：月份、数据口径、业务维度、销量、净收入、成本、边际等；需要保留可下钻维度。"],
+            ["模板结构", "Excel 模板使用“实际”和“预算”两个工作表表达对比口径；不要把预算/实际写成经营明细里的行项目。CSV 只能表达单个工作表，建议分别准备实际表和预算表，或优先使用 Excel 模板。"],
+            ["上传区", "经营明细（边际以上）：月份、业务维度、销量、净收入、成本、边际等；需要保留可下钻维度。"],
             ["固定科目", "固定科目不放在上传模板内，在页面左侧固定科目表格中粘贴或手工维护。"],
-            ["必填字段", "月份、数据口径、销量。净收入、成本、边际至少保留一个可分析金额指标。"],
+            ["必填字段", "月份、销量。净收入、成本、边际至少保留一个可分析金额指标。预算/实际由工作表名称表达。"],
             ["维度字段", "大区、国家、品牌、品牌市场、经营模式、业务单元、车型、燃油品类都是示例维度；用户可以少填、改名或新增维度列。"],
-            ["维度识别", "模型会把销量列之前的业务字段识别为维度。月份、数据口径、备注、说明等字段不会作为预算差异下钻维度。"],
+            ["维度识别", "模型会把销量列之前的业务字段识别为维度。月份、备注、说明等字段不会作为预算差异下钻维度。"],
             ["维度展示", "模型会默认展示并纳入下钻所有可识别维度，用户只需要在页面左侧调整维度顺序。"],
             ["总额优先", "默认按总额填报：净收入、成本、边际均直接填金额；成本等扣减项建议按负数填写。"],
             ["单车可选", "如果用户只有单车口径，可以填销量 + 单车净收入/单车成本，模型会换算总额；默认模板不强制展示单车字段。"],
@@ -2596,7 +2594,7 @@ import {
 
     function downloadCsvTemplate() {
         const rows = buildTemplateRows();
-        const headers = TEMPLATE_HEADERS;
+        const headers = SCENARIO_SHEET_HEADERS;
         const csv = [
             headers.map(csvCell).join(","),
             ...rows.map((row) => headers.map((header) => csvCell(row[header])).join(","))
@@ -2611,12 +2609,12 @@ import {
         }
         const workbook = XLSX.utils.book_new();
         const actualSheet = setWorksheetWidths(
-            XLSX.utils.json_to_sheet(buildScenarioTemplateRows("actual"), { header: TEMPLATE_HEADERS }),
-            TEMPLATE_HEADERS.map((header) => Math.max(12, String(header).length + 8))
+            XLSX.utils.json_to_sheet(buildScenarioTemplateRows("actual"), { header: SCENARIO_SHEET_HEADERS }),
+            SCENARIO_SHEET_HEADERS.map((header) => Math.max(12, String(header).length + 8))
         );
         const budgetSheet = setWorksheetWidths(
-            XLSX.utils.json_to_sheet(buildScenarioTemplateRows("budget"), { header: TEMPLATE_HEADERS }),
-            TEMPLATE_HEADERS.map((header) => Math.max(12, String(header).length + 8))
+            XLSX.utils.json_to_sheet(buildScenarioTemplateRows("budget"), { header: SCENARIO_SHEET_HEADERS }),
+            SCENARIO_SHEET_HEADERS.map((header) => Math.max(12, String(header).length + 8))
         );
         XLSX.utils.book_append_sheet(workbook, actualSheet, "实际");
         XLSX.utils.book_append_sheet(workbook, budgetSheet, "预算");
@@ -2913,7 +2911,8 @@ import {
 
         return rows.map((row) => {
             const amount = pick(row, ["金额", "数量", "值", "amount", "Amount", "value"]);
-            const next = { "数据口径": scenario === "actual" ? "实际" : "预算", ...row };
+            const scenarioLabel = scenario === "actual" ? "实际" : "预算";
+            const next = { ...row, "数据口径": scenarioLabel };
             if (amount !== undefined && pick(row, ["实际", "实际值", "实际数据", "actual", "Actual"]) === undefined && pick(row, ["预算", "预算值", "budget", "Budget"]) === undefined) {
                 next[scenario === "actual" ? "实际" : "预算"] = amount;
             }

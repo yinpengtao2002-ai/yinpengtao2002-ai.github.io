@@ -123,6 +123,7 @@ Current models:
 - Treat the finance chart system as the shared source of truth for reusable chart specs, Plotly theme/config, PVM attribution, and FBP bridge logic. Local per-model chart code should move toward this center instead of growing new one-off implementations.
 - Treat the finance interaction system as the shared source of truth for reusable filter state, cascading filter pruning, drill paths, and detail-table filters. Model-local UI shells can remain, but state logic should move toward `src/lib/finance/filters/`.
 - Treat the finance template system as the shared source of truth for upload templates and demo data. 除敏感性分析之外，`business-analysis`, `margin-analysis`, `monthly-trend`, `profit-structure`, `perspective-bi`, and the finance AI assistant belong to the `operating-detail` family; sensitivity uses `profit-sensitivity-assumptions`.
+- Budget/actual templates may use multiple sheets, and should prefer `实际` / `预算` sheet names for the user-facing workbook. Do not ask users to put budget vs actual as a row-level `数据口径` field in downloaded templates; internal parsers may still normalize sheet names into a scenario field for calculation.
 - Keep dimensions business-readable: region, country, model/product, channel, customer/store where relevant.
 - Use upload, template download, demo data, filters, KPI cards, tables, and charts as real controls, not decorative controls.
 - Use a left control console plus a scrollable analysis workspace for full-screen tools.

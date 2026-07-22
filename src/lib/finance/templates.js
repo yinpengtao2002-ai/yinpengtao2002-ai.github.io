@@ -16,8 +16,10 @@ const OPERATING_DETAIL_HEADERS = [
   "边际",
 ];
 
+const OPERATING_DETAIL_SCENARIO_SHEET_HEADERS = OPERATING_DETAIL_HEADERS.filter((header) => header !== "数据口径");
+
 const OPERATING_DETAIL_TEMPLATE_NOTE =
-  "可直接修改标题行；请保留“月份”和“销量”。“数据口径”用于区分实际、预算、目标或预测；只做趋势或质量诊断时填“实际”即可。“备注”用于记录业务解释，不参与默认下钻。销量列之前的业务字段会按表头自动识别为维度，可新增、删除或改名；销量列之后的数值列会识别为上传指标。模板提供净收入、成本、边际作为示例，也可以替换成任意质量指标。成本等扣减项建议按负数填写。";
+  "可直接修改标题行；请保留“月份”和“销量”。“数据口径”只是系统兼容字段，趋势、归因或质量诊断可留空或填“实际”；预算/实际对比建议使用独立工作表表达，不要把预算和实际写成明细行项目。“备注”用于记录业务解释，不参与默认下钻。销量列之前的业务字段会按表头自动识别为维度，可新增、删除或改名；销量列之后的数值列会识别为上传指标。模板提供净收入、成本、边际作为示例，也可以替换成任意质量指标。成本等扣减项建议按负数填写。";
 
 const FINANCE_TEMPLATE_FAMILIES = [
   {
@@ -185,6 +187,20 @@ function getBudgetOperatingDetailTemplateRows(limit = 24) {
   return createBudgetOperatingDetailRows(getOperatingDetailTemplateRows(limit));
 }
 
+function toScenarioSheetRow(row) {
+  return OPERATING_DETAIL_SCENARIO_SHEET_HEADERS.reduce((next, header) => {
+    next[header] = row[header];
+    return next;
+  }, {});
+}
+
+function getBudgetScenarioSheetTemplateRows(scenario = "actual", limit = 24) {
+  const scenarioLabel = scenario === "budget" ? "预算" : "实际";
+  return getBudgetOperatingDetailTemplateRows(limit)
+    .filter((row) => row["数据口径"] === scenarioLabel)
+    .map(toScenarioSheetRow);
+}
+
 function getFinanceTemplateFamilies() {
   return FINANCE_TEMPLATE_FAMILIES.map((family) => ({
     ...family,
@@ -204,6 +220,7 @@ function getFinanceTemplateFamilyForModel(modelSlug) {
 module.exports = {
   FINANCE_TEMPLATE_FAMILIES,
   OPERATING_DETAIL_HEADERS,
+  OPERATING_DETAIL_SCENARIO_SHEET_HEADERS,
   OPERATING_DETAIL_TEMPLATE_NOTE,
   buildMonthKeys,
   createBudgetOperatingDetailRows,
@@ -211,5 +228,6 @@ module.exports = {
   getFinanceTemplateFamilies,
   getFinanceTemplateFamilyForModel,
   getBudgetOperatingDetailTemplateRows,
+  getBudgetScenarioSheetTemplateRows,
   getOperatingDetailTemplateRows,
 };
