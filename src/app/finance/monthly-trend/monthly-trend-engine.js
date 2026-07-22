@@ -18,6 +18,14 @@ import {
     closeFinanceFieldGovernance,
     showFinanceFieldGovernance
 } from "../../../lib/finance/field-governance.ts";
+import { renderPlotlyAccessibleData } from "../../../lib/finance/chart-accessibility.ts";
+
+function renderAccessiblePlot(target, data, layout, config) {
+    const result = window.Plotly.react(target, data, layout, config);
+    const chartId = typeof target === "string" ? target : target?.id;
+    if (chartId) renderPlotlyAccessibleData(chartId, data);
+    return result;
+}
 
 const MONTHLY_PERIOD_ALIASES = ["月份", "月度", "月", "期间", "年月", "会计期间", "month", "date", "period"];
 const MONTHLY_VOLUME_ALIASES = ["销量", "销售量", "发车量", "台数", "数量", "volume", "qty", "quantity", "units"];
@@ -1284,7 +1292,7 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
     function renderEmptyChart(id, message) {
         const node = byId(id);
         if (!node || !window.Plotly) return;
-        window.Plotly.react(node, [], chartLayout({
+        renderAccessiblePlot(node, [], chartLayout({
             annotations: [{
                 text: message,
                 showarrow: false,
@@ -1455,7 +1463,7 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
         if (!traces.length) return renderEmptyChart("monthly-trend-chart", "暂无趋势数据");
 
         const layoutMargins = { l: 72, r: 24, t: 34, b: 74 };
-        window.Plotly.react("monthly-trend-chart", traces, chartLayout({
+        renderAccessiblePlot("monthly-trend-chart", traces, chartLayout({
             margin: layoutMargins,
             showlegend: false,
             annotations: annotations.concat(monthAxisDecorations.annotations),
@@ -1515,7 +1523,7 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
             });
         }
 
-        window.Plotly.react("monthly-mom-chart", traces, chartLayout({
+        renderAccessiblePlot("monthly-mom-chart", traces, chartLayout({
             margin: { l: 58, r: 18, t: 16, b: 82 },
             xaxis: monthAxis.axis,
             yaxis: numericAxis({ title: "变化率", ticksuffix: "%", tickfont: { color: COLORS.muted }, gridcolor: COLORS.grid, zerolinecolor: COLORS.grid }),
@@ -1588,7 +1596,7 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
                 : `${currentYear} 年月度水平。`;
         }
 
-        window.Plotly.react("monthly-cumulative-chart", traces, chartLayout({
+        renderAccessiblePlot("monthly-cumulative-chart", traces, chartLayout({
             xaxis: {
                 ...monthAxisFromIndexes(comparisonMonths, comparisonTickIndexes, (index) => monthLabels[index]),
                 tickfont: { color: COLORS.muted },
@@ -1648,7 +1656,7 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
             };
         });
         const layoutMargins = { l: 52, r: 20, t: 52, b: 74 };
-        window.Plotly.react("monthly-structure-chart", traces, chartLayout({
+        renderAccessiblePlot("monthly-structure-chart", traces, chartLayout({
             margin: layoutMargins,
             xaxis: monthAxis.axis,
             yaxis: numericAxis({ title: "占比", ticksuffix: "%", tickfont: { color: COLORS.muted }, gridcolor: COLORS.grid, zerolinecolor: COLORS.grid }),
@@ -1702,7 +1710,7 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
         const monthCustomData = categories.map(() => analysisMonths.map((month) => month.label));
         const compact = isCompactMonthAxis();
 
-        window.Plotly.react("monthly-heatmap-chart", [{
+        renderAccessiblePlot("monthly-heatmap-chart", [{
             type: "heatmap",
             x: monthAxis.x,
             y: categories,
@@ -1781,7 +1789,7 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
         const monthCustomData = categories.map(() => analysisMonths.map((month) => month.label));
         const compact = isCompactMonthAxis();
 
-        window.Plotly.react("monthly-mom-heatmap-chart", [{
+        renderAccessiblePlot("monthly-mom-heatmap-chart", [{
             type: "heatmap",
             x: monthAxis.x,
             y: categories,

@@ -31,6 +31,7 @@ import {
     closeFinanceFieldGovernance,
     showFinanceFieldGovernance
 } from "../../../lib/finance/field-governance.ts";
+import { renderPlotlyAccessibleData } from "../../../lib/finance/chart-accessibility.ts";
 
 (function () {
     const lifecycle = createFinanceEngineLifecycle();
@@ -139,6 +140,13 @@ import {
 
     function byId(id) {
         return document.getElementById(id);
+    }
+
+    function renderAccessiblePlot(target, data, layout, config) {
+        const result = Plotly.react(target, data, layout, config);
+        const chartId = typeof target === "string" ? target : target?.id;
+        if (chartId) renderPlotlyAccessibleData(chartId, data);
+        return result;
     }
 
     function bindOnce(element, eventName, handler, key = eventName) {
@@ -1881,7 +1889,7 @@ import {
                 borderpad: 4
             }];
 
-        Plotly.react("unit-margin-chart", [
+        renderAccessiblePlot("unit-margin-chart", [
             {
                 type: "scatter",
                 mode: "markers+text",
@@ -2113,7 +2121,7 @@ import {
             endText
         ];
 
-        Plotly.react("variance-chart", [
+        renderAccessiblePlot("variance-chart", [
             bridgeTrace({ measures, labels, values, text })
         ], bridgeLayout(labels, {
             margin: { l: 64, r: 24, t: 54, b: 96 },
@@ -2154,7 +2162,7 @@ import {
             ...(isMarginScope ? [] : [formatAmount(actual.profit)])
         ];
 
-        Plotly.react("profit-bridge-chart", [
+        renderAccessiblePlot("profit-bridge-chart", [
             bridgeTrace({ measures, labels, values, text })
         ], bridgeLayout(labels, {
             margin: { l: 58, r: 24, t: 58, b: 64 }
@@ -2541,7 +2549,7 @@ import {
         ];
         const chart = byId("dimension-waterfall-chart");
 
-        Plotly.react("dimension-waterfall-chart", [{
+        renderAccessiblePlot("dimension-waterfall-chart", [{
             type: "waterfall",
             measure: ["absolute", ...waterfallRows.map(() => "relative"), "total"],
             x: labels.map(waterfallAxisLabel),
@@ -2571,7 +2579,7 @@ import {
         updateBridgeTitles(hasActiveDimensionFilter());
         renderMetrics(enrichSummary(emptyPnl(), emptyPnl()));
         ["unit-margin-chart", "variance-chart", "profit-bridge-chart"].forEach((id) => {
-            Plotly.react(id, [], plotLayout({
+            renderAccessiblePlot(id, [], plotLayout({
                 annotations: [{
                     text: "当前筛选无数据",
                     x: 0.5,

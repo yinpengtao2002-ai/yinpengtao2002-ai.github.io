@@ -1591,6 +1591,14 @@ details[open] > .usage-summary::after {
     font-family: var(--font-sans);
 }
 
+.chart-accessible-summary {
+    margin: 0.45rem 0 0;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 0.74rem;
+    line-height: 1.55;
+}
+
 .waterfall-chart-container {
     position: relative;
     width: 100%;

@@ -11,8 +11,16 @@ import {
     clearFinanceEngineBindingMarkers,
     createFinanceEngineLifecycle
 } from "../../../lib/finance/browser-engine-lifecycle.ts";
+import { renderPlotlyAccessibleData } from "../../../lib/finance/chart-accessibility.ts";
 
 const lifecycle = createFinanceEngineLifecycle();
+
+function renderAccessiblePlot(target, data, layout, config) {
+    const result = Plotly.react(target, data, layout, config);
+    const chartId = typeof target === "string" ? target : target?.id;
+    if (chartId) renderPlotlyAccessibleData(chartId, data);
+    return result;
+}
 
 let DRIVER_DEFINITIONS = [
     {
@@ -1145,7 +1153,7 @@ function renderTornadoChart() {
     const chartHeight = Math.max(compact ? 480 : 440, rows.length * (compact ? 30 : 34) + (compact ? 90 : 110));
     const metricLabel = METRIC_DEFINITIONS.profit.label;
 
-    Plotly.react("tornado-chart", [
+    renderAccessiblePlot("tornado-chart", [
         {
             x: rows.map((row) => row.lowDelta),
             y: rows.map((row) => row.name),
@@ -1353,7 +1361,7 @@ function renderTargetProfitChart(result) {
         });
     }
 
-    Plotly.react("target-profit-chart", traces, getLockedPlotLayout({
+    renderAccessiblePlot("target-profit-chart", traces, getLockedPlotLayout({
         height: compact ? 360 : 420,
         margin: { l: compact ? 42 : 58, r: compact ? 8 : 22, t: compact ? 18 : 26, b: compact ? 50 : 58 },
         paper_bgcolor: "rgba(0,0,0,0)",
@@ -1392,7 +1400,7 @@ function renderMatrixChart() {
         formatMetric(value)
     ]));
 
-    Plotly.react("matrix-chart", [
+    renderAccessiblePlot("matrix-chart", [
         {
             x: xIndexes,
             y: yIndexes,
@@ -1526,7 +1534,7 @@ function renderWaterfallChart(targetId, options) {
         `${label}<br>${formatAmount(options.values[index], 1)}`
     ));
 
-    Plotly.react(targetId, [
+    renderAccessiblePlot(targetId, [
         {
             type: "waterfall",
             orientation: "v",

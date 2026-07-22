@@ -20,6 +20,14 @@ import {
     closeFinanceFieldGovernance,
     showFinanceFieldGovernance
 } from "../../../lib/finance/field-governance.ts";
+import { renderPlotlyAccessibleData } from "../../../lib/finance/chart-accessibility.ts";
+
+function renderAccessiblePlot(target, data, layout, config) {
+    const result = window.Plotly.react(target, data, layout, config);
+    const chartId = typeof target === "string" ? target : target?.id;
+    if (chartId) renderPlotlyAccessibleData(chartId, data);
+    return result;
+}
 
 const lifecycle = createFinanceEngineLifecycle();
 let closeFieldGovernance = () => undefined;
@@ -710,7 +718,7 @@ function renderDimensionDiagnostics(id, summary) {
     const compact = isCompactViewport();
     const items = [...diagnostics].reverse();
 
-    window.Plotly.react(id, [{
+    renderAccessiblePlot(id, [{
         type: "bar",
         orientation: "h",
         x: items.map((item) => item.score),
@@ -770,7 +778,7 @@ function renderQualityMap(id, summary) {
         };
     }).filter((trace) => trace.x.length);
 
-    window.Plotly.react(id, traces, chartLayout({
+    renderAccessiblePlot(id, traces, chartLayout({
         xaxis: {
             title: summary.analysis.quality.xTitle,
             tickformat: ".0%",

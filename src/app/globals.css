@@ -1183,6 +1183,70 @@ body {
   background: transparent;
 }
 
+.finance-chart-accessibility {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  font-family: var(--font-sans, sans-serif);
+}
+
+.finance-chart-accessibility-summary {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.finance-chart-accessibility-details {
+  border-top: 1px solid var(--border);
+  padding-top: 7px;
+}
+
+.finance-chart-accessibility-details > summary {
+  width: fit-content;
+  cursor: pointer;
+  color: var(--foreground);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.finance-chart-accessibility-table-wrap {
+  max-height: 320px;
+  margin-top: 8px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+}
+
+.finance-chart-accessibility table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font-size: 0.72rem;
+}
+
+.finance-chart-accessibility caption {
+  padding: 8px 10px;
+  color: var(--muted);
+  text-align: left;
+}
+
+.finance-chart-accessibility th,
+.finance-chart-accessibility td {
+  border-top: 1px solid var(--border);
+  padding: 7px 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.finance-chart-accessibility th {
+  position: sticky;
+  top: 0;
+  background: var(--background);
+  font-weight: 750;
+}
+
 .finance-ai-detail-table-panel {
   display: grid;
   gap: 8px;

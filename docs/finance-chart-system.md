@@ -12,6 +12,7 @@
 - `public/tools/shared/finance-core.js`：静态工具使用的同构浏览器版本，同时承接 RFC 4180 CSV 状态机。
 - `src/lib/finance/core/`：后续继续承接筛选聚合、单车指标、PVM 结构/费率效应、FBP 利润链和预算实际差异。
 - `src/lib/finance/charts/`：统一 `FinanceChartSpec`、Plotly 主题、图表尺寸、移动端规则、瀑布桥、趋势图、热力图、气泡散点图、横向排名图、Pareto 排名、小多图趋势、系列柱状图和明细表协议。
+- `src/lib/finance/chart-accessibility.ts`：从同一 Plotly trace 构建同步的结论和数据表，并把图表与文字替代通过 `aria-describedby` 关联。
 
 当前中心化进度：
 
@@ -22,6 +23,7 @@
 - `src/lib/finance/charts/types.ts` 已承接 `FinanceChartSpec`、图表类型、明细表 variant/meta、直接图表输入和中心 builder 输入类型。
 - `src/lib/finance/charts/index.ts` 已承接 `buildChartSpec`、`buildDirectChartSpec`、Plotly 主题、瀑布桥、趋势图、排名图、Pareto 排名、小多图趋势、热力图、气泡散点和明细表规格。
 - `src/lib/finance-ai/charts.ts` 只保留兼容转发，旧 import 不再拥有单独图表实现。
+- Business、Monthly、Profit Structure、Sensitivity 与 Finance AI 的 Plotly 渲染均从当前 trace 同步生成最高/最低结论和可折叠数据表；Margin 复用既有归因明细表并补同步结论与 `aria-describedby`，避免图表和替代表格使用两套计算口径。
 - `src/lib/finance-ai/chart-demo.ts` 的能力展示只维护 `FinanceAIDirectChart` 示例输入，并统一通过 `buildDirectChartSpec` 生成，避免示例页和真实对话图表样式分叉。
 - `finance-ai-assistant` 当前已接入 `pareto_rank` 和 `small_multiples_trend`；其它财务模型暂不接入，等各模型的业务场景和交互位确认后再迁移。
 - `src/lib/finance-ai/metrics.ts` 仍是待迁移的通用聚合、趋势、排名、期间桥和单车结构/费率效应种子。

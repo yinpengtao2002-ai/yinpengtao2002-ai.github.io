@@ -15,6 +15,7 @@
 - `src/lib/finance/filters/*`：财务模型共用筛选状态、搜索、include/exclude 判断和级联筛选修剪。
 - `src/lib/finance/templates.js`：财务模型共用模板族登记、经营明细事实表通用表头、预算/实际分 sheet 表头和共享示例数据生成器；除敏感性分析之外，当前模型默认复用 `operating-detail`。
 - `src/lib/finance/core.ts`、`public/tools/shared/finance-core.js`：共用字段角色、期间、数值、CSV 和指标聚合语义；静态 Margin 通过浏览器版本复用同一口径。
+- `src/lib/finance/chart-accessibility.ts`：Business、Monthly、Profit Structure、Sensitivity 与 Finance AI 共用的 Plotly 文字结论和数据表生成器；静态 Margin 复用同一交互语义的本地结论层。
 - `src/lib/finance/field-governance.ts`：Monthly、Profit Structure 与 Business Analysis 共用的安全字段映射确认面板；静态 Margin 使用相同交互语义的本地适配，不依赖字段位置推断。
 - `src/lib/finance/browser-tool-loader.ts`、`src/lib/finance/browser-engine-lifecycle.ts`：五个旧式浏览器引擎的 typed 启动、vendor script 超时/重试和统一资源清理边界；工具壳卸载时必须调用引擎 `dispose()`。
 - `docs/finance-chart-system.md`：财务图表中枢、共享算法边界和模型依赖地图；改图表中枢或共享计算口径时要先核对这里。
@@ -71,6 +72,7 @@
 - 维度经营实绩正文操作台只保留路径、当前层筛选、指标提示、退一层和清空下钻，避免重复的排序入口。
 - 选择当前维度成员，点击瀑布柱下钻，用「退一层」返回上级。
 - 当前层筛选的值清洗、搜索、反选、筛选命中和级联修剪复用 `src/lib/finance/filters/`。
+- 每张 Plotly 图会按当前筛选后的同一组 trace 同步生成简短结论和可折叠数据表，并通过 `aria-describedby` 关联。
 - 桌面端瀑布图支持悬停查看实际、预算、差异，并点击下钻。
 - 移动端瀑布图支持点击柱子进入明细层，并通过触控返回卡回到图表。
 - 支持重置筛选和导出摘要。
@@ -104,6 +106,7 @@
 - 瀑布图支持悬停卡片、点击/触控下钻、触控明细卡和空白处关闭。
 - 图表交互说明位于底部折叠区，和归因口径、模式说明并列。
 - 明细表支持列筛选、排序、复制当前表格和导出当前表格。
+- 每层归因瀑布图会同步说明基期、当期、总变动和最大影响项，并通过 `aria-describedby` 关联既有归因明细表。
 - 维度聚合使用 `Map`，安全保留 `__proto__`、`constructor`、数值零等合法值；零销量时单位指标显示 `—`，图表单位由当前指标决定，不默认使用人民币。
 
 ### 财务分析 AI 助手

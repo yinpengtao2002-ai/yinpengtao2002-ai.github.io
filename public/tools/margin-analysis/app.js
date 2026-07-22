@@ -3016,6 +3016,22 @@ function getAttributionViewConfig(levelResult, dimName, unitMetricLabel, viewMod
 }
 
 
+function buildWaterfallAccessibleSummary(title, labels, values, baseValue, currentValue, metricDisplayFormat) {
+    const contributions = labels.slice(1, -1).map((label, index) => ({
+        label: String(label || '空白'),
+        value: Number(values[index + 1]) || 0
+    }));
+    const strongest = contributions.reduce((best, item) => (
+        !best || Math.abs(item.value) > Math.abs(best.value) ? item : best
+    ), null);
+    const change = currentValue - baseValue;
+    const strongestText = strongest
+        ? `；最大影响项为${strongest.label} ${formatSignedMetricValue(strongest.value, metricDisplayFormat)}`
+        : '';
+    return `${title}：基期为 ${formatMetricValue(baseValue, metricDisplayFormat)}，当期为 ${formatMetricValue(currentValue, metricDisplayFormat)}，变动 ${formatSignedMetricValue(change, metricDisplayFormat)}${strongestText}。`;
+}
+
+
 // ==================== 瀑布图渲染 ====================
 function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargin, currMargin, colorScheme, level = 0, chartOptions = {}) {
     // 按绝对值排序取 Top 10，再按先负后正排列
@@ -3195,6 +3211,24 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
 
     const graphDiv = document.getElementById(containerId);
     if (!graphDiv) return Promise.resolve();
+    const summaryId = `waterfall-chart-summary-${level}`;
+    let accessibleSummary = document.getElementById(summaryId);
+    if (!accessibleSummary) {
+        accessibleSummary = document.createElement('p');
+        accessibleSummary.id = summaryId;
+        accessibleSummary.className = 'chart-accessible-summary';
+        graphDiv.insertAdjacentElement('beforebegin', accessibleSummary);
+    }
+    accessibleSummary.textContent = buildWaterfallAccessibleSummary(
+        title,
+        labels,
+        values,
+        baseMargin,
+        currMargin,
+        metricDisplayFormat
+    );
+    graphDiv.setAttribute('aria-label', title);
+    graphDiv.setAttribute('aria-describedby', `${summaryId} detail-table-content-${level}`);
     const plotMethod = graphDiv?.classList?.contains('js-plotly-plot') ? Plotly.react : Plotly.newPlot;
 
     return plotMethod(containerId, [trace], layout, config).then(() => {

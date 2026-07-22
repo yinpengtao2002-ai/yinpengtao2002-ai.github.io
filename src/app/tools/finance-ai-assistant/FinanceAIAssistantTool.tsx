@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type DragEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type DragEvent } from "react";
 import Link from "next/link";
 import { ArrowUp, Clock3, Download, Eye, Loader2, LockKeyhole, RotateCcw, Trash2, UploadCloud } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -10,6 +10,7 @@ import rehypeKatex from "rehype-katex";
 import * as XLSX from "xlsx";
 import "katex/dist/katex.min.css";
 import { buildChartSpec, buildDirectChartSpec } from "@/lib/finance/charts";
+import { buildPlotlyAccessibleData } from "@/lib/finance/chart-accessibility";
 import financeTemplates from "@/lib/finance/templates.js";
 import { resolveFinanceActionFilterMembers } from "@/lib/finance-ai/filter-resolution";
 import {
@@ -1573,6 +1574,8 @@ function resolveFinanceAIChartSpecTokens(spec: FinanceChartSpec): FinanceChartSp
 
 function PlotlyChart({ spec, className = "finance-ai-chart-host" }: { spec: FinanceChartSpec; className?: string }) {
   const nodeRef = useRef<HTMLDivElement | null>(null);
+  const summaryId = `${useId()}-chart-summary`;
+  const accessibleData = buildPlotlyAccessibleData(spec.data, { title: spec.title });
 
   useEffect(() => {
     let cancelled = false;
@@ -1603,7 +1606,34 @@ function PlotlyChart({ spec, className = "finance-ai-chart-host" }: { spec: Fina
     };
   }, [spec]);
 
-  return <div ref={nodeRef} className={className} aria-label={spec.title} />;
+  return (
+    <>
+      <div ref={nodeRef} className={className} aria-label={spec.title} aria-describedby={summaryId} />
+      <div className="finance-chart-accessibility">
+        <p id={summaryId} className="finance-chart-accessibility-summary">{accessibleData.summary}</p>
+        <details className="finance-chart-accessibility-details">
+          <summary>查看{spec.title}数据表</summary>
+          <div className="finance-chart-accessibility-table-wrap">
+            <table>
+              <caption>
+                {spec.title}数据表，共 {accessibleData.totalRowCount} 行
+              </caption>
+              <thead>
+                <tr>{accessibleData.columns.map((column) => <th key={column} scope="col">{column}</th>)}</tr>
+              </thead>
+              <tbody>
+                {accessibleData.rows.map((row, rowIndex) => (
+                  <tr key={`${spec.title}-${rowIndex}`}>
+                    {row.map((value, columnIndex) => <td key={`${rowIndex}-${columnIndex}`}>{value}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+    </>
+  );
 }
 
 export default function FinanceAIAssistantTool() {
