@@ -4,7 +4,7 @@ import GoalkeeperLandscapeRuntime, { GOALKEEPER_SCRIPT_SRC } from "./GoalkeeperL
 const GOALKEEPER_STYLESHEET_HREF = "/tools/goalkeeper-landscape/assets/index-C3Y5dsvI.css";
 
 export const metadata: Metadata = {
-  title: "守门挑战｜Lucas Yin",
+  title: "守门挑战",
   description: "横屏 3D 守门游戏，支持经典模式和点球大战。",
   manifest: "/tools/goalkeeper-landscape/manifest.webmanifest",
   appleWebApp: {

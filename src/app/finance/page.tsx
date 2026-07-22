@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import FinanceModelLibrary from "@/components/finance/FinanceModelLibrary";
 
 export const metadata: Metadata = {
-  title: "财务模型｜Lucas Yin",
+  title: "财务模型",
   description: "Lucas Yin 自己搭建并持续打磨的财务模型和分析工具。",
 };
 

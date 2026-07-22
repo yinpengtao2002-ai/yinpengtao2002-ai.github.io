@@ -163,7 +163,7 @@ const assetCandidates: AssetCandidate[] = [
 ];
 
 export const metadata: Metadata = {
-  title: "Goalkeeper Landscape Lab｜Lucas Yin",
+  title: "Goalkeeper Landscape Lab",
   description: "Hidden goalkeeper game workbench for physics scenarios and asset review.",
 };
 

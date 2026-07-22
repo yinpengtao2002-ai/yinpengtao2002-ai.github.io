@@ -3,7 +3,7 @@ import ToolBackButton from "@/components/finance/ToolBackButton";
 import FinanceAIChartDemo from "./FinanceAIChartDemo";
 
 export const metadata: Metadata = {
-  title: "财务分析 AI 助手图表 Demo｜Lucas Yin",
+  title: "财务分析 AI 助手图表 Demo",
   description: "集中预览财务分析 AI 助手可生成的图表样式。",
 };
 

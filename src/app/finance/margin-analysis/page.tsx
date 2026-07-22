@@ -4,7 +4,7 @@ import ToolBackButton from "@/components/finance/ToolBackButton";
 const MARGIN_ANALYSIS_TOOL_VERSION = "20260715-basis";
 
 export const metadata: Metadata = {
-    title: "单车指标变动归因模型｜财务模型｜Lucas Yin",
+    title: "单车指标变动归因模型｜财务模型",
     description: "上传两期单车指标数据，按当前分析维度拆解结构效应和费率效应，解释单车指标变化的主要来源。",
 };
 

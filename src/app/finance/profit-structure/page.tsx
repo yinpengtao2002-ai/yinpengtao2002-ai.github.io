@@ -3,7 +3,7 @@ import ToolBackButton from "@/components/finance/ToolBackButton";
 import ProfitStructureTool from "./ProfitStructureTool";
 
 export const metadata: Metadata = {
-    title: "多维利润质量诊断模型｜财务诊断工具｜Lucas Yin",
+    title: "多维利润质量诊断模型｜财务诊断工具",
     description: "上传通用经营明细底表，判断哪个维度最值得优先下钻，以及哪些组合正在拖累整体利润质量。",
 };
 

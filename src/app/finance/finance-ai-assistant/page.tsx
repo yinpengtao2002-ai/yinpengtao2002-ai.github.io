@@ -3,7 +3,7 @@ import ToolBackButton from "@/components/finance/ToolBackButton";
 import FinanceAIAssistantTool from "@/app/tools/finance-ai-assistant/FinanceAIAssistantTool";
 
 export const metadata: Metadata = {
-  title: "财务分析 AI 助手｜对话式经营分析模型｜Lucas Yin",
+  title: "财务分析 AI 助手｜对话式经营分析模型",
   description: "上传经营明细后，通过持续聊天生成趋势图、横向排名和瀑布桥分析。",
 };
 

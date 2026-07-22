@@ -37,11 +37,20 @@ export const metadata: Metadata = {
     siteName: "Lucas Yin",
     locale: "zh_CN",
     type: "website",
+    images: [
+      {
+        url: "/images/og/lucas-yin-financial-modeling-ai.png",
+        width: 1200,
+        height: 630,
+        alt: "Lucas Yin — Financial Modeling & AI",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Lucas Yin (殷鹏焘) | Financial Modeling & AI",
     description: "殷鹏焘 (Lucas Yin) — Financial Modeling & AI. Driven by a passion for solving real-world problems with technology.",
+    images: ["/images/og/lucas-yin-financial-modeling-ai.png"],
   },
   verification: {
     google: "_SRIbBn9vkLjTvw36xM7n5Fx4SXdSY2WsTy-LYUtKm4",
