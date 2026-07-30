@@ -99,6 +99,216 @@ function asRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
+function buildDeterministicFallbackPlan(
+  schema: FinanceSchema,
+  question: string,
+  chatState: FinanceAIChatState,
+): FinanceActionPlan | null {
+  const scenarioDimension = getScenarioDimension(schema);
+  if (!scenarioDimension || !hasScenarioIntent(question)) {
+    return null;
+  }
+
+  const metric = getFallbackMetric(schema, question, chatState);
+  const dimension = getFallbackDimension(schema, question, chatState, scenarioDimension);
+  const period = getFallbackPeriod(schema, question, chatState);
+  if (!metric || !dimension || !period) {
+    return null;
+  }
+
+  if (hasScenarioWaterfallIntent(question)) {
+    return {
+      modules: [{
+        type: "waterfall_bridge",
+        metric,
+        dimension,
+        period,
+        comparison: "scenario",
+        fromScenario: "预算",
+        toScenario: "实际",
+      }],
+    };
+  }
+
+  if (hasScenarioCompletionIntent(question)) {
+    return {
+      modules: [{
+        type: "grouped_bar",
+        metric,
+        dimension,
+        period,
+        seriesDimension: scenarioDimension,
+      }],
+    };
+  }
+
+  return null;
+}
+
+function normalizeIntentText(value: string) {
+  return value.toLowerCase().replace(/[\s_\-./,，。:：;；、"'“”‘’()（）]/g, "");
+}
+
+function hasAnyToken(question: string, tokens: string[]) {
+  const normalizedQuestion = normalizeIntentText(question);
+  return tokens
+    .map(normalizeIntentText)
+    .some((token) => normalizedQuestion.includes(token));
+}
+
+function hasScenarioIntent(question: string) {
+  return hasAnyToken(question, ["预算", "目标", "实际", "预测", "计划", "达成", "完成", "target", "budget", "actual", "forecast", "plan"]);
+}
+
+function hasScenarioCompletionIntent(question: string) {
+  return hasAnyToken(question, ["目标", "预算", "达成", "完成", "完成率", "完成情况", "未完成", "超预算", "target", "budget"]);
+}
+
+function hasScenarioWaterfallIntent(question: string) {
+  return hasScenarioCompletionIntent(question) && hasAnyToken(question, [
+    "瀑布",
+    "桥",
+    "贡献",
+    "拖累",
+    "拉动",
+    "差异来源",
+    "变化来源",
+    "原因",
+    "拆解",
+    "归因",
+    "影响",
+  ]);
+}
+
+function getScenarioDimension(schema: FinanceSchema) {
+  const aliases = ["数据口径", "口径", "场景", "scenario", "scenarios"].map(normalizeIntentText);
+  return schema.dimensionColumns.find((dimension) => aliases.includes(normalizeIntentText(dimension))) ?? "";
+}
+
+function getFallbackMetric(
+  schema: FinanceSchema,
+  question: string,
+  chatState: FinanceAIChatState,
+) {
+  const salesMetric = schema.totalMetrics.find((metric) => (
+    metric.column === schema.salesColumn ||
+    metric.name === schema.salesColumn ||
+    /sales|volume|qty|quantity|units/i.test(`${metric.name}${metric.column}`)
+  ))?.name;
+  const questionMetric = getQuestionMetric(schema, question, salesMetric);
+  const contextMetric = [
+    chatState.currentMetric,
+    ...(chatState.analysisContext ?? []).slice().reverse().flatMap((item) => (
+      item.metric ? [item.metric] : item.metrics ?? []
+    )),
+  ].find((metric): metric is string => Boolean(metric && hasMetric(schema, metric)));
+
+  return questionMetric ??
+    contextMetric ??
+    salesMetric ??
+    schema.totalMetrics[0]?.name ??
+    schema.unitMetrics[0]?.name ??
+    "";
+}
+
+function getQuestionMetric(schema: FinanceSchema, question: string, salesMetric: string | undefined) {
+  const normalizedQuestion = normalizeIntentText(question);
+  if (
+    salesMetric &&
+    ["销量", "销售量", "台数", "volume", "salesvolume", "quantity", "qty", "units"]
+      .map(normalizeIntentText)
+      .some((token) => normalizedQuestion.includes(token))
+  ) {
+    return salesMetric;
+  }
+
+  const metrics = [...schema.totalMetrics, ...schema.unitMetrics];
+  return metrics.find((metric) => {
+    const aliases = [metric.name];
+    if (metric.kind === "total") {
+      aliases.push(metric.column);
+    } else {
+      aliases.push(metric.numeratorColumn, metric.denominatorColumn);
+      if (/边际|margin/i.test(`${metric.name}${metric.numeratorColumn}`)) {
+        aliases.push("单车边际", "边际", "margin");
+      }
+    }
+
+    return aliases
+      .map(normalizeIntentText)
+      .filter((alias) => alias.length >= 2)
+      .some((alias) => normalizedQuestion.includes(alias));
+  })?.name;
+}
+
+function hasMetric(schema: FinanceSchema, metricName: string) {
+  return schema.totalMetrics.some((metric) => metric.name === metricName || metric.column === metricName) ||
+    schema.unitMetrics.some((metric) => metric.name === metricName);
+}
+
+function isProviderJsonExtractionError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return error.message === "AI response did not contain JSON" ||
+    error.message === "AI response must contain a single JSON object";
+}
+
+function getFallbackDimension(
+  schema: FinanceSchema,
+  question: string,
+  chatState: FinanceAIChatState,
+  scenarioDimension: string,
+) {
+  const normalizedQuestion = normalizeIntentText(question);
+  const questionDimension = schema.dimensionColumns.find((dimension) => (
+    dimension !== scenarioDimension &&
+    normalizedQuestion.includes(normalizeIntentText(dimension))
+  ));
+  const contextDimension = (chatState.analysisContext ?? [])
+    .slice()
+    .reverse()
+    .map((item) => item.dimension)
+    .find((dimension): dimension is string => Boolean(
+      dimension &&
+      dimension !== scenarioDimension &&
+      schema.dimensionColumns.includes(dimension),
+    ));
+
+  return questionDimension ??
+    contextDimension ??
+    schema.dimensionColumns.find((dimension) => (
+      dimension !== scenarioDimension &&
+      ["国家", "country", "市场", "market"].some((alias) => normalizeIntentText(dimension).includes(normalizeIntentText(alias)))
+    )) ??
+    schema.dimensionColumns.find((dimension) => dimension !== scenarioDimension) ??
+    "";
+}
+
+function getFallbackPeriod(
+  schema: FinanceSchema,
+  question: string,
+  chatState: FinanceAIChatState,
+) {
+  const periodKeys = new Set(schema.profile.periods.map((period) => period.key));
+  const normalizedQuestion = normalizeIntentText(question);
+  const questionPeriod = schema.profile.periods.find((period) => (
+    normalizedQuestion.includes(normalizeIntentText(period.key)) ||
+    normalizedQuestion.includes(normalizeIntentText(period.label))
+  ))?.key;
+  const contextPeriod = (chatState.analysisContext ?? [])
+    .slice()
+    .reverse()
+    .flatMap((item) => [item.period, item.toPeriod, item.fromPeriod])
+    .find((period): period is string => Boolean(period && periodKeys.has(period)));
+
+  return questionPeriod ??
+    contextPeriod ??
+    schema.profile.periods.at(-1)?.key ??
+    "";
+}
+
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
@@ -362,10 +572,35 @@ export async function POST(req: Request) {
       return errorResponse(requestId, providerResult.status, providerResult.errorCode, "AI 服务暂时不可用，请稍后重试。");
     }
 
+    let providerPlan: FinanceActionPlan | null = null;
+    try {
+      providerPlan = normalizePlan(extractJsonObject(providerResult.content));
+    } catch (error) {
+      if (!isProviderJsonExtractionError(error)) {
+        return errorResponse(
+          requestId,
+          502,
+          "provider_invalid_json",
+          "AI 返回的数据格式不正确，请重试。",
+        );
+      }
+
+      providerPlan = buildDeterministicFallbackPlan(schema, question, chatState);
+    }
+
+    if (!providerPlan) {
+      return errorResponse(
+        requestId,
+        502,
+        "provider_invalid_json",
+        "AI 返回的数据格式不正确，请重试。",
+      );
+    }
+
     try {
       const plan = normalizeFinanceActionPlanForQuestion(
         schema,
-        normalizePlan(extractJsonObject(providerResult.content)),
+        providerPlan,
         question,
         chatState,
       );

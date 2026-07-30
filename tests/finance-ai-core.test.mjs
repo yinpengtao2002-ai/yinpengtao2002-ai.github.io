@@ -1046,6 +1046,31 @@ test("budget actual scenario comparisons can use waterfall bridges for the same 
   assert.deepEqual(spec.data[0].measure, ["absolute", "relative", "relative", "total"]);
 });
 
+test("scenario waterfall bridges resolve target wording to budget rows when no target scenario exists", () => {
+  const scenarioRows = [
+    { "月份": "5月", "国家": "巴西", "数据口径": "实际", "销量": 120 },
+    { "月份": "5月", "国家": "西班牙", "数据口径": "实际", "销量": 80 },
+    { "月份": "5月", "国家": "巴西", "数据口径": "预算", "销量": 100 },
+    { "月份": "5月", "国家": "西班牙", "数据口径": "预算", "销量": 90 },
+  ];
+  const schema = inferFinanceSchema(scenarioRows);
+  const bridge = buildWaterfallBridge(scenarioRows, schema, {
+    type: "waterfall_bridge",
+    metric: "销量",
+    dimension: "国家",
+    period: "M05",
+    comparison: "scenario",
+    fromScenario: "目标",
+    toScenario: "实际",
+  });
+
+  assert.equal(bridge.startValue, 190);
+  assert.equal(bridge.endValue, 200);
+  assert.equal(bridge.changeValue, 10);
+  assert.equal(bridge.fromScenario, "预算");
+  assert.equal(bridge.toScenario, "实际");
+});
+
 test("action plan normalization converts budget actual waterfall requests to scenario bridges", () => {
   const schema = inferFinanceSchema([
     { "月份": "5月", "国家": "巴西", "数据口径": "实际", "销量": 120, "净收入": 1200 },

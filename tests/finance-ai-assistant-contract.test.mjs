@@ -574,6 +574,112 @@ test("finance AI assistant plan mode converts budget actual attribution into sce
   }));
 });
 
+test("finance AI assistant plan mode falls back to deterministic target completion charts when provider returns prose", async () => {
+  const schema = {
+    headers: ["Month", "Country", "数据口径", "Sales Volume"],
+    monthColumn: "Month",
+    salesColumn: "Sales Volume",
+    dimensionColumns: ["Country", "数据口径"],
+    totalMetrics: [
+      { kind: "total", name: "Sales Volume", column: "Sales Volume" },
+    ],
+    unitMetrics: [],
+    excludedMetricColumns: [],
+    requiredIssues: [],
+    profile: {
+      rowCount: 80,
+      periods: [
+        { key: "M04", label: "4月", sort: 4 },
+        { key: "M05", label: "5月", sort: 5 },
+      ],
+      dimensionValueCounts: { Country: 20, "数据口径": 2 },
+    },
+  };
+
+  await withMockedProvider(async (calls) => {
+    const response = await POST(makeRequest({
+      mode: "plan",
+      question: "好的，目标完成情况呢",
+      schema,
+      state: {
+        analysisContext: [{
+          type: "detail_table",
+          title: "5月 国家明细表",
+          metric: "Sales Volume",
+          dimension: "Country",
+          period: "M05",
+          filters: { "数据口径": ["实际"] },
+        }],
+      },
+    }));
+    const payload = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(calls.length, 1);
+    assert.equal(payload.modules[0].type, "grouped_bar");
+    assert.equal(payload.modules[0].metric, "Sales Volume");
+    assert.equal(payload.modules[0].dimension, "Country");
+    assert.equal(payload.modules[0].seriesDimension, "数据口径");
+    assert.equal(payload.modules[0].period, "M05");
+    assert.equal(payload.modules[0].comparison, undefined);
+  }, "我来帮你分析目标完成情况。");
+});
+
+test("finance AI assistant plan mode falls back to scenario waterfalls for target drag questions", async () => {
+  const schema = {
+    headers: ["Month", "Country", "数据口径", "Sales Volume"],
+    monthColumn: "Month",
+    salesColumn: "Sales Volume",
+    dimensionColumns: ["Country", "数据口径"],
+    totalMetrics: [
+      { kind: "total", name: "Sales Volume", column: "Sales Volume" },
+    ],
+    unitMetrics: [],
+    excludedMetricColumns: [],
+    requiredIssues: [],
+    profile: {
+      rowCount: 80,
+      periods: [
+        { key: "M05", label: "5月", sort: 5 },
+      ],
+      dimensionValueCounts: { Country: 20, "数据口径": 2 },
+    },
+  };
+
+  await withMockedProvider(async () => {
+    const response = await POST(makeRequest({
+      mode: "plan",
+      question: "销量未完成目标，用瀑布图告诉我是谁贡献和拖累的",
+      schema,
+      state: {
+        currentMetric: "Sales Volume",
+        analysisContext: [{
+          type: "grouped_bar",
+          title: "5月 国家数据口径销量对比",
+          metric: "Sales Volume",
+          dimension: "Country",
+          period: "M05",
+          comparison: "scenario",
+          fromScenario: "预算",
+          toScenario: "实际",
+        }],
+      },
+    }));
+    const payload = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.modules[0].type, "waterfall_bridge");
+    assert.equal(payload.modules[0].metric, "Sales Volume");
+    assert.equal(payload.modules[0].dimension, "Country");
+    assert.equal(payload.modules[0].period, "M05");
+    assert.equal(payload.modules[0].comparison, "scenario");
+    assert.equal(payload.modules[0].fromScenario, "预算");
+    assert.equal(payload.modules[0].toScenario, "实际");
+    assert.equal("fromPeriod" in payload.modules[0], false);
+    assert.equal("toPeriod" in payload.modules[0], false);
+  }, "上游模型没有返回 JSON。");
+});
+
 test("finance AI assistant plan mode accepts unit-metric waterfall plans", async () => {
   const schema = {
     headers: ["Month", "Country", "Model", "Sales Volume", "Total Margin"],

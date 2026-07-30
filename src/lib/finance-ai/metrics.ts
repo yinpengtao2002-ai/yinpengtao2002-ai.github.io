@@ -263,8 +263,8 @@ function buildScenarioWaterfallBridge(
 
   const filters = withoutScenarioFilter(cloneFilters(request.filters), scenarioDimension);
   const period = normalizePeriodKey(request.period);
-  const fromScenario = request.fromScenario?.trim() || "预算";
-  const toScenario = request.toScenario?.trim() || "实际";
+  const fromScenario = resolveScenarioValue(rows, scenarioDimension, request.fromScenario, ["预算", "目标", "计划"]);
+  const toScenario = resolveScenarioValue(rows, scenarioDimension, request.toScenario, ["实际"]);
   const fromFilters = compileFilters(mergeScenarioFilter(filters, scenarioDimension, fromScenario));
   const toFilters = compileFilters(mergeScenarioFilter(filters, scenarioDimension, toScenario));
   const base = aggregateMetric(rows, schema, metric, period, fromFilters);
@@ -478,6 +478,74 @@ function getScenarioDimension(schema: FinanceSchema) {
   return schema.dimensionColumns.find((dimension) => (
     aliases.includes(normalizeIntentText(dimension))
   ));
+}
+
+function resolveScenarioValue(
+  rows: FinanceRow[],
+  scenarioDimension: string,
+  requestedValue: string | undefined,
+  fallbackCandidates: string[],
+) {
+  const availableValues = collectScenarioValues(rows, scenarioDimension);
+  const requested = requestedValue?.trim() || fallbackCandidates[0] || "";
+  if (!availableValues.size) {
+    return requested;
+  }
+
+  const candidateValues = [
+    requested,
+    ...getScenarioAliasCandidates(requested),
+    ...fallbackCandidates,
+    ...fallbackCandidates.flatMap(getScenarioAliasCandidates),
+  ];
+
+  for (const candidate of candidateValues) {
+    const available = availableValues.get(normalizeIntentText(candidate));
+    if (available) {
+      return available;
+    }
+  }
+
+  return requested;
+}
+
+function collectScenarioValues(rows: FinanceRow[], scenarioDimension: string) {
+  const values = new Map<string, string>();
+
+  rows.forEach((row) => {
+    if (!Object.prototype.hasOwnProperty.call(row, scenarioDimension)) {
+      return;
+    }
+
+    const value = normalizeDimensionValue(row[scenarioDimension]);
+    const normalized = normalizeIntentText(value);
+    if (normalized && !values.has(normalized)) {
+      values.set(normalized, value);
+    }
+  });
+
+  return values;
+}
+
+function getScenarioAliasCandidates(value: string) {
+  const normalized = normalizeIntentText(value);
+  if (!normalized) {
+    return [];
+  }
+
+  if (["目标", "target", "预算", "budget", "计划", "plan"].some((alias) => normalized.includes(normalizeIntentText(alias)))) {
+    return ["预算", "目标", "计划", "Budget", "Target", "Plan"];
+  }
+
+  if (["实际", "actual", "实绩"].some((alias) => normalized.includes(normalizeIntentText(alias)))) {
+    return ["实际", "实绩", "Actual"];
+  }
+
+  if (["预测", "forecast"].some((alias) => normalized.includes(normalizeIntentText(alias)))) {
+    return ["预测", "Forecast"];
+  }
+
+  return [];
 }
 
 function mergeScenarioFilter(filters: FinanceFilter, scenarioDimension: string, scenarioValue: string): FinanceFilter {
