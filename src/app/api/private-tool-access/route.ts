@@ -1,7 +1,12 @@
 import { createPrivateToolAccessToken, getPrivateToolAccessTokenExpiry, isPrivateToolAccessConfigured, isPrivateToolAccessKeyValid } from "../../../lib/security/private-tool-access.ts";
 import { enforceRateLimit } from "../../../lib/security/rate-limit.ts";
 
-const PRIVATE_TOOL_ACCESS_RATE_LIMIT = { keyPrefix: "api-private-tool-access", limit: 8, windowMs: 5 * 60_000 };
+const PRIVATE_TOOL_ACCESS_RATE_LIMIT = {
+  keyPrefix: "api-private-tool-access",
+  limit: 8,
+  windowMs: 5 * 60_000,
+  requirePersistentBackend: true,
+};
 
 function errorResponse(status: number, errorCode: string, message: string) {
   return Response.json(

@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState, type DragEvent } from "react";
 import Link from "next/link";
-import { ArrowUp, Clock3, Download, Eye, Loader2, LockKeyhole, RotateCcw, Trash2, UploadCloud } from "lucide-react";
+import { ArrowUp, Download, Eye, Loader2, RotateCcw, Trash2, UploadCloud } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -1896,7 +1896,6 @@ export default function FinanceAIAssistantTool() {
           <div className="finance-ai-header-copy">
             <p className="finance-ai-kicker">Lucas Finance AI</p>
             <h1>财务分析 AI 助手</h1>
-            <p>上传经营明细后，直接对话生成趋势、排名和变化桥；数据刷新后清空。</p>
           </div>
           {workbook ? (
             <div className="finance-ai-header-actions">
@@ -1923,7 +1922,6 @@ export default function FinanceAIAssistantTool() {
                   <AssistantAvatar />
                   <p className="finance-ai-kicker">Upload Workbook</p>
                   <h2>拖拽经营明细到这里</h2>
-                  <p>支持 CSV、XLS、XLSX。数据仅保留在当前页面会话中。</p>
                   <div className="finance-ai-upload-row">
                     <label className="finance-ai-upload-chip">
                       <input
@@ -1951,10 +1949,6 @@ export default function FinanceAIAssistantTool() {
                     <span>查看示例效果</span>
                   </Link>
                 </div>
-                <p className="finance-ai-upload-footnote">
-                  <LockKeyhole aria-hidden="true" />
-                  <span>当前为会话内分析，刷新页面后数据清空。</span>
-                </p>
               </div>
 
               <div className="finance-ai-upload-preview-list" aria-label="示例图表预览">
@@ -2015,52 +2009,45 @@ export default function FinanceAIAssistantTool() {
           </section>
         ) : null}
 
-        <div className="finance-ai-composer-dock">
-          <form
-            className={`finance-ai-composer ${workbook ? "" : "has-upload-status"}`}
-            onSubmit={(event) => {
-              event.preventDefault();
-              void handleSubmit();
-            }}
-          >
-            {!workbook ? (
-              <>
-                <span className="finance-ai-composer-status">
-                  <Clock3 aria-hidden="true" />
-                  <span>等待上传</span>
-                </span>
-                <span className="finance-ai-composer-divider" aria-hidden="true" />
-              </>
-            ) : null}
-            <textarea
-              ref={questionInputRef}
-              className="finance-ai-question-input"
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              onInput={(event) => resizeFinanceAIQuestionInput(event.currentTarget)}
-              onKeyDown={(event) => {
-                if (event.nativeEvent.isComposing) {
-                  return;
-                }
-
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  void handleSubmit();
-                }
+        {workbook ? (
+          <div className="finance-ai-composer-dock">
+            <form
+              className="finance-ai-composer"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleSubmit();
               }}
-              placeholder={workbook ? getDefaultQuestion(schema) : "上传后可以问：哪些国家拉低了单车边际？"}
-              rows={1}
-              disabled={busy || !canAsk}
-            />
-            <button type="submit" disabled={!input.trim() || !canAsk} aria-label="发送问题">
-              {busy ? <Loader2 className="finance-ai-spin" aria-hidden="true" /> : <ArrowUp aria-hidden="true" />}
-            </button>
-          </form>
+            >
+              <textarea
+                ref={questionInputRef}
+                className="finance-ai-question-input"
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                onInput={(event) => resizeFinanceAIQuestionInput(event.currentTarget)}
+                onKeyDown={(event) => {
+                  if (event.nativeEvent.isComposing) {
+                    return;
+                  }
 
-          {workbook && (!canAsk && schema && schema.requiredIssues.length === 0 ? null : (
-            <p className="finance-ai-session-note">数据仅保留在当前页面会话中，刷新后清空。</p>
-          ))}
-        </div>
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    void handleSubmit();
+                  }
+                }}
+                placeholder={getDefaultQuestion(schema)}
+                rows={1}
+                disabled={busy || !canAsk}
+              />
+              <button type="submit" disabled={!input.trim() || !canAsk} aria-label="发送问题">
+                {busy ? <Loader2 className="finance-ai-spin" aria-hidden="true" /> : <ArrowUp aria-hidden="true" />}
+              </button>
+            </form>
+
+            {!canAsk && schema && schema.requiredIssues.length === 0 ? null : (
+              <p className="finance-ai-session-note">数据仅保留在当前页面会话中，刷新后清空。</p>
+            )}
+          </div>
+        ) : null}
       </section>
     </div>
   );

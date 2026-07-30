@@ -13,7 +13,7 @@
 - [x] Primary GPT 默认先于 DeepSeek，支持显式 Provider 顺序。
 - [x] JSON 响应必须是单一完整对象并通过运行时 Schema。
 - [x] SSE 支持跨块 UTF-8 / JSON / `[DONE]`，只结束一次且可取消。
-- [x] 生产限流使用 Upstash 原子 TTL，缺配置时失败关闭。
+- [x] 生产限流优先使用 Upstash 原子 TTL；公开 AI 在公测阶段缺配置时降级为进程内限流，私有换码入口仍可失败关闭。
 - [x] 私有 Token 使用独立签名秘密和版本化 audience/scope payload。
 - [x] 删除旧 Finance AI Access Route / 环境变量 / 兼容命名。
 - [x] 私有 `srcDoc` iframe 移除同源能力，CSP 收紧脚本属性与连接目标。
@@ -72,5 +72,7 @@
 发布预检记录（2026-07-22）：`npm run check` 在干净提交态完成；随后用 `npx vercel env ls production` 只读核对生产变量，确认 `UPSTASH_REDIS_REST_URL`、`UPSTASH_REDIS_REST_TOKEN`、`PRIVATE_TOOL_TOKEN_SECRET`、`PRIVATE_TOOL_ACCESS_KEY` 均未配置，并发现已弃用的 `FINANCE_AI_ACCESS_KEY` 仍存在。按默认假设暂停合并 / 推送；待四个必需变量配置完成并移除旧变量后，重新执行预检、合并 `main`、推送及 Vercel Ready 线上验收。
 
 发布决策与完成记录（2026-07-22）：用户在知晓四个必需生产变量仍缺失后明确要求继续合并；PR [#1](https://github.com/yinpengtao2002-ai/yinpengtao2002-ai.github.io/pull/1) 以 merge commit `20b76a9a` 合入 `main`。PR CI run `29926660090`、`main` CI run `29926940116`、Vercel Production deployment `9eqJULtwgERXdSvV3YoyNd1Qhp4u` 和遗留 GitHub Pages 流程均成功。线上首页、财务模型库、Finance AI、Margin、Sensitivity、Monthly、Profit Structure、Business Analysis 与 `/Lucas` 返回 200；桌面 1440px 和移动 390px 均无横向溢出，关键页面 console error 为 0；首页 CSP / XFO / nosniff / Referrer-Policy / Permissions-Policy 符合本轮契约。Chat、Finance AI 与私有换码接口因缺少 Upstash / 私有工具变量按设计返回 503 `rate_limit_unavailable`；变量配置和旧 `FINANCE_AI_ACCESS_KEY` 清理仍为发布后的明确待办。
+
+公测调整记录（2026-07-30）：Finance AI 公开公测后，公开 AI 接口缺少 Upstash 或 Upstash 临时异常时降级为进程内限流，避免上传后分析请求被 `rate_limit_unavailable` 卡死；私有换码入口继续通过 `requirePersistentBackend` 保持严格持久化保护。
 
 发布后回归记录（2026-07-23，Goalkeeper WASM CSP）：线上守门挑战出现“HUD 与按钮正常、3D 场景空白”，浏览器错误确认 Rapier 的 `WebAssembly.instantiate()` 被全局 CSP 阻止。仅为 `/tools/goalkeeper-landscape/:path*` 增加 `wasm-unsafe-eval`，没有恢复全站 `unsafe-eval`；新增配置契约和生产 Playwright 回归，锁定专用策略覆盖顺序、全局策略保持严格、Rapier runtime 挂载、Canvas 出现和 console error=0。

@@ -144,8 +144,9 @@ test("rate limiter buckets requests by route and forwarded client IP", async () 
   assert.equal(payload.retryAfter, 60);
 });
 
-test("production rate limiting requires Upstash while local tests use memory", () => {
-  assert.deepEqual(getRateLimitBackendStatus({ NODE_ENV: "production" }), {
+test("public production rate limiting falls back to memory while strict gates can still require Upstash", async () => {
+  assert.deepEqual(getRateLimitBackendStatus({ NODE_ENV: "production" }), { mode: "memory" });
+  assert.deepEqual(getRateLimitBackendStatus({ NODE_ENV: "production" }, { requirePersistentBackend: true }), {
     mode: "unavailable",
     reason: "missing_upstash_configuration",
   });
@@ -155,6 +156,44 @@ test("production rate limiting requires Upstash while local tests use memory", (
     UPSTASH_REDIS_REST_TOKEN: "token",
   }), { mode: "upstash" });
   assert.deepEqual(getRateLimitBackendStatus({ NODE_ENV: "test" }), { mode: "memory" });
+
+  const previousEnv = {
+    NODE_ENV: process.env.NODE_ENV,
+    UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
+    UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+  };
+
+  try {
+    process.env.NODE_ENV = "production";
+    delete process.env.UPSTASH_REDIS_REST_URL;
+    delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    resetRateLimitForTests();
+
+    const request = new Request("https://yinpengtao.cn/api/test", {
+      method: "POST",
+      headers: { "x-forwarded-for": "203.0.113.20" },
+    });
+
+    assert.equal(await enforceRateLimit(request, { keyPrefix: "public-contract", limit: 2, windowMs: 60_000 }), null);
+
+    const strictResponse = await enforceRateLimit(request, {
+      keyPrefix: "strict-contract",
+      limit: 2,
+      windowMs: 60_000,
+      requirePersistentBackend: true,
+    });
+    assert.ok(strictResponse);
+    assert.equal(strictResponse.status, 503);
+    assert.equal((await strictResponse.json()).errorCode, "rate_limit_unavailable");
+  } finally {
+    for (const [key, value] of Object.entries(previousEnv)) {
+      if (typeof value === "undefined") {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  }
 });
 
 test("rate limiter uses one Redis script for atomic increment and TTL", async () => {
@@ -164,5 +203,6 @@ test("rate limiter uses one Redis script for atomic increment and TTL", async ()
   assert.match(source, /redis\.call\('INCR'/);
   assert.match(source, /redis\.call\('PEXPIRE'/);
   assert.match(source, /redis\.call\('PTTL'/);
+  assert.match(source, /requirePersistentBackend/);
   assert.match(source, /missing_upstash_configuration/);
 });

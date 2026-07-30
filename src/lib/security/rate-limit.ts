@@ -11,6 +11,7 @@ export type RateLimitOptions = {
   keyPrefix: string;
   limit: number;
   windowMs: number;
+  requirePersistentBackend?: boolean;
 };
 
 type RateLimitBackendStatus =
@@ -34,11 +35,14 @@ function readEnv(env: NodeJS.ProcessEnv, key: string) {
   return env[key]?.trim() || "";
 }
 
-export function getRateLimitBackendStatus(env: NodeJS.ProcessEnv = process.env): RateLimitBackendStatus {
+export function getRateLimitBackendStatus(
+  env: NodeJS.ProcessEnv = process.env,
+  options: Pick<RateLimitOptions, "requirePersistentBackend"> = {},
+): RateLimitBackendStatus {
   const url = readEnv(env, "UPSTASH_REDIS_REST_URL");
   const token = readEnv(env, "UPSTASH_REDIS_REST_TOKEN");
   if (url && token) return { mode: "upstash" };
-  if (env.NODE_ENV === "production") {
+  if (env.NODE_ENV === "production" && options.requirePersistentBackend) {
     return { mode: "unavailable", reason: "missing_upstash_configuration" };
   }
   return { mode: "memory" };
@@ -138,7 +142,7 @@ function buildUnavailableResponse() {
 }
 
 export async function enforceRateLimit(req: Request, options: RateLimitOptions) {
-  const backend = getRateLimitBackendStatus();
+  const backend = getRateLimitBackendStatus(process.env, options);
   if (backend.mode === "unavailable") return buildUnavailableResponse();
 
   const key = `rate-limit:${options.keyPrefix}:${getClientIp(req)}`;
@@ -156,7 +160,15 @@ export async function enforceRateLimit(req: Request, options: RateLimitOptions) 
       keyPrefix: options.keyPrefix,
       error: error instanceof Error ? error.message : "unknown error",
     }));
-    return buildUnavailableResponse();
+    if (options.requirePersistentBackend) {
+      return buildUnavailableResponse();
+    }
+
+    const increment = getMemoryIncrement(key, options.windowMs);
+    if (increment.count > options.limit) {
+      return buildRateLimitResponse(options, Date.now() + increment.ttlMs);
+    }
+    return null;
   }
 }
 
