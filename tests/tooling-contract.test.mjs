@@ -356,7 +356,7 @@ test("Next runtime, Sharp and PostCSS dependencies stay on patched versions", ()
   assert.equal(packageData.dependencies?.sharp, "0.35.0");
   assert.equal(packageData.devDependencies?.["eslint-config-next"], "16.2.11");
   assert.equal(packageData.overrides?.sharp, "0.35.0");
-  assert.equal(packageData.overrides?.next?.postcss, "^8.5.10");
+  assert.equal(packageData.overrides?.next?.postcss, "8.5.25");
 
   const installedNext = packageLockData.packages?.["node_modules/next"];
   const installedSharp = packageLockData.packages?.["node_modules/sharp"];
@@ -367,7 +367,7 @@ test("Next runtime, Sharp and PostCSS dependencies stay on patched versions", ()
   assert.equal(installedSharp?.version, "0.35.0");
   assert.equal(installedEslintConfig?.version, "16.2.11");
   assert.ok(installedNextPostcss, "Next should keep a resolved PostCSS dependency in the lockfile");
-  assertVersionAtLeast(installedNextPostcss.version, "8.5.10", "Next nested PostCSS");
+  assertVersionAtLeast(installedNextPostcss.version, "8.5.25", "Next nested PostCSS");
   assert.notEqual(installedNextPostcss.version, "8.4.31");
 });
 
