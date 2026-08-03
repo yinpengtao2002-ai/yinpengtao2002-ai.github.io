@@ -924,8 +924,21 @@ test("loaded data center exposes unit name, current metric selector, and visual 
 
 test("static margin analysis shell version-busts the shared core and app bundle", () => {
     assert.match(marginAnalysisHtml, /<script src="\.\.\/shared\/finance-core\.js\?v=20260722"><\/script>/);
-    assert.match(marginAnalysisHtml, /<script src="app\.js\?v=20260722-finance-core"><\/script>/);
+    assert.match(marginAnalysisHtml, /<script src="app\.js\?v=20260803-upload"><\/script>/);
     assert.doesNotMatch(marginAnalysisHtml, /<script src="app\.js"><\/script>/);
+});
+
+test("field governance stays visible after demo data loads and uploads can reselect the same file", () => {
+    const initialDataCenter = marginAnalysisHtml.match(/<section id="data-center-init"[\s\S]*?<\/section>/);
+    const loadedDataCenter = marginAnalysisHtml.match(/<section id="data-center-loaded"[\s\S]*?<\/section>/);
+    assert.ok(initialDataCenter, "Expected initial data center section");
+    assert.ok(loadedDataCenter, "Expected loaded data center section");
+    assert.doesNotMatch(initialDataCenter[0], /id="margin-field-governance"/);
+    assert.doesNotMatch(loadedDataCenter[0], /id="margin-field-governance"/);
+    assert.match(marginAnalysisHtml, /<\/section>\s*<section id="margin-field-governance" class="margin-field-governance"/);
+    assert.match(marginAnalysisSource, /input\.addEventListener\('click',\s*\(\)\s*=>\s*\{/);
+    assert.match(marginAnalysisSource, /input\.value\s*=\s*''/);
+    assert.match(marginAnalysisSource, /e\.target\.value\s*=\s*''/);
 });
 
 test("visual metric basis controls unit labels versus ratio labels without auto-naming rates", () => {

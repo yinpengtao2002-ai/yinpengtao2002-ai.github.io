@@ -67,7 +67,7 @@ test("subtitle workbench route opens the hosted app directly instead of embeddin
 });
 
 test("margin analysis iframe carries a static asset version", () => {
-  assert.match(marginAnalysisPage, /MARGIN_ANALYSIS_TOOL_VERSION\s*=\s*"20260715-basis"/);
+  assert.match(marginAnalysisPage, /MARGIN_ANALYSIS_TOOL_VERSION\s*=\s*"20260803-upload"/);
   assert.match(
     marginAnalysisPage,
     /src=\{`\/tools\/margin-analysis\/index\.html\?v=\$\{MARGIN_ANALYSIS_TOOL_VERSION\}`\}/

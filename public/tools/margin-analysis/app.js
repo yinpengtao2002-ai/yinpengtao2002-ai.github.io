@@ -200,9 +200,13 @@ function setupUploadArea(areaId, inputId) {
     });
 
     // 点击上传
+    input.addEventListener('click', () => {
+        input.value = '';
+    });
     input.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
             handleFileUpload(e.target.files[0]);
+            e.target.value = '';
         }
     });
 }
