@@ -1120,6 +1120,10 @@ function validateMarginNumericRows(rows, metricColumns, dimCols, source = {}) {
                 normalized[column.key] = parsed.value;
                 return;
             }
+            if (column.key === 'Sales Volume' && parsed.status === 'blank') {
+                normalized[column.key] = 0;
+                return;
+            }
             issues.push({
                 status: parsed.status,
                 reason: parsed.reason || 'required_blank',

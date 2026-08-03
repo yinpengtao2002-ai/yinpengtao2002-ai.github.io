@@ -83,18 +83,21 @@ test("margin period defaults use normalized latest two periods", () => {
     );
 });
 
-test("margin numeric validation reports invalid required cells and normalizes units", () => {
+test("margin numeric validation allows blank denominator cells and reports invalid required cells", () => {
     const result = validateMarginNumericRows([
         { Month: "2026-01", Dim_A: "", "Sales Volume": "100", Metric_1: "1.2亿" },
         { Month: "2026-02", Dim_A: "A", "Sales Volume": "", Metric_1: "#VALUE!" },
+        { Month: "2026-03", Dim_A: "B", "Sales Volume": "abc", Metric_1: "200" },
     ], [{ key: "Metric_1", sourceHeader: "边际" }], ["Dim_A"], { sheet: "经营明细", firstDataRow: 2 });
 
     assert.equal(result.rows[0]["Sales Volume"], 100);
     assert.equal(result.rows[0].Metric_1, 120_000_000);
     assert.equal(result.rows[0].Dim_A, "空白");
+    assert.equal(result.rows[1]["Sales Volume"], 0);
+    assert.equal(result.rows[2].Metric_1, 200);
     assert.deepEqual(result.issues.map((issue) => ({ status: issue.status, sheet: issue.sheet, row: issue.row, column: issue.column })), [
-        { status: "blank", sheet: "经营明细", row: 3, column: "销量" },
         { status: "invalid", sheet: "经营明细", row: 3, column: "边际" },
+        { status: "invalid", sheet: "经营明细", row: 4, column: "销量" },
     ]);
 });
 
@@ -924,7 +927,7 @@ test("loaded data center exposes unit name, current metric selector, and visual 
 
 test("static margin analysis shell version-busts the shared core and app bundle", () => {
     assert.match(marginAnalysisHtml, /<script src="\.\.\/shared\/finance-core\.js\?v=20260722"><\/script>/);
-    assert.match(marginAnalysisHtml, /<script src="app\.js\?v=20260803-upload"><\/script>/);
+    assert.match(marginAnalysisHtml, /<script src="app\.js\?v=20260803-blank-volume"><\/script>/);
     assert.doesNotMatch(marginAnalysisHtml, /<script src="app\.js"><\/script>/);
 });
 
