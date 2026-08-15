@@ -36,6 +36,10 @@ import {
 import { createRapierGoalkeeperWorld } from "../physics/rapier-world.js";
 import { resolveGoalNetCollision } from "../physics/goal-net-geometry.js";
 import { createGoalkeeperScene } from "../three/goalkeeper-scene.js";
+import {
+  createContextRecoveryReloadFallback,
+  createWebGLContextRecovery,
+} from "../three/webgl-context-recovery.js";
 import { createHud } from "../ui/hud.js";
 import {
   getStageRenderBounds,
@@ -662,6 +666,19 @@ export async function createThreeGameRuntime(options) {
   var input = createPointerInput(stage);
   windowRef.goalkeeperBootStatus = "three-scene";
   var scene = createGoalkeeperScene(canvas);
+  var contextRecoveryReload = createContextRecoveryReloadFallback({ windowRef, stage });
+  var contextRecovery = createWebGLContextRecovery({
+    canvas,
+    context: scene.renderer?.getContext?.(),
+    stage,
+    windowRef,
+    onRestored() {
+      if (runningLoop) resize();
+    },
+    onRecoveryTimeout() {
+      contextRecoveryReload();
+    },
+  });
   windowRef.goalkeeperBootStatus = "rapier-world";
   var physics = await createRapierGoalkeeperWorld();
   windowRef.goalkeeperBootStatus = "runtime-ready";
@@ -1304,6 +1321,7 @@ export async function createThreeGameRuntime(options) {
       this.stop();
       roundStartController.dispose();
       hud.dispose?.();
+      contextRecovery.dispose();
       physics.dispose();
       scene.dispose();
       audio.stopMusic?.();
