@@ -45,6 +45,7 @@ const {
     parseCSV,
     selectDefaultComparisonPeriods,
     validateMarginNumericRows,
+    formatMarginDataIssues,
     getMetricUnitSuffix,
 } = marginAnalysis.default;
 
@@ -83,22 +84,46 @@ test("margin period defaults use normalized latest two periods", () => {
     );
 });
 
-test("margin numeric validation allows blank denominator cells and reports invalid required cells", () => {
+test("margin row validation accepts explicit zero values but requires every dimension", () => {
     const result = validateMarginNumericRows([
-        { Month: "2026-01", Dim_A: "", "Sales Volume": "100", Metric_1: "1.2亿" },
-        { Month: "2026-02", Dim_A: "A", "Sales Volume": "", Metric_1: "#VALUE!" },
-        { Month: "2026-03", Dim_A: "B", "Sales Volume": "abc", Metric_1: "200" },
-    ], [{ key: "Metric_1", sourceHeader: "边际" }], ["Dim_A"], { sheet: "经营明细", firstDataRow: 2 });
+        { Month: "2026-01", Dim_A: "西班牙", "Sales Volume": 0, Metric_1: 0, Metric_2: "0" },
+        { Month: "2026-02", Dim_A: "", "Sales Volume": "0", Metric_1: "0", Metric_2: 0 },
+        { Month: "2026-03", Dim_A: "意大利", "Sales Volume": "", Metric_1: "#VALUE!", Metric_2: "200" },
+        { Month: "2026-04", Dim_A: "德国", "Sales Volume": "abc", Metric_1: "100", Metric_2: "300" },
+    ], [
+        { key: "Metric_1", sourceHeader: "边际" },
+        { key: "Metric_2", sourceHeader: "净收入" },
+    ], ["Dim_A"], {
+        sheet: "经营明细",
+        firstDataRow: 2,
+        dimNames: { Dim_A: "国家" },
+    });
 
-    assert.equal(result.rows[0]["Sales Volume"], 100);
-    assert.equal(result.rows[0].Metric_1, 120_000_000);
-    assert.equal(result.rows[0].Dim_A, "空白");
+    assert.equal(result.rows[0]["Sales Volume"], 0);
+    assert.equal(result.rows[0].Metric_1, 0);
+    assert.equal(result.rows[0].Metric_2, 0);
     assert.equal(result.rows[1]["Sales Volume"], 0);
-    assert.equal(result.rows[2].Metric_1, 200);
-    assert.deepEqual(result.issues.map((issue) => ({ status: issue.status, sheet: issue.sheet, row: issue.row, column: issue.column })), [
-        { status: "invalid", sheet: "经营明细", row: 3, column: "边际" },
-        { status: "invalid", sheet: "经营明细", row: 4, column: "销量" },
+    assert.deepEqual(result.issues.map((issue) => ({ status: issue.status, reason: issue.reason, sheet: issue.sheet, row: issue.row, column: issue.column })), [
+        { status: "blank", reason: "required_dimension", sheet: "经营明细", row: 3, column: "国家" },
+        { status: "invalid", reason: "not_numeric", sheet: "经营明细", row: 4, column: "边际" },
+        { status: "invalid", reason: "not_numeric", sheet: "经营明细", row: 5, column: "销量" },
     ]);
+});
+
+test("margin upload pipeline keeps business rows whose numeric fields are all zero", () => {
+    assert.doesNotMatch(
+        marginAnalysisSource,
+        /rows\s*=\s*rows\.filter\(r\s*=>\s*r\['Sales Volume'\]\s*!==\s*0/,
+    );
+});
+
+test("margin validation messages distinguish period formats from invalid numbers", () => {
+    const message = formatMarginDataIssues([
+        { status: "invalid", reason: "invalid_period", sheet: "经营明细", row: 3, column: "月份" },
+        { status: "invalid", reason: "not_numeric", sheet: "经营明细", row: 4, column: "成本" },
+    ]);
+    assert.match(message, /「月份」格式无法识别/);
+    assert.match(message, /「成本」无法识别为数字/);
 });
 
 test("zero-volume global unit metric is explicitly undefined", () => {
@@ -927,8 +952,23 @@ test("loaded data center exposes unit name, current metric selector, and visual 
 
 test("static margin analysis shell version-busts the shared core and app bundle", () => {
     assert.match(marginAnalysisHtml, /<script src="\.\.\/shared\/finance-core\.js\?v=20260722"><\/script>/);
-    assert.match(marginAnalysisHtml, /<script src="app\.js\?v=20260803-blank-volume"><\/script>/);
+    assert.match(marginAnalysisHtml, /<link rel="stylesheet" href="styles\.css\?v=20260816-zero-value-validation">/);
+    assert.match(marginAnalysisHtml, /<script src="app\.js\?v=20260816-zero-value-validation"><\/script>/);
     assert.doesNotMatch(marginAnalysisHtml, /<script src="app\.js"><\/script>/);
+});
+
+test("upload validation failures use an accessible persistent dialog", () => {
+    assert.match(marginAnalysisHtml, /id="margin-validation-dialog"/);
+    assert.match(marginAnalysisHtml, /role="dialog"/);
+    assert.match(marginAnalysisHtml, /aria-modal="true"/);
+    assert.match(marginAnalysisHtml, /数据未通过校验/);
+    assert.match(marginAnalysisSource, /function showMarginValidationDialog\(/);
+    assert.match(marginAnalysisSource, /function closeMarginValidationDialog\(/);
+    assert.match(marginAnalysisSource, /showMarginValidationDialog\(formatMarginDataIssues\(validated\.issues\)\)/);
+    assert.match(marginAnalysisSource, /dialog\.contains\(document\.activeElement\)[\s\S]*?document\.activeElement\.blur\(\)[\s\S]*?dialog\.hidden = true/);
+    assert.match(marginAnalysisStyles, /\.margin-validation-dialog-backdrop/);
+    assert.match(marginAnalysisStyles, /\.margin-validation-dialog-panel/);
+    assert.doesNotMatch(marginAnalysisStyles, /\.margin-validation-dialog\s*\{\s*align-items:\s*end;/);
 });
 
 test("field governance stays visible after demo data loads and uploads can reselect the same file", () => {

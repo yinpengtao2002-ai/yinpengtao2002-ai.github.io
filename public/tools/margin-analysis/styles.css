@@ -1078,6 +1078,197 @@ details[open] > .sidebar-summary::after {
     font-family: var(--font-sans);
 }
 
+body.margin-validation-dialog-open {
+    overflow: hidden;
+}
+
+.margin-validation-dialog[hidden] {
+    display: none;
+}
+
+.margin-validation-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    font-family: var(--font-sans);
+}
+
+.margin-validation-dialog-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(20, 20, 19, 0.42);
+    backdrop-filter: blur(4px);
+}
+
+.margin-validation-dialog-panel {
+    position: relative;
+    z-index: 1;
+    width: min(540px, calc(100vw - 48px));
+    max-height: min(680px, calc(100vh - 48px));
+    overflow: auto;
+    border: 1px solid rgba(217, 119, 87, 0.24);
+    border-radius: 8px;
+    padding: 28px;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 0 16px;
+    color: var(--text-primary);
+    background: var(--bg-card);
+    box-shadow: 0 24px 70px rgba(20, 20, 19, 0.24);
+    animation: margin-validation-dialog-enter 160ms ease-out;
+}
+
+.margin-validation-dialog-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 7px;
+    display: grid;
+    place-items: center;
+    color: #6f6d66;
+    background: transparent;
+    cursor: pointer;
+    font: 400 1.45rem/1 var(--font-sans);
+}
+
+.margin-validation-dialog-close:hover,
+.margin-validation-dialog-close:focus-visible {
+    color: var(--text-primary);
+    background: rgba(20, 20, 19, 0.06);
+    outline: 2px solid rgba(217, 119, 87, 0.28);
+    outline-offset: 1px;
+}
+
+.margin-validation-dialog-status {
+    width: 44px;
+    height: 44px;
+    border: 1px solid rgba(217, 119, 87, 0.28);
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    color: #b85f40;
+    background: rgba(217, 119, 87, 0.1);
+    font-size: 1.35rem;
+    font-weight: 800;
+}
+
+.margin-validation-dialog-content {
+    min-width: 0;
+    padding-right: 24px;
+}
+
+.margin-validation-dialog-kicker {
+    display: block;
+    margin-bottom: 5px;
+    color: #b85f40;
+    font-size: 0.72rem;
+    font-weight: 750;
+}
+
+.margin-validation-dialog-content h2 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: 1.42rem;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: 0;
+}
+
+.margin-validation-dialog-intro {
+    margin: 8px 0 0;
+    color: #6f6d66;
+    font-size: 0.86rem;
+    line-height: 1.65;
+}
+
+.margin-validation-dialog-message {
+    max-height: 240px;
+    overflow: auto;
+    margin: 18px 0 0;
+    border-top: 1px solid var(--border-light);
+    padding-top: 16px;
+    color: #4c4a45;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.margin-validation-dialog-actions {
+    grid-column: 2;
+    margin-top: 22px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.margin-validation-dialog-confirm {
+    min-width: 104px;
+    min-height: 38px;
+}
+
+@keyframes margin-validation-dialog-enter {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.985);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (max-width: 600px) {
+    .margin-validation-dialog {
+        padding: 12px;
+    }
+
+    .margin-validation-dialog-panel {
+        width: 100%;
+        max-height: calc(100svh - 24px);
+        padding: 22px 18px 18px;
+        grid-template-columns: 38px minmax(0, 1fr);
+        gap: 0 12px;
+    }
+
+    .margin-validation-dialog-status {
+        width: 38px;
+        height: 38px;
+        font-size: 1.15rem;
+    }
+
+    .margin-validation-dialog-content {
+        padding-right: 22px;
+    }
+
+    .margin-validation-dialog-content h2 {
+        font-size: 1.24rem;
+    }
+
+    .margin-validation-dialog-message {
+        max-height: 34svh;
+    }
+
+    .margin-validation-dialog-actions {
+        grid-column: 1 / -1;
+    }
+
+    .margin-validation-dialog-confirm {
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .margin-validation-dialog-panel {
+        animation: none;
+    }
+}
+
 
 /* ==================== 主内容区 ==================== */
 .main-content {

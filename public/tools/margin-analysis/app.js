@@ -58,6 +58,7 @@ const PLOT_FONT_FAMILY = 'PingFang SC, Microsoft YaHei, Helvetica Neue, Arial, s
 const ATTRIBUTION_VIEW_SELF = 'self';
 const ATTRIBUTION_VIEW_GLOBAL = 'global';
 const IMPACT_BASELINE_GLOBAL = '__global__';
+let marginValidationDialogReturnFocus = null;
 
 const DIM_ICONS = {
     Dim_A: '🌍', Dim_B: '🏳️', Dim_C: '🚗',
@@ -73,12 +74,13 @@ const TEMPLATE_ROLE_ROW = TEMPLATE_HEADERS.map((header) => {
     return '';
 });
 TEMPLATE_ROLE_ROW[0] = '指标角色';
-const TEMPLATE_HEADER_NOTE = '可直接修改标题行；请保留“月份”和一列“分母”。“指标角色”行用于标记计算口径：把销量、净收入等基数列标为“分母”，把净收入、成本、边际、毛利等分析指标标为“分子”。单车归因不需要填写预算/实际口径，基期和当期通过“月份”选择；“数据口径”可留空或填“实际”。“备注”用于记录业务解释，不参与默认归因下钻。业务字段会结合表头、样本类型和指标角色识别，可直接插入或删除维度列；无法判断的空字段会在页面内请你确认。成本等扣减项建议按负数填写；如果要看比率指标，可把“净收入”等列标为分母，把“毛利”等列标为分子，并在指标口径中选择比率指标。';
+const TEMPLATE_HEADER_NOTE = '可直接修改标题行；请保留“月份”和一列“分母”。“指标角色”行用于标记计算口径：把销量、净收入等基数列标为“分母”，把净收入、成本、边际、毛利等分析指标标为“分子”。单车归因不需要填写预算/实际口径，基期和当期通过“月份”选择；“数据口径”可留空或填“实际”。“备注”用于记录业务解释，不参与默认归因下钻。业务字段会结合表头、样本类型和指标角色识别，可直接插入或删除维度列；所有维度字段应逐行填写完整，销量、净收入、成本、边际等数值可以填写 0。为兼容附属金额行，分母留空仍按 0 处理；无法判断用途的空字段会在页面内请你确认。成本等扣减项建议按负数填写；如果要看比率指标，可把“净收入”等列标为分母，把“毛利”等列标为分子，并在指标口径中选择比率指标。';
 
 
 // ==================== DOM Ready ====================
 if (typeof document !== 'undefined') {
     document.addEventListener("DOMContentLoaded", () => {
+        initMarginValidationDialog();
         initSidebarToggle();
         initFileUpload();
         initTemplateDownloads();
@@ -223,7 +225,7 @@ function handleFileUpload(file) {
                 const rows = parseCSV(text, file.name);
                 processLoadedData(rows, file.name);
             } catch (err) {
-                showMessage('error', `CSV 解析失败: ${err.message}`);
+                showMarginValidationDialog(`CSV 解析失败：${err.message}`);
             }
         };
         reader.readAsText(file);
@@ -240,12 +242,12 @@ function handleFileUpload(file) {
                 const rows = sheetRowsToObjects(sheetRows, firstSheetName);
                 processLoadedData(rows, file.name);
             } catch (err) {
-                showMessage('error', `Excel 解析失败: ${err.message}`);
+                showMarginValidationDialog(`Excel 解析失败：${err.message}`);
             }
         };
         reader.readAsArrayBuffer(file);
     } else {
-        showMessage('error', '不支持的文件格式，请上传 CSV 或 Excel 文件');
+        showMarginValidationDialog('不支持的文件格式，请上传 CSV、XLSX 或 XLS 文件。');
     }
 }
 
@@ -693,7 +695,7 @@ function normalizeMetricRole(value) {
 // ==================== 数据处理管线 ====================
 function processLoadedData(rows, sourceName, fieldRoleOverrides = {}) {
     if (!rows || rows.length === 0) {
-        showMessage('error', '数据为空，请检查文件内容');
+        showMarginValidationDialog('文件中没有可读取的数据，请检查工作表内容。');
         return;
     }
 
@@ -706,41 +708,34 @@ function processLoadedData(rows, sourceName, fieldRoleOverrides = {}) {
     const metricColumns = normalizedInput.metricColumns;
 
     if (normalizedInput.ambiguousColumns.length > 0) {
-        showMessage('error', `请确认以下字段用途后继续：${normalizedInput.ambiguousColumns.join('、')}`);
+        showMarginValidationDialog(`请先确认这些字段的用途：${normalizedInput.ambiguousColumns.join('、')}。关闭提示后，可在左侧完成字段确认。`);
         showMarginFieldGovernance(sourceRows, sourceName, normalizedInput.ambiguousColumns, fieldRoleOverrides);
         return;
     }
     closeMarginFieldGovernance();
 
     if (dimCols.length === 0) {
-        showMessage('error', `缺少维度列：请至少保留一个业务维度列，例如“大区”或“国家”。当前列名: ${normalizedInput.sourceHeaders.join(', ')}`);
+        showMarginValidationDialog(`缺少维度列。请至少保留一个业务维度列，例如“大区”或“国家”。当前列名：${normalizedInput.sourceHeaders.join('、')}`);
         return;
     }
     if (normalizedInput.missingCols.length > 0) {
-        showMessage('error', `缺少必要列: ${normalizedInput.missingCols.join(', ')}。当前列名: ${normalizedInput.sourceHeaders.join(', ')}`);
+        showMarginValidationDialog(`缺少必要列：${normalizedInput.missingCols.join('、')}。当前列名：${normalizedInput.sourceHeaders.join('、')}`);
         return;
     }
 
     // 2. 在计算前统一规范期间和必填数值；非法值不再静默变成 0
     const validated = validateMarginNumericRows(rows, metricColumns, dimCols, {
         sheet: sourceName || '工作表',
-        denominatorLabel: normalizedInput.denominatorLabel || '销量'
+        denominatorLabel: normalizedInput.denominatorLabel || '销量',
+        dimNames: normalizedInput.dimNames
     });
     if (validated.issues.length > 0) {
-        showMessage('error', formatMarginDataIssues(validated.issues));
+        showMarginValidationDialog(formatMarginDataIssues(validated.issues));
         return;
     }
     rows = validated.rows;
 
-    // 3. 移除完全空行 (销量和所有指标都为 0)
-    rows = rows.filter(r => r['Sales Volume'] !== 0 || metricColumns.some(metric => r[metric.key] !== 0));
-
-    if (rows.length === 0) {
-        showMessage('error', '数据清理后为空，请检查数据格式');
-        return;
-    }
-
-    // 4. 存储并切换 UI
+    // 3. 存储并切换 UI。显式填写的全零业务行仍是合法数据，必须保留。
     AppState.rawRows = rows;
     AppState.metricColumns = metricColumns;
     AppState.selectedMetricKey = resolveInitialMetricKey(metricColumns);
@@ -755,7 +750,7 @@ function processLoadedData(rows, sourceName, fieldRoleOverrides = {}) {
     AppState.months = periodSelection.months;
 
     if (AppState.months.length < 2) {
-        showMessage('error', '需要至少两个月份的数据');
+        showMarginValidationDialog('至少需要两个有效月份，才能比较基期和当期。');
         return;
     }
 
@@ -1135,7 +1130,17 @@ function validateMarginNumericRows(rows, metricColumns, dimCols, source = {}) {
         });
 
         (dimCols || []).forEach((dimension) => {
-            normalized[dimension] = cleanText(row?.[dimension]) || '空白';
+            const dimensionValue = cleanText(row?.[dimension]);
+            normalized[dimension] = dimensionValue;
+            if (dimensionValue) return;
+            issues.push({
+                status: 'blank',
+                reason: 'required_dimension',
+                sheet: sourceLocation.sheet,
+                row: sourceLocation.row,
+                column: source.dimNames?.[dimension] || dimension,
+                raw: row?.[dimension]
+            });
         });
         return normalized;
     });
@@ -1145,11 +1150,20 @@ function validateMarginNumericRows(rows, metricColumns, dimCols, source = {}) {
 
 function formatMarginDataIssues(issues) {
     const preview = (issues || []).slice(0, 6).map((issue) => {
-        const reason = issue.status === 'blank' ? '为空' : '无法识别';
-        return `${issue.sheet} 第 ${issue.row} 行「${issue.column}」${reason}`;
+        const reason = issue.status === 'blank'
+            ? '为空'
+            : (issue.reason === 'invalid_period' ? '格式无法识别' : '无法识别为数字');
+        return `• ${issue.sheet} · 第 ${issue.row} 行 · 「${issue.column}」${reason}`;
     });
     const remainder = Math.max(0, (issues || []).length - preview.length);
-    return `数据质量校验未通过：${issues.length} 个必填单元格存在问题。${preview.join('；')}${remainder ? `；另有 ${remainder} 个` : ''}`;
+    return [
+        `共发现 ${issues.length} 个需要修改的单元格。`,
+        '',
+        ...preview,
+        ...(remainder ? [`• 另有 ${remainder} 个问题未在此展开`] : []),
+        '',
+        '维度字段必须填写完整；销量、收入、成本、边际等数值可以填写 0。'
+    ].join('\n');
 }
 
 
@@ -1218,6 +1232,74 @@ function generateDemoData() {
 
 
 // ==================== 消息提示 ====================
+function initMarginValidationDialog() {
+    const dialog = document.getElementById('margin-validation-dialog');
+    if (!dialog) return;
+
+    dialog.querySelectorAll('[data-margin-validation-close]').forEach((control) => {
+        control.addEventListener('click', closeMarginValidationDialog);
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (dialog.hidden) return;
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            closeMarginValidationDialog();
+            return;
+        }
+        if (event.key !== 'Tab') return;
+
+        const focusable = Array.from(dialog.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'));
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    });
+}
+
+function showMarginValidationDialog(message) {
+    const dialog = document.getElementById('margin-validation-dialog');
+    const messageNode = document.getElementById('margin-validation-message');
+    if (!dialog || !messageNode) {
+        showMessage('error', message);
+        return;
+    }
+
+    marginValidationDialogReturnFocus = document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    messageNode.textContent = String(message || '请检查上传文件的字段和值。');
+    dialog.hidden = false;
+    dialog.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('margin-validation-dialog-open');
+
+    window.requestAnimationFrame(() => {
+        dialog.querySelector('.margin-validation-dialog-close')?.focus();
+    });
+}
+
+function closeMarginValidationDialog() {
+    const dialog = document.getElementById('margin-validation-dialog');
+    if (!dialog || dialog.hidden) return;
+    if (dialog.contains(document.activeElement) && document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+    }
+    dialog.hidden = true;
+    dialog.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('margin-validation-dialog-open');
+
+    if (marginValidationDialogReturnFocus?.isConnected) {
+        marginValidationDialogReturnFocus.focus();
+    }
+    marginValidationDialogReturnFocus = null;
+}
+
 function showMessage(type, text) {
     // 移除已有消息
     const existing = document.querySelector('.msg-success, .msg-error');
@@ -4655,6 +4737,7 @@ if (typeof module !== 'undefined' && module.exports) {
         parseCSV,
         selectDefaultComparisonPeriods,
         validateMarginNumericRows,
+        formatMarginDataIssues,
         getMetricUnitSuffix,
         buildTemplateStylesXml,
         buildTemplateWorksheetXml,
