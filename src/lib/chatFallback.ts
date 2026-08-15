@@ -80,7 +80,7 @@ export function getLocalFallbackResponse(
 
     if (includesAny(lower, ["lucas", "卢卡斯", "站长", "博主", "作者", "yinpengtao", "殷鹏焘", "殷鹏涛"])) {
         return withOfflineNotice({
-            response: "Lucas Yin（殷鹏焘）关注经营分析、财务模型和 AI 工作流，目前也在奇瑞汽车国际财务 BP 岗位努力工作。你可以先看 [财务模型](/finance)，也可以进入 [工具与思考](/thinking-lab)。",
+            response: "Lucas Yin（殷鹏焘）关注经营分析、财务模型和 AI 工作流。你可以先看 [财务模型](/finance)，也可以进入 [工具与思考](/thinking-lab)。",
         }, options.includeOfflineNotice);
     }
 

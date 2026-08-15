@@ -190,7 +190,7 @@ export const ownerPatterns: DialoguePattern[] = [
     {
         keywords: ["lucas", "卢卡斯", "站长", "博主", "作者", "yinpengtao", "殷鹏涛"],
         responses: [
-            "Lucas Yin（殷鹏焘）目前在奇瑞汽车做财务 BP，关注财务建模、数据分析和 AI 工具应用。",
+            "Lucas Yin（殷鹏焘）关注财务建模、数据分析和 AI 工具应用。",
             "Lucas 是这个网站的主人。你可以从【财务建模】看他的工具和模型，也可以从【工具与思考】看他的技术思考。",
             "如果想了解 Lucas，可以先看首页介绍，再看【财务建模】和【工具与思考】两个板块。"
         ]

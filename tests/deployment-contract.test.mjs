@@ -45,7 +45,7 @@ test("patched Next, Sharp and DOMPurify versions are pinned", async () => {
   const packageJson = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
   assert.equal(packageJson.dependencies.next, "16.2.11");
   assert.match(packageJson.dependencies.sharp, /0\.35\./);
-  assert.match(packageJson.dependencies.dompurify, /3\.4\.(?:1[2-9]|[2-9]\d)/);
+  assert.equal(packageJson.dependencies.dompurify, "3.4.13");
   assert.equal(packageJson.devDependencies["eslint-config-next"], "16.2.11");
   assert.equal(packageJson.overrides.sharp, "0.35.0");
 });

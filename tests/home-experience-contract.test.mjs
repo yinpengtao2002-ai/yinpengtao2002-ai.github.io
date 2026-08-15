@@ -135,7 +135,7 @@ test("home hero returns to a split Lucas plus product-stage layout", () => {
   assert.doesNotMatch(hero, /把经营问题，变成可计算的判断/);
   assert.doesNotMatch(hero, /<span className="home-headline-mark">从问题进入模型<\/span>/);
   assert.match(hero, /Lucas Yin/);
-  assert.match(hero, /奇瑞汽车国际财务 BP/);
+  assert.match(hero, /Lucas Yin · 财务 BP/);
   assert.match(hero, /用模型穿透业务，用工具精简判断/);
   assert.doesNotMatch(hero, /用模型理解业务，用工具沉淀判断/);
   assert.match(hero, /这里收录我持续打磨的财务模型、分析方法和 AI 实践。/);
@@ -734,6 +734,8 @@ test("home animation polish respects reduced-motion preferences", () => {
 });
 
 test("contact section reads Lucas contact details from site config", () => {
+  assert.doesNotMatch(contactSection, new RegExp("\\u6c7d\\u8f66\\u51fa\\u6d77", "u"));
+  assert.match(contactSection, /经营分析 · 财务模型 · AI 实践/);
   assert.match(contactSection, /siteConfig\.links\?\.email/);
   assert.match(contactSection, /siteConfig\.links\?\.phone/);
   assert.match(contactSection, /href=\{`tel:\$\{siteConfig\.links\?\.phone\}`\}/);

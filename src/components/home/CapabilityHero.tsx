@@ -65,7 +65,7 @@ export default function CapabilityHero() {
             className="home-hero-left"
           >
             <FloatingMiniWidgets />
-            <p className="home-hero-eyebrow">Lucas Yin · 奇瑞汽车国际财务 BP</p>
+            <p className="home-hero-eyebrow">Lucas Yin · 财务 BP</p>
             <h1 className="home-hero-title">
               <span className="gradient-text">Lucas<br />Yin</span>
             </h1>

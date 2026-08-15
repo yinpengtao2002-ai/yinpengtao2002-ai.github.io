@@ -372,18 +372,20 @@ test("Next runtime, Sharp and PostCSS dependencies stay on patched versions", ()
 });
 
 test("Mermaid parser and sanitizer dependencies stay on patched versions", () => {
-  assert.equal(packageData.dependencies?.mermaid, "^11.16.0");
+  assert.equal(packageData.dependencies?.mermaid, "^11.16.1");
   assert.equal(packageData.overrides?.uuid, "^11.1.1");
 
   const installedMermaid = packageLockData.packages?.["node_modules/mermaid"];
   const installedParser = packageLockData.packages?.["node_modules/@mermaid-js/parser"];
   const installedDomPurify = packageLockData.packages?.["node_modules/dompurify"];
+  const installedNanoid = packageLockData.packages?.["node_modules/nanoid"];
   const installedUuid = packageLockData.packages?.["node_modules/uuid"];
   const installedLodashEs = packageLockData.packages?.["node_modules/lodash-es"];
 
-  assert.equal(installedMermaid?.version, "11.16.0");
+  assert.equal(installedMermaid?.version, "11.16.1");
   assertVersionAtLeast(installedParser?.version ?? "0.0.0", "1.2.0", "Mermaid parser");
-  assertVersionAtLeast(installedDomPurify?.version ?? "0.0.0", "3.4.12", "DOMPurify");
+  assertVersionAtLeast(installedDomPurify?.version ?? "0.0.0", "3.4.13", "DOMPurify");
+  assertVersionAtLeast(installedNanoid?.version ?? "0.0.0", "3.3.18", "nanoid");
   assertVersionAtLeast(installedUuid?.version ?? "0.0.0", "11.1.1", "uuid");
   assertVersionAtLeast(installedLodashEs?.version ?? "0.0.0", "4.18.1", "lodash-es");
 
