@@ -5,6 +5,10 @@ import "@perspective-dev/viewer-d3fc";
 import * as XLSX from "xlsx";
 import financeTemplates from "../../../lib/finance/templates.js";
 import {
+    createTemplateDataSheet,
+    createTemplateInfoSheet
+} from "../../../lib/finance/template-workbook.ts";
+import {
     clearFinanceEngineBindingMarkers,
     createFinanceEngineLifecycle
 } from "../../../lib/finance/browser-engine-lifecycle.ts";
@@ -12,9 +16,11 @@ import {
 const lifecycle = createFinanceEngineLifecycle();
 
 const {
+    OPERATING_DETAIL_FIELD_DICTIONARY_ROWS,
     OPERATING_DETAIL_HEADERS,
     createOperatingDetailSampleRows,
-    getOperatingDetailTemplateRows
+    getOperatingDetailInstructionRowsForModel,
+    getOperatingDetailTemplateRowsForModel
 } = financeTemplates;
 
 function orderOperatingDetailRow(row) {
@@ -25,7 +31,7 @@ function orderOperatingDetailRow(row) {
 }
 
 const SAMPLE_ROWS = createOperatingDetailSampleRows().map(orderOperatingDetailRow);
-const TEMPLATE_ROWS = getOperatingDetailTemplateRows().map(orderOperatingDetailRow);
+const TEMPLATE_ROWS = getOperatingDetailTemplateRowsForModel("perspective-bi").map(orderOperatingDetailRow);
 
 const FIELD_ROLE_OPTIONS = ["dimension", "metric", "ignore"];
 const AGGREGATION_OPTIONS = ["sum", "avg", "count", "min", "max"];
@@ -1599,16 +1605,28 @@ function downloadBlob(blob, filename) {
 }
 
 function downloadCsvTemplate() {
-    const sheet = XLSX.utils.json_to_sheet(TEMPLATE_ROWS);
+    const sheet = createTemplateDataSheet(XLSX, TEMPLATE_ROWS, OPERATING_DETAIL_HEADERS);
     const csv = XLSX.utils.sheet_to_csv(sheet);
-    downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), "perspective-bi-template.csv");
+    downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), "经营明细BI分析模板.csv");
 }
 
 function downloadXlsxTemplate() {
     const workbook = XLSX.utils.book_new();
-    const sheet = XLSX.utils.json_to_sheet(TEMPLATE_ROWS);
-    XLSX.utils.book_append_sheet(workbook, sheet, "BI数据模板");
-    XLSX.writeFile(workbook, "perspective-bi-template.xlsx");
+    const sheet = createTemplateDataSheet(XLSX, TEMPLATE_ROWS, OPERATING_DETAIL_HEADERS);
+    const instructions = createTemplateInfoSheet(
+        XLSX,
+        getOperatingDetailInstructionRowsForModel("perspective-bi"),
+        { widths: [18, 88] }
+    );
+    const dictionary = createTemplateInfoSheet(
+        XLSX,
+        OPERATING_DETAIL_FIELD_DICTIONARY_ROWS,
+        { widths: [18, 14, 10, 24, 16, 14, 14, 56] }
+    );
+    XLSX.utils.book_append_sheet(workbook, sheet, "经营明细");
+    XLSX.utils.book_append_sheet(workbook, instructions, "填表说明");
+    XLSX.utils.book_append_sheet(workbook, dictionary, "字段字典");
+    XLSX.writeFile(workbook, "经营明细BI分析模板.xlsx");
 }
 
 function handleFieldRoleChange(event) {

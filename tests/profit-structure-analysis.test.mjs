@@ -38,11 +38,11 @@ test("profit structure model is registered as a profit quality diagnostic model"
 test("template keeps the shared month-dimension-volume-metric shape", () => {
   assert.deepEqual(
     TEMPLATE_HEADERS,
-    ["月份", "数据口径", "大区", "国家", "品牌", "品牌市场", "经营模式", "业务单元", "车型", "燃油品类", "备注", "销量", "净收入", "成本", "边际"]
+    ["月份", "大区", "国家", "品牌", "品牌市场", "经营模式", "业务单元", "车型", "燃油品类", "备注", "销量", "净收入", "成本", "边际"]
   );
 });
 
-test("profit structure keeps scenario as a selectable dimension and ignores remark metadata", () => {
+test("profit structure accepts a legacy scenario column without exposing it as a diagnostic dimension", () => {
   const { rows, schema } = normalizeUploadedRows([
     {
       月份: "2026-01",
@@ -56,9 +56,9 @@ test("profit structure keeps scenario as a selectable dimension and ignores rema
     },
   ]);
 
-  assert.deepEqual(schema.dimensions, ["数据口径", "大区", "国家"]);
+  assert.deepEqual(schema.dimensions, ["大区", "国家"]);
   assert.ok(!schema.dimensions.includes("备注"));
-  assert.equal(rows[0].dimensionValues.数据口径, "实际");
+  assert.equal(rows[0].raw.数据口径, "实际");
   assert.equal(rows[0].raw.备注, "只填实际，用于趋势和利润质量诊断");
 });
 
@@ -70,6 +70,7 @@ test("sample data keeps countries in one region while brands cross most countrie
   const modelFuels = new Map();
 
   for (const row of sampleRows) {
+    assert.equal("数据口径" in row, false);
     const currentRegion = countryRegions.get(row.国家);
     assert.ok(!currentRegion || currentRegion === row.大区, `${row.国家} should not move across regions`);
     countryRegions.set(row.国家, row.大区);

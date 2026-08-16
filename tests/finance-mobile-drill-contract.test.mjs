@@ -40,7 +40,7 @@ const financeChartSystem = await readFile(
   "utf8"
 );
 const financeTemplatesSource = await readFile(
-  new URL("../src/lib/finance/templates.js", import.meta.url),
+  new URL("../public/tools/shared/operating-detail-templates.js", import.meta.url),
   "utf8"
 );
 const profitStructureEngine = await readFile(
@@ -196,7 +196,7 @@ test("Perspective BI follows the finance workbench shell and upload controls", (
 });
 
 test("Perspective BI templates only ask for base business fields without automatic derived metrics", () => {
-  assert.match(perspectiveEngine, /getOperatingDetailTemplateRows\(\)\.map\(orderOperatingDetailRow\)/);
+  assert.match(perspectiveEngine, /getOperatingDetailTemplateRowsForModel\("perspective-bi"\)\.map\(orderOperatingDetailRow\)/);
   assert.match(perspectiveEngine, /OPERATING_DETAIL_HEADERS/);
   assert.match(perspectiveEngine, /销量/);
   assert.match(perspectiveEngine, /净收入/);
@@ -214,16 +214,16 @@ test("Perspective BI default demo data is rich enough to exercise chart explorat
   assert.match(perspectiveEngine, /createOperatingDetailSampleRows\(\)\.map\(orderOperatingDetailRow\)/);
   assert.match(perspectiveEngine, /function orderOperatingDetailRow\(row\)/);
   assert.match(perspectiveEngine, /OPERATING_DETAIL_HEADERS\.reduce/);
-  assert.match(financeTemplatesSource, /"品牌"/);
-  assert.match(financeTemplatesSource, /"品牌市场"/);
-  assert.match(financeTemplatesSource, /"经营模式"/);
-  assert.match(financeTemplatesSource, /"业务单元"/);
-  assert.match(financeTemplatesSource, /"车型"/);
-  assert.match(financeTemplatesSource, /"燃油品类"/);
-  assert.match(financeTemplatesSource, /"销量"/);
-  assert.match(financeTemplatesSource, /"净收入"/);
-  assert.match(financeTemplatesSource, /"成本"/);
-  assert.match(financeTemplatesSource, /"边际"/);
+  assert.match(financeTemplatesSource, /["']品牌["']/);
+  assert.match(financeTemplatesSource, /["']品牌市场["']/);
+  assert.match(financeTemplatesSource, /["']经营模式["']/);
+  assert.match(financeTemplatesSource, /["']业务单元["']/);
+  assert.match(financeTemplatesSource, /["']车型["']/);
+  assert.match(financeTemplatesSource, /["']燃油品类["']/);
+  assert.match(financeTemplatesSource, /["']销量["']/);
+  assert.match(financeTemplatesSource, /["']净收入["']/);
+  assert.match(financeTemplatesSource, /["']成本["']/);
+  assert.match(financeTemplatesSource, /["']边际["']/);
   assert.doesNotMatch(perspectiveEngine, /预算达成率/);
 });
 
@@ -575,7 +575,8 @@ test("monthly trend keeps the base table schema business-facing", () => {
   assert.match(monthlyEngine, /const TEMPLATE_HEADER_NOTE\s*=\s*OPERATING_DETAIL_TEMPLATE_NOTE/);
   assert.match(monthlyEngine, /OPERATING_DETAIL_TEMPLATE_NOTE/);
   assert.match(monthlyEngine, /getOperatingDetailTemplateRows/);
-  assert.match(monthlyEngine, /window\.XLSX\.utils\.aoa_to_sheet/);
+  assert.match(monthlyEngine, /createTemplateDataSheet\(window\.XLSX,\s*rows,\s*headers\)/);
+  assert.match(monthlyEngine, /createTemplateInfoSheet/);
   assert.match(monthlyEngine, /function findTemplateHeaderRowIndex/);
   assert.match(monthlyEngine, /sheet_to_json\(sheet,\s*\{\s*header:\s*1/);
   assert.match(monthlyEngine, /const LOCKED_MONTH_COLUMN\s*=\s*"月份"/);

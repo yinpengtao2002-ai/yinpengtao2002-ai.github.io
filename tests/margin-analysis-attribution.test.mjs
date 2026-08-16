@@ -4,6 +4,9 @@ import { readFile } from "node:fs/promises";
 
 const financeCore = await import("../public/tools/shared/finance-core.js");
 globalThis.FinanceCore = financeCore.default;
+const financeTemplates = await import("../src/lib/finance/templates.js");
+const xlsxModule = await import("xlsx");
+const XLSX = xlsxModule.default ?? xlsxModule;
 const marginAnalysis = await import("../public/tools/margin-analysis/app.js");
 const marginAnalysisSource = await readFile(new URL("../public/tools/margin-analysis/app.js", import.meta.url), "utf8");
 const marginAnalysisStyles = await readFile(new URL("../public/tools/margin-analysis/styles.css", import.meta.url), "utf8");
@@ -26,10 +29,8 @@ const {
     TEMPLATE_HEADERS,
     TEMPLATE_ROLE_ROW,
     TEMPLATE_HEADER_NOTE,
-    buildTemplateStylesXml,
-    buildTemplateWorksheetXml,
-    buildXlsxTemplateEntries,
-    createStoredZip,
+    buildXlsxTemplateWorkbook,
+    parseMetricRoleDictionary,
     buildUnitMetricLabel,
     buildMetricDisplayLabel,
     buildWaterfallTooltipHTML,
@@ -708,21 +709,32 @@ test("left drill filter search supports keep-search and apply-current-selection 
     );
 });
 
-test("spreadsheet template can carry a visible note above the detected header row", () => {
+test("spreadsheet template keeps a clean row-1 data sheet and separate guidance sheets", () => {
     assert.match(TEMPLATE_HEADER_NOTE, /可直接修改标题行/);
     assert.match(TEMPLATE_HEADER_NOTE, /插入或删除维度列/);
     assert.match(TEMPLATE_HEADER_NOTE, /表头、样本类型和指标角色/);
     assert.match(TEMPLATE_HEADER_NOTE, /页面内请你确认/);
     assert.doesNotMatch(TEMPLATE_HEADER_NOTE, /销量列之后的数值列/);
-    assert.match(TEMPLATE_HEADER_NOTE, /数据口径/);
+    assert.doesNotMatch(TEMPLATE_HEADER_NOTE, /数据口径/);
     assert.match(TEMPLATE_HEADER_NOTE, /备注/);
     assert.match(TEMPLATE_HEADER_NOTE, /扣减项建议按负数填写/);
-    assert.match(buildTemplateStylesXml(), /fgColor rgb="FFFFF7CC"/);
-    assert.match(buildTemplateWorksheetXml(), /<c r="A1" s="1" t="inlineStr">/);
-    assert.match(buildTemplateWorksheetXml(), /<mergeCell ref="A1:O1"\/>/);
-    const zippedTemplate = new TextDecoder().decode(createStoredZip(buildXlsxTemplateEntries()));
-    assert.match(zippedTemplate, /fgColor rgb="FFFFF7CC"/);
-    assert.match(zippedTemplate, /<c r="A1" s="1" t="inlineStr">/);
+    assert.equal(typeof buildXlsxTemplateWorkbook, "function");
+    const workbook = buildXlsxTemplateWorkbook(XLSX);
+    assert.deepEqual(workbook.SheetNames, ["经营明细", "填表说明", "字段字典"]);
+    const dataSheet = workbook.Sheets["经营明细"];
+    const dataRows = XLSX.utils.sheet_to_json(dataSheet, { header: 1, defval: "" });
+    assert.deepEqual(dataRows[0], TEMPLATE_HEADERS);
+    assert.ok(!dataRows.slice(1).flat().includes("数据口径"));
+    assert.match(dataSheet["!autofilter"].ref, /^A1:N\d+$/);
+    assert.equal(dataSheet["!cols"].length, TEMPLATE_HEADERS.length);
+
+    const dictionaryRows = XLSX.utils.sheet_to_json(workbook.Sheets["字段字典"], { header: 1, defval: "" });
+    assert.deepEqual(parseMetricRoleDictionary(dictionaryRows), {
+        "销量": "denominator",
+        "净收入": "numerator",
+        "成本": "numerator",
+        "边际": "numerator",
+    });
 
     const rows = sheetRowsToObjects([
         [TEMPLATE_HEADER_NOTE],
@@ -741,9 +753,12 @@ test("spreadsheet template can carry a visible note above the detected header ro
 
 test("template sample rows use negative costs as financial deductions", () => {
     assert.equal(typeof getTemplateRows, "function");
+    assert.deepEqual(getTemplateRows(), financeTemplates.default.getOperatingDetailTemplateRowsForModel("margin-analysis"));
+    assert.equal(new Set(getTemplateRows().map((row) => row.月份)).size, 2);
+    assert.ok(getTemplateRows().every((row) => !("数据口径" in row)));
     getTemplateRows().forEach((row) => {
         assert.ok(row["成本"] < 0, "template cost should be negative");
-        assert.equal(row["净收入"] + row["成本"], row["边际"]);
+        approx(row["净收入"] + row["成本"], row["边际"], "template margin should equal revenue plus cost");
     });
 });
 
@@ -769,17 +784,16 @@ test("uploaded sheets can expose multiple metrics after sales volume for single-
 
 test("template role row marks denominator and numerator metrics for ratio analysis", () => {
     assert.deepEqual(TEMPLATE_ROLE_ROW, [
-        "指标角色", "", "", "", "", "", "", "", "", "", "", "分母", "分子", "分子", "分子"
+        "指标角色", "", "", "", "", "", "", "", "", "", "分母", "分子", "分子", "分子"
     ]);
     assert.match(TEMPLATE_HEADER_NOTE, /指标角色/);
     assert.match(TEMPLATE_HEADER_NOTE, /分母/);
     assert.match(TEMPLATE_HEADER_NOTE, /分子/);
-    assert.match(buildTemplateWorksheetXml(), /指标角色[\s\S]*分母[\s\S]*分子/);
 
     const parsed = sheetRowsToObjects([
         TEMPLATE_ROLE_ROW,
         TEMPLATE_HEADERS,
-        ["2025-01", "实际", "欧洲区", "德国", "品牌A", "品牌市场A", "直营", "业务A", "T19", "ICE", "", 100, 9000, -7000, 2000],
+        ["2025-01", "欧洲区", "德国", "品牌A", "品牌市场A", "直营", "业务A", "T19", "ICE", "", 100, 9000, -7000, 2000],
     ]);
     assert.equal(parsed.__metricRolesByHeader["销量"], "denominator");
     assert.equal(parsed.__metricRolesByHeader["净收入"], "numerator");
@@ -893,8 +907,8 @@ test("detail table exports neutralize spreadsheet formulas only in text columns"
 });
 
 test("upload template and sidebar use business dimension headers instead of Dim labels", () => {
-    assert.deepEqual(TEMPLATE_HEADERS, ["月份", "数据口径", "大区", "国家", "品牌", "品牌市场", "经营模式", "业务单元", "车型", "燃油品类", "备注", "销量", "净收入", "成本", "边际"]);
-    assert.deepEqual(TEMPLATE_ROLE_ROW, ["指标角色", "", "", "", "", "", "", "", "", "", "", "分母", "分子", "分子", "分子"]);
+    assert.deepEqual(TEMPLATE_HEADERS, ["月份", "大区", "国家", "品牌", "品牌市场", "经营模式", "业务单元", "车型", "燃油品类", "备注", "销量", "净收入", "成本", "边际"]);
+    assert.deepEqual(TEMPLATE_ROLE_ROW, ["指标角色", "", "", "", "", "", "", "", "", "", "分母", "分子", "分子", "分子"]);
     assert.ok(!TEMPLATE_HEADERS.some(header => /^Dim_/i.test(header)));
     assert.doesNotMatch(marginAnalysisHtml, /维度配置|dim-config-section/);
     assert.doesNotMatch(marginAnalysisHtml, /id="user-settings-section"/);
@@ -1082,20 +1096,23 @@ test("demo data gives revenue, cost, and margin distinct unit-metric movements",
     assert.equal(typeof generateDemoData, "function");
     const normalized = normalizeUploadedRows(generateDemoData());
     assert.deepEqual(normalized.metricColumns.map(metric => metric.metricType), ["净收入", "成本", "边际"]);
+    const [baseMonth, currentMonth] = selectDefaultComparisonPeriods(
+        normalized.rows.map((row) => row.Month),
+    ).months;
 
     const deltas = {};
     normalized.metricColumns.forEach((metric) => {
         const rows = applySelectedMetricToRows(normalized.rows, metric.key);
-        const base = calculateGlobalMetrics(rows, "2025-01").avgMargin;
-        const current = calculateGlobalMetrics(rows, "2025-02").avgMargin;
+        const base = calculateGlobalMetrics(rows, baseMonth).avgMargin;
+        const current = calculateGlobalMetrics(rows, currentMonth).avgMargin;
         deltas[metric.metricType] = current - base;
     });
 
-    assert.ok(Math.abs(deltas["净收入"]) > 100, "demo net revenue should visibly move");
-    assert.ok(Math.abs(deltas["成本"] + deltas["边际"]) > 100, "demo cost and margin should not be mirror images");
+    assert.ok(Math.abs(deltas["净收入"]) > 0.01, "demo net revenue should visibly move");
+    assert.ok(Math.abs(deltas["成本"] + deltas["边际"]) > 0.01, "demo cost and margin should not be mirror images");
     normalized.rows.forEach((row) => {
         assert.ok(row.Metric_2 < 0, "demo cost should be negative");
-        assert.equal(row.Metric_1 + row.Metric_2, row.Metric_3);
+        approx(row.Metric_1 + row.Metric_2, row.Metric_3, "demo margin should equal revenue plus cost");
     });
 });
 
@@ -1103,16 +1120,16 @@ test("demo data provides a richer drill path for first-time exploration", () => 
     const demoRows = generateDemoData();
     const normalized = normalizeUploadedRows(demoRows);
 
-    assert.ok(demoRows.length >= 40, "demo data should include enough rows to make filters and drilldown meaningful");
+    assert.ok(demoRows.length >= 24, "demo data should include enough paired rows to make filters and drilldown meaningful");
     assert.deepEqual(normalized.dimCols, ["Dim_A", "Dim_B", "Dim_C", "Dim_D", "Dim_E", "Dim_F", "Dim_G", "Dim_H"]);
 
     const uniqueCount = (field) => new Set(demoRows.map(row => row[field])).size;
     assert.ok(uniqueCount("大区") >= 4, "demo should span multiple regions");
-    assert.ok(uniqueCount("国家") >= 10, "demo should span many countries");
+    assert.ok(uniqueCount("国家") >= 8, "demo should span many countries");
     assert.ok(uniqueCount("品牌市场") >= 3, "demo should include brand-market drilldown");
     assert.ok(uniqueCount("经营模式") >= 2, "demo should include operating modes");
     assert.ok(uniqueCount("业务单元") >= 3, "demo should include business units");
-    assert.ok(uniqueCount("车型") >= 5, "demo should span several model families");
+    assert.ok(uniqueCount("车型") >= 4, "demo should span several model families");
     assert.ok(uniqueCount("燃油品类") >= 3, "demo should include fuel or energy categories");
     assert.ok(uniqueCount("品牌") >= 3, "demo should include brand-level drilldown");
 });

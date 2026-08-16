@@ -10,7 +10,6 @@ const DEFAULT_DIMENSION_NAMES = {
     Dim_D: '品牌市场', Dim_E: '经营模式', Dim_F: '业务单元',
     Dim_G: '车型', Dim_H: '燃油品类'
 };
-const TEMPLATE_DIMENSION_HEADERS = ['大区', '国家', '品牌', '品牌市场', '经营模式', '业务单元', '车型', '燃油品类'];
 const NON_ANALYSIS_DIMENSION_HEADERS = ['数据口径', '口径', '版本', '备注', '说明', '单位'];
 const ALL_DIMENSIONS = Array.from({ length: 20 }, (_, index) => `Dim_${String.fromCharCode(65 + index)}`);
 const ATTRIBUTION_METHOD_LAYERED = 'layered';
@@ -18,9 +17,17 @@ const ATTRIBUTION_METHOD_BOTTOM_UP = 'bottom-up';
 const METRIC_DISPLAY_NUMBER = 'number';
 const METRIC_DISPLAY_PERCENT = 'percent';
 const SharedFinanceCore = globalThis.FinanceCore;
+const OperatingDetailTemplates = globalThis.FinanceOperatingDetailTemplates
+    || (typeof module !== 'undefined' && module.exports
+        // eslint-disable-next-line @typescript-eslint/no-require-imports -- Static browser tool also exposes a Node test entrypoint.
+        ? require('../shared/operating-detail-templates.js')
+        : null);
 
 if (!SharedFinanceCore) {
     throw new Error('共享财务解析模块加载失败');
+}
+if (!OperatingDetailTemplates) {
+    throw new Error('共享经营明细模板模块加载失败');
 }
 
 const AppState = {
@@ -65,16 +72,14 @@ const DIM_ICONS = {
     Dim_D: '🏷️', Dim_E: '🏢'
 };
 
-const TEMPLATE_HEADERS = [
-    '月份', '数据口径', ...TEMPLATE_DIMENSION_HEADERS, '备注', '销量', '净收入', '成本', '边际'
-];
+const TEMPLATE_HEADERS = OperatingDetailTemplates.OPERATING_DETAIL_HEADERS.slice();
 const TEMPLATE_ROLE_ROW = TEMPLATE_HEADERS.map((header) => {
     if (header === '销量') return '分母';
     if (['净收入', '成本', '边际'].includes(header)) return '分子';
     return '';
 });
 TEMPLATE_ROLE_ROW[0] = '指标角色';
-const TEMPLATE_HEADER_NOTE = '可直接修改标题行；请保留“月份”和一列“分母”。“指标角色”行用于标记计算口径：把销量、净收入等基数列标为“分母”，把净收入、成本、边际、毛利等分析指标标为“分子”。单车归因不需要填写预算/实际口径，基期和当期通过“月份”选择；“数据口径”可留空或填“实际”。“备注”用于记录业务解释，不参与默认归因下钻。业务字段会结合表头、样本类型和指标角色识别，可直接插入或删除维度列；所有维度字段应逐行填写完整，销量、净收入、成本、边际等数值可以填写 0。为兼容附属金额行，分母留空仍按 0 处理；无法判断用途的空字段会在页面内请你确认。成本等扣减项建议按负数填写；如果要看比率指标，可把“净收入”等列标为分母，把“毛利”等列标为分子，并在指标口径中选择比率指标。';
+const TEMPLATE_HEADER_NOTE = '可直接修改标题行；请保留“月份”和一列“分母”。单车归因不需要填写预算/实际口径，基期和当期通过“月份”选择。“备注”用于记录业务解释，不参与默认归因下钻。业务字段会结合表头、样本类型和指标角色识别，可直接插入或删除维度列；所有维度字段应逐行填写完整，销量、净收入、成本、边际等数值可以填写 0。Excel 模板在“字段字典”工作表标记分母和分子，旧文件中的“指标角色”行仍可识别。为兼容附属金额行，分母留空仍按 0 处理；无法判断用途的空字段会在页面内请你确认。成本等扣减项建议按负数填写；如果要看比率指标，可把“净收入”等列标为分母，把“毛利”等列标为分子，并在指标口径中选择比率指标。';
 
 
 // ==================== DOM Ready ====================
@@ -240,6 +245,14 @@ function handleFileUpload(file) {
                 const firstSheet = workbook.Sheets[firstSheetName];
                 const sheetRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '', blankrows: false });
                 const rows = sheetRowsToObjects(sheetRows, firstSheetName);
+                const dictionarySheetName = workbook.SheetNames.find(name => normalizeHeaderAlias(name) === normalizeHeaderAlias('字段字典'));
+                if (dictionarySheetName) {
+                    const dictionaryRows = XLSX.utils.sheet_to_json(
+                        workbook.Sheets[dictionarySheetName],
+                        { header: 1, defval: '', blankrows: false }
+                    );
+                    mergeMetricRoles(rows, parseMetricRoleDictionary(dictionaryRows));
+                }
                 processLoadedData(rows, file.name);
             } catch (err) {
                 showMarginValidationDialog(`Excel 解析失败：${err.message}`);
@@ -264,7 +277,7 @@ function initTemplateDownloads() {
 }
 
 function getTemplateRows() {
-    return generateDemoData().slice(0, 8);
+    return OperatingDetailTemplates.getOperatingDetailTemplateRowsForModel('margin-analysis');
 }
 
 function downloadTemplate(format) {
@@ -277,283 +290,101 @@ function downloadTemplate(format) {
 
 function downloadCsvTemplate() {
     const rows = [
-        TEMPLATE_ROLE_ROW,
         TEMPLATE_HEADERS,
         ...getTemplateRows().map(row => TEMPLATE_HEADERS.map(header => row[header] ?? ''))
     ];
     const csv = rows.map(row => row.map(escapeCsvCell).join(',')).join('\r\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    downloadBlob(blob, 'margin-analysis-template.csv');
+    downloadBlob(blob, '单车指标变动归因示例格式.csv');
 }
 
 function downloadXlsxTemplate() {
     const blob = buildXlsxTemplateBlob();
-    downloadBlob(blob, 'margin-analysis-template.xlsx');
+    downloadBlob(blob, '单车指标变动归因示例格式.xlsx');
+}
+
+function createTemplateWorksheet(XLSXRuntime, rows, headers) {
+    const values = [
+        headers,
+        ...rows.map(row => headers.map(header => row[header] ?? ''))
+    ];
+    const worksheet = XLSXRuntime.utils.aoa_to_sheet(values);
+    worksheet['!cols'] = headers.map((header) => {
+        const contentWidth = rows.reduce(
+            (width, row) => Math.max(width, String(row[header] ?? '').length + 2),
+            String(header).length + 4
+        );
+        return { wch: Math.max(12, Math.min(28, contentWidth)) };
+    });
+    worksheet['!autofilter'] = {
+        ref: XLSXRuntime.utils.encode_range({
+            s: { r: 0, c: 0 },
+            e: { r: values.length - 1, c: headers.length - 1 }
+        })
+    };
+    headers.forEach((_, columnIndex) => {
+        const cell = worksheet[XLSXRuntime.utils.encode_cell({ r: 0, c: columnIndex })];
+        if (!cell) return;
+        cell.s = {
+            font: { bold: true, color: { rgb: 'FFFFFF' } },
+            fill: { fgColor: { rgb: '5C8FBA' } },
+            alignment: { vertical: 'center', horizontal: 'center', wrapText: true }
+        };
+    });
+    return worksheet;
+}
+
+function createTemplateInfoWorksheet(XLSXRuntime, rows, widths) {
+    const worksheet = XLSXRuntime.utils.aoa_to_sheet(rows);
+    const columnCount = rows.reduce((count, row) => Math.max(count, row.length), 0);
+    worksheet['!cols'] = Array.from({ length: columnCount }, (_, columnIndex) => ({
+        wch: widths?.[columnIndex] || Math.max(
+            12,
+            Math.min(72, rows.reduce(
+                (width, row) => Math.max(width, String(row[columnIndex] ?? '').length + 2),
+                12
+            ))
+        )
+    }));
+    worksheet['!autofilter'] = {
+        ref: XLSXRuntime.utils.encode_range({
+            s: { r: 0, c: 0 },
+            e: { r: Math.max(0, rows.length - 1), c: Math.max(0, columnCount - 1) }
+        })
+    };
+    return worksheet;
+}
+
+function buildXlsxTemplateWorkbook(XLSXRuntime) {
+    if (!XLSXRuntime?.utils) throw new Error('Excel 组件加载失败');
+    const workbook = XLSXRuntime.utils.book_new();
+    const dataSheet = createTemplateWorksheet(XLSXRuntime, getTemplateRows(), TEMPLATE_HEADERS);
+    const instructionSheet = createTemplateInfoWorksheet(
+        XLSXRuntime,
+        OperatingDetailTemplates.getOperatingDetailInstructionRowsForModel('margin-analysis'),
+        [16, 72]
+    );
+    const dictionarySheet = createTemplateInfoWorksheet(
+        XLSXRuntime,
+        OperatingDetailTemplates.OPERATING_DETAIL_FIELD_DICTIONARY_ROWS,
+        [16, 14, 10, 24, 18, 14, 14, 56]
+    );
+    XLSXRuntime.utils.book_append_sheet(workbook, dataSheet, '经营明细');
+    XLSXRuntime.utils.book_append_sheet(workbook, instructionSheet, '填表说明');
+    XLSXRuntime.utils.book_append_sheet(workbook, dictionarySheet, '字段字典');
+    return workbook;
 }
 
 function buildXlsxTemplateBlob() {
-    const entries = buildXlsxTemplateEntries();
-    const zipBytes = createStoredZip(entries);
-    return new Blob([zipBytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-}
-
-function buildXlsxTemplateEntries() {
-    return [
-        { name: '[Content_Types].xml', content: buildContentTypesXml() },
-        { name: '_rels/.rels', content: buildRootRelsXml() },
-        { name: 'xl/workbook.xml', content: buildWorkbookXml() },
-        { name: 'xl/_rels/workbook.xml.rels', content: buildWorkbookRelsXml() },
-        { name: 'xl/styles.xml', content: buildTemplateStylesXml() },
-        { name: 'xl/worksheets/sheet1.xml', content: buildTemplateWorksheetXml() }
-    ];
-}
-
-function buildContentTypesXml() {
-    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-    <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-    <Default Extension="xml" ContentType="application/xml"/>
-    <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
-    <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
-    <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
-</Types>`;
-}
-
-function buildRootRelsXml() {
-    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-    <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
-</Relationships>`;
-}
-
-function buildWorkbookXml() {
-    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-    <sheets>
-        <sheet name="示例格式" sheetId="1" r:id="rId1"/>
-    </sheets>
-</workbook>`;
-}
-
-function buildWorkbookRelsXml() {
-    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-    <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
-    <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
-</Relationships>`;
-}
-
-function buildTemplateStylesXml() {
-    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-    <fonts count="2">
-        <font><sz val="11"/><color theme="1"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font>
-        <font><b/><sz val="11"/><color rgb="FF6F4E00"/><name val="Calibri"/><family val="2"/></font>
-    </fonts>
-    <fills count="3">
-        <fill><patternFill patternType="none"/></fill>
-        <fill><patternFill patternType="gray125"/></fill>
-        <fill><patternFill patternType="solid"><fgColor rgb="FFFFF7CC"/><bgColor indexed="64"/></patternFill></fill>
-    </fills>
-    <borders count="2">
-        <border><left/><right/><top/><bottom/><diagonal/></border>
-        <border>
-            <left style="thin"><color rgb="FFE8D98A"/></left>
-            <right style="thin"><color rgb="FFE8D98A"/></right>
-            <top style="thin"><color rgb="FFE8D98A"/></top>
-            <bottom style="thin"><color rgb="FFE8D98A"/></bottom>
-            <diagonal/>
-        </border>
-    </borders>
-    <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-    <cellXfs count="2">
-        <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
-        <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
-    </cellXfs>
-    <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
-    <dxfs count="0"/>
-    <tableStyles count="0" defaultTableStyle="TableStyleMedium9" defaultPivotStyle="PivotStyleMedium4"/>
-</styleSheet>`;
-}
-
-function buildTemplateWorksheetXml() {
-    const rows = [
-        [TEMPLATE_HEADER_NOTE],
-        [],
-        TEMPLATE_ROLE_ROW,
-        TEMPLATE_HEADERS,
-        ...getTemplateRows().map(row => TEMPLATE_HEADERS.map(header => row[header] ?? ''))
-    ];
-    const lastRow = rows.length;
-    const lastCol = columnName(TEMPLATE_HEADERS.length - 1);
-    const colsXml = TEMPLATE_HEADERS
-        .map((header, index) => {
-            const width = Math.max(String(header).length + 8, 16);
-            return `<col min="${index + 1}" max="${index + 1}" width="${width}" customWidth="1"/>`;
-        })
-        .join('');
-    const rowsXml = rows.map((row, rowIndex) => {
-        const rowNumber = rowIndex + 1;
-        if (rowNumber === 2) return '<row r="2" ht="6" customHeight="1"/>';
-        const cells = row
-            .map((value, colIndex) => buildTemplateCell(value, rowNumber, colIndex, rowNumber === 1 ? 1 : 0))
-            .join('');
-        const rowAttrs = rowNumber === 1 ? ' ht="48" customHeight="1"' : '';
-        return `<row r="${rowNumber}"${rowAttrs}>${cells}</row>`;
-    }).join('');
-
-    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-    <dimension ref="A1:${lastCol}${lastRow}"/>
-    <sheetViews><sheetView workbookViewId="0"/></sheetViews>
-    <cols>${colsXml}</cols>
-    <sheetData>${rowsXml}</sheetData>
-    <mergeCells count="1"><mergeCell ref="A1:${lastCol}1"/></mergeCells>
-    <pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>
-</worksheet>`;
-}
-
-function buildTemplateCell(value, rowNumber, colIndex, styleId = 0) {
-    const ref = `${columnName(colIndex)}${rowNumber}`;
-    const styleAttr = styleId > 0 ? ` s="${styleId}"` : '';
-    if (typeof value === 'number' && Number.isFinite(value)) {
-        return `<c r="${ref}"${styleAttr}><v>${value}</v></c>`;
-    }
-    return `<c r="${ref}"${styleAttr} t="inlineStr"><is><t>${escapeXml(value)}</t></is></c>`;
-}
-
-function columnName(index) {
-    let name = '';
-    let current = index + 1;
-    while (current > 0) {
-        const remainder = (current - 1) % 26;
-        name = String.fromCharCode(65 + remainder) + name;
-        current = Math.floor((current - 1) / 26);
-    }
-    return name;
-}
-
-function escapeXml(value) {
-    return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;');
-}
-
-function createStoredZip(entries) {
-    const encoder = new TextEncoder();
-    const fileRecords = [];
-    const centralRecords = [];
-    let offset = 0;
-
-    entries.forEach((entry) => {
-        const nameBytes = encoder.encode(entry.name);
-        const contentBytes = typeof entry.content === 'string' ? encoder.encode(entry.content) : entry.content;
-        const crc = crc32(contentBytes);
-        const localHeader = buildZipLocalHeader(nameBytes, contentBytes.length, crc);
-        const centralHeader = buildZipCentralHeader(nameBytes, contentBytes.length, crc, offset);
-
-        fileRecords.push(localHeader, contentBytes);
-        centralRecords.push(centralHeader);
-        offset += localHeader.length + contentBytes.length;
+    const workbook = buildXlsxTemplateWorkbook(globalThis.XLSX);
+    const bytes = globalThis.XLSX.write(workbook, {
+        bookType: 'xlsx',
+        type: 'array',
+        cellStyles: true
     });
-
-    const centralOffset = offset;
-    const centralSize = centralRecords.reduce((sum, record) => sum + record.length, 0);
-    const endRecord = buildZipEndRecord(entries.length, centralSize, centralOffset);
-    return concatUint8Arrays([...fileRecords, ...centralRecords, endRecord]);
-}
-
-function buildZipLocalHeader(nameBytes, contentLength, crc) {
-    const header = new Uint8Array(30 + nameBytes.length);
-    const view = new DataView(header.buffer);
-    view.setUint32(0, 0x04034b50, true);
-    view.setUint16(4, 20, true);
-    view.setUint16(6, 0x0800, true);
-    view.setUint16(8, 0, true);
-    view.setUint16(10, 0, true);
-    view.setUint16(12, 0, true);
-    view.setUint32(14, crc, true);
-    view.setUint32(18, contentLength, true);
-    view.setUint32(22, contentLength, true);
-    view.setUint16(26, nameBytes.length, true);
-    view.setUint16(28, 0, true);
-    header.set(nameBytes, 30);
-    return header;
-}
-
-function buildZipCentralHeader(nameBytes, contentLength, crc, offset) {
-    const header = new Uint8Array(46 + nameBytes.length);
-    const view = new DataView(header.buffer);
-    view.setUint32(0, 0x02014b50, true);
-    view.setUint16(4, 20, true);
-    view.setUint16(6, 20, true);
-    view.setUint16(8, 0x0800, true);
-    view.setUint16(10, 0, true);
-    view.setUint16(12, 0, true);
-    view.setUint16(14, 0, true);
-    view.setUint32(16, crc, true);
-    view.setUint32(20, contentLength, true);
-    view.setUint32(24, contentLength, true);
-    view.setUint16(28, nameBytes.length, true);
-    view.setUint16(30, 0, true);
-    view.setUint16(32, 0, true);
-    view.setUint16(34, 0, true);
-    view.setUint16(36, 0, true);
-    view.setUint32(38, 0, true);
-    view.setUint32(42, offset, true);
-    header.set(nameBytes, 46);
-    return header;
-}
-
-function buildZipEndRecord(entryCount, centralSize, centralOffset) {
-    const record = new Uint8Array(22);
-    const view = new DataView(record.buffer);
-    view.setUint32(0, 0x06054b50, true);
-    view.setUint16(4, 0, true);
-    view.setUint16(6, 0, true);
-    view.setUint16(8, entryCount, true);
-    view.setUint16(10, entryCount, true);
-    view.setUint32(12, centralSize, true);
-    view.setUint32(16, centralOffset, true);
-    view.setUint16(20, 0, true);
-    return record;
-}
-
-function concatUint8Arrays(arrays) {
-    const totalLength = arrays.reduce((sum, item) => sum + item.length, 0);
-    const merged = new Uint8Array(totalLength);
-    let offset = 0;
-    arrays.forEach((item) => {
-        merged.set(item, offset);
-        offset += item.length;
+    return new Blob([bytes], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
-    return merged;
-}
-
-function crc32(bytes) {
-    const table = getCrc32Table();
-    let crc = 0 ^ -1;
-    for (let index = 0; index < bytes.length; index++) {
-        crc = (crc >>> 8) ^ table[(crc ^ bytes[index]) & 0xff];
-    }
-    return (crc ^ -1) >>> 0;
-}
-
-function getCrc32Table() {
-    if (getCrc32Table.cache) return getCrc32Table.cache;
-    const table = new Uint32Array(256);
-    for (let index = 0; index < 256; index++) {
-        let current = index;
-        for (let bit = 0; bit < 8; bit++) {
-            current = current & 1 ? 0xedb88320 ^ (current >>> 1) : current >>> 1;
-        }
-        table[index] = current >>> 0;
-    }
-    getCrc32Table.cache = table;
-    return table;
 }
 
 function escapeCsvCell(value) {
@@ -623,7 +454,8 @@ function sheetRowsToObjects(sheetRows, sourceSheet = '工作表') {
 
     Object.defineProperty(objects, '__metricRolesByHeader', {
         value: metricRolesByHeader,
-        enumerable: false
+        enumerable: false,
+        configurable: true
     });
     return objects;
 }
@@ -689,6 +521,35 @@ function normalizeMetricRole(value) {
     if (['分母', 'denominator', 'denom', 'base', '基数'].includes(normalized)) return 'denominator';
     if (['分子', 'numerator', 'metric', 'value', '指标', '金额'].includes(normalized)) return 'numerator';
     return '';
+}
+
+function parseMetricRoleDictionary(sheetRows) {
+    const rows = Array.isArray(sheetRows) ? sheetRows : [];
+    const headerIndex = rows.findIndex(row => {
+        const normalized = (Array.isArray(row) ? row : []).map(normalizeHeaderAlias);
+        return normalized.includes(normalizeHeaderAlias('字段')) && normalized.includes(normalizeHeaderAlias('指标角色'));
+    });
+    if (headerIndex < 0) return {};
+
+    const headers = rows[headerIndex].map(cell => String(cell ?? '').trim());
+    const fieldIndex = headers.findIndex(header => normalizeHeaderAlias(header) === normalizeHeaderAlias('字段'));
+    const roleIndex = headers.findIndex(header => normalizeHeaderAlias(header) === normalizeHeaderAlias('指标角色'));
+    return rows.slice(headerIndex + 1).reduce((roles, row) => {
+        const field = String(row?.[fieldIndex] ?? '').trim();
+        const role = normalizeMetricRole(row?.[roleIndex]);
+        if (field && role) roles[field] = role;
+        return roles;
+    }, {});
+}
+
+function mergeMetricRoles(rows, roles) {
+    const merged = { ...(rows?.__metricRolesByHeader || {}), ...(roles || {}) };
+    Object.defineProperty(rows, '__metricRolesByHeader', {
+        value: merged,
+        enumerable: false,
+        configurable: true
+    });
+    return rows;
 }
 
 
@@ -1179,55 +1040,7 @@ function initDemoButton() {
 }
 
 function generateDemoData() {
-    const portfolio = [
-        { region: '亚太区', country: '中国', model: 'SUV-旗舰', energy: '燃油', brand: '核心品牌', baseVolume: 5000, baseRevenue: 9800, baseCost: 6800, currVolume: 6200, currRevenue: 10300, currCost: 7100 },
-        { region: '亚太区', country: '中国', model: 'Sedan-经典', energy: '混动', brand: '核心品牌', baseVolume: 3500, baseRevenue: 7600, baseCost: 5600, currVolume: 3000, currRevenue: 7800, currCost: 5900 },
-        { region: '亚太区', country: '中国', model: 'EV-新能源', energy: '纯电', brand: '新能源品牌', baseVolume: 1600, baseRevenue: 11200, baseCost: 7600, currVolume: 2600, currRevenue: 11800, currCost: 8100 },
-        { region: '亚太区', country: '日本', model: 'SUV-旗舰', energy: '混动', brand: '高端品牌', baseVolume: 2000, baseRevenue: 9100, baseCost: 5900, currVolume: 1800, currRevenue: 9300, currCost: 6200 },
-        { region: '亚太区', country: '日本', model: 'EV-新能源', energy: '纯电', brand: '新能源品牌', baseVolume: 1500, baseRevenue: 11200, baseCost: 7700, currVolume: 2200, currRevenue: 11800, currCost: 8050 },
-        { region: '亚太区', country: '泰国', model: 'MPV-家用', energy: '燃油', brand: '核心品牌', baseVolume: 900, baseRevenue: 7200, baseCost: 5200, currVolume: 1400, currRevenue: 7600, currCost: 5500 },
-        { region: '亚太区', country: '印度', model: 'Mini-EV', energy: '纯电', brand: '新能源品牌', baseVolume: 700, baseRevenue: 6100, baseCost: 4600, currVolume: 1250, currRevenue: 6400, currCost: 4800 },
-        { region: '欧洲区', country: '德国', model: 'SUV-旗舰', energy: '燃油', brand: '高端品牌', baseVolume: 3000, baseRevenue: 10500, baseCost: 7000, currVolume: 2600, currRevenue: 10400, currCost: 7100 },
-        { region: '欧洲区', country: '德国', model: 'Sedan-经典', energy: '混动', brand: '核心品牌', baseVolume: 2500, baseRevenue: 8200, baseCost: 6000, currVolume: 2100, currRevenue: 8000, currCost: 5900 },
-        { region: '欧洲区', country: '法国', model: 'EV-新能源', energy: '纯电', brand: '新能源品牌', baseVolume: 1800, baseRevenue: 11800, baseCost: 8500, currVolume: 2800, currRevenue: 12300, currCost: 8700 },
-        { region: '欧洲区', country: '西班牙', model: 'SUV-旗舰', energy: '混动', brand: '核心品牌', baseVolume: 1100, baseRevenue: 9300, baseCost: 6500, currVolume: 1700, currRevenue: 9000, currCost: 6700 },
-        { region: '欧洲区', country: '意大利', model: 'MPV-家用', energy: '燃油', brand: '商用品牌', baseVolume: 600, baseRevenue: 7800, baseCost: 5600, currVolume: 900, currRevenue: 8100, currCost: 5850 },
-        { region: '欧洲区', country: '英国', model: 'EV-新能源', energy: '纯电', brand: '高端品牌', baseVolume: 850, baseRevenue: 12400, baseCost: 8900, currVolume: 1250, currRevenue: 12800, currCost: 9200 },
-        { region: '美洲区', country: '美国', model: 'SUV-旗舰', energy: '燃油', brand: '高端品牌', baseVolume: 4000, baseRevenue: 10100, baseCost: 6600, currVolume: 4200, currRevenue: 10200, currCost: 6700 },
-        { region: '美洲区', country: '美国', model: 'Pickup-皮卡', energy: '燃油', brand: '商用品牌', baseVolume: 2800, baseRevenue: 10900, baseCost: 7900, currVolume: 3500, currRevenue: 11300, currCost: 8100 },
-        { region: '美洲区', country: '墨西哥', model: 'Sedan-经典', energy: '燃油', brand: '核心品牌', baseVolume: 700, baseRevenue: 6900, baseCost: 5100, currVolume: 1250, currRevenue: 7100, currCost: 5200 },
-        { region: '美洲区', country: '巴西', model: 'Sedan-经典', energy: '混动', brand: '核心品牌', baseVolume: 1200, baseRevenue: 7000, baseCost: 5500, currVolume: 1000, currRevenue: 6800, currCost: 5400 },
-        { region: '美洲区', country: '巴西', model: 'SUV-旗舰', energy: '燃油', brand: '核心品牌', baseVolume: 800, baseRevenue: 8200, baseCost: 5700, currVolume: 1500, currRevenue: 8500, currCost: 5900 },
-        { region: '中东非区', country: '沙特', model: 'SUV-旗舰', energy: '燃油', brand: '高端品牌', baseVolume: 900, baseRevenue: 11200, baseCost: 7600, currVolume: 1450, currRevenue: 11600, currCost: 7950 },
-        { region: '中东非区', country: '阿联酋', model: 'EV-新能源', energy: '纯电', brand: '新能源品牌', baseVolume: 600, baseRevenue: 12100, baseCost: 8400, currVolume: 1050, currRevenue: 12600, currCost: 8700 },
-        { region: '中东非区', country: '南非', model: 'Sedan-经典', energy: '燃油', brand: '核心品牌', baseVolume: 700, baseRevenue: 6600, baseCost: 5000, currVolume: 1100, currRevenue: 6900, currCost: 5200 },
-        { region: '中东非区', country: '埃及', model: 'Mini-EV', energy: '纯电', brand: '新能源品牌', baseVolume: 500, baseRevenue: 5800, baseCost: 4300, currVolume: 800, currRevenue: 6100, currCost: 4500 },
-    ];
-
-    return portfolio.flatMap(item => ([
-        { month: '2025-01', volume: item.baseVolume, unitRevenue: item.baseRevenue, unitCost: item.baseCost },
-        { month: '2025-02', volume: item.currVolume, unitRevenue: item.currRevenue, unitCost: item.currCost }
-    ]).map(period => {
-        const netRevenue = Math.round(period.volume * period.unitRevenue);
-        const cost = -Math.round(period.volume * period.unitCost);
-        return {
-            '月份': period.month,
-            '数据口径': '实际',
-            '大区': item.region,
-            '国家': item.country,
-            '品牌': item.brand,
-            '品牌市场': item.brand,
-            '经营模式': item.country === '中国' || item.country === '日本' ? '直营' : '经销',
-            '业务单元': `${item.energy}业务`,
-            '车型': item.model,
-            '燃油品类': item.energy,
-            '备注': '',
-            '销量': period.volume,
-            '净收入': netRevenue,
-            '成本': cost,
-            '边际': netRevenue + cost
-        };
-    }));
+    return OperatingDetailTemplates.getOperatingDetailTemplateRowsForModel('margin-analysis');
 }
 
 
@@ -4719,6 +4532,7 @@ if (typeof module !== 'undefined' && module.exports) {
         analyzeUploadHeaders,
         getTemplateRows,
         sheetRowsToObjects,
+        parseMetricRoleDictionary,
         TEMPLATE_HEADERS,
         TEMPLATE_ROLE_ROW,
         TEMPLATE_HEADER_NOTE,
@@ -4739,9 +4553,6 @@ if (typeof module !== 'undefined' && module.exports) {
         validateMarginNumericRows,
         formatMarginDataIssues,
         getMetricUnitSuffix,
-        buildTemplateStylesXml,
-        buildTemplateWorksheetXml,
-        buildXlsxTemplateEntries,
-        createStoredZip
+        buildXlsxTemplateWorkbook
     };
 }

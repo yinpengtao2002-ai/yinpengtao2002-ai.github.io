@@ -1,9 +1,8 @@
+import financeTemplates from "../../../lib/finance/templates.js";
 import {
-    OPERATING_DETAIL_HEADERS,
-    OPERATING_DETAIL_TEMPLATE_NOTE,
-    createOperatingDetailSampleRows,
-    getOperatingDetailTemplateRows
-} from "../../../lib/finance/templates.js";
+    createTemplateDataSheet,
+    createTemplateInfoSheet
+} from "../../../lib/finance/template-workbook.ts";
 import { FINANCE_WORKBENCH_MOBILE_QUERY } from "../../../lib/finance/workbench-breakpoints.ts";
 import {
     aggregateMetricRows,
@@ -21,6 +20,15 @@ import {
     showFinanceFieldGovernance
 } from "../../../lib/finance/field-governance.ts";
 import { renderPlotlyAccessibleData } from "../../../lib/finance/chart-accessibility.ts";
+
+const {
+    OPERATING_DETAIL_FIELD_DICTIONARY_ROWS,
+    OPERATING_DETAIL_HEADERS,
+    OPERATING_DETAIL_TEMPLATE_NOTE,
+    createOperatingDetailSampleRows,
+    getOperatingDetailInstructionRowsForModel,
+    getOperatingDetailTemplateRowsForModel
+} = financeTemplates;
 
 function renderAccessiblePlot(target, data, layout, config) {
     const result = window.Plotly.react(target, data, layout, config);
@@ -40,7 +48,7 @@ const VOLUME_ALIASES = ["销量", "销售量", "发车量", "台数", "数量", 
 const REVENUE_ALIASES = ["净收入", "营业收入", "收入", "净收入总额", "收入总额", "revenue", "netrevenue", "sales", "gmv"];
 const PRIMARY_VALUE_ALIASES = ["边际", "边际总额", "贡献边际", "毛利", "毛利额", "利润贡献", "利润", "margin", "grossmargin", "contributionmargin", "profit"];
 const DEFAULT_DIMENSION_PATH_CANDIDATES = ["大区", "国家", "品牌", "车型", "燃油品类"];
-const NON_ANALYSIS_DIMENSION_COLUMNS = ["备注", "说明", "单位", "版本", "数据类型", "类型", "note", "notes", "remark", "remarks", "comment", "comments"];
+const NON_ANALYSIS_DIMENSION_COLUMNS = ["数据口径", "口径", "场景", "scenario", "备注", "说明", "单位", "版本", "数据类型", "类型", "note", "notes", "remark", "remarks", "comment", "comments"];
 const DIMENSION_SELECT_IDS = [
     "profit-structure-primary-dimension",
     "profit-structure-secondary-dimension",
@@ -1029,7 +1037,7 @@ function downloadBlob(blob, filename) {
 }
 
 function templateRows() {
-    return getOperatingDetailTemplateRows(24);
+    return getOperatingDetailTemplateRowsForModel("profit-structure");
 }
 
 function downloadCsv() {
@@ -1043,14 +1051,20 @@ function downloadCsv() {
 
 function downloadXlsx() {
     const workbook = window.XLSX.utils.book_new();
-    const sheet = window.XLSX.utils.json_to_sheet(templateRows(), { header: TEMPLATE_HEADERS });
+    const sheet = createTemplateDataSheet(window.XLSX, templateRows(), TEMPLATE_HEADERS);
     window.XLSX.utils.book_append_sheet(workbook, sheet, "经营明细");
-    const note = window.XLSX.utils.aoa_to_sheet([
-        ["字段说明", TEMPLATE_HEADER_NOTE],
-        ["诊断维度", "页面会把销量列之前的所有字段识别为可选维度，并用于判断优先下钻方向。"],
-        ["质量指标", "销量列之后的所有数值字段都会进入指标列表；页面会按汇总指标除以销量计算单位质量。"]
-    ]);
-    window.XLSX.utils.book_append_sheet(workbook, note, "说明");
+    const note = createTemplateInfoSheet(
+        window.XLSX,
+        getOperatingDetailInstructionRowsForModel("profit-structure"),
+        { widths: [18, 88] }
+    );
+    const dictionary = createTemplateInfoSheet(
+        window.XLSX,
+        OPERATING_DETAIL_FIELD_DICTIONARY_ROWS,
+        { widths: [18, 14, 10, 24, 16, 14, 14, 56] }
+    );
+    window.XLSX.utils.book_append_sheet(workbook, note, "填表说明");
+    window.XLSX.utils.book_append_sheet(workbook, dictionary, "字段字典");
     window.XLSX.writeFile(workbook, "多维利润质量诊断模型模板.xlsx");
 }
 

@@ -14,6 +14,7 @@
 
     <!-- Shared finance parsing and aggregation rules -->
     <script src="../shared/finance-core.js?v=20260722"></script>
+    <script src="../shared/operating-detail-templates.js?v=20260817"></script>
 
     <link rel="stylesheet" href="styles.css?v=20260816-zero-value-validation">
 </head>
@@ -173,19 +174,19 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td>指标角色</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>分母</td><td>分子</td><td>分子</td><td>分子</td>
+                                <td>字段类型</td><td>期间</td><td>维度</td><td>维度</td><td>维度</td><td>维度</td><td>维度</td><td>指标</td><td>指标</td><td>指标</td><td>指标</td>
                             </tr>
                             <tr>
-                                <td>说明</td><td>月份</td><td>维度</td><td>维度</td><td>维度</td><td>维度</td><td>维度</td><td>默认分母</td><td>可选分子</td><td>可选分子</td><td>可选分子</td>
+                                <td>聚合方式</td><td>不可汇总</td><td>分组</td><td>分组</td><td>分组</td><td>分组</td><td>分组</td><td>求和</td><td>求和</td><td>求和</td><td>求和</td>
                             </tr>
                             <tr>
-                                <td>默认</td><td>-</td><td>大区</td><td>国家</td><td>车型</td><td>燃油品类</td><td>品牌</td><td>-</td><td>单车净收入</td><td>单车成本</td><td>单车边际</td>
+                                <td>指标角色</td><td>期间</td><td>维度</td><td>维度</td><td>维度</td><td>维度</td><td>维度</td><td>分母</td><td>分子</td><td>分子</td><td>分子</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
                 <div class="tip-box">
-                    💡 <strong>提示</strong>：指标角色行用于标记分母和分子。默认把销量作为分母，净收入、成本、边际作为分子；如果要看比率指标，可以把净收入等列标为分母、毛利等列标为分子，并在数据中心选择“比率指标”。分母列之前的业务字段可新增或删除维度列；每个维度字段都需要填写完整，销量、净收入、成本、边际等数值可以填写 0。没有指标角色行时，销量列之后的数值列会识别为可分析指标；旧版“指标总额”列仍可直接上传。
+                    💡 <strong>提示</strong>：Excel 模板在“字段字典”中标记分母和分子，经营明细第 1 行直接填写字段名。默认把销量作为分母，净收入、成本、边际作为分子；如果要看比率指标，可以在字段字典中把净收入等列标为分母、毛利等列标为分子，并在数据中心选择“比率指标”。分母列之前的业务字段可新增或删除维度列；销量列之后的数值列会识别为可分析指标。每个维度字段都需要填写完整，销量、净收入、成本、边际等数值可以填写 0。上传时也兼容包含“指标角色”行或“指标总额”列的文件。
                 </div>
                 <h3>计算逻辑</h3>
                 <ol>
@@ -215,7 +216,7 @@
         <summary class="usage-summary">📐 归因口径说明</summary>
         <div class="usage-content">
             <p class="assumption-note">
-                本工具按当前展示维度计算<span data-unit-metric-label>单车边际</span>变动贡献。默认使用销量作为分母，也可以通过模板里的指标角色行改成净收入等其他分母。可以先从大区、国家、车型等汇总视角定位主要变化，再通过下钻查看更细层级的驱动因素。
+                本工具按当前展示维度计算<span data-unit-metric-label>单车边际</span>变动贡献。默认使用销量作为分母，也可以通过 Excel 模板“字段字典”中的指标角色改成净收入等其他分母。可以先从大区、国家、车型等汇总视角定位主要变化，再通过下钻查看更细层级的驱动因素。
             </p>
             <div class="table-wrapper">
                 <table class="assumption-table">

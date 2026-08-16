@@ -12,6 +12,10 @@ import {
     createFinanceEngineLifecycle
 } from "../../../lib/finance/browser-engine-lifecycle.ts";
 import { renderPlotlyAccessibleData } from "../../../lib/finance/chart-accessibility.ts";
+import {
+    createTemplateDataSheet,
+    createTemplateInfoSheet
+} from "../../../lib/finance/template-workbook.ts";
 
 const lifecycle = createFinanceEngineLifecycle();
 
@@ -1668,32 +1672,54 @@ function getTemplateRows() {
     });
 }
 
+const SENSITIVITY_TEMPLATE_HEADERS = ["序号", "部分", "名称", "口径", "基准值", "单位"];
+
+function getSensitivityTemplateInstructions() {
+    return [
+        ["项目", "说明"],
+        ["数据表", "“敏感性假设”工作表第1行是表头，第2行开始填写假设科目。"],
+        ["序号", "用于识别已有科目；修改名称时请保留原序号。"],
+        ["部分", "可填写销量、变动收入、变动成本、固定扣减、利润贡献；新增行按该列进入模型。"],
+        ["名称", "图表和控制台显示的科目名称，可以改成真实业务名称。"],
+        ["口径", "销量填总量；其余边际以上科目填总额，系统按销量反算单车。"],
+        ["基准值", "填写现状底稿的数值；销量使用统一体量单位，金额默认使用亿元总额。"],
+        ["正负号", "收入和利润贡献通常填正数；成本和固定扣减填负数；0 是有效数值。"]
+    ];
+}
+
+function getSensitivityFieldDictionary() {
+    return [
+        ["字段", "字段类型", "必填", "单位或格式", "正负号", "聚合方式", "说明"],
+        ["序号", "标识", "是", "正整数", "正数", "不汇总", "已有科目的稳定识别号。"],
+        ["部分", "分类", "是", "文本", "-", "分组", "决定科目进入销量、收入、成本、固定扣减或利润贡献。"],
+        ["名称", "科目", "是", "文本", "-", "分组", "页面显示名称。"],
+        ["口径", "计算口径", "是", "总量或总额", "-", "不汇总", "说明基准值按总量、总额或单车填写。"],
+        ["基准值", "假设", "是", "数值", "按科目性质", "按科目计算", "现状基准假设。"],
+        ["单位", "说明", "是", "文本", "-", "不汇总", "万辆、亿元或万元/辆等显示单位。"]
+    ];
+}
+
 function downloadTemplate(format) {
     const rows = getTemplateRows();
     if (format === "xlsx" && typeof XLSX !== "undefined") {
         const workbook = XLSX.utils.book_new();
-        const worksheet = XLSX.utils.json_to_sheet(rows);
-        worksheet["!cols"] = [
-            { wch: 8 }, { wch: 12 }, { wch: 20 }, { wch: 10 },
-            { wch: 12 }, { wch: 12 }
-        ];
-        const readme = XLSX.utils.aoa_to_sheet([
-            ["字段", "说明"],
-            ["序号", "用于识别已有科目。修改名称时请保留原序号。"],
-            ["部分", "可填写：销量、变动收入、变动成本、固定扣减、利润贡献。新增行按该列进入模型。"],
-            ["名称", "图表和控制台显示的科目名称，可修改。"],
-            ["口径", "销量填总量；其余边际以上科目填总额，系统按销量反算单车。"],
-            ["基准值", "现状底表的实际值。边际以上金额口径为亿元总额。"]
-        ]);
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Assumptions");
-        XLSX.utils.book_append_sheet(workbook, readme, "Readme");
-        XLSX.writeFile(workbook, "profit-sensitivity-template.xlsx");
+        const worksheet = createTemplateDataSheet(XLSX, rows, SENSITIVITY_TEMPLATE_HEADERS);
+        const readme = createTemplateInfoSheet(XLSX, getSensitivityTemplateInstructions(), { widths: [18, 88] });
+        const dictionary = createTemplateInfoSheet(
+            XLSX,
+            getSensitivityFieldDictionary(),
+            { widths: [18, 14, 10, 22, 16, 18, 56] }
+        );
+        XLSX.utils.book_append_sheet(workbook, worksheet, "敏感性假设");
+        XLSX.utils.book_append_sheet(workbook, readme, "填表说明");
+        XLSX.utils.book_append_sheet(workbook, dictionary, "字段字典");
+        XLSX.writeFile(workbook, "利润敏感性分析模板.xlsx");
         return;
     }
 
     downloadBlob(
         new Blob(["\uFEFF" + toCsv(rows)], { type: "text/csv;charset=utf-8;" }),
-        "profit-sensitivity-template.csv"
+        "利润敏感性分析模板.csv"
     );
 }
 

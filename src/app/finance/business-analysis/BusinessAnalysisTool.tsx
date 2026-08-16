@@ -72,7 +72,6 @@ export default function BusinessAnalysisTool() {
                                 </label>
                             </div>
                             <div className="button-grid template-button-grid">
-                                <button type="button" className="btn btn-secondary" id="btn-csv-template">CSV 模板</button>
                                 <button type="button" className="btn btn-secondary" id="btn-xlsx-template">Excel 模板</button>
                             </div>
                         </div>

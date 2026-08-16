@@ -8,13 +8,11 @@ import {
     resolveAppliedFilterValues,
     searchFilterOptions
 } from "@/lib/finance/filters";
+import financeTemplates from "../../../lib/finance/templates.js";
 import {
-    OPERATING_DETAIL_SCENARIO_SHEET_HEADERS,
-    buildMonthKeys,
-    createBudgetOperatingDetailRows,
-    createOperatingDetailSampleRows,
-    getBudgetScenarioSheetTemplateRows
-} from "../../../lib/finance/templates.js";
+    createTemplateDataSheet,
+    createTemplateInfoSheet
+} from "../../../lib/finance/template-workbook.ts";
 import {
     FINANCE_WORKBENCH_MOBILE_QUERY,
     isFinanceWorkbenchMobileViewport
@@ -32,6 +30,16 @@ import {
     showFinanceFieldGovernance
 } from "../../../lib/finance/field-governance.ts";
 import { renderPlotlyAccessibleData } from "../../../lib/finance/chart-accessibility.ts";
+
+const {
+    OPERATING_DETAIL_FIELD_DICTIONARY_ROWS,
+    OPERATING_DETAIL_SCENARIO_SHEET_HEADERS,
+    buildMonthKeys,
+    createBudgetOperatingDetailRows,
+    createOperatingDetailSampleRows,
+    getBudgetScenarioSheetTemplateRows,
+    getOperatingDetailInstructionRowsForModel
+} = financeTemplates;
 
 (function () {
     const lifecycle = createFinanceEngineLifecycle();
@@ -2634,11 +2642,7 @@ import { renderPlotlyAccessibleData } from "../../../lib/finance/chart-accessibi
     }
 
     function buildScenarioTemplateRows(scenario = "actual") {
-        return getBudgetScenarioSheetTemplateRows(scenario, 24);
-    }
-
-    function buildTemplateRows() {
-        return buildScenarioTemplateRows("actual");
+        return getBudgetScenarioSheetTemplateRows(scenario, "business-analysis");
     }
 
     function downloadBlob(filename, content, type) {
@@ -2653,24 +2657,11 @@ import { renderPlotlyAccessibleData } from "../../../lib/finance/chart-accessibi
         URL.revokeObjectURL(url);
     }
 
-    function csvCell(value) {
-        const text = String(value ?? "");
-        return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-    }
-
     function buildTemplateRules() {
         return [
-            ["模块", "规则"],
-            ["模板结构", "Excel 模板使用“实际”和“预算”两个工作表表达对比口径；不要把预算/实际写成经营明细里的行项目。CSV 只能表达单个工作表，建议分别准备实际表和预算表，或优先使用 Excel 模板。"],
-            ["上传区", "经营明细（边际以上）：月份、业务维度、销量、净收入、成本、边际等；需要保留可下钻维度。"],
+            ...getOperatingDetailInstructionRowsForModel("business-analysis"),
             ["固定科目", "固定科目不放在上传模板内，在页面左侧固定科目表格中粘贴或手工维护。"],
-            ["必填字段", "月份、销量。净收入、成本、边际至少保留一个可分析金额指标。预算/实际由工作表名称表达。"],
-            ["维度字段", "大区、国家、品牌、品牌市场、经营模式、业务单元、车型、燃油品类都是示例维度；用户可以少填、改名或新增维度列。"],
-            ["维度识别", "模型会把销量列之前的业务字段识别为维度。月份、备注、说明等字段不会作为预算差异下钻维度。"],
-            ["维度展示", "模型会默认展示并纳入下钻所有可识别维度，用户只需要在页面左侧调整维度顺序。"],
-            ["总额优先", "默认按总额填报：净收入、成本、边际均直接填金额；成本等扣减项建议按负数填写。"],
             ["单车可选", "如果用户只有单车口径，可以填销量 + 单车净收入/单车成本，模型会换算总额；默认模板不强制展示单车字段。"],
-            ["单位建议", "销量和金额单位保持同一口径即可；备注列可写业务解释或口径说明。"]
         ];
     }
 
@@ -2691,59 +2682,27 @@ import { renderPlotlyAccessibleData } from "../../../lib/finance/chart-accessibi
         ];
     }
 
-    function buildDimensionGuide() {
-        return [
-            ["维度列", "是否示例默认列", "建议用途", "能否改名/删除"],
-            ["大区", "是", "第一层经营区域下钻。", "可以"],
-            ["国家", "是", "国家/市场层级下钻。", "可以"],
-            ["品牌", "是", "品牌或品牌线层级对比。", "可以"],
-            ["品牌市场", "是", "品牌、品牌层级或品牌市场定位。", "可以"],
-            ["经营模式", "是", "经销、直营、批售等模式对比。", "可以"],
-            ["业务单元", "是", "燃油、纯电、插混、SUV 等业务线。", "可以"],
-            ["车型", "是", "车型/平台级分析。", "可以"],
-            ["燃油品类", "是", "燃油、插混、纯电等能源结构对比。", "可以"],
-            ["自定义维度", "否", "可新增如销售公司、订单类型、动力类型、价格带、客户类型、项目阶段等。", "可以新增任意列"]
-        ];
-    }
-
-    function setWorksheetWidths(worksheet, widths) {
-        worksheet["!cols"] = widths.map((wch) => ({ wch }));
-        return worksheet;
-    }
-
-    function downloadCsvTemplate() {
-        const rows = buildTemplateRows();
-        const headers = SCENARIO_SHEET_HEADERS;
-        const csv = [
-            headers.map(csvCell).join(","),
-            ...rows.map((row) => headers.map((header) => csvCell(row[header])).join(","))
-        ].join("\n");
-        downloadBlob("预算实际对比模型模板.csv", `\uFEFF${csv}`, "text/csv;charset=utf-8");
-    }
-
     function downloadXlsxTemplate() {
         if (typeof XLSX === "undefined") {
-            downloadCsvTemplate();
+            showMessage("error", "Excel 模板组件加载失败，请刷新页面后重试。");
             return;
         }
         const workbook = XLSX.utils.book_new();
-        const actualSheet = setWorksheetWidths(
-            XLSX.utils.json_to_sheet(buildScenarioTemplateRows("actual"), { header: SCENARIO_SHEET_HEADERS }),
-            SCENARIO_SHEET_HEADERS.map((header) => Math.max(12, String(header).length + 8))
-        );
-        const budgetSheet = setWorksheetWidths(
-            XLSX.utils.json_to_sheet(buildScenarioTemplateRows("budget"), { header: SCENARIO_SHEET_HEADERS }),
-            SCENARIO_SHEET_HEADERS.map((header) => Math.max(12, String(header).length + 8))
-        );
+        const actualSheet = createTemplateDataSheet(XLSX, buildScenarioTemplateRows("actual"), SCENARIO_SHEET_HEADERS);
+        const budgetSheet = createTemplateDataSheet(XLSX, buildScenarioTemplateRows("budget"), SCENARIO_SHEET_HEADERS);
         XLSX.utils.book_append_sheet(workbook, actualSheet, "实际");
         XLSX.utils.book_append_sheet(workbook, budgetSheet, "预算");
 
-        const rules = setWorksheetWidths(XLSX.utils.aoa_to_sheet(buildTemplateRules()), [18, 92]);
-        const subjects = setWorksheetWidths(XLSX.utils.aoa_to_sheet(buildSubjectDictionary()), [16, 28, 14, 46]);
-        const dimensions = setWorksheetWidths(XLSX.utils.aoa_to_sheet(buildDimensionGuide()), [18, 16, 48, 18]);
-        XLSX.utils.book_append_sheet(workbook, rules, "填表规则");
+        const rules = createTemplateInfoSheet(XLSX, buildTemplateRules(), { widths: [18, 92] });
+        const dictionary = createTemplateInfoSheet(
+            XLSX,
+            OPERATING_DETAIL_FIELD_DICTIONARY_ROWS,
+            { widths: [18, 14, 10, 24, 16, 14, 14, 56] }
+        );
+        const subjects = createTemplateInfoSheet(XLSX, buildSubjectDictionary(), { widths: [16, 28, 14, 46] });
+        XLSX.utils.book_append_sheet(workbook, rules, "填表说明");
+        XLSX.utils.book_append_sheet(workbook, dictionary, "字段字典");
         XLSX.utils.book_append_sheet(workbook, subjects, "科目字典");
-        XLSX.utils.book_append_sheet(workbook, dimensions, "维度说明");
         XLSX.writeFile(workbook, "预算实际对比模型模板.xlsx");
     }
 
@@ -3285,7 +3244,6 @@ import { renderPlotlyAccessibleData } from "../../../lib/finance/chart-accessibi
         bindCurrentLayerFilterMenu();
 
         bindOnce(byId("btn-demo"), "click", loadDemoData, "btn-demo");
-        bindOnce(byId("btn-csv-template"), "click", downloadCsvTemplate, "btn-csv-template");
         bindOnce(byId("btn-xlsx-template"), "click", downloadXlsxTemplate, "btn-xlsx-template");
         bindOnce(byId("btn-reset"), "click", resetFilters, "btn-reset");
         bindOnce(byId("btn-export"), "click", exportSummary, "btn-export");
@@ -3358,7 +3316,6 @@ import { renderPlotlyAccessibleData } from "../../../lib/finance/chart-accessibi
         module.exports = {
             computePnl,
             buildSampleData,
-            buildTemplateRows,
             buildScenarioTemplateRows,
             parseRows,
             summarize,

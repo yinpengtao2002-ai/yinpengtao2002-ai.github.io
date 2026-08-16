@@ -103,7 +103,7 @@ Current models:
   - Styles: `src/app/finance/business-analysis/tool.css`
   - Content: `content/finance/business-analysis.md`
   - Origin: adapted from Desktop `经营分析看板v14.html` / `business_dashboard_v14.html`.
-  - Purpose: budget-vs-actual model across HQ dispatch/sales volume, net revenue, variable costs, contribution margin, fixed deductions, profit additions, and profit total. Excel uploads use separate `实际` and `预算` sheets with subjects on rows and amount in one column; the UI also has a second fixed/profit-subject entry area. Operating rows carry user-defined drillable dimensions while fixed/profit contribution rows may be summary amounts. Default dimensions are 大区、国家、品牌市场、经营模式、业务单元、车型, but uploads may include more or fewer dimensions.
+  - Purpose: budget-vs-actual model across HQ dispatch/sales volume, net revenue, variable costs, contribution margin, fixed deductions, profit additions, and profit total. Excel templates use separate `实际` and `预算` operating-detail sheets with row-1 headers and matching business keys; the UI has a separate fixed/profit-subject entry area. Operating rows carry user-defined drillable dimensions while fixed/profit contribution rows may be summary amounts. Default dimensions are 大区、国家、品牌市场、经营模式、业务单元、车型, but uploads may include more or fewer dimensions.
 
 - `profit-structure`: `/finance/profit-structure`
   - Route: `src/app/finance/profit-structure/page.tsx`
@@ -123,7 +123,9 @@ Current models:
 - Treat the finance chart system as the shared source of truth for reusable chart specs, Plotly theme/config, PVM attribution, and FBP bridge logic. Local per-model chart code should move toward this center instead of growing new one-off implementations.
 - Treat the finance interaction system as the shared source of truth for reusable filter state, cascading filter pruning, drill paths, and detail-table filters. Model-local UI shells can remain, but state logic should move toward `src/lib/finance/filters/`.
 - Treat the finance template system as the shared source of truth for upload templates and demo data. 除敏感性分析之外，`business-analysis`, `margin-analysis`, `monthly-trend`, `profit-structure`, `perspective-bi`, and the finance AI assistant belong to the `operating-detail` family; sensitivity uses `profit-sensitivity-assumptions`.
-- Budget/actual templates may use multiple sheets, and should prefer `实际` / `预算` sheet names for the user-facing workbook. Do not ask users to put budget vs actual as a row-level `数据口径` field in downloaded templates; internal parsers may still normalize sheet names into a scenario field for calculation.
+- User-facing operating-detail sheets must never contain `数据口径`. Budget/actual templates use separate `实际` / `预算` sheets with identical row-1 headers and matching business keys; internal parsers may normalize sheet names or legacy columns into a scenario field only for calculation.
+- Operating-detail workbooks use row-1 data headers, automatic filters, readable widths, plus separate `填表说明` and `字段字典` sheets. CSV is acceptable only for single-table examples; the budget/actual model teaches Excel only while retaining legacy CSV upload support.
+- All operating-detail demos come from `public/tools/shared/operating-detail-templates.js`. Models may select deterministic periods and business keys suited to their workflow, but must not invent a separate sample company, geography, product set, or budget derivation.
 - Keep dimensions business-readable: region, country, model/product, channel, customer/store where relevant.
 - Use upload, template download, demo data, filters, KPI cards, tables, and charts as real controls, not decorative controls.
 - Use a left control console plus a scrollable analysis workspace for full-screen tools.

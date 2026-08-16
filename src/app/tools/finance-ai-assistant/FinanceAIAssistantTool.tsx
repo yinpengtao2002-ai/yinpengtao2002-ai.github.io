@@ -12,6 +12,7 @@ import "katex/dist/katex.min.css";
 import { buildChartSpec, buildDirectChartSpec } from "@/lib/finance/charts";
 import { buildPlotlyAccessibleData } from "@/lib/finance/chart-accessibility";
 import financeTemplates from "@/lib/finance/templates.js";
+import { createTemplateDataSheet, createTemplateInfoSheet } from "@/lib/finance/template-workbook";
 import { resolveFinanceActionFilterMembers } from "@/lib/finance-ai/filter-resolution";
 import {
   FINANCE_SCENARIO_COLUMN,
@@ -113,21 +114,16 @@ const FINANCE_AI_QUESTION_INPUT_MAX_HEIGHT = 128;
 const FINANCE_AI_UPLOAD_MAX_BYTES = 10 * 1024 * 1024;
 const FINANCE_AI_UPLOAD_MAX_ROWS = 20_000;
 const {
+  OPERATING_DETAIL_FIELD_DICTIONARY_ROWS,
   OPERATING_DETAIL_SCENARIO_SHEET_HEADERS,
   getBudgetScenarioSheetTemplateRows,
+  getOperatingDetailInstructionRowsForModel,
 } = financeTemplates;
 const SCENARIO_SHEET_HEADERS = OPERATING_DETAIL_SCENARIO_SHEET_HEADERS;
 const SAMPLE_TEMPLATE_HEADERS = SCENARIO_SHEET_HEADERS;
-const ACTUAL_SAMPLE_TEMPLATE_ROWS = getBudgetScenarioSheetTemplateRows("actual", 24);
-const BUDGET_SAMPLE_TEMPLATE_ROWS = getBudgetScenarioSheetTemplateRows("budget", 24);
-const SAMPLE_TEMPLATE_README_ROWS = [
-  ["项目", "说明"],
-  ["推荐格式", "实际和预算请分别放在名为“实际”“预算”的工作表中；不要把预算/实际写成经营明细里的行项目。"],
-  ["月份", "月份列只填写纯月份，例如 2026-04；不要写 4月实际、5月预算。"],
-  ["维度", "大区、国家、品牌、品牌市场、经营模式、业务单元、车型、燃油品类都可以替换为真实业务维度。"],
-  ["指标", "销量是体量分母；净收入、成本、边际、利润等总额指标可以继续向右新增。"],
-  ["口径识别", "上传后页面会根据工作表名称识别实际、预算、目标或预测，并在内部生成分析口径。"],
-];
+const ACTUAL_SAMPLE_TEMPLATE_ROWS = getBudgetScenarioSheetTemplateRows("actual", "finance-ai-assistant");
+const BUDGET_SAMPLE_TEMPLATE_ROWS = getBudgetScenarioSheetTemplateRows("budget", "finance-ai-assistant");
+const SAMPLE_TEMPLATE_README_ROWS = getOperatingDetailInstructionRowsForModel("finance-ai-assistant");
 
 const EMPTY_STATE_PREVIEW_WATERFALL_CONNECTOR_LINE = "var(--finance-ai-empty-preview-waterfall-connector-line)";
 
@@ -1394,21 +1390,24 @@ function AssistantAvatar({ compact = false }: { compact?: boolean }) {
 }
 
 function makeTemplateWorksheet(rows: Record<string, string | number>[]) {
-  const worksheet = XLSX.utils.json_to_sheet(rows, { header: SAMPLE_TEMPLATE_HEADERS });
-  worksheet["!cols"] = SAMPLE_TEMPLATE_HEADERS.map((header) => ({ wch: Math.max(header.length + 4, 14) }));
-  return worksheet;
+  return createTemplateDataSheet(XLSX, rows, SAMPLE_TEMPLATE_HEADERS);
 }
 
 function downloadSampleTemplate() {
   const workbook = XLSX.utils.book_new();
   const actualWorksheet = makeTemplateWorksheet(ACTUAL_SAMPLE_TEMPLATE_ROWS);
   const budgetWorksheet = makeTemplateWorksheet(BUDGET_SAMPLE_TEMPLATE_ROWS);
-  const readmeWorksheet = XLSX.utils.aoa_to_sheet(SAMPLE_TEMPLATE_README_ROWS);
-  readmeWorksheet["!cols"] = [{ wch: 18 }, { wch: 96 }];
+  const readmeWorksheet = createTemplateInfoSheet(XLSX, SAMPLE_TEMPLATE_README_ROWS, { widths: [18, 96] });
+  const dictionaryWorksheet = createTemplateInfoSheet(
+    XLSX,
+    OPERATING_DETAIL_FIELD_DICTIONARY_ROWS,
+    { widths: [18, 14, 10, 24, 16, 14, 14, 56] },
+  );
 
   XLSX.utils.book_append_sheet(workbook, actualWorksheet, "实际");
   XLSX.utils.book_append_sheet(workbook, budgetWorksheet, "预算");
   XLSX.utils.book_append_sheet(workbook, readmeWorksheet, "填表说明");
+  XLSX.utils.book_append_sheet(workbook, dictionaryWorksheet, "字段字典");
   const bytes = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
   const blob = new Blob([bytes], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -1416,7 +1415,7 @@ function downloadSampleTemplate() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "finance-ai-assistant-template.xlsx";
+  link.download = "财务分析AI助手经营明细模板.xlsx";
   document.body.appendChild(link);
   link.click();
   link.remove();

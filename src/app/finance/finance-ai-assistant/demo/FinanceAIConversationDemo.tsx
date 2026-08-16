@@ -9,10 +9,12 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { buildDirectChartSpec } from "@/lib/finance/charts";
+import financeAIDemoStory from "@/lib/finance-ai/demo-story.js";
 import { normalizeChatMathMarkdown } from "@/lib/markdown/normalizeChatMathMarkdown";
 import { normalizeMarkdownStrongEmphasis } from "@/lib/markdown/normalizeStrongEmphasis";
 import FinanceAIDetailTable from "@/components/finance/FinanceAIDetailTable";
 import type { FinanceChartSpec } from "@/lib/finance/charts/types";
+import type { FinanceAIDemoStory } from "@/lib/finance-ai/demo-story.js";
 
 type ChatRole = "user" | "assistant";
 
@@ -37,215 +39,245 @@ type PlotlyModule = {
 };
 
 const ASSISTANT_AVATAR_IMAGE = "/images/product-stage/finance-ai-assistant-avatar.webp";
-const BUSINESS_DEMO_CHARTS: FinanceChartSpec[] = [
-  buildDirectChartSpec({
-    type: "grouped_bar",
-    title: "5月各大区销量预算实际对比",
-    xLabel: "大区",
-    yLabel: "销量",
-    series: [
-      {
-        name: "预算",
-        items: [
-          { label: "拉美", value: 42100 },
-          { label: "右舵", value: 35600 },
-          { label: "欧洲", value: 31800 },
-          { label: "中东非", value: 18400 },
-          { label: "亚太", value: 16200 },
-          { label: "独联体", value: 9800 },
-        ],
-      },
-      {
-        name: "实际",
-        items: [
-          { label: "拉美", value: 45620 },
-          { label: "右舵", value: 37180 },
-          { label: "欧洲", value: 30940 },
-          { label: "中东非", value: 17660 },
-          { label: "亚太", value: 16880 },
-          { label: "独联体", value: 10340 },
-        ],
-      },
-    ],
-    note: "用并列柱展示所有大区的预算与实际，不把不同口径堆叠相加。",
-  }),
-  buildDirectChartSpec({
-    type: "detail_table",
-    title: "巴西5月分指标预算实际表",
-    variant: "budget_actual",
-    meta: {
-      primaryDimension: "指标",
-      metrics: ["销量", "净收入", "边际总额", "利润"],
-      period: "5月",
-      periods: ["5月"],
-      comparison: "scenario",
-      filters: { "国家": ["巴西"] },
-    },
-    columns: ["指标", "预算", "实际", "完成率", "环比", "判断"],
-    rows: [
-      ["销量", 28900, 30680, "106.2%", "+8.6%", "超预算"],
-      ["净收入", 992000000, 1025700000, "103.4%", "+6.9%", "达标"],
-      ["边际总额", 91200000, 88500000, "97.1%", "-1.8%", "低于预算"],
-      ["利润", 54600000, 52200000, "95.6%", "-2.4%", "承压"],
-    ],
-    note: "表格适合承接单个国家的多指标完成情况，并保留筛选和数字筛选能力。",
-  }),
-  buildDirectChartSpec({
-    type: "waterfall",
-    title: "巴西单车边际变化归因桥",
-    startLabel: "4月",
-    startValue: 31.2,
-    endLabel: "5月",
-    endValue: 28.7,
-    items: [
-      { label: "S56 EV", value: -0.9 },
-      { label: "Tiggo 8", value: -0.65 },
-      { label: "Arrizo 5", value: -0.45 },
-      { label: "T18 HEV", value: 0.25 },
-      { label: "其他车型", value: -0.75 },
-    ],
-    note: "单车指标瀑布桥的中间项应下钻到车型、国家等维度成员，而不是停留在抽象原因。",
-  }),
-  buildDirectChartSpec({
-    type: "grouped_bar",
-    title: "5月各大区销量环比对比",
-    xLabel: "大区",
-    yLabel: "销量",
-    series: [
-      {
-        name: "4月",
-        items: [
-          { label: "拉美", value: 42010 },
-          { label: "右舵", value: 35370 },
-          { label: "欧洲", value: 31180 },
-          { label: "中东非", value: 18140 },
-          { label: "亚太", value: 16010 },
-          { label: "独联体", value: 9720 },
-        ],
-      },
-      {
-        name: "5月",
-        items: [
-          { label: "拉美", value: 45620 },
-          { label: "右舵", value: 37180 },
-          { label: "欧洲", value: 30940 },
-          { label: "中东非", value: 17660 },
-          { label: "亚太", value: 16880 },
-          { label: "独联体", value: 10340 },
-        ],
-      },
-    ],
-    note: "环比问题优先用上月和本月并列柱，避免只给一串百分比。",
-  }),
-  buildDirectChartSpec({
-    type: "grouped_bar",
-    title: "5月各大区单车边际环比对比",
-    xLabel: "大区",
-    yLabel: "单车边际",
-    series: [
-      {
-        name: "4月",
-        items: [
-          { label: "拉美", value: 30.4 },
-          { label: "右舵", value: 27.8 },
-          { label: "欧洲", value: 25.6 },
-          { label: "中东非", value: 23.1 },
-          { label: "亚太", value: 29.2 },
-          { label: "独联体", value: 22.7 },
-        ],
-      },
-      {
-        name: "5月",
-        items: [
-          { label: "拉美", value: 28.9 },
-          { label: "右舵", value: 29.1 },
-          { label: "欧洲", value: 25.4 },
-          { label: "中东非", value: 22.4 },
-          { label: "亚太", value: 30.0 },
-          { label: "独联体", value: 22.1 },
-        ],
-      },
-    ],
-    note: "同一问题可以同时给销量和单车质量图，避免只解释规模。",
-  }),
-  buildDirectChartSpec({
-    type: "waterfall",
-    title: "5月边际总额环比变化桥",
-    startLabel: "4月边际总额",
-    startValue: 48000000,
-    endLabel: "5月边际总额",
-    endValue: 57800000,
-    items: [
-      { label: "巴西", value: 4200000 },
-      { label: "泰国", value: 2100000 },
-      { label: "墨西哥", value: 1650000 },
-      { label: "马来西亚", value: 1100000 },
-      { label: "西班牙", value: -1250000 },
-      { label: "其他国家", value: 2000000 },
-    ],
-    note: "总额变化桥按国家贡献下钻，正负贡献加总后与首尾差额一致。",
-  }),
-];
+const { buildFinanceAIDemoStory } = financeAIDemoStory;
+const DEMO_STORY = buildFinanceAIDemoStory();
 
-const SIMULATED_MESSAGES: SimulatedMessage[] = [
-  {
-    id: "demo-user-kpi",
-    role: "user",
-    text: "整体 KPI 表现怎么样？先看 5月各大区销量预算实际对比。",
-  },
-  {
-    id: "demo-assistant-kpi",
-    role: "assistant",
-    text: "**整体判断：**5月销量整体高于预算，但大区之间分化明显。拉美实际 45,620 台，高于预算 3,520 台；右舵实际 37,180 台，高于预算 1,580 台，是主要正贡献。\n\n欧洲和中东非分别低于预算 860 台和 740 台，后续需要重点复盘这两个大区的订单节奏、主销车型销量占比和单车边际质量。",
-    chartTitles: ["5月各大区销量预算实际对比"],
-    meta: "示例口径：这里使用模拟底稿演示聊天形态，不代表真实经营数据。",
-  },
-  {
-    id: "demo-user-country",
-    role: "user",
-    text: "巴西 5月分指标完成情况怎么样？销量、净收入、边际和利润都看一下。",
-  },
-  {
-    id: "demo-assistant-country",
-    role: "assistant",
-    text: "**巴西是规模超预算、利润质量偏弱。**销量完成 106.2%，净收入完成 103.4%，但边际只完成 97.1%，利润完成 95.6%。\n\n这说明巴西不是“卖不动”，而是销量增长没有完全转化成边际和利润。S56 EV、Tiggo 8 等车型的折扣、成本和结构占比需要单独拉出来看。",
-    chartTitles: ["巴西5月分指标预算实际表"],
-  },
-  {
-    id: "demo-user-unit-margin",
-    role: "user",
-    text: "巴西单车边际为什么比上月下降？",
-  },
-  {
-    id: "demo-assistant-unit-margin",
-    role: "assistant",
-    text: "**巴西单车边际从 31.2 降到 28.7，下降 2.5。**按车型下钻后，S56 EV 贡献 -0.9，Tiggo 8 贡献 -0.65，Arrizo 5 贡献 -0.45，其他车型贡献 -0.75，是主要拖累。\n\nT18 HEV 有 +0.25 的小幅对冲，但不足以抵消主销车型的负贡献，巴西本月边际问题集中在 S56 EV 和 Tiggo 8 的折扣、成本与单车盈利能力同步走弱。",
-    chartTitles: ["巴西单车边际变化归因桥"],
-  },
-  {
-    id: "demo-user-mom",
-    role: "user",
-    text: "5月各大区销量和单车边际环比情况怎么样？",
-  },
-  {
-    id: "demo-assistant-mom",
-    role: "assistant",
-    text: "**环比看，拉美和右舵的销量增长最明显，但质量表现不同。**拉美销量从 42,010 台增至 45,620 台，但单车边际从 30.4 降到 28.9，属于规模增长、质量回落。\n\n右舵销量从 35,370 台增至 37,180 台，单车边际从 27.8 提升到 29.1，是更健康的增长；欧洲和中东非则需要关注销量回落带来的总额压力。",
-    chartTitles: ["5月各大区销量环比对比", "5月各大区单车边际环比对比"],
-  },
-  {
-    id: "demo-user-total-change",
-    role: "user",
-    text: "5月边际总额环比增加的原因是什么？",
-  },
-  {
-    id: "demo-assistant-total-change",
-    role: "assistant",
-    text: "**5月边际总额环比增加 980 万，主要来自国家层面的正贡献。**巴西贡献 +420 万，泰国贡献 +210 万，墨西哥贡献 +165 万，马来西亚贡献 +110 万，是增长主线；西班牙拖累 -125 万。\n\n总额提升的底层结构并不完全一致：巴西和泰国更偏规模拉动，墨西哥和马来西亚需要继续拆分销量、净收入和单车边际，确认增长质量是否稳定。",
-    chartTitles: ["5月边际总额环比变化桥"],
-    meta: "只读示例，不能追问或编辑；进入正式助手后可以上传自己的经营明细继续分析。",
-  },
-];
+function monthLabel(period: string) {
+  const [year, month] = period.split("-");
+  return `${year}年${Number(month)}月`;
+}
+
+function formatDemoNumber(value: number, maximumFractionDigits = 3) {
+  return value.toLocaleString("zh-CN", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits,
+  });
+}
+
+function formatDemoSigned(value: number) {
+  const normalized = Math.abs(value) < 0.0000005 ? 0 : value;
+  return `${normalized >= 0 ? "+" : ""}${formatDemoNumber(normalized)}`;
+}
+
+function formatDemoPercent(value: number) {
+  return `${(value * 100).toLocaleString("zh-CN", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })}%`;
+}
+
+function sumDemoValues(items: Array<{ value: number }>) {
+  return items.reduce((total, item) => total + item.value, 0);
+}
+
+function buildBusinessDemoCharts(story: FinanceAIDemoStory): FinanceChartSpec[] {
+  const baseLabel = monthLabel(story.periods.base);
+  const currentLabel = monthLabel(story.periods.current);
+  const scenarioTitle = `${currentLabel}各大区销量预算实际对比`;
+  const countryTitle = `${story.country}${currentLabel}分指标预算实际表`;
+  const countryBridgeTitle = `${story.country}单车边际变化归因桥`;
+  const volumeMomTitle = `${currentLabel}各大区销量环比对比`;
+  const unitMarginMomTitle = `${currentLabel}各大区单车边际环比对比`;
+  const totalBridgeTitle = `${currentLabel}边际总额环比变化桥`;
+
+  return [
+    buildDirectChartSpec({
+      type: "grouped_bar",
+      title: scenarioTitle,
+      xLabel: "大区",
+      yLabel: "销量",
+      series: [
+        { name: "预算", items: story.regionScenario.budget },
+        { name: "实际", items: story.regionScenario.actual },
+      ],
+      note: "实际和预算按同一大区并列，均来自统一示例底稿。",
+    }),
+    buildDirectChartSpec({
+      type: "detail_table",
+      title: countryTitle,
+      variant: "budget_actual",
+      meta: {
+        primaryDimension: "指标",
+        metrics: story.countryMetrics.map((metric) => metric.label),
+        period: story.periods.current,
+        periods: [story.periods.current],
+        comparison: "scenario",
+        filters: { "国家": [story.country] },
+      },
+      columns: ["指标", "预算", "实际", "完成率", "判断"],
+      rows: story.countryMetrics.map((metric) => [
+        metric.label,
+        metric.budget,
+        metric.actual,
+        formatDemoPercent(metric.completion),
+        metric.completion >= 1 ? "达到预算" : "低于预算",
+      ]),
+      note: "销量、净收入和边际使用相同国家、期间及业务明细汇总。",
+    }),
+    buildDirectChartSpec({
+      type: "waterfall",
+      title: countryBridgeTitle,
+      startLabel: baseLabel,
+      startValue: story.countryUnitMarginBridge.startValue,
+      endLabel: currentLabel,
+      endValue: story.countryUnitMarginBridge.endValue,
+      items: story.countryUnitMarginBridge.items,
+      note: "各车型贡献合计后与巴西单车边际的首尾差额一致。",
+    }),
+    buildDirectChartSpec({
+      type: "grouped_bar",
+      title: volumeMomTitle,
+      xLabel: "大区",
+      yLabel: "销量",
+      series: [
+        {
+          name: baseLabel,
+          items: story.regionMom.map((item) => ({ label: item.label, value: item.baseVolume })),
+        },
+        {
+          name: currentLabel,
+          items: story.regionMom.map((item) => ({ label: item.label, value: item.currentVolume })),
+        },
+      ],
+      note: "两个期间沿用相同大区和统一销量单位。",
+    }),
+    buildDirectChartSpec({
+      type: "grouped_bar",
+      title: unitMarginMomTitle,
+      xLabel: "大区",
+      yLabel: "单车边际",
+      series: [
+        {
+          name: baseLabel,
+          items: story.regionMom.map((item) => ({ label: item.label, value: item.baseUnitMargin })),
+        },
+        {
+          name: currentLabel,
+          items: story.regionMom.map((item) => ({ label: item.label, value: item.currentUnitMargin })),
+        },
+      ],
+      note: "单车边际由每个大区的边际总额除以销量重新计算。",
+    }),
+    buildDirectChartSpec({
+      type: "waterfall",
+      title: totalBridgeTitle,
+      startLabel: `${baseLabel}边际总额`,
+      startValue: story.totalMarginBridge.startValue,
+      endLabel: `${currentLabel}边际总额`,
+      endValue: story.totalMarginBridge.endValue,
+      items: story.totalMarginBridge.items,
+      note: "国家贡献合计后与边际总额的首尾差额一致。",
+    }),
+  ];
+}
+
+function buildSimulatedMessages(story: FinanceAIDemoStory): SimulatedMessage[] {
+  const baseLabel = monthLabel(story.periods.base);
+  const currentLabel = monthLabel(story.periods.current);
+  const scenarioTitle = `${currentLabel}各大区销量预算实际对比`;
+  const countryTitle = `${story.country}${currentLabel}分指标预算实际表`;
+  const countryBridgeTitle = `${story.country}单车边际变化归因桥`;
+  const volumeMomTitle = `${currentLabel}各大区销量环比对比`;
+  const unitMarginMomTitle = `${currentLabel}各大区单车边际环比对比`;
+  const totalBridgeTitle = `${currentLabel}边际总额环比变化桥`;
+  const regionVariance = story.regionScenario.actual.map((actual, index) => ({
+    label: actual.label,
+    actual: actual.value,
+    budget: story.regionScenario.budget[index]?.value ?? 0,
+    change: actual.value - (story.regionScenario.budget[index]?.value ?? 0),
+  }));
+  const strongestRegion = [...regionVariance].sort((a, b) => b.change - a.change)[0];
+  const weakestRegion = [...regionVariance].sort((a, b) => a.change - b.change)[0];
+  const totalActual = sumDemoValues(story.regionScenario.actual);
+  const totalBudget = sumDemoValues(story.regionScenario.budget);
+  const countryMetricText = story.countryMetrics
+    .map((metric) => `${metric.label}完成 ${formatDemoPercent(metric.completion)}`)
+    .join("，");
+  const weakestCountryMetric = [...story.countryMetrics].sort((a, b) => a.completion - b.completion)[0];
+  const unitMarginChange = story.countryUnitMarginBridge.endValue - story.countryUnitMarginBridge.startValue;
+  const leadingModelItems = [...story.countryUnitMarginBridge.items]
+    .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+    .slice(0, 2);
+  const regionVolumeChanges = story.regionMom.map((item) => ({
+    ...item,
+    volumeChange: item.currentVolume - item.baseVolume,
+    unitMarginChange: item.currentUnitMargin - item.baseUnitMargin,
+  }));
+  const leadingVolumeRegion = [...regionVolumeChanges].sort((a, b) => b.volumeChange - a.volumeChange)[0];
+  const leadingQualityRegion = [...regionVolumeChanges].sort((a, b) => b.unitMarginChange - a.unitMarginChange)[0];
+  const totalMarginChange = story.totalMarginBridge.endValue - story.totalMarginBridge.startValue;
+  const positiveCountries = story.totalMarginBridge.items
+    .filter((item) => item.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 3);
+  const negativeCountries = story.totalMarginBridge.items
+    .filter((item) => item.value < 0)
+    .sort((a, b) => a.value - b.value)
+    .slice(0, 2);
+
+  return [
+    {
+      id: "demo-user-kpi",
+      role: "user",
+      text: `整体 KPI 表现怎么样？先看${currentLabel}各大区销量预算实际对比。`,
+    },
+    {
+      id: "demo-assistant-kpi",
+      role: "assistant",
+      text: `**整体判断：**${currentLabel}销量合计 ${formatDemoNumber(totalActual)}，${totalActual >= totalBudget ? "高于" : "低于"}预算 ${formatDemoNumber(Math.abs(totalActual - totalBudget))}。${strongestRegion.label}实际 ${formatDemoNumber(strongestRegion.actual)}，相对预算变化 ${formatDemoSigned(strongestRegion.change)}；${weakestRegion.label}相对预算变化 ${formatDemoSigned(weakestRegion.change)}。\n\n区域对比只反映规模完成情况，后续仍需结合单车边际判断增长质量。`,
+      chartTitles: [scenarioTitle],
+      meta: "统一示例底稿，仅用于展示分析过程，不代表真实经营数据。",
+    },
+    {
+      id: "demo-user-country",
+      role: "user",
+      text: `${story.country}${currentLabel}分指标完成情况怎么样？销量、净收入和边际都看一下。`,
+    },
+    {
+      id: "demo-assistant-country",
+      role: "assistant",
+      text: `**${story.country}${currentLabel}预算完成情况：**${countryMetricText}。\n\n三项指标中，${weakestCountryMetric.label}完成率最低，为 ${formatDemoPercent(weakestCountryMetric.completion)}。这说明规模、收入和边际需要放在同一口径下共同判断，不能只看其中一项。`,
+      chartTitles: [countryTitle],
+    },
+    {
+      id: "demo-user-unit-margin",
+      role: "user",
+      text: `${story.country}单车边际为什么比${baseLabel}发生变化？`,
+    },
+    {
+      id: "demo-assistant-unit-margin",
+      role: "assistant",
+      text: `**${story.country}单车边际从 ${formatDemoNumber(story.countryUnitMarginBridge.startValue)} ${unitMarginChange >= 0 ? "升至" : "降至"} ${formatDemoNumber(story.countryUnitMarginBridge.endValue)}，变化 ${formatDemoSigned(unitMarginChange)}。**按车型下钻后，${leadingModelItems.map((item) => `${item.label} 贡献 ${formatDemoSigned(item.value)}`).join("，")}，是绝对影响最大的两项。\n\n所有车型贡献相加后与单车边际首尾差额一致。`,
+      chartTitles: [countryBridgeTitle],
+    },
+    {
+      id: "demo-user-mom",
+      role: "user",
+      text: `${currentLabel}各大区销量和单车边际环比情况怎么样？`,
+    },
+    {
+      id: "demo-assistant-mom",
+      role: "assistant",
+      text: `**环比看，${leadingVolumeRegion.label}的销量增量最大。**销量从 ${formatDemoNumber(leadingVolumeRegion.baseVolume)} 变为 ${formatDemoNumber(leadingVolumeRegion.currentVolume)}，变化 ${formatDemoSigned(leadingVolumeRegion.volumeChange)}。\n\n单车边际方面，${leadingQualityRegion.label}的改善最明显，从 ${formatDemoNumber(leadingQualityRegion.baseUnitMargin)} 变为 ${formatDemoNumber(leadingQualityRegion.currentUnitMargin)}，变化 ${formatDemoSigned(leadingQualityRegion.unitMarginChange)}。`,
+      chartTitles: [volumeMomTitle, unitMarginMomTitle],
+    },
+    {
+      id: "demo-user-total-change",
+      role: "user",
+      text: `${currentLabel}边际总额环比${totalMarginChange >= 0 ? "增加" : "减少"}的原因是什么？`,
+    },
+    {
+      id: "demo-assistant-total-change",
+      role: "assistant",
+      text: `**${currentLabel}边际总额从 ${formatDemoNumber(story.totalMarginBridge.startValue)} 变为 ${formatDemoNumber(story.totalMarginBridge.endValue)}，环比变化 ${formatDemoSigned(totalMarginChange)}。**${positiveCountries.length ? `主要正贡献来自${positiveCountries.map((item) => `${item.label} ${formatDemoSigned(item.value)}`).join("、")}` : "本期没有国家形成正贡献"}；${negativeCountries.length ? `主要负贡献来自${negativeCountries.map((item) => `${item.label} ${formatDemoSigned(item.value)}`).join("、")}` : "本期没有国家形成负贡献"}。\n\n国家贡献合计与边际总额变化完全衔接。`,
+      chartTitles: [totalBridgeTitle],
+      meta: "只读示例，不能追问或编辑；进入正式助手后可以上传自己的经营明细继续分析。",
+    },
+  ];
+}
+
+const BUSINESS_DEMO_CHARTS = buildBusinessDemoCharts(DEMO_STORY);
+const SIMULATED_MESSAGES = buildSimulatedMessages(DEMO_STORY);
 
 function AssistantAvatar({ compact = false }: { compact?: boolean }) {
   return (

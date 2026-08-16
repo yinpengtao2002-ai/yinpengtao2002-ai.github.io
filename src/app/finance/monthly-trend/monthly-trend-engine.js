@@ -1,9 +1,8 @@
+import financeTemplates from "../../../lib/finance/templates.js";
 import {
-    OPERATING_DETAIL_HEADERS,
-    OPERATING_DETAIL_TEMPLATE_NOTE,
-    createOperatingDetailSampleRows,
-    getOperatingDetailTemplateRows
-} from "../../../lib/finance/templates.js";
+    createTemplateDataSheet,
+    createTemplateInfoSheet
+} from "../../../lib/finance/template-workbook.ts";
 import { FINANCE_WORKBENCH_MOBILE_QUERY } from "../../../lib/finance/workbench-breakpoints.ts";
 import {
     inferFinanceFieldRoles,
@@ -20,6 +19,15 @@ import {
 } from "../../../lib/finance/field-governance.ts";
 import { renderPlotlyAccessibleData } from "../../../lib/finance/chart-accessibility.ts";
 
+const {
+    OPERATING_DETAIL_FIELD_DICTIONARY_ROWS,
+    OPERATING_DETAIL_HEADERS,
+    OPERATING_DETAIL_TEMPLATE_NOTE,
+    createOperatingDetailSampleRows,
+    getOperatingDetailInstructionRowsForModel,
+    getOperatingDetailTemplateRowsForModel
+} = financeTemplates;
+
 function renderAccessiblePlot(target, data, layout, config) {
     const result = window.Plotly.react(target, data, layout, config);
     const chartId = typeof target === "string" ? target : target?.id;
@@ -29,7 +37,7 @@ function renderAccessiblePlot(target, data, layout, config) {
 
 const MONTHLY_PERIOD_ALIASES = ["月份", "月度", "月", "期间", "年月", "会计期间", "month", "date", "period"];
 const MONTHLY_VOLUME_ALIASES = ["销量", "销售量", "发车量", "台数", "数量", "volume", "qty", "quantity", "units"];
-const MONTHLY_IGNORED_HEADERS = ["备注", "说明", "单位", "版本", "数据类型", "类型", "note", "notes", "remark", "remarks", "comment", "comments"];
+const MONTHLY_IGNORED_HEADERS = ["数据口径", "口径", "场景", "scenario", "备注", "说明", "单位", "版本", "数据类型", "类型", "note", "notes", "remark", "remarks", "comment", "comments"];
 
 function monthlyHeaders(rows) {
     const seen = new Set();
@@ -162,7 +170,7 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
     const PREFERRED_METRICS = ["利润", "毛利", "边际", "净收入", "收入"];
     const TEMPLATE_HEADERS = OPERATING_DETAIL_HEADERS;
     const TEMPLATE_HEADER_NOTE = OPERATING_DETAIL_TEMPLATE_NOTE;
-    const TEMPLATE_ROWS = getOperatingDetailTemplateRows();
+    const TEMPLATE_ROWS = getOperatingDetailTemplateRowsForModel("monthly-trend");
 
     const state = {
         initialized: false,
@@ -1928,21 +1936,22 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
     }
 
     function downloadXlsx(rows = TEMPLATE_ROWS) {
-        const templateRows = buildTemplateRows(rows);
         const headers = templateHeadersFor(rows);
-        const worksheet = window.XLSX.utils.aoa_to_sheet(templateRows);
-        worksheet["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: Math.max(headers.length - 1, 0) } }];
-        worksheet["!cols"] = headers.map((header) => ({ wch: Math.max(String(header).length + 6, 14) }));
-        worksheet["!rows"] = [{ hpt: 42 }, { hpt: 6 }];
-        if (worksheet.A1) {
-            worksheet.A1.s = {
-                font: { bold: true, color: { rgb: "6F4E00" } },
-                fill: { fgColor: { rgb: "FFF7CC" } },
-                alignment: { vertical: "center", wrapText: true }
-            };
-        }
+        const worksheet = createTemplateDataSheet(window.XLSX, rows, headers);
+        const instructions = createTemplateInfoSheet(
+            window.XLSX,
+            getOperatingDetailInstructionRowsForModel("monthly-trend"),
+            { widths: [18, 88] }
+        );
+        const dictionary = createTemplateInfoSheet(
+            window.XLSX,
+            OPERATING_DETAIL_FIELD_DICTIONARY_ROWS,
+            { widths: [18, 14, 10, 24, 16, 14, 14, 56] }
+        );
         const workbook = window.XLSX.utils.book_new();
-        window.XLSX.utils.book_append_sheet(workbook, worksheet, "分月数据");
+        window.XLSX.utils.book_append_sheet(workbook, worksheet, "经营明细");
+        window.XLSX.utils.book_append_sheet(workbook, instructions, "填表说明");
+        window.XLSX.utils.book_append_sheet(workbook, dictionary, "字段字典");
         window.XLSX.writeFile(workbook, "分月指标趋势分析模板.xlsx");
     }
 
@@ -1950,16 +1959,6 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
         const rowHeaders = Object.keys(safeArray(rows)[0] || {});
         const extraHeaders = rowHeaders.filter((header) => !TEMPLATE_HEADERS.includes(header));
         return TEMPLATE_HEADERS.concat(extraHeaders);
-    }
-
-    function buildTemplateRows(rows = TEMPLATE_ROWS) {
-        const headers = templateHeadersFor(rows);
-        return [
-            [TEMPLATE_HEADER_NOTE],
-            [],
-            headers,
-            ...safeArray(rows).map((row) => headers.map((header) => row?.[header] ?? ""))
-        ];
     }
 
     function sheetRowsToObjects(sheetRows) {
