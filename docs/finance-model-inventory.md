@@ -330,3 +330,7 @@ Lifecycle axes now use explicit zero-inclusive nice ticks and padding, formatted
 ## Checkmi filter-aware charts · revision 21
 
 Single-year overview hides unchanged lifecycle metrics while retaining actual scenario/unit differences. Model/scenario annual lines hide without two effective years; model bars and scenario profit bars/waterfalls preserve meaningful cross-category comparison. One-model bars also hide, leaving the full numeric matrix and P&L drilldown. Hidden slots collapse, expanded scopes restore charts, and no filters, assumptions or snapshots reset. Saved scenarios retain their captured scope; cash remains independent. Business/Agent docs are synchronized; publish only the existing direct /checkmi/ route without navigation entries or Sites updates.
+
+## Checkmi break-even arrow · revision 22
+
+The overview threshold now shows reference vehicles → selected vehicles with actual scenario names and a signed vehicle-count difference. Both sides use the same filtered records but their own drivers/effective local and Mix assumptions. Round display counts to integer vehicles; displayed delta equals displayed right minus left, with raw thresholds unchanged. Unavailable/unit-mode sides remain gaps and suppress the delta. Remove the obsolete ratio track; retain adjustment action and all financial/P&L/cash rules. Business and Agent documents are synchronized; publish only direct /checkmi/ without a navigation entry or Sites update.
