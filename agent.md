@@ -29,6 +29,8 @@ git restore --worktree -- src/lib/data/generated/content.ts
 
 ## Key Structure
 
+- `/checkmi/`: the user-requested standalone BC economics dashboard, served from `public/checkmi/` by a rewrite. No homepage/navigation/model-directory/sitemap entry. Keep the separate upstream source and business documentation; follow `docs/checkmi-maintenance.md` and `docs/checkmi-release.json` for validated asset updates. This explicit route-only request overrides the usual finance card/back-button/shell conventions for this tool. Do not change its original BC ledger to the site's FBP assumptions.
+
 - `src/app/page.tsx`: homepage sections.
 - `src/app/layout.tsx`: site metadata and global shell.
 - `src/app/finance/page.tsx`: finance model listing page.

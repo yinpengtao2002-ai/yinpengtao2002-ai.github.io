@@ -33,6 +33,10 @@
 | finance-ai-assistant | operating-detail | Excel 模板使用 `实际`、`预算` 两个工作表；上传后由系统归一化口径，AI 规划图表，确定性代码计算结果。 |
 | sensitivity-analysis | profit-sensitivity-assumptions | 使用假设行驱动利润敏感性测算。 |
 
+## 独立 BC 看板的模板边界
+
+`/checkmi/` 是按用户要求迁入的独立页面，保留 `bc-model-year` 输入形态：项目 × 国家 × 阀点 × 车型 × 年度，加单车售价、单车成本、费用、税率与销量。它需从原表 Sales 至 EBIT 的科目链重建损益，不能直接替换为金额事实表 `operating-detail`。模板为 `public/checkmi/templates/经营测算_标准底表.xlsx`，含填写说明、空白数据填写和独立填写示例；只读取数据填写页，不自动导入示例。原模型模板族和共享生成器均不改变。
+
 ## 示例数据
 
 `createOperatingDetailSampleRows()` 生成所有 operating-detail 模型共用的经营明细示例数据。默认示例只使用实际经营明细，以免趋势、BI 和利润质量页面默认展示被预算行重复放大；预算实际或 AI 场景从同一套明细派生 `实际`、`预算` 工作表，系统再在内部归一化出口径。

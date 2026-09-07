@@ -1,0 +1,2 @@
+# Keep the imported dashboard release byte-identical across Windows and Linux.
+public/checkmi/** -text

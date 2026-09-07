@@ -47,6 +47,16 @@
 
 ## 模型明细
 
+### 独立直达页面：BC 经济性分析
+
+- 路径：`/checkmi/`，不计入上方 7 个模型库入口，也不添加首页、导航、工具卡片、站内搜索或 sitemap 入口。
+- 来源：独立 BC 经济性看板的已验证产物，位于 `public/checkmi/`；原始 Excel 保留在源项目。维护方式见 `docs/checkmi-maintenance.md`。
+- 业务链路：销量与单价 → 净收入 → 毛利 → EBIT → 年度所得税与净利润。固定费用保留总额/单车假设，原表未分解项目保留差额核对；不改写为其他模型的边际口径。
+- 图表：经营指标卡、按毛利和 EBIT 分组的年度柱状图、利润瀑布、车型贡献、情景利润柱状图及年度折线图。经营假设与情景比较默认折叠，调参后经营总览和损益明细同时更新。
+- 明细：末页保留分车型、MIX、Sales 至 EBIT 完整损益表、来源核查与导出。
+- 数据：原结构 Excel、独立 BC 中文标准模板、CSV/JSON 及支持浏览器跨域读取的 HTTPS JSON 接口。上传与已存情景仅在当前页面会话保留；现金流为独立快照。
+- 业务文档：`public/checkmi/业务逻辑说明.md`，与源项目同步。
+
 ### 预算实际对比模型
 
 - 源码：`src/app/finance/business-analysis/BusinessAnalysisTool.tsx`、`src/app/finance/business-analysis/business-analysis-engine.js`、`src/app/finance/business-analysis/tool.css`
