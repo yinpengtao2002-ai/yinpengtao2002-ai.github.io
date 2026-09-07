@@ -10,7 +10,7 @@ To update:
 
 1. Implement and verify in the dashboard source repository, then commit the exact source.
 2. Run `pnpm build:checkmi` there. It produces `dist/checkmi` without changing the Sites build.
-3. Run `node scripts/sync-checkmi.mjs <absolute dashboard dist/checkmi path> <full source HEAD>` in this repository. It copies only the validated entry, referenced assets, icon, template and business document, and records hashes in `docs/checkmi-release.json`.
+3. Run `node scripts/sync-checkmi.mjs <absolute dashboard dist/checkmi path> <full source HEAD>` in this repository. It copies only the validated entry, entry and lazy-loaded JS/CSS assets, icon, template and business document, and records hashes in `docs/checkmi-release.json`.
 4. Run the route/asset contract, lint and production build. With the built site running, use `node scripts/verify-checkmi.mjs <origin>` to verify `/checkmi`, `/checkmi/`, both downloads, referenced assets, headers and absence of a listing entry by HTTP. Imported asset bytes are preserved by the scoped `.gitattributes` rule.
 5. Commit and push to `main` using the site's existing Vercel Git integration, then confirm deployment status and the live route.
 
@@ -29,3 +29,9 @@ Overview, project/model portfolio, break-even analysis, scenario comparison, cas
 Only baseline and user-adjusted live conventions are provided; no system-authored parameter presets. The user can restore baseline or preserve their own adjusted snapshots for comparison. Operating cards now have metric-specific tones, related facts and neutral baseline deltas; these styles never assign a favorable/adverse rating.
 
 Analytical text uses objective metric names, units, scope and data boundaries. Reading-order suggestions, rhetorical titles and duplicate scenario-update notes have been removed; detailed calculation sequence remains in Data & Methodology and the business document.
+
+## P&L Excel export revision · 2026-09-07
+
+Operating cards appear only on overview. P&L opens directly to the ledger beneath shared controls. The global result-export action/code is removed; P&L retains a styled .xlsx export of the chosen scope, view, unit and grouping. It includes every visible/off-screen ledger group and a separate source/assumptions sheet, preserving raw numbers, percent/percentage-point formats, null/zero distinctions, neutral hierarchy colors, frozen headings and print titles. It is a numeric snapshot, not a formula model.
+
+ExcelJS is loaded on demand. `sync-checkmi.mjs` validates and copies all regular flat JS/CSS assets from the built assets directory, including dynamic imports. Do not return to copying only index.html references; that breaks Excel export online. The release manifest and HTTP verification must include all lazy chunks. Upstream now has 41 passing tests, including five XLSX readback cases; actual workbook top/EBIT/assumption renders were inspected separately from browser QA.

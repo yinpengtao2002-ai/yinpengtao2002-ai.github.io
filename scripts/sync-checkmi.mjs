@@ -22,6 +22,15 @@ if (!assets.some((file) => file.endsWith(".js")) || !assets.some((file) => file.
 for (const asset of assets) {
   if (!/^assets\/[a-zA-Z0-9._-]+\.(js|css)$/.test(asset)) throw new Error("Unexpected asset path");
 }
+// Include lazy-loaded export chunks as well as the HTML's entry assets.
+// Only accept regular, flat build assets; never follow symlinks or source directories.
+const generatedAssets = await readdir(path.join(build, "assets"), { withFileTypes: true });
+for (const entry of generatedAssets) {
+  if (!entry.isFile() || !/^[a-zA-Z0-9._-]+\.(js|css)$/.test(entry.name)) {
+    throw new Error(`Unexpected generated asset: ${entry.name}`);
+  }
+}
+assets.push(...generatedAssets.map(entry => `assets/${entry.name}`).sort());
 const files = [...new Set([...fixedFiles, ...assets])];
 const payloads = await Promise.all(files.map(async (file) => {
   const data = await readFile(path.join(build, file));

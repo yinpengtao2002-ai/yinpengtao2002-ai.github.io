@@ -47,3 +47,18 @@ test("checkmi release contains matching assets, downloadable template and busine
   assert.equal(template.subarray(0, 2).toString(), "PK");
   assert.match(await read("public/checkmi/业务逻辑说明.md"), /生命周期经营表现的分组方式/);
 });
+
+test("checkmi publishes lazy Excel-export imports alongside the entry bundle", async () => {
+  const release = JSON.parse(await read("docs/checkmi-release.json"));
+  const files = new Set(release.files.map(entry => entry.file));
+  let dynamicImports = 0;
+  for (const file of files) {
+    if (!file.endsWith(".js")) continue;
+    const code = await read(`public/checkmi/${file}`);
+    for (const match of code.matchAll(/import\(["'`](\.\/[a-zA-Z0-9._-]+\.js)["'`]\)/g)) {
+      dynamicImports++;
+      assert.ok(files.has(`assets/${match[1].slice(2)}`), `Unpublished dynamic import in ${file}: ${match[1]}`);
+    }
+  }
+  assert.ok(dynamicImports > 0, "Excel generation remains lazy-loaded");
+});
