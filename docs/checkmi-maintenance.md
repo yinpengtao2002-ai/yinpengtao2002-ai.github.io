@@ -101,3 +101,7 @@ Single-year overview hides unchanged lifecycle metrics while retaining actual sc
 ## Checkmi break-even arrow · revision 22
 
 The overview threshold now shows reference vehicles → selected vehicles with actual scenario names and a signed vehicle-count difference. Both sides use the same filtered records but their own drivers/effective local and Mix assumptions. Round display counts to integer vehicles; displayed delta equals displayed right minus left, with raw thresholds unchanged. Unavailable/unit-mode sides remain gaps and suppress the delta. Remove the obsolete ratio track; retain adjustment action and all financial/P&L/cash rules. Business and Agent documents are synchronized; publish only direct /checkmi/ without a navigation entry or Sites update.
+
+## Conditional checkmi break-even comparison · revision 23
+
+Supersedes revision 22's unconditional arrow: unchanged effective assumptions retain the original single threshold in ten-thousand vehicles, ratio track and scenario volume. Only differing settings within the viewed records show the reference → selected arrow and signed change; reset or equivalent saved settings restores the plain view. Effective quantity takes precedence over volume percentage, names and out-of-scope edits do not trigger comparison. Changed settings with equal thresholds retain zero change. Economic calculations and snapshot/P&L/cash behavior remain intact. Business doc 1.23 and Agent notes are synchronized; publish only direct /checkmi/ and verify the exact artifacts by HTTP.
