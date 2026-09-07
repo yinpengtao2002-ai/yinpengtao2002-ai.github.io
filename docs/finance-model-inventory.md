@@ -304,3 +304,7 @@
 ### /checkmi 调参交互精简 · 2026-09-07
 
 不再逐车型铺开行，也无需切换指标。展开参数即显示六项滑块和手填，默认全局，按需切换车型／年度；已调整车型用快捷标签保留并可直接返回。总量与Mix默认折叠；既有独立幅度、固定总量、全页情景对照和损益导出规则保持。
+
+### Checkmi revision 16
+
+Hidden standalone route still has no catalog/navigation entry. Scenario names now default automatically when blank. The P&L toolbar directly selects any saved scenario and exports its exact assumptions/results; difference mode selects two scenarios. The break-even page and overview card have been removed. Only `/checkmi/` is synchronized; ChatGPT Sites remains unchanged.
