@@ -308,3 +308,7 @@
 ### Checkmi revision 16
 
 Hidden standalone route still has no catalog/navigation entry. Scenario names now default automatically when blank. The P&L toolbar directly selects any saved scenario and exports its exact assumptions/results; difference mode selects two scenarios. The break-even page and overview card have been removed. Only `/checkmi/` is synchronized; ChatGPT Sites remains unchanged.
+
+### Checkmi revision 17
+
+The overview break-even widget is restored while its standalone page stays removed. Scenario pair selectors sit at the right of the scope filters. Remove the portfolio supporting disclosure and group scenario-profit bars by account (EBIT, net profit). No catalog entry; personal route only.
