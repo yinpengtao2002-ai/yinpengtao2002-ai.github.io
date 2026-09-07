@@ -25,3 +25,5 @@ Do not edit minified assets. No uploaded files or saved scenarios are sent to th
 ## Current page structure
 
 Overview, project/model portfolio, break-even analysis, scenario comparison, cash snapshot, P&L, data/methodology last. The seven-tab navigation stays fixed at the viewport top while scrolling. Per-page hero headings are omitted. Operating parameters use a full-width horizontal bar and expand downward inline with shared global state; collapsing preserves assumptions and snapshots. P&L body rows are compact (roughly 29px for one-line subjects), without repeated source-row labels; optional subject drilldown still exposes provenance. Portfolio and coverage use the same upstream economics engine; see the synchronized business document for formulas and boundaries.
+
+Only baseline and user-adjusted live conventions are provided; no system-authored parameter presets. The user can restore baseline or preserve their own adjusted snapshots for comparison. Operating cards now have metric-specific tones, related facts and neutral baseline deltas; these styles never assign a favorable/adverse rating.
