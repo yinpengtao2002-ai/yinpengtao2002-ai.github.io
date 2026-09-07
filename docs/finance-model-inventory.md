@@ -322,3 +322,7 @@ Compact Mix total/year controls and model rows; lifecycle total bars now carry m
 Sales Quantity edits the active Mix total directly; year/model target selectors are always visible, Mix uses compact multi-column model cards, and all annual line charts use smooth connections through original values. Preserve the direct-only personal route, immutable saved scenarios and existing economic rules.
 
 Default checkmi operating demo now varies by year/model while retaining 1.15m lifecycle vehicles. Price/cost variations feed the same economics engine. It is explicitly demo data; original Excel, imports and cash snapshots are unchanged.
+
+## Checkmi revision 20
+
+Lifecycle axes now use explicit zero-inclusive nice ticks and padding, formatted labels and measured-label gutters; raw maxima no longer clip. Demo quantity profiles stay unchanged while price/BOM/expense paths become gradual; unit EBIT is approximately 3149/3595/3888/3793/3461 yuan. Values still flow through the same engine and P&L, with original Excel, imports and cash snapshots untouched. Business documentation is synchronized. Publish only the existing direct /checkmi/ route without adding navigation; Sites stays unchanged.
