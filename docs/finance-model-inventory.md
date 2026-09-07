@@ -312,3 +312,7 @@ Hidden standalone route still has no catalog/navigation entry. Scenario names no
 ### Checkmi revision 17
 
 The overview break-even widget is restored while its standalone page stays removed. Scenario pair selectors sit at the right of the scope filters. Remove the portfolio supporting disclosure and group scenario-profit bars by account (EBIT, net profit). No catalog entry; personal route only.
+
+### Checkmi revision 18
+
+Compact Mix total/year controls and model rows; lifecycle total bars now carry matching annual unit-profit lines. Group allocation always enters EBIT in all scenarios; special adjustments contains fixed-cost mode, income tax and an inactive tariff-rate placeholder. Business logic and XLSX conventions are synchronized. The route remains direct-only, with no catalog or homepage entry.

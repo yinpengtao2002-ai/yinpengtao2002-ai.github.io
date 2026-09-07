@@ -77,3 +77,9 @@ Revision 16 also replaces the raw local audit with explicit target selection and
 ## Overview widget and metric grouping · revision 17
 
 Restore the overview break-even widget only; the standalone page remains removed. It follows the selected primary scenario, current scope and effective Mix/local settings. Place the scenario pair to the right of filters in one horizontally scrollable toolbar within the sticky deck. Remove the supporting 项目汇总与经营明细 disclosure/component. Group profit comparison bars by EBIT and net profit, with scenarios as the series; use the same scenario colors as annual lines. Keep comparison filters, signed/null semantics, full ledger/export and cash boundaries unchanged. Business documentation is synchronized; publish only this personal route.
+
+## Compact Mix, unit profit lines and special adjustments · revision 18
+
+Total vehicles now sits beside allocation years; compact model rows retain all Mix controls and source quantities. Overview gross/EBIT charts overlay annual weighted per-vehicle lines (right yuan/vehicle axis) on total bars (left 100m-yuan axis). Both selected scenarios share filters and show unit differences even if totals match; zero-volume unit values are gaps.
+
+Group allocation is now mandatory for baseline and every scenario, superseding older toggle instructions. Source expenses/EBIT omit row70; upstream adds it exactly once and recomputes annual tax/net profit. Preserve raw workbook validation/cash snapshots. Special adjustments keeps global fixed-cost mode and income tax; a blank disabled tariff-rate placeholder has no calculation or snapshot effect. XLSX notes and business doc use the same rule. Publish only /checkmi/ without navigation entry; Sites stays unchanged.
