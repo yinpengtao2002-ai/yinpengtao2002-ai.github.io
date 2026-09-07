@@ -316,3 +316,9 @@ The overview break-even widget is restored while its standalone page stays remov
 ### Checkmi revision 18
 
 Compact Mix total/year controls and model rows; lifecycle total bars now carry matching annual unit-profit lines. Group allocation always enters EBIT in all scenarios; special adjustments contains fixed-cost mode, income tax and an inactive tariff-rate placeholder. Business logic and XLSX conventions are synchronized. The route remains direct-only, with no catalog or homepage entry.
+
+### Checkmi revision 19
+
+Sales Quantity edits the active Mix total directly; year/model target selectors are always visible, Mix uses compact multi-column model cards, and all annual line charts use smooth connections through original values. Preserve the direct-only personal route, immutable saved scenarios and existing economic rules.
+
+Default checkmi operating demo now varies by year/model while retaining 1.15m lifecycle vehicles. Price/cost variations feed the same economics engine. It is explicitly demo data; original Excel, imports and cash snapshots are unchanged.
