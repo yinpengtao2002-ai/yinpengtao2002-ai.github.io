@@ -93,3 +93,7 @@ The revision 19 package also replaces the flat default operating example with la
 ## Readable lifecycle scales and demo tuning
 
 Lifecycle axes now use explicit zero-inclusive nice ticks and padding, formatted labels and measured-label gutters; raw maxima no longer clip. Demo quantity profiles stay unchanged while price/BOM/expense paths become gradual; unit EBIT is approximately 3149/3595/3888/3793/3461 yuan. Values still flow through the same engine and P&L, with original Excel, imports and cash snapshots untouched. Business documentation is synchronized. Publish only the existing direct /checkmi/ route without adding navigation; Sites stays unchanged.
+
+## Checkmi filter-aware charts · revision 21
+
+Single-year overview hides unchanged lifecycle metrics while retaining actual scenario/unit differences. Model/scenario annual lines hide without two effective years; model bars and scenario profit bars/waterfalls preserve meaningful cross-category comparison. One-model bars also hide, leaving the full numeric matrix and P&L drilldown. Hidden slots collapse, expanded scopes restore charts, and no filters, assumptions or snapshots reset. Saved scenarios retain their captured scope; cash remains independent. Business/Agent docs are synchronized; publish only the existing direct /checkmi/ route without navigation entries or Sites updates.
