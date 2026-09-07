@@ -1,2 +1,2 @@
 # Keep the imported dashboard release byte-identical across Windows and Linux.
-public/checkmi/** -text
+public/checkmi/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

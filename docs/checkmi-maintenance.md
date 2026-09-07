@@ -18,6 +18,10 @@ Do not edit minified assets. No uploaded files or saved scenarios are sent to th
 
 ## Validation receipt · 2026-09-07
 
-- Upstream: 32 economics/import/comparison/P&L tests passed; TypeScript and `/checkmi/` production build passed.
+- Upstream: 36 economics/import/comparison/P&L tests passed; TypeScript and `/checkmi/` production build passed.
 - Personal site: 23 route, security and release checks passed; production build and TypeScript passed. Lint had no errors; four pre-existing Goalkeeper unused-variable warnings remain.
 - Local production HTTP: `/checkmi` redirects to `/checkmi/`; standalone HTML, all six deployed files, both downloads and scoped CSP match. Homepage and sitemap remain available without a checkmi entry. No browser interaction or visual QA was performed.
+
+## Current page structure
+
+Overview, project/model portfolio, break-even analysis, scenario comparison, cash snapshot, P&L, data/methodology last. The operating parameter Sheet opens beside the title and shares global state across operating pages. Closing it preserves assumptions and snapshots. Portfolio and coverage use the same upstream economics engine; see the synchronized business document for formulas and boundaries.
