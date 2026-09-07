@@ -45,3 +45,9 @@ Scenario comparison adds gross and EBIT waterfalls over two visible snapshots. T
 ## Full-page ledger and comparison order · 2026-09-07
 
 Main P&L is a full document-flow table, with no height-limited inner scroll pane. The two header rows stick below the measured global deck; their row offsets track actual wrapping. Wide model/year columns use document horizontal scrolling with a sticky subject column and viewport-width navigation/controls. Compact normal model columns expand with the viewport. Keep observer cleanup, scrollbar-aware width and main-table selector specificity; the optional source-record dialog is separate. Profit-scale bars and annual charts now precede the account waterfalls. Export/calculation behavior is unchanged.
+
+## Scoped assumptions and named snapshots · 2026-09-07
+
+Upstream supports six operating percentage overrides per model-year record, chosen independently of view filters. Local values replace global defaults relative to source, with per-field inheritance reset and immutable snapshot copies. Totals, MIX, annual results, portfolio, P&L and break-even share effective row assumptions. Break-even follows adjusted volume MIX; all-zero volume falls back to source MIX. Fixed-mode/group/tax stay global. Export's existing assumptions sheet includes the relevant local scope and numeric percentages.
+
+Scenario names are required and collision-safe; stable UUIDs drive chart state and removal. Names appear in charts, legends, waterfall options and saved tables. Removed repeated retention copy; existing ephemeral/latest-four behavior remains. Break-even is rebuilt around quantity/threshold and annual EBIT comparison, with collapsed methodology. Upstream 51 calculation/import/export tests pass. The model-year line/bar/table proposal is design-only and awaits business review; do not publish it as implemented functionality.
