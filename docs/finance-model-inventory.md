@@ -338,3 +338,7 @@ The overview threshold now shows reference vehicles → selected vehicles with a
 ## Conditional checkmi break-even comparison · revision 23
 
 Unchanged effective assumptions show the original single break-even volume with its ratio track and scenario quantity. Only differing assumptions in the current view activate the reference → selected comparison; restoring equivalent settings automatically returns to the plain view. Mix quantity priority and scoped overrides are honored, with existing economics/P&L/cash semantics unchanged. Business doc 1.23 is included; personal /checkmi/ remains direct-only without Sites synchronization.
+
+## Checkmi operating income/cost bridges · revision 24
+
+The direct checkmi overview now has three connected account bridges: tax-inclusive MSRP sales amount → net revenue → gross → EBIT. The first two are new cards using the existing visual format, scoped selected-scenario ledger and cost totals, with consistent labels and live assumption/filter updates. One-year scopes remain meaningful; zero-volume fixed losses and original source residuals are retained. Business doc 1.24 covers the calculation sequence and P&L dependencies. Keep the route outside the public model catalog and navigation; no Sites update.
