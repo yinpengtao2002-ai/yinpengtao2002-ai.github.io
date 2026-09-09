@@ -358,3 +358,7 @@ Overview hover detail uses亿元 consistently, sorted vertical segments, amounts
 ## Checkmi line-marker synchronization and hover polish · revision 28
 
 Line points and paths now enter together in0.75seconds, including model symbols and hover highlights. The overview waterfall's vertical detail uses muted tones and direct labels; small accounts remain proportional with aligned annotations below the column. Business doc1.28 explains presentation order and unchanged financial dependencies. Keep /checkmi/ direct-only without catalog/navigation entries or Sites synchronization.
+
+## Immediate waterfall hover detail · revision 29
+
+Waterfall hover panels show the complete column and labels directly, without visual transitions. Main-chart synchronized motion and all business values remain. Business doc1.29 is included; /checkmi/ stays direct-only.

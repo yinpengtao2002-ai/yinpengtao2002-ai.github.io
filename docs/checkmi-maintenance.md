@@ -125,3 +125,7 @@ Hover detail now matches the main chart's亿元 unit, sorts subjects by descendi
 ## Checkmi synchronized markers and redesigned detail · revision 28
 
 Progressive line rendering now shares one750ms reveal window across smooth paths, ordinary/model-shape markers and active hover markers; points no longer appear ahead of the curve. Keep page re-entry replay, reduced-motion behavior, dashed comparisons and gaps. Hover composition uses a compact360px surface, restrained olive/sage tones, unboxed amounts on the column and names at right. Thin components retain true heights and get aligned annotations below; equal manufacturing accounts fit directly inside the stack, all-zero composition collapses the blank plot. Business doc1.28/source Agent/chart notes are synchronized. Focused browser checks cover all four chart pages, custom/active marker clipping, model-filter updates and three density cases; financial/P&L/Excel/cash/source logic is unchanged. Publish only direct /checkmi/ with exact hashes; no homepage/nav/catalog or Sites update.
+
+## Immediate checkmi hover detail · revision 29
+
+Hover detail now opens fully and dismisses without visual entry/exit/reveal animation. Its layout, signed amounts, sort, tiny-account annotations and pointer/keyboard handling stay unchanged. All main-chart750ms bar/line/marker motion remains. Business doc1.29 and Agent/chart notes are synchronized. Only /checkmi/ is updated; no financial/export logic, navigation/catalog entry or Sites synchronization.
