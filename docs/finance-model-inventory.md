@@ -366,3 +366,7 @@ Waterfall hover panels show the complete column and labels directly, without vis
 ## Continuous MSRP-to-gross chart · revision 30
 
 Overview now shows MSRP → net revenue → gross as one continuous chart, with net revenue retained once as a subtotal. The separate gross-to-EBIT chart remains. Waterfalls enter in account order and adapt to narrow containers without horizontal dragging; hover detail stays immediate. Business doc1.30 documents the sequence and unchanged operating dependencies. Keep /checkmi/ direct-only.
+
+## No repeated total composition · revision 31
+
+MSRP, net revenue, gross and EBIT total/subtotal bars now show their chart labels and amounts without duplicate hover detail. Deduction, cost and expense breakdowns remain available, using unchanged financial results and units. Business doc1.31 is included; /checkmi/ stays direct-only.
