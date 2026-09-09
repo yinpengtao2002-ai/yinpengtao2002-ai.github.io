@@ -1,12 +1,12 @@
 {
   "source": "BC economics dashboard",
-  "sourceCommit": "5c9b9ce98b95b4e10c7e73717d6ceceec4fc524d",
+  "sourceCommit": "debe567c5483317d694dd5c743606d15ffbc1639",
   "basePath": "/checkmi/",
   "files": [
     {
       "file": "index.html",
       "bytes": 668,
-      "sha256": "2952e563b8950e77de6ed69dedfff5a5e68ad599914406c6c1d784bf340ed8f5"
+      "sha256": "b1f9694a0e8711d33eb3dfc89d8961d91aa2053ca1472839a74b2f3a918f4bca"
     },
     {
       "file": "favicon.svg",
@@ -15,8 +15,8 @@
     },
     {
       "file": "业务逻辑说明.md",
-      "bytes": 69818,
-      "sha256": "7ccf0e0452b54d66266d3627826bdbddbba7d1e5dd6498b8663892708e7bafc3"
+      "bytes": 70354,
+      "sha256": "f83a9f7d71d0be68f8aa088bc59ad296b594dd8624f3535c64127d78cd3b1477"
     },
     {
       "file": "templates/经营测算_标准底表.xlsx",
@@ -24,19 +24,19 @@
       "sha256": "8520d6eed247e497a87e7480a71c5ccb9e5a501753d310f5dd530f8ccadac3bb"
     },
     {
-      "file": "assets/index-rkM02kKS.js",
-      "bytes": 932254,
-      "sha256": "9568a886d3f3dc35ce108ee8cc8a41917877f6321e5dac5d7b1730765b6850b7"
+      "file": "assets/index-IAcRBs1_.js",
+      "bytes": 933240,
+      "sha256": "f7584ecf6adef126ee8a221c58e380fa501a2be95d787f64dae62445b0845e38"
     },
     {
-      "file": "assets/index-C9Mk37ho.css",
-      "bytes": 228653,
-      "sha256": "d1aa3015b84ffa73ee2a245fff568bfcfb1c381c6f8315086679f1b1face2284"
+      "file": "assets/index-CFLuBOCP.css",
+      "bytes": 228953,
+      "sha256": "56f9d6d298969af84197dc34fb6c7257ff9395f497632c6bd83b99f7e317cefa"
     },
     {
-      "file": "assets/export-profit-loss-DtKs95mG.js",
+      "file": "assets/export-profit-loss-CZyVgPz-.js",
       "bytes": 937178,
-      "sha256": "9fbf3b2b9719cddfe615e83f13a58ac8841fee78eccce73bed6a3b1c553554e1"
+      "sha256": "9548e9491e83358d1c2badd1aae72919c8a582768a90e9f19b62c6875863810a"
     }
   ]
 }

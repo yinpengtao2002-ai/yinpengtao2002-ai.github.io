@@ -354,3 +354,7 @@ The three overview waterfalls now keep major accounts on the main chart. Hover/c
 ## Checkmi sorted composition and short chart motion · revision 27
 
 Overview hover detail uses亿元 consistently, sorted vertical segments, amounts on the column and names at right. Each chart page shows its bars and smooth lines with a concurrent0.75-second entry reveal; reduced-motion preference skips it. Source economics, annual P&L and Excel exports are unchanged. Business doc1.27 is included; keep /checkmi/ direct-only without catalog/navigation entries or Sites synchronization.
+
+## Checkmi line-marker synchronization and hover polish · revision 28
+
+Line points and paths now enter together in0.75seconds, including model symbols and hover highlights. The overview waterfall's vertical detail uses muted tones and direct labels; small accounts remain proportional with aligned annotations below the column. Business doc1.28 explains presentation order and unchanged financial dependencies. Keep /checkmi/ direct-only without catalog/navigation entries or Sites synchronization.
