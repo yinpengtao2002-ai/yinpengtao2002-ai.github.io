@@ -342,3 +342,7 @@ Unchanged effective assumptions show the original single break-even volume with 
 ## Checkmi operating income/cost bridges · revision 24
 
 The direct checkmi overview now has three connected account bridges: tax-inclusive MSRP sales amount → net revenue → gross → EBIT. The first two are new cards using the existing visual format, scoped selected-scenario ledger and cost totals, with consistent labels and live assumption/filter updates. One-year scopes remain meaningful; zero-volume fixed losses and original source residuals are retained. Business doc 1.24 covers the calculation sequence and P&L dependencies. Keep the route outside the public model catalog and navigation; no Sites update.
+
+## Checkmi annual ledger summaries · revision 25
+
+The P&L's second column grouping now summarizes years across selected models instead of separate model-year columns, with annual weighted amounts and matching styled Excel export. MSRP-to-net-revenue now shows available points benefits, showroom discounts, financing and purchase-tax subsidies, other deductions and any unallocated balance. The source financial engine and drilldown remain unchanged. Business doc1.25 is included; keep /checkmi/ direct-only without navigation/catalog entries or Sites synchronization.
