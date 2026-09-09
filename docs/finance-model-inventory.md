@@ -362,3 +362,7 @@ Line points and paths now enter together in0.75seconds, including model symbols 
 ## Immediate waterfall hover detail · revision 29
 
 Waterfall hover panels show the complete column and labels directly, without visual transitions. Main-chart synchronized motion and all business values remain. Business doc1.29 is included; /checkmi/ stays direct-only.
+
+## Continuous MSRP-to-gross chart · revision 30
+
+Overview now shows MSRP → net revenue → gross as one continuous chart, with net revenue retained once as a subtotal. The separate gross-to-EBIT chart remains. Waterfalls enter in account order and adapt to narrow containers without horizontal dragging; hover detail stays immediate. Business doc1.30 documents the sequence and unchanged operating dependencies. Keep /checkmi/ direct-only.

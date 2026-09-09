@@ -129,3 +129,7 @@ Progressive line rendering now shares one750ms reveal window across smooth paths
 ## Immediate checkmi hover detail · revision 29
 
 Hover detail now opens fully and dismisses without visual entry/exit/reveal animation. Its layout, signed amounts, sort, tiny-account annotations and pointer/keyboard handling stay unchanged. All main-chart750ms bar/line/marker motion remains. Business doc1.29 and Agent/chart notes are synchronized. Only /checkmi/ is updated; no financial/export logic, navigation/catalog entry or Sites synchronization.
+
+## Continuous responsive waterfall and ordered entry · revision 30
+
+The two overview income/cost cards become one12-account MSRP → net revenue → gross chart. Net revenue is a zero-anchored intermediate subtotal, carried into subsequent costs without adding it again. Preserve the6-account EBIT bridge, break-even widget and all instant hover detail. Overview/scenario waterfalls share a width-aware native plot: readable columns on wide panels, sequential rows with name/amount columns on narrow panels, without SVG minimum widths or sideways chart scrolling. Their entry-only750ms reveal follows account order and includes connectors/labels, replacing sign-dependent per-bar growth. Financial engine, data, P&L/export and smooth-line markers are unchanged. Business doc1.30 and source Agent/chart notes are synchronized;95 source regressions and focused390px browser previews cover the changes. Publish only direct /checkmi/ with exact hashes; no navigation/catalog entry or Sites update.
