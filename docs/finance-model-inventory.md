@@ -346,3 +346,7 @@ The direct checkmi overview now has three connected account bridges: tax-inclusi
 ## Checkmi annual ledger summaries · revision 25
 
 The P&L's second column grouping now summarizes years across selected models instead of separate model-year columns, with annual weighted amounts and matching styled Excel export. MSRP-to-net-revenue now shows available points benefits, showroom discounts, financing and purchase-tax subsidies, other deductions and any unallocated balance. The source financial engine and drilldown remain unchanged. Business doc1.25 is included; keep /checkmi/ direct-only without navigation/catalog entries or Sites synchronization.
+
+## Checkmi parent accounts and detail composition · revision 26
+
+The three overview waterfalls now keep major accounts on the main chart. Hover/click opens signed horizontal detail stacks with matching account names and yuan amounts, including reconciled unallocated balances. Detail follows the displayed scenario and filters; parent totals/P&L exports keep the same values. Annual ledger grouping remains available. Business doc1.26 is included; /checkmi/ stays direct-only without navigation/catalog entries or Sites synchronization.
