@@ -291,7 +291,7 @@
 
 ### /checkmi 车型对比与批量调参 · 2026-09-07
 
-车型年度折线、年度车型柱状对比和数值下钻已上线，入口为项目与车型页顶部及经营总览的车型对比按钮。指标可切换EBIT总额、单车EBIT、毛利率、净收入、销量；原值与调整后可切换。局部假设支持同时勾选多款车型及多个年度，滑块和手填与全局一致。
+车型年度折线、年度车型柱状对比和数值下钻已上线，入口为车型分析页顶部及经营总览的车型对比按钮。指标可切换EBIT总额、单车EBIT、毛利率、净收入、销量；原值与调整后可切换。局部假设支持同时勾选多款车型及多个年度，滑块和手填与全局一致。
 
 ### /checkmi 逐车型独立幅度与总量 Mix · 2026-09-07
 
@@ -374,3 +374,7 @@ MSRP, net revenue, gross and EBIT total/subtotal bars now show their chart label
 ## Frozen parameter editing · revision 32
 
 Expanded operating parameters remain with the top navigation and filters while the user scrolls result charts. Long settings scroll within the editor, keeping the collapse action and some results visible. P&L frozen headers automatically move below the expanded deck. Business doc1.32 describes this interaction; financial calculations, scenarios and exports are unchanged. Keep /checkmi/ direct-only.
+
+## Model-analysis label · revision 33
+
+The model/annual comparison page is now named 车型分析. Project filters still define the data scope; all model charts and operating calculations are unchanged. Business doc1.33 is included; /checkmi/ remains direct-only.

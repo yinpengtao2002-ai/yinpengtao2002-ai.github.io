@@ -141,3 +141,7 @@ All total/subtotal waterfall bars (MSRP, net revenue, gross, EBIT) retain their 
 ## Frozen expanded checkmi parameters · revision 32
 
 The expanded parameter editor now belongs to the sticky navigation/filter deck, so scrolling result charts leaves controls available. Cap its visible height using the viewport and separately measured toolbar, and scroll longer Mix/special/save contents internally; the collapse trigger remains outside that scroll area. Measure the full deck for P&L header offsets, including open/close height changes. The nested editor follows its parent width in the wide P&L, and the Mix shortcut scrolls within it. Browser checks cover scrolled live edits, expanded/collapsed P&L headers,390px overflow and save reachability, plus cash-page suppression. Business doc1.32 and source Agent notes are synchronized. No financial/export/source data or Sites changes; publish only direct /checkmi/ with exact hashes.
+
+## Model-analysis navigation · revision 33
+
+Rename the visible portfolio tab to 车型分析, since it presents model-level metrics and annual comparisons. Preserve the internal key and existing scope filters, charts, P&L links and financial calculations. Business doc1.33, source Agent notes and the model-comparison design document use the same label. Publish only direct /checkmi/; no homepage/navigation/catalog entry or Sites update.
