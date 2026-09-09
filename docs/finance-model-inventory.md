@@ -350,3 +350,7 @@ The P&L's second column grouping now summarizes years across selected models ins
 ## Checkmi parent accounts and detail composition · revision 26
 
 The three overview waterfalls now keep major accounts on the main chart. Hover/click opens signed horizontal detail stacks with matching account names and yuan amounts, including reconciled unallocated balances. Detail follows the displayed scenario and filters; parent totals/P&L exports keep the same values. Annual ledger grouping remains available. Business doc1.26 is included; /checkmi/ stays direct-only without navigation/catalog entries or Sites synchronization.
+
+## Checkmi sorted composition and short chart motion · revision 27
+
+Overview hover detail uses亿元 consistently, sorted vertical segments, amounts on the column and names at right. Each chart page shows its bars and smooth lines with a concurrent0.75-second entry reveal; reduced-motion preference skips it. Source economics, annual P&L and Excel exports are unchanged. Business doc1.27 is included; keep /checkmi/ direct-only without catalog/navigation entries or Sites synchronization.
