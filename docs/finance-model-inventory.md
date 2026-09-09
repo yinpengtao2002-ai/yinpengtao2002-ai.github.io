@@ -382,3 +382,7 @@ The model/annual comparison page is now named 车型分析. Project filters stil
 ## Compact parameter save row · revision 34
 
 The parameter editor now places scenario naming and saving at the top with model/year selection, keeping name and save button side by side on narrow screens. Reset and comparison access sit above the sliders, with no duplicated bottom rows. Frozen controls, default names and snapshot behavior are unchanged. Business doc1.34 is included; keep /checkmi/ direct-only.
+
+## Smooth parameter section expansion · revision 35
+
+Mix and special adjustments now stretch and contract over0.24seconds, moving surrounding content continuously and retaining entered settings. Reduced-motion preference skips the effect. Smooth interaction is recorded in source README and Agent guidance; business doc1.35 covers the unchanged calculation and save relationships. Keep /checkmi/ direct-only.
