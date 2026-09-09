@@ -370,3 +370,7 @@ Overview now shows MSRP → net revenue → gross as one continuous chart, with 
 ## No repeated total composition · revision 31
 
 MSRP, net revenue, gross and EBIT total/subtotal bars now show their chart labels and amounts without duplicate hover detail. Deduction, cost and expense breakdowns remain available, using unchanged financial results and units. Business doc1.31 is included; /checkmi/ stays direct-only.
+
+## Frozen parameter editing · revision 32
+
+Expanded operating parameters remain with the top navigation and filters while the user scrolls result charts. Long settings scroll within the editor, keeping the collapse action and some results visible. P&L frozen headers automatically move below the expanded deck. Business doc1.32 describes this interaction; financial calculations, scenarios and exports are unchanged. Keep /checkmi/ direct-only.
