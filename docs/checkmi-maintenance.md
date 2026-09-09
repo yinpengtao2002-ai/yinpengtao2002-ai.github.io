@@ -145,3 +145,7 @@ The expanded parameter editor now belongs to the sticky navigation/filter deck, 
 ## Model-analysis navigation · revision 33
 
 Rename the visible portfolio tab to 车型分析, since it presents model-level metrics and annual comparisons. Preserve the internal key and existing scope filters, charts, P&L links and financial calculations. Business doc1.33, source Agent notes and the model-comparison design document use the same label. Publish only direct /checkmi/; no homepage/navigation/catalog entry or Sites update.
+
+## Compact parameter saving controls · revision 34
+
+Move the scenario name and save form beside model/year scope at the top of the expanded editor. Narrow screens wrap the form below scope but keep input/button together. Reset and view-comparison move to a compact tools row, removing the old two bottom rows and reducing spacing; desktop default editor height drops from383px to273px. Existing automatic naming, named saves, close-and-compare navigation and frozen deck/P&L offsets remain. Browser verification covers both saves, desktop/narrow width and the table header. Business doc1.34 and source Agent notes are synchronized; keep 车型分析 naming and direct-only /checkmi/ publication, without financial/export/Sites changes.

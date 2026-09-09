@@ -378,3 +378,7 @@ Expanded operating parameters remain with the top navigation and filters while t
 ## Model-analysis label · revision 33
 
 The model/annual comparison page is now named 车型分析. Project filters still define the data scope; all model charts and operating calculations are unchanged. Business doc1.33 is included; /checkmi/ remains direct-only.
+
+## Compact parameter save row · revision 34
+
+The parameter editor now places scenario naming and saving at the top with model/year selection, keeping name and save button side by side on narrow screens. Reset and comparison access sit above the sliders, with no duplicated bottom rows. Frozen controls, default names and snapshot behavior are unchanged. Business doc1.34 is included; keep /checkmi/ direct-only.
