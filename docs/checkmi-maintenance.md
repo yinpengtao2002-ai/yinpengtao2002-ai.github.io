@@ -1,5 +1,12 @@
 # Checkmi maintenance
 
+## Editable expense totals · revision38
+
+User clarified special adjustments require actual monetary amounts. Production now has four direct total inputs in 万元: manufacturing/R&D/fixed selling/group allocation. No total/unit selector or group-rate input; price/cost keeps price/BOM/deductions. Monetary scope follows top filters, shown explicitly. Capture original fee proportions by record ID once; viewing subsets or subsequent quantity/Mix changes never repartition the total. Partial edits preserve other scopes, zero is explicit, restore removes only selected amounts. Fixed totals and child ledger feed gross/EBIT, annual tax and break-even; group is charged once. Unchanged source group-ratio behavior remains only until an explicit amount is entered.
+
+Preserve B layout and0.26s actual-height motion. Saved amount maps are deep-copied and participate in duplicate-current matching. Excel keeps the signed main ledger and adds numeric expense assumptions with scope/unit notes. Business guide1.38 is synchronized. Upstream112 tests, TypeScript, basic changed-file lint and production build pass. Browser confirms totals unchanged after1.2m volume/modelA40%Mix, saved name alias, filtered annual allocation and390px no page/editor overflow. Only personal /checkmi/, no homepage entry/demos/Sites.
+
+
 ## Special allocations and four-metric comparison · revision 37
 
 User requested price/cost before Mix, and evaluated additional special adjustments. Default group is now price/cost. R&D allocation and fixed selling can independently inherit or override the common total/unit convention; net-revenue group allocation can use an explicit rate or retain individual source rates. Group allocation always enters EBIT once. Defaults, immutable source rows, existing scoped percentages, scenario matching and independent cash snapshot remain. Mixed-mode break-even includes only effective fixed totals. P&L child rows and Excel assumptions use the same modes and numeric group rate; business guide1.37 explains sequence, scope and examples.
@@ -169,3 +176,5 @@ Move the scenario name and save form beside model/year scope at the top of the e
 ## Smooth Mix and special-adjustment sections · revision 35
 
 Both inner parameter sections now expand/collapse through measured240ms height transitions with matching arrow rotation. Existing Base UI primitives keep hidden editors mounted, retain entered values and handle reversed transitions; the sales-to-Mix shortcut locates the section after expansion, with immediate reduced-motion behavior. The frozen height cap and compact save heading remain. Source README/Agent notes record smooth interaction as an ongoing acceptance requirement, preserving immediate hover exceptions. Browser checks cover intermediate/final heights, reversal, retained tax/Mix inputs, reset and narrow layout. Business doc1.35 is included; financial/export data and Sites remain unchanged. Publish only direct /checkmi/.
+
+Revision38 personal checks:16 route/release/deployment tests passed; production build and TypeScript completed. ESLint has0 errors and4 existing Goalkeeper warnings.
