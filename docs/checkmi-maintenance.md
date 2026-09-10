@@ -1,5 +1,11 @@
 # Checkmi maintenance
 
+## Repeated parameter edit crash · revision41
+
+Resolves the revision40 open investigation below. The user's actual production Chrome captured React185 (maximum update depth) in Recharts Bar animation-end state updates, invoked by JavascriptAnimate cleanup. Price/cost and Mix both continuously update these charts. All four production Bar declarations now use native SVG entrance clips with Recharts JS animation disabled, eliminating that cleanup/state feedback path. Keep numeric-zero origins in both orientations, signed amounts, custom model colors,750ms entry and reduced motion. In-place edits render final values and retain completed clips. Existing line/marker, waterfall and business rules remain unchanged.
+
+Source53fee82582f6b9698ac035ae48b90c06445e5b29:112 source regressions, TypeScript, basic changed-file lint and build passed. Browser regression first failed on continued geometry interpolation before the fix and now passes; it also checks entry duration, negative EBIT, zero origin, no replay during edits and reduced motion. Repeated parameter drags/numeric/save/navigation pass at1366x768 and2560x1264. Exact fatal stack was captured in the user's session; the headless test reproduces the unsafe animation behavior, not a deterministic fatal race. Business guide1.41 matches its source mirror. Only personal direct /checkmi/, no homepage entry, demos or Sites.
+
 ## First Mix drag and total-row composition · revision40
 
 Capture resolved editor selection on first Mix write to prevent all-years scope becoming the new plan year list and remounting the active slider. A failing browser test reached24.39% instead of60% before the fix; it passes afterward and preserves the actual slider DOM. Composition returns to the right of total sales, uses the same plan shares/colors, and wraps on narrow screens. Reserve restore-action space to avoid first-edit layout jumps. No economics changes.
