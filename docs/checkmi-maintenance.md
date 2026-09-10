@@ -1,5 +1,13 @@
 # Checkmi maintenance
 
+## Special allocations and four-metric comparison · revision 37
+
+User requested price/cost before Mix, and evaluated additional special adjustments. Default group is now price/cost. R&D allocation and fixed selling can independently inherit or override the common total/unit convention; net-revenue group allocation can use an explicit rate or retain individual source rates. Group allocation always enters EBIT once. Defaults, immutable source rows, existing scoped percentages, scenario matching and independent cash snapshot remain. Mixed-mode break-even includes only effective fixed totals. P&L child rows and Excel assumptions use the same modes and numeric group rate; business guide1.37 explains sequence, scope and examples.
+
+Scenario comparison keeps quantity, net revenue, gross and EBIT only. Four small charts group the same account together; quantity uses 万台, money uses 亿元, with independent axes. Net revenue is visually lighter. Annual lines switch EBIT/gross, and values/saved tables contain the same four metrics. Waterfalls remain below. Hidden tooltip positioning is bounded on narrow resize. Source108 regressions, TypeScript and real desktop/mobile interactions passed; upstream lint limitation remains documented. Keep personal direct-only publication, no demo entry or Sites synchronization.
+
+Personal validation: all16 release/routing/deployment contracts passed and the37-page production build completed, including TypeScript. The seven manifest files contain the matching business document and the lazy Excel export chunk.
+
 ## B parameter workbench and saved-scenario display · revision 36
 
 User selected B from three LOCAL design demos. Adopt its sage/neutral grouped parameter workspace in the formal dashboard: Mix, price/cost and special categories; single scenario name/save form at the editor top. Comparison's extra form is removed. Categories switch by260ms measured height, preserve values and remain inside the frozen deck; mobile Mix has two columns. Only the formal built entry is synchronized here; A/B/C demo sources and review entry remain local.
