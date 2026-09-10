@@ -1,5 +1,12 @@
 # Checkmi maintenance
 
+## Compact notebook parameters · revision39
+
+User requests a much smaller editor on14-inch notebooks, and reiterates no total/unit fee selectors. Monetary totals and tax remain; presentation now uses a single horizontal category/save/reset/compare toolbar, four expense fields, and five Mix model inputs per desktop row. Remove duplicated titles, descriptions, composition strip and disabled tariff input; tariff is a short inactive label. Narrow inputs remain readable with two columns. Single Mix plan no longer duplicates a tab; multi-plan/conflict selection remains. Historical local demos use compact=false.
+
+1366×768 special panel falls417.59→182.64px; price/Mix about188px.1280×640 fits the common controls without internal overflow;390px page/editor have no horizontal overflow. Cap280px and48dvh minus the measured toolbar, with120px floor, keeps long/error states internally scrollable. Height motion remains0.26s; after a1945px P&L scroll the deck spans0–294.30px and two frozen table headers begin295/345px. Quantity/Mix edits, scoped monetary input and blank-name saved alias were exercised. Source112 tests, TypeScript, basic changed-file lint and build pass; document1.39 is mirrored. No model, source, P&L/export numbers or cash changes. Publish only direct /checkmi/, no home entry, demos or Sites.
+
+
 ## Editable expense totals · revision38
 
 User clarified special adjustments require actual monetary amounts. Production now has four direct total inputs in 万元: manufacturing/R&D/fixed selling/group allocation. No total/unit selector or group-rate input; price/cost keeps price/BOM/deductions. Monetary scope follows top filters, shown explicitly. Capture original fee proportions by record ID once; viewing subsets or subsequent quantity/Mix changes never repartition the total. Partial edits preserve other scopes, zero is explicit, restore removes only selected amounts. Fixed totals and child ledger feed gross/EBIT, annual tax and break-even; group is charged once. Unchanged source group-ratio behavior remains only until an explicit amount is entered.
@@ -178,3 +185,5 @@ Move the scenario name and save form beside model/year scope at the top of the e
 Both inner parameter sections now expand/collapse through measured240ms height transitions with matching arrow rotation. Existing Base UI primitives keep hidden editors mounted, retain entered values and handle reversed transitions; the sales-to-Mix shortcut locates the section after expansion, with immediate reduced-motion behavior. The frozen height cap and compact save heading remain. Source README/Agent notes record smooth interaction as an ongoing acceptance requirement, preserving immediate hover exceptions. Browser checks cover intermediate/final heights, reversal, retained tax/Mix inputs, reset and narrow layout. Business doc1.35 is included; financial/export data and Sites remain unchanged. Publish only direct /checkmi/.
 
 Revision38 personal checks:16 route/release/deployment tests passed; production build and TypeScript completed. ESLint has0 errors and4 existing Goalkeeper warnings.
+
+Revision39 personal validation:16 release/routing/deployment tests pass;37-page production build and TypeScript complete. ESLint has0 errors and4 existing Goalkeeper warnings.
