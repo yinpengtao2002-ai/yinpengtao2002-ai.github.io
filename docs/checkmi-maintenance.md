@@ -1,5 +1,13 @@
 # Checkmi maintenance
 
+## First Mix drag and total-row composition · revision40
+
+Capture resolved editor selection on first Mix write to prevent all-years scope becoming the new plan year list and remounting the active slider. A failing browser test reached24.39% instead of60% before the fix; it passes afterward and preserves the actual slider DOM. Composition returns to the right of total sales, uses the same plan shares/colors, and wraps on narrow screens. Reserve restore-action space to avoid first-edit layout jumps. No economics changes.
+
+112 source tests, TypeScript, basic changed-file lint and the continuous-drag/numeric/save/navigation browser regression passed.1280x640 editor187.93px and no page overflow;390px page375/375 and editor326/326. Business guide1.40 mirrored.
+
+OPEN: user-reported white-screen crash after2–3 edits has not been reproduced or resolved. No captured error in their existing older tabs; fresh local/production and in-app repeated-edit probes produced no uncaught errors. Await exact reproducing steps; do not advertise this release as a white-screen fix. Upstream docs/parameter-workbench.md contains investigation evidence. Personal direct /checkmi/ only, no homepage entry, demos or Sites.
+
 ## Compact notebook parameters · revision39
 
 User requests a much smaller editor on14-inch notebooks, and reiterates no total/unit fee selectors. Monetary totals and tax remain; presentation now uses a single horizontal category/save/reset/compare toolbar, four expense fields, and five Mix model inputs per desktop row. Remove duplicated titles, descriptions, composition strip and disabled tariff input; tariff is a short inactive label. Narrow inputs remain readable with two columns. Single Mix plan no longer duplicates a tab; multi-plan/conflict selection remains. Historical local demos use compact=false.
@@ -187,3 +195,5 @@ Both inner parameter sections now expand/collapse through measured240ms height t
 Revision38 personal checks:16 route/release/deployment tests passed; production build and TypeScript completed. ESLint has0 errors and4 existing Goalkeeper warnings.
 
 Revision39 personal validation:16 release/routing/deployment tests pass;37-page production build and TypeScript complete. ESLint has0 errors and4 existing Goalkeeper warnings.
+
+Revision40 personal validation:16 route/release/deployment checks and37-page build passed. ESLint0 errors,4 existing unrelated Goalkeeper warnings.
