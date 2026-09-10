@@ -1,5 +1,13 @@
 # Checkmi maintenance
 
+## B parameter workbench and saved-scenario display · revision 36
+
+User selected B from three LOCAL design demos. Adopt its sage/neutral grouped parameter workspace in the formal dashboard: Mix, price/cost and special categories; single scenario name/save form at the editor top. Comparison's extra form is removed. Categories switch by260ms measured height, preserve values and remain inside the frozen deck; mobile Mix has two columns. Only the formal built entry is synchronized here; A/B/C demo sources and review entry remain local.
+
+Saved-current deduplication uses full parameter/Mix state rather than formatted profit equality. Whole-page current aliases the latest matching saved name; price/cost/Mix/tax edits restore a current draft. The comparison chart omits current only when assumptions and record scope both match a saved snapshot, including its legend/value/waterfall options. A different year/model scope remains comparable. Saved deletion, record-order allocation ties, tax, locks and no-data rules are retained. Business document1.36 covers the sequence; no financial engine/source/cash/export format or homepage/Sites changes.
+
+Revision36 verification: upstream102 regressions, TypeScript and formal build passed; real browser checks covered saved/current transitions, automatic naming, Mix total, tax, different-year scope, P&L names and desktop/390px layouts. Upstream basic lint passed with native type-aware helper unavailable on Windows (see source QA receipt). Personal16 route/release/deployment checks and37-page production build passed; ESLint has no errors and the four existing Goalkeeper warnings. The deployment test now uses `fileURLToPath` so Windows paths do not duplicate the drive letter. Slider center alignment avoids hidden-panel measurement dependence without resetting drafts. Publish only the seven manifest files and this maintenance record.
+
 The user requested the existing BC dashboard at `https://yinpengtao.cn/checkmi/` with no homepage, navigation, finance listing, sitemap or assistant recommendation entry. It is a directly accessible page; this is not an access-code gate. Route-specific `X-Robots-Tag` asks crawlers not to index it.
 
 As of 2026-09-07, the user explicitly requested that future releases update only this personal website. Stop synchronizing the separate ChatGPT Sites deployment; leave that existing deployment unchanged unless the user asks otherwise. This supersedes prior dual-destination publishing instructions.
