@@ -1,6 +1,6 @@
 {
   "source": "BC economics dashboard",
-  "sourceCommit": "0b9ddda8a1276c91ed50e30afcbea97b37f506e7",
+  "sourceCommit": "0e4f2a7e992341d51c68b95a5a874f31a81df1f1",
   "basePath": "/checkmi/",
   "files": [
     {
@@ -15,8 +15,8 @@
     },
     {
       "file": "业务逻辑说明.md",
-      "bytes": 73171,
-      "sha256": "1cf1c9ab9745de17030fda713b354a844181cc9dda97004bbd6bed859ae37458"
+      "bytes": 73369,
+      "sha256": "feed7112077842bb66e828678b58a2e1cf2952480793f77b7ee4901a0578d602"
     },
     {
       "file": "templates/经营测算_标准底表.xlsx",
