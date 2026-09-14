@@ -1,5 +1,13 @@
 # Checkmi maintenance
 
+## Multi-table benchmarking and consolidated overview · revision56
+
+Source 56dbb2792994d0ba241dbbb141fe9166f1dec5c8 introduces independent named dataset collections: first upload replaces demo/base; subsequent mixed XLSX/CSV/JSON files append benchmarks, while explicit base replacement resets base assumptions/snapshots and preserves benchmarks. Batch failures do not partially apply. The new 对标比较 tab provides shared total/unit/rate observation, selectable reference, separate dataset project/country/gate scopes, common/all/single years, annual lines and shared-scale model panels. Only the base receives a selected current/saved assumption; benchmark records never inherit it.
+
+Navigation now has five tabs: overview, scenarios, benchmarks, cash and P&L. Data/definitions and model-analysis tabs are removed; downloads live in the import dialog. Annual model lines move to the overview bottom left of contribution, stack on narrow screens, and disappear for a single year. Scenario/model measures include unit gross and EBIT rate, with weighted numerators/denominators and percentage-point deltas. Parameter labels say 调整车型 / 调整年度. The business1.56 document, README and Agent notes match; formula/template/export contracts are unchanged.
+
+Verification:189 source tests, TypeScript, changed-file lint, source build and16 personal deployment/routing contracts pass. Browser checks cover real mixed batch uploads through four datasets, renaming/removal, failed/successful base replacement, separate scope/scenario results, weighted units/rates/missing years, preserved benchmark settings across tabs, original model matrix/drilldown and fixed share denominator, both template downloads/styled exports, repeated parameter drags/numeric linkage/Mix locks/zero quantity,1366/390 layouts and real height transitions/reduced motion. Fixes a blank-screen cause where old bar indices referenced a shorter replacement dataset; rectangle color now uses its own payload. Publish personal /checkmi/ only, without a homepage entry or Sites synchronization.
+
 ## Remove redundant navigation shortcuts · revision55
 
 Source 646fbda8cc18d773f8b5451ceef2f7b15411b330 removes 查看情景比较, 车型年度走势, 查看计算口径 and the break-even card's 调整经营参数 shortcut, including unused callback props and icons. The six top tabs and top parameter trigger remain the navigation entrances. Keep scenario saving/reset, model filtering, filter reset, matrix P&L drilldown, detail disclosures and the break-even comparison arrow. No financial or Excel changes. Historical local design demos remain unchanged.
