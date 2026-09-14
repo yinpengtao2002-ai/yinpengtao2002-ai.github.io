@@ -1,5 +1,13 @@
 # Checkmi maintenance
 
+## Live amount values in price and cost · revision43
+
+Source6e5593ee72a08a6123ac666fc55f42c45b40228a fixes the common-only amount preview: heterogeneous model/year amounts previously stayed 多值 during percentage edits. 实时金额 now displays the current-quantity-weighted unit value, including exact Mix allocations, with a small 加权 qualifier. Zero quantities use original-volume/equal reference weights; no records stay unavailable. Original-volume percentage comparison and direct monetary target/local precedence remain unchanged. Merely displaying the average never changes any underlying unit amounts.
+
+All124 source economics/import/export/scenario tests, TypeScript, changed-file basic lint and production build pass. Expanded browser regression covers initial numeric values for all three fields, percentage edits and held-pointer live updates, Mix100% concentration, reset, target/local/save/P&L and1366/390px layout. In-app layout inspected. Business1.43 and its source mirror match. Existing quantity/Mix controls, ledger, snapshots, source workbook, cash and special totals unchanged; personal direct /checkmi/ only.
+
+Personal validation:16 deployment/routing contracts pass, lint has no errors and the four existing Goalkeeper warnings,37-page production build and TypeScript pass. The seven-file release manifest retains the unchanged template and stylesheet.
+
 ## Absolute and percentage parameter inputs · revision42
 
 Source81b5e91bfdab05331ea9b4f6200026d684af9343 adds final price/BOM/deduction amounts in yuan per vehicle beside percentage sliders/inputs. Amount edits display change against the immutable original; percentage edits replace the target using that same baseline. Local inputs of either mode override global defaults. Multi-record percentage summaries use original volume weights, independent of Mix; zero baseline ratios remain undefined. Known subaccounts preserve original proportions and missing-detail reconciliation.
