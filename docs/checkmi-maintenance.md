@@ -1,5 +1,16 @@
 # Checkmi maintenance
 
+## Pasted numbers and nonblocking reconciliation · revision45
+
+Source bf9701f150019d3bfbf7082e1bc3f40fc5104cdb fixes a reproduced tax-total false rejection: r44 recalculated numeric tax details from parameter rates before comparing the user's pasted subtotal. Explicit finite source values, including0, now take priority for tax/VAT/warranty, subtotals and core profit metrics. Formula/blank totals retain known aggregation. Real differences are preserved as visible residuals with bounded notices rather than rejecting the file; cent rounding does not trigger mismatch notices.
+
+Scenario changes anchor on the uploaded baseline and apply supported tax/price deltas. Manual manufacturing/selling and net/gross/EBIT differences survive quantity changes and reconcile in the ledger, P&L export, operating waterfalls and scenario bridges. Cash, standard rows, original BC compatibility, independent custom entries, fixed budgets and group inclusion once remain. Business1.45/public mirror match; templates are unchanged.
+
+Verification:138 source tests, TypeScript and changed-file lint pass. Browser tests pass for values-only XLSX with exact exported VAT−18000/tax−600/gross69000/EBIT62000 yuan per vehicle and visible residuals, original formula fixture, downloads, added years/models, continuous absolute/percentage edits, responsive layout and native chart entrance/no-replay. Publish only personal direct /checkmi/.
+
+Personal16 routing/deployment contracts, TypeScript and37-page production build pass. Eight-file release retains unchanged styles and both templates; only the entry/lazy-export build references and business guide change.
+
+
 ## Two upload templates and extensible P&L · revision44
 
 Adds distinct P&L/standard-row upload choices with two downloadable Excel templates. The supplied P&L layout supports dynamic SOP years/model columns and inserted/deleted detail rows within known parents. Predefined sums/taxes are recalculated from input leaves; uploaded custom formulas are never executed. New subjects retain independent amounts and flow into parent totals, named hover details, scenarios and the formatted P&L export. Imported group allocation enters EBIT once; fixed expenses retain source budgets. Original BC compatibility and cash isolation remain.
