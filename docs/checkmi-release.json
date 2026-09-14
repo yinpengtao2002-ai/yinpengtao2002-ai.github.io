@@ -1,6 +1,6 @@
 {
   "source": "BC economics dashboard",
-  "sourceCommit": "bf9701f150019d3bfbf7082e1bc3f40fc5104cdb",
+  "sourceCommit": "e6f95a3124f3843cfd3cc9aab655217ca076e171",
   "basePath": "/checkmi/",
   "files": [
     {
@@ -15,8 +15,8 @@
     },
     {
       "file": "业务逻辑说明.md",
-      "bytes": 86845,
-      "sha256": "34a7f16f3e33845363f186f9d6ff4a0617e040c666a141ff9698380d232d8ee6"
+      "bytes": 87335,
+      "sha256": "7f3df2633c9d4537346a0745056d79574b02e0f94148ba215416d89153c714ec"
     },
     {
       "file": "templates/经营测算_标准底表.xlsx",
@@ -25,8 +25,8 @@
     },
     {
       "file": "templates/车型损益表_空白公式模板.xlsx",
-      "bytes": 19077,
-      "sha256": "f19bbf44f6471dbd9e0eeb52a9ce062c16b4a786d5924dc466a30fa07d833d28"
+      "bytes": 19967,
+      "sha256": "313c46179e8d97d0999634951a4adf44ea3da5a4b06a67dd4f16414e82aab35f"
     },
     {
       "file": "assets/index-Bdr_Mwtw.js",

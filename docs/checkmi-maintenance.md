@@ -1,5 +1,11 @@
 # Checkmi maintenance
 
+## Simplified BOM inputs in the P&L download · revision46
+
+Source e6f95a3124f3843cfd3cc9aab655217ca076e171 removes the template's BOM unallocated input and separate duplicate gift row. BOM is now a yellow complete signed unit-cost input; the single retained gift and tooling rows are included breakdowns. Cost/gross/EBIT count the BOM parent once. Later Excel references, source formats, row heights and note merges move two rows; B5 freeze and all five year/model groups remain. Original attachment, standard template, demo/source economics and compatibility with old template IDs1000/23 remain unchanged.
+
+Verification:139 source tests, TypeScript and changed-test lint pass. Reopened XLSX calculation changes BOM−100000→−110000 and EBIT100000→90000 yuan/vehicle with no duplicate detail charge. Read-only comparison verifies2,095 retained cells, shifted formulas/styles/heights/merges and no cached errors. Browser formula and values-only uploads, custom rows/years/models, exact formatted Excel values, parameter edits and compact layout pass. Business1.46 mirrors match. Personal16 deployment/routing tests and37-page build pass. Only personal direct /checkmi/ is published.
+
 ## Pasted numbers and nonblocking reconciliation · revision45
 
 Source bf9701f150019d3bfbf7082e1bc3f40fc5104cdb fixes a reproduced tax-total false rejection: r44 recalculated numeric tax details from parameter rates before comparing the user's pasted subtotal. Explicit finite source values, including0, now take priority for tax/VAT/warranty, subtotals and core profit metrics. Formula/blank totals retain known aggregation. Real differences are preserved as visible residuals with bounded notices rather than rejecting the file; cent rounding does not trigger mismatch notices.
