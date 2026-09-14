@@ -1,5 +1,13 @@
 # Checkmi maintenance
 
+## Aligned values, corrected model panels and stable shares · revision54
+
+Source 5f909ffc9e197573d0947757adec71dbe24e6c05 places lifecycle/model total values below their actual bars, with per-vehicle values beside line points. Direct numbers omit unit suffixes; axes/tooltips retain 亿元 and 万元/台. Native bar geometry keeps values aligned when reference bars appear after an edit. Signed/tiny precision, smooth lines, subsecond entry and narrow pagination remain. Move the horizontal model comparison and numerical matrix together to overview before 车型贡献; keep annual model lines on 车型分析. The matrix retains year selection and P&L drilldown.
+
+车型贡献 volume shares use all models in the same project/country/gate/year and displayed scenario as the denominator. Viewing only C preserves23.7%, while actual Mix changes and scenario selection still update the share. Headline metrics and P&L continue using the selected model scope. Business1.54/public mirrors match; Excel and the financial engine are unchanged.
+
+Verification:183 source tests, TypeScript, changed-file lint and four browser suites pass. Checks cover actual bar/value alignment after reference-series insertion, positive/negative1366/390 layouts, chart placement, weighted single/all-year results, matrix drilldown, C23.7% under model selection and annual filters, actual Mix change to30%, and saved/baseline scenario switching. Continuous editing, reduced motion and total/unit waterfall regressions pass. Personal16 deployment/routing contracts and production build pass. Publish personal /checkmi/ only, with no homepage entry or Sites synchronization.
+
 ## Direct chart values and overview model comparisons · revision53
 
 Source b0520c02173e4d9da287d2408fc0343e2eed5516 restores smooth connected model unit lines. Lifecycle/model total bars and unit points now carry direct values, including both compared scenarios. Totals remain 亿元; both charts' unit axes, labels and tooltips use 万元/台 without changing ledger amounts. Tiny signed amounts retain necessary precision. A bounded label layout separates annotations without moving marks; Recharts' label layer keeps them above bars, and the same subsecond reveal keeps labels/lines synchronized. Narrow screens paginate both dimensions with stable full-range scales. Hidden chart tooltips reset stale transforms to prevent overflow after resizing.
