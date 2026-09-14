@@ -1,5 +1,13 @@
 # Checkmi maintenance
 
+## Unified model console and explicit benchmark upload · revision57
+
+Source 726b3c0e0d59561a0abeeb1039a30d7894e80e21 replaces the model region's independent selectors with one shared console for metric, model identity, summary year and scenario. Model performance joins this region below project economics. Summary year scopes amount views while the annual line/matrix preserve time context; matrix becomes an expandable audit surface. Annual trend and contribution always occupy separate full-width rows. The console sticks below the measured global deck; model filters preserve the all-model quantity-share denominator and never apply assumptions or alter global scenario selection.
+
+Reproduced and fixed the fresh-session benchmark import bug: 上传对标数据 was forced into first-base replacement, leaving the benchmark page empty. All upload entrances on the benchmark page now explicitly append against the current base, including demo. Ordinary first-base import remains available and preserves previously added benchmarks. Purpose controls are visible before application; importing against demo does not mark it as an uploaded real base.
+
+Business1.57/public mirror, focused business guides, README and Agent instructions match. Verification:192 source tests, TypeScript, changed-file lint and source build pass; model-console, model-overview, benchmark-upload and repeated parameter-interaction browser suites pass, including exact first-benchmark reproduction, shared result/scenario scope, preserved shares, P&L drilldown,1366/390 layouts, pinned console, measured disclosure height/reduced motion and repeated drags without errors. Personal16 deployment/routing tests and production build pass. Financial formulas and Excel templates/export implementations remain unchanged. Publish personal /checkmi/ only without homepage links or Sites synchronization.
+
 ## Multi-table benchmarking and consolidated overview · revision56
 
 Source 56dbb2792994d0ba241dbbb141fe9166f1dec5c8 introduces independent named dataset collections: first upload replaces demo/base; subsequent mixed XLSX/CSV/JSON files append benchmarks, while explicit base replacement resets base assumptions/snapshots and preserves benchmarks. Batch failures do not partially apply. The new 对标比较 tab provides shared total/unit/rate observation, selectable reference, separate dataset project/country/gate scopes, common/all/single years, annual lines and shared-scale model panels. Only the base receives a selected current/saved assumption; benchmark records never inherit it.
