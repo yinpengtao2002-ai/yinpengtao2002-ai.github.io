@@ -1,5 +1,15 @@
 # Checkmi maintenance
 
+## Absolute and percentage parameter inputs · revision42
+
+Source81b5e91bfdab05331ea9b4f6200026d684af9343 adds final price/BOM/deduction amounts in yuan per vehicle beside percentage sliders/inputs. Amount edits display change against the immutable original; percentage edits replace the target using that same baseline. Local inputs of either mode override global defaults. Multi-record percentage summaries use original volume weights, independent of Mix; zero baseline ratios remain undefined. Known subaccounts preserve original proportions and missing-detail reconciliation.
+
+Total vehicles and original-relative percentage are editable beside the allocation-year selector. Model quantities accept exact integers, rebalance unlocked peers, retain locked counts and feed the same annual allocation, P&L and saved-scenario ledger. Displayed two-decimal Mix never rounds an exact vehicle input. Total changes preserve actual allocation proportions including zero/restore. Numeric targets and integer allocations are included in styled Excel assumptions with correct units/formats.
+
+All122 upstream economics/import/export/scenario tests, TypeScript, changed-file basic lint and production build pass. New browser regression verifies bidirectional price and total inputs, scope, continuous dragging beyond prior slider limits, exact counts, locks, saves/P&L and1366/390px overflow. Existing repeated-parameter and native chart-motion regressions pass. In-app desktop/narrow layouts inspected; temporary viewport reset. Business doc1.42 matches source mirror. Original workbook, cash and special fee-total rules unchanged; retain revision41 crash fix. Personal direct /checkmi/ only.
+
+Personal verification:16 deployment/routing contracts pass, ESLint has no errors and the four existing Goalkeeper warnings,37-page Vercel production build and TypeScript pass. Seven manifest files include the new entry/CSS/lazy Excel chunk, matching business guide and unchanged template.
+
 ## Repeated parameter edit crash · revision41
 
 Resolves the revision40 open investigation below. The user's actual production Chrome captured React185 (maximum update depth) in Recharts Bar animation-end state updates, invoked by JavascriptAnimate cleanup. Price/cost and Mix both continuously update these charts. All four production Bar declarations now use native SVG entrance clips with Recharts JS animation disabled, eliminating that cleanup/state feedback path. Keep numeric-zero origins in both orientations, signed amounts, custom model colors,750ms entry and reduced motion. In-place edits render final values and retain completed clips. Existing line/marker, waterfall and business rules remain unchanged.
