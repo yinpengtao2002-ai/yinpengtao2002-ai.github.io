@@ -1,5 +1,14 @@
 # Checkmi maintenance
 
+## Global model scope and unit/rate combination charts · revision58
+
+Source e44269d45307bbdde31455ea0da0f9a327d26dac removes the secondary frozen model console. Only metric is local; global filters and display/reference scenarios drive model results. Horizontal model bars and always-visible annual matrix share a desktop row, with annual trend and contribution in separate full-width rows. Volume-share tracks and values align without rebasing selected-model shares. Overview now has one operating waterfall with total/unit switching and unchanged ledger/zero-sales/detail behavior.
+
+Benchmark comparison now displays actual unit net/gross/EBIT and gross/EBIT margins, without total or delta selectors. Gross/EBIT panels, annual view and model views pair monetary bars (万元/台) with smooth percentage lines; both model scales are shared across datasets/pages. Missing values stay missing, independent dataset scope and base-only scenarios remain. Entry uses existing750ms bar/line/dot reveal without replay on edits.
+
+Verification:190 source tests, TypeScript, lint and source build pass. Updated model-overview, model-console, operating-bridge, benchmark-upload and repeated parameter-interaction browser suites pass, including mixed3/4-file uploads, first benchmark against demo, exact unit/rate results, saved Mix/scenarios, global filters, P&L drilldown, aligned shares, zero-volume bridge,1366/390 no-overflow and stable continuous drags. Personal16 deployment/routing tests and production build pass. Business1.58, public mirror, focused business guides, README and Agent notes match. Financial engine and Excel contracts unchanged. Publish only personal /checkmi/ without a homepage entrance or Sites sync.
+
+
 ## Unified model console and explicit benchmark upload · revision57
 
 Source 726b3c0e0d59561a0abeeb1039a30d7894e80e21 replaces the model region's independent selectors with one shared console for metric, model identity, summary year and scenario. Model performance joins this region below project economics. Summary year scopes amount views while the annual line/matrix preserve time context; matrix becomes an expandable audit surface. Annual trend and contribution always occupy separate full-width rows. The console sticks below the measured global deck; model filters preserve the all-model quantity-share denominator and never apply assumptions or alter global scenario selection.
