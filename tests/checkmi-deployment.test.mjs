@@ -42,9 +42,14 @@ test("checkmi release contains matching assets, downloadable template and busine
   for (const file of paths) assert.ok(release.files.some((entry) => entry.file === file));
   const bundle = await read(`public/checkmi/${release.files.find((file) => file.file.endsWith(".js")).file}`);
   assert.ok(bundle.includes("./templates/经营测算_标准底表.xlsx"));
+  assert.ok(bundle.includes("./templates/车型损益表_空白公式模板.xlsx"));
   assert.ok(bundle.includes("./业务逻辑说明.md"));
   const template = await readFile(new URL("../public/checkmi/templates/经营测算_标准底表.xlsx", import.meta.url));
   assert.equal(template.subarray(0, 2).toString(), "PK");
+  const pnlPath = "templates/车型损益表_空白公式模板.xlsx";
+  assert.ok(release.files.some(file => file.file === pnlPath));
+  const pnl = await readFile(new URL(`../public/checkmi/${pnlPath}`, import.meta.url));
+  assert.equal(pnl.subarray(0, 2).toString(), "PK");
   assert.match(await read("public/checkmi/业务逻辑说明.md"), /生命周期经营表现的分组方式/);
 });
 

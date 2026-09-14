@@ -13,7 +13,7 @@ const destination = path.join(root, "public", "checkmi");
 if (build === destination || build.startsWith(destination + path.sep)) {
   throw new Error("Build input must be separate from the deployed output");
 }
-const fixedFiles = ["index.html", "favicon.svg", "业务逻辑说明.md", "templates/经营测算_标准底表.xlsx"];
+const fixedFiles = ["index.html", "favicon.svg", "业务逻辑说明.md", "templates/经营测算_标准底表.xlsx", "templates/车型损益表_空白公式模板.xlsx"];
 const html = await readFile(path.join(build, "index.html"), "utf8");
 const assets = [...html.matchAll(/(?:src|href)="(\/checkmi\/assets\/[^"?#]+)"/g)].map((match) => match[1].slice("/checkmi/".length));
 if (!assets.some((file) => file.endsWith(".js")) || !assets.some((file) => file.endsWith(".css"))) {

@@ -1,12 +1,12 @@
 {
   "source": "BC economics dashboard",
-  "sourceCommit": "6e5593ee72a08a6123ac666fc55f42c45b40228a",
+  "sourceCommit": "cac1d7b8cc0f00591ec63e95ff00babbe53960ff",
   "basePath": "/checkmi/",
   "files": [
     {
       "file": "index.html",
       "bytes": 668,
-      "sha256": "1be318812802f0f251fad23e952d929c7a2b19650abd16d365d9bfe4128774ae"
+      "sha256": "92ed496a9e97ae79a83bfc0dd3bf0149cdbbe6f1533df09fb5c0c01c1c74f4f2"
     },
     {
       "file": "favicon.svg",
@@ -15,28 +15,33 @@
     },
     {
       "file": "业务逻辑说明.md",
-      "bytes": 82199,
-      "sha256": "d70f2b089c8c14eabfcef3854ddc64c99fe96cef022739ca2fabfc04ef7ea7f2"
+      "bytes": 85776,
+      "sha256": "ef0563132a2096cabf26d703650eaf80a4083415e1e4ec4643b80bf69376744f"
     },
     {
       "file": "templates/经营测算_标准底表.xlsx",
-      "bytes": 10069,
-      "sha256": "8520d6eed247e497a87e7480a71c5ccb9e5a501753d310f5dd530f8ccadac3bb"
+      "bytes": 10083,
+      "sha256": "e63824b1181a16ce1dee1ac32c6d081e8cb29952e9ae83c6ce03f67061319a96"
     },
     {
-      "file": "assets/index-CfbRUlKd.js",
-      "bytes": 944012,
-      "sha256": "c6ffbacd13e80f55d8fb8a39212c3af7f0063c5033e232898c3329cd3cd11607"
+      "file": "templates/车型损益表_空白公式模板.xlsx",
+      "bytes": 19077,
+      "sha256": "f19bbf44f6471dbd9e0eeb52a9ce062c16b4a786d5924dc466a30fa07d833d28"
     },
     {
-      "file": "assets/index-DAxdoQkU.css",
-      "bytes": 239346,
-      "sha256": "3a3de29bfaf55af94142f42b3b0183f962e7a204d38ac2e6f9d0168fa46a6591"
+      "file": "assets/index-DEana0wa.js",
+      "bytes": 955277,
+      "sha256": "1ee8115703569b1fe2afd77670dcf6cb3b9800944df6a1aa9cecce9bf7817232"
     },
     {
-      "file": "assets/export-profit-loss-D_aSKh8e.js",
+      "file": "assets/index-gcO5MChW.css",
+      "bytes": 240656,
+      "sha256": "5078020e3935dc541967019c92614a9d4e6248b433234a583fbda97cb49a5ae0"
+    },
+    {
+      "file": "assets/export-profit-loss-CwoTaIlq.js",
       "bytes": 937750,
-      "sha256": "1160552aebfed3dba7e8b772548af1416249035629edfbe35908f638ace4b40b"
+      "sha256": "c9522122685c4a37278966d8bddacd9e0fa430df8b9f3f71dcfc3e8a15031dfa"
     }
   ]
 }

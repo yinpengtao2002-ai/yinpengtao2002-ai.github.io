@@ -1,5 +1,14 @@
 # Checkmi maintenance
 
+## Two upload templates and extensible P&L · revision44
+
+Adds distinct P&L/standard-row upload choices with two downloadable Excel templates. The supplied P&L layout supports dynamic SOP years/model columns and inserted/deleted detail rows within known parents. Predefined sums/taxes are recalculated from input leaves; uploaded custom formulas are never executed. New subjects retain independent amounts and flow into parent totals, named hover details, scenarios and the formatted P&L export. Imported group allocation enters EBIT once; fixed expenses retain source budgets. Original BC compatibility and cash isolation remain.
+
+Source verification:134 economics/import/export/scenario tests, TypeScript and changed-file lint; browser coverage for actual XML row/year/model edits, upload previews/errors, both downloads, reopened Excel amounts/formats, repeated absolute/percentage edits and1366/390px layout. Animation regression now compares edits against the completed entry's initialized startTime rather than a pending animation's null startTime. No chart runtime changes. Business1.44 mirrors match. The release allowlist now includes both templates and hashes eight files. Personal direct /checkmi/ only; no Sites, demos or homepage link.
+
+Source cac1d7b8cc0f00591ec63e95ff00babbe53960ff. Personal checks:16 deployment/routing contracts pass, lint has no errors and the four existing Goalkeeper warnings, TypeScript and the37-page production build pass.
+
+
 ## Live amount values in price and cost · revision43
 
 Source6e5593ee72a08a6123ac666fc55f42c45b40228a fixes the common-only amount preview: heterogeneous model/year amounts previously stayed 多值 during percentage edits. 实时金额 now displays the current-quantity-weighted unit value, including exact Mix allocations, with a small 加权 qualifier. Zero quantities use original-volume/equal reference weights; no records stay unavailable. Original-volume percentage comparison and direct monetary target/local precedence remain unchanged. Merely displaying the average never changes any underlying unit amounts.
