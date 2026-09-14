@@ -1,5 +1,13 @@
 # Checkmi maintenance
 
+## Direct chart values and overview model comparisons · revision53
+
+Source b0520c02173e4d9da287d2408fc0343e2eed5516 restores smooth connected model unit lines. Lifecycle/model total bars and unit points now carry direct values, including both compared scenarios. Totals remain 亿元; both charts' unit axes, labels and tooltips use 万元/台 without changing ledger amounts. Tiny signed amounts retain necessary precision. A bounded label layout separates annotations without moving marks; Recharts' label layer keeps them above bars, and the same subsecond reveal keeps labels/lines synchronized. Narrow screens paginate both dimensions with stable full-range scales. Hidden chart tooltips reset stale transforms to prevent overflow after resizing.
+
+The annual model lines and 年度车型对比 horizontal bars move together to overview before 车型贡献. Bars default to 全部年度 and also accept a single year within the global filter. All-year totals/volumes are summed before deriving weighted unit EBIT and gross margin; missing and zero remain distinct. Model Analysis retains its numerical matrix and P&L drilldown. Business1.53/public mirrors match. Excel templates, exports and economics are unchanged.
+
+Verification:183 source tests, TypeScript and changed-file lint pass. Browser checks verify actual single/all-year results, weighted ratios, current/reference linkage, relocated order, retained matrix drilldown, direct value/unit accuracy, connected lines, positive/negative1366/390 label separation and no horizontal page overflow. Overview total/unit waterfall and repeated parameter/negative-EBIT/reduced-motion regressions pass. Personal16 routing/deployment contracts and37-page build pass. Publish only personal /checkmi/ without a homepage entry or Sites synchronization.
+
 ## Overview rates, model performance and amount-basis badges · revision52
 
 Source 19e88bfe998f5e883d0a4dd428ed6a4c293defc0 makes gross/EBIT rates the primary overview profit values, with their total amounts below and percentage-point comparisons. Both continuous operating bridges have prominent, distinct 总额 · 亿元 / 单车 · 元/台 badges. Add model performance below lifecycle performance: aggregate selected years by full model identity, compare gross and EBIT total bars with quantity-weighted unit dots, and keep nominal categories unconnected. Shared filters and scenario choices, equal-value de-duplication, missing/zero cases and signed fixed losses remain consistent with the ledger. Responsive model pagination uses the same axes across pages and never changes filters. Annual charts retain their prior rules.
