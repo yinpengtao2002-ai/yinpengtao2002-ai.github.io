@@ -1,5 +1,11 @@
 # Checkmi maintenance
 
+## Remove redundant navigation shortcuts · revision55
+
+Source 646fbda8cc18d773f8b5451ceef2f7b15411b330 removes 查看情景比较, 车型年度走势, 查看计算口径 and the break-even card's 调整经营参数 shortcut, including unused callback props and icons. The six top tabs and top parameter trigger remain the navigation entrances. Keep scenario saving/reset, model filtering, filter reset, matrix P&L drilldown, detail disclosures and the break-even comparison arrow. No financial or Excel changes. Historical local design demos remain unchanged.
+
+Business1.55/public mirrors and README match. TypeScript and changed-file lint pass. Browser verification confirms absent duplicate buttons, all six top tabs and parameter save/reset availability,1366/390 layouts, retained model comparison/drilldown and accurate shares under filters, actual Mix edits and saved scenarios. Personal16 deployment/routing contracts and production build pass. Publish personal /checkmi/ only without a homepage entry or Sites synchronization.
+
 ## Aligned values, corrected model panels and stable shares · revision54
 
 Source 5f909ffc9e197573d0947757adec71dbe24e6c05 places lifecycle/model total values below their actual bars, with per-vehicle values beside line points. Direct numbers omit unit suffixes; axes/tooltips retain 亿元 and 万元/台. Native bar geometry keeps values aligned when reference bars appear after an edit. Signed/tiny precision, smooth lines, subsecond entry and narrow pagination remain. Move the horizontal model comparison and numerical matrix together to overview before 车型贡献; keep annual model lines on 车型分析. The matrix retains year selection and P&L drilldown.
