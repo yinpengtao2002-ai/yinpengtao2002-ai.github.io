@@ -1,12 +1,12 @@
 {
   "source": "BC economics dashboard",
-  "sourceCommit": "4a6c77801ebc8a0f0372c8140e469fd2347a0854",
+  "sourceCommit": "1b7283599e0c171a780c222e7d23b0e40c7fa725",
   "basePath": "/checkmi/",
   "files": [
     {
       "file": "index.html",
       "bytes": 668,
-      "sha256": "4737749f601b0bc239d29402498c515cab61c9357e99b43257ba6d0f02821706"
+      "sha256": "3aca825e6c5e7cf28d635972f4f442e32b24f0458a0903da6c4bc52320783892"
     },
     {
       "file": "favicon.svg",
@@ -15,8 +15,8 @@
     },
     {
       "file": "业务逻辑说明.md",
-      "bytes": 87982,
-      "sha256": "64d08807d3303952a48d14998c6b316ed9301969f2ce9328e1cb70f70d4ffae2"
+      "bytes": 93063,
+      "sha256": "558486402a8a78be6d07e7d423b95d37ecccbf60251619d84286aa3ab8ee5577"
     },
     {
       "file": "templates/经营测算_标准底表.xlsx",
@@ -25,23 +25,33 @@
     },
     {
       "file": "templates/车型损益表_空白公式模板.xlsx",
-      "bytes": 20052,
-      "sha256": "3d148687580801b8800e1b5f2fdff623686143800f6e6e4bbdbe22eb921f1569"
+      "bytes": 44840,
+      "sha256": "92343ea9db2b331a3daf1496f2c97adf276c0a4d68637d4f2fc285fe4d638fb9"
     },
     {
-      "file": "assets/index-CHX1o7CM.js",
-      "bytes": 956912,
-      "sha256": "e4a1bf1cb98d8fe66cc9da3b79e721e32217943122bdfa57f8f0f4858bb4c5a8"
+      "file": "assets/index--VD5mmpN.js",
+      "bytes": 966426,
+      "sha256": "244b619c46ea57ce4fa307eeeb610df94a4605c6ad5705b23bccf01a1d942609"
     },
     {
-      "file": "assets/index-gcO5MChW.css",
-      "bytes": 240656,
-      "sha256": "5078020e3935dc541967019c92614a9d4e6248b433234a583fbda97cb49a5ae0"
+      "file": "assets/index-tk3r0-so.css",
+      "bytes": 240683,
+      "sha256": "4aa06ca5ee414a3d90300bbb3b8f0f29424475b2e097634d15564faaef2504dd"
     },
     {
-      "file": "assets/export-profit-loss-BrW-kbyZ.js",
-      "bytes": 937750,
-      "sha256": "5d5a1cdf1e89392fef5207d2b66986a8a587057e44d318e819f59c534ec02ffe"
+      "file": "assets/exceljs.min-BMHLkx0q.js",
+      "bytes": 929913,
+      "sha256": "7d1b0b7cb966057085256bebffb3a44c3902c649172b9ea05b46a45de48ef739"
+    },
+    {
+      "file": "assets/export-pnl-template-BFZoryiJ.js",
+      "bytes": 8762,
+      "sha256": "d53dda74d282e0e82044deacea4199be6e3c95fd0038b3adab2091924759d910"
+    },
+    {
+      "file": "assets/export-profit-loss-BRPmXUKd.js",
+      "bytes": 7944,
+      "sha256": "6be9614c2fac78d9edfc0916e2060b1a271454660012f61d918cfd87dfbabdce"
     }
   ]
 }

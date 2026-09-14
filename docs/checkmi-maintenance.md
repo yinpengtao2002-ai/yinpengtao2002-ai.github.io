@@ -1,5 +1,13 @@
 # Checkmi maintenance
 
+## BC column layout and two P&L exports · revision48
+
+Source 1b7283599e0c171a780c222e7d23b0e40c7fa725 aligns the downloadable P&L template with the original BC测算模板 through A:DG:111 column widths, grouped headers, model/Average, income-ratio and lifecycle columns, spacer columns, original Normal font 等线12 and theme. All r47 subjects and formulas remain in order; data moves down one row, labels to B, freeze C6. Only actual annual model amount columns are imported. Auxiliary columns never affect validation or calculations; dynamic groups and legacy templates remain supported.
+
+The original export is now 导出当前筛选损益表 and retains its filtered report format. Adjacent 导出完整损益表 fills the upload-template layout from the chosen scenario's entire dataset, ignoring top filters and exporting actual values even from a difference view. It preserves actual custom subjects, separate outside-BOM gifts, pasted totals, source precision and tariffs. Zero-volume records without budgets retain scenario unit inputs; incompatible remaining budgets, input signs, prices, quantities and excessive column counts produce explicit errors before a misleading file is generated. Dedicated project/country/gate metadata and original income-tax grouping are not representable in this template; the documented roundtrip guarantee covers operating amounts through EBIT.
+
+Validation:163 source tests, TypeScript and changed-file lint pass. Browser checks cover both import modes, extra years/models/subjects, auxiliary junk, repeated edits and1366/390px layout. Complete-export browser checks verify saved scenario versus later edits, full25 model-years despite one-model/year filtering, baseline and difference modes, exact re-imported economics and template styling. Read-only workbook checks verify111 widths and headers plus1800 mapped original input/formula cells; reopened calculations and rendered exports pass. Business1.48 mirrors match. Personal16 routing/deployment tests and37-page production build pass. Ten-file release includes both template files and all shared/lazy Excel chunks. Publish only direct personal /checkmi/; no homepage entry or Sites update.
+
 ## Explicit BOM base and subtotal · revision47
 
 Source 4a6c77801ebc8a0f0372c8140e469fd2347a0854 supersedes r46's inclusive-input convention: physical17 BOM成本总额 now sums18 base BOM成本,19 gift and20 tooling. Overall cost counts the subtotal once. The upload adapter detects the explicit parent label; canonical20 is the parent,1000 is the known driver-linked base child. Legacy r45/r46 definitions and amounts remain compatible. Numeric subtotal overrides and independent additional subjects retain their existing rules.
