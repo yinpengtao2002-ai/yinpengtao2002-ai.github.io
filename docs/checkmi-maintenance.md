@@ -1,5 +1,13 @@
 # Checkmi maintenance
 
+## Explicit BOM base and subtotal · revision47
+
+Source 4a6c77801ebc8a0f0372c8140e469fd2347a0854 supersedes r46's inclusive-input convention: physical17 BOM成本总额 now sums18 base BOM成本,19 gift and20 tooling. Overall cost counts the subtotal once. The upload adapter detects the explicit parent label; canonical20 is the parent,1000 is the known driver-linked base child. Legacy r45/r46 definitions and amounts remain compatible. Numeric subtotal overrides and independent additional subjects retain their existing rules.
+
+P&L/Excel place the base directly below its parent, before gift/tooling. The operating waterfall shows the same three constituents and omits the separate gift bar when its source row is absent. Source/demo/standard-format economics and cash are unchanged. Business1.47/public mirror match; the styled template retains B5 freeze and five year/model header groups.
+
+Validation:142 source tests, TypeScript, changed-file lint, and formula/values-only browser imports pass. Browser verifies four-row UI/Excel hierarchy and exact sum with two-decimal formatting. Reopened workbook input changes verify100000+2000+3000=105000, gift+2000 lowers unit EBIT95000→93000, then base+10000 lowers it to83000. Read-only comparison confirms2,094 preserved cells with shifted formulas/styles/heights/merges and zero cached errors. Personal16 deployment/routing tests and37-page build pass. Publish only the direct personal /checkmi/ route.
+
 ## Simplified BOM inputs in the P&L download · revision46
 
 Source e6f95a3124f3843cfd3cc9aab655217ca076e171 removes the template's BOM unallocated input and separate duplicate gift row. BOM is now a yellow complete signed unit-cost input; the single retained gift and tooling rows are included breakdowns. Cost/gross/EBIT count the BOM parent once. Later Excel references, source formats, row heights and note merges move two rows; B5 freeze and all five year/model groups remain. Original attachment, standard template, demo/source economics and compatibility with old template IDs1000/23 remain unchanged.

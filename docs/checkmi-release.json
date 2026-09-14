@@ -1,12 +1,12 @@
 {
   "source": "BC economics dashboard",
-  "sourceCommit": "e6f95a3124f3843cfd3cc9aab655217ca076e171",
+  "sourceCommit": "4a6c77801ebc8a0f0372c8140e469fd2347a0854",
   "basePath": "/checkmi/",
   "files": [
     {
       "file": "index.html",
       "bytes": 668,
-      "sha256": "992429bd98ec0fad88c069c91695adb9ab31f8a1e121600a2dcacf35ec289220"
+      "sha256": "4737749f601b0bc239d29402498c515cab61c9357e99b43257ba6d0f02821706"
     },
     {
       "file": "favicon.svg",
@@ -15,8 +15,8 @@
     },
     {
       "file": "业务逻辑说明.md",
-      "bytes": 87335,
-      "sha256": "7f3df2633c9d4537346a0745056d79574b02e0f94148ba215416d89153c714ec"
+      "bytes": 87982,
+      "sha256": "64d08807d3303952a48d14998c6b316ed9301969f2ce9328e1cb70f70d4ffae2"
     },
     {
       "file": "templates/经营测算_标准底表.xlsx",
@@ -25,13 +25,13 @@
     },
     {
       "file": "templates/车型损益表_空白公式模板.xlsx",
-      "bytes": 19967,
-      "sha256": "313c46179e8d97d0999634951a4adf44ea3da5a4b06a67dd4f16414e82aab35f"
+      "bytes": 20052,
+      "sha256": "3d148687580801b8800e1b5f2fdff623686143800f6e6e4bbdbe22eb921f1569"
     },
     {
-      "file": "assets/index-Bdr_Mwtw.js",
-      "bytes": 956521,
-      "sha256": "41934768b56f136a31611040ca2447362bfaf7ae4dc867174d10ea87b692774b"
+      "file": "assets/index-CHX1o7CM.js",
+      "bytes": 956912,
+      "sha256": "e4a1bf1cb98d8fe66cc9da3b79e721e32217943122bdfa57f8f0f4858bb4c5a8"
     },
     {
       "file": "assets/index-gcO5MChW.css",
@@ -39,9 +39,9 @@
       "sha256": "5078020e3935dc541967019c92614a9d4e6248b433234a583fbda97cb49a5ae0"
     },
     {
-      "file": "assets/export-profit-loss-CSjKB6aQ.js",
+      "file": "assets/export-profit-loss-BrW-kbyZ.js",
       "bytes": 937750,
-      "sha256": "496f27e7e57197a89e291e31f2182957e30015d4d11697b722d3bbf590942c11"
+      "sha256": "5d5a1cdf1e89392fef5207d2b66986a8a587057e44d318e819f59c534ec02ffe"
     }
   ]
 }
