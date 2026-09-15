@@ -1,5 +1,11 @@
 # Checkmi maintenance
 
+## Aligned contribution and visible metric choices · revision62
+
+Source43641ddd796339d50f5ed76b26f12d8b9d41c40f aligns contribution primary values and the matching rate/unit header rows, removes model metadata subtitles, and exposes all9 lower model metrics as compact horizontal buttons with responsive wrapping. Native fieldset/pressed states, stable grid widths, keyboard focus and bounded color feedback preserve direct interaction. Selection updates bars/matrix/trend together using existing global scope and metric state. Keep KPI → contribution → lifecycle order, full model identities and the all-model share denominator; financial and Excel contracts are unchanged.
+
+TypeScript, lint and source build pass. overview-performance verifies all9 metric values/captions, unique selected state, text alignment, metadata removal and1366/390 layout on the final built preview. model-overview and long-model-names pass with scenario/Mix/share behavior, drilldown, full names and responsive labels. Business1.62 and Agent/focused documentation are synchronized. Publish only personal /checkmi/ with no public navigation entry or Sites sync.
+
 ## Contribution below headline cards · revision61
 
 Source06587d6393ed73933fc5873dd2173df3a02ef093 corrects the overview order to four KPI cards → model contribution → lifecycle performance → model performance. This moves existing blocks only; all calculation, scope, share, percentage and interaction contracts are retained. TypeScript, lint, source build and the existing overview-performance browser suite pass on the fixed preview, including exact order and1366/390 bounds. Business1.61/public mirror, focused guides and Agent notes are synchronized. Publish personal /checkmi/ only.
