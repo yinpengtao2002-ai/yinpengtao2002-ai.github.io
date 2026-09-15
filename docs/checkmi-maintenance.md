@@ -1,5 +1,11 @@
 # Checkmi maintenance
 
+## Scenario chip deletion and simpler comparison · revision69
+
+Source74e098d525ccd3090a69fc812495cdd5cb8e1bed moves saved-scenario deletion to independent corner buttons on comparison chips. Removal uses snapshot IDs and synchronizes charts, summary rows, global/P&L options and waterfall endpoints, preserving live assumptions, Mix, filters and remaining snapshots. Selected display/reference safely fall back; removing the matching snapshot reveals current again. Buttons remain visible on narrow screens, support keyboard focus and do not toggle chip visibility. Baseline/current remain nondeletable.
+
+Remove the summary table apply/remove column and both gross/EBIT waterfall numeric disclosures with their exclusive styles. General chart values, saved assumptions, six summary columns and waterfall labels/tooltips/reveal remain. Business1.69/public mirror and Agent/chart notes synchronized. Source204 calculation/import tests, TypeScript, focused changed-file lint and production build pass; dedicated browser verification covers repeated names, hidden/last removal, all selector fallbacks, unchanged results/parameters and1366/982/390 layouts, with screenshots reviewed. Repository-wide lint still reports existing unrelated vendored component and long-model test issues. Publish only personal /checkmi/ and verify exact HTTP hashes.
+
 ## P&L upload recognition and zero MSRP · 2026-09-15
 
 Source62066e17a4d89d5be5fc82cba126fa06ccb14625 accepts decorated calendar-year headers including SOP 2028年-现状 and2029年-现状, removes the P&L model-name length limit, and excludes model-year columns whose saved MSRP value is zero. Names do not decide this exclusion; zero-sales models with positive MSRP remain. Carry valid annual headings before filtering so later columns retain their correct year. Missing/invalid MSRP and uncached formulas are not coerced to zero. Existing auxiliary ratio/Average/lifecycle handling, independent subjects and source subtotal preservation remain.
