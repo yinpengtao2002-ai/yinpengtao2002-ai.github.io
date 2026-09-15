@@ -1,5 +1,14 @@
 # Checkmi maintenance
 
+## Full model names, unit-first waterfall and performance order · revision59
+
+Source f030fc139f5406e1117d52f861204bb49c778dba renders complete model/category labels with measured-width SVG wrapping, word-aware English breaks and Unicode grapheme fallback. Model performance allocates label height without shrinking the plot; horizontal model bars widen the name area and grow row spacing; benchmark charts reduce categories per page on narrow screens. Full model dropdown options wrap, and compact selected fields expose full names on hover. No name, record identity, financial aggregation or shared axis scale is changed.
+
+Overview now presents lifecycle performance, immediately model gross/EBIT performance, then one continuous operating waterfall. The waterfall defaults to unit元/台 and retains its total亿元 switch, shared ledger and zero-volume behavior. The lower metric selector still controls model bars/matrix/annual trend; global filters/scenarios retain their meaning.
+
+Verification:192 source tests, TypeScript, lint and source build pass. Long-model-names checks complete Chinese/English names, no label clipping/overlap,1366/390 bounds, all models reachable by paging, full dropdown text, correct order and unit default against development and the built preview. Existing model-overview, operating-bridge and benchmark-upload suites pass. Final repeated parameter-interaction passes against the fixed production preview; no runtime errors. Personal16 routing/deployment tests and production build pass. Business1.59/public mirror, focused business docs and maintenance instructions match. Publish personal /checkmi/ only, no homepage entrance or Sites sync.
+
+
 ## Global model scope and unit/rate combination charts · revision58
 
 Source e44269d45307bbdde31455ea0da0f9a327d26dac removes the secondary frozen model console. Only metric is local; global filters and display/reference scenarios drive model results. Horizontal model bars and always-visible annual matrix share a desktop row, with annual trend and contribution in separate full-width rows. Volume-share tracks and values align without rebasing selected-model shares. Overview now has one operating waterfall with total/unit switching and unchanged ledger/zero-sales/detail behavior.
