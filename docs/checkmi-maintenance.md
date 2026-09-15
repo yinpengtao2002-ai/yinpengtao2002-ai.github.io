@@ -1,5 +1,11 @@
 # Checkmi maintenance
 
+## P&L upload recognition and zero MSRP · 2026-09-15
+
+Source62066e17a4d89d5be5fc82cba126fa06ccb14625 accepts decorated calendar-year headers including SOP 2028年-现状 and2029年-现状, removes the P&L model-name length limit, and excludes model-year columns whose saved MSRP value is zero. Names do not decide this exclusion; zero-sales models with positive MSRP remain. Carry valid annual headings before filtering so later columns retain their correct year. Missing/invalid MSRP and uncached formulas are not coerced to zero. Existing auxiliary ratio/Average/lifecycle handling, independent subjects and source subtotal preservation remain.
+
+All49 focused import/export tests, TypeScript and source lint pass. The user's unchanged latest workbook imports24 records across2028–2033 and4 models; its120 subtotal discrepancies remain nonblocking and source values are preserved. Source /checkmi/ production build passes. Public business documentation includes the updated filtering and calculation order. Publish only personal /checkmi/ through the existing Git integration, recording exact asset hashes; no uploaded workbook is copied into the release.
+
 ## Share progress and percentage centered together · revision67
 
 Source0a9f45aa14127f6bd04dc9ba7835341395f40a2f centers the progress track plus percentage as one flex group with6px gap, on desktop and narrow cards. Replaces revision66 text-only centering; other numeric columns, financial data and denominator rules remain unchanged. Source build and existing cash-snapshot browser verification pass; group midpoint matches cell midpoint within1px at1366/390 and both elements remain visible without overflow. Screenshot inspected. Business1.67/public mirror and Agent notes synchronized; corrected two prior documentation number substitutions without data/code changes. Publish personal /checkmi/ only.
