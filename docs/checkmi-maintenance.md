@@ -1,5 +1,11 @@
 # Checkmi maintenance
 
+## Metric families and nine-field contribution redesign · revision63
+
+Sourcea9c91e026b8a8880ccca2b139ecd2cfb5511b415 groups all model metric buttons as volume/revenue/unit revenue, gross total/unit/margin, and EBIT total/unit/margin. The contribution table keeps its9 existing fields, now in independent columns under3 group headers with aligned numbers. Narrow layouts show the same fields and units in per-model cards; no horizontal scroll or metadata subtitles. Preserve existing model identity, order, all-model share denominator, default metric, global scopes and data/Excel calculations.
+
+TypeScript, lint,5 model-comparison tests and source build pass. overview-performance verifies field completeness and baseline/adjusted numbers, grouped button order/all9 selections, linked outputs, desktop/mobile alignment and percentage/scenario contracts. model-overview and long-model-names pass, retaining Mix/saved shares, drilldown and full identities. Business1.63/public mirror, focused guides and Agent notes are synchronized. Publish personal /checkmi/ only, with no homepage entrance or Sites sync.
+
 ## Aligned contribution and visible metric choices · revision62
 
 Source43641ddd796339d50f5ed76b26f12d8b9d41c40f aligns contribution primary values and the matching rate/unit header rows, removes model metadata subtitles, and exposes all9 lower model metrics as compact horizontal buttons with responsive wrapping. Native fieldset/pressed states, stable grid widths, keyboard focus and bounded color feedback preserve direct interaction. Selection updates bars/matrix/trend together using existing global scope and metric state. Keep KPI → contribution → lifecycle order, full model identities and the all-model share denominator; financial and Excel contracts are unchanged.
