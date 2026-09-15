@@ -1,5 +1,11 @@
 # Checkmi maintenance
 
+## Unit/rate performance and contribution-first overview · revision60
+
+Source40cafc21e6013c3e1fed62d27352a4d5f741901d places model contribution first in overview, before the four KPI cards. Lifecycle and model gross/EBIT panels pair per-unit profit bars (万元/台) with corresponding margin lines (%). Sum quantities, net revenue and profits before calculating units/rates. Money labels remain below their own bars; rate point labels, axes and model/scenario/benchmark numeric tables include %. Remove the overview break-even widget while keeping financial math and Excel contracts intact. Unit-default waterfall, full model names, global scopes and unchanged model-share denominator remain.
+
+Verification:193 source tests, TypeScript, lint and production build pass. Updated overview-performance verifies exact baseline/adjusted year/model units and rates, table-first order, percentage displays, removed widget and1366/390 bounds. model-overview, operating-bridge and benchmark-upload pass. Long model names and final continuous parameter interaction pass against the fixed production preview, with no runtime errors. Business1.60/public mirror, focused business guides and Agent documentation are synchronized. Personal routing/build verification and immutable asset hashes accompany this release; publish only /checkmi/, with no homepage link or Sites sync.
+
 ## Full model names, unit-first waterfall and performance order · revision59
 
 Source f030fc139f5406e1117d52f861204bb49c778dba renders complete model/category labels with measured-width SVG wrapping, word-aware English breaks and Unicode grapheme fallback. Model performance allocates label height without shrinking the plot; horizontal model bars widen the name area and grow row spacing; benchmark charts reduce categories per page on narrow screens. Full model dropdown options wrap, and compact selected fields expose full names on hover. No name, record identity, financial aggregation or shared axis scale is changed.
