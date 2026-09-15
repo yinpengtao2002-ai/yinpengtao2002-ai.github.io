@@ -1,5 +1,11 @@
 # Checkmi maintenance
 
+## Concise saved assumptions · revision70
+
+Sourcefd31447dadbe0279492f14ad86a2eabd8c2fc23e replaces repeated source/scope prose with effective changed global inputs and grouped model/year, fee and Mix settings. Default percentages/tax/fixed-total copy and singleton source metadata are omitted. Keep real scope restrictions, absolute-vs-percentage distinctions, explicit zero overrides, targets and exact Mix/fee values; group only matching full identities, settings and real consecutive years. Baseline has no disclosure. The second summary column is 调整摘要; its220ms height transition is reversible and respects reduced motion. Desktop rows fit content, mobile retains six fields without overflow; redundant bridge note removed. Calculations, snapshot state, deletion, imports and Excel are unchanged.
+
+Business1.70/public mirror and Agent/chart docs synchronized. Source211 tests, TypeScript, changed-file lint and build pass. Browser saved-assumptions checks changed-only copy, collapsed annual groups, unchanged results, real intermediate transition heights, reversal/reduced motion and1366/982/390 screenshots; expanded mobile content is checked against figures for overlap. Scenario-removal regression passes including all selector/P&L/waterfall fallbacks. Publish only personal /checkmi/ and verify exact assets plus live behavior.
+
 ## Scenario chip deletion and simpler comparison · revision69
 
 Source74e098d525ccd3090a69fc812495cdd5cb8e1bed moves saved-scenario deletion to independent corner buttons on comparison chips. Removal uses snapshot IDs and synchronizes charts, summary rows, global/P&L options and waterfall endpoints, preserving live assumptions, Mix, filters and remaining snapshots. Selected display/reference safely fall back; removing the matching snapshot reveals current again. Buttons remain visible on narrow screens, support keyboard focus and do not toggle chip visibility. Baseline/current remain nondeletable.
