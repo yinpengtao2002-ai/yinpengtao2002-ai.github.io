@@ -1,5 +1,9 @@
 # Checkmi maintenance
 
+## Share progress and percentage centered together · revision67
+
+Source0a9f45aa14127f6bd04dc9ba7835341395f40a2f centers the progress track plus percentage as one flex group with6px gap, on desktop and narrow cards. Replaces revision66 text-only centering; other numeric columns, financial data and denominator rules remain unchanged. Source build and existing cash-snapshot browser verification pass; group midpoint matches cell midpoint within1px at1366/390 and both elements remain visible without overflow. Screenshot inspected. Business1.67/public mirror and Agent notes synchronized; corrected two prior documentation number substitutions without data/code changes. Publish personal /checkmi/ only.
+
 ## Centered model values and cash payback cards · revision66
 
 Source b435335a959678a2b294266bd4d1933dbfb8c875 centers contribution numeric/share values and every annual model matrix header/value. Share tracks position independently to preserve the percentage center and existing denominator. Cash snapshot reuses overview card styling for NPV, cumulative cash, maximum funding gap and static payback. Payback uses selected annual snapshot flows, first period t=0, construction included, no discounting, first cumulative recovery interpolated within the year; unrecovered/no-deficit/missing and later renewed deficit states are explicit. Cash remains independent of operating assumptions. Removes obsolete original-template IRR/payback footer constants.
