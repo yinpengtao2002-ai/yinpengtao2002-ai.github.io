@@ -1,5 +1,9 @@
 # Checkmi maintenance
 
+## Contribution below headline cards · revision61
+
+Source06587d6393ed73933fc5873dd2173df3a02ef093 corrects the overview order to four KPI cards → model contribution → lifecycle performance → model performance. This moves existing blocks only; all calculation, scope, share, percentage and interaction contracts are retained. TypeScript, lint, source build and the existing overview-performance browser suite pass on the fixed preview, including exact order and1366/390 bounds. Business1.61/public mirror, focused guides and Agent notes are synchronized. Publish personal /checkmi/ only.
+
 ## Unit/rate performance and contribution-first overview · revision60
 
 Source40cafc21e6013c3e1fed62d27352a4d5f741901d places model contribution first in overview, before the four KPI cards. Lifecycle and model gross/EBIT panels pair per-unit profit bars (万元/台) with corresponding margin lines (%). Sum quantities, net revenue and profits before calculating units/rates. Money labels remain below their own bars; rate point labels, axes and model/scenario/benchmark numeric tables include %. Remove the overview break-even widget while keeping financial math and Excel contracts intact. Unit-default waterfall, full model names, global scopes and unchanged model-share denominator remain.
