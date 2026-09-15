@@ -1,12 +1,12 @@
 {
   "source": "BC economics dashboard",
-  "sourceCommit": "c37074774abd8b2061e03fcb0461d38579ecb806",
+  "sourceCommit": "b435335a959678a2b294266bd4d1933dbfb8c875",
   "basePath": "/checkmi/",
   "files": [
     {
       "file": "index.html",
       "bytes": 668,
-      "sha256": "8641f976dcebb983348a5c58df79448de73f0b5d06589dab7b4586f7d6a5f172"
+      "sha256": "6ed183cb4a10d8ea72227ed95715e054e547f9223b4ffdc4807c5d69fa52e3b5"
     },
     {
       "file": "favicon.svg",
@@ -15,8 +15,8 @@
     },
     {
       "file": "业务逻辑说明.md",
-      "bytes": 109577,
-      "sha256": "eb0fd83b2a5d9165d3fc61671dd6e6d1c25358b4d3a030d213bee419490beacd"
+      "bytes": 111335,
+      "sha256": "740429ed5f8c9ea0e210d5a8ff6d547b51c10bbcf4123eea999c467a022ae5de"
     },
     {
       "file": "templates/经营测算_标准底表.xlsx",
@@ -29,29 +29,29 @@
       "sha256": "cd9f7c0e0944e289affd568c7ee41b385284947166a58f588996d0958ae34600"
     },
     {
-      "file": "assets/index-Ct_VEldo.js",
-      "bytes": 986234,
-      "sha256": "c532d0e88b51f0c50e3afea4a2554d6944c3fc5e2d21394eaa31dbe99ec1cf43"
+      "file": "assets/index-8F65fNPq.js",
+      "bytes": 987944,
+      "sha256": "11ca955837181d7faa91b5633a1250223a66a40b707f4cec832464ac946a7b32"
     },
     {
-      "file": "assets/index-DJtxS5fA.css",
-      "bytes": 255800,
-      "sha256": "dc1f925b46a44dfe96be26326e059daebfc8ff7d566dfc130c3f581cde649dbf"
+      "file": "assets/index-6VVvawae.css",
+      "bytes": 255923,
+      "sha256": "dbca9ff0eb518518b7b61bc12188e3cf0f927a6f8bfed8c53d079412813def18"
     },
     {
-      "file": "assets/exceljs.min-D3l-QYOP.js",
+      "file": "assets/exceljs.min-CWA2Lpa-.js",
       "bytes": 929913,
-      "sha256": "8a90bf2405aefb7fd3d328428f0b5ac249ca62c73f492e2d10514c33aa56dda5"
+      "sha256": "099f1a49f40bef0a4482177dc833fe2e98b0c1ebd767eb17dd8769d68ef51626"
     },
     {
-      "file": "assets/export-pnl-template-F5KfODCo.js",
+      "file": "assets/export-pnl-template-BSmSr369.js",
       "bytes": 10816,
-      "sha256": "8c81518c7a622d6f58f43f244341c6c0a5d32719e1cd3f49133e418f950ee8d4"
+      "sha256": "11ab2860c29b794b8080b191a1bb2aa4304e2c27f3cdb1473c7bf66f59eb8ecd"
     },
     {
-      "file": "assets/export-profit-loss-D8qBKdyg.js",
+      "file": "assets/export-profit-loss-CIKo1sxk.js",
       "bytes": 7944,
-      "sha256": "a15d93b2783cfd38e9fa34242878fb2dd0468588bd721e23c27e5e1bb77d7d69"
+      "sha256": "4de2c6ec3a8d55cd22019a8260ceb4d03a774fde38cca93e7a345a2a2ce08163"
     }
   ]
 }

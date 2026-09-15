@@ -1,5 +1,11 @@
 # Checkmi maintenance
 
+## Centered model values and cash payback cards · revision66
+
+Source b435335a959678a2b294266bd4d1933dbfb8c875 centers contribution numeric/share values and every annual model matrix header/value. Share tracks position independently to preserve the percentage center and existing denominator. Cash snapshot reuses overview card styling for NPV, cumulative cash, maximum funding gap and static payback. Payback uses selected annual snapshot flows, first period t=0, construction included, no discounting, first cumulative recovery interpolated within the year; unrecovered/no-deficit/missing and later renewed deficit states are explicit. Cash remains independent of operating assumptions. Removes obsolete original-template IRR/payback footer constants.
+
+Five payback unit tests, TypeScript, lint and source build pass. Cash browser verification independently reconciles both methods/rate changes, unchanged cash under operating edits and no-cash import, centered text and four/two-column card geometry at1366/390. Existing overview-performance, model-overview and long-model-names pass with shares, saved scopes, Mix, values and drilldown intact. Screenshots reviewed. Business1.66/public mirror and technical/Agent notes synchronized. Publish only personal /checkmi/; no homepage entry or Sites sync.
+
 ## Overview annotation polish · revision65
 
 Source c37074774abd8b2061e03fcb0461d38579ecb806 centers contribution subject/unit headers, compacts performance legends by content width, and labels horizontal model bars with actual selected measures. Two-decimal amounts and percent suffixes follow the chosen units; signed/null semantics and subsecond reveal remain. Removes page footer and swap button, labels headline volume as 销量, and assigns a distinct combination-chart benchmark icon. Financial engine, source metadata and Excel contracts unchanged.
