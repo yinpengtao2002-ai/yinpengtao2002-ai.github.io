@@ -1,5 +1,9 @@
 # Checkmi maintenance
 
+## Centered metric family headings · revision64
+
+Source d6cc3ff8a623773c502244681ba60374b1626791 centers the three existing model metric group headings. No change to the accepted contribution table, controls, financial calculations or Excel contracts. Source build and existing overview-performance checks pass; text geometry verifies centered headings at1366/390 with no horizontal overflow. Business1.64 and Agent notes synchronized. Publish personal /checkmi/ only.
+
 ## Metric families and nine-field contribution redesign · revision63
 
 Sourcea9c91e026b8a8880ccca2b139ecd2cfb5511b415 groups all model metric buttons as volume/revenue/unit revenue, gross total/unit/margin, and EBIT total/unit/margin. The contribution table keeps its9 existing fields, now in independent columns under3 group headers with aligned numbers. Narrow layouts show the same fields and units in per-model cards; no horizontal scroll or metadata subtitles. Preserve existing model identity, order, all-model share denominator, default metric, global scopes and data/Excel calculations.
