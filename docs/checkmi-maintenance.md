@@ -1,5 +1,11 @@
 # Checkmi maintenance
 
+## Overview annotation polish · revision65
+
+Source c37074774abd8b2061e03fcb0461d38579ecb806 centers contribution subject/unit headers, compacts performance legends by content width, and labels horizontal model bars with actual selected measures. Two-decimal amounts and percent suffixes follow the chosen units; signed/null semantics and subsecond reveal remain. Removes page footer and swap button, labels headline volume as 销量, and assigns a distinct combination-chart benchmark icon. Financial engine, source metadata and Excel contracts unchanged.
+
+TypeScript, lint and source build pass. overview-performance verifies all nine label values against aggregated records and existing scenario/table/benchmark behavior. operating-bridge, long-model-names and continuous parameter-interaction pass. Rendered review checks all eight annotations, two/four-item legends, positive/negative values and1366/390 geometry without overflow. Business1.65/public mirror and Agent notes synchronized. Publish only personal /checkmi/, without homepage entrance or Sites synchronization.
+
 ## Centered metric family headings · revision64
 
 Source d6cc3ff8a623773c502244681ba60374b1626791 centers the three existing model metric group headings. No change to the accepted contribution table, controls, financial calculations or Excel contracts. Source build and existing overview-performance checks pass; text geometry verifies centered headings at1366/390 with no horizontal overflow. Business1.64 and Agent notes synchronized. Publish personal /checkmi/ only.
