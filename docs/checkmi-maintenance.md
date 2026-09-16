@@ -1,5 +1,9 @@
 # Checkmi maintenance
 
+## Equals-sign waterfall legends · revision75
+
+Source 34d0abfde28b4d596c17a27f236ef84b46ac4163 changes only the inline legend separator: name = formula RHS or name = 数据直接接入. No enclosing parentheses. Wrapping, layout, amounts and financial logic are unchanged. Business1.75/public mirror and Agent/reference docs synchronized. Production build, diff check and the existing account-attribution browser suite pass, including exact labels, own-column totals, no below-chart duplicates and long labels without overlap/clipping at1366/390; screenshot inspected. Publish personal /checkmi/ only, with release/routing tests and Vercel/live artifact/browser verification.
+
 ## Inline waterfall legend formulas · revision74
 
 Source b91fdc6095eb359a698394df5c24b660df10333a moves formula RHS into parentheses immediately after each right-hand waterfall legend name. Direct input uses 数据直接接入. Own-column totals follow the same placement; no formula blocks or repeated lists remain below the diagrams. Long labels wrap with independent vertical space and connectors, preserving exact segment proportions, signed in-bar amounts and small/zero annotations. Account page/P&L tooltip keep full formulas; calculations/imports/exports are unchanged.
