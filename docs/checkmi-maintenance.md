@@ -1,5 +1,14 @@
 # Checkmi maintenance
 
+## Account attribution, aligned benchmarks and chart replay · revision71
+
+Sourcebbf9c894439bb154e71ef562894b6e9184c27cb7 adds the 科目归因 page with searchable source/formula/parameter/downstream explanations reused by waterfall/P&L hover. Actual P&L delta-anchored taxes and fixed group budgets, standard source formulas, independent custom subjects and reconciliation differences remain distinct. MSRP/net/gross/EBIT total hovers show only their own bar/value/formula; other components retain ranked signed stacks and add formulas. P&L click still opens records.
+
+Visible names are 项目总览 and 项目参数; bottom model annual line removed. Explicit selector/scenario/page/mode changes replay bars, curves, dots and numbers in750ms; numeric edits remain immediate and scale subscriptions isolated. Benchmark global year/model selections affect the whole page. Annual/model sections pair gross and EBIT, sharing category axes across independent datasets with grouped per-unit bars and rate lines, null gaps, weighted values and synchronized responsive pages. No sums across datasets, totals or deltas introduced.
+
+Business1.71/public mirror and Agent/reference docs synchronized.218 source tests, types, focused lint and production build pass. Browser account-attribution, benchmark-upload, overview-performance, model-overview, operating-bridge, parameter-interaction and chart-update pass, covering real multi-format imports, hover explanations/record drilldown, categories/filters/missing gaps, replay and stable drags,1366/390 layouts and clean runtime. Screenshots inspected. Financial engine, Excel templates/exports and cash untouched. Publish personal /checkmi/ only, with exact asset/provenance verification. The16 personal deployment/routing contract tests pass. Local full-site Turbopack is blocked by the machine native-binding policy; its Webpack fallback cannot resolve the pre-existing Perspective alias (configured only for Turbopack). No unrelated application/configuration changes were made; the Linux Vercel production build and post-deploy artifact/browser checks are the release gate.
+
+
 ## Concise saved assumptions · revision70
 
 Sourcefd31447dadbe0279492f14ad86a2eabd8c2fc23e replaces repeated source/scope prose with effective changed global inputs and grouped model/year, fee and Mix settings. Default percentages/tax/fixed-total copy and singleton source metadata are omitted. Keep real scope restrictions, absolute-vs-percentage distinctions, explicit zero overrides, targets and exact Mix/fee values; group only matching full identities, settings and real consecutive years. Baseline has no disclosure. The second summary column is 调整摘要; its220ms height transition is reversible and respects reduced motion. Desktop rows fit content, mobile retains six fields without overflow; redundant bridge note removed. Calculations, snapshot state, deletion, imports and Excel are unchanged.
