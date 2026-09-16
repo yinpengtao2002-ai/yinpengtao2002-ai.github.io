@@ -1,5 +1,11 @@
 # Checkmi maintenance
 
+## Inline waterfall legend formulas · revision74
+
+Source b91fdc6095eb359a698394df5c24b660df10333a moves formula RHS into parentheses immediately after each right-hand waterfall legend name. Direct input uses 数据直接接入. Own-column totals follow the same placement; no formula blocks or repeated lists remain below the diagrams. Long labels wrap with independent vertical space and connectors, preserving exact segment proportions, signed in-bar amounts and small/zero annotations. Account page/P&L tooltip keep full formulas; calculations/imports/exports are unchanged.
+
+Business1.74/public mirror and Agent/reference docs synchronized. Types, focused lint,18 account/waterfall tests, production build and diff check pass. Browser account-attribution and operating-bridge pass: inline formulas/fallback, own-column hovers, no duplicate blocks, long tax/manufacturing/direct-input text without overlap/clipping at1366/390, signed totals/unit amounts, filters/edits and zero-sales. Popup screenshots inspected. The16 personal release/routing checks gate sync; production Vercel and live asset/browser checks gate publication. Preserve the existing local native-build limitation, personal /checkmi/ only, no homepage entry or Sites sync.
+
 ## Formula-only account reference · revision73
 
 Source 70fa4ea0a21847d1354d26f2c9a3de43e4015704 removes account definitions from the catalog, P&L tooltip and waterfall popover. Each shows only a basic formula or exactly 数据直接接入. The two-column heading is 科目 / 计算公式; retained search/classification uses formulas and names. Aggregate sums, taxes, warranty and profit relationships use the signed ledger convention. Own-column totals, ranked component stacks and record clicks remain intact; no financial/import/export calculation changes.
