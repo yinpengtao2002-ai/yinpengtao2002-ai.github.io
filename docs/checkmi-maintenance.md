@@ -1,5 +1,11 @@
 # Checkmi maintenance
 
+## Concise business account glossary · revision72
+
+Source 9cf1ae09550d1cced2ea7bce59d851afec7a1166 replaces the verbose account explanations with one short business definition and optional basic formula per account. The catalog has two columns (科目 / 说明), retaining search and classification. Waterfall and P&L hovers reuse the same concise definitions; dynamic adjustment logic, source metadata, input/dependency labels and downstream prose are removed. Custom parent identities, own-value total hovers, ranked component stacks and source-record clicks remain intact.
+
+Business 1.72/public mirror and Agent/reference docs synchronized. All 218 source tests, TypeScript, focused lint, production build and diff check pass. The production-preview account-attribution browser suite passes at 1366/390, covering concise catalog/search, shared hovers, record drilldown, chart replay and benchmark filters/axes; screenshot reviewed. Financial/import/export behavior is unchanged. Publish only personal /checkmi/ with exact asset/provenance verification. The previously recorded local personal-site native-build limitation remains; Linux Vercel build and live artifact/browser checks gate publication.
+
 ## Account attribution, aligned benchmarks and chart replay · revision71
 
 Sourcebbf9c894439bb154e71ef562894b6e9184c27cb7 adds the 科目归因 page with searchable source/formula/parameter/downstream explanations reused by waterfall/P&L hover. Actual P&L delta-anchored taxes and fixed group budgets, standard source formulas, independent custom subjects and reconciliation differences remain distinct. MSRP/net/gross/EBIT total hovers show only their own bar/value/formula; other components retain ranked signed stacks and add formulas. P&L click still opens records.
