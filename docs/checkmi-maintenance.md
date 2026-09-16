@@ -1,5 +1,11 @@
 # Checkmi maintenance
 
+## Formula-only account reference · revision73
+
+Source 70fa4ea0a21847d1354d26f2c9a3de43e4015704 removes account definitions from the catalog, P&L tooltip and waterfall popover. Each shows only a basic formula or exactly 数据直接接入. The two-column heading is 科目 / 计算公式; retained search/classification uses formulas and names. Aggregate sums, taxes, warranty and profit relationships use the signed ledger convention. Own-column totals, ranked component stacks and record clicks remain intact; no financial/import/export calculation changes.
+
+Business 1.73/public mirror and Agent/reference docs synchronized. All 218 source tests, types, focused lint, production build and diff check pass. Production-preview account-attribution checks formula-only content and fallback, all hovers/drilldown, selector replay, benchmark filters/axes and clean 1366/390 layout; screenshots inspected. Publish only personal /checkmi/ with matching asset hashes and live browser checks. The previously recorded local personal-site native-build limitation remains; Linux Vercel production build is the release gate.
+
 ## Concise business account glossary · revision72
 
 Source 9cf1ae09550d1cced2ea7bce59d851afec7a1166 replaces the verbose account explanations with one short business definition and optional basic formula per account. The catalog has two columns (科目 / 说明), retaining search and classification. Waterfall and P&L hovers reuse the same concise definitions; dynamic adjustment logic, source metadata, input/dependency labels and downstream prose are removed. Custom parent identities, own-value total hovers, ranked component stacks and source-record clicks remain intact.
