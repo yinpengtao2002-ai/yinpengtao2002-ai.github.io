@@ -1,5 +1,11 @@
 # Checkmi maintenance
 
+## Scenario animation and preview navigation · revision77
+
+Source 8d902e1dc88dd308e82a157330c83910c0005d9d restores comparison animation on explicit basis, metric, scope and waterfall endpoint changes. Keep series UUID identity so only a newly added scenario receives new750ms bar/line/point windows; existing schemes and bridges stay displayed. Numeric edits remain immediate, snapshot deduplication/deletion/rollover unchanged. Benchmark/cash navigation is subdued neutral gray and remains usable.
+
+Root cause reproduced with a failing browser assertion (unit switch annual lines remained finished), then passed after explicit chart view keys. Four browser suites pass: scenario-motion, chart-update, scenario-removal and parameter-interaction, including five additions/rollover, exact survivor animation start times, point clipping, signed zero origins, repeated sliders,1366/390 and reduced motion.17 focused finance/identity tests, types, focused lint, build and diff check pass; screenshot inspected. Business1.77/public mirror and Agent/reference docs synchronized. Personal /checkmi/ only, with16 release/routing tests and Vercel/live checks; preserve existing native-build limitation and no home entry/Sites sync.
+
 ## Overview simplification and variant terminology · revision76
 
 Source 1a20596bd73a6756ccdfd65d834e77fd739a4fcf moves the MSRP→EBIT waterfall to the end of project overview and labels signed account/net-revenue percentages only after the revenue subtotal (zero revenue:—). Total/unit shares match. Remove only the overview model-dimension gross/EBIT combo pair; annual performance, contribution, variant bars/matrix and benchmark charts remain. Visible labels use 版型, demo names follow, actual uploaded names remain unchanged; old/new standard headers both import. Preserve original complete-template path/sheet/style, while filtered exports use updated visible names.
