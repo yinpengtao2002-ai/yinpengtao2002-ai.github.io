@@ -1,12 +1,12 @@
 {
   "source": "BC economics dashboard",
-  "sourceCommit": "34d0abfde28b4d596c17a27f236ef84b46ac4163",
+  "sourceCommit": "1a20596bd73a6756ccdfd65d834e77fd739a4fcf",
   "basePath": "/checkmi/",
   "files": [
     {
       "file": "index.html",
       "bytes": 668,
-      "sha256": "a7e142f0c8abce129b8352bf632d4d3d07aaf652dc4d0e525e4a80ff798139f4"
+      "sha256": "cb866d83a6b9e603ea66e08e6bfa194ecfa4069b85dcb4d96f7803ef06022585"
     },
     {
       "file": "favicon.svg",
@@ -15,8 +15,8 @@
     },
     {
       "file": "业务逻辑说明.md",
-      "bytes": 116769,
-      "sha256": "1001c72e98e95a78dbc8c6c580ff56246da168c005081577d8ab8e730c86c3e8"
+      "bytes": 116354,
+      "sha256": "41e7b9bcc63a6fb531b99b1a70e40b2450b941386c934dff04d10f8e500bd678"
     },
     {
       "file": "templates/经营测算_标准底表.xlsx",
@@ -29,9 +29,9 @@
       "sha256": "cd9f7c0e0944e289affd568c7ee41b385284947166a58f588996d0958ae34600"
     },
     {
-      "file": "assets/index-BZ2T5UZy.js",
-      "bytes": 1009785,
-      "sha256": "50cb6f01b190bac6ba262e9ef8fffcfaef3d3ad36832f95a37a3464638f8d8b4"
+      "file": "assets/index-BZFnLta8.js",
+      "bytes": 1010022,
+      "sha256": "b1086e48f0dcaa5037e586cfaf51fcce38e1f41832afc0c5e37a3cd3ab8b3217"
     },
     {
       "file": "assets/index-D5aJnceY.css",
@@ -39,19 +39,19 @@
       "sha256": "561f6cce84982a2af3b049ad2e6cd3fa6c1852baed65a0776d812563c4b4366e"
     },
     {
-      "file": "assets/exceljs.min-UqzYeVgf.js",
+      "file": "assets/exceljs.min-DkPoEMVG.js",
       "bytes": 929913,
-      "sha256": "9ea6cee08a5dd556ad7fc962472436565ceea4793e9f5d15663e8fc6b76e1a5b"
+      "sha256": "da17ed166196b83ab10f0e988a6c6336fb3636001ea4652380ffb4d1d7727f00"
     },
     {
-      "file": "assets/export-pnl-template-e6tB6xi5.js",
+      "file": "assets/export-pnl-template-BTU8dfmL.js",
       "bytes": 10816,
-      "sha256": "97b9add96ae91490dfecd22f05c50a83279a0eced6261318d2433c8359b8178c"
+      "sha256": "800383e73de16a2edf58233594be7977943e90d71a26c16d7fddd262033ea086"
     },
     {
-      "file": "assets/export-profit-loss-BXmPtSjh.js",
+      "file": "assets/export-profit-loss-DEIPgm7d.js",
       "bytes": 7944,
-      "sha256": "561c2837dd744c866701b29a34b0d4326ffe53720676954bd3b8cda6b2b72788"
+      "sha256": "e2e6055c0d0b28fddd411af7c8ec8a85fc4c49d227b151730caddc7ba03aa1b4"
     }
   ]
 }

@@ -1,5 +1,12 @@
 # Checkmi maintenance
 
+## Overview simplification and variant terminology · revision76
+
+Source 1a20596bd73a6756ccdfd65d834e77fd739a4fcf moves the MSRP→EBIT waterfall to the end of project overview and labels signed account/net-revenue percentages only after the revenue subtotal (zero revenue:—). Total/unit shares match. Remove only the overview model-dimension gross/EBIT combo pair; annual performance, contribution, variant bars/matrix and benchmark charts remain. Visible labels use 版型, demo names follow, actual uploaded names remain unchanged; old/new standard headers both import. Preserve original complete-template path/sheet/style, while filtered exports use updated visible names.
+
+All220 source tests, TypeScript, focused lint, production build and diff check pass. Eight browser suites cover signed ratios/exclusions, final order,1366/390 label geometry, long names/pagination, repeated drags, scenarios, both imports and filtered/full exports. Finished waterfall screenshots inspected. Business1.76/public mirror and Agent/reference docs updated. Publish personal /checkmi/ only, gated by16 release/routing checks, Vercel production and live artifact/browser checks. Existing local personal-site native-build limitation remains; no homepage entry or Sites sync.
+
+
 ## Equals-sign waterfall legends · revision75
 
 Source 34d0abfde28b4d596c17a27f236ef84b46ac4163 changes only the inline legend separator: name = formula RHS or name = 数据直接接入. No enclosing parentheses. Wrapping, layout, amounts and financial logic are unchanged. Business1.75/public mirror and Agent/reference docs synchronized. Production build, diff check and the existing account-attribution browser suite pass, including exact labels, own-column totals, no below-chart duplicates and long labels without overlap/clipping at1366/390; screenshot inspected. Publish personal /checkmi/ only, with release/routing tests and Vercel/live artifact/browser verification.
