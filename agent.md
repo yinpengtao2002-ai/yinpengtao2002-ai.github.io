@@ -175,6 +175,7 @@ Do not delete stale Markdown files without explicit user confirmation.
 
 ## Recent Gotchas
 
+- Perspective's browser engine must import the explicit browser entry, not the package root that resolves to its Node HTTP/file server during SSR. Run the postbuild function-bundle guard before publishing; broad file tracing can otherwise pull development dependencies into the Vercel function.
 - CSP is attached to the initial document and survives Next client navigation. Keep `wasm-unsafe-eval` in the shared document policy so Perspective BI and Goalkeeper also work when entered from the homepage/catalog; do not add JavaScript `unsafe-eval` in production.
 - Route entry animations must keep a stable wrapper around Next's children. A pathname-keyed `AnimatePresence` wrapper remounts a new route twice and can clear form input or restart browser engines.
 - Monthly Trend retains its engine state during client navigation; `initApp()` must rebuild both controls and charts on re-entry.

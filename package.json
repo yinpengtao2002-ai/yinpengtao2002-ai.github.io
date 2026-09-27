@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "node scripts/check-function-bundles.mjs",
     "build:vercel": "npm run build",
     "start": "next start",
     "lint": "eslint",

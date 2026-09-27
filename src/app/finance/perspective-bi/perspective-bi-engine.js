@@ -1,4 +1,6 @@
-import perspective from "@perspective-dev/client";
+// The package root selects a Node HTTP/file server during Next's SSR build.
+// This engine runs only in the browser; keep those server dependencies out.
+import perspective from "@perspective-dev/client/dist/esm/perspective.js";
 import perspectiveViewer from "@perspective-dev/viewer";
 import "@perspective-dev/viewer-datagrid";
 import "@perspective-dev/viewer-d3fc";
