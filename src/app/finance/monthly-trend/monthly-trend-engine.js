@@ -2138,6 +2138,7 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
         bindControls();
 
         if (state.initialized) {
+            renderColumnControls();
             renderAll();
             return;
         }

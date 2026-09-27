@@ -352,10 +352,10 @@ test("spreadsheet parser uses the patched SheetJS npm alias and matching browser
 });
 
 test("Next runtime, Sharp and PostCSS dependencies stay on patched versions", () => {
-  assert.equal(packageData.dependencies?.next, "16.2.11");
-  assert.equal(packageData.dependencies?.sharp, "0.35.0");
-  assert.equal(packageData.devDependencies?.["eslint-config-next"], "16.2.11");
-  assert.equal(packageData.overrides?.sharp, "0.35.0");
+  assertVersionAtLeast(packageData.dependencies?.next, "16.3.6", "Next");
+  assertVersionAtLeast(packageData.dependencies?.sharp, "0.35.4", "Sharp");
+  assert.equal(packageData.devDependencies?.["eslint-config-next"], packageData.dependencies?.next);
+  assert.equal(packageData.overrides?.sharp, packageData.dependencies?.sharp);
   assert.equal(packageData.overrides?.next?.postcss, "8.5.25");
 
   const installedNext = packageLockData.packages?.["node_modules/next"];
@@ -363,9 +363,9 @@ test("Next runtime, Sharp and PostCSS dependencies stay on patched versions", ()
   const installedEslintConfig = packageLockData.packages?.["node_modules/eslint-config-next"];
   const installedNextPostcss = packageLockData.packages?.["node_modules/next/node_modules/postcss"];
 
-  assert.equal(installedNext?.version, "16.2.11");
-  assert.equal(installedSharp?.version, "0.35.0");
-  assert.equal(installedEslintConfig?.version, "16.2.11");
+  assertVersionAtLeast(installedNext?.version, "16.3.6", "Resolved Next");
+  assertVersionAtLeast(installedSharp?.version, "0.35.4", "Resolved Sharp");
+  assert.equal(installedEslintConfig?.version, installedNext?.version);
   assert.ok(installedNextPostcss, "Next should keep a resolved PostCSS dependency in the lockfile");
   assertVersionAtLeast(installedNextPostcss.version, "8.5.25", "Next nested PostCSS");
   assert.notEqual(installedNextPostcss.version, "8.4.31");

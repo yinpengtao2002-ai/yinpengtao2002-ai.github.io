@@ -9,7 +9,7 @@ test("production pages send the hardened content security policy", async ({ page
   expect(policy).not.toContain("'unsafe-eval'");
 });
 
-test("goalkeeper route mounts its WebAssembly runtime under an isolated CSP", async ({ page }) => {
+test("goalkeeper direct entry mounts its WebAssembly runtime under the CSP", async ({ page }) => {
   const consoleErrors: string[] = [];
   page.on("console", (message) => {
     if (message.type() === "error") consoleErrors.push(message.text());

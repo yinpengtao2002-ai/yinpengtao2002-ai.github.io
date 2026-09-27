@@ -8,7 +8,9 @@ const upgradeInsecureRequestsDirective = shouldUpgradeInsecureRequests ? ["upgra
 
 const baseContentSecurityPolicyDirectives = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' blob:",
+  // CSP belongs to the document, so client navigation into WASM tools must
+  // also work from the homepage/catalog. This does not permit JavaScript eval.
+  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:",
   "script-src-attr 'none'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
@@ -94,6 +96,17 @@ const goalkeeperHeaders = [
   ...sharedSecurityHeaders,
 ];
 
+// The standalone BC dashboard can read user-selected HTTPS JSON data sources.
+// Keep this capability scoped to /checkmi; the rest of the site stays same-origin.
+const checkmiHeaders = [
+  ...denyFramingHeaders.filter((header) => header.key !== "Content-Security-Policy"),
+  {
+    key: "Content-Security-Policy",
+    value: contentSecurityPolicy.replace("connect-src 'self'", "connect-src 'self' https:"),
+  },
+  { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+];
+
 const nextConfig: NextConfig = {
   // Pin the workspace root so Turbopack does not infer the parent home folder.
   turbopack: {
@@ -134,7 +147,15 @@ const nextConfig: NextConfig = {
         source: "/tools/margin-analysis/:path*",
         headers: sameOriginFrameHeaders,
       },
+      {
+        source: "/checkmi/:path*",
+        headers: checkmiHeaders,
+      },
     ];
+  },
+
+  async rewrites() {
+    return [{ source: "/checkmi/", destination: "/checkmi/index.html" }];
   },
 
   async redirects() {

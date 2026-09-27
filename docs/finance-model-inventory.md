@@ -1,6 +1,6 @@
 # 财务模型清单
 
-最后核对时间：2026-08-17
+最后核对时间：2026-09-27
 
 这份文档用于记录当前财务模型库里的模型入口、源码位置、已设计的可视化图表和交互模式。只要财务模型内容发生实质变化，都要同步更新这份文档，包括新增、删除、重命名、迁移模型，增加或移除图表，调整交互方式，调整内测门禁，调整上传模板，或修改模型库元数据。
 
@@ -47,6 +47,18 @@
 | Perspective BI 分析台 | `/finance/perspective-bi` | `src/app/finance/perspective-bi/` | 测试中 |
 
 ## 模型明细
+
+### 独立直达页面：BC 经济性分析
+
+- 路径：`/checkmi/`，不计入上方 7 个模型库入口，也不添加首页、导航、工具卡片、站内搜索或 sitemap 入口。
+- 来源：独立 BC 经济性看板的已验证产物，位于 `public/checkmi/`；原始 Excel 保留在源项目。维护方式见 `docs/checkmi-maintenance.md`。
+- 业务链路：销量与单价 → 净收入 → 毛利 → EBIT → 年度所得税与净利润。固定费用保留总额/单车假设，原表未分解项目保留差额核对；不改写为其他模型的边际口径。
+- 图表：经营指标卡、按毛利和 EBIT 分组的年度柱状图、利润瀑布、车型贡献、情景利润柱状图及年度折线图。顶部固定区合并七项导航、经营参数及项目/年度/车型筛选；参数向下展开，编辑区随正文滚动，收起保留结果。图表采用指标名、单位、范围，去掉阅读顺序建议和重复状态提示，各页大标题保持移除。损益表压缩行距、去掉逐项原表行号，保留点击科目核查来源；情景比较为独立页面。新增项目与车型卡片、单车EBIT/利润贡献图、亏损组合核查，以及保本销量、安全边际、覆盖倍数和年度费用覆盖。各经营页面共享参数与筛选，数据与口径放最后。只保留底表基线与用户调整后两种实时口径，取消系统预设参数组合；用户主动保存的情景继续可比。五项核心指标卡分色呈现主值、关联业务量、基线和中性的增减差额，不评价方案好坏。
+- 展示顺序：损益表全部科目整页展开，取消内部纵向滚动框，表头两行固定在顶端操作区下方；超宽年度列使用页面横向查看。情景比较先看利润规模和年度变化，再看毛利与 EBIT 瀑布图。
+- 交互精简：总览、项目/保本与现金流摘要卡压缩留白和主数字；移除总览的销量结构、盈利分布和安全边际快捷组件。情景比较新增毛利与 EBIT 差额瀑布图，可从可见方案中选择起点/终点，按收入、成本、费用核对到利润合计；保留源表差额和业务范围提示。
+- 明细：损益页删除标题、说明、组数与滚动提示，筛选和 Excel 导出合并一行；在共享筛选下直接呈现分车型、MIX、Sales 至 EBIT 完整损益表，不重复经营总览指标卡；保留来源核查与精排 .xlsx 导出。Excel 包含完整列、项目合计、金额/百分比/百分点格式、冻结表头、层级配色及独立口径参数页，保持原始数值精度。顶部全局“导出结果”及相关代码已删除。
+- 数据：原结构 Excel、独立 BC 中文标准模板、CSV/JSON 及支持浏览器跨域读取的 HTTPS JSON 接口。上传与已存情景仅在当前页面会话保留；现金流为独立快照。
+- 业务文档：`public/checkmi/业务逻辑说明.md`，与源项目同步。
 
 ### 预算实际对比模型
 
@@ -178,6 +190,7 @@
 - 期间统一规范为 `YYYY-MM`；必填数值支持括号负数、百分号和万/亿倍率，空值或非法值会显示来源位置并阻止计算。
 - 根据识别出的维度生成下钻路径和上级筛选控件。
 - 支持在控制台重置筛选。
+- 从模型列表返回后再次进入时，重建指标和筛选控件，并恢复当前会话的上传数据、关注指标与筛选条件。
 - 图表锁定 Plotly 缩放和工具栏，主要通过指标选择和维度筛选完成业务交互。
 - 移动端使用折叠式浮层控制台。
 
@@ -258,6 +271,7 @@
 - 上传后进入字段治理：按时间维度、业务维度、金额指标三类展示识别依据，并支持一键采用系统建议、单位/比率设平均、金额/规模设求和。
 - 支持用 `[字段名]` 公式新增计算指标。
 - 在 Perspective 原生 viewer 中拖拽字段、分组、拆分、筛选、排序和切换图表类型。
+- 站点文档的 CSP 允许 WebAssembly 编译，以支持直接打开及从模型列表进入；JavaScript `eval` 仍禁止。
 - Perspective 原生操作面板通过站内样式变量和 shadow 样式注入统一成白底、细边框和蓝绿橙强调色。
 - 支持「放大工作台」按钮，扩大 BI 分析区域。
 - 解锁后数据只保存在当前页面会话中。
@@ -270,3 +284,108 @@
 - 除非确实能提升业务工作流，否则 Plotly modebar、滚轮缩放和自由拖拽都应保持隐藏。
 - 优先把上传、示例/模板文件、指标选择、期间/月度选择、维度筛选和下钻作为主要交互。
 - 用户上传的维度和用户编辑过的业务名称要能进入图表和表格，不要被内部字段名覆盖。
+
+### /checkmi 本轮更新 · 2026-09-07
+
+- 全局默认之外，可按年度、车型或车型年度设置量价成本假设。局部项替换同项全局值；经营汇总、MIX、保本点与损益同步。
+- 保存情景前填写名称，图例、瀑布图与明细使用同一名称；情景保留并可恢复局部假设。损益 Excel 在口径与参数页列出相关局部值。
+- 盈亏平衡页调整为销量与保本点对比、年度基线与调整后 EBIT 对比、核对表及可展开口径。
+- 车型年度折线与年度柱状联动目前仅为待评审方案，未上线。独立访问路径、原有公开范围和无首页入口约定不变。
+
+### /checkmi 车型对比与批量调参 · 2026-09-07
+
+车型年度折线、年度车型柱状对比和数值下钻已上线，入口为车型分析页顶部及经营总览的车型对比按钮。指标可切换EBIT总额、单车EBIT、毛利率、净收入、销量；原值与调整后可切换。局部假设支持同时勾选多款车型及多个年度，滑块和手填与全局一致。
+
+### /checkmi 逐车型独立幅度与总量 Mix · 2026-09-07
+
+经营参数默认逐车型分行，支持同一指标对A、B设置不同幅度，也可按车型年度展开。新增“总量与 Mix”：明确项目、国家、阀点、年度范围，固定整数总销量，调整一款车型占比后，其余未锁定车型按当前占比分摊；锁定占比保持不变。经营总览、车型对比、损益、保本点和已存情景共享分配结果；Excel列出相关车型年度分配台数。入口仍仅为独立 /checkmi/ 路径。
+
+
+顶部还可独立选择展示情景和对照情景，直接在经营总览、车型分析、盈亏平衡和损益表比较两套已存方案。两套假设在同一查看范围下重算；查看不覆盖当前编辑，独立情景比较页仍保留各方案原保存范围。Excel使用实际情景名称并记录差额双方参数。
+
+
+### /checkmi 调参交互精简 · 2026-09-07
+
+不再逐车型铺开行，也无需切换指标。展开参数即显示六项滑块和手填，默认全局，按需切换车型／年度；已调整车型用快捷标签保留并可直接返回。总量与Mix默认折叠；既有独立幅度、固定总量、全页情景对照和损益导出规则保持。
+
+### Checkmi revision 16
+
+Hidden standalone route still has no catalog/navigation entry. Scenario names now default automatically when blank. The P&L toolbar directly selects any saved scenario and exports its exact assumptions/results; difference mode selects two scenarios. The break-even page and overview card have been removed. Only `/checkmi/` is synchronized; ChatGPT Sites remains unchanged.
+
+### Checkmi revision 17
+
+The overview break-even widget is restored while its standalone page stays removed. Scenario pair selectors sit at the right of the scope filters. Remove the portfolio supporting disclosure and group scenario-profit bars by account (EBIT, net profit). No catalog entry; personal route only.
+
+### Checkmi revision 18
+
+Compact Mix total/year controls and model rows; lifecycle total bars now carry matching annual unit-profit lines. Group allocation always enters EBIT in all scenarios; special adjustments contains fixed-cost mode, income tax and an inactive tariff-rate placeholder. Business logic and XLSX conventions are synchronized. The route remains direct-only, with no catalog or homepage entry.
+
+### Checkmi revision 19
+
+Sales Quantity edits the active Mix total directly; year/model target selectors are always visible, Mix uses compact multi-column model cards, and all annual line charts use smooth connections through original values. Preserve the direct-only personal route, immutable saved scenarios and existing economic rules.
+
+Default checkmi operating demo now varies by year/model while retaining 1.15m lifecycle vehicles. Price/cost variations feed the same economics engine. It is explicitly demo data; original Excel, imports and cash snapshots are unchanged.
+
+## Checkmi revision 20
+
+Lifecycle axes now use explicit zero-inclusive nice ticks and padding, formatted labels and measured-label gutters; raw maxima no longer clip. Demo quantity profiles stay unchanged while price/BOM/expense paths become gradual; unit EBIT is approximately 3149/3595/3888/3793/3461 yuan. Values still flow through the same engine and P&L, with original Excel, imports and cash snapshots untouched. Business documentation is synchronized. Publish only the existing direct /checkmi/ route without adding navigation; Sites stays unchanged.
+
+## Checkmi filter-aware charts · revision 21
+
+Single-year overview hides unchanged lifecycle metrics while retaining actual scenario/unit differences. Model/scenario annual lines hide without two effective years; model bars and scenario profit bars/waterfalls preserve meaningful cross-category comparison. One-model bars also hide, leaving the full numeric matrix and P&L drilldown. Hidden slots collapse, expanded scopes restore charts, and no filters, assumptions or snapshots reset. Saved scenarios retain their captured scope; cash remains independent. Business/Agent docs are synchronized; publish only the existing direct /checkmi/ route without navigation entries or Sites updates.
+
+## Checkmi break-even arrow · revision 22
+
+The overview threshold now shows reference vehicles → selected vehicles with actual scenario names and a signed vehicle-count difference. Both sides use the same filtered records but their own drivers/effective local and Mix assumptions. Round display counts to integer vehicles; displayed delta equals displayed right minus left, with raw thresholds unchanged. Unavailable/unit-mode sides remain gaps and suppress the delta. Remove the obsolete ratio track; retain adjustment action and all financial/P&L/cash rules. Business and Agent documents are synchronized; publish only direct /checkmi/ without a navigation entry or Sites update.
+
+## Conditional checkmi break-even comparison · revision 23
+
+Unchanged effective assumptions show the original single break-even volume with its ratio track and scenario quantity. Only differing assumptions in the current view activate the reference → selected comparison; restoring equivalent settings automatically returns to the plain view. Mix quantity priority and scoped overrides are honored, with existing economics/P&L/cash semantics unchanged. Business doc 1.23 is included; personal /checkmi/ remains direct-only without Sites synchronization.
+
+## Checkmi operating income/cost bridges · revision 24
+
+The direct checkmi overview now has three connected account bridges: tax-inclusive MSRP sales amount → net revenue → gross → EBIT. The first two are new cards using the existing visual format, scoped selected-scenario ledger and cost totals, with consistent labels and live assumption/filter updates. One-year scopes remain meaningful; zero-volume fixed losses and original source residuals are retained. Business doc 1.24 covers the calculation sequence and P&L dependencies. Keep the route outside the public model catalog and navigation; no Sites update.
+
+## Checkmi annual ledger summaries · revision 25
+
+The P&L's second column grouping now summarizes years across selected models instead of separate model-year columns, with annual weighted amounts and matching styled Excel export. MSRP-to-net-revenue now shows available points benefits, showroom discounts, financing and purchase-tax subsidies, other deductions and any unallocated balance. The source financial engine and drilldown remain unchanged. Business doc1.25 is included; keep /checkmi/ direct-only without navigation/catalog entries or Sites synchronization.
+
+## Checkmi parent accounts and detail composition · revision 26
+
+The three overview waterfalls now keep major accounts on the main chart. Hover/click opens signed horizontal detail stacks with matching account names and yuan amounts, including reconciled unallocated balances. Detail follows the displayed scenario and filters; parent totals/P&L exports keep the same values. Annual ledger grouping remains available. Business doc1.26 is included; /checkmi/ stays direct-only without navigation/catalog entries or Sites synchronization.
+
+## Checkmi sorted composition and short chart motion · revision 27
+
+Overview hover detail uses亿元 consistently, sorted vertical segments, amounts on the column and names at right. Each chart page shows its bars and smooth lines with a concurrent0.75-second entry reveal; reduced-motion preference skips it. Source economics, annual P&L and Excel exports are unchanged. Business doc1.27 is included; keep /checkmi/ direct-only without catalog/navigation entries or Sites synchronization.
+
+## Checkmi line-marker synchronization and hover polish · revision 28
+
+Line points and paths now enter together in0.75seconds, including model symbols and hover highlights. The overview waterfall's vertical detail uses muted tones and direct labels; small accounts remain proportional with aligned annotations below the column. Business doc1.28 explains presentation order and unchanged financial dependencies. Keep /checkmi/ direct-only without catalog/navigation entries or Sites synchronization.
+
+## Immediate waterfall hover detail · revision 29
+
+Waterfall hover panels show the complete column and labels directly, without visual transitions. Main-chart synchronized motion and all business values remain. Business doc1.29 is included; /checkmi/ stays direct-only.
+
+## Continuous MSRP-to-gross chart · revision 30
+
+Overview now shows MSRP → net revenue → gross as one continuous chart, with net revenue retained once as a subtotal. The separate gross-to-EBIT chart remains. Waterfalls enter in account order and adapt to narrow containers without horizontal dragging; hover detail stays immediate. Business doc1.30 documents the sequence and unchanged operating dependencies. Keep /checkmi/ direct-only.
+
+## No repeated total composition · revision 31
+
+MSRP, net revenue, gross and EBIT total/subtotal bars now show their chart labels and amounts without duplicate hover detail. Deduction, cost and expense breakdowns remain available, using unchanged financial results and units. Business doc1.31 is included; /checkmi/ stays direct-only.
+
+## Frozen parameter editing · revision 32
+
+Expanded operating parameters remain with the top navigation and filters while the user scrolls result charts. Long settings scroll within the editor, keeping the collapse action and some results visible. P&L frozen headers automatically move below the expanded deck. Business doc1.32 describes this interaction; financial calculations, scenarios and exports are unchanged. Keep /checkmi/ direct-only.
+
+## Model-analysis label · revision 33
+
+The model/annual comparison page is now named 车型分析. Project filters still define the data scope; all model charts and operating calculations are unchanged. Business doc1.33 is included; /checkmi/ remains direct-only.
+
+## Compact parameter save row · revision 34
+
+The parameter editor now places scenario naming and saving at the top with model/year selection, keeping name and save button side by side on narrow screens. Reset and comparison access sit above the sliders, with no duplicated bottom rows. Frozen controls, default names and snapshot behavior are unchanged. Business doc1.34 is included; keep /checkmi/ direct-only.
+
+## Smooth parameter section expansion · revision 35
+
+Mix and special adjustments now stretch and contract over0.24seconds, moving surrounding content continuously and retaining entered settings. Reduced-motion preference skips the effect. Smooth interaction is recorded in source README and Agent guidance; business doc1.35 covers the unchanged calculation and save relationships. Keep /checkmi/ direct-only.

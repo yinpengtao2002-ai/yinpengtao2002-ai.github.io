@@ -135,12 +135,14 @@ test("sensitivity upload labels are rendered as text rather than interpolated HT
 
 test("private iframe and CSP remove uploaded-content script escalation paths", async () => {
   const workbench = await readProjectFile("src/app/Lucas/LucasPrivateWorkbench.tsx");
-  const nextConfig = await readProjectFile("next.config.ts");
+  const { default: nextConfig } = await import("../next.config.ts");
+  const globalRule = (await nextConfig.headers()).find((rule) => rule.source === "/:path*");
+  const policy = globalRule.headers.find((header) => header.key === "Content-Security-Policy").value;
 
   assert.match(workbench, /sandbox="allow-scripts"/);
   assert.doesNotMatch(workbench, /allow-same-origin/);
-  assert.match(nextConfig, /script-src-attr 'none'/);
-  assert.doesNotMatch(nextConfig, /connect-src 'self' https:/);
+  assert.match(policy, /script-src-attr 'none'/);
+  assert.equal(policy.split("; ").find((directive) => directive.startsWith("connect-src ")), "connect-src 'self'");
 });
 
 test("private access tokens use a separate signing secret and scoped payload", async () => {

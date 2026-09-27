@@ -29,6 +29,8 @@ git restore --worktree -- src/lib/data/generated/content.ts
 
 ## Key Structure
 
+- `/checkmi/`: the user-requested standalone BC economics dashboard, served from `public/checkmi/` by a rewrite. No homepage/navigation/model-directory/sitemap entry. Keep the separate upstream source and business documentation; follow `docs/checkmi-maintenance.md` and `docs/checkmi-release.json` for validated asset updates. This explicit route-only request overrides the usual finance card/back-button/shell conventions for this tool. Do not change its original BC ledger to the site's FBP assumptions.
+
 - `src/app/page.tsx`: homepage sections.
 - `src/app/layout.tsx`: site metadata and global shell.
 - `src/app/finance/page.tsx`: finance model listing page.
@@ -173,6 +175,9 @@ Do not delete stale Markdown files without explicit user confirmation.
 
 ## Recent Gotchas
 
+- CSP is attached to the initial document and survives Next client navigation. Keep `wasm-unsafe-eval` in the shared document policy so Perspective BI and Goalkeeper also work when entered from the homepage/catalog; do not add JavaScript `unsafe-eval` in production.
+- Route entry animations must keep a stable wrapper around Next's children. A pathname-keyed `AnimatePresence` wrapper remounts a new route twice and can clear form input or restart browser engines.
+- Monthly Trend retains its engine state during client navigation; `initApp()` must rebuild both controls and charts on re-entry.
 - The margin analysis tool is static frontend files, not Streamlit.
 - Desktop source folders may contain extra files such as `.git`, `.DS_Store`, `.claude`, `.devcontainer`, and `agent.md`; do not blindly copy whole folders into this repo.
 - Markdown bold rendering has CommonMark delimiter edge cases when `**` touches quote/currency characters. Use `src/lib/markdown/normalizeStrongEmphasis.ts` rather than patching article text by hand.
