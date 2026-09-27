@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "postbuild": "node scripts/check-function-bundles.mjs",
     "build:vercel": "npm run build",
+    "check:function-bundles": "node scripts/check-function-bundles.mjs",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit --pretty false",
@@ -19,7 +19,7 @@
     "test:all": "npm run test && npm run test:goalkeeper",
     "audit:prod": "npm audit --omit=dev --audit-level=high",
     "test:e2e": "playwright test",
-    "check": "npm run lint && npm run typecheck && npm run test:all && npm run audit:prod && npm run build:goalkeeper && npm run build:vercel && npm run test:e2e && git diff --exit-code",
+    "check": "npm run lint && npm run typecheck && npm run test:all && npm run audit:prod && npm run build:goalkeeper && npm run build:vercel && npm run check:function-bundles && npm run test:e2e && git diff --exit-code",
     "prepare:vendor": "node scripts/prepare-vendor-assets.mjs",
     "gen": "node scripts/generate-content.js",
     "clean:artifacts": "node scripts/clean-local-artifacts.mjs",

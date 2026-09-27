@@ -45,6 +45,8 @@ npm run gen
 npm run build:vercel
 ```
 
+本地构建完成后可运行 `npm run check:function-bundles` 检查函数依赖体积；完整的 `npm run check` 和 GitHub CI 已包含该步骤。这项检查依赖本地构建清单，不挂到 Vercel 的 `postbuild` 生命周期。
+
 ## 内容来源
 
 内容数据生成到：
