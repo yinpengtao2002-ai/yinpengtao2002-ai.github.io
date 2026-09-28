@@ -1,12 +1,12 @@
 {
   "source": "BC economics dashboard",
-  "sourceCommit": "ce145e3cfd65ccf082038f5c39f946a4b9bb6515",
+  "sourceCommit": "80ce19a5bb5fd3b1ac7b37bd31972068f91ad000",
   "basePath": "/checkmi/",
   "files": [
     {
       "file": "index.html",
       "bytes": 668,
-      "sha256": "730e8c9fa86f464ad646b9d16435ee41511ef19a24da2e959635cbb300172681"
+      "sha256": "c0c68b14713cb668f58b283e082076074a3c0bdb40bb9bf007214f663f7eb908"
     },
     {
       "file": "favicon.svg",
@@ -15,8 +15,8 @@
     },
     {
       "file": "业务逻辑说明.md",
-      "bytes": 19150,
-      "sha256": "edf7ff0dbfe0be384a9a29ef7f375fa21795e3e5a08fa0d056e9d11e3dc13f85"
+      "bytes": 20126,
+      "sha256": "a8be1690c3f1fb9cd81aaf1898ba368070cfea01ad7873de1af01960c4fe52c2"
     },
     {
       "file": "templates/经营测算_标准底表.xlsx",
@@ -29,29 +29,29 @@
       "sha256": "cd9f7c0e0944e289affd568c7ee41b385284947166a58f588996d0958ae34600"
     },
     {
-      "file": "assets/index-7DiHRLbQ.js",
-      "bytes": 1038704,
-      "sha256": "43d62fd6d8545e744b52b83a451e3d35d1d8e3e3534ab15e09b6863221397593"
+      "file": "assets/index-Cm4YgIo5.js",
+      "bytes": 1044245,
+      "sha256": "572f9db7ce1585924aefb9203360dd36a24c68c4a831213eeb1805e13b05430f"
     },
     {
-      "file": "assets/index-n-rqb7Ef.css",
-      "bytes": 274932,
-      "sha256": "b656531f3624410d75ccb3632b727cdc5addb67d9782a067173edc028ae02b6d"
+      "file": "assets/index-DwU2_1uU.css",
+      "bytes": 276584,
+      "sha256": "ad85badd8792b713c147cd01aabef75e3704c25382e1084e6349386d6d7e842d"
     },
     {
-      "file": "assets/exceljs.min-B7D7xaZq.js",
+      "file": "assets/exceljs.min-DSkZ0q4u.js",
       "bytes": 929913,
-      "sha256": "1761a87f18c6d67f716174dbe7e782daa6204891e0030c1ab0e8dedf7272a15d"
+      "sha256": "2a85c6bda5a4a550d4f5fe8d542df9c769f24939c1b7f1db70d8dc9f64c3eec7"
     },
     {
-      "file": "assets/export-pnl-template-BK_5sgmj.js",
-      "bytes": 10203,
-      "sha256": "0a2a0147c991265c1edf08f5a3baf865f00d351e78db7c94fb90c4affabe4028"
+      "file": "assets/export-pnl-template-fCweKsC-.js",
+      "bytes": 9898,
+      "sha256": "d081530d28a0a6c68c206cc207c67c7230664364f92234b8014544cb9dc1a96c"
     },
     {
-      "file": "assets/export-profit-loss-DHZ81jD1.js",
+      "file": "assets/export-profit-loss-DRhibLqg.js",
       "bytes": 7944,
-      "sha256": "a6dc23d88b627813471456b91f1195b1f78967730780220c6b8a33736aaef19a"
+      "sha256": "3810c5b437e094e796c8dd4934347c537dbb680d2b3218ccf71a043ce3b85404"
     }
   ]
 }

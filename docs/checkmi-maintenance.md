@@ -1,5 +1,11 @@
 # Checkmi maintenance
 
+## Compact assumptions and unified account inputs · revision83 · 2026-09-29
+
+Source 80ce19a5bb5fd3b1ac7b37bd31972068f91ad000 replaces the large assumptions block with three highlighted text lines and removes investment. Scope/scenario, volume, weighted price/BOM and R&D/selling/fixed manufacturing amounts use the same ledger. Small amounts use 万元/元. 科目与数据 merges the catalog and uploaded-data editor, with separate model/year selection and formula/input/result on each row. Account inputs support appropriate unit amounts, rates, tariff base/rate and model-year total allocation; aggregate results recalculate and link to their constituents. Zero-sales budgets, source residuals, immutable originals and historical scenarios remain intact. Drafts persist between tabs and block project download/open or source replacement until saved/discarded.
+
+All 249 source tests, TypeScript, focused lint and production build pass. Browser validation covers rate/budget/unit modes, invalid rates, actual project downloads and same-ID reopen, zero sales, original restoration, actual Excel roundtrip, saved-scenario recovery, account hovers/drilldown and 1366/390 layouts. Final compact summary and editor screenshots reviewed. Business documentation 1.83 is synchronized. Project JSON retains calculation modes; Excel preserves current values without promising mode recovery. All 16 website release/routing tests, TypeScript, full-site production build and function-bundle checks pass locally; lint has zero errors and four existing Goalkeeper warnings. Live artifact/browser checks gate publication. Keep /checkmi/ direct-only, without homepage/catalog/sitemap entries or Sites synchronization.
+
 ## Executive assumptions and uploaded-data repairs · revision82 · 2026-09-29
 
 Source ce145e3cfd65ccf082038f5c39f946a4b9bb6515 adds the highlighted 项目关键假设 before overview results. It presents the displayed scenario's scoped volume, sales-weighted gross price/BOM, R&D amortization, selling/delivery/service expenses and fixed manufacturing costs, plus period/model coverage. Preserve historical baseline snapshots, signed credits and zero-volume fixed budgets. Investment has no explicit source field and is marked 待补充; never infer it from R&D amortization or cash deficits. Demo values are labeled.
