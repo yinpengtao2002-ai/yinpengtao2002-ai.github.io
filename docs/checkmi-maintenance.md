@@ -1,5 +1,13 @@
 # Checkmi maintenance
 
+## Executive assumptions and uploaded-data repairs · revision82 · 2026-09-29
+
+Source ce145e3cfd65ccf082038f5c39f946a4b9bb6515 adds the highlighted 项目关键假设 before overview results. It presents the displayed scenario's scoped volume, sales-weighted gross price/BOM, R&D amortization, selling/delivery/service expenses and fixed manufacturing costs, plus period/model coverage. Preserve historical baseline snapshots, signed credits and zero-volume fixed budgets. Investment has no explicit source field and is marked 待补充; never infer it from R&D amortization or cash deficits. Demo values are labeled.
+
+This release also publishes previously local uploaded-data editing, separate model/year navigation, immutable original restoration, saved scenario retention beyond four, consistent comparison scope, downloadable/reopenable project files, null-preserving Excel roundtrips, long names and corrected account/input explanations. Project JSON preserves business state; Excel is a report, not a complete project backup. Uploaded work remains local to the browser.
+
+All 240 source tests, types, focused lint and production build pass. Actual browser checks cover summary weighting/scopes/historical inputs, edits, six saved scenarios, project recovery, bad-file protection, original restoration and actual Excel export/reimport. Desktop 1366 and mobile 390 screenshots reviewed; no page errors or overflow. Business documentation 1.82 mirrors the source. All 16 personal release/routing tests, full-site production build, TypeScript and function-bundle checks pass locally. Site lint has zero errors and four existing Goalkeeper warnings. Production artifact/browser checks gate publication. Keep /checkmi/ direct-only, without homepage/catalog/sitemap entries or Sites synchronization.
+
 ## Scenario animation and preview navigation · revision77
 
 Source 8d902e1dc88dd308e82a157330c83910c0005d9d restores comparison animation on explicit basis, metric, scope and waterfall endpoint changes. Keep series UUID identity so only a newly added scenario receives new750ms bar/line/point windows; existing schemes and bridges stay displayed. Numeric edits remain immediate, snapshot deduplication/deletion/rollover unchanged. Benchmark/cash navigation is subdued neutral gray and remains usable.

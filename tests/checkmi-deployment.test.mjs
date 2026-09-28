@@ -50,7 +50,12 @@ test("checkmi release contains matching assets, downloadable template and busine
   assert.ok(release.files.some(file => file.file === pnlPath));
   const pnl = await readFile(new URL(`../public/checkmi/${pnlPath}`, import.meta.url));
   assert.equal(pnl.subarray(0, 2).toString(), "PK");
-  assert.match(await read("public/checkmi/业务逻辑说明.md"), /生命周期经营表现的分组方式/);
+  const businessRules = await read("public/checkmi/业务逻辑说明.md");
+  assert.match(businessRules, /项目关键假设/);
+  assert.match(businessRules, /含税均价与BOM按销量加权/);
+  assert.match(businessRules, /投资总额目前没有独立接入字段/);
+  assert.match(businessRules, /下载项目 \/ 打开项目/);
+  assert.match(businessRules, /现金流是完整项目的独立上传快照/);
 });
 
 test("checkmi publishes lazy Excel-export imports alongside the entry bundle", async () => {
