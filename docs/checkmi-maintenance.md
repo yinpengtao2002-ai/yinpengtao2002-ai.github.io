@@ -1,5 +1,15 @@
 # Checkmi maintenance
 
+## Compact account numeric inputs · revision85 · 2026-09-29
+
+Source 27b1f35c4783197e3bc0a1eea8d2e4141ccdc5d0 fixes raw floating-point tails in 科目与数据: the demo price now shows190190 and VAT13. Amounts display up to2 decimals, rates4, and budgets in万元6; tiny nonzero values remain visible. Actual typing is untouched, hover exposes the full value, and focus/blur or saving another account never rewrites source precision. Calculation, project files and Excel keep their original precision.
+
+The existing account-workspace browser flow was extended with a failing reproduction, source/typed precision preservation through real project downloads, partial input, explicit zero and tiny nonzero rates. It passes on dev and production builds, at1366/390, without page errors. All257 source tests, TypeScript and focused lint pass; business documentation1.85 is synchronized. Website release/routing checks and deployment evidence are recorded separately. Keep /checkmi/ direct-only.
+
+The user explicitly requests web updates only for now. Do not rebuild EXE/DMG or update the installed desktop app unless requested. Shared source can evolve, but installed desktop versions stay unchanged until a separate desktop release.
+
+Local site validation:16/16 release/routing tests, TypeScript, production build and33 function-bundle traces pass. Lint has0 errors and the same4 existing Goalkeeper warnings. Production artifact hashes and browser behavior are checked after deployment.
+
 ## Compact assumptions and unified account inputs · revision83 · 2026-09-29
 
 Source 80ce19a5bb5fd3b1ac7b37bd31972068f91ad000 replaces the large assumptions block with three highlighted text lines and removes investment. Scope/scenario, volume, weighted price/BOM and R&D/selling/fixed manufacturing amounts use the same ledger. Small amounts use 万元/元. 科目与数据 merges the catalog and uploaded-data editor, with separate model/year selection and formula/input/result on each row. Account inputs support appropriate unit amounts, rates, tariff base/rate and model-year total allocation; aggregate results recalculate and link to their constituents. Zero-sales budgets, source residuals, immutable originals and historical scenarios remain intact. Drafts persist between tabs and block project download/open or source replacement until saved/discarded.
