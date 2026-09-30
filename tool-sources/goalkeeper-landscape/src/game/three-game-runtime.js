@@ -1,6 +1,8 @@
 import { createAudioEngine } from "../audio/audio-engine.js";
 import { MAX_CONCEDED } from "../config/game-config.js";
 import { getContactEventSignature } from "./contact-event.js";
+import { readGamePreferences, saveGamePreferences } from "./game-preferences.js";
+import { createRuntimeLifecycle } from "./runtime-lifecycle.js";
 import {
   createGloveImpactCandidate,
   finalizeGloveImpactReview,
@@ -647,12 +649,10 @@ export async function createThreeGameRuntime(options) {
   var stage = options.stage;
   var documentRef = options.documentRef || document;
   var windowRef = options.windowRef || window;
-  var selectedMode = resolveRuntimeMode(windowRef);
-  var requestedDifficulty = resolveRuntimeDifficulty(windowRef);
-  var selectedTimedDifficulty = requestedDifficulty === "extreme" ? DEFAULT_SHOT_DIFFICULTY : requestedDifficulty;
-  var selectedPenaltyDifficulty = selectedMode === "penalty"
-    ? getModeDifficulty("penalty", requestedDifficulty)
-    : "extreme";
+  var preferences = readGamePreferences(windowRef);
+  var selectedMode = preferences.mode;
+  var selectedTimedDifficulty = preferences.timedDifficulty;
+  var selectedPenaltyDifficulty = preferences.penaltyDifficulty;
   var selectedDifficulty = getModeDifficulty(
     selectedMode,
     selectedMode === "penalty" ? selectedPenaltyDifficulty : selectedTimedDifficulty,
@@ -662,6 +662,7 @@ export async function createThreeGameRuntime(options) {
   var hud = createHud(documentRef);
   windowRef.goalkeeperBootStatus = "audio";
   var audio = createAudioEngine(windowRef);
+  if (!preferences.sound) audio.toggle();
   windowRef.goalkeeperBootStatus = "input";
   var input = createPointerInput(stage);
   windowRef.goalkeeperBootStatus = "three-scene";
@@ -697,7 +698,7 @@ export async function createThreeGameRuntime(options) {
   var groundContactAudioCooldown = 0;
   var outcomeTimer = 0;
   var lingeringBalls = [];
-  var saveAssistEnabled = true;
+  var saveAssistEnabled = preferences.assist;
   var forcedGloveTarget = null;
   var forcedGloveTimer = 0;
   var roundIntroTimer = 0;
@@ -707,7 +708,6 @@ export async function createThreeGameRuntime(options) {
   var penaltyRoundBreakTimer = 0;
   var musicStoppedForResult = false;
   var lastPointerInput = { x: 0, y: 0 };
-  var lastFrame = 0;
   var runningLoop = false;
   var roundStartController = null;
   var debugKeysEnabled =
@@ -719,6 +719,23 @@ export async function createThreeGameRuntime(options) {
       enabled: saveAssistEnabled,
       margin: SAVE_ASSIST_MARGIN,
     });
+  }
+
+  function rememberPreferences() {
+    saveGamePreferences(windowRef, {
+      mode: selectedMode,
+      timedDifficulty: selectedTimedDifficulty,
+      penaltyDifficulty: selectedPenaltyDifficulty,
+      sound: audio.isEnabled(),
+      assist: saveAssistEnabled,
+    });
+  }
+
+  function pauseForInterruption() {
+    if (!state.running || state.paused || state.ended) return;
+    state = togglePause(state);
+    audio.setMusicPaused?.(true);
+    updateHud();
   }
 
   syncSaveAssist();
@@ -791,6 +808,7 @@ export async function createThreeGameRuntime(options) {
     penaltyRoundBreak = null;
     penaltyRoundBreakTimer = 0;
     musicStoppedForResult = false;
+    if (documentRef.hidden) pauseForInterruption();
     updateHud();
   }
 
@@ -1097,14 +1115,18 @@ export async function createThreeGameRuntime(options) {
     scene.updateVisuals(getSnapshot());
   }
 
-  function frame(now) {
-    var dt = lastFrame ? Math.min(0.04, (now - lastFrame) / 1000) : 0;
-    lastFrame = now;
+  function frame(dt) {
     update(dt);
     updateHud();
     render();
-    if (runningLoop) windowRef.requestAnimationFrame(frame);
   }
+
+  var lifecycle = createRuntimeLifecycle({
+    windowRef,
+    documentRef,
+    onFrame: frame,
+    onInterrupt: pauseForInterruption,
+  });
 
   function forcePlan(plan, gloveTarget) {
     if (!state.running || state.ended) resetRound();
@@ -1152,11 +1174,13 @@ export async function createThreeGameRuntime(options) {
     },
     onPause() {
       state = togglePause(state);
+      if (!state.paused) audio.prime();
       audio.setMusicPaused?.(state.paused);
       updateHud();
     },
     onSound() {
       audio.toggle();
+      rememberPreferences();
       updateHud();
     },
     onDifficulty(value) {
@@ -1168,17 +1192,20 @@ export async function createThreeGameRuntime(options) {
         selectedDifficulty = selectedTimedDifficulty;
       }
       director = { ...director, difficulty: selectedDifficulty };
+      rememberPreferences();
       syncSaveAssist();
       hud.updateDifficulty(selectedDifficulty);
     },
     onAssist(value) {
       saveAssistEnabled = Boolean(value);
+      rememberPreferences();
       syncSaveAssist();
       hud.updateAssist(saveAssistEnabled);
     },
     onMode(value) {
       if (state.running && !state.ended) return;
       selectedMode = resolveGameMode(value).id;
+      rememberPreferences();
       selectedDifficulty = getModeDifficulty(
         selectedMode,
         selectedMode === "penalty" ? selectedPenaltyDifficulty : selectedTimedDifficulty,
@@ -1215,13 +1242,16 @@ export async function createThreeGameRuntime(options) {
       resize();
       windowRef.addEventListener("resize", resize);
       windowRef.addEventListener("keydown", onDebugKey);
+      canvas.addEventListener("webglcontextlost", pauseForInterruption);
       updateHud();
-      windowRef.requestAnimationFrame(frame);
+      lifecycle.start();
     },
     stop() {
       runningLoop = false;
+      lifecycle.stop();
       windowRef.removeEventListener("resize", resize);
       windowRef.removeEventListener("keydown", onDebugKey);
+      canvas.removeEventListener("webglcontextlost", pauseForInterruption);
     },
     resize,
     resetRound,
@@ -1276,6 +1306,7 @@ export async function createThreeGameRuntime(options) {
     setMode(value) {
       if (state.running && !state.ended) return false;
       selectedMode = resolveGameMode(value).id;
+      rememberPreferences();
       selectedDifficulty = getModeDifficulty(
         selectedMode,
         selectedMode === "penalty" ? selectedPenaltyDifficulty : selectedTimedDifficulty,
@@ -1290,6 +1321,7 @@ export async function createThreeGameRuntime(options) {
     },
     setSaveAssist(value) {
       saveAssistEnabled = Boolean(value);
+      rememberPreferences();
       syncSaveAssist();
       hud.updateAssist(saveAssistEnabled);
       render();
@@ -1320,6 +1352,7 @@ export async function createThreeGameRuntime(options) {
     dispose() {
       this.stop();
       roundStartController.dispose();
+      input.dispose();
       hud.dispose?.();
       contextRecovery.dispose();
       physics.dispose();

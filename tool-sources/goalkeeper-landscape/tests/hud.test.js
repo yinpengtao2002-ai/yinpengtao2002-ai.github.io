@@ -1001,6 +1001,13 @@ describe("hud", () => {
     expect(pauseClicks).toBe(1);
   });
 
+  it("shows round and score during penalty pauses instead of a nonexistent time limit", () => {
+    const hint = HudModule.getPauseHintText({ mode: "penalty", paused: true, timeLeft: null, shootout: { round: 3, teamGoals: 2, opponentGoals: 1 } });
+    expect(hint).toContain("3");
+    expect(hint).toContain("2:1");
+    expect(hint).not.toContain("秒");
+  });
+
   it("gives context-aware pause hints without blocking the resume action", () => {
     expect(HudModule.getPauseHintText).toBeTypeOf("function");
     const documentRef = createDocument();

@@ -19,7 +19,7 @@ export function createPointerInput(element) {
     return event.target && event.target.closest && event.target.closest("button");
   }
 
-  element.addEventListener("pointerdown", function onPointerDown(event) {
+  function onPointerDown(event) {
     if (shouldIgnore(event)) return;
     event.preventDefault();
     pointer.active = true;
@@ -32,13 +32,13 @@ export function createPointerInput(element) {
         // active pointer before pointerdown reaches this handler.
       }
     }
-  });
+  }
 
-  element.addEventListener("pointermove", function onPointerMove(event) {
+  function onPointerMove(event) {
     if (shouldIgnore(event)) return;
     event.preventDefault();
     updateFromEvent(event);
-  });
+  }
 
   function releasePointer(event) {
     pointer.active = false;
@@ -51,10 +51,18 @@ export function createPointerInput(element) {
     }
   }
 
+  element.addEventListener("pointerdown", onPointerDown);
+  element.addEventListener("pointermove", onPointerMove);
   element.addEventListener("pointerup", releasePointer);
   element.addEventListener("pointercancel", releasePointer);
 
   return {
+    dispose() {
+      element.removeEventListener("pointerdown", onPointerDown);
+      element.removeEventListener("pointermove", onPointerMove);
+      element.removeEventListener("pointerup", releasePointer);
+      element.removeEventListener("pointercancel", releasePointer);
+    },
     getPointer(bounds) {
       return {
         x: Math.max(0, Math.min(bounds.width, pointer.x)),

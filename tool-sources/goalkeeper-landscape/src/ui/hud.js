@@ -429,6 +429,11 @@ export function getEventRibbonPlan(state) {
 }
 
 export function getPauseHintText(state) {
+  if (state?.mode === "penalty") {
+    var shootout = state.shootout;
+    return "第 " + String(shootout?.round || 1) + " 轮 · 比分 "
+      + String(shootout?.teamGoals || 0) + ":" + String(shootout?.opponentGoals || 0);
+  }
   var secondsLeft = getSecondsLeft(state);
   var conceded = state?.conceded || 0;
   var streak = state?.streak || 0;

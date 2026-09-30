@@ -13,16 +13,28 @@ function createFakeStage() {
     addEventListener(type, listener) {
       listeners[type] = listener;
     },
+    removeEventListener(type, listener) {
+      if (listeners[type] === listener) delete listeners[type];
+    },
     setPointerCapture() {
       throw new Error("No active pointer");
     },
     dispatch(type, event) {
-      listeners[type](event);
+      listeners[type]?.(event);
     },
   };
 }
 
 describe("pointer input", () => {
+  it("stops reacting to old stage events after leaving the game", () => {
+    const stage = createFakeStage();
+    const input = createPointerInput(stage);
+    const before = input.getPointer({ width: 844, height: 390 });
+    expect(input.dispose).toBeTypeOf("function");
+    input.dispose();
+    stage.dispatch("pointermove", { clientX: 70, clientY: 720, preventDefault() {} });
+    expect(input.getPointer({ width: 844, height: 390 })).toEqual(before);
+  });
   it("keeps synthetic mobile touches usable when pointer capture is unavailable", () => {
     const stage = createFakeStage();
     const input = createPointerInput(stage);
