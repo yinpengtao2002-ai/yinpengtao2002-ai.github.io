@@ -41,10 +41,13 @@ test("checkmi release contains matching assets, downloadable template and busine
   assert.ok(paths.some((file) => file.endsWith(".css")));
   for (const file of paths) assert.ok(release.files.some((entry) => entry.file === file));
   const bundle = await read(`public/checkmi/${release.files.find((file) => file.file.endsWith(".js")).file}`);
-  assert.ok(bundle.includes("./templates/经营测算_标准底表.xlsx"));
+  assert.ok(bundle.includes("基础数据生成损益"));
+  assert.ok(bundle.includes("待接入系统规则"));
   assert.ok(bundle.includes("./templates/车型损益表_空白公式模板.xlsx"));
   assert.ok(bundle.includes("./业务逻辑说明.md"));
   const template = await readFile(new URL("../public/checkmi/templates/经营测算_标准底表.xlsx", import.meta.url));
+  // Keep the old workbook artifact compatible without advertising a new-plan path.
+  assert.ok(release.files.some(file => file.file === "templates/经营测算_标准底表.xlsx"));
   assert.equal(template.subarray(0, 2).toString(), "PK");
   const pnlPath = "templates/车型损益表_空白公式模板.xlsx";
   assert.ok(release.files.some(file => file.file === pnlPath));

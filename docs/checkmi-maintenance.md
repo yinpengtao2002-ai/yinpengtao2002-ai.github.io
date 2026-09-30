@@ -1,5 +1,13 @@
 # Checkmi maintenance
 
+## Reserved basic-data generation entry · revision86 · 2026-09-30
+
+Source 11474724db17175a709a11d55dc55c62c47e015e replaces the public standard-table choice with 基础数据生成损益, marked 待接入系统规则. The user will provide Mapping later: this release only reserves the entry component, without a basic-plan uploader, rules service, matching or generated P&L. Mapping belongs to the maintenance side, never an ordinary-user upload. The placeholder cannot import or apply an incomplete plan. Switching entry points invalidates in-flight reads and pending previews, without changing applied datasets.
+
+P&L upload/template remain available; legacy XLSX/CSV/JSON parsing and project compatibility remain. Old standard-table download and JSON URL/example controls are retired from the dialog; retain the legacy template artifact for compatibility. Source43 focused import/project checks, TypeScript, lint, build and real-browser P&L/multi-dataset flows pass. Desktop1366/mobile390 final dialog screenshots reviewed. Business documentation1.86 is mirrored. Automatic Mapping calculations and saved rule-version snapshots remain future work. Publish only /checkmi/; no EXE/DMG or installed desktop update.
+
+Local release checks:16/16 route/artifact contracts, site production build, TypeScript and33 function-bundle traces pass. Lint has0 errors and4 existing unrelated Goalkeeper warnings. Deployment and live checks follow the push.
+
 ## Compact account numeric inputs · revision85 · 2026-09-29
 
 Source 27b1f35c4783197e3bc0a1eea8d2e4141ccdc5d0 fixes raw floating-point tails in 科目与数据: the demo price now shows190190 and VAT13. Amounts display up to2 decimals, rates4, and budgets in万元6; tiny nonzero values remain visible. Actual typing is untouched, hover exposes the full value, and focus/blur or saving another account never rewrites source precision. Calculation, project files and Excel keep their original precision.
