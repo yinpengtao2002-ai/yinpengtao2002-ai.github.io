@@ -1,5 +1,15 @@
 # Checkmi maintenance
 
+## Compact editing and selectable rate denominators · revision88 · 2026-09-30
+
+Source 4491761779ed756d0dbbd7abe693e9e0095a02af makes account rows compact, with optional formulas, changed-only original values and a sticky save area. Rate controls show their denominator beside the value. Editable cost/expense/deduction accounts, including imported custom details, support unit amounts or rates; quantity, price and computed results retain their foundational roles. Existing allocation and native tax formulas remain available. The system recommends net revenue, MSRP or absolute BOM as applicable; users can change the denominator. Cycles and missing bases are rejected, zero is preserved, and switching bases converts the current amount where possible.
+
+The shared ledger projects rate-linked amounts through parents while retaining source residuals. Mixed fixed budgets retain the fixed remainder; rate details follow their bases and volume. A new fixed total conflicts with rate details until those details are converted. Scenario absolute fee replacements still take precedence. Individual/batch editing, explanation, project persistence and live parameter amounts use the same contract. Relative batch changes require matching denominators. Mapping and creating new subjects in the browser remain future work.
+
+All275 source tests, TypeScript, focused source lint and production build pass. Tests include162 amount-preserving account/base conversions, real Excel reread, source residuals, custom details, mixed/zero-volume budgets, cycles, scenarios and project restoration. Account workspace, attribution and batch browser workflows pass;1366/982/390 controls were inspected and an actual mobile overlap was fixed with geometry assertions. Business1.88 mirrored. This is a web-only release; no EXE/DMG or installed desktop update. Website build/routing and live evidence are verified separately below.
+
+Website validation:16 release/routing contracts, production build, TypeScript and33 function-bundle traces pass. Lint has0 errors and4 pre-existing Goalkeeper warnings. The release contains15 validated public files; verify their production hashes and the real account/batch browser flows after deployment.
+
 ## Scoped batch calibration and calendar demo · revision87 · 2026-09-30
 
 Source 7e9c030b013a2eb56467f47739d05731a9b3f7c6 adds a collapsible 批量调整 entry in 科目与数据: separate model/year scopes, multiple unit/rate/budget operations, set/add/percentage modes, clipboard rows, protected manual changes, financial/difference preview, one commit and session-scoped undo. A scope budget is allocated once using updated quantities or equal record shares. Parent/detail, duplicate, conflicting custom definitions and rate-driven detail conflicts reject atomically. Pending individual drafts are included explicitly; undo retains work preceding the batch. The user rejected Excel correction roundtrips; existing P&L upload remains available. Mapping generation remains reserved and unavailable.
