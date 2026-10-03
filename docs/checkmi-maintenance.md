@@ -1,5 +1,16 @@
 # Checkmi maintenance
 
+## Project vehicle-year Mapping generation · revision89 · 2026-10-03
+
+Source c45f30926eb86f239807f2c8efdb3e3be21ca385 connects basic-plan XLSX/CSV/JSON to maintenance-prepared Mapping carried in complete project files. One exact vehicle-family/calendar-year rule provides shared unit amounts or rates to its variants; quantity and MSRP remain variant inputs, with an optional explicit BOM override. Ordinary users open the prepared project, inspect coverage/version and upload only their basic plan. Missing projects/rules, incomplete required branches, duplicate rules, parent/detail conflicts and rate cycles cannot apply an invented zero-cost ledger. No actual Xiaomi business assumptions are supplied or published.
+
+Generation reuses the existing ledger and commits to baseline after preview, with the existing replacement warning/reset behavior. Unit/rate inputs remain editable individually or in bulk. Vehicle/variant identity, original rule/version/accounts and BOM source survive project download/reopen and historical snapshots; changing the project configuration does not reprice existing data. Maintenance CLI creates complete files atomically without clobbering prior projects. Mapping custom details are supported; a new-subject browser UI and live database/global rule synchronization remain out of scope.
+
+299 source tests, TypeScript, focused lint and production build pass. Tests include real CLI processes, actual XLSX/CSV/template reads, generated P&L Excel export/reimport, shared variants, missing/zero/conflicts, scenario linkage and immutable provenance. Review fixed uncached Excel formulas silently falling back, duplicate header aliases, custom fixed-detail allocation and unknown unit details becoming zero after unrelated edits. Final new-generation browser flow passes; P&L and benchmark import regressions pass. 1366/390/320 screenshots inspected; no page errors/overflow. Business1.89 mirrored. Only web output is shipped; no EXE/DMG update, public fixture or user data.
+
+Website validation:16 release/routing contracts, production build, TypeScript and33 function-bundle traces pass. Lint has0 errors and4 existing unrelated Goalkeeper warnings. Release contract now checks the usable generation controls and missing-project gating instead of the retired placeholder. The15-file public inventory is verified on production after deployment.
+
+
 ## Compact editing and selectable rate denominators · revision88 · 2026-09-30
 
 Source a0b9e2084339c87d9786090864b8b6bf025edb5e makes account rows compact, with optional formulas, changed-only original values and a sticky save area. Rate controls show their denominator beside the value. Editable cost/expense/deduction accounts, including imported custom details, support unit amounts or rates; quantity, price and computed results retain their foundational roles. Existing allocation and native tax formulas remain available. The system recommends net revenue, MSRP or absolute BOM as applicable; users can change the denominator. Cycles and missing bases are rejected, zero is preserved, and switching bases converts the current amount where possible. Returning to native formulas derives the rate from the current amount rather than restoring the old imported rate; native VAT-rate changes still affect its existing input-tax/surcharge relationship.

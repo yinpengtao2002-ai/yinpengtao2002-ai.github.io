@@ -42,7 +42,10 @@ test("checkmi release contains matching assets, downloadable template and busine
   for (const file of paths) assert.ok(release.files.some((entry) => entry.file === file));
   const bundle = await read(`public/checkmi/${release.files.find((file) => file.file.endsWith(".js")).file}`);
   assert.ok(bundle.includes("基础数据生成损益"));
-  assert.ok(bundle.includes("待接入系统规则"));
+  assert.ok(bundle.includes("当前项目未配置车型规则"));
+  assert.ok(bundle.includes("应用生成的损益"));
+  assert.ok(bundle.includes("上传基础数据文件"));
+  assert.ok(!bundle.includes("待接入系统规则"));
   assert.ok(bundle.includes("./templates/车型损益表_空白公式模板.xlsx"));
   assert.ok(bundle.includes("./业务逻辑说明.md"));
   const template = await readFile(new URL("../public/checkmi/templates/经营测算_标准底表.xlsx", import.meta.url));
@@ -57,6 +60,8 @@ test("checkmi release contains matching assets, downloadable template and busine
   assert.match(businessRules, /三行浅色高亮文字/);
   assert.match(businessRules, /加权售价\/BOM/);
   assert.match(businessRules, /科目与数据/);
+  assert.match(businessRules, /车型＋年度/);
+  assert.match(businessRules, /普通测算用户不上传 Mapping/);
   assert.match(businessRules, /总额分摊/);
   assert.match(businessRules, /不展示投资总额/);
   assert.match(businessRules, /下载项目 \/ 打开项目/);

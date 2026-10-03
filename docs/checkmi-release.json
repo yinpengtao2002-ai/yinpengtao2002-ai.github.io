@@ -1,12 +1,12 @@
 {
   "source": "BC economics dashboard",
-  "sourceCommit": "a0b9e2084339c87d9786090864b8b6bf025edb5e",
+  "sourceCommit": "c45f30926eb86f239807f2c8efdb3e3be21ca385",
   "basePath": "/checkmi/",
   "files": [
     {
       "file": "index.html",
       "bytes": 668,
-      "sha256": "c5964db95ec8df80d83677216e1a867cc84ee39342ce8ba0cc5b4de279f7ab85"
+      "sha256": "218ec92de55d5e06a10439cd01ff31fb47ddd001d32650485c5bda81ed17ff40"
     },
     {
       "file": "favicon.svg",
@@ -15,8 +15,8 @@
     },
     {
       "file": "业务逻辑说明.md",
-      "bytes": 27182,
-      "sha256": "ddd68b3474d5148a394b8a9b8baa3076a70ec6729f24b4431233ca6a5ebfa9b7"
+      "bytes": 29239,
+      "sha256": "5c57fca12262d54e1cc2316dedfb6b14c928a9d85e206c9cbfde4eb630180ba3"
     },
     {
       "file": "templates/经营测算_标准底表.xlsx",
@@ -29,14 +29,19 @@
       "sha256": "cd9f7c0e0944e289affd568c7ee41b385284947166a58f588996d0958ae34600"
     },
     {
-      "file": "assets/index-KqIdIG8z.js",
-      "bytes": 1069945,
-      "sha256": "bb44c40571fd118dd65a3f44fe49c8e2661a3c0b71166f13f7f887d33b658eb5"
+      "file": "assets/index-CB3m0ouD.js",
+      "bytes": 1089964,
+      "sha256": "0b1fb48c3c32eea435568d7eaea8a5904db4466f76bf8719550e0373f1168189"
     },
     {
-      "file": "assets/index-CjetE_MI.css",
-      "bytes": 285977,
-      "sha256": "c24301fdcef4e418423f7c542677879d87fa60f7c2614da1d44700b653960f57"
+      "file": "assets/index-CcDIQCJM.css",
+      "bytes": 289046,
+      "sha256": "145124e9967b725c6f262c1e06c3ffbe2b0cdfabb1a9e32508dfc72666deaeb3"
+    },
+    {
+      "file": "assets/app-B41Aa9ZY.js",
+      "bytes": 24433,
+      "sha256": "b34e977a501b028ce7950af4eaf812364dd3080ed6ab383dcaa789679744b2ca"
     },
     {
       "file": "assets/app-Bl0EwOYq.css",
@@ -44,39 +49,34 @@
       "sha256": "151d814a2b67a1a0f4bba9a40d095ecb270430f133acc7c7a7c6266ab6869679"
     },
     {
-      "file": "assets/app-D8vVEBAd.js",
-      "bytes": 24433,
-      "sha256": "cc468e787cdf9d6535bdf204934dee320b633a2f287e32313c079c85169e29b3"
-    },
-    {
-      "file": "assets/dist-js-BYs1Oh5X.js",
-      "bytes": 1246,
-      "sha256": "6f7428a9a5d6902e56fcedd2e4e45feb5affae01df304a183ff56c5d9aaa360a"
-    },
-    {
-      "file": "assets/dist-js-Br_J0lbt.js",
+      "file": "assets/dist-js-BWDWiUK4.js",
       "bytes": 7425,
-      "sha256": "b0fca4732d9572c054eef16c307bdfd9de259e71af4ba39ce6f6a483348c1e84"
+      "sha256": "c8149d1a823a7cd9b143462d813505252ffa7c7a052a1e7d35d5fdbec74b0965"
     },
     {
-      "file": "assets/exceljs.min-Bvhlgf1y.js",
+      "file": "assets/dist-js-DA2BQoEq.js",
+      "bytes": 1246,
+      "sha256": "9878df84a7e73b9544f7d370d1f5d784e5afc4ef3167e4e152cdc15b35b6ff9f"
+    },
+    {
+      "file": "assets/exceljs.min-DTNi3BAE.js",
       "bytes": 929913,
-      "sha256": "36223623d6baa098f28cec0f787e9f793d91c92a8c79614667fcd38270e76948"
+      "sha256": "52f3cba3edc97e76b1091dfcf72a30e50f7f41eaf036b1ee74259b29194c4a49"
     },
     {
-      "file": "assets/export-pnl-template-0QEZH2R5.js",
+      "file": "assets/export-pnl-template-Bo7pGaMx.js",
       "bytes": 9908,
-      "sha256": "911199c44f86a7e477073b6a2111748db3cf2cac70be1e3b69239aeee6527772"
+      "sha256": "3173605a3156f1aca346548af27b57461fa2218a4f0113e77b5b88e2f909b492"
     },
     {
-      "file": "assets/export-profit-loss-DfQq-_MX.js",
+      "file": "assets/export-profit-loss-DM5zP1wM.js",
       "bytes": 7944,
-      "sha256": "01fb1f4e778ca5cd6b6012dba6373c47b0bd93f686f92483013436d636fd5544"
+      "sha256": "d9c4511bbbf3355f2297d43a56d9846f9e386be4f638438142dc6f036720896a"
     },
     {
-      "file": "assets/window-DbjnNd1g.js",
+      "file": "assets/window-DOkg3C37.js",
       "bytes": 14328,
-      "sha256": "7de2f9b74742fb068d7bb1f810374c8c13aabdec5bc4ee1be6f2527675d914e6"
+      "sha256": "5b3108fcb09cd2068990f49cb09d32f281c6c576eb9d6b0283e989fda84765fc"
     }
   ]
 }

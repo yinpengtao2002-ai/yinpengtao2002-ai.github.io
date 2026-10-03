@@ -1,6 +1,6 @@
 # 财务模型清单
 
-最后核对时间：2026-09-29
+最后核对时间：2026-10-03
 
 这份文档用于记录当前财务模型库里的模型入口、源码位置、已设计的可视化图表和交互模式。只要财务模型内容发生实质变化，都要同步更新这份文档，包括新增、删除、重命名、迁移模型，增加或移除图表，调整交互方式，调整内测门禁，调整上传模板，或修改模型库元数据。
 
@@ -391,3 +391,10 @@ The parameter editor now places scenario naming and saving at the top with model
 ## Smooth parameter section expansion · revision 35
 
 Mix and special adjustments now stretch and contract over0.24seconds, moving surrounding content continuously and retaining entered settings. Reduced-motion preference skips the effect. Smooth interaction is recorded in source README and Agent guidance; business doc1.35 covers the unchanged calculation and save relationships. Keep /checkmi/ direct-only.
+
+
+## Checkmi 车型年度 Mapping 实际生成 · revision89 · 2026-10-03
+
+`/checkmi/` 保留上传损益，并将原预留入口接通为基础计划生成。维护侧把 Mapping 预装进完整项目；普通用户打开后上传车型、版型、年度、销量、售价及可选 BOM，按精确车型年度匹配，同车型年度各版型共享单车费用或费率。规则覆盖、版本、匹配及损益预览后应用到基础；缺失、重复、父子冲突、费率循环均拒绝。无规则时仅上传现成损益。
+
+生成结果沿用单条/批量编辑及共享经营账本；项目保留原 Mapping 快照、人工修改和历史情景，配置更新不会静默重算历史。自定义明细可由维护规则声明；网页新增科目仍是后续范围。不内置实际小米业务费用，维护验证样例不进入网站产物。业务文档1.89；仅网页，EXE/DMG不更新，保留direct-only路由及独立BC模板族。
