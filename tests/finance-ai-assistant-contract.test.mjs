@@ -1565,5 +1565,5 @@ test("finance AI assistant mobile chat balances assistant avatar and user bubble
   assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*\.finance-ai-message\.is-user::after\s*\{[\s\S]*flex:\s*0\s+0\s+32px/s);
   assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*\.finance-ai-message\.is-user\s+\.finance-ai-message-bubble\s*\{[\s\S]*max-width:\s*min\(calc\(100%\s*-\s*var\(--finance-ai-mobile-avatar-gutter\)\s*-\s*32px\),\s*78%\)/s);
   assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*\.finance-ai-message\.is-assistant\s+\.finance-ai-message-bubble\s*\{[\s\S]*width:\s*calc\(100%\s*-\s*var\(--finance-ai-mobile-avatar-gutter\)\)/s);
-  assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*\.finance-ai-assistant-panel:not\(\.is-ready\)\s+\.finance-ai-chat-header\s*\{[\s\S]*padding-top:\s*58px/s);
+  assert.match(styles, /@media \(max-width:\s*760px\)[\s\S]*\.finance-ai-assistant-panel:not\(\.is-ready\)\s+\.finance-ai-chat-header\s*\{[\s\S]*padding-top:\s*70px/s);
 });

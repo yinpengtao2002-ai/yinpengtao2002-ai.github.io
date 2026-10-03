@@ -950,7 +950,7 @@ export default function ChatWidget() {
                                         ? "var(--background)"
                                         : "var(--background)"
                                     : "var(--background)",
-                                fontFamily: isMobileLike ? undefined : CHAT_UI_FONT,
+                                fontFamily: CHAT_UI_FONT,
                                 border: isMobileLike
                                     ? mobileFullscreenMode && keyboardOpen
                                         ? "none"

@@ -479,6 +479,7 @@ body {
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   font: inherit;
+  font-family: var(--font-poppins);
   font-size: 0.875rem;
   font-weight: 600;
   transition:
@@ -622,6 +623,13 @@ body {
 .finance-ai-readonly-pill svg {
   width: 15px;
   height: 15px;
+}
+
+/* Keep the read-only pill clear of the fixed top-right back button. */
+@media (min-width: 761px) {
+  .finance-ai-conversation-demo .finance-ai-chat-header {
+    padding-right: max(0px, calc(232px - (100vw - min(1120px, 100vw - 44px)) / 2));
+  }
 }
 
 .finance-ai-assistant-panel.is-ready .finance-ai-chat-header {
@@ -1848,7 +1856,7 @@ body {
   }
 
   .finance-ai-assistant-panel:not(.is-ready) .finance-ai-chat-header {
-    padding-top: 58px;
+    padding-top: 70px;
   }
 
   .finance-ai-avatar {
@@ -8273,6 +8281,131 @@ h6 {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--muted);
+}
+
+/* Not found page */
+.not-found-page {
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 50% 18%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 42%),
+    var(--background);
+  padding: 6rem 20px 4rem;
+  font-family: var(--font-poppins);
+}
+
+.not-found-shell {
+  width: min(100%, 520px);
+  text-align: center;
+}
+
+.not-found-code {
+  color: color-mix(in srgb, var(--accent) 86%, var(--foreground));
+  font-family: var(--font-hero-display);
+  font-size: clamp(4.4rem, 14vw, 6.5rem);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.not-found-title {
+  margin-top: 18px;
+  color: var(--foreground);
+  font-family: var(--font-hero-display);
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.not-found-copy {
+  margin: 12px auto 0;
+  max-width: 26em;
+  color: color-mix(in srgb, var(--foreground) 58%, var(--muted));
+  font-size: 14.5px;
+  line-height: 1.75;
+}
+
+.not-found-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  margin-top: 26px;
+  border-radius: 999px;
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 14px;
+  font-weight: 650;
+  padding: 0 20px;
+  text-decoration: none;
+  transition: transform 0.2s ease;
+}
+
+.not-found-home svg {
+  width: 16px;
+  height: 16px;
+}
+
+.not-found-home:hover {
+  transform: translateY(-1px);
+}
+
+.not-found-links {
+  display: grid;
+  gap: 8px;
+  margin-top: 30px;
+  text-align: left;
+}
+
+.not-found-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid color-mix(in srgb, var(--foreground) 8%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  color: var(--foreground);
+  padding: 13px 16px;
+  text-decoration: none;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.not-found-link > span {
+  display: grid;
+  gap: 3px;
+}
+
+.not-found-link strong {
+  font-size: 14.5px;
+  font-weight: 650;
+}
+
+.not-found-link span span {
+  color: color-mix(in srgb, var(--foreground) 52%, var(--muted));
+  font-size: 12.5px;
+}
+
+.not-found-link svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  color: color-mix(in srgb, var(--foreground) 40%, var(--muted));
+  transition: transform 0.2s ease;
+}
+
+.not-found-link:hover {
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--border));
+  transform: translateY(-1px);
+}
+
+.not-found-link:hover svg {
+  transform: translateX(3px);
 }
 
 /* Article reader */

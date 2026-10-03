@@ -134,7 +134,7 @@ export default function SiteNavigation() {
                             padding: 6,
                             borderRadius: 12,
                             border: "1px solid var(--border)",
-                            background: "color-mix(in srgb, var(--card) 92%, transparent)",
+                            background: "color-mix(in srgb, var(--card) 97%, transparent)",
                             boxShadow: "var(--site-nav-menu-shadow)",
                             backdropFilter: "blur(16px)",
                             WebkitBackdropFilter: "blur(16px)",
