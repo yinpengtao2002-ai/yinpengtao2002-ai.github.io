@@ -642,7 +642,7 @@ test("home thinking section uses a visual card and a clear index link", () => {
   assert.match(globals, /\.home-thinking-category-link\s*\{/);
   assert.match(globals, /\.home-thinking-featured-meta\s*\{/);
   assert.doesNotMatch(globals, /\.home-thinking-source-pill\s*\{/);
-  assert.match(cssRule(".home-thinking-section"), /align-items:\s*flex-start/);
+  assert.match(cssRule(".home-thinking-section"), /align-items:\s*center/);
   assert.match(cssRule(".home-thinking-section"), /font-family:\s*var\(--font-poppins\)/);
   assert.match(globals, /\.home-section\.home-thinking-section\s*\{[^}]*padding-top:\s*clamp\(4\.6rem,\s*8vh,\s*6\.2rem\)/s);
   assert.doesNotMatch(globals, /\.home-thinking-list\s*\{/);

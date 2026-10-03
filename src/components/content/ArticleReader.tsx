@@ -232,75 +232,19 @@ export default function ArticleReader({ article, sectionLabel, backHref }: Artic
         }
     };
     return (
-        <div
-            style={{
-                minHeight: "100vh",
-                background: "var(--background)",
-                color: "var(--foreground)",
-            }}
-        >
+        <div className="article-reader">
             {/* Sticky Header */}
-            <header
-                style={{
-                    position: "sticky",
-                    top: 0,
-                    zIndex: 50,
-                    background: "var(--background)",
-                    borderBottom: "1px solid var(--border)",
-                    backdropFilter: "blur(8px)",
-                }}
-            >
-                <div
-                    style={{
-                        maxWidth: 720,
-                        margin: "0 auto",
-                        padding: "12px 24px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                    }}
-                >
-                    <button
-                        onClick={handleBack}
-                        style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 6,
-                            color: "var(--muted)",
-                            fontSize: 14,
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: 0,
-                        }}
-                    >
-                        <ArrowLeft style={{ width: 16, height: 16 }} />
+            <header className="article-reader-header">
+                <div className="article-reader-header-inner">
+                    <button type="button" onClick={handleBack} className="article-reader-nav-button">
+                        <ArrowLeft aria-hidden="true" />
                         <span>返回</span>
                     </button>
-                    <span
-                        style={{
-                            fontSize: 12,
-                            color: "var(--muted)",
-                            opacity: 0.5,
-                            letterSpacing: 1,
-                            textTransform: "uppercase",
-                        }}
-                    >
+                    <span className="article-reader-section-label">
                         {sectionLabel}
                     </span>
-                    <Link
-                        href="/"
-                        aria-label="回到首页"
-                        style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 6,
-                            color: "var(--muted)",
-                            fontSize: 14,
-                            textDecoration: "none",
-                        }}
-                    >
-                        <Home style={{ width: 15, height: 15 }} />
+                    <Link href="/" aria-label="回到首页" className="article-reader-nav-button">
+                        <Home aria-hidden="true" />
                         <span>首页</span>
                     </Link>
                 </div>
@@ -317,59 +261,34 @@ export default function ArticleReader({ article, sectionLabel, backHref }: Artic
             </header>
 
             {/* Article Content */}
-            <motion.main
+            <motion.div
+                className="article-reader-body"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
-                style={{
-                    maxWidth: 720,
-                    margin: "0 auto",
-                    padding: "48px 24px 96px",
-                }}
             >
                 {/* Title */}
-                <h1
-                    style={{
-                        fontSize: "clamp(1.75rem, 4vw, 2.5rem)",
-                        fontWeight: 700,
-                        lineHeight: 1.3,
-                        color: "var(--foreground)",
-                        marginBottom: 16,
-                    }}
-                >
+                <h1 className="article-reader-title">
                     {article.title}
                 </h1>
 
                 {/* Meta */}
-                <div
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                        marginBottom: 40,
-                        paddingBottom: 24,
-                        borderBottom: "1px solid var(--border)",
-                    }}
-                >
+                <div className="article-reader-meta">
                     {article.date && (
-                        <span style={{ fontSize: 14, color: "var(--muted)" }}>
-                            {article.date}
-                        </span>
+                        <time dateTime={article.date}>{article.date}</time>
                     )}
                     {article.description && (
                         <>
-                            <span style={{ color: "var(--border)" }}>·</span>
-                            <span style={{ fontSize: 14, color: "var(--muted)" }}>
-                                {article.description}
-                            </span>
+                            <span className="article-reader-meta-dot" aria-hidden="true">·</span>
+                            <span>{article.description}</span>
                         </>
                     )}
                 </div>
 
                 {tocHeadings.length > 1 && (
-                    <nav aria-label="文章目录" style={styles.toc}>
-                        <div style={styles.tocTitle}>目录</div>
-                        <div style={styles.tocList}>
+                    <nav aria-label="文章目录" className="article-toc">
+                        <div className="article-toc-title">目录</div>
+                        <div className="article-toc-list">
                             {tocHeadings.map((heading) => {
                                 const isActiveHeading = activeHeadingId === heading.id;
                                 return (
@@ -377,11 +296,12 @@ export default function ArticleReader({ article, sectionLabel, backHref }: Artic
                                         key={heading.id}
                                         href={`#${heading.id}`}
                                         aria-current={isActiveHeading ? "location" : undefined}
+                                        className="article-toc-link"
                                         style={{
                                             ...styles.tocLink,
                                             ...(isActiveHeading ? styles.tocLinkActive : {}),
-                                            paddingLeft: heading.level === 3 ? 18 : 0,
-                                        }}
+                                            "--toc-indent": heading.level === 3 ? "18px" : "0px",
+                                        } as React.CSSProperties}
                                     >
                                         {heading.text}
                                     </a>
@@ -502,30 +422,13 @@ export default function ArticleReader({ article, sectionLabel, backHref }: Artic
                 </article>
 
                 {/* Footer */}
-                <div
-                    style={{
-                        marginTop: 64,
-                        paddingTop: 24,
-                        borderTop: "1px solid var(--border)",
-                        display: "flex",
-                        justifyContent: "center",
-                    }}
-                >
-                    <button
-                        onClick={handleBack}
-                        style={{
-                            fontSize: 14,
-                            color: "var(--muted)",
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: 0,
-                        }}
-                    >
-                        ← 返回
+                <div className="article-reader-footer">
+                    <button type="button" onClick={handleBack} className="article-reader-back-pill">
+                        <ArrowLeft aria-hidden="true" />
+                        返回
                     </button>
                 </div>
-            </motion.main>
+            </motion.div>
         </div>
     );
 }
@@ -539,41 +442,25 @@ const styles: Record<string, React.CSSProperties> = {
         lineHeight: 1.3,
     },
     h2: {
+        fontFamily: "var(--font-hero-display)",
         fontSize: "1.5rem",
         fontWeight: 600,
         color: "var(--foreground)",
-        margin: "40px 0 12px",
+        margin: "48px 0 14px",
         lineHeight: 1.35,
         scrollMarginTop: 88,
     },
     h3: {
+        fontFamily: "var(--font-hero-display)",
         fontSize: "1.25rem",
         fontWeight: 600,
         color: "var(--foreground)",
-        margin: "32px 0 8px",
+        margin: "34px 0 10px",
         lineHeight: 1.4,
         scrollMarginTop: 88,
     },
-    toc: {
-        border: "1px solid var(--border)",
-        borderRadius: 8,
-        background: "var(--card)",
-        padding: "18px 20px",
-        margin: "0 0 36px",
-    },
-    tocTitle: {
-        fontSize: 13,
-        fontWeight: 700,
-        letterSpacing: "0.08em",
-        color: "var(--muted)",
-        marginBottom: 10,
-    },
-    tocList: {
-        display: "grid",
-        gap: 8,
-    },
     tocLink: {
-        color: "var(--foreground)",
+        color: "color-mix(in srgb, var(--foreground) 72%, var(--muted))",
         fontSize: 14,
         lineHeight: 1.5,
         textDecoration: "none",
@@ -583,10 +470,10 @@ const styles: Record<string, React.CSSProperties> = {
         fontWeight: 700,
     },
     p: {
-        fontSize: 16,
-        lineHeight: 1.8,
+        fontSize: 17,
+        lineHeight: 1.9,
         color: "var(--foreground)",
-        margin: "8px 0 16px",
+        margin: "8px 0 18px",
     },
     a: {
         color: "var(--accent)",
@@ -604,8 +491,8 @@ const styles: Record<string, React.CSSProperties> = {
         listStyleType: "decimal",
     },
     li: {
-        fontSize: 16,
-        lineHeight: 1.8,
+        fontSize: 17,
+        lineHeight: 1.85,
         color: "var(--foreground)",
         marginBottom: 4,
     },

@@ -133,7 +133,6 @@ export default function HomeThinkingSection() {
                   {activeTrack.items.length} {activeTrack.countUnit}
                 </span>
               </div>
-              <p className="home-thinking-preview-summary">{activeTrack.summary}</p>
               <div className="home-thinking-preview-list" aria-label={`${activeTrack.label}代表内容`}>
                 {activePreviewItems.map((item, index) => (
                   <Link
