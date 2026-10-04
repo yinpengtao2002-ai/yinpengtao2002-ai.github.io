@@ -1,5 +1,15 @@
 # Checkmi maintenance
 
+## Contribution decimals and current documentation · 2026-10-05
+
+Source be8d3e1c9dc6a9aabcc62a0b96b0a279639793d1 fixes contribution-table per-car amounts at two decimals (16.60 rather than16.6). Shared compact summaries remain unchanged; small amounts still use yuan and tiny nonzero values retain enough precision. No calculation, input, desktop code or installer changes.
+
+The source documentation review corrected fixed-budget editing, direct-entry blanks versus zero, import choices, lifecycle units, optional waterfall reconciliation differences and old-desktop v1 compatibility. A new source docs/README.md separates current guidance from historical material. Public business1.92 adds the display convention with an October5 supplement; it remains identical to the workspace mirror. Historical performance evidence and its unmet total-CPU target are unchanged.
+
+Source number-format checks, TypeScript, focused lint and both production builds pass. A fresh1366 browser verified all15 contribution per-car cells and the small-yuan result, with no page errors; screenshot reviewed. Source docs have243 valid non-archive local links and matching installed Skill files. Website release checks and online verification are recorded after deployment; only validated /checkmi artifacts are synchronized.
+
+Website local validation:16 release/routing checks, production build, TypeScript and32 function-bundle traces pass. ESLint has0 errors and7 existing warnings. The30-file public manifest matches the synchronized build; user-generated posters and other site source are unchanged. Deployment success, live hashes and a fresh1366 contribution-table check remain the final release gates.
+
 ## Web responsiveness, lazy views and compact project files · revision92 · 2026-10-04
 
 Source f36a0bd23f8dae28d2802e832ca2de014a010ad7 contains six separate Step0–5 commits. The economics engine and original baseline are unchanged. Fix invalid cash discount input, small per-car amounts/negative zero, consistent source-order variants, disabled controls, demo reserve-account labels and source-gap explanations. Show the waterfall basis beside its title. Numeric fields display grouping without rewriting the focused value or committing on focus/blur; sliders have accessible labels and charts mount after valid dimensions exist.
