@@ -45,6 +45,8 @@ test("checkmi release contains matching assets, downloadable template and busine
   assert.ok(bundle.includes("当前项目未配置 Mapping 规则"));
   assert.ok(bundle.includes("应用生成的损益"));
   assert.ok(bundle.includes("上传基础数据文件"));
+  assert.ok(bundle.includes("本项目车型"));
+  assert.ok(!bundle.includes("多个车型、版型和年度"));
   assert.ok(!bundle.includes("待接入系统规则"));
   assert.ok(bundle.includes("./templates/车型损益表_空白公式模板.xlsx"));
   assert.ok(bundle.includes("./业务逻辑说明.md"));
@@ -61,6 +63,8 @@ test("checkmi release contains matching assets, downloadable template and busine
   assert.match(businessRules, /加权售价\/BOM/);
   assert.match(businessRules, /科目与数据/);
   assert.match(businessRules, /最细规则优先/);
+  assert.match(businessRules, /一个测算项目只对应一款车型/);
+  assert.match(businessRules, /模板不包含车型列/);
   assert.match(businessRules, /Modena、Lemans、Kunlun、Ultra/);
   assert.match(businessRules, /普通测算用户不上传 Mapping/);
   assert.match(businessRules, /总额分摊/);
