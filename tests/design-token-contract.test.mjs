@@ -74,7 +74,6 @@ test("finance tool page wrappers use shared tokenized shell classes", async () =
     "src/app/finance/margin-analysis/page.tsx",
     "src/app/finance/sensitivity-analysis/page.tsx",
     "src/app/finance/profit-structure/page.tsx",
-    "src/app/finance/perspective-bi/page.tsx",
     "src/app/finance/finance-ai-assistant/page.tsx",
     "src/app/finance/finance-ai-assistant/demo/page.tsx",
   ];

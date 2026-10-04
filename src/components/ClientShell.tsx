@@ -11,7 +11,6 @@ function shouldHideDecorativeExtras(pathname: string) {
     return (
         pathname.startsWith("/finance/business-analysis") ||
         pathname.startsWith("/finance/profit-structure") ||
-        pathname.startsWith("/finance/perspective-bi") ||
         pathname.startsWith("/finance/finance-ai-assistant") ||
         pathname.startsWith("/tools/study-cards") ||
         pathname.startsWith("/tools/subtitle-workbench") ||

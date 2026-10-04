@@ -19,8 +19,8 @@ test("goalkeeper starts when opened from the thinking lab", async ({ page }) => 
 });
 
 for (const entry of ["direct", "catalog"] as const) {
-  test(`Perspective BI loads real table data after ${entry} entry`, async ({ page }) => {
-    // Only replace server access verification; use the real browser WASM engine.
+  test(`profit structure unlocks and renders charts after ${entry} entry`, async ({ page }) => {
+    // Only replace server access verification; the browser engine and charts are real.
     await page.route("**/api/private-tool-access/", (route) => route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -30,18 +30,17 @@ for (const entry of ["direct", "catalog"] as const) {
       }),
     }));
     if (entry === "direct") {
-      await page.goto("/finance/perspective-bi/");
+      await page.goto("/finance/profit-structure/");
     } else {
       await page.goto("/finance/");
-      await page.locator('a[href="/finance/perspective-bi/"]').click();
-      await page.waitForURL("**/finance/perspective-bi/");
+      await page.locator('a[href="/finance/profit-structure/"]').click();
+      await page.waitForURL("**/finance/profit-structure/");
     }
 
     await page.getByPlaceholder("输入内测密钥").fill("e2e-access-code");
     await page.getByRole("button", { name: "进入", exact: true }).click();
-    await expect(page.locator("#perspective-message-area")).toContainText("已载入", { timeout: 30_000 });
-    await expect(page.locator("perspective-viewer regular-table")).toBeVisible();
-    await expect(page.locator("perspective-viewer regular-table td").first()).not.toBeEmpty();
+    await expect(page.locator("#profit-structure-message-area")).toContainText("示例数据", { timeout: 30_000 });
+    await expect(page.locator(".profit-structure-tool .js-plotly-plot").first()).toBeVisible();
     await expect(page.locator(".engine-load-error")).toHaveCount(0);
   });
 }

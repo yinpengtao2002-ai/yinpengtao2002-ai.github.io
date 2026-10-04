@@ -7,8 +7,7 @@ export type FinanceBrowserEngineName =
     | "BusinessAnalysisModel"
     | "MonthlyTrendModel"
     | "ProfitBridgeSensitivity"
-    | "ProfitStructureModel"
-    | "PerspectiveBIModel";
+    | "ProfitStructureModel";
 
 type BootFinanceBrowserEngineOptions = {
     engineName: FinanceBrowserEngineName;
@@ -36,7 +35,6 @@ declare global {
         MonthlyTrendModel?: FinanceBrowserEngine;
         ProfitBridgeSensitivity?: FinanceBrowserEngine;
         ProfitStructureModel?: FinanceBrowserEngine;
-        PerspectiveBIModel?: FinanceBrowserEngine;
     }
 }
 

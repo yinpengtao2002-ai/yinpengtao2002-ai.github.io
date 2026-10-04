@@ -115,16 +115,14 @@ Current models:
   - Tests: `tests/profit-structure-analysis.test.mjs`
   - Purpose: multi-dimensional profit structure diagnosis from one operating detail table. The expected bottom-table habit is `月份` + any user-uploaded dimensions + `销量` + finance metrics such as `净收入`, `成本`, and `边际`. Do not position this model around one fixed dimension such as 车型 or 产品; all uploaded dimension columns should remain available for primary analysis, combination, filtering, and drill-down.
 
-- `perspective-bi`: `/finance/perspective-bi`
-  - Route: `src/app/finance/perspective-bi/page.tsx`
-  - Purpose: a productized Perspective BI workbench for ad hoc CSV/XLSX/XLS exploration before users enter a more opinionated finance model.
+- Perspective BI (`/finance/perspective-bi`) was removed on 2026-10-04 at the user's request, including its `@perspective-dev/*` dependencies; the old URL redirects to `/finance`. Do not reintroduce it unless asked.
 
 ## Finance Model Conventions
 
 - Prefer the FBP chain: sales volume -> net revenue -> contribution margin -> fixed deductions -> profit total. Add non-P&L modules only when the model explicitly asks for them.
 - Treat the finance chart system as the shared source of truth for reusable chart specs, Plotly theme/config, PVM attribution, and FBP bridge logic. Local per-model chart code should move toward this center instead of growing new one-off implementations.
 - Treat the finance interaction system as the shared source of truth for reusable filter state, cascading filter pruning, drill paths, and detail-table filters. Model-local UI shells can remain, but state logic should move toward `src/lib/finance/filters/`.
-- Treat the finance template system as the shared source of truth for upload templates and demo data. 除敏感性分析之外，`business-analysis`, `margin-analysis`, `monthly-trend`, `profit-structure`, `perspective-bi`, and the finance AI assistant belong to the `operating-detail` family; sensitivity uses `profit-sensitivity-assumptions`.
+- Treat the finance template system as the shared source of truth for upload templates and demo data. 除敏感性分析之外，`business-analysis`, `margin-analysis`, `monthly-trend`, `profit-structure`, and the finance AI assistant belong to the `operating-detail` family; sensitivity uses `profit-sensitivity-assumptions`.
 - User-facing operating-detail sheets must never contain `数据口径`. Budget/actual templates use separate `实际` / `预算` sheets with identical row-1 headers and matching business keys; internal parsers may normalize sheet names or legacy columns into a scenario field only for calculation.
 - Operating-detail workbooks use row-1 data headers, automatic filters, readable widths, plus separate `填表说明` and `字段字典` sheets. CSV is acceptable only for single-table examples; the budget/actual model teaches Excel only while retaining legacy CSV upload support.
 - All operating-detail demos come from `public/tools/shared/operating-detail-templates.js`. Models may select deterministic periods and business keys suited to their workflow, but must not invent a separate sample company, geography, product set, or budget derivation.
@@ -175,8 +173,8 @@ Do not delete stale Markdown files without explicit user confirmation.
 
 ## Recent Gotchas
 
-- Perspective's browser engine must import the explicit browser entry, not the package root that resolves to its Node HTTP/file server during SSR. Run `check:function-bundles` after local/CI builds; `npm run check` includes it. Do not run this guard in `postbuild`: Vercel's build does not produce `.next/next-server.js.nft.json` and validates its own function bundles.
-- CSP is attached to the initial document and survives Next client navigation. Keep `wasm-unsafe-eval` in the shared document policy so Perspective BI and Goalkeeper also work when entered from the homepage/catalog; do not add JavaScript `unsafe-eval` in production.
+- Run `check:function-bundles` after local/CI builds; `npm run check` includes it. Do not run this guard in `postbuild`: Vercel's build does not produce `.next/next-server.js.nft.json` and validates its own function bundles.
+- CSP is attached to the initial document and survives Next client navigation. Keep `wasm-unsafe-eval` in the shared document policy so Goalkeeper (Rapier WASM) also works when entered from the homepage/catalog; do not add JavaScript `unsafe-eval` in production.
 - Route entry animations must keep a stable wrapper around Next's children. A pathname-keyed `AnimatePresence` wrapper remounts a new route twice and can clear form input or restart browser engines.
 - Monthly Trend retains its engine state during client navigation; `initApp()` must rebuild both controls and charts on re-entry.
 - The margin analysis tool is static frontend files, not Streamlit.

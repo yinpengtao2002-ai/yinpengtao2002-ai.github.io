@@ -8,7 +8,6 @@ const TOKEN_AUDIENCE = "lucas-private-tools";
 const TOKEN_SCOPES = [
   "lucas:stock-decision",
   "finance:profit-structure",
-  "finance:perspective-bi",
 ] as const;
 
 export type PrivateToolAccessTokenPayload = {

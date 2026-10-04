@@ -25,11 +25,10 @@ test("finance template hub records the template families used by the model suite
 
   assert.deepEqual(
     getFinanceTemplateFamilyForModel("business-analysis").modelSlugs,
-    ["business-analysis", "margin-analysis", "monthly-trend", "profit-structure", "perspective-bi", "finance-ai-assistant"]
+    ["business-analysis", "margin-analysis", "monthly-trend", "profit-structure", "finance-ai-assistant"]
   );
   assert.equal(getFinanceTemplateFamilyForModel("monthly-trend").slug, "operating-detail");
   assert.equal(getFinanceTemplateFamilyForModel("profit-structure").slug, "operating-detail");
-  assert.equal(getFinanceTemplateFamilyForModel("perspective-bi").slug, "operating-detail");
   assert.equal(getFinanceTemplateFamilyForModel("finance-ai-assistant").slug, "operating-detail");
   assert.equal(getFinanceTemplateFamilyForModel("margin-analysis").slug, "operating-detail");
   assert.equal(getFinanceTemplateFamilyForModel("sensitivity-analysis").slug, "profit-sensitivity-assumptions");
@@ -91,7 +90,6 @@ test("operating detail models share one visible template header and canonical sa
   const profileExpectations = {
     "monthly-trend": { minMonths: 18, minRegions: 4, pairedPeriods: false },
     "profit-structure": { minMonths: 4, minRegions: 4, pairedPeriods: false },
-    "perspective-bi": { minMonths: 4, minRegions: 4, pairedPeriods: false },
     "margin-analysis": { minMonths: 2, minRegions: 4, pairedPeriods: true },
     "business-analysis": { minMonths: 4, minRegions: 4, pairedPeriods: false },
     "finance-ai-assistant": { minMonths: 12, minRegions: 4, pairedPeriods: false },
@@ -165,13 +163,11 @@ test("operating detail model engines use the shared template hub", async () => {
   const businessEngine = await readProjectFile("../src/app/finance/business-analysis/business-analysis-engine.js");
   const monthlyEngine = await readProjectFile("../src/app/finance/monthly-trend/monthly-trend-engine.js");
   const profitStructureEngine = await readProjectFile("../src/app/finance/profit-structure/profit-structure-engine.js");
-  const perspectiveBIEngine = await readProjectFile("../src/app/finance/perspective-bi/perspective-bi-engine.js");
   const financeAITool = await readProjectFile("../src/app/tools/finance-ai-assistant/FinanceAIAssistantTool.tsx");
 
   for (const [name, source] of [
     ["monthly-trend", monthlyEngine],
     ["profit-structure", profitStructureEngine],
-    ["perspective-bi", perspectiveBIEngine],
   ]) {
     assert.match(source, /finance\/templates\.js/, `${name} should import the template hub`);
     assert.match(source, /OPERATING_DETAIL_HEADERS/, `${name} should use the shared operating detail headers`);
@@ -186,7 +182,6 @@ test("operating detail model engines use the shared template hub", async () => {
     ["business-analysis", businessEngine],
     ["monthly-trend", monthlyEngine],
     ["profit-structure", profitStructureEngine],
-    ["perspective-bi", perspectiveBIEngine],
   ]) {
     assert.match(source, /createOperatingDetailSampleRows/, `${name} should use the shared operating detail sample`);
   }
@@ -260,7 +255,7 @@ test("finance template center is documented next to chart and interaction center
   assert.match(templateSystem, /src\/lib\/finance\/templates\.js/);
   assert.match(templateSystem, /\| monthly-trend \| operating-detail \|/);
   assert.match(templateSystem, /\| profit-structure \| operating-detail \|/);
-  assert.match(templateSystem, /\| perspective-bi \| operating-detail \|/);
+  assert.doesNotMatch(templateSystem, /perspective-bi/);
   assert.match(templateSystem, /\| finance-ai-assistant \| operating-detail \|/);
   assert.match(templateSystem, /\| business-analysis \| operating-detail \|/);
   assert.match(templateSystem, /\| margin-analysis \| operating-detail \|/);

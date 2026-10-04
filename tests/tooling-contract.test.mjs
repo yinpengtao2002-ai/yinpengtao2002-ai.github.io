@@ -13,10 +13,6 @@ const packageLockJson = await readFile(new URL("../package-lock.json", import.me
 const tsconfigJson = await readFile(new URL("../tsconfig.json", import.meta.url), "utf8");
 const vendorScript = await readFile(new URL("../scripts/prepare-vendor-assets.mjs", import.meta.url), "utf8");
 const xlsxVendorBundle = await readFile(new URL("../public/vendor/xlsx/xlsx.full.min.js", import.meta.url), "utf8");
-const perspectiveShim = await readFile(
-  new URL("../src/app/finance/perspective-bi/perspective-extensions-shim.js", import.meta.url),
-  "utf8"
-).catch(() => "");
 const notionSyncScript = await readFile(new URL("../scripts/sync-notion-content.mjs", import.meta.url), "utf8").catch(() => "");
 const packageData = JSON.parse(packageJson);
 const packageLockData = JSON.parse(packageLockJson);
@@ -247,7 +243,6 @@ test("legacy finance browser engines share one typed script loader boundary", as
     "MonthlyTrendModel",
     "ProfitBridgeSensitivity",
     "ProfitStructureModel",
-    "PerspectiveBIModel",
   ]) {
     assert.match(loader, new RegExp(`${engineName}\\?:\\s*FinanceBrowserEngine`));
   }
@@ -262,10 +257,6 @@ test("legacy finance browser engines share one typed script loader boundary", as
     assert.doesNotMatch(source, /__financeToolScripts/, `${path} should not own the browser script cache type`);
     assert.doesNotMatch(source, /declare global/, `${path} should not redeclare the browser engine global`);
   }));
-
-  const perspectiveShell = await readRequiredProjectFile("../src/app/finance/perspective-bi/PerspectiveBITool.tsx");
-  assert.match(perspectiveShell, /bootFinanceBrowserEngine/);
-  assert.doesNotMatch(perspectiveShell, /declare global/);
 });
 
 test("interactive viewport media queries use named breakpoint constants", async () => {
@@ -296,45 +287,6 @@ test("interactive viewport media queries use named breakpoint constants", async 
   assert.match(studyCardsTool, /STUDY_CARDS_MOBILE_PRACTICE_QUERY/);
   assert.match(studyCardsTool, /STUDY_CARDS_RESULT_PORTRAIT_QUERY/);
   assert.doesNotMatch(studyCardsTool, /matchMedia\("\(max-width:\s*(?:760|900)px\)/);
-});
-
-test("Perspective BI dependencies and local browser assets are wired", () => {
-  assert.match(packageJson, /"@perspective-dev\/client":/);
-  assert.match(packageJson, /"@perspective-dev\/server":/);
-  assert.match(packageJson, /"@perspective-dev\/viewer":/);
-  assert.match(packageJson, /"@perspective-dev\/viewer-datagrid":/);
-  assert.match(packageJson, /"@perspective-dev\/viewer-d3fc":/);
-  assert.match(vendorScript, /@perspective-dev\/server\/dist\/wasm\/perspective-server\.wasm/);
-  assert.match(vendorScript, /@perspective-dev\/viewer\/dist\/wasm\/perspective-viewer\.wasm/);
-  assert.match(vendorScript, /@perspective-dev\/viewer\/dist\/css\/pro\.css/);
-  assert.match(vendorScript, /@perspective-dev\/viewer\/dist\/css\/intl\/zh\.css/);
-  assert.match(nextConfig, /@perspective-dev\/viewer\/src\/ts\/extensions\.js/);
-  assert.match(nextConfig, /perspective-extensions-shim\.js/);
-  assert.match(perspectiveShim, /class PerspectiveSelectDetail/);
-  assert.match(perspectiveShim, /removeFilters/);
-});
-
-test("Perspective BI D3 legend chain stays on patched D3 versions", () => {
-  assert.equal(packageData.overrides?.["d3-color"], "^3.1.0");
-  assert.equal(packageData.overrides?.["d3-interpolate"], "^3.0.1");
-  assert.equal(packageData.overrides?.["d3-scale"], "^4.0.2");
-  assert.equal(packageData.overrides?.["d3-transition"], "^3.0.1");
-
-  const installedD3Color = packageLockData.packages?.["node_modules/d3-color"];
-  const installedD3Interpolate = packageLockData.packages?.["node_modules/d3-interpolate"];
-  const installedD3Scale = packageLockData.packages?.["node_modules/d3-scale"];
-  const installedD3Transition = packageLockData.packages?.["node_modules/d3-transition"];
-
-  assertVersionAtLeast(installedD3Color?.version ?? "0.0.0", "3.1.0", "d3-color");
-  assertVersionAtLeast(installedD3Interpolate?.version ?? "0.0.0", "3.0.1", "d3-interpolate");
-  assertVersionAtLeast(installedD3Scale?.version ?? "0.0.0", "4.0.2", "d3-scale");
-  assertVersionAtLeast(installedD3Transition?.version ?? "0.0.0", "3.0.1", "d3-transition");
-
-  assert.doesNotMatch(packageLockJson, /node_modules\/d3-svg-legend\/node_modules\/d3-(?:color|interpolate|scale|transition)/);
-  assert.doesNotMatch(packageLockJson, /d3-color-1\.4\.1\.tgz/);
-  assert.doesNotMatch(packageLockJson, /d3-interpolate-1\.4\.0\.tgz/);
-  assert.doesNotMatch(packageLockJson, /d3-scale-1\.0\.3\.tgz/);
-  assert.doesNotMatch(packageLockJson, /d3-transition-1\.0\.3\.tgz/);
 });
 
 test("spreadsheet parser uses the patched SheetJS npm alias and matching browser asset", () => {
@@ -405,17 +357,4 @@ test("Notion content sync uses the modern SDK without the vulnerable form-data c
   assert.doesNotMatch(packageLockJson, /node_modules\/@types\/node-fetch/);
   assert.doesNotMatch(packageLockJson, /node_modules\/form-data/);
   assert.doesNotMatch(packageLockJson, /form-data-4\.0\.[0-5]\.tgz/);
-});
-
-test("Perspective BI requires the private tool access key before booting", async () => {
-  const tool = await readRequiredProjectFile("../src/app/finance/perspective-bi/PerspectiveBITool.tsx");
-  const styles = await readRequiredProjectFile("../src/app/finance/perspective-bi/tool.css");
-
-  assert.match(tool, /PRIVATE_TOOL_ACCESS_ENDPOINT/);
-  assert.doesNotMatch(tool, /\/api\/tools\/finance-ai-assistant\/access/);
-  assert.match(tool, /Perspective BI 分析台内测访问/);
-  assert.match(tool, /type="password"/);
-  assert.match(tool, /if \(!accessToken\) {\s+return;\s+}/);
-  assert.match(tool, /\}, \[accessToken, bootAttempt\]\);/);
-  assert.match(styles, /\.perspective-access-gate/);
 });

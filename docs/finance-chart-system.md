@@ -38,7 +38,6 @@
 | monthly-trend | 多指标趋势、同期对比、环比/同比线、结构趋势、同比/环比热力图 | trend-line、series-share、heatmap | 月份识别、跨年月份轴、环比/同比、Top N + 其他 |
 | profit-structure | KPI、诊断结论、维度解释力横向条、结构质量气泡图、拖累贡献清单 | metric-card、bar-rank、scatter-bubble、detail-table | 单位质量、维度解释力、拖累贡献、组合粒度聚合 |
 | sensitivity-analysis | KPI、Tornado 条形图、目标利润曲线、双变量热力图、边际瀑布、利润瀑布 | metric-card、tornado-bar、target-line、heatmap、waterfall-bridge | FBP 利润链、目标利润倒推、双变量矩阵 |
-| perspective-bi | Perspective 原生表格、柱状图、折线图、热力图、散点图 | 不强行替换原生 viewer；只复用字段治理和中枢说明 | 字段角色识别、派生指标建议、上传预检 |
 
 ## 中枢改动同步规则
 
@@ -48,7 +47,7 @@
 - 改瀑布桥规则：同步检查 `business-analysis`、`margin-analysis`、`finance-ai-assistant`、`sensitivity-analysis`。
 - 改 PVM 结构/费率效应：同步检查 `margin-analysis` 和 `finance-ai-assistant`，并用同一组输入验证两边结果一致。
 - 改 FBP 利润链：同步检查 `business-analysis` 和 `sensitivity-analysis`，同时确认零值科目不会生成无意义柱子。
-- 改期间、字段识别、数值解析、CSV 或指标聚合：同步检查 `business-analysis`、`margin-analysis`、`monthly-trend`、`profit-structure`、`perspective-bi`、`finance-ai-assistant` 和所有上传模板说明。
+- 改期间、字段识别、数值解析、CSV 或指标聚合：同步检查 `business-analysis`、`margin-analysis`、`monthly-trend`、`profit-structure`、`finance-ai-assistant` 和所有上传模板说明。
 - 改模型图表组合、交互模式或模板行为：同步更新 `docs/finance-model-inventory.md` 和本文件的模型依赖地图。
 
 ## 迁移顺序

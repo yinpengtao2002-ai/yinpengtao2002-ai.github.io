@@ -163,7 +163,7 @@ test("private access tokens use a separate signing secret and scoped payload", a
 
     assert.equal(payload.v, 1);
     assert.equal(payload.aud, "lucas-private-tools");
-    assert.deepEqual(payload.scope, ["lucas:stock-decision", "finance:profit-structure", "finance:perspective-bi"]);
+    assert.deepEqual(payload.scope, ["lucas:stock-decision", "finance:profit-structure"]);
     assert.equal(payload.iat, Math.floor(now / 1000));
     assert.equal(payload.exp, Math.floor((now + 2 * 60 * 60 * 1000) / 1000));
     assert.equal(verifyPrivateToolAccessToken(token, now, { audience: payload.aud, scope: "lucas:stock-decision" }), true);

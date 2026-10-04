@@ -106,7 +106,7 @@ test("finance registry is a direct model list without category metadata", () => 
 test("finance registry contains the approved model routes", () => {
   assert.deepEqual(
     registry.models.map((model) => model.slug).sort(),
-    ["business-analysis", "finance-ai-assistant", "margin-analysis", "monthly-trend", "perspective-bi", "profit-structure", "sensitivity-analysis"]
+    ["business-analysis", "finance-ai-assistant", "margin-analysis", "monthly-trend", "profit-structure", "sensitivity-analysis"]
   );
   for (const model of registry.models) {
     assert.match(model.href, /^\/finance\/[a-z-]+$/);
@@ -133,31 +133,17 @@ test("finance AI assistant is registered as a finance model with its own assista
   assert.ok(model.aiGuide.fields.some((field) => /月份|销量|指标|维度/.test(field.name)));
 });
 
-test("Perspective BI is registered as a user-operable finance model", () => {
-  const model = registry.models.find((item) => item.slug === "perspective-bi");
-
-  assert.ok(model, "perspective-bi should be present in the finance model registry");
-  assert.equal(model.href, "/finance/perspective-bi");
-  assert.match(model.title, /BI/);
-  assert.match(model.summary, /上传/);
-  assert.match(model.summary, /透视|看板|分析/);
-  assert.ok(model.aiGuide.fields.some((field) => /维度|指标/.test(field.name)));
-  assert.ok(model.aiGuide.steps.some((step) => /上传|示例数据/.test(step)));
-  assert.doesNotMatch(model.aiGuide.sampleData, /预算达成率/);
-  assert.ok(model.aiGuide.fields.some((field) => /派生指标/.test(field.name)));
-});
-
 test("finance registry marks only the active testing models", () => {
   assert.deepEqual(
     registry.models
       .filter((model) => model.status === "testing")
       .map((model) => model.slug)
       .sort(),
-    ["perspective-bi", "profit-structure"]
+    ["profit-structure"]
   );
 
   for (const model of registry.models) {
-    if (["perspective-bi", "profit-structure"].includes(model.slug)) {
+    if (model.slug === "profit-structure") {
       assert.equal(model.status, "testing", `${model.slug} should be labeled as testing`);
     } else {
       assert.equal("status" in model, false, `${model.slug} should not show a testing ribbon`);
@@ -168,7 +154,7 @@ test("finance registry marks only the active testing models", () => {
 test("finance registry preserves model order as the only browsing structure", () => {
   assert.deepEqual(
     registry.models.map((model) => model.slug),
-    ["business-analysis", "margin-analysis", "finance-ai-assistant", "monthly-trend", "profit-structure", "sensitivity-analysis", "perspective-bi"]
+    ["business-analysis", "margin-analysis", "finance-ai-assistant", "monthly-trend", "profit-structure", "sensitivity-analysis"]
   );
 });
 

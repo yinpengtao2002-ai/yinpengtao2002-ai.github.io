@@ -24,7 +24,7 @@ test("finance generated content points to finance tool routes", () => {
   assert.match(generated, /"href": "\/finance\/business-analysis"/);
   assert.match(generated, /"href": "\/finance\/monthly-trend"/);
   assert.match(generated, /"href": "\/finance\/profit-structure"/);
-  assert.match(generated, /"href": "\/finance\/perspective-bi"/);
+  assert.doesNotMatch(generated, /"href": "\/finance\/perspective-bi"/);
   assert.match(generated, /"href": "\/finance\/sensitivity-analysis"/);
   assert.match(generated, /"href": "\/finance\/margin-analysis"/);
 });

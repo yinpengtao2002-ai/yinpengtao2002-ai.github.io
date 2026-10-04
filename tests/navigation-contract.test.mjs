@@ -75,12 +75,6 @@ test("site navigation uses page links instead of scroll-tracked homepage section
   assert.match(navigation, /layoutId="home-nav-active-pill"/);
 });
 
-test("site navigation hides on the Perspective BI workbench route", () => {
-  assert.match(navigation, /pathname\.startsWith\("\/finance\/perspective-bi"\)/);
-  assert.match(navigation, /pathname\.startsWith\("\/finance\/profit-structure"\)/);
-  assert.match(navigation, /pathname\.startsWith\("\/tools\/goalkeeper-landscape"\)/);
-});
-
 test("site keeps a single light theme without a dark-mode toggle", () => {
   assert.doesNotMatch(clientShell, /ThemeToggle/);
   assert.doesNotMatch(clientShell, /theme/i);

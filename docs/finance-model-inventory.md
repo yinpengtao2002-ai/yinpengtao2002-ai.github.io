@@ -18,7 +18,7 @@
 - `src/lib/finance/core.ts`、`public/tools/shared/finance-core.js`：共用字段角色、期间、数值、CSV 和指标聚合语义；静态 Margin 通过浏览器版本复用同一口径。
 - `src/lib/finance/chart-accessibility.ts`：Business、Monthly、Profit Structure、Sensitivity 与 Finance AI 共用的 Plotly 文字结论和数据表生成器；静态 Margin 复用同一交互语义的本地结论层。
 - `src/lib/finance/field-governance.ts`：Monthly、Profit Structure 与 Business Analysis 共用的安全字段映射确认面板；静态 Margin 使用相同交互语义的本地适配，不依赖字段位置推断。
-- `src/lib/finance/browser-tool-loader.ts`、`src/lib/finance/browser-engine-lifecycle.ts`：五个旧式浏览器引擎的 typed 启动、vendor script 超时/重试和统一资源清理边界；工具壳卸载时必须调用引擎 `dispose()`。
+- `src/lib/finance/browser-tool-loader.ts`、`src/lib/finance/browser-engine-lifecycle.ts`：四个旧式浏览器引擎的 typed 启动、vendor script 超时/重试和统一资源清理边界；工具壳卸载时必须调用引擎 `dispose()`。
 - `docs/finance-chart-system.md`：财务图表中枢、共享算法边界和模型依赖地图；改图表中枢或共享计算口径时要先核对这里。
 - `docs/finance-interaction-system.md`：财务交互中枢、筛选器/下钻/明细表筛选依赖地图；改筛选和下钻交互时要先核对这里。
 - `docs/finance-template-system.md`：财务模板中枢、上传模板和示例数据依赖地图；改模板族、示例数据或默认加载数据时要先核对这里。
@@ -30,11 +30,11 @@
 - 改中枢筛选、级联筛选、维度下钻、明细表列筛选或字段治理时，同时更新 `docs/finance-interaction-system.md`，并检查依赖地图里受影响的模型。
 - 改中枢模板族、经营明细通用表头、示例数据或默认加载数据时，同时更新 `docs/finance-template-system.md`，并检查同模板族模型。
 - 用户可见经营明细不得出现 `数据口径`；预算/实际类模板必须使用独立的 `实际`、`预算` 工作表表达，内部归一化和旧格式兼容不得反向影响下载模板。
-- 模板归属以 `docs/finance-template-system.md` 为准：预算实际、单车归因、月度趋势、利润质量、Perspective BI 和财务分析 AI 助手共用 `operating-detail`；利润敏感性分析使用 `profit-sensitivity-assumptions`。
+- 模板归属以 `docs/finance-template-system.md` 为准：预算实际、单车归因、月度趋势、利润质量和财务分析 AI 助手共用 `operating-detail`；利润敏感性分析使用 `profit-sensitivity-assumptions`。
 
 ## 当前财务模型目录
 
-当前 `/finance` 模型库共有 7 个入口：
+当前 `/finance` 模型库共有 6 个入口（Perspective BI 分析台已于 2026-10-04 下线，旧地址重定向到 `/finance`）：
 
 | 模型 | 路由 | 主要源码 | 状态 |
 | --- | --- | --- | --- |
@@ -44,13 +44,12 @@
 | 分月指标趋势分析模型 | `/finance/monthly-trend` | `src/app/finance/monthly-trend/` | 已上线 |
 | 多维利润质量诊断模型 | `/finance/profit-structure` | `src/app/finance/profit-structure/` | 测试中 |
 | 利润敏感性分析 | `/finance/sensitivity-analysis` | `src/app/finance/sensitivity-analysis/` | 已上线 |
-| Perspective BI 分析台 | `/finance/perspective-bi` | `src/app/finance/perspective-bi/` | 测试中 |
 
 ## 模型明细
 
 ### 独立直达页面：BC 经济性分析
 
-- 路径：`/checkmi/`，不计入上方 7 个模型库入口，也不添加首页、导航、工具卡片、站内搜索或 sitemap 入口。
+- 路径：`/checkmi/`，不计入上方 6 个模型库入口，也不添加首页、导航、工具卡片、站内搜索或 sitemap 入口。
 - 来源：独立 BC 经济性看板的已验证产物，位于 `public/checkmi/`；原始 Excel 保留在源项目。维护方式见 `docs/checkmi-maintenance.md`，版本与文件哈希见 `docs/checkmi-release.json`。
 - 业务链路：销量与单价 → 净收入 → 毛利 → EBIT → 年度所得税与净利润。固定制造、研发与固定销交服按选择的总额、单车或费率假设计算，集团分摊始终计入；与本站其他财务模型保持独立。
 - 总览：先以三行浅色高亮文字列出期间/情景、销量/加权售价/BOM、研发/销交服/固定制造费用，小金额自动切换万元/元，不展示投资总额或大数字卡片。随后为四项经营指标、版型贡献、生命周期表现、版型比较和连续损益瀑布。
@@ -247,36 +246,6 @@
 - 支持重置为默认假设。
 - 页面明确展示当前业务口径：所有 Driver 非负、所得税为固定金额，利润总额按“销量 × 单位收入 - 销量 × 单位变动成本 - 固定扣减项 + 利润贡献项”计算。
 - 图表锁定 Plotly 缩放和工具栏，用户主要通过假设调整、指标选择和矩阵变量切换完成交互。
-
-### Perspective BI 分析台
-
-- 源码：`src/app/finance/perspective-bi/PerspectiveBITool.tsx`、`src/app/finance/perspective-bi/perspective-bi-engine.js`、`src/app/finance/perspective-bi/tool.css`
-- 路由：`/finance/perspective-bi`
-- 状态：测试中
-- 用途：在进入更专门的财务模型之前，先用 Perspective 原生工作台对 CSV/XLS/XLSX 明细进行自由探索。
-
-已设计图表：
-
-- Perspective 原生数据表。
-- 柱状图。
-- 折线图。
-- 热力图。
-- 散点图。
-- 已本地化的 Perspective 插件名称还包括矩形树图、旭日图、面积图、OHLC 和蜡烛图等，具体可用范围以原生 viewer 实际支持为准。
-
-交互模式：
-
-- 通过共享 private-tool 访问接口校验访问码；签名 Token 使用独立密钥并包含版本、audience、scope、签发与过期时间，Token 仅保存在当前页面内存中，有效期为 2 小时。
-- 支持上传 CSV/XLS/XLSX 和下载 CSV/XLSX 模板；模板族为 `operating-detail`，Excel 的数据表第 1 行为共享表头，并带独立 `填表说明`、`字段字典`。
-- 默认示例数据和分月趋势、利润质量诊断来自同一套经营故事；各模型只确定性抽取适合自身分析的期间和业务键。
-- 上传后进入字段治理：按时间维度、业务维度、金额指标三类展示识别依据，并支持一键采用系统建议、单位/比率设平均、金额/规模设求和。
-- 支持用 `[字段名]` 公式新增计算指标。
-- 在 Perspective 原生 viewer 中拖拽字段、分组、拆分、筛选、排序和切换图表类型。
-- 站点文档的 CSP 允许 WebAssembly 编译，以支持直接打开及从模型列表进入；JavaScript `eval` 仍禁止。
-- BI 引擎显式使用 Perspective 浏览器入口；服务端函数不包含其 Node HTTP/文件服务依赖，本地和 GitHub CI 构建后检查函数依赖体积，Vercel 使用平台自身的包体校验。
-- Perspective 原生操作面板通过站内样式变量和 shadow 样式注入统一成白底、细边框和蓝绿橙强调色。
-- 支持「放大工作台」按钮，扩大 BI 分析区域。
-- 解锁后数据只保存在当前页面会话中。
 
 ## 共享交互约定
 

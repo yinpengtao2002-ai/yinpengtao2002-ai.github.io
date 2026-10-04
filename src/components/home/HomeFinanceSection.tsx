@@ -66,12 +66,6 @@ const modelDetails: Record<string, { focus: string; detail: string; guide: strin
     guide: "先设置关键变量假设，再看利润影响排序，用敏感变量反推需要优先管理的经营动作。",
     points: ["利润情景测算", "变量敏感性排序", "目标利润倒推"],
   },
-  "perspective-bi": {
-    focus: "上传明细后的自助 BI 数据透视",
-    detail: "适合先把 CSV 或 Excel 明细放进网页工作台，拖动字段、切换图表、筛选排序，快速判断数据里有什么。",
-    guide: "先上传明细或查看示例数据，再用字段拖拽确认维度和指标，最后把清晰的问题带入专项模型。",
-    points: ["自助 BI 透视", "字段拖拽分析", "上传明细探索"],
-  },
   "finance-ai-assistant": {
     focus: "上传底稿后的对话式财务分析",
     detail: "适合直接问某月、某国家、某车型的单车边际、环比同比、维度排名和变化来源，并把结果生成在聊天里的图表卡片。",

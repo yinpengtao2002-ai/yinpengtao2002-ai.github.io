@@ -136,10 +136,6 @@
             months: ['2025-06', '2025-09', '2025-12', '2026-01', '2026-03', '2026-06'],
             businessKeyCount: 12
         },
-        'perspective-bi': {
-            months: ['2025-06', '2025-09', '2025-12', '2026-01', '2026-03', '2026-06'],
-            businessKeyCount: 12
-        },
         'margin-analysis': {
             months: ['2026-05', '2026-06'],
             businessKeyCount: 12
@@ -157,7 +153,6 @@
     const MODEL_TEMPLATE_GUIDANCE = {
         'monthly-trend': '模板覆盖连续18个月，可直接演示环比、同比和跨年趋势。',
         'profit-structure': '模板覆盖多个期间和完整区域，用于比较规模、结构和单位质量。',
-        'perspective-bi': '模板覆盖多个期间、区域和品牌，便于拖拽字段、筛选和透视探索。',
         'margin-analysis': '单车归因不需要填写预算/实际口径；请用“月份”选择基期和当期，同一业务键必须在两个期间都出现。',
         'business-analysis': '实际和预算分别填写在同名工作表中；两张表必须保留相同的业务键，不要把实际和预算写成明细行项目。',
         'finance-ai-assistant': '实际和预算分别填写在同名工作表中；连续月份越完整，AI 越容易回答环比、同比和变化来源。'

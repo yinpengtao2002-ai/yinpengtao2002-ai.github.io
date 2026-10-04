@@ -14,7 +14,6 @@ const engineFixtures = [
   ["MonthlyTrendModel", "../src/app/finance/monthly-trend/monthly-trend-engine.js", ".monthly-trend-tool .js-plotly-plot"],
   ["ProfitBridgeSensitivity", "../src/app/finance/sensitivity-analysis/sensitivity-engine.js", ".sensitivity-tool .js-plotly-plot"],
   ["ProfitStructureModel", "../src/app/finance/profit-structure/profit-structure-engine.js", ".profit-structure-tool .js-plotly-plot"],
-  ["PerspectiveBIModel", "../src/app/finance/perspective-bi/perspective-bi-engine.js", "perspective-viewer"],
 ];
 
 class FakeScript extends EventTarget {
@@ -99,7 +98,7 @@ test("browser engine boot surfaces asynchronous initialization failures", async 
   let reported;
   let disposeCount = 0;
   globalThis.window = {
-    PerspectiveBIModel: {
+    ProfitStructureModel: {
       async initApp() { throw failure; },
       dispose() { disposeCount += 1; },
     },
@@ -107,7 +106,7 @@ test("browser engine boot surfaces asynchronous initialization failures", async 
   console.error = () => {};
   try {
     const loaded = await loader.bootFinanceBrowserEngine({
-      engineName: "PerspectiveBIModel",
+      engineName: "ProfitStructureModel",
       importEngine: async () => undefined,
       errorMessage: "boot failed",
       onError(error) { reported = error; },
@@ -186,7 +185,6 @@ test("finance tool wrappers dispose loaded engines and expose a retry action", a
     "../src/app/finance/monthly-trend/MonthlyTrendTool.tsx",
     "../src/app/finance/profit-structure/ProfitStructureTool.tsx",
     "../src/app/finance/sensitivity-analysis/SensitivityTool.tsx",
-    "../src/app/finance/perspective-bi/PerspectiveBITool.tsx",
   ];
   for (const path of wrappers) {
     const source = await readFile(new URL(path, import.meta.url), "utf8");

@@ -29,7 +29,6 @@
 | monthly-trend | 上传预检、多维度筛选卡、联动候选项 | field-governance、filter-state、cascading-filter |
 | profit-structure | 上传预检、维度/组合粒度筛选、诊断下钻 | field-governance、filter-state、cascading-filter |
 | finance-ai-assistant | 明细表列筛选、聊天上下文中的过滤条件 | detail-table-filter、filter-state |
-| perspective-bi | 字段角色确认和原生 viewer 筛选 | 只复用字段治理和上传预检，不强行替换 Perspective 原生筛选 |
 
 ## 迁移顺序
 

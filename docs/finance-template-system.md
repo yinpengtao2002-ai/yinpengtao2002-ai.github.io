@@ -51,7 +51,6 @@ CSV 只能表达一张二维表，因此：
 | margin-analysis | operating-detail | 2026 年 5 至 6 月、12 个成对业务键；只按月份选择基期和当期，不需要预算/实际 Sheet。 |
 | monthly-trend | operating-detail | 连续 18 个月、8 个业务键，用于环比、同比和跨年趋势。 |
 | profit-structure | operating-detail | 6 个代表期间、12 个业务键，用于规模、结构和单位质量诊断。 |
-| perspective-bi | operating-detail | 6 个代表期间、12 个业务键，用于多维透视探索。 |
 | finance-ai-assistant | operating-detail | 模板使用连续 18 个月、8 个业务键，并从同一明细派生 `实际`、`预算`；只读对话示例中的图表和文字也由这套故事计算。 |
 | sensitivity-analysis | profit-sensitivity-assumptions | 保留独立的利润敏感性假设故事，但工作簿同样使用第 1 行表头、自动筛选、`填表说明` 和 `字段字典`。 |
 

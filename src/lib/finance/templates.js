@@ -6,7 +6,7 @@ const FINANCE_TEMPLATE_FAMILIES = [
     slug: "operating-detail",
     title: "经营明细事实表",
     description: "月份 + 业务维度 + 销量 + 财务指标；预算和实际在用户工作簿中使用独立工作表表达。",
-    modelSlugs: ["business-analysis", "margin-analysis", "monthly-trend", "profit-structure", "perspective-bi", "finance-ai-assistant"],
+    modelSlugs: ["business-analysis", "margin-analysis", "monthly-trend", "profit-structure", "finance-ai-assistant"],
     defaultSample: "shared-operating-detail",
   },
   {
