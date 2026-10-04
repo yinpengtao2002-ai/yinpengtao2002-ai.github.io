@@ -40,7 +40,11 @@ test("checkmi release contains matching assets, downloadable template and busine
   assert.ok(paths.some((file) => file.endsWith(".js")));
   assert.ok(paths.some((file) => file.endsWith(".css")));
   for (const file of paths) assert.ok(release.files.some((entry) => entry.file === file));
-  const bundle = await read(`public/checkmi/${release.files.find((file) => file.file.endsWith(".js")).file}`);
+  // Secondary views and import controls are lazy chunks, so their contract spans
+  // the complete validated release rather than only the initial entry module.
+  const bundle = (await Promise.all(release.files
+    .filter((file) => file.file.endsWith(".js"))
+    .map((file) => read(`public/checkmi/${file.file}`)))).join("\n");
   assert.ok(bundle.includes("基础数据生成损益"));
   assert.ok(bundle.includes("当前项目未配置 Mapping 规则"));
   assert.ok(bundle.includes("应用生成的损益"));
