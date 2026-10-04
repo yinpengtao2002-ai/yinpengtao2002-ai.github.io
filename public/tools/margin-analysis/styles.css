@@ -205,7 +205,8 @@ details[open] > .sidebar-summary::after {
     gap: 0.6rem;
 }
 
-.attribution-method-field {
+.attribution-method-field,
+.metric-format-field {
     grid-column: 1 / -1;
 }
 
@@ -1654,6 +1655,195 @@ details[open] > .usage-summary::after {
 
 
 /* ==================== 图表层级区域 ==================== */
+/* ==================== 归因总览 ==================== */
+.attribution-overview {
+    margin: 0 0 2rem;
+    padding: 1.25rem 1.35rem 1.1rem;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-card);
+    box-shadow: var(--shadow-soft);
+    font-family: var(--font-sans);
+}
+
+.attribution-overview-head h2 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.attribution-overview-head p {
+    margin: 0.3rem 0 0;
+    color: #8a887f;
+    font-size: 0.82rem;
+}
+
+.attribution-bridge {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr) auto) minmax(0, 1fr);
+    align-items: stretch;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.bridge-step {
+    display: grid;
+    align-content: start;
+    gap: 0.2rem;
+    min-width: 0;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: #fbfaf6;
+}
+
+.bridge-step span {
+    color: #8a887f;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.bridge-step strong {
+    color: var(--text-primary);
+    font-size: 1.35rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.bridge-step em {
+    color: #8a887f;
+    font-size: 0.74rem;
+    font-style: normal;
+    line-height: 1.4;
+}
+
+.bridge-step.is-total {
+    border-color: rgba(106, 155, 204, 0.35);
+    background: rgba(106, 155, 204, 0.07);
+}
+
+.bridge-step.is-up {
+    border-color: rgba(120, 140, 93, 0.38);
+    background: rgba(120, 140, 93, 0.08);
+}
+
+.bridge-step.is-down {
+    border-color: rgba(217, 119, 87, 0.38);
+    background: rgba(217, 119, 87, 0.08);
+}
+
+.bridge-step.is-up strong,
+.attribution-overview .is-up {
+    color: #5f7445;
+}
+
+.bridge-step.is-down strong,
+.attribution-overview .is-down {
+    color: #c0603f;
+}
+
+.bridge-arrow {
+    align-self: center;
+    color: #b0aea5;
+    font-size: 1rem;
+}
+
+.attribution-overview-takeaway {
+    margin: 0.9rem 0 0;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.6;
+}
+
+.attribution-overview-table-wrap {
+    margin-top: 0.9rem;
+    overflow-x: auto;
+}
+
+.attribution-overview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.attribution-overview-table caption {
+    padding-bottom: 0.5rem;
+    color: #8a887f;
+    font-size: 0.78rem;
+    text-align: left;
+}
+
+.attribution-overview-table th,
+.attribution-overview-table td {
+    padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid var(--border-light);
+    text-align: right;
+    white-space: nowrap;
+}
+
+.attribution-overview-table th:first-child,
+.attribution-overview-table td:last-child {
+    text-align: left;
+}
+
+.attribution-overview-table thead th {
+    color: #8a887f;
+    font-size: 0.76rem;
+    font-weight: 600;
+}
+
+.attribution-overview-table tbody tr {
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.attribution-overview-table tbody tr:hover,
+.attribution-overview-table tbody tr:focus-visible {
+    background: rgba(217, 119, 87, 0.06);
+    outline: none;
+}
+
+.attribution-overview-table tbody th {
+    color: var(--text-primary);
+    font-weight: 650;
+}
+
+.overview-top-name {
+    color: var(--text-primary);
+}
+
+.overview-filter-tag {
+    margin-left: 0.4rem;
+    padding: 0.05rem 0.4rem;
+    border-radius: 999px;
+    background: rgba(106, 155, 204, 0.12);
+    color: var(--accent-blue);
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .attribution-overview {
+        padding: 1rem;
+    }
+
+    .attribution-bridge {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .bridge-arrow {
+        display: none;
+    }
+
+    .bridge-step strong {
+        font-size: 1.15rem;
+    }
+}
+
 .chart-level-section {
     margin-bottom: 0.5rem;
     overflow-anchor: none;

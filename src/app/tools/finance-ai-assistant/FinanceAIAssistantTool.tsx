@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState, type DragEvent } from "react";
 import Link from "next/link";
-import { ArrowUp, Download, Eye, Loader2, RotateCcw, Trash2, UploadCloud } from "lucide-react";
+import { ArrowUp, Download, Eye, Loader2, MessageSquarePlus, RefreshCw, UploadCloud } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -43,6 +43,7 @@ import type {
 } from "@/lib/finance-ai/types";
 import type { FinanceChartSpec, FinanceTableMeta, FinanceTableVariant } from "@/lib/finance/charts/types";
 import type { FinanceAIChatState } from "@/lib/finance-ai/context";
+import { normalizePlotlyLayout, normalizePlotlyTraces } from "@/lib/finance/plotly-layout";
 
 type ChatRole = "user" | "assistant";
 
@@ -60,6 +61,7 @@ type ChatMessage = {
   chartCards?: ChartCard[];
   analysisContext?: NonNullable<FinanceAIChatState["analysisContext"]>;
   meta?: string;
+  suggestions?: string[];
 };
 
 type APIResponse = {
@@ -347,6 +349,54 @@ function getDefaultQuestion(schema: FinanceSchema | null) {
     : businessDimensions[0] ?? "国家";
 
   return `${period} ${dimension}表现怎么看？${metric}环比同比如何？`;
+}
+
+function listPreview(values: string[], limit = 5) {
+  if (values.length <= limit) return values.join("、");
+  return `${values.slice(0, limit).join("、")} 等 ${values.length} 个`;
+}
+
+function buildSuggestedQuestions(schema: FinanceSchema): string[] {
+  if (schema.requiredIssues.length) return [];
+  const period = schema.profile.periods.at(-1)?.label ?? "最近月份";
+  const dimensions = schema.dimensionColumns.filter((dimension) => dimension !== FINANCE_SCENARIO_COLUMN);
+  const dimension = dimensions.includes("国家") ? "国家" : dimensions[0] ?? "国家";
+  const salesMetric = schema.totalMetrics.find((metric) => metric.column === schema.salesColumn)?.name ?? "销量";
+  const unitMetric = schema.unitMetrics.find((metric) => /边际/.test(metric.name))?.name ?? schema.unitMetrics[0]?.name;
+  const hasBudget = schema.dimensionColumns.includes(FINANCE_SCENARIO_COLUMN);
+  const questions = [
+    `${period} 各${dimension}${salesMetric}排名？`,
+    unitMetric ? `${period} ${unitMetric}环比、同比怎么样？` : `${period} ${salesMetric}环比、同比怎么样？`,
+    unitMetric ? `${period} ${unitMetric}变化主要来自哪些${dimension}？` : "",
+    hasBudget ? `${period} 各${dimension}${salesMetric}预算完成情况？` : "",
+  ];
+  return questions.filter(Boolean).slice(0, 4);
+}
+
+function buildDataSummaryMessage(workbook: FinanceRawWorkbook, schema: FinanceSchema): ChatMessage {
+  const periods = schema.profile.periods;
+  const periodText = periods.length
+    ? periods.length === 1
+      ? `期间 ${periods[0].label}`
+      : `期间 ${periods[0].label} 至 ${periods.at(-1)?.label}（${periods.length} 个月）`
+    : "未识别到月份";
+  const dimensions = schema.dimensionColumns.filter((dimension) => dimension !== FINANCE_SCENARIO_COLUMN);
+  const metrics = [...schema.totalMetrics.map((metric) => metric.name), ...schema.unitMetrics.map((metric) => metric.name)];
+  const sheetText = workbook.sheets.length > 1 ? `${workbook.sheets.length} 张表 · ` : "";
+  const lines = [
+    `已读取「${workbook.fileName}」：${sheetText}${schema.profile.rowCount.toLocaleString("zh-CN")} 行，${periodText}。`,
+    dimensions.length ? `可拆分维度：${listPreview(dimensions)}。` : "",
+    metrics.length ? `可分析指标：${listPreview(metrics, 6)}。` : "",
+    schema.dimensionColumns.includes(FINANCE_SCENARIO_COLUMN) ? "包含实际与预算两套口径，可以直接问预算完成情况。" : "",
+    "直接提问，或点下面的问题开始。",
+  ].filter(Boolean);
+
+  return {
+    id: `assistant-summary-${Date.now()}`,
+    role: "assistant",
+    text: lines.join("\n\n"),
+    suggestions: buildSuggestedQuestions(schema),
+  };
 }
 
 function resizeFinanceAIQuestionInput(element: HTMLTextAreaElement | null) {
@@ -1588,7 +1638,7 @@ function PlotlyChart({ spec, className = "finance-ai-chart-host" }: { spec: Fina
       }
 
       const resolvedSpec = resolveFinanceAIChartSpecTokens(spec);
-      void Plotly.default.react(chartNode, resolvedSpec.data, resolvedSpec.layout, resolvedSpec.config);
+      void Plotly.default.react(chartNode, normalizePlotlyTraces(resolvedSpec.data), normalizePlotlyLayout(resolvedSpec.layout), resolvedSpec.config);
     }).catch(() => {
       if (chartNode) {
         chartNode.textContent = "图表渲染失败，请稍后重试。";
@@ -1654,6 +1704,7 @@ export default function FinanceAIAssistantTool() {
   const questionInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const canAsk = Boolean(workbook) && !busy;
+  const hasAskedQuestion = messages.some((message) => message.role === "user");
 
   useLayoutEffect(() => {
     if (!workbook) {
@@ -1700,6 +1751,7 @@ export default function FinanceAIAssistantTool() {
       const nextSchema = inferFinanceSchema(parsed.previewRows);
       setWorkbook(parsed.workbook);
       setSchema(nextSchema);
+      setMessages([buildDataSummaryMessage(parsed.workbook, nextSchema)]);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "文件读取失败，请换一个 CSV/XLS/XLSX 文件。");
     } finally {
@@ -1755,8 +1807,8 @@ export default function FinanceAIAssistantTool() {
     return payload;
   }
 
-  async function handleSubmit() {
-    const question = input.trim();
+  async function handleSubmit(questionOverride?: string) {
+    const question = (questionOverride ?? input).trim();
 
     if (!question) {
       return;
@@ -1874,6 +1926,13 @@ export default function FinanceAIAssistantTool() {
     }
   }
 
+  function startNewConversation() {
+    if (!workbook || !schema) return;
+    setInput("");
+    setError("");
+    setMessages([buildDataSummaryMessage(workbook, schema)]);
+  }
+
   function resetData() {
     setWorkbook(null);
     setSchema(null);
@@ -1898,11 +1957,13 @@ export default function FinanceAIAssistantTool() {
           </div>
           {workbook ? (
             <div className="finance-ai-header-actions">
-              <button type="button" className="finance-ai-icon-button" onClick={resetData} aria-label="清空当前数据">
-                <RotateCcw aria-hidden="true" />
+              <button type="button" className="finance-ai-header-action" onClick={startNewConversation} title="保留当前数据，清空对话记录" aria-label="新对话（保留当前数据）">
+                <MessageSquarePlus aria-hidden="true" />
+                <span>新对话</span>
               </button>
-              <button type="button" className="finance-ai-icon-button" onClick={resetData} aria-label="重置对话和数据">
-                <Trash2 aria-hidden="true" />
+              <button type="button" className="finance-ai-header-action" onClick={resetData} title="清空当前数据和对话，重新上传" aria-label="换数据（清空数据和对话）">
+                <RefreshCw aria-hidden="true" />
+                <span>换数据</span>
               </button>
             </div>
           ) : null}
@@ -1988,6 +2049,21 @@ export default function FinanceAIAssistantTool() {
                       </div>
                     ))}
                     {message.meta ? <small>{message.meta}</small> : null}
+                    {message.suggestions?.length && !hasAskedQuestion ? (
+                      <div className="finance-ai-suggestions" aria-label="推荐问题">
+                        {message.suggestions.map((question) => (
+                          <button
+                            type="button"
+                            key={question}
+                            className="finance-ai-suggestion"
+                            onClick={() => void handleSubmit(question)}
+                            disabled={!canAsk}
+                          >
+                            {question}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 </article>
               );

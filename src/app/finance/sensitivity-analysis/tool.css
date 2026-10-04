@@ -397,8 +397,67 @@
 }
 
 .sensitivity-tool .adjustment-slider {
+    --fill-from: 50%;
+    --fill-to: 50%;
+    --fill-color: var(--accent-green);
     width: 100%;
-    accent-color: var(--accent-orange);
+    height: 22px;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.sensitivity-tool .adjustment-slider.is-negative {
+    --fill-color: var(--accent-orange);
+}
+
+.sensitivity-tool .adjustment-slider::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+    background:
+        linear-gradient(90deg, transparent calc(50% - 1px), rgba(20, 20, 19, 0.28) calc(50% - 1px), rgba(20, 20, 19, 0.28) calc(50% + 1px), transparent calc(50% + 1px)),
+        linear-gradient(90deg, transparent var(--fill-from), var(--fill-color) var(--fill-from), var(--fill-color) var(--fill-to), transparent var(--fill-to)),
+        #e8e6dc;
+}
+
+.sensitivity-tool .adjustment-slider::-moz-range-track {
+    height: 6px;
+    border-radius: 999px;
+    background:
+        linear-gradient(90deg, transparent var(--fill-from), var(--fill-color) var(--fill-from), var(--fill-color) var(--fill-to), transparent var(--fill-to)),
+        #e8e6dc;
+}
+
+.sensitivity-tool .adjustment-slider::-webkit-slider-thumb {
+    width: 16px;
+    height: 16px;
+    margin-top: -5px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    background: var(--fill-color);
+    box-shadow: 0 1px 4px rgba(20, 20, 19, 0.25);
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.sensitivity-tool .adjustment-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    background: var(--fill-color);
+    box-shadow: 0 1px 4px rgba(20, 20, 19, 0.25);
+}
+
+.sensitivity-tool .adjustment-slider:focus-visible {
+    outline: 2px solid rgba(217, 119, 87, 0.45);
+    outline-offset: 2px;
+}
+
+.sensitivity-tool .adjustment-slider.is-beyond::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.25);
 }
 
 .sensitivity-tool .adjustment-meta {

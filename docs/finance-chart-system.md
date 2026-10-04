@@ -12,7 +12,8 @@
 - `public/tools/shared/finance-core.js`：静态工具使用的同构浏览器版本，同时承接 RFC 4180 CSV 状态机。
 - `src/lib/finance/core/`：后续继续承接筛选聚合、单车指标、PVM 结构/费率效应、FBP 利润链和预算实际差异。
 - `src/lib/finance/charts/`：统一 `FinanceChartSpec`、Plotly 主题、图表尺寸、移动端规则、瀑布桥、趋势图、热力图、气泡散点图、横向排名图、Pareto 排名、小多图趋势、系列柱状图和明细表协议。
-- `src/lib/finance/chart-accessibility.ts`：从同一 Plotly trace 构建同步的结论和数据表，并把图表与文字替代通过 `aria-describedby` 关联。
+- `src/lib/finance/chart-accessibility.ts`：从同一 Plotly trace 构建同步的结论和数据表，并把图表与文字替代通过 `aria-describedby` 关联。未命名 trace 不在结论里输出“系列 N”占位；散点按 `customdata[0]` 取业务名称，数值按量级保留位数。
+- `src/lib/finance/plotly-layout.ts`：Plotly 3 不再接受字符串标题（`title: "亿元"`）和 `titlefont`，会静默丢弃。四个浏览器引擎和财务 AI 助手的所有 `Plotly.react` 都必须先经过 `normalizePlotlyLayout` / `normalizePlotlyTraces`，新图表也可以直接写 `{ text }` 形式。
 
 当前中心化进度：
 

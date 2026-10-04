@@ -18,6 +18,7 @@ import {
     showFinanceFieldGovernance
 } from "../../../lib/finance/field-governance.ts";
 import { renderPlotlyAccessibleData } from "../../../lib/finance/chart-accessibility.ts";
+import { normalizePlotlyLayout, normalizePlotlyTraces } from "../../../lib/finance/plotly-layout.ts";
 
 const {
     OPERATING_DETAIL_FIELD_DICTIONARY_ROWS,
@@ -29,7 +30,7 @@ const {
 } = financeTemplates;
 
 function renderAccessiblePlot(target, data, layout, config) {
-    const result = window.Plotly.react(target, data, layout, config);
+    const result = window.Plotly.react(target, normalizePlotlyTraces(data), normalizePlotlyLayout(layout), config);
     const chartId = typeof target === "string" ? target : target?.id;
     if (chartId) renderPlotlyAccessibleData(chartId, data);
     return result;
@@ -1090,12 +1091,112 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
 
     function renderAll() {
         renderDataStatus();
+        renderKpiStrip();
         renderTrendChart();
         renderMomChart();
         renderYearComparisonChart();
         renderStructureChart();
         renderHeatmapChart();
         renderMomHeatmapChart();
+    }
+
+    function percentChange(current, previous) {
+        if (!Number.isFinite(current) || !Number.isFinite(previous) || Math.abs(previous) < 1e-12) return null;
+        return (current - previous) / Math.abs(previous);
+    }
+
+    function formatChange(change) {
+        if (change === null) return "—";
+        const percent = change * 100;
+        return `${percent > 0 ? "+" : ""}${formatNumber(percent, 1)}%`;
+    }
+
+    function changeTone(change) {
+        if (change === null || Math.abs(change) < 1e-9) return "is-flat";
+        return change > 0 ? "is-up" : "is-down";
+    }
+
+    function renderKpiStrip() {
+        const host = byId("monthly-kpi-strip");
+        if (!host) return;
+        const metric = state.selectedMetric;
+        const series = indexedMonthValues(currentRows());
+        const latest = series.months[series.months.length - 1];
+        if (!metric || !latest) {
+            host.innerHTML = "";
+            return;
+        }
+
+        const unit = axisUnitLabel(metric);
+        const unitText = unit ? ` ${unit}` : "";
+        const valueOf = (key) => (series.valueByMonth.has(key) ? series.valueByMonth.get(key) : Number.NaN);
+        const latestValue = valueOf(latest.key);
+        const previousKey = previousMonthKey(latest.key);
+        const lastYearKey = previousYearKey(latest.key);
+        const mom = percentChange(latestValue, valueOf(previousKey));
+        const yoy = percentChange(latestValue, valueOf(lastYearKey));
+
+        // Year to date: same months of the latest year against the same months a year earlier.
+        const [latestYear, latestMonth] = latest.key.split("-").map(Number);
+        const ytdKeys = Array.from({ length: latestMonth }, (_, index) => makePeriod(latestYear, index + 1)?.key).filter(Boolean);
+        const lastYtdKeys = ytdKeys.map(previousYearKey);
+        const isAverage = currentAggregation(metric) === "avg";
+        const combine = (keys) => {
+            const values = keys.filter((key) => series.valueByMonth.has(key)).map(valueOf);
+            if (values.length !== keys.length) return Number.NaN;
+            const total = values.reduce((sum, value) => sum + value, 0);
+            return isAverage ? total / values.length : total;
+        };
+        const ytd = combine(ytdKeys);
+        const lastYtd = combine(lastYtdKeys);
+        const ytdYoy = percentChange(ytd, lastYtd);
+
+        const volumeMetric = volumeMetricColumn();
+        const showUnit = Boolean(volumeMetric) && metric !== volumeMetric && !isAverage;
+        const unitSeries = showUnit ? unitMetricSeries(metric) : null;
+        const unitLatest = unitSeries?.valueByMonth.get(latest.key);
+        const unitPrevious = unitSeries?.valueByMonth.get(previousKey);
+        const unitMom = showUnit ? percentChange(unitLatest, unitPrevious) : null;
+
+        const cards = [
+            {
+                label: `${metric} · ${formatMonthKey(latest.key)}`,
+                value: `${displayValue(latestValue, metric)}${unitText}`,
+                note: "最新月份"
+            },
+            {
+                label: "环比",
+                value: formatChange(mom),
+                tone: changeTone(mom),
+                note: series.valueByMonth.has(previousKey) ? `上月 ${displayValue(valueOf(previousKey), metric)}${unitText}` : "缺少上月数据"
+            },
+            {
+                label: "同比",
+                value: formatChange(yoy),
+                tone: changeTone(yoy),
+                note: series.valueByMonth.has(lastYearKey) ? `去年同月 ${displayValue(valueOf(lastYearKey), metric)}${unitText}` : "缺少去年同月数据"
+            },
+            {
+                label: `年累计 1–${latestMonth}月${isAverage ? "均值" : ""}`,
+                value: Number.isFinite(ytd) ? `${displayValue(ytd, metric)}${unitText}` : "—",
+                note: ytdYoy === null ? "缺少完整的去年同期月份" : `同比 ${formatChange(ytdYoy)}`,
+                noteTone: changeTone(ytdYoy)
+            },
+            ...(showUnit ? [{
+                label: unitMetricLabel(metric),
+                value: Number.isFinite(unitLatest) ? formatNumber(unitLatest, Math.abs(unitLatest) >= 100 ? 0 : 2) : "—",
+                note: unitMom === null ? `${metric} ÷ ${volumeMetric}` : `环比 ${formatChange(unitMom)}`,
+                noteTone: changeTone(unitMom)
+            }] : [])
+        ];
+
+        host.innerHTML = cards.map((card) => `
+            <article class="monthly-kpi-card">
+                <span class="monthly-kpi-label">${escapeHtml(card.label)}</span>
+                <strong class="monthly-kpi-value ${card.tone || ""}">${escapeHtml(card.value)}</strong>
+                <span class="monthly-kpi-note ${card.noteTone || ""}">${escapeHtml(card.note)}</span>
+            </article>
+        `).join("");
     }
 
     function renderDataStatus() {
@@ -1457,8 +1558,12 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
             if (index === metrics.length - 1) {
                 monthAxisDecorations = { annotations: monthAxis.annotations, shapes: monthAxis.shapes, months: series.months };
             }
+            const span = upper - lower;
             axes[yAxisKey] = numericAxis({
                 domain: rowDomains[index],
+                // Integer ticks repeated (−11, −11, −12, −12) on narrow unit-metric ranges.
+                tickformat: span < 2 ? ",.2f" : span < 20 ? ",.1f" : ",.0f",
+                nticks: 4,
                 title: trendAxisTitle(item),
                 titlefont: { color: item.color, size: 11 },
                 tickfont: { color: item.color },
@@ -1611,7 +1716,7 @@ export function validateMonthlyUploadRows(rows, schema, source = {}) {
                 gridcolor: COLORS.grid,
                 zeroline: false
             },
-            yaxis: numericAxis({ title: axisUnitLabel(), tickfont: { color: COLORS.muted }, gridcolor: COLORS.grid, zerolinecolor: COLORS.grid })
+            yaxis: numericAxis({ title: metricAxisTitle(state.selectedMetric), tickfont: { color: COLORS.muted }, gridcolor: COLORS.grid, zerolinecolor: COLORS.grid })
         }), chartConfig());
     }
 

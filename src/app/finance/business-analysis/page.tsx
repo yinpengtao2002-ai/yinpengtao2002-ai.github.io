@@ -48,7 +48,7 @@ export default function BusinessAnalysisPage() {
                 </div>
             </noscript>
 
-            <ToolBackButton />
+            <ToolBackButton topScrim />
             <BusinessAnalysisTool />
         </div>
     );

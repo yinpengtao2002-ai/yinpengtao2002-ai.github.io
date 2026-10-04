@@ -966,8 +966,8 @@ test("loaded data center exposes unit name, current metric selector, and visual 
 
 test("static margin analysis shell version-busts the shared core and app bundle", () => {
     assert.match(marginAnalysisHtml, /<script src="\.\.\/shared\/finance-core\.js\?v=20260722"><\/script>/);
-    assert.match(marginAnalysisHtml, /<link rel="stylesheet" href="styles\.css\?v=20260816-zero-value-validation">/);
-    assert.match(marginAnalysisHtml, /<script src="app\.js\?v=20260816-zero-value-validation"><\/script>/);
+    assert.match(marginAnalysisHtml, /<link rel="stylesheet" href="styles\.css\?v=20261004-attribution-overview">/);
+    assert.match(marginAnalysisHtml, /<script src="app\.js\?v=20261004-attribution-overview"><\/script>/);
     assert.doesNotMatch(marginAnalysisHtml, /<script src="app\.js"><\/script>/);
 });
 
@@ -1211,4 +1211,28 @@ test("business headers map into dimensions and all uploaded dimensions are enabl
     assert.equal(normalized.rows[1]["Sales Volume"], 120);
     assert.equal(normalized.rows[1]["Total Margin"], 1800);
     assert.deepEqual(normalized.metricColumns.map(metric => metric.metricType), ["边际"]);
+});
+
+test("attribution overview totals summarise mix, rate and the largest driver per dimension", () => {
+    const { getLevelTotals, formatContributionLabel } = marginAnalysis.default ?? marginAnalysis;
+    const totals = getLevelTotals({
+        dim: "Dim_A",
+        displayData: [
+            { Dim_A: "欧洲", Mix_Effect: 0.004, Rate_Effect: 0.013, Total_Contribution: 0.017 },
+            { Dim_A: "中东", Mix_Effect: -0.001, Rate_Effect: 0.001, Total_Contribution: 0 },
+            { Dim_A: "拉美", Mix_Effect: 0.001, Rate_Effect: -0.03, Total_Contribution: -0.029 },
+            { Dim_A: "总计", Mix_Effect: 0.004, Rate_Effect: -0.016, Total_Contribution: -0.012 },
+        ],
+    });
+    approx(totals.mix, 0.004, "mix total comes from the summary row");
+    approx(totals.rate, -0.016, "rate total comes from the summary row");
+    assert.equal(totals.topName, "拉美");
+    approx(totals.topValue, -0.029, "largest absolute contribution wins");
+    assert.equal(getLevelTotals({ dim: "Dim_A", displayData: [] }), null);
+
+    assert.equal(formatContributionLabel(0), "0");
+    assert.equal(formatContributionLabel(0.0002), "≈0");
+    assert.equal(formatContributionLabel(0.017), "+0.017");
+    assert.match(marginAnalysisSource, /buildAttributionOverview\(levelResults, dimNames\)/);
+    assert.match(marginAnalysisHtml, /metric-format-field/);
 });

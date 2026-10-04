@@ -460,6 +460,7 @@ body {
   z-index: 50;
 }
 
+
 .finance-tool-back-button {
   --finance-tool-back-shadow: color-mix(in srgb, var(--foreground) 10%, transparent);
   --finance-tool-back-hover-shadow: color-mix(in srgb, var(--accent) 16%, transparent);
@@ -1099,6 +1100,80 @@ body {
   margin-top: 12px;
   color: color-mix(in srgb, var(--foreground) 54%, var(--muted));
   line-height: 1.6;
+}
+
+.finance-ai-header-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, var(--foreground));
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--foreground);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 650;
+  padding: 0 12px;
+  white-space: nowrap;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.finance-ai-header-action svg {
+  width: 15px;
+  height: 15px;
+}
+
+.finance-ai-header-action:hover {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  background: color-mix(in srgb, var(--accent) 6%, var(--card));
+}
+
+@media (max-width: 760px) {
+  .finance-ai-header-action {
+    width: 38px;
+    height: 38px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .finance-ai-header-action span {
+    display: none;
+  }
+}
+
+.finance-ai-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.finance-ai-suggestion {
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--card));
+  color: color-mix(in srgb, var(--foreground) 86%, var(--accent));
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.4;
+  padding: 7px 13px;
+  text-align: left;
+  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.finance-ai-suggestion:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, var(--card));
+  transform: translateY(-1px);
+}
+
+.finance-ai-suggestion:disabled {
+  cursor: default;
+  opacity: 0.6;
 }
 
 .finance-ai-message-section {
@@ -9024,5 +9099,30 @@ h6 {
     bottom: auto;
     width: auto;
     height: auto;
+  }
+}
+
+/* Workbench pages scroll under the fixed 控制台 / 返回 buttons on phones; a short fade keeps
+   chart titles from colliding with them. */
+.finance-tool-top-scrim {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .finance-tool-top-scrim {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 45;
+    display: block;
+    height: 68px;
+    background: linear-gradient(
+      180deg,
+      var(--background) 0%,
+      color-mix(in srgb, var(--background) 92%, transparent) 62%,
+      transparent 100%
+    );
+    pointer-events: none;
   }
 }

@@ -55,6 +55,12 @@ export default function SensitivityTool() {
                     <div id="message-area" className="message-area" aria-live="polite" />
                 </section>
 
+                <section className="sidebar-block" aria-labelledby="sensitivity-adjustment-title">
+                    <h2 className="sidebar-title" id="sensitivity-adjustment-title">百分比调整</h2>
+                    <p className="field-note adjustment-hint">拖动滑杆调整 ±50%，更大幅度直接在右侧输入框填写；右侧图表即时联动。</p>
+                    <div id="adjustment-inputs" className="form-grid" />
+                </section>
+
                 <section className="sidebar-block">
                     <h2 className="sidebar-title">数据与模板</h2>
                     <div className="upload-zone" id="upload-zone">
@@ -132,10 +138,6 @@ export default function SensitivityTool() {
                     </div>
                 </section>
 
-                <section className="sidebar-block">
-                    <h2 className="sidebar-title">百分比调整</h2>
-                    <div id="adjustment-inputs" className="form-grid" />
-                </section>
             </aside>
 
             <div id="sidebar-backdrop" className="sidebar-backdrop" aria-hidden="true" />
@@ -185,7 +187,7 @@ export default function SensitivityTool() {
                         <div className="panel-header">
                             <div>
                                 <h2>双变量影响矩阵</h2>
-                                <p>同时调整两个科目，查看利润总额可能落在哪个区间。</p>
+                                <p>同时调整两个科目，查看利润总额可能落在哪个区间；黑框为当前假设，横纵轴可在左侧「联动分析」切换。</p>
                             </div>
                         </div>
                         <div id="matrix-chart" className="chart" />

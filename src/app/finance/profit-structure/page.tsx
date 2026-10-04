@@ -48,7 +48,7 @@ export default function ProfitStructurePage() {
                 </div>
             </noscript>
 
-            <ToolBackButton />
+            <ToolBackButton topScrim />
             <ProfitStructureTool />
         </div>
     );

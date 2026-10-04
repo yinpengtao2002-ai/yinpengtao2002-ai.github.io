@@ -47,7 +47,7 @@ export default function MonthlyTrendPage() {
                 </div>
             </noscript>
 
-            <ToolBackButton />
+            <ToolBackButton topScrim />
             <MonthlyTrendTool />
         </div>
     );

@@ -109,6 +109,8 @@ export default function MonthlyTrendTool() {
                     </div>
                 </header>
 
+                <section className="monthly-kpi-strip" id="monthly-kpi-strip" aria-label="最新月份概览" aria-live="polite" />
+
                 <section className="workspace-grid featured-grid">
                     <article className="panel panel-large">
                         <div className="panel-header">

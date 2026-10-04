@@ -331,3 +331,21 @@ test("source files for the tool do not expose rejected panels or rejected chart 
   assert.match(surfaceText, /拖累贡献/);
   assert.doesNotMatch(surfaceText, /交叉结构切分|维度组合气泡矩阵|主路径结构条|正负结构拆解|markers\+text|textposition/);
 });
+
+test("equivalent dimensions are grouped and the first load uses two crossing dimensions", () => {
+  const { rows, schema } = normalizeUploadedRows([
+    { 月份: "2026-01", 大区: "欧洲", 车型: "Atlas", 品牌: "品牌A", 销量: 100, 边际: 300 },
+    { 月份: "2026-01", 大区: "欧洲", 车型: "Nova", 品牌: "品牌B", 销量: 100, 边际: 120 },
+    { 月份: "2026-01", 大区: "拉美", 车型: "Atlas", 品牌: "品牌A", 销量: 100, 边际: -80 },
+    { 月份: "2026-01", 大区: "拉美", 车型: "Nova", 品牌: "品牌B", 销量: 100, 边际: -70 },
+  ]);
+  assert.deepEqual(profitStructure.default.groupEquivalentDimensions(rows, ["大区", "车型", "品牌"]), [["大区"], ["车型", "品牌"]]);
+  assert.deepEqual(profitStructure.default.defaultDiagnosisDimensions(schema), ["大区", "车型"]);
+
+  const summary = summarizeProfitStructure(rows, schema, { dimensions: ["大区"], primaryMetric: "边际" });
+  const diagnostics = buildDimensionDiagnostics(summary);
+  assert.equal(diagnostics.length, 2, "equivalent 品牌 should not get its own identical bar");
+  const productRow = diagnostics.find((item) => item.dimension === "车型");
+  assert.deepEqual(productRow.equivalents, ["品牌"]);
+  assert.match(productRow.label, /车型（≈品牌）/);
+});

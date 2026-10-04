@@ -16,6 +16,7 @@ export type PlotlyAccessibleData = {
 
 type NumericPoint = {
   series: string;
+  namedSeries: boolean;
   label: string;
   value: number;
 };
@@ -39,13 +40,29 @@ function finiteValue(value: unknown): number | null {
 }
 
 function formatSummaryValue(value: number) {
+  const magnitude = Math.abs(value);
   return new Intl.NumberFormat("zh-CN", {
-    maximumFractionDigits: 4,
+    maximumFractionDigits: magnitude >= 100 ? 1 : magnitude >= 1 ? 2 : 4,
   }).format(value);
+}
+
+function pointLabelText(value: unknown, fallback: string) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? formatSummaryValue(value)
+    : textValue(value, fallback);
 }
 
 function traceName(trace: PlotlyAccessibleTrace, index: number) {
   return textValue(trace.name, `系列 ${index + 1}`);
+}
+
+function hasTraceName(trace: PlotlyAccessibleTrace) {
+  return textValue(trace.name, "") !== "";
+}
+
+function describePoint(point: NumericPoint) {
+  // Unnamed traces only get a generic "系列 N" placeholder, which reads as noise in the sentence.
+  return point.namedSeries ? `${point.series} · ${point.label}` : point.label;
 }
 
 export function buildPlotlyAccessibleData(
@@ -65,6 +82,7 @@ export function buildPlotlyAccessibleData(
 
   traces.forEach((trace, traceIndex) => {
     const series = traceName(trace, traceIndex);
+    const namedSeries = hasTraceName(trace);
     if (trace.type === "heatmap") {
       const xValues = valueArray(trace.x);
       const yValues = valueArray(trace.y);
@@ -86,7 +104,7 @@ export function buildPlotlyAccessibleData(
             `第 ${columnIndex + 1} 列`,
           );
           rows.push([series, rowLabel, columnLabel, value]);
-          points.push({ series, label: `${rowLabel} · ${columnLabel}`, value });
+          points.push({ series, namedSeries, label: `${rowLabel} · ${columnLabel}`, value });
         });
       });
       return;
@@ -103,16 +121,19 @@ export function buildPlotlyAccessibleData(
       if (value === null) return;
       const textLabel = textLabels[pointIndex];
       const customLabel = customLabels[pointIndex];
-      const label = textValue(
+      const customFirst = Array.isArray(customLabel) ? customLabel[0] : undefined;
+      const label = pointLabelText(
         typeof customLabel === "string"
           ? customLabel
           : pointTextIsCategory && typeof textLabel === "string" && !textLabel.includes("<")
           ? textLabel
+          : trace.type === "scatter" && typeof customFirst === "string"
+          ? customFirst
           : axisLabels[pointIndex],
         `数据点 ${pointIndex + 1}`,
       );
       rows.push([series, label, value]);
-      points.push({ series, label, value });
+      points.push({ series, namedSeries, label, value });
     });
   });
 
@@ -120,9 +141,9 @@ export function buildPlotlyAccessibleData(
   if (points.length > 0) {
     const highest = points.reduce((best, point) => point.value > best.value ? point : best);
     const lowest = points.reduce((best, point) => point.value < best.value ? point : best);
-    summary = `${title}共 ${points.length} 个数据点；最高为${highest.series} · ${highest.label} ${formatSummaryValue(highest.value)}`;
+    summary = `${title}共 ${points.length} 个数据点；最高为${describePoint(highest)} ${formatSummaryValue(highest.value)}`;
     if (lowest !== highest) {
-      summary += `，最低为${lowest.series} · ${lowest.label} ${formatSummaryValue(lowest.value)}`;
+      summary += `，最低为${describePoint(lowest)} ${formatSummaryValue(lowest.value)}`;
     }
     summary += "。";
   }

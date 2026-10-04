@@ -2600,6 +2600,9 @@ function renderCharts() {
     const colorSchemes = ['claude', 'warm', 'soft'];
     const dimNames = AppState.customDimNames;
 
+    const overview = buildAttributionOverview(levelResults, dimNames);
+    if (overview) container.appendChild(overview);
+
     levelResults.forEach((lr, level) => {
         if (!lr.effects || !lr.displayData) return;
 
@@ -2678,6 +2681,117 @@ function renderCharts() {
     });
 
     console.log('[renderCharts] 渲染完成，层级数:', levelResults.length);
+}
+
+// ==================== 归因总览 ====================
+function getLevelTotals(levelResult) {
+    const rows = levelResult?.displayData || [];
+    const totalRow = rows[rows.length - 1];
+    if (!totalRow || totalRow.Mix_Effect == null) return null;
+    const items = rows.slice(0, -1);
+    const dim = levelResult.dim;
+    const topItem = items.reduce((best, row) => (
+        !best || Math.abs(row.Total_Contribution) > Math.abs(best.Total_Contribution) ? row : best
+    ), null);
+    return {
+        mix: Number(totalRow.Mix_Effect) || 0,
+        rate: Number(totalRow.Rate_Effect) || 0,
+        topName: topItem ? String(topItem[dim] ?? '') : '',
+        topValue: topItem ? Number(topItem.Total_Contribution) || 0 : 0
+    };
+}
+
+function buildAttributionOverview(levelResults, dimNames = AppState.customDimNames) {
+    const firstIndex = levelResults.findIndex(lr => lr?.displayData?.length);
+    if (firstIndex < 0) return null;
+    const first = levelResults[firstIndex];
+    const firstTotals = getLevelTotals(first);
+    if (!firstTotals) return null;
+
+    const format = getMetricDisplayFormat();
+    const unitMetricLabel = getUnitMetricLabel();
+    const firstDimName = dimNames[first.dim] || first.dim;
+    const base = Number(first.levelAvgMarginBase) || 0;
+    const curr = Number(first.levelAvgMarginCurr) || 0;
+    const delta = curr - base;
+    const pct = base !== 0 ? delta / Math.abs(base) * 100 : 0;
+    const toneClass = (value) => (value > 1e-12 ? 'is-up' : value < -1e-12 ? 'is-down' : 'is-flat');
+    const dominantIsRate = Math.abs(firstTotals.rate) >= Math.abs(firstTotals.mix);
+    const takeaway = Math.abs(delta) < 1e-12
+        ? `两期${unitMetricLabel}基本持平。`
+        : dominantIsRate
+            ? `变动主要来自费率效应：同一${firstDimName}内的${unitMetricLabel}变化贡献 ${formatContributionLabel(firstTotals.rate, format)}；结构效应贡献 ${formatContributionLabel(firstTotals.mix, format)}。`
+            : `变动主要来自结构效应：${firstDimName}之间的销量占比变化贡献 ${formatContributionLabel(firstTotals.mix, format)}；费率效应贡献 ${formatContributionLabel(firstTotals.rate, format)}。`;
+
+    const dimensionRows = levelResults.map((lr, level) => {
+        const totals = getLevelTotals(lr);
+        if (!totals) return '';
+        const dimName = dimNames[lr.dim] || lr.dim;
+        return `
+            <tr data-overview-level="${level}" tabindex="0" role="link" aria-label="查看${escapeHTML(dimName)}维度贡献分析">
+                <th scope="row">${escapeHTML(dimName)}${lr.isDrilled ? '<span class="overview-filter-tag">已筛选</span>' : ''}</th>
+                <td class="${toneClass(totals.mix)}">${escapeHTML(formatContributionLabel(totals.mix, format))}</td>
+                <td class="${toneClass(totals.rate)}">${escapeHTML(formatContributionLabel(totals.rate, format))}</td>
+                <td><span class="overview-top-name">${escapeHTML(totals.topName || '—')}</span> <span class="${toneClass(totals.topValue)}">${escapeHTML(formatContributionLabel(totals.topValue, format))}</span></td>
+            </tr>`;
+    }).join('');
+
+    const section = document.createElement('section');
+    section.className = 'attribution-overview';
+    section.setAttribute('aria-labelledby', 'attribution-overview-title');
+    section.innerHTML = `
+        <div class="attribution-overview-head">
+            <h2 id="attribution-overview-title">归因总览</h2>
+            <p>${escapeHTML(AppState.baseMonth || '基期')} → ${escapeHTML(AppState.currMonth || '当期')} · 按「${escapeHTML(firstDimName)}」拆分结构效应与费率效应</p>
+        </div>
+        <div class="attribution-bridge">
+            <div class="bridge-step is-total">
+                <span>基期${escapeHTML(unitMetricLabel)}</span>
+                <strong>${escapeHTML(formatMetricValue(base, format))}</strong>
+            </div>
+            <span class="bridge-arrow" aria-hidden="true">→</span>
+            <div class="bridge-step ${toneClass(firstTotals.mix)}">
+                <span>结构效应</span>
+                <strong>${escapeHTML(formatContributionLabel(firstTotals.mix, format))}</strong>
+                <em>${escapeHTML(firstDimName)}之间的销量占比变化</em>
+            </div>
+            <span class="bridge-arrow" aria-hidden="true">→</span>
+            <div class="bridge-step ${toneClass(firstTotals.rate)}">
+                <span>费率效应</span>
+                <strong>${escapeHTML(formatContributionLabel(firstTotals.rate, format))}</strong>
+                <em>同一${escapeHTML(firstDimName)}内的${escapeHTML(unitMetricLabel)}变化</em>
+            </div>
+            <span class="bridge-arrow" aria-hidden="true">→</span>
+            <div class="bridge-step is-total">
+                <span>当期${escapeHTML(unitMetricLabel)}</span>
+                <strong>${escapeHTML(formatMetricValue(curr, format))}</strong>
+                <em class="${toneClass(delta)}">变动 ${escapeHTML(formatSignedMetricValue(delta, format))}（${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%）</em>
+            </div>
+        </div>
+        <p class="attribution-overview-takeaway">${escapeHTML(takeaway)}</p>
+        <div class="attribution-overview-table-wrap">
+            <table class="attribution-overview-table">
+                <caption>各维度怎么看 · 结构/费率拆分随维度不同，点击行查看对应图表</caption>
+                <thead>
+                    <tr><th scope="col">维度</th><th scope="col">结构效应</th><th scope="col">费率效应</th><th scope="col">最大影响项</th></tr>
+                </thead>
+                <tbody>${dimensionRows}</tbody>
+            </table>
+        </div>`;
+
+    const scrollToLevel = (row) => {
+        const target = document.querySelector(`.chart-level-section[data-level="${row.dataset.overviewLevel}"]`);
+        target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    section.querySelectorAll('tr[data-overview-level]').forEach((row) => {
+        row.addEventListener('click', () => scrollToLevel(row));
+        row.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            scrollToLevel(row);
+        });
+    });
+    return section;
 }
 
 function canUseGlobalImpactView(levelResult) {
@@ -3011,7 +3125,7 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
     const textLabels = values.map((v, i) => {
         if (i === 0) return formatMetricValue(baseMargin, metricDisplayFormat);
         if (i === values.length - 1) return formatMetricValue(currMargin, metricDisplayFormat);
-        return formatSignedMetricValue(v, metricDisplayFormat);
+        return formatContributionLabel(v, metricDisplayFormat);
     });
 
     // 变动金额注释
@@ -3052,8 +3166,9 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
         plot_bgcolor: 'rgba(250, 249, 245, 0)',
         paper_bgcolor: 'rgba(250, 249, 245, 0)',
         xaxis: {
-            tickangle: -25,
-            tickfont: { size: 12, color: '#b0aea5', family: PLOT_FONT_FAMILY },
+            tickangle: labels.length <= 8 ? 0 : -25,
+            automargin: true,
+            tickfont: { size: 12, color: '#8a887f', family: PLOT_FONT_FAMILY },
             gridcolor: 'rgba(232, 230, 220, 0.5)',
             linecolor: '#e8e6dc',
             showline: true,
@@ -3097,6 +3212,7 @@ function renderWaterfallChart(containerId, effectsData, dimCol, title, baseMargi
         layout.height = 380;
         layout.margin = { l: 60, r: 40, t: 100, b: 80 };
         layout.xaxis.tickfont.size = 10;
+        layout.xaxis.tickangle = labels.length <= 4 ? 0 : -50;
         layout.yaxis.tickfont.size = 10;
         layout.yaxis.title.font.size = 11;
         layout.title.font.size = 14;
@@ -4408,11 +4524,13 @@ function buildWaterfallAxisRange(baseMargin = 0, currMargin = 0, values = []) {
         dataRange,
         0
     );
+    // Size the window from the change itself; a padding tied to the absolute level (e.g. 6% of a
+    // 4.11 unit margin) squeezed typical month-on-month contributions into 1–2 pixel bars.
     const padding = Math.max(
         delta * 1.2,
         dataRange * 0.35,
         maxAbsRelative * 0.8,
-        maxAbsCore > 0 ? maxAbsCore * 0.06 : 0,
+        maxAbsCore > 0 ? maxAbsCore * 0.012 : 0,
         0.02
     );
 
@@ -4427,7 +4545,7 @@ function buildWaterfallAxisRange(baseMargin = 0, currMargin = 0, values = []) {
         maxAbsRelative * 3,
         delta * 3,
         dataRange * 2.2,
-        maxAbsCore > 0 ? maxAbsCore * 0.18 : 0,
+        maxAbsCore > 0 ? maxAbsCore * 0.04 : 0,
         0.08
     );
     const currentSpan = yRangeMax - yRangeMin;
@@ -4470,6 +4588,14 @@ function formatSignedMetricValue(num, format = getMetricDisplayFormat()) {
         return sign + formatPercentRatio(value);
     }
     return formatSignedMetricNumber(num);
+}
+
+function formatContributionLabel(num, format = getMetricDisplayFormat()) {
+    const value = Number(num) || 0;
+    if (Math.abs(value) < 1e-12) return '0';
+    const formatted = formatSignedMetricValue(value, format);
+    // Tiny contributions that round to zero read better as "≈0" than as a signed "+0".
+    return /^[+-]?0(?:\.0+)?%?$/.test(formatted) ? '≈0' : formatted;
 }
 
 function formatPercentRatio(num) {
@@ -4517,6 +4643,8 @@ function formatSignedMetricNumber(num) {
 
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
+        getLevelTotals,
+        formatContributionLabel,
         calculateGlobalMetrics,
         calculateDimensionPVMEffects,
         calculateBottomUpPVMEffects,

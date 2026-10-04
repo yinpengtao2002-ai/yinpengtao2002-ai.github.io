@@ -48,6 +48,13 @@ test("Plotly alternatives summarize ranked and heatmap data without losing table
   ], { title: "双变量影响矩阵" });
   assert.deepEqual(driverMatrix.rows.at(-1), ["系列 1", "单车收入 +10%", "销量 +10%", 150]);
   assert.match(driverMatrix.summary, /单车收入 \+10% · 销量 \+10% 150/);
+  assert.doesNotMatch(driverMatrix.summary, /系列 1/, "unnamed traces should not leak a placeholder series name");
+
+  const qualityMap = buildPlotlyAccessibleData([
+    { type: "scatter", mode: "markers", name: "低规模高质量", x: [0.007105665394987014], y: [3.80512], customdata: [["拉美 / 巴西", "7.2"]] },
+  ], { title: "结构质量地图" });
+  assert.match(qualityMap.summary, /低规模高质量 · 拉美 \/ 巴西 3\.81/);
+  assert.doesNotMatch(qualityMap.summary, /0\.0071056/);
 });
 
 test("all key finance Plotly engines publish synchronized summaries and data tables", async () => {

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import ToolBackButton from "@/components/finance/ToolBackButton";
 
-const MARGIN_ANALYSIS_TOOL_VERSION = "20260816-zero-value-validation";
+const MARGIN_ANALYSIS_TOOL_VERSION = "20261004-attribution-overview";
 
 export const metadata: Metadata = {
     title: "单车指标变动归因模型｜财务模型",
@@ -49,7 +49,7 @@ export default function MarginAnalysisPage() {
                 </div>
             </noscript>
 
-            <ToolBackButton />
+            <ToolBackButton topScrim />
 
             <div className="absolute inset-0">
                 <iframe

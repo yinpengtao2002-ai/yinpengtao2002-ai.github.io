@@ -205,7 +205,7 @@ export default function BusinessAnalysisTool() {
                         <div className="panel-header">
                             <div>
                                 <h2>单车净收入 × 单车边际</h2>
-                                <p>每个维度一个点，横轴单车净收入，纵轴单车边际，气泡代表销量规模。</p>
+                                <p>每个维度一个点，横轴单车净收入，纵轴单车边际，气泡代表销量规模；绿色为边际总额达到预算，红色为低于预算。</p>
                             </div>
                         </div>
                         <div id="unit-margin-chart" className="chart" />

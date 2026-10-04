@@ -20,6 +20,7 @@ import {
     showFinanceFieldGovernance
 } from "../../../lib/finance/field-governance.ts";
 import { renderPlotlyAccessibleData } from "../../../lib/finance/chart-accessibility.ts";
+import { normalizePlotlyLayout, normalizePlotlyTraces } from "../../../lib/finance/plotly-layout.ts";
 
 const {
     OPERATING_DETAIL_FIELD_DICTIONARY_ROWS,
@@ -31,7 +32,7 @@ const {
 } = financeTemplates;
 
 function renderAccessiblePlot(target, data, layout, config) {
-    const result = window.Plotly.react(target, data, layout, config);
+    const result = window.Plotly.react(target, normalizePlotlyTraces(data), normalizePlotlyLayout(layout), config);
     const chartId = typeof target === "string" ? target : target?.id;
     if (chartId) renderPlotlyAccessibleData(chartId, data);
     return result;
@@ -48,6 +49,9 @@ const VOLUME_ALIASES = ["销量", "销售量", "发车量", "台数", "数量", 
 const REVENUE_ALIASES = ["净收入", "营业收入", "收入", "净收入总额", "收入总额", "revenue", "netrevenue", "sales", "gmv"];
 const PRIMARY_VALUE_ALIASES = ["边际", "边际总额", "贡献边际", "毛利", "毛利额", "利润贡献", "利润", "margin", "grossmargin", "contributionmargin", "profit"];
 const DEFAULT_DIMENSION_PATH_CANDIDATES = ["大区", "国家", "品牌", "车型", "燃油品类"];
+// Two crossing dimensions (geography × product) keep the quality map readable on first load;
+// all five levels split the demo into dozens of tiny combinations.
+const DEFAULT_DIAGNOSIS_DIMENSION_CANDIDATES = ["大区", "车型"];
 const NON_ANALYSIS_DIMENSION_COLUMNS = ["数据口径", "口径", "场景", "scenario", "备注", "说明", "单位", "版本", "数据类型", "类型", "note", "notes", "remark", "remarks", "comment", "comments"];
 const DIMENSION_SELECT_IDS = [
     "profit-structure-primary-dimension",
@@ -247,6 +251,38 @@ function defaultDimensionPath(schema, maxLevels = 5) {
         if (!selected.includes(dimension)) selected.push(dimension);
     }
     return selected.slice(0, maxLevels);
+}
+
+function defaultDiagnosisDimensions(schema) {
+    const dimensions = buildDimensionOptions(schema);
+    const preferred = DEFAULT_DIAGNOSIS_DIMENSION_CANDIDATES.filter((dimension) => dimensions.includes(dimension));
+    if (preferred.length === DEFAULT_DIAGNOSIS_DIMENSION_CANDIDATES.length) return preferred;
+    return defaultDimensionPath(schema, 2);
+}
+
+// Dimensions whose values map one-to-one across every row (e.g. 车型 ↔ 品牌 ↔ 业务单元 in a
+// single-brand-per-model book) split the data identically and always get the same score.
+function groupEquivalentDimensions(rows, dimensions) {
+    const groups = [];
+    const isEquivalent = (left, right) => {
+        const forward = new Map();
+        const backward = new Map();
+        for (const row of rows) {
+            const a = String(row?.dimensionValues?.[left] ?? "");
+            const b = String(row?.dimensionValues?.[right] ?? "");
+            if (forward.has(a) && forward.get(a) !== b) return false;
+            if (backward.has(b) && backward.get(b) !== a) return false;
+            forward.set(a, b);
+            backward.set(b, a);
+        }
+        return true;
+    };
+    for (const dimension of dimensions) {
+        const group = groups.find((members) => isEquivalent(members[0], dimension));
+        if (group) group.push(dimension);
+        else groups.push([dimension]);
+    }
+    return groups;
 }
 
 function ratio(numerator, denominator) {
@@ -513,9 +549,20 @@ function renderEmptyChart(id, text) {
     node.innerHTML = `<div class="empty-chart">${escapeHtml(text)}</div>`;
 }
 
-function buildSummaryCards(summary) {
+function sourceUnits(sourceLabel = state.currentSourceLabel) {
+    // The shared demo book is in 万辆 / 亿元; uploads keep whatever unit the sheet uses.
+    return sourceLabel === "示例数据"
+        ? { volume: "万辆", amount: "亿元", unit: "万元/辆" }
+        : { volume: "", amount: "", unit: "" };
+}
+
+function buildSummaryCards(summary, schema = summary.schema, sourceLabel = state.currentSourceLabel) {
+    void schema;
+    const units = sourceUnits(sourceLabel);
+    const unitSuffix = (unit) => (unit ? ` ${unit}` : "");
+    const sourceNote = units.volume ? "" : " · 单位同底表";
     const cards = [
-        { label: "销量", value: formatVolume(summary.totals.volume), note: "上传销量合计" }
+        { label: "销量", value: `${formatVolume(summary.totals.volume)}${unitSuffix(units.volume)}`, note: `上传销量合计${sourceNote}` }
     ];
     for (const metric of summary.metricColumns.slice(0, 5)) {
         const aggregation = summary.schema?.metricAggregations?.[metric] || { mode: "sum" };
@@ -527,10 +574,11 @@ function buildSummaryCards(summary) {
                     ? "取当前范围最新期间值"
                     : aggregation.mode === "weighted_average"
                         ? `按 ${aggregation.weightColumn} 加权`
-                        : "上传指标合计";
+                        : `上传指标合计${sourceNote}`;
+        const isAmount = aggregation.mode === "sum" && !isRateLikeMetric(metric);
         cards.push({
             label: metric,
-            value: formatMetricValue(summary.totals.metrics[metric]),
+            value: `${formatMetricValue(summary.totals.metrics[metric])}${isAmount ? unitSuffix(units.amount) : ""}`,
             note
         });
     }
@@ -538,7 +586,10 @@ function buildSummaryCards(summary) {
 }
 
 function buildDimensionDiagnostics(summary, options = {}) {
-    const dimensions = buildDimensionOptions(summary.schema);
+    const allDimensions = buildDimensionOptions(summary.schema);
+    const equivalentGroups = groupEquivalentDimensions(summary.rows, allDimensions);
+    const equivalentsByDimension = new Map(equivalentGroups.map((group) => [group[0], group.slice(1)]));
+    const dimensions = equivalentGroups.map((group) => group[0]);
     const limit = options.limit || dimensions.length;
     const totalNegativeDrag = Math.abs(summary.items
         .filter((item) => item.dragContribution < 0)
@@ -562,8 +613,11 @@ function buildDimensionDiagnostics(summary, options = {}) {
             .filter((item) => item.dragContribution < 0)
             .sort((a, b) => a.dragContribution - b.dragContribution)[0];
 
+        const equivalents = equivalentsByDimension.get(dimension) || [];
         return {
             dimension,
+            equivalents,
+            label: equivalents.length ? `${dimension}（≈${equivalents.join("、")}）` : dimension,
             members: diagnosticSummary.items.length,
             qualitySpread,
             rawQualitySpread,
@@ -686,15 +740,18 @@ function renderDiagnosticSummary(summary) {
         ? summary.totals.unitMetrics[summary.analysis.primaryMetric] || 0
         : 0;
 
+    const unitLabel = sourceUnits().unit;
     const cards = [
         {
             label: "优先下钻维度",
             value: topDimension?.dimension || "暂无",
-            note: topDimension?.reason || "上传更多维度后生成诊断"
+            note: topDimension
+                ? `${topDimension.reason}${topDimension.equivalents.length ? `；与${topDimension.equivalents.join("、")}一一对应，结论相同` : ""}`
+                : "上传更多维度后生成诊断"
         },
         {
             label: "整体单位质量",
-            value: formatMetricValue(totalUnit),
+            value: `${formatMetricValue(totalUnit)}${unitLabel ? ` ${unitLabel}` : ""}`,
             note: summary.analysis.quality.unitTitle
         },
         {
@@ -725,13 +782,16 @@ function renderDimensionDiagnostics(id, summary) {
     }
     const compact = isCompactViewport();
     const items = [...diagnostics].reverse();
+    const topScore = diagnostics[0].score;
 
     renderAccessiblePlot(id, [{
         type: "bar",
         orientation: "h",
+        name: "解释力得分",
         x: items.map((item) => item.score),
-        y: items.map((item) => item.dimension),
-        marker: { color: items.map((_, index) => COLOR_PALETTE[index % COLOR_PALETTE.length]) },
+        y: items.map((item) => item.label),
+        // One hue; only the leading dimension (and ties) is emphasised.
+        marker: { color: items.map((item) => (item.score >= topScore - 1e-9 ? "#d97757" : "#c9c4b6")) },
         customdata: items.map((item) => [
             formatMetricValue(item.qualitySpread),
             formatMetricValue(item.negativeDrag),
@@ -996,12 +1056,12 @@ function loadRows(inputRows, sourceLabel = "示例数据", fieldRoleOverrides = 
     }
     state.rows = rows;
     state.schema = schema;
-    state.selectedDimensions = defaultDimensionPath(schema);
+    state.currentSourceLabel = sourceLabel;
+    state.selectedDimensions = defaultDiagnosisDimensions(schema);
     state.selectedPrimaryMetric = pickPrimaryMetric(schema);
     state.selectedSecondaryMetric = pickSecondaryMetric(schema, state.selectedPrimaryMetric);
     state.selectedMonth = "__all__";
     state.filters = {};
-    state.currentSourceLabel = sourceLabel;
     renderAll();
     showMessage("success", `${sourceLabel}已载入，可切换诊断维度、质量指标或筛选条件继续诊断。`);
 }
@@ -1232,6 +1292,8 @@ const profitStructureModelApi = {
     buildQualityMapItems,
     buildDragContributionItems,
     defaultDimensionPath,
+    defaultDiagnosisDimensions,
+    groupEquivalentDimensions,
     summarizeProfitStructure,
     createSampleRows,
     initApp,

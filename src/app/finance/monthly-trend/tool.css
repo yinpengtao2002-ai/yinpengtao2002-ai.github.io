@@ -800,6 +800,62 @@
     margin-bottom: 0.85rem;
 }
 
+.monthly-trend-tool .monthly-kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.65rem;
+    margin-bottom: 0.85rem;
+}
+
+.monthly-trend-tool .monthly-kpi-strip:empty {
+    display: none;
+}
+
+.monthly-trend-tool .monthly-kpi-card {
+    display: grid;
+    gap: 0.25rem;
+    min-width: 0;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: var(--shadow-soft);
+    padding: 0.8rem 0.9rem;
+    font-family: var(--font-sans);
+}
+
+.monthly-trend-tool .monthly-kpi-label {
+    overflow: hidden;
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.monthly-trend-tool .monthly-kpi-value {
+    color: var(--text-primary);
+    font-size: 1.32rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.monthly-trend-tool .monthly-kpi-note {
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.monthly-trend-tool .monthly-kpi-value.is-up,
+.monthly-trend-tool .monthly-kpi-note.is-up {
+    color: var(--accent-green);
+}
+
+.monthly-trend-tool .monthly-kpi-value.is-down,
+.monthly-trend-tool .monthly-kpi-note.is-down {
+    color: var(--accent-orange);
+}
+
 .monthly-trend-tool .featured-grid {
     grid-template-columns: minmax(0, 1fr);
 }

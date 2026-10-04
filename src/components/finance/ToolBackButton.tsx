@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-export default function ToolBackButton() {
+export default function ToolBackButton({ topScrim = false }: { topScrim?: boolean }) {
     const router = useRouter();
 
     const handleBack = () => {
@@ -17,6 +17,8 @@ export default function ToolBackButton() {
     };
 
     return (
+        <>
+        {topScrim ? <div className="finance-tool-top-scrim" aria-hidden="true" /> : null}
         <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -35,5 +37,6 @@ export default function ToolBackButton() {
                 <span className="finance-tool-back-label">返回上一页</span>
             </button>
         </motion.div>
+        </>
     );
 }

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { buildFinanceAIChartDemoSpecs } from "@/lib/finance-ai/chart-demo";
 import FinanceAIDetailTable from "@/components/finance/FinanceAIDetailTable";
 import type { FinanceChartSpec } from "@/lib/finance/charts/types";
+import { normalizePlotlyLayout, normalizePlotlyTraces } from "@/lib/finance/plotly-layout";
 
 type PlotlyModule = {
   default: {
@@ -46,7 +47,7 @@ function PlotlyDemoChart({ spec }: { spec: FinanceChartSpec }) {
         return;
       }
 
-      void Plotly.default.react(chartNode, spec.data, spec.layout, spec.config);
+      void Plotly.default.react(chartNode, normalizePlotlyTraces(spec.data), normalizePlotlyLayout(spec.layout), spec.config);
     }).catch(() => {
       if (chartNode) {
         chartNode.textContent = "图表渲染失败";

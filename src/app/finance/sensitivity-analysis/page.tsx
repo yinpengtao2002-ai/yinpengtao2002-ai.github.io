@@ -49,7 +49,7 @@ export default function SensitivityAnalysisPage() {
                 </div>
             </noscript>
 
-            <ToolBackButton />
+            <ToolBackButton topScrim />
             <SensitivityTool />
         </div>
     );

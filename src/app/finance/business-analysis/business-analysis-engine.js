@@ -30,6 +30,7 @@ import {
     showFinanceFieldGovernance
 } from "../../../lib/finance/field-governance.ts";
 import { renderPlotlyAccessibleData } from "../../../lib/finance/chart-accessibility.ts";
+import { normalizePlotlyLayout, normalizePlotlyTraces } from "../../../lib/finance/plotly-layout.ts";
 
 const {
     OPERATING_DETAIL_FIELD_DICTIONARY_ROWS,
@@ -151,7 +152,7 @@ const {
     }
 
     function renderAccessiblePlot(target, data, layout, config) {
-        const result = Plotly.react(target, data, layout, config);
+        const result = Plotly.react(target, normalizePlotlyTraces(data), normalizePlotlyLayout(layout), config);
         const chartId = typeof target === "string" ? target : target?.id;
         if (chartId) renderPlotlyAccessibleData(chartId, data);
         return result;
@@ -296,6 +297,10 @@ const {
         return currentUnit() === "million" ? value * 100 : value;
     }
 
+    function isDisplayZeroAmount(value) {
+        return !Number.isFinite(value) || Math.abs(displayAmount(value)) < 0.005;
+    }
+
     function amountAxisLabel() {
         return currentUnit() === "million" ? "百万元" : "亿元";
     }
@@ -306,7 +311,7 @@ const {
         return normalized.toLocaleString("zh-CN", {
             minimumFractionDigits: digits,
             maximumFractionDigits: digits
-        }).replace("-0", "0");
+        }).replace(/^-(?=0(?:\.0+)?$)/, "");
     }
 
     function formatAmount(value, digits = 2) {
@@ -801,16 +806,14 @@ const {
             || fixedSubjectEntries(assumptions).length > 0;
     }
 
-    function hasLongFormat(rows) {
-        return safeArray(rows).some((sourceRow) => {
-            const row = normalizeRowKeys(sourceRow);
-            const amount = pick(row, ["金额", "数量", "值", "amount", "Amount", "value"]);
-            const scenario = pick(row, ["数据口径", "口径", "版本", "scenario", "Scenario"]);
-            return pick(row, ["科目", "项目", "指标", "subject", "lineItem"]) !== undefined
-                && (pick(row, ["实际", "实际值", "实际数据", "actual", "Actual"]) !== undefined
-                    || pick(row, ["预算", "预算值", "budget", "Budget"]) !== undefined
-                    || (amount !== undefined && scenario !== undefined));
-        });
+    function isLongSubjectRow(sourceRow) {
+        const row = normalizeRowKeys(sourceRow);
+        const amount = pick(row, ["金额", "数量", "值", "amount", "Amount", "value"]);
+        const scenario = pick(row, ["数据口径", "口径", "版本", "scenario", "Scenario"]);
+        return pick(row, ["科目", "项目", "指标", "subject", "lineItem"]) !== undefined
+            && (pick(row, ["实际", "实际值", "实际数据", "actual", "Actual"]) !== undefined
+                || pick(row, ["预算", "预算值", "budget", "Budget"]) !== undefined
+                || (amount !== undefined && scenario !== undefined));
     }
 
     function inferDimensionColumns(rows, fieldRoleOverrides = {}) {
@@ -1091,17 +1094,30 @@ const {
     }
 
     function parseRows(rows, fieldRoleOverrides = {}) {
-        const parsed = hasLongFormat(rows)
-            ? parseLongRows(rows, inferDimensionColumns(rows.map(normalizeRowKeys), fieldRoleOverrides))
-            : hasOperatingDetailScenarioRows(rows)
-                ? parseOperatingDetailScenarioRows(rows, fieldRoleOverrides)
-                : parseWideRows(rows, fieldRoleOverrides);
+        // Uploaded operating detail and subject rows (科目 + 实际/预算, from the subject sheet or the
+        // manual table) arrive together. Parse each with its own reader; letting one subject row switch
+        // the whole batch to the long-format reader would drop every operating-detail row.
+        const sourceRows = safeArray(rows);
+        const subjectRows = sourceRows.filter(isLongSubjectRow);
+        const operatingRows = sourceRows.filter((row) => !isLongSubjectRow(row));
+        const parseSubjects = () => parseLongRows(
+            subjectRows,
+            inferDimensionColumns(subjectRows.map(normalizeRowKeys), fieldRoleOverrides)
+        );
+        const parseOperating = () => (hasOperatingDetailScenarioRows(operatingRows)
+            ? parseOperatingDetailScenarioRows(operatingRows, fieldRoleOverrides)
+            : parseWideRows(operatingRows, fieldRoleOverrides));
+        const parsed = !operatingRows.length
+            ? parseSubjects()
+            : subjectRows.length
+                ? [...parseOperating(), ...parseSubjects()]
+                : parseOperating();
         parsed.availableDimensions = inferAvailableDimensions(parsed);
         return parsed;
     }
 
-    function buildSampleData() {
-        return parseRows(createBudgetOperatingDetailRows(createOperatingDetailSampleRows({ months: buildMonthKeys(2026, 1, 4) })));
+    function buildSampleSourceRows() {
+        return createBudgetOperatingDetailRows(createOperatingDetailSampleRows({ months: buildMonthKeys(2026, 1, 4) }));
     }
 
     function initSelectOptions(select, values, allLabel, selectedValue) {
@@ -1780,8 +1796,15 @@ const {
         const impact = driverValue(summary, driver);
         const hasBudget = Math.abs(budget) > 1e-9;
         const favorable = metric.compare === "lower" ? rawGap <= 0 : impact >= 0;
-        const ratio = metric.ratioKey ? summary[metric.ratioKey] : ratioValue(actual, budget);
-        const band = gaugeBand(ratio, hasBudget);
+        // A completion rate over a negative budget (a planned loss) reads backwards: a larger loss
+        // would show >100%. Judge those cards by the direction of the gap instead.
+        const negativeBudget = budget < -1e-9;
+        const ratio = negativeBudget
+            ? Number.NaN
+            : metric.ratioKey ? summary[metric.ratioKey] : ratioValue(actual, budget);
+        const band = negativeBudget
+            ? { className: favorable ? "green" : "red", label: favorable ? "优于预算" : "差于预算" }
+            : gaugeBand(ratio, hasBudget);
 
         return {
             actual,
@@ -1793,7 +1816,7 @@ const {
             status: band.label,
             statusClass: band.className,
             gaugeClass: band.className,
-            gaugeProgress: hasBudget ? Math.max(0, Math.min(100, ratio * 100)) : 0,
+            gaugeProgress: hasBudget && Number.isFinite(ratio) ? Math.max(0, Math.min(100, ratio * 100)) : 0,
             gapLine: hasBudget ? budgetGapLine(actual, budget, driver) : "预算为 0"
         };
     }
@@ -2043,7 +2066,9 @@ const {
 
     function bridgeTrace({ measures, labels, values, text }) {
         const compact = isCompactBridgeViewport();
-        const compactText = text.map((item) => String(item || "")
+        // Bar labels carry only the amount (the axis title holds the unit) so Plotly does not shrink
+        // wide two-line labels to fit narrow bars; the full text, including rates, stays in the hover.
+        const barText = text.map((item) => String(item || "")
             .split("<br>")[0]
             .replace(new RegExp(`\\s*${amountAxisLabel()}$`), ""));
         return {
@@ -2055,11 +2080,15 @@ const {
             increasing: { marker: { color: COLORS.green } },
             decreasing: { marker: { color: COLORS.red } },
             totals: { marker: { color: COLORS.orange } },
-            text: compact ? compactText : text,
-            textposition: "outside",
-            textfont: { size: compact ? 9 : 12 },
+            text: barText,
+            hovertext: text,
+            // Horizontal (mobile) bars: long decreasing bars would push outside labels onto the
+            // category axis, so let Plotly place them inside when they fit.
+            textposition: compact ? "auto" : "outside",
+            constraintext: "none",
+            textfont: { size: compact ? 10 : 11 },
             cliponaxis: false,
-            hovertemplate: `${compact ? "%{y}" : "%{x}"}<br>%{text}<extra></extra>`
+            hovertemplate: `${compact ? "%{y}" : "%{x}"}<br>%{hovertext}<extra></extra>`
         };
     }
 
@@ -2068,7 +2097,7 @@ const {
             return plotLayout({
                 showlegend: false,
                 height: Math.max(360, labels.length * 42 + 110),
-                margin: { l: 102, r: 18, t: 18, b: 42 },
+                margin: { l: 102, r: 58, t: 18, b: 42 },
                 xaxis: {
                     title: amountAxisLabel(),
                     tickfont: { size: 10 },
@@ -2100,7 +2129,10 @@ const {
     function renderVarianceChart(summary) {
         const isMarginScope = hasActiveDimensionFilter();
         updateBridgeTitles(isMarginScope);
-        const rows = profitVarianceBridgeRows(summary, { includeFixed: !isMarginScope });
+        // Steps that would display as 0.00 (e.g. variable manufacturing/selling costs the upload
+        // does not carry) only add empty bars, so leave them out of the chart.
+        const rows = profitVarianceBridgeRows(summary, { includeFixed: !isMarginScope })
+            .filter((row) => !isDisplayZeroAmount(row.value));
         const startValue = isMarginScope ? summary.budget.contributionMargin : summary.budget.profit;
         const endValue = isMarginScope ? summary.actual.contributionMargin : summary.actual.profit;
         const startText = `${formatAmount(startValue)}<br>${isMarginScope ? "预算边际率" : "预算利润率"} ${formatPercent(isMarginScope ? summary.budget.contributionMarginRate : summary.budget.profitRate)}`;
@@ -2144,31 +2176,21 @@ const {
         const isMarginScope = hasActiveDimensionFilter();
         const actual = summary.actual;
         const fixedRows = isMarginScope ? [] : fixedSubjectEntries(actual);
-        const fixedMeasures = fixedRows.map(() => "relative");
-        const fixedLabels = fixedRows.map((row) => row.subject);
-        const fixedValues = fixedRows.map((row) => -displayAmount(row.amount));
-        const fixedText = fixedRows.map((row) => formatGap(-row.amount));
-        const measures = ["absolute", "relative", "relative", "relative", "total", ...fixedMeasures, ...(isMarginScope ? [] : ["total"])];
+        const costStep = (label, amount) => ({ label, measure: "relative", value: -displayAmount(amount), text: formatGap(-amount), amount });
+        const steps = [
+            { label: "净收入", measure: "absolute", value: displayAmount(actual.netRevenue), text: formatAmount(actual.netRevenue) },
+            costStep("材料成本", actual.materialCost),
+            costStep("变动制造", actual.variableManufacturingCost),
+            costStep("变动销售", actual.variableSalesCost),
+            { label: "边际总额", measure: "total", value: 0, text: formatAmount(actual.contributionMargin) },
+            ...fixedRows.map((row) => costStep(row.subject, row.amount)),
+            ...(isMarginScope ? [] : [{ label: "利润总额", measure: "total", value: 0, text: formatAmount(actual.profit) }])
+        ].filter((step) => step.measure !== "relative" || !isDisplayZeroAmount(step.amount));
         const labeler = isCompactBridgeViewport() ? compactBridgeAxisLabel : bridgeAxisLabel;
-        const labels = ["净收入", "材料成本", "变动制造", "变动销售", "边际总额", ...fixedLabels, ...(isMarginScope ? [] : ["利润总额"])].map(labeler);
-        const values = [
-            displayAmount(actual.netRevenue),
-            -displayAmount(actual.materialCost),
-            -displayAmount(actual.variableManufacturingCost),
-            -displayAmount(actual.variableSalesCost),
-            0,
-            ...fixedValues,
-            ...(isMarginScope ? [] : [0])
-        ];
-        const text = [
-            formatAmount(actual.netRevenue),
-            `-${formatAmount(actual.materialCost)}`,
-            `-${formatAmount(actual.variableManufacturingCost)}`,
-            `-${formatAmount(actual.variableSalesCost)}`,
-            formatAmount(actual.contributionMargin),
-            ...fixedText,
-            ...(isMarginScope ? [] : [formatAmount(actual.profit)])
-        ];
+        const measures = steps.map((step) => step.measure);
+        const labels = steps.map((step) => labeler(step.label));
+        const values = steps.map((step) => step.value);
+        const text = steps.map((step) => step.text);
 
         renderAccessiblePlot("profit-bridge-chart", [
             bridgeTrace({ measures, labels, values, text })
@@ -2627,18 +2649,14 @@ const {
     }
 
     function loadDemoData() {
-        state.operationSourceRows = [];
+        // Keep the demo as the operating-detail source so later 应用科目 recalculates on top of it
+        // instead of replacing the whole dataset with manual subject rows.
+        state.operationSourceRows = buildSampleSourceRows();
         state.subjectSourceRows = [];
-        state.manualSubjectRows = [];
-        state.rawData = buildSampleData();
-        state.availableDimensions = inferAvailableDimensions(state.rawData);
-        state.selectedDimensions = defaultSelectedDimensions(state.availableDimensions);
-        state.dimensionFilters = {};
-        state.currentFilterMenuOpen = "";
-        state.currentFilterSearch = "";
-        initFilterOptions();
-        updateAll();
-        showMessage("success", "已加载预算实际对比示例数据。");
+        state.manualSubjectDrafts = defaultManualSubjectDrafts();
+        renderManualSubjectRows();
+        state.manualSubjectRows = manualSubjectRowsFromDrafts();
+        applySourceRows("已加载预算实际对比示例数据，左侧示例固定科目已计入利润总额。");
     }
 
     function buildScenarioTemplateRows(scenario = "actual") {

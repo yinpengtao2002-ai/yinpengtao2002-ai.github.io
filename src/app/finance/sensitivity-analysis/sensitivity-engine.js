@@ -12,6 +12,7 @@ import {
     createFinanceEngineLifecycle
 } from "../../../lib/finance/browser-engine-lifecycle.ts";
 import { renderPlotlyAccessibleData } from "../../../lib/finance/chart-accessibility.ts";
+import { normalizePlotlyLayout, normalizePlotlyTraces } from "../../../lib/finance/plotly-layout.ts";
 import {
     createTemplateDataSheet,
     createTemplateInfoSheet
@@ -20,7 +21,7 @@ import {
 const lifecycle = createFinanceEngineLifecycle();
 
 function renderAccessiblePlot(target, data, layout, config) {
-    const result = Plotly.react(target, data, layout, config);
+    const result = Plotly.react(target, normalizePlotlyTraces(data), normalizePlotlyLayout(layout), config);
     const chartId = typeof target === "string" ? target : target?.id;
     if (chartId) renderPlotlyAccessibleData(chartId, data);
     return result;
@@ -212,6 +213,10 @@ const SENSITIVITY_PERCENT = 10;
 const ADJUSTMENT_MIN = -100;
 const ADJUSTMENT_MAX = 300;
 const ADJUSTMENT_STEP = 0.1;
+// The slider covers the common ±50% band so 0% sits in the middle; larger moves (down to −100%,
+// up to +300%) are typed into the number box next to it.
+const SLIDER_MIN = -50;
+const SLIDER_MAX = 50;
 
 const AppState = {
     baseAssumptions: getDefaultAssumptions(),
@@ -366,7 +371,7 @@ function formatNumber(value, decimals = 1) {
     return Number(normalizedValue).toLocaleString("zh-CN", {
         minimumFractionDigits: displayDecimals,
         maximumFractionDigits: displayDecimals
-    }).replace("-0", "0");
+    }).replace(/^-(?=0(?:\.0+)?$)/, "");
 }
 
 function formatAmount(value, decimals = 1) {
@@ -597,11 +602,13 @@ function renderControlInputs() {
             slider.id = `adjustment-${driver.key}`;
             slider.className = "adjustment-slider adjustment-input";
             slider.type = "range";
-            slider.min = String(ADJUSTMENT_MIN);
-            slider.max = String(ADJUSTMENT_MAX);
+            slider.min = String(SLIDER_MIN);
+            slider.max = String(SLIDER_MAX);
             slider.step = String(ADJUSTMENT_STEP);
             slider.dataset.key = driver.key;
+            slider.setAttribute("aria-label", `${driver.name}调整幅度`);
             slider.value = String(AppState.adjustments[driver.key] || 0);
+            paintSliderFill(slider, AppState.adjustments[driver.key] || 0);
 
             const meta = document.createElement("div");
             meta.className = "adjustment-meta";
@@ -1070,11 +1077,21 @@ function refreshInputValues() {
     refreshAdjustmentDisplay();
 }
 
+function paintSliderFill(slider, value) {
+    const clamped = clampNumber(Number(value) || 0, SLIDER_MIN, SLIDER_MAX);
+    const position = ((clamped - SLIDER_MIN) / (SLIDER_MAX - SLIDER_MIN)) * 100;
+    slider.style.setProperty("--fill-from", `${Math.min(50, position)}%`);
+    slider.style.setProperty("--fill-to", `${Math.max(50, position)}%`);
+    slider.classList.toggle("is-negative", Number(value) < 0);
+    slider.classList.toggle("is-beyond", Number(value) < SLIDER_MIN || Number(value) > SLIDER_MAX);
+}
+
 function refreshAdjustmentDisplay() {
     DRIVER_DEFINITIONS.forEach((driver) => {
         const adjustment = round(AppState.adjustments[driver.key] || 0, 1);
         document.querySelectorAll(`.adjustment-input[data-key="${driver.key}"]`).forEach((input) => {
             input.value = adjustment;
+            if (input.type === "range") paintSliderFill(input, adjustment);
         });
         const label = document.getElementById(`adjustment-label-${driver.key}`);
         if (label) label.textContent = formatSignedPercent(adjustment, 1);
@@ -1398,6 +1415,9 @@ function renderMatrixChart() {
     const xIndexes = matrix.xValues.map((_, index) => index);
     const yIndexes = matrix.yValues.map((_, index) => index);
     const cellText = matrix.z.map((row) => row.map((value) => formatMetricCellValue(value)));
+    // Values are generated symmetrically around the current assumption, so the centre cell is "now".
+    const currentX = Math.floor(xIndexes.length / 2);
+    const currentY = Math.floor(yIndexes.length / 2);
     const hoverValues = matrix.z.map((row, rowIndex) => row.map((value, columnIndex) => [
         xLabels[columnIndex],
         yLabels[rowIndex],
@@ -1431,6 +1451,17 @@ function renderMatrixChart() {
         paper_bgcolor: "rgba(0,0,0,0)",
         plot_bgcolor: "rgba(0,0,0,0)",
         font: getPlotFont(),
+        shapes: [{
+            type: "rect",
+            xref: "x",
+            yref: "y",
+            x0: currentX - 0.5,
+            x1: currentX + 0.5,
+            y0: currentY - 0.5,
+            y1: currentY + 0.5,
+            line: { color: "#141413", width: 2 },
+            fillcolor: "rgba(0,0,0,0)"
+        }],
         xaxis: {
             title: `${driverByKey[matrix.xKey].name}（${driverByKey[matrix.xKey].unit}）`,
             tickmode: "array",
@@ -1442,7 +1473,7 @@ function renderMatrixChart() {
             automargin: true
         },
         yaxis: {
-            title: compact ? "" : `${driverByKey[matrix.yKey].name}（${driverByKey[matrix.yKey].unit}）`,
+            title: `${driverByKey[matrix.yKey].name}（${driverByKey[matrix.yKey].unit}）`,
             tickmode: "array",
             tickvals: yIndexes,
             ticktext: yLabels,
