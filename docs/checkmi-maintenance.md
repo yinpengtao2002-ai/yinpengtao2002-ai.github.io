@@ -1,5 +1,15 @@
 # Checkmi maintenance
 
+## Editable project-file Mapping hierarchy · revision90 · 2026-10-04
+
+Source 87d41f74b3d81545bad7804ab3b0287e18151071 supports per-account inheritance from project defaults to vehicle family, vehicle/year, and vehicle/variant/year. Omitted accounts inherit; explicit zero overrides. Rule order is irrelevant. Identical scope/account duplicates, final parent/detail conflicts and rate dependency cycles reject instead of silently picking a value. Empty/null scope fields are omitted; year requires family and variant requires family/year. Current families are Modena, Lemans, Kunlun and Ultra, normalized for new plans and active rules while retaining unknown legacy families and historical snapshots.
+
+The editable interface is state.mapping in the complete .checkmi.json project file, with documented fields and a maintenance CLI that writes readable JSON atomically. There is no web Mapping editor/uploader. The webpage shows read-only rule scopes and effective contributors. Changing configuration leaves saved baseline, original data and scenarios unchanged; uploading a basic plan again previews a new generation. Per-account source rule/scope and effective values survive project save/reopen and manual adjustment.
+
+45 focused source tests, TypeScript, focused lint, production build and the full mapping-generation browser flow pass. Independent review checks all120 permutations of five rules. Browser evidence covers missing-rule gating, atomic failure, async invalidation, family normalization, four-level inheritance, baseline application, real download/reopen and manual-edit provenance. Desktop1366/mobile390/320 screenshots inspected, no page errors/overflow. The P&L and benchmark browser scripts only receive wording updates this round; their full flows were not rerun. Business1.90 mirrored; fictional examples are local only. Web release only, no EXE/DMG or installed desktop changes.
+
+Website validation:16 release/routing contracts, production build, TypeScript and33 function-bundle traces pass. Lint has0 errors and4 existing unrelated Goalkeeper warnings. Production verification follows deployment and checks all15 public artifacts plus the same real Mapping browser flow.
+
 ## Project vehicle-year Mapping generation · revision89 · 2026-10-03
 
 Source c45f30926eb86f239807f2c8efdb3e3be21ca385 connects basic-plan XLSX/CSV/JSON to maintenance-prepared Mapping carried in complete project files. One exact vehicle-family/calendar-year rule provides shared unit amounts or rates to its variants; quantity and MSRP remain variant inputs, with an optional explicit BOM override. Ordinary users open the prepared project, inspect coverage/version and upload only their basic plan. Missing projects/rules, incomplete required branches, duplicate rules, parent/detail conflicts and rate cycles cannot apply an invented zero-cost ledger. No actual Xiaomi business assumptions are supplied or published.
