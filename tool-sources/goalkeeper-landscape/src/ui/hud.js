@@ -623,6 +623,8 @@ export function createHud(documentRef) {
     gloveImpactDetail: documentRef.getElementById("gloveImpactDetail"),
   };
   var eventDisposers = [];
+  var lastDisplayValues = null;
+  var lastImpactReview;
 
   function bindEvent(element, name, listener) {
     if (!element || typeof listener !== "function") return;
@@ -751,7 +753,7 @@ export function createHud(documentRef) {
     setClass(status, "is-penalty-countdown", isPenaltyCountdown);
   }
 
-  function updatePressureCue(state) {
+  function updatePressureCue(state, penaltyPlan) {
     var cue = refs.pressureCue;
     var secondsLeft = getSecondsLeft(state);
     var timedMode = state.mode !== "penalty";
@@ -763,7 +765,7 @@ export function createHud(documentRef) {
       setClass(refs.timeValue, "is-low-time", lowTime);
       refs.timeValue.setAttribute(
         "aria-label",
-        lowTime ? "剩余 " + String(secondsLeft) + " 秒，最后 10 秒" : "剩余 " + String(secondsLeft) + " 秒",
+        timedMode ? "剩余 " + secondsLeft + " 秒" + (lowTime ? "，最后 10 秒" : "") : penaltyPlan.roundLabel,
       );
     }
 
@@ -771,7 +773,9 @@ export function createHud(documentRef) {
       setClass(refs.concededValue, "is-match-point", matchPoint);
       refs.concededValue.setAttribute(
         "aria-label",
-        "失球 " + String(state.conceded || 0) + "/" + String(MAX_CONCEDED) + (matchPoint ? "，再丢一球结束" : ""),
+        timedMode
+          ? "失球 " + String(state.conceded || 0) + "/" + String(MAX_CONCEDED) + (matchPoint ? "，再丢一球结束" : "")
+          : "比分 " + penaltyPlan.teamScore + ":" + penaltyPlan.opponentScore,
       );
     }
 
@@ -784,16 +788,15 @@ export function createHud(documentRef) {
     }
   }
 
-  function updateMatchProgress(state) {
+  function updateMatchProgress(state, penaltyPlan, percent) {
     var progress = refs.matchProgress;
     var fill = refs.matchProgressFill;
     var secondsLeft = getSecondsLeft(state);
-    var percent = getMatchProgressPercent(state);
     var liveVisible = state.running && !state.ended;
-    var lowTime = state.running && !state.paused && !state.ended && secondsLeft <= LOW_TIME_SECONDS;
-    var matchPoint = state.running && !state.paused && !state.ended && (state.conceded || 0) >= MAX_CONCEDED - 1;
     var isPenalty = state.mode === "penalty";
-    var penaltyPlan = getPenaltyHudPlan(state);
+    var timedPlay = !isPenalty && liveVisible && !state.paused;
+    var lowTime = timedPlay && secondsLeft <= LOW_TIME_SECONDS;
+    var matchPoint = timedPlay && (state.conceded || 0) >= MAX_CONCEDED - 1;
     var text = isPenalty ? penaltyPlan.roundLabel + " " + penaltyPlan.phaseLabel : "剩余 " + String(secondsLeft) + " 秒";
 
     if (progress) {
@@ -920,6 +923,26 @@ export function createHud(documentRef) {
       refs.saveAssistSwitch.classList.toggle("is-active", enabled);
     },
     update(state, soundEnabled, context = {}) {
+      // A published shot review is immutable until the next shot or round reset.
+      if (!lastDisplayValues || lastImpactReview !== context.gloveImpactReview) {
+        updateGloveImpactReview(context.gloveImpactReview);
+        lastImpactReview = context.gloveImpactReview;
+      }
+      var cue = context.roundIntroCue;
+      var roundBreak = context.penaltyRoundBreak;
+      var progressPercent = getMatchProgressPercent(state);
+      // Compare the values printed on screen, including the rounded match clock.
+      // The simulation still advances on every animation frame.
+      var displayValues = [
+        state.mode, state.running, state.paused, state.ended, state.endReason,
+        state.message, state.score, state.saves, state.conceded, state.streak,
+        state.bestStreak, state.lastSavePoints, state.shootout,
+        getSecondsLeft(state), progressPercent, soundEnabled, context.audioStatus,
+        cue?.visible, cue?.label, cue?.kicker, cue?.ariaLabel, context.penaltyAnnouncement,
+        roundBreak?.visible, roundBreak?.roundLabel, roundBreak?.scoreText, roundBreak?.teamResultLabel,
+      ];
+      if (lastDisplayValues && displayValues.every((value, index) => value === lastDisplayValues[index])) return;
+      lastDisplayValues = displayValues;
       var penaltyPlan = getPenaltyHudPlan(state);
       var penaltyMode = state.mode === "penalty";
       var penaltyResult = penaltyMode ? getPenaltyResultPlan(state) : null;
@@ -1022,10 +1045,9 @@ export function createHud(documentRef) {
       updateEventRibbon(state);
       updateMatchAtmosphere(state);
       updateMatchStatus(state, context);
-      updatePressureCue(state);
-      updateMatchProgress(state);
+      updatePressureCue(state, penaltyPlan);
+      updateMatchProgress(state, penaltyPlan, progressPercent);
       updateControlRail(state);
-      updateGloveImpactReview(context.gloveImpactReview);
       setVisible(refs.startOverlay, !state.running && !state.ended);
       setVisible(refs.pauseOverlay, state.running && state.paused && !state.ended);
       setVisible(refs.endOverlay, state.ended);

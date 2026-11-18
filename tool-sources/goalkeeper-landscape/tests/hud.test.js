@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createGameState } from "../src/game/game-state.js";
 import * as HudModule from "../src/ui/hud.js";
 import { createHud } from "../src/ui/hud.js";
@@ -175,6 +175,37 @@ function createDocument() {
 }
 
 describe("hud", () => {
+  it("refreshes the scoreboard at display changes and paints each published review once", () => {
+    const hud = createHud(createDocument());
+    const paint = vi.spyOn(hud.refs.gloveImpactCanvas.getContext(), "clearRect");
+    const label = vi.spyOn(hud.refs.timeValue, "setAttribute");
+    const state = { ...createGameState(), running: true, timeLeft: 58.9 };
+    const review = { visible: true, result: "goal", impact: null };
+    hud.update(state, true, { gloveImpactReview: review });
+    label.mockClear();
+    paint.mockClear();
+    hud.update({ ...state, elapsed: 1.12, timeLeft: 58.88 }, true, { gloveImpactReview: review });
+    expect(label).not.toHaveBeenCalled();
+    hud.update({ ...state, timeLeft: 57.9 }, true, { gloveImpactReview: review });
+    expect(hud.refs.timeValue.textContent).toBe("58");
+    expect(paint).not.toHaveBeenCalled();
+    hud.update(state, true, { gloveImpactReview: { ...review, result: "save" } });
+    expect(paint).toHaveBeenCalledTimes(1);
+    hud.update(createGameState(), true);
+    expect(hud.refs.gloveImpactReview.classList.contains("is-visible")).toBe(false);
+  });
+
+  it("uses round and score labels throughout a shootout, including late rounds", () => {
+    const hud = createHud(createDocument());
+    const state = createGameState({ mode: "penalty" });
+    state.shootout = { ...state.shootout, round: 5, teamGoals: 3, opponentGoals: 4 };
+    hud.update({ ...state, running: true, conceded: 4 }, true);
+    expect(hud.refs.timeValue.getAttribute("aria-label")).toContain("第 5 轮");
+    expect(hud.refs.concededValue.getAttribute("aria-label")).toContain("3:4");
+    expect(hud.refs.matchProgress.classList.contains("is-low-time")).toBe(false);
+    expect(hud.refs.matchProgress.classList.contains("is-match-point")).toBe(false);
+  });
+
   it("removes restart listeners when a runtime HUD is disposed", () => {
     const documentRef = createDocument();
     const staleHud = createHud(documentRef);
