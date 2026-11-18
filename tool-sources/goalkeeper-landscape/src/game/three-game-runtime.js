@@ -732,6 +732,7 @@ export async function createThreeGameRuntime(options) {
   }
 
   function pauseForInterruption() {
+    input.cancelGesture();
     if (!state.running || state.paused || state.ended) return;
     state = togglePause(state);
     audio.setMusicPaused?.(true);
@@ -747,7 +748,7 @@ export async function createThreeGameRuntime(options) {
       width: rect.width || 1280,
       height: rect.height || 720,
     };
-    input.setDefault(bounds);
+    input.resize(bounds);
     lastPointerInput = input.getPointer(bounds);
     scene.resize(bounds);
     render();
@@ -1115,8 +1116,7 @@ export async function createThreeGameRuntime(options) {
     scene.updateVisuals(getSnapshot());
   }
 
-  function frame(dt) {
-    update(dt);
+  function frame() {
     updateHud();
     render();
   }
@@ -1124,6 +1124,7 @@ export async function createThreeGameRuntime(options) {
   var lifecycle = createRuntimeLifecycle({
     windowRef,
     documentRef,
+    onStep: update,
     onFrame: frame,
     onInterrupt: pauseForInterruption,
   });

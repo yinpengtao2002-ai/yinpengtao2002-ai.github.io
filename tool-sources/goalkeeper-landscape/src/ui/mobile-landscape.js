@@ -73,10 +73,10 @@ export async function requestLandscapeOrientation(windowRef, stage) {
 
   try {
     await orientation.lock("landscape");
-    if (stage?.dataset) stage.dataset.mobileLandscape = "native";
+    syncMobileLandscape(stage, windowRef);
     return true;
-  } catch (error) {
-    if (stage?.dataset) stage.dataset.mobileLandscape = "forced";
+  } catch {
+    syncMobileLandscape(stage, windowRef);
     return false;
   }
 }

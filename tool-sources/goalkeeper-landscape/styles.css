@@ -2764,3 +2764,32 @@ button {
     width: 106px;
   }
 }
+
+.stage[data-mode="timed"] .pressure-cue {
+  left: 50%;
+  right: auto;
+  width: max-content;
+  translate: -50% 0;
+}
+
+@media (orientation: portrait) and (max-width: 760px) {
+  .stage[data-mobile-landscape="forced"] .broadcast-scorebug {
+    left: 50%;
+    right: auto;
+    top: 8px;
+    width: max-content;
+    max-width: calc(100% - 20px);
+    height: auto;
+    grid-template-columns: repeat(3, auto);
+    align-items: center;
+    white-space: nowrap;
+  }
+
+  .broadcast-scorebug .glass-panel .hud-label {
+    display: none;
+  }
+
+  .broadcast-scorebug .hud-metric {
+    min-width: auto;
+  }
+}

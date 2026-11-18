@@ -26,6 +26,36 @@ function createFakeStage() {
 }
 
 describe("pointer input", () => {
+  const bounds = { width: 844, height: 390 };
+  const touch = (id, x, y) => ({ pointerId: id, clientX: x, clientY: y, pointerType: "touch", preventDefault() {} });
+
+  it("keeps the first finger in control until release or cancellation", () => {
+    const stage = createFakeStage();
+    const input = createPointerInput(stage);
+    stage.dispatch("pointerdown", touch(1, 40, 720));
+    stage.dispatch("pointerdown", touch(2, 300, 100));
+    stage.dispatch("pointermove", touch(2, 305, 115));
+    stage.dispatch("pointerup", touch(2, 305, 115));
+    expect(input.getPointer(bounds)).toEqual({ x: 720, y: 350 });
+    stage.dispatch("pointermove", touch(1, 45, 715));
+    expect(input.getPointer(bounds)).toEqual({ x: 715, y: 345 });
+    stage.dispatch("pointercancel", touch(1, 45, 715));
+    stage.dispatch("pointermove", touch(1, 0, 0));
+    expect(input.getPointer(bounds)).toEqual({ x: 715, y: 345 });
+    stage.dispatch("pointerdown", touch(3, 12, 28));
+    expect(input.getPointer(bounds)).toEqual({ x: 28, y: 378 });
+  });
+
+  it("keeps the active finger under its screen position across resize", () => {
+    const stage = createFakeStage();
+    const input = createPointerInput(stage);
+    input.resize(bounds);
+    stage.dispatch("pointerdown", touch(9, 70, 720));
+    stage.getBoundingClientRect = () => ({ left: 10, top: 20, width: 390, height: 844 });
+    input.resize(bounds);
+    expect(input.getPointer(bounds)).toEqual({ x: 700, y: 330 });
+  });
+
   it("stops reacting to old stage events after leaving the game", () => {
     const stage = createFakeStage();
     const input = createPointerInput(stage);

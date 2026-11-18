@@ -1,4 +1,7 @@
-export function createRuntimeLifecycle({ windowRef, documentRef, onFrame, onInterrupt }) {
+const MAX_FRAME_SECONDS = 0.1;
+const MAX_STEP_SECONDS = 0.04;
+
+export function createRuntimeLifecycle({ windowRef, documentRef, onStep, onFrame, onInterrupt }) {
   var running = false;
   var frameId = null;
   var lastFrame = null;
@@ -18,9 +21,12 @@ export function createRuntimeLifecycle({ windowRef, documentRef, onFrame, onInte
   function frame(now) {
     frameId = null;
     if (!running || documentRef.hidden) return;
-    var dt = lastFrame === null ? 0 : Math.max(0, Math.min(0.04, (now - lastFrame) / 1000));
+    var dt = lastFrame === null ? 0 : Math.max(0, Math.min(MAX_FRAME_SECONDS, (now - lastFrame) / 1000));
     lastFrame = now;
-    onFrame(dt);
+    // Catch up short frames in steps the physics world can fully consume.
+    var steps = Math.ceil(dt / MAX_STEP_SECONDS);
+    for (var i = 0; i < steps; i++) onStep(dt / steps);
+    onFrame();
     scheduleFrame();
   }
 

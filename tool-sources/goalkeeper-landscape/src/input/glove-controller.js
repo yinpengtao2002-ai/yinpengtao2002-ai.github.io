@@ -121,7 +121,8 @@ export function updateGloveController(controller, pointer, dt, bounds) {
     };
   }
 
-  var follow = GLOVE_3D.mouseFollow;
+  var elapsed = Math.max(0, dt);
+  var follow = 1 - Math.pow(1 - GLOVE_3D.mouseFollow, elapsed * 60);
   var maxSpeed = GLOVE_3D.maxSpeedMouse;
   var desired = {
     x: previous.x + (target.x - previous.x) * follow,
@@ -131,7 +132,7 @@ export function updateGloveController(controller, pointer, dt, bounds) {
   var dx = desired.x - previous.x;
   var dy = desired.y - previous.y;
   var distance = Math.hypot(dx, dy);
-  var maxDistance = maxSpeed * safeDt;
+  var maxDistance = maxSpeed * elapsed;
   var center = desired;
 
   if (distance > maxDistance) {
@@ -144,8 +145,8 @@ export function updateGloveController(controller, pointer, dt, bounds) {
   }
 
   var velocity = {
-    x: (center.x - previous.x) / safeDt,
-    y: (center.y - previous.y) / safeDt,
+    x: elapsed > 0 ? (center.x - previous.x) / elapsed : 0,
+    y: elapsed > 0 ? (center.y - previous.y) / elapsed : 0,
     z: 0,
   };
 

@@ -4,14 +4,16 @@ export function createPointerInput(element) {
   var pointer = {
     x: 640,
     y: 560,
-    active: false,
     mode: "mouse",
   };
+  var activePointerId = null;
+  var clientPoint = null;
+  var needsMapping = false;
+  var previousBounds = null;
 
   function updateFromEvent(event) {
-    var point = mapClientPointToStage(event, element);
-    pointer.x = point.x;
-    pointer.y = point.y;
+    clientPoint = { clientX: event.clientX, clientY: event.clientY };
+    needsMapping = true;
     pointer.mode = event.pointerType === "touch" ? "touch" : "mouse";
   }
 
@@ -20,9 +22,9 @@ export function createPointerInput(element) {
   }
 
   function onPointerDown(event) {
-    if (shouldIgnore(event)) return;
+    if (shouldIgnore(event) || activePointerId !== null) return;
     event.preventDefault();
-    pointer.active = true;
+    activePointerId = event.pointerId;
     updateFromEvent(event);
     if (element.setPointerCapture && event.pointerId !== undefined) {
       try {
@@ -36,34 +38,54 @@ export function createPointerInput(element) {
 
   function onPointerMove(event) {
     if (shouldIgnore(event)) return;
+    if ((activePointerId !== null || event.pointerType === "touch") && event.pointerId !== activePointerId) return;
     event.preventDefault();
     updateFromEvent(event);
   }
 
-  function releasePointer(event) {
-    pointer.active = false;
-    if (element.releasePointerCapture && event.pointerId !== undefined) {
+  function cancelGesture() {
+    var id = activePointerId;
+    activePointerId = null;
+    if (id != null && element.hasPointerCapture?.(id)) {
       try {
-        element.releasePointerCapture(event.pointerId);
+        element.releasePointerCapture(id);
       } catch {
         // Pointer may already have been released by the browser.
       }
     }
   }
 
+  function releasePointer(event) {
+    if (activePointerId === event.pointerId) cancelGesture();
+  }
+
+  function onCaptureLost(event) {
+    if (event.target === element) releasePointer(event);
+  }
+
   element.addEventListener("pointerdown", onPointerDown);
   element.addEventListener("pointermove", onPointerMove);
   element.addEventListener("pointerup", releasePointer);
   element.addEventListener("pointercancel", releasePointer);
+  element.addEventListener("lostpointercapture", onCaptureLost);
 
   return {
+    cancelGesture,
     dispose() {
+      cancelGesture();
       element.removeEventListener("pointerdown", onPointerDown);
       element.removeEventListener("pointermove", onPointerMove);
       element.removeEventListener("pointerup", releasePointer);
       element.removeEventListener("pointercancel", releasePointer);
+      element.removeEventListener("lostpointercapture", onCaptureLost);
     },
     getPointer(bounds) {
+      if (needsMapping) {
+        var point = mapClientPointToStage(clientPoint, element);
+        pointer.x = point.x;
+        pointer.y = point.y;
+        needsMapping = false;
+      }
       return {
         x: Math.max(0, Math.min(bounds.width, pointer.x)),
         y: Math.max(0, Math.min(bounds.height, pointer.y)),
@@ -72,9 +94,17 @@ export function createPointerInput(element) {
     getMode() {
       return pointer.mode;
     },
-    setDefault(bounds) {
-      pointer.x = bounds.width * 0.5;
-      pointer.y = bounds.height * 0.8;
+    resize(bounds) {
+      if (!clientPoint) {
+        pointer.x = bounds.width * 0.5;
+        pointer.y = bounds.height * 0.8;
+      } else if (pointer.mode === "touch" && activePointerId === null && previousBounds && !needsMapping) {
+        pointer.x *= bounds.width / previousBounds.width;
+        pointer.y *= bounds.height / previousBounds.height;
+      } else {
+        needsMapping = true;
+      }
+      previousBounds = bounds;
     },
   };
 }

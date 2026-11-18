@@ -92,6 +92,11 @@ describe("mobile landscape helpers", () => {
     expect(requestFullscreen).toHaveBeenCalledTimes(1);
     expect(lock).toHaveBeenCalledWith("landscape");
     expect(calls).toEqual(["fullscreen", "landscape"]);
+    // Some browsers resolve lock() before delivering the landscape resize.
+    expect(stage.dataset.mobileLandscape).toBe("forced");
+    windowRef.innerWidth = 844;
+    windowRef.innerHeight = 390;
+    expect(syncMobileLandscape(stage, windowRef)).toBe(false);
     expect(stage.dataset.mobileLandscape).toBe("native");
   });
 

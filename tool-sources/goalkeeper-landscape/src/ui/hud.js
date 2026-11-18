@@ -141,7 +141,7 @@ export function getResultPerformanceTags(state) {
 
 export function getPressureCueText(state) {
   if (!state?.running || state.paused || state.ended) return "";
-  if (state.mode === "penalty") return state.shootout?.phase === "team-kick" ? "我方罚球" : "准备扑救";
+  if (state.mode === "penalty") return "";
 
   var secondsLeft = getSecondsLeft(state);
   var lowTime = secondsLeft <= LOW_TIME_SECONDS;

@@ -155,4 +155,15 @@ describe("3D glove controller", () => {
     expect(mouse.center.x).toBeGreaterThan(0);
     expect(mouse.center.x).toBeLessThan(target.x);
   });
+
+  it("tracks the same fine mouse movement over equal time at different refresh rates", () => {
+    for (const hz of [30, 60, 120, 240]) {
+      let controller = createGloveController();
+      const options = { ...bounds, inputMode: "mouse", pointerWorldTarget: { x: 0.2, y: 1.2 } };
+      for (let i = 0; i < hz / 30; i++) {
+        controller = updateGloveController(controller, {}, 1 / hz, options);
+      }
+      expect(controller.center.x).toBeCloseTo(0.18848, 5);
+    }
+  });
 });

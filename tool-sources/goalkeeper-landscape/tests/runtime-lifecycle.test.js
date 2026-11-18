@@ -9,18 +9,21 @@ function setup() {
   let id = 0;
   let state = startRound(createGameState());
   let frames = 0;
+  let longestStep = 0;
   documentRef.hidden = false;
   windowRef.requestAnimationFrame = (fn) => { callbacks.set(++id, fn); return id; };
   windowRef.cancelAnimationFrame = (key) => callbacks.delete(key);
   const loop = createRuntimeLifecycle({
     windowRef, documentRef,
-    onFrame(dt) { state = tickRound(state, dt); frames++; },
+    onStep(dt) { state = tickRound(state, dt); longestStep = Math.max(longestStep, dt); },
+    onFrame() { frames++; },
     onInterrupt() { if (!state.paused) state = togglePause(state); },
   });
   return {
     loop, callbacks, windowRef,
     get state() { return state; },
     get frames() { return frames; },
+    get longestStep() { return longestStep; },
     step(now) { const pending = [...callbacks.values()]; callbacks.clear(); pending.forEach((fn) => fn(now)); },
     visible(visible) { documentRef.hidden = !visible; documentRef.dispatchEvent(new Event("visibilitychange")); },
     resume() { state = togglePause(state); },
@@ -28,6 +31,17 @@ function setup() {
 }
 
 describe("runtime lifecycle", () => {
+  it("advances a full second at 15 fps and bounds the jump after a long stall", () => {
+    const game = setup();
+    game.loop.start();
+    for (let frame = 0; frame <= 15; frame++) game.step(1000 + frame * 1000 / 15);
+    expect(game.state.timeLeft).toBeCloseTo(59);
+    expect(game.frames).toBe(16);
+    game.step(5000);
+    expect(game.state.timeLeft).toBeCloseTo(58.9);
+    expect(game.longestStep).toBeLessThanOrEqual(0.04);
+  });
+
   it("freezes match time and rendering while hidden and waits for manual resume", () => {
     const game = setup();
     game.loop.start();
